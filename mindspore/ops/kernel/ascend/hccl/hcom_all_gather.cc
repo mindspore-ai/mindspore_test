@@ -18,7 +18,7 @@
 
 #include <string>
 
-#include "include/backend/distributed/collective/collective_manager.h"
+#include "include/cluster/topology/collective_manager.h"
 
 namespace mindspore {
 namespace kernel {

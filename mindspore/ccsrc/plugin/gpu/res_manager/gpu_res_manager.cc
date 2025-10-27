@@ -25,7 +25,7 @@
 #include "plugin/gpu/res_manager/mem_manager/gpu_memory_manager.h"
 #include "plugin/gpu/res_manager/device_context_conf/op_precision_conf.h"
 #include "plugin/gpu/res_manager/device_context_conf/op_tuning_conf.h"
-#include "include/backend/distributed/collective/collective_manager.h"
+#include "include/cluster/topology/collective_manager.h"
 #include "include/runtime/hardware_abstract/data_queue/data_queue_mgr.h"
 #include "include/runtime/memory/mem_pool/mem_tracker.h"
 #include "ir/tensor_new.h"

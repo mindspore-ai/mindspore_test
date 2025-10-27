@@ -21,11 +21,11 @@
 #include <utility>
 #include <memory>
 #include <optional>
-#include "include/backend/distributed/collective/collective_manager.h"
+#include "include/cluster/topology/collective_manager.h"
 #if defined(__linux__) && defined(WITH_BACKEND)
-#include "include/backend/distributed/cluster/cluster_context.h"
+#include "include/cluster/topology/cluster_context.h"
 #else
-#include "include/backend/distributed/cluster/dummy_cluster_context.h"
+#include "include/cluster/topology/dummy_cluster_context.h"
 #endif
 #include "include/backend/visible.h"
 

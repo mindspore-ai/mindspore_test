@@ -22,13 +22,13 @@
 #include <string>
 #include <random>
 #include "runtime/hardware_abstract/collective/collective_communication_lib.h"
-#include "include/backend/distributed/cluster/cluster_context.h"
+#include "include/cluster/topology/cluster_context.h"
 #include "cluster/rpc/core/collective_ops_impl.h"
 #include "plugin/cpu/res_manager/collective/ms_communication_group.h"
 #include "plugin/cpu/res_manager/collective/allreduce_impl.h"
 #include "plugin/cpu/res_manager/collective/ms_collective_node.h"
-#include "include/backend/distributed/cluster/topology/compute_graph_node.h"
-#include "include/backend/distributed/cluster/topology/tcp_node.h"
+#include "include/cluster/topology/compute_graph_node.h"
+#include "include/cluster/rpc/tcp_node.h"
 
 namespace mindspore {
 namespace device {

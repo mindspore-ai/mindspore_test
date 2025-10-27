@@ -20,7 +20,7 @@
 #include <string>
 #include <memory>
 
-#include "include/backend/distributed/rpc/rpc_server_base.h"
+#include "include/cluster/rpc/rpc_server_base.h"
 #include "cluster/rpc/tcp/tcp_comm.h"
 #include "utils/ms_utils.h"
 #include "include/backend/visible.h"

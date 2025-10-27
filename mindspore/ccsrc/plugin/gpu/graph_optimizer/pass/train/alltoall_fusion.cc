@@ -27,7 +27,7 @@
 #include "include/utils/anfalgo.h"
 #include "include/utils/utils.h"
 #include "plugin/gpu/graph_optimizer/pass/base/kernel_info_setter.h"
-#include "include/backend/distributed/init.h"
+#include "include/cluster/init.h"
 #ifndef _WIN32
 #include "kernel/gpu/nccl/nccl_gpu_kernel.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"

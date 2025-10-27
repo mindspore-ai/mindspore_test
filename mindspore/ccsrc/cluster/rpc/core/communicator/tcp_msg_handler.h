@@ -21,7 +21,7 @@
 #include "proto/ps.pb.h"
 #include "cluster/rpc/core/abstract_node.h"
 #include "cluster/rpc/core/communicator/message_handler.h"
-#include "include/backend/distributed/ps/constants.h"
+#include "include/cluster/rpc/constants.h"
 
 namespace mindspore {
 namespace ps {

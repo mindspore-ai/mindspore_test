@@ -60,7 +60,7 @@
 #include "utils/profile.h"
 #include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
 #if !defined(_WIN32) && !defined(_WIN64) && !defined(__APPLE__)
-#include "include/backend/distributed/cluster/topology/compute_graph_node.h"
+#include "include/cluster/topology/compute_graph_node.h"
 #endif
 #include "include/backend/debug/data_dump/dump_json_parser.h"
 #ifdef ENABLE_DEBUGGER
@@ -68,11 +68,11 @@
 #endif
 #include "tools/profiler/profiling.h"
 #include "include/utils/common.h"
-#include "include/backend/distributed/collective/collective_manager.h"
+#include "include/cluster/topology/collective_manager.h"
 #if defined(__linux__) && defined(WITH_BACKEND)
-#include "include/backend/distributed/cluster/cluster_context.h"
+#include "include/cluster/topology/cluster_context.h"
 #else
-#include "include/backend/distributed/cluster/dummy_cluster_context.h"
+#include "include/cluster/topology/dummy_cluster_context.h"
 #endif
 #include "abstract/ops/primitive_infer_map.h"
 #include "utils/file_utils.h"

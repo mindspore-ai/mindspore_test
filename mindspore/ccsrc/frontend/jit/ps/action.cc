@@ -79,9 +79,9 @@
 #include "frontend/jit/ps/pass_config.h"
 
 #if defined(__linux__) && defined(WITH_BACKEND)
-#include "include/backend/distributed/cluster/cluster_context.h"
+#include "include/cluster/topology/cluster_context.h"
 #else
-#include "include/backend/distributed/cluster/dummy_cluster_context.h"
+#include "include/cluster/topology/dummy_cluster_context.h"
 #endif
 #include "tools/profiler/profiling_framework_data.h"
 #include "tools/profiler/profiler.h"

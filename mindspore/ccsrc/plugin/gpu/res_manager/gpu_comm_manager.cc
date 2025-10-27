@@ -19,7 +19,7 @@
 #include "include/utils/convert_utils.h"
 #include "utils/ms_context.h"
 #include "include/utils/parallel_context.h"
-#include "include/backend/distributed/init.h"
+#include "include/cluster/init.h"
 
 namespace mindspore {
 namespace {

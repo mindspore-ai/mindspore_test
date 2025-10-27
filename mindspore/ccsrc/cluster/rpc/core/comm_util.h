@@ -63,7 +63,7 @@
 #include "cluster/rpc/core/cluster_metadata.h"
 #include "cluster/rpc/core/cluster_config.h"
 #include "utils/log_adapter.h"
-#include "include/backend/distributed/ps/ps_context.h"
+#include "include/cluster/topology/ps_context.h"
 #include "include/utils/utils.h"
 #include "cluster/rpc/core/configuration.h"
 

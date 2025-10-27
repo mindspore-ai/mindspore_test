@@ -21,7 +21,7 @@
 #include <memory>
 
 #include "actor/aid.h"
-#include "include/backend/distributed/rpc/tcp/constants.h"
+#include "cluster/rpc/tcp/constants.h"
 #include "cluster/rpc/tcp/tcp_socket_operation.h"
 
 namespace mindspore {

@@ -19,7 +19,7 @@
 
 #include <memory>
 #include "cluster/rpc/core/abstract_node.h"
-#include "include/backend/distributed/cluster/topology/compute_graph_node.h"
+#include "include/cluster/topology/compute_graph_node.h"
 
 namespace mindspore {
 namespace ps {

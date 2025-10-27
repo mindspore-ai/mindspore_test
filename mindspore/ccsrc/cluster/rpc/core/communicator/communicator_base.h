@@ -26,7 +26,7 @@
 #include "utils/log_adapter.h"
 #include "cluster/rpc/core/communicator/tcp_server.h"
 #include "cluster/rpc/core/node_info.h"
-#include "include/backend/distributed/ps/constants.h"
+#include "include/cluster/rpc/constants.h"
 
 namespace mindspore {
 namespace ps {

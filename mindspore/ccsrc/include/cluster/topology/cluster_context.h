@@ -25,10 +25,10 @@
 #include <atomic>
 #include <utility>
 #include <optional>
-#include "include/backend/distributed/constants.h"
+#include "include/cluster/topology/constants.h"
 #include "utils/log_adapter.h"
 #include "utils/ms_utils.h"
-#include "include/backend/distributed/cluster/topology/node_base.h"
+#include "include/cluster/topology/node_base.h"
 #include "include/backend/visible.h"
 
 namespace mindspore {

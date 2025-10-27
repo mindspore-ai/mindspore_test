@@ -18,7 +18,7 @@
 
 #include <string>
 
-#include "include/backend/distributed/collective/collective_manager.h"
+#include "include/cluster/topology/collective_manager.h"
 #include "plugin/ascend/res_manager/stream_manager/ascend_stream_manager.h"
 #include "runtime/rt.h"
 

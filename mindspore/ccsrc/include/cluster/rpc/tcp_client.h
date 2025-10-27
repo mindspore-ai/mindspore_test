@@ -22,7 +22,7 @@
 #include <mutex>
 #include <condition_variable>
 
-#include "include/backend/distributed/rpc/rpc_client_base.h"
+#include "include/cluster/rpc/rpc_client_base.h"
 #include "utils/ms_utils.h"
 #include "include/backend/visible.h"
 

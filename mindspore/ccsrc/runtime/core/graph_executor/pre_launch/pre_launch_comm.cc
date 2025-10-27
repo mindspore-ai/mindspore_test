@@ -21,7 +21,7 @@
 #include "include/utils/anfalgo.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "ir/device_address.h"
-#include "include/backend/distributed/collective/collective_manager.h"
+#include "include/cluster/topology/collective_manager.h"
 #include "include/runtime/memory/mem_pool/mem_tracker.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"

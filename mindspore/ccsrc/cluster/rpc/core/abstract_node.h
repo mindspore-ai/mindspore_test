@@ -25,7 +25,7 @@
 #include <vector>
 #include <memory>
 #include <string>
-#include "include/backend/distributed/ps/constants.h"
+#include "include/cluster/rpc/constants.h"
 #include "cluster/rpc/core/communicator/communicator_base.h"
 #include "cluster/rpc/core/communicator/message.h"
 #include "cluster/rpc/core/communicator/task_executor.h"

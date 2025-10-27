@@ -21,7 +21,7 @@
 #include <sstream>
 #include <iomanip>
 #include "include/utils/common.h"
-#include "include/backend/distributed/collective/collective_manager.h"
+#include "include/cluster/topology/collective_manager.h"
 #include "include/utils/anfalgo.h"
 #include "utils/ms_context.h"
 #include "utils/log_adapter.h"

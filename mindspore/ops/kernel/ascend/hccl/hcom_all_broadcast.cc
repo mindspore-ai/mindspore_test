@@ -19,7 +19,7 @@
 #include <string>
 
 #include "utils/ms_context.h"
-#include "include/backend/distributed/collective/collective_manager.h"
+#include "include/cluster/topology/collective_manager.h"
 
 namespace mindspore {
 namespace kernel {

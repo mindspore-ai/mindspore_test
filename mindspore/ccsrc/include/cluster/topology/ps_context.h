@@ -20,7 +20,7 @@
 #include <map>
 #include <string>
 #include <memory>
-#include "include/backend/distributed/ps/constants.h"
+#include "include/cluster/rpc/constants.h"
 #include "include/backend/visible.h"
 #include "ir/tensor.h"
 #include "include/utils/tensor_py.h"

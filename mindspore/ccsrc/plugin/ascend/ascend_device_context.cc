@@ -26,7 +26,7 @@
 #include "include/utils/callback.h"
 #include "include/utils/parallel_context.h"
 #include "include/utils/scoped_long_running.h"
-#include "include/backend/distributed/constants.h"
+#include "include/cluster/topology/constants.h"
 #include "include/backend/debug/data_dump/dump_json_parser.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "plugin/ascend/res_manager/device_context_conf/op_debug_conf.h"

@@ -28,11 +28,11 @@
 #include <mutex>
 #include <unordered_map>
 #include "utils/ms_utils.h"
-#include "include/backend/distributed/constants.h"
+#include "include/cluster/topology/constants.h"
 #if defined(__linux__) && defined(WITH_BACKEND)
-#include "include/backend/distributed/cluster/cluster_context.h"
+#include "include/cluster/topology/cluster_context.h"
 #else
-#include "include/backend/distributed/cluster/dummy_cluster_context.h"
+#include "include/cluster/topology/dummy_cluster_context.h"
 #endif
 #include "runtime/hardware_abstract/collective/collective_communication_lib.h"
 #include "runtime/hardware_abstract/collective/communication_group.h"

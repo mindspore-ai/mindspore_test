@@ -28,7 +28,7 @@
 #include <unordered_map>
 #include <nlohmann/json.hpp>
 
-#include "include/backend/distributed/ps/constants.h"
+#include "include/cluster/rpc/constants.h"
 #include "utils/log_adapter.h"
 #include "cluster/rpc/core/comm_util.h"
 #include "cluster/rpc/core/configuration.h"

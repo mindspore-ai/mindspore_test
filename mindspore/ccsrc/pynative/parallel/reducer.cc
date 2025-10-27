@@ -19,7 +19,7 @@
 #include <memory>
 #include <limits>
 #include <algorithm>
-#include "include/backend/distributed/init.h"
+#include "include/cluster/init.h"
 #include "tools/profiler/profiler.h"
 #include "runtime/pipeline/pipeline.h"
 #include "pyboost/functions/auto_generate/functions.h"
