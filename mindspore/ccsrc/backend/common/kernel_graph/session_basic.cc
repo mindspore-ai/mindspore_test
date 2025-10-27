@@ -21,6 +21,9 @@
 #include <utility>
 #include <functional>
 #include <unordered_map>
+#include <vector>
+#include <string>
+#include <memory>
 
 #include "mindspore/ops/op_def/ascend_op_name.h"
 #include "mindspore/ops/op_def/structure_op_name.h"
@@ -281,9 +284,7 @@ void SessionBasic::DumpGraphs(const std::vector<KernelGraphPtr> &graphs) const {
     }
     // If the new runtime is used, get rank_id from context via GetRankID(), else get rank_id from rank_id_.
     uint32_t rank_id = rank_id_;
-    if (MsContext::GetInstance()->get_param<bool>(MS_CTX_ENABLE_MINDRT)) {
-      rank_id = GetRankId();
-    }
+    rank_id = GetRankId();
     std::string final_graph = "trace_code_graph_" + std::to_string(graph->graph_id());
     if (json_parser.e2e_dump_enabled()) {
       std::string root_dir = json_parser.path() + "/rank_" + std::to_string(rank_id);

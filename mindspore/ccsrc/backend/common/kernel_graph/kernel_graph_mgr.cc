@@ -20,6 +20,11 @@
 #include <utility>
 #include <functional>
 #include <unordered_map>
+#include <vector>
+#include <string>
+#include <memory>
+#include <map>
+#include <set>
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "mindspore/ccsrc/utils/ir_dump/anf_ir_dump.h"
@@ -1242,11 +1247,9 @@ AnfNodePtr KernelGraphMgr::CreateParameterFromTuple(const AnfNodePtr &node, Kern
     const auto &parameter = parameters[i];
     auto context_ptr = MsContext::GetInstance();
     MS_EXCEPTION_IF_NULL(context_ptr);
-    if (context_ptr->get_param<bool>(MS_CTX_ENABLE_MINDRT)) {
-      // In control flow, if the input of the cnode is a call node, it will be processed as a make_tuple input,
-      // which needs to be linked when processing the internal node.
-      graph->CacheInternalParameterToFrontNode(parameter, {node, i});
-    }
+    // In control flow, if the input of the cnode is a call node, it will be processed as a make_tuple input,
+    // which needs to be linked when processing the internal node.
+    graph->CacheInternalParameterToFrontNode(parameter, {node, i});
     auto valid_inputs = graph->MutableValidInputs();
     MS_EXCEPTION_IF_NULL(valid_inputs);
     auto graph_inputs = graph->MutableInputs();
@@ -2268,22 +2271,6 @@ KernelGraphPtr KernelGraphMgr::ConstructKernelGraph(const AnfNodePtrList &lst, c
 
   if (ExistSummaryNode(graph.get())) {
     graph->set_summary_node_exist(true);
-  }
-  MS_EXCEPTION_IF_NULL(MsContext::GetInstance());
-  if (!MsContext::GetInstance()->get_param<bool>(MS_CTX_ENABLE_MINDRT)) {
-    FuncGraphManagerPtr manager = MakeManager({graph}, false);
-    if (manager) {
-      manager->AddFuncGraph(graph);
-      graph->set_manager(manager);
-    }
-    UnifyMindIR(graph);
-    graph->UpdateGraphAquireGilAttr();
-    if (common_opt) {
-      opt::BackendCommonOptimization(graph);
-    }
-    graph->SetInputNodes();
-    SetInputNodeUsage(graph, manager);
-    graph->SetOptimizerFlag();
   }
   graph->set_parameters(graph->inputs());
   return graph;
