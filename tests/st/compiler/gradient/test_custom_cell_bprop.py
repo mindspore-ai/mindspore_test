@@ -19,8 +19,7 @@ import re
 
 import mindspore as ms
 import mindspore.common.dtype as mstype
-import mindspore.nn as nn
-from mindspore import jit
+from mindspore import jit, nn
 from mindspore import Parameter, ParameterTuple
 from mindspore import context, mutable
 from mindspore.common.initializer import initializer
@@ -56,7 +55,7 @@ def test_grad_mul_add():
 
 class InlineMulADD(nn.Cell):
     def __init__(self):
-        super(InlineMulADD, self).__init__()
+        super().__init__()
         self.mul_add = MulAdd()
         self.param = 2
 
@@ -74,7 +73,7 @@ def test_grad_inline_mul_add():
 
 class WithParameter(nn.Cell):
     def __init__(self):
-        super(WithParameter, self).__init__()
+        super().__init__()
         self.param1 = Parameter(1, 'param1')
         self.param2 = Parameter(2, 'param2')
 
@@ -111,7 +110,7 @@ def test_with_no_bprop():
 def test_grad_in_bprop_1():
     class GradInBprop_1(nn.Cell):
         def __init__(self):
-            super(GradInBprop_1, self).__init__()
+            super().__init__()
             self.relu = P.ReLU()
 
         def construct(self, x, y):
@@ -119,7 +118,7 @@ def test_grad_in_bprop_1():
 
     class GradInBprop_2(nn.Cell):
         def __init__(self):
-            super(GradInBprop_2, self).__init__()
+            super().__init__()
             self.f = GradInBprop_1()
 
         def construct(self, x, y):
@@ -131,7 +130,7 @@ def test_grad_in_bprop_1():
 
     class GradInBprop_3(nn.Cell):
         def __init__(self):
-            super(GradInBprop_3, self).__init__()
+            super().__init__()
             self.f = GradInBprop_2()
 
         def construct(self, x, y):
@@ -153,7 +152,7 @@ def test_grad_in_bprop_with_jit():
     """
     class GradInBprop_1(nn.Cell):
         def __init__(self):
-            super(GradInBprop_1, self).__init__()
+            super().__init__()
             self.relu = P.ReLU()
 
         def construct(self, x, y):
@@ -161,7 +160,7 @@ def test_grad_in_bprop_with_jit():
 
     class GradInBprop_2(nn.Cell):
         def __init__(self):
-            super(GradInBprop_2, self).__init__()
+            super().__init__()
             self.f = GradInBprop_1()
 
         def construct(self, x, y):
@@ -173,7 +172,7 @@ def test_grad_in_bprop_with_jit():
 
     class GradInBprop_3(nn.Cell):
         def __init__(self):
-            super(GradInBprop_3, self).__init__()
+            super().__init__()
             self.f = GradInBprop_2()
 
         @jit
@@ -191,7 +190,7 @@ def test_grad_in_bprop_with_jit():
 def test_grad_in_bprop_2():
     class GradInBprop_1(nn.Cell):
         def __init__(self):
-            super(GradInBprop_1, self).__init__()
+            super().__init__()
             self.relu = P.ReLU()
 
         def construct(self, x, y):
@@ -202,7 +201,7 @@ def test_grad_in_bprop_2():
 
     class GradInBprop_2(nn.Cell):
         def __init__(self):
-            super(GradInBprop_2, self).__init__()
+            super().__init__()
             self.f = GradInBprop_1()
 
         def construct(self, x, y):
@@ -214,7 +213,7 @@ def test_grad_in_bprop_2():
 
     class GradInBprop_3(nn.Cell):
         def __init__(self):
-            super(GradInBprop_3, self).__init__()
+            super().__init__()
             self.f = GradInBprop_2()
 
         def construct(self, x, y):
@@ -231,7 +230,7 @@ def test_grad_in_bprop_2():
 def test_grad_in_bprop_3():
     class GradInBprop_1(nn.Cell):
         def __init__(self):
-            super(GradInBprop_1, self).__init__()
+            super().__init__()
             self.relu = P.ReLU()
 
         def construct(self, x, y):
@@ -239,7 +238,7 @@ def test_grad_in_bprop_3():
 
     class GradInBprop_2(nn.Cell):
         def __init__(self):
-            super(GradInBprop_2, self).__init__()
+            super().__init__()
             self.f = GradInBprop_1()
 
         def construct(self, x, y):
@@ -251,7 +250,7 @@ def test_grad_in_bprop_3():
 
     class GradInBprop_3(nn.Cell):
         def __init__(self):
-            super(GradInBprop_3, self).__init__()
+            super().__init__()
             self.f = GradInBprop_2()
 
         def construct(self, x, y):
@@ -365,6 +364,35 @@ class InlineMutilTwoInputParameterCell(nn.Cell):
         return output
 
 
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_bprop_twoinputbprop():
+    """
+    Feature: Custom bprop
+    Description: Test custom bprop
+    Expectation: No exception.
+    """
+    class GradOfAllInputs(nn.Cell):
+        def __init__(self, net):
+            super().__init__()
+            self.net = net
+            self.grad_op = ops.GradOperation(get_all=True)
+
+        def construct(self, *inputs):
+            grad_net = self.grad_op(self.net)
+            return grad_net(*inputs)
+
+    context.set_context(mode=context.GRAPH_MODE)
+    net = TwoInputBprop()
+    input1 = Tensor(np.ones([2, 2]).astype(np.float32))
+    input2 = Tensor(np.ones([2, 2]).astype(np.float32))
+    grad_net = GradOfAllInputs(net)
+    grad_net.set_train()
+    grads = grad_net(input1, input2)
+    assert len(grads) == 2
+    assert (grads[0].asnumpy() == np.array([5, 5]).astype(np.float32)).all()
+    assert (grads[1].asnumpy() == np.array([8, 8]).astype(np.float32)).all()
+
+
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_grad_inline_bprop_multi_input():
     net = InlineMutilTwoInputParameterCell()
@@ -379,7 +407,7 @@ def test_grad_inline_bprop_multi_input():
 
 class MulAddWithParam(nn.Cell):
     def __init__(self):
-        super(MulAddWithParam, self).__init__()
+        super().__init__()
         self.mul_add = MulAdd()
         self.param = Parameter(Tensor(np.array([[3, 2]], np.float32)), 'param')
 
@@ -393,7 +421,7 @@ def test_refkey_bprop():
 
     class GradWrap(nn.Cell):
         def __init__(self, network):
-            super(GradWrap, self).__init__()
+            super().__init__()
             self.network = network
             self.weights = ParameterTuple(filter(lambda x: x.requires_grad, network.get_parameters()))
 
@@ -447,7 +475,7 @@ def test_grad_mul_add_with_wrong_output_type():
 
 class MulAddWithWrongOutputShape(nn.Cell):
     def __init__(self):
-        super(MulAddWithWrongOutputShape, self).__init__()
+        super().__init__()
         self.ones = Tensor(np.ones([2,]))
 
     def construct(self, x, y):
@@ -477,7 +505,7 @@ def test_forward_with_parameter():
 
     class Net(nn.Cell):
         def __init__(self):
-            super(Net, self).__init__()
+            super().__init__()
             self.matmul = P.MatMul()
             self.z = Parameter(Tensor(np.array([1.0], np.float32)), name='z')
 
@@ -493,7 +521,7 @@ def test_forward_with_parameter():
 
     class GradNet(nn.Cell):
         def __init__(self, net):
-            super(GradNet, self).__init__()
+            super().__init__()
             self.net = net
 
         def construct(self, x, y):
@@ -522,7 +550,7 @@ def test_forward_with_parameter_in_sub_cell():
 
     class Net(nn.Cell):
         def __init__(self):
-            super(Net, self).__init__()
+            super().__init__()
             self.net = Net1()
 
         def construct(self, x, y):
@@ -530,7 +558,7 @@ def test_forward_with_parameter_in_sub_cell():
 
     class Net1(nn.Cell):
         def __init__(self):
-            super(Net1, self).__init__()
+            super().__init__()
             self.matmul = P.MatMul()
             self.z = Parameter(Tensor(np.array([1.0], np.float32)), name='z')
 
@@ -546,7 +574,7 @@ def test_forward_with_parameter_in_sub_cell():
 
     class GradNet(nn.Cell):
         def __init__(self, net):
-            super(GradNet, self).__init__()
+            super().__init__()
             self.net = net
 
         def construct(self, x, y):
@@ -575,7 +603,7 @@ def test_forward_with_parameter_in_sub_cell_get_by_list():
 
     class Net(nn.Cell):
         def __init__(self):
-            super(Net, self).__init__()
+            super().__init__()
             self.net = Net1()
 
         def construct(self, x, y):
@@ -583,7 +611,7 @@ def test_forward_with_parameter_in_sub_cell_get_by_list():
 
     class Net1(nn.Cell):
         def __init__(self):
-            super(Net1, self).__init__()
+            super().__init__()
             self.matmul = P.MatMul()
             self.z = Parameter(Tensor(np.array([1.0], np.float32)), name='z')
 
@@ -599,7 +627,7 @@ def test_forward_with_parameter_in_sub_cell_get_by_list():
 
     class GradNet(nn.Cell):
         def __init__(self, net):
-            super(GradNet, self).__init__()
+            super().__init__()
             self.net = net
             self.params = ParameterTuple(net.trainable_params())
             self.grad_op = C.GradOperation(get_by_list=True, get_all=True)
@@ -633,7 +661,7 @@ def test_pynative_forward_with_parameter():
 
     class Net(nn.Cell):
         def __init__(self):
-            super(Net, self).__init__()
+            super().__init__()
             self.matmul = P.MatMul()
             self.z = Parameter(Tensor(np.array([1.0], np.float32)), name='z')
 
@@ -649,7 +677,7 @@ def test_pynative_forward_with_parameter():
 
     class GradNet(nn.Cell):
         def __init__(self, net):
-            super(GradNet, self).__init__()
+            super().__init__()
             self.net = net
 
         def construct(self, x, y):
@@ -680,7 +708,7 @@ def test_pynative_forward_with_parameter_in_sub_cell():
 
     class Net(nn.Cell):
         def __init__(self):
-            super(Net, self).__init__()
+            super().__init__()
             self.net = Net1()
 
         def construct(self, x, y):
@@ -688,7 +716,7 @@ def test_pynative_forward_with_parameter_in_sub_cell():
 
     class Net1(nn.Cell):
         def __init__(self):
-            super(Net1, self).__init__()
+            super().__init__()
             self.matmul = P.MatMul()
             self.z = Parameter(Tensor(np.array([1.0], np.float32)), name='z')
 
@@ -704,7 +732,7 @@ def test_pynative_forward_with_parameter_in_sub_cell():
 
     class GradNet(nn.Cell):
         def __init__(self, net):
-            super(GradNet, self).__init__()
+            super().__init__()
             self.net = net
 
         def construct(self, x, y):
@@ -735,7 +763,7 @@ def test_pynative_forward_with_parameter_in_sub_cell_get_by_list():
 
     class Net(nn.Cell):
         def __init__(self):
-            super(Net, self).__init__()
+            super().__init__()
             self.net = Net1()
 
         def construct(self, x, y):
@@ -743,7 +771,7 @@ def test_pynative_forward_with_parameter_in_sub_cell_get_by_list():
 
     class Net1(nn.Cell):
         def __init__(self):
-            super(Net1, self).__init__()
+            super().__init__()
             self.matmul = P.MatMul()
             self.z = Parameter(Tensor(np.array([1.0], np.float32)), name='z')
 
@@ -759,7 +787,7 @@ def test_pynative_forward_with_parameter_in_sub_cell_get_by_list():
 
     class GradNet(nn.Cell):
         def __init__(self, net):
-            super(GradNet, self).__init__()
+            super().__init__()
             self.net = net
             self.params = ParameterTuple(net.trainable_params())
             self.grad_op = C.GradOperation(get_by_list=True, get_all=True)
@@ -800,7 +828,7 @@ def test_dde_self_define_cell_output_not_use():
 
     class ForwardNet(ms.nn.Cell):
         def __init__(self):
-            super(ForwardNet, self).__init__()
+            super().__init__()
             self.self_defined_cell = SelfDefineCell()
 
         def construct(self, x):
@@ -810,7 +838,7 @@ def test_dde_self_define_cell_output_not_use():
 
     class TestNet(ms.nn.Cell):
         def __init__(self):
-            super(TestNet, self).__init__()
+            super().__init__()
             self.forward_net = ForwardNet()
             self.grad_op = ops.GradOperation(get_all=True)
 

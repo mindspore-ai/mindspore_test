@@ -12,31 +12,29 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+""" test keep order """
 import numpy as np
 import mindspore as ms
-import mindspore.context as context
-import mindspore.nn as nn
 import mindspore.ops.functional as F
-from mindspore import ops
+from mindspore import ops, context, nn, Tensor
 from mindspore.common import dtype as mstype
-from mindspore.common.tensor import Tensor
 from mindspore.ops import composite as C
 from mindspore.ops import operations as P
 from mindspore.common.parameter import Parameter
 
 context.set_context(mode=context.GRAPH_MODE)
-add1 = P.Add()
-mul1 = P.MatMul()
-add2 = P.Add()
+add_op = P.Add()
+mul_op = P.MatMul()
+add_op2 = P.Add()
 
 
 def add(x, y):
-    return add1(x, y)
+    return add_op(x, y)
 
 
 class Func(nn.Cell):
     def __init__(self):
-        super(Func, self).__init__()
+        super().__init__()
         self.alloc_status = P.NPUAllocFloatStatus()
         self.get_status = P.NPUGetFloatStatus()
         self.clear_status = P.NPUClearFloatStatus()
@@ -44,13 +42,13 @@ class Func(nn.Cell):
     def construct(self, x, y):
         init = self.alloc_status()
         sum_ = add(x, y)
-        product = mul1(x, y)
+        product = mul_op(x, y)
         init = F.depend(init, sum_)
         init = F.depend(init, product)
         get_status = self.get_status(init)
         sum_ = F.depend(sum_, get_status)
         product = F.depend(product, get_status)
-        out = add2(sum_, product)
+        out = add_op2(sum_, product)
         init = F.depend(init, out)
         clear = self.clear_status(init)
         out = F.depend(out, clear)
@@ -62,7 +60,7 @@ grad_s = C.GradOperation(get_all=True, sens_param=True)
 
 class Net(nn.Cell):
     def __init__(self):
-        super(Net, self).__init__()
+        super().__init__()
         self.func = Func()
         self.alloc_status = P.NPUAllocFloatStatus()
         self.get_status = P.NPUGetFloatStatus()
@@ -77,9 +75,9 @@ class Net(nn.Cell):
         get_status = self.get_status(init)
         sum1 = F.depend(sum1, get_status)
         dx = F.depend(dx, get_status)
-        sum2 = add2(sum1, dx[0])
-        sum3 = add2(y, dx[1])
-        out = add2(sum2, sum3)
+        sum2 = add_op2(sum1, dx[0])
+        sum3 = add_op2(y, dx[1])
+        out = add_op2(sum2, sum3)
         init = F.depend(init, out)
         clear = self.clear_status(init)
         out = F.depend(out, clear)
@@ -103,7 +101,7 @@ def test_sens():
 
 class Net_hyper(nn.Cell):
     def __init__(self):
-        super(Net_hyper, self).__init__()
+        super().__init__()
         self.func = Func()
         self.alloc_status = P.NPUAllocFloatStatus()
         self.get_status = P.NPUGetFloatStatus()
@@ -119,8 +117,8 @@ class Net_hyper(nn.Cell):
         get_status = self.get_status(init)
         sum1 = F.depend(sum1, get_status)
         dx = F.depend(dx, get_status)
-        sum2 = add2(sum1[0], dx[0])
-        sum3 = add2(sum1[1], dx[1])
+        sum2 = add_op2(sum1[0], dx[0])
+        sum3 = add_op2(sum1[1], dx[1])
         out = C.hyper_add([sum2, sum2], [sum3, sum3])
         init = F.depend(init, out)
         clear = self.clear_status(init)
@@ -137,7 +135,7 @@ def test_hyper_add():
 
 
 def test_keep_order_io_effect_exception_return_dtype():
-    class Net(nn.Cell):
+    class ReturnTypeNet(nn.Cell):
         def __init__(self):
             super().__init__()
             self.alloc_status = P.NPUAllocFloatStatus()
@@ -162,7 +160,7 @@ def test_keep_order_io_effect_exception_return_dtype():
     value = 655
     data = np.full((8, 5, 3, 1), value, dtype=np.float16)
     x = Tensor(data, dtype=mstype.float16)
-    net = Net()
+    net = ReturnTypeNet()
     data = net(x)
 
 
@@ -191,3 +189,35 @@ def test_print_effect_trace():
     model.compile(x)
     out = model(x)
     print('out: ', out)
+
+
+def test_keep_order_io_effect_base():
+    """
+    Feature: side effect
+    Description: Test io side effect
+    Expectation: No exception
+    """
+    class BaseNet(nn.Cell):
+        def __init__(self):
+            super().__init__()
+            self.alloc_status = P.NPUAllocFloatStatus()
+            self.get_status = P.NPUGetFloatStatus()
+            self.clear_status = P.NPUClearFloatStatus()
+            self.reduce_sum = P.ReduceSum(keep_dims=True)
+            self.sub = P.Sub()
+            self.neg = P.Neg()
+            self.add_flags(has_effect=True)
+
+        def construct(self, x):
+            init = self.alloc_status()
+            self.clear_status(init)
+            self.sub(x, self.neg(x))
+            self.get_status(init)
+            flag_sum = self.reduce_sum(init, (0,))
+            return flag_sum
+
+    value = 655
+    data = np.full((8, 5, 3, 1), value, dtype=np.float16)
+    x = Tensor(data, dtype=mstype.float16)
+    net = BaseNet()
+    net(x)

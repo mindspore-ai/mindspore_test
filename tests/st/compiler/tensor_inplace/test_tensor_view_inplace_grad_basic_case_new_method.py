@@ -12,10 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
+"""Test tensor view inplace grad"""
 import numpy as np
 import mindspore as ms
-import mindspore.nn as nn
-from mindspore import ops, Tensor
+from mindspore import ops, Tensor, nn
 from mindspore.nn import Momentum
 from mindspore.train.model import Model
 from mindspore.dataset import GeneratorDataset

@@ -15,9 +15,9 @@
 """test jvp in graph mode"""
 import numpy as np
 import pytest
-import mindspore.nn as nn
-import mindspore.context as context
-from mindspore import Tensor
+import torch
+from torch.autograd.functional import vjp
+from mindspore import nn, context, ops, Tensor
 from mindspore.nn.grad import Vjp
 from tests.mark_utils import arg_mark
 
@@ -78,3 +78,72 @@ def test_vjp_multiple_inputs_default_v_graph(mode):
     assert len(grad) == 2
     assert np.allclose(grad[0].asnumpy(), expect_grad_0.asnumpy())
     assert np.allclose(grad[1].asnumpy(), expect_grad_1.asnumpy())
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_vjp_in2_out2_param():
+    """
+    Feature: vjp
+    Description: Test vjp and compare with torch
+    Expectation: No exception.
+    """
+    class MsConvRelu(nn.Cell):
+        def __init__(self):
+            super().__init__()
+            self.conv = nn.Conv2d(4, 8, 3, 3, "valid")
+            self.relu = nn.ReLU()
+
+        def construct(self, x, y):
+            a = self.conv(x)
+            b = self.conv(y)
+            c = a + b
+            return self.relu(c), c
+
+    class TcConvRelu:
+        def __init__(self):
+            self.conv = torch.nn.Conv2d(4, 8, 3, 3, bias=False)
+            self.relu = torch.nn.ReLU()
+
+        def construct(self, x, y):
+            a = self.conv(x)
+            b = self.conv(y)
+            c = a + b
+            return self.relu(c), c
+
+    class MSVjp(nn.Cell):
+        def __init__(self, net):
+            super().__init__()
+            self.net = net
+
+        def construct(self, *args):
+            out, grad_net = ops.vjp(self.net, *args[:-1])
+            grad = grad_net(args[-1])
+            return out, grad
+
+    context.set_context(mode=context.GRAPH_MODE)
+    ms_net = MsConvRelu()
+    weight = ms_net.conv.weight.asnumpy()
+    tc_net = TcConvRelu()
+    tc_net.conv.register_parameter('weight', torch.nn.Parameter(torch.from_numpy(weight)))
+    x = np.random.rand(4, 4, 4, 4).astype(np.float32)
+    y = np.random.rand(4, 4, 4, 4).astype(np.float32)
+    sense_shape = ((4, 8, 1, 1), (4, 8, 1, 1))
+
+    ms_inputs = (Tensor(x), Tensor(y))
+    tc_inputs = (torch.tensor(x, requires_grad=True), torch.tensor(y, requires_grad=True))
+    usenses = [np.random.rand(*shape).astype(np.float32) for shape in sense_shape]
+    # pylint: disable=consider-using-generator
+    ms_sense = tuple([Tensor(v) for v in usenses])
+    tc_sense = tuple([torch.tensor(v) for v in usenses])
+    ms_out, ms_grad = MSVjp(ms_net)(*ms_inputs, ms_sense)
+    tc_out, tc_grad = vjp(tc_net.construct, tc_inputs, tc_sense)
+    if isinstance(ms_out, tuple):
+        for m, t in zip(ms_out, tc_out):
+            assert np.allclose(m.asnumpy(), t.detach().numpy(), 0.001, 0.001)
+    else:
+        assert np.allclose(ms_out.asnumpy(), tc_out.detach().numpy(), 0.001, 0.001)
+    if isinstance(ms_grad, tuple):
+        for m, t in zip(ms_grad, tc_grad):
+            assert np.allclose(m.asnumpy(), t.detach().numpy(), 0.001, 0.001)
+    else:
+        assert np.allclose(ms_grad.asnumpy(), tc_grad[0].detach().numpy(), 0.001, 0.001)

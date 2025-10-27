@@ -12,10 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+""" Test control flow: for in while """
 import numpy as np
+import torch
 from tests.mark_utils import arg_mark
-from mindspore import context
-from mindspore import Tensor, nn, jit
+from mindspore import context, Tensor, nn, jit
+from mindspore.nn import ForwardValueAndGrad
 from mindspore.common.parameter import Parameter
 from mindspore.ops import composite as C
 from mindspore.ops import operations as P
@@ -58,7 +60,7 @@ def test_for_in_while_01():
 
     class GradNet(nn.Cell):
         def __init__(self, net):
-            super(GradNet, self).__init__()
+            super().__init__()
             self.net = net
 
         def construct(self, *inputs):
@@ -111,7 +113,7 @@ def test_for_in_while_02():
 
     class GradNet(nn.Cell):
         def __init__(self, net):
-            super(GradNet, self).__init__()
+            super().__init__()
             self.net = net
 
         def construct(self, *inputs):
@@ -175,3 +177,79 @@ def test_for_by_if_in_while():
 
     x = Tensor(9)
     assert jit(func)(x) == 219
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_control_flow_for_in_while_break_continue():
+    """
+    Feature: Control Flow
+    Description: Test for in while with break and continue
+    Expectation: No exception.
+    """
+    class CtrlForInWhileBC(nn.Cell):
+        def __init__(self, t):
+            super().__init__()
+            self.add = P.Add()
+            self.mul = P.Mul()
+            self.assignadd = P.AssignAdd()
+            self.para = Parameter(t, name="a")
+
+        def construct(self, x, y):
+            out = self.add(y, y)
+            while x > 3:
+                x = x - 1
+                if x < 5:
+                    self.assignadd(self.para, y)
+                    break
+                for _ in range(1, 10):
+                    x = x + 1
+                    if x < 2:
+                        out = self.add(out, y)
+                    elif x < 5:
+                        y = self.mul(y, y)
+                        continue
+            out = self.add(out, self.para)
+            return out
+
+    class TorchForInWhileBC:
+        def __init__(self, t):
+            self.para = torch.tensor(t, dtype=torch.float)
+
+        def construct(self, x, y):
+            out = y + y
+            while x > 3:
+                x = x - 1
+                if x < 5:
+                    self.para = self.para + y
+                    break
+                for _ in range(1, 10):
+                    x = x + 1
+                    if x < 2:
+                        out = out + y
+                    elif x < 5:
+                        y = y * y
+                        continue
+            out = out + self.para
+            return out
+
+    context.set_context(mode=context.GRAPH_MODE, jit_level='O0')
+    input_np = np.random.randn(3, 4, 5).astype(np.float32)
+    ms_x = Tensor(3, mstype.float32)
+    ms_y = Tensor(input_np, mstype.float32)
+    tc_x = torch.tensor(3, dtype=torch.float)
+    tc_y = torch.tensor(input_np, dtype=torch.float)
+    tc_x.requires_grad = True
+    tc_y.requires_grad = True
+
+    ms_net = CtrlForInWhileBC(Tensor(input_np, mstype.float32))
+    tc_net = TorchForInWhileBC(torch.tensor(input_np, dtype=torch.float))
+    grad_net = ForwardValueAndGrad(ms_net, get_all=True)
+    ms_out, ms_grad = grad_net(ms_x, ms_y)
+    tc_out = tc_net.construct(tc_x, tc_y)
+    tc_out.backward(torch.ones_like(tc_out))
+    tc_grad = [t.grad for t in (tc_x, tc_y)]
+    assert np.allclose(ms_out.asnumpy(), tc_out.detach().numpy(), 0.001, 0.001)
+    for m, t in zip(ms_grad, tc_grad):
+        if t is None:
+            continue
+        assert np.allclose(m.asnumpy(), t.detach().numpy(), 0.001, 0.001)
