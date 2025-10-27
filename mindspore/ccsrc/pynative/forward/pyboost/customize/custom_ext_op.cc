@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "include/common/pybind_api/api_register.h"
+#include "include/utils/pybind_api/api_register.h"
 #include "pynative/backward/grad_utils.h"
 #include "pynative/utils/pynative_utils.h"
 #include "pynative/forward/pyboost/converter.h"

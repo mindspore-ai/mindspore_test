@@ -27,7 +27,7 @@
 #include "kernel/gpu/gpu_kernel.h"
 #include "kernel/gpu/gpu_kernel_factory.h"
 #include "kernel/gpu/kernel_constants.h"
-#include "include/common/utils/utils.h"
+#include "include/utils/utils.h"
 #include "kernel/gpu/cudnn/convolution/conv_kernel_factory.h"
 
 namespace mindspore {

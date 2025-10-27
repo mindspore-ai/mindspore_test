@@ -17,7 +17,7 @@
 #include "pybind_api/ir/cell_py.h"
 #include <string>
 
-#include "include/common/pybind_api/api_register.h"
+#include "include/utils/pybind_api/api_register.h"
 #include "frontend/jit/ps/parse/data_converter.h"
 
 namespace mindspore {

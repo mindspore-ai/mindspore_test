@@ -29,8 +29,8 @@
 #include "frontend/jit/ps/executor/graph_executor_py.h"
 #include "frontend/jit/ps/pipeline.h"
 #include "pynative/utils/pynative_execute.h"
-#include "include/common/thread_pool.h"
-#include "include/common/pybind_api/api_register.h"
+#include "include/utils/thread_pool.h"
+#include "include/utils/pybind_api/api_register.h"
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
 
 namespace mindspore {

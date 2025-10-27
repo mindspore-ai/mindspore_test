@@ -19,7 +19,7 @@
 
 #include "common/common_test.h"
 #include "frontend/operator/ops.h"
-#include "include/common/utils/python_adapter.h"
+#include "include/utils/python_adapter.h"
 #include "ir/value.h"
 #include "mindspore/ops/op_def/arithmetic_ops.h"
 #include "mindspore/ops/op_def/array_ops.h"

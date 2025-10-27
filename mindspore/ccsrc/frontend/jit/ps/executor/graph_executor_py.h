@@ -33,7 +33,7 @@
 #include "base/base.h"
 #include "ir/tensor.h"
 #include "frontend/parallel/strategy.h"
-#include "include/common/visible.h"
+#include "include/utils/visible.h"
 
 namespace mindspore {
 // namespace to support pipeline structures definition

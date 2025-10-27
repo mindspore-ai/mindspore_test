@@ -26,17 +26,17 @@
 #include "frontend/jit/pi/graph_guard/guard_utils.h"
 #include "pybind11/pybind11.h"
 #include "frontend/operator/primitive_py.h"
-#include "include/common/utils/convert_utils_py.h"
+#include "include/utils/convert_utils_py.h"
 #include "frontend/jit/pi/graph_guard/infer.h"
 #include "frontend/jit/pi/graph_guard/strategy.h"
 #include "frontend/jit/pi/utils/utils.h"
-#include "include/common/utils/python_adapter.h"
+#include "include/utils/python_adapter.h"
 #include "frontend/jit/pi/graph_capture/abstract_object.h"
 #include "frontend/jit/pi/pi_jit_config.h"
 #include "frontend/jit/pi/external.h"
 #include "frontend/jit/pi/utils/opcode_declare.h"
 #include "frontend/jit/pi/python_adapter/pydef.h"
-#include "include/common/utils/tensor_py.h"
+#include "include/utils/tensor_py.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_n.h"
 
 namespace mindspore {
@@ -1060,26 +1060,24 @@ static std::unordered_map<int, PythonBytecodeFuncSet> kBytecodeExecuter = {
     }}},
   {INPLACE_XOR,
    {ByteCodeTest(INPLACE_XOR),
-    [](int opargs, const PyObjectArray &objs, PTraceContext ctx) -> PyObject
-                                                                   * {
-                                                                     if (ByteCodeCheck(INPLACE_XOR, opargs, objs)) {
-                                                                       return PyNumber_InPlaceXor(objs[0], objs[1]);
-                                                                     } else {
-                                                                       Py_INCREF(objs[0]);
-                                                                       return objs[0];
-                                                                     }
-                                                                   }}},
+    [](int opargs, const PyObjectArray &objs, PTraceContext ctx) -> PyObject * {
+      if (ByteCodeCheck(INPLACE_XOR, opargs, objs)) {
+        return PyNumber_InPlaceXor(objs[0], objs[1]);
+      } else {
+        Py_INCREF(objs[0]);
+        return objs[0];
+      }
+    }}},
   {INPLACE_OR,
    {ByteCodeTest(INPLACE_OR),
-    [](int opargs, const PyObjectArray &objs, PTraceContext ctx) -> PyObject
-                                                                   * {
-                                                                     if (ByteCodeCheck(INPLACE_OR, opargs, objs)) {
-                                                                       return PyNumber_InPlaceOr(objs[0], objs[1]);
-                                                                     } else {
-                                                                       Py_INCREF(objs[0]);
-                                                                       return objs[0];
-                                                                     }
-                                                                   }}},
+    [](int opargs, const PyObjectArray &objs, PTraceContext ctx) -> PyObject * {
+      if (ByteCodeCheck(INPLACE_OR, opargs, objs)) {
+        return PyNumber_InPlaceOr(objs[0], objs[1]);
+      } else {
+        Py_INCREF(objs[0]);
+        return objs[0];
+      }
+    }}},
   {RETURN_VALUE, {ByteCodeUnsupported, nullptr}},
   {IMPORT_STAR, {ByteCodeUnsupported, nullptr}},
   {SETUP_ANNOTATIONS, {ByteCodeUnsupported, nullptr}},

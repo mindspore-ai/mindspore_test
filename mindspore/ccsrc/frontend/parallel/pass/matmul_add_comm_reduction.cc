@@ -21,7 +21,7 @@
 #include <string>
 #include <utility>
 #include "ir/tensor_new.h"
-#include "include/common/utils/utils.h"
+#include "include/utils/utils.h"
 #include "frontend/optimizer/optimizer.h"
 #include "frontend/parallel/step_parallel.h"
 #include "frontend/parallel/step_parallel_utils.h"

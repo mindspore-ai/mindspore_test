@@ -24,7 +24,7 @@
 #include "base/base.h"
 #include "abstract/ops/primitive_infer_map.h"
 #include "frontend/operator/primitive_py.h"
-#include "include/common/utils/convert_utils_py.h"
+#include "include/utils/convert_utils_py.h"
 #include "ir/anf.h"
 #include "ir/tensor_new.h"
 #include "ir/dtype/tensor_type.h"
@@ -39,9 +39,9 @@
 #include "frontend/jit/ps/parse/data_converter.h"
 #include "frontend/jit/ps/action.h"
 #include "frontend/jit/pi/graph_build/func_graph_builder.h"
-#include "include/common/utils/convert_utils.h"
-#include "include/common/utils/tensor_py.h"
-#include "include/common/pynative/common_utils.h"
+#include "include/utils/convert_utils.h"
+#include "include/utils/tensor_py.h"
+#include "include/utils/pynative/common_utils.h"
 
 namespace mindspore {
 namespace parse {

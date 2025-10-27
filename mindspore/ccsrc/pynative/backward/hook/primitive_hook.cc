@@ -17,7 +17,7 @@
 #include "pynative/backward/hook/primitive_hook.h"
 #include <memory>
 #include <string>
-#include "include/common/utils/primitive_utils.h"
+#include "include/utils/primitive_utils.h"
 #include "pynative/utils/pynative_execute.h"
 
 namespace mindspore {

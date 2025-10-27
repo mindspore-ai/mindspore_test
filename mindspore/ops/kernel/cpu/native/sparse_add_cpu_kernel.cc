@@ -20,7 +20,7 @@
 #include <utility>
 #include <complex>
 #include <functional>
-#include "include/common/thread_pool.h"
+#include "include/utils/thread_pool.h"
 #include "mindspore/ops/infer/sparse_add.h"
 
 namespace mindspore {
@@ -205,20 +205,18 @@ bool SparseAddCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTensor 
 
 #define CPU_SPARSE_SPARSE_ADD_ADD_KERNEL_REGISTER(ms_index_type, ms_value_type, ms_thresh_type, index_type, \
                                                   value_type, thresh_type)                                  \
-  {                                                                                                         \
-    KernelAttr()                                                                                            \
-      .AddInputAttr(ms_index_type)                                                                          \
-      .AddInputAttr(ms_value_type)                                                                          \
-      .AddInputAttr(ms_index_type)                                                                          \
-      .AddInputAttr(ms_index_type)                                                                          \
-      .AddInputAttr(ms_value_type)                                                                          \
-      .AddInputAttr(ms_index_type)                                                                          \
-      .AddInputAttr(ms_thresh_type)                                                                         \
-      .AddOutputAttr(ms_index_type)                                                                         \
-      .AddOutputAttr(ms_value_type)                                                                         \
-      .AddOutputAttr(ms_index_type),                                                                        \
-      &SparseAddCpuKernelMod::LaunchKernel<index_type, value_type, thresh_type>                             \
-  }
+  {KernelAttr()                                                                                             \
+     .AddInputAttr(ms_index_type)                                                                           \
+     .AddInputAttr(ms_value_type)                                                                           \
+     .AddInputAttr(ms_index_type)                                                                           \
+     .AddInputAttr(ms_index_type)                                                                           \
+     .AddInputAttr(ms_value_type)                                                                           \
+     .AddInputAttr(ms_index_type)                                                                           \
+     .AddInputAttr(ms_thresh_type)                                                                          \
+     .AddOutputAttr(ms_index_type)                                                                          \
+     .AddOutputAttr(ms_value_type)                                                                          \
+     .AddOutputAttr(ms_index_type),                                                                         \
+   &SparseAddCpuKernelMod::LaunchKernel<index_type, value_type, thresh_type>}
 
 const std::vector<std::pair<KernelAttr, SparseAddCpuKernelMod::KernelRunFunc>> &SparseAddCpuKernelMod::GetFuncList()
   const {

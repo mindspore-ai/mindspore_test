@@ -20,13 +20,13 @@
 #include "pynative/backward/hook/function_py.h"
 #include "pynative/utils/predict_out_type_map.h"
 #include "pynative/forward/pyboost/auto_grad_register.h"
-#include "include/common/utils/tensor_py.h"
+#include "include/utils/tensor_py.h"
 #include "frontend/jit/ps/debug/trace.h"
 #include "pybind_api/pybind_patch.h"
 #include "pybind_api/gil_scoped_long_running.h"
 #include "pynative/backward/hook/hook_py.h"
-#include "include/common/utils/config_manager.h"
-#include "include/common/pybind_api/api_register.h"
+#include "include/utils/config_manager.h"
+#include "include/utils/pybind_api/api_register.h"
 #include "frontend/optimizer/ad/grad.h"
 #include "frontend/jit/ps/pass.h"
 #include "pynative/utils/runtime/op_executor.h"
@@ -36,12 +36,12 @@
 #include "tools/profiler/profiler.h"
 #include "tools/profiler/profiling.h"
 #include "ir/cell.h"
-#include "include/common/utils/python_utils.h"
+#include "include/utils/python_utils.h"
 #include "mindspore/ccsrc/pyboost/kernel_mod_cache.h"
 #include "runtime/pipeline/pipeline.h"
-#include "include/common/utils/convert_utils_py.h"
-#include "include/common/pynative/adapter.h"
-#include "include/common/pynative/variable.h"
+#include "include/utils/convert_utils_py.h"
+#include "include/utils/pynative/adapter.h"
+#include "include/utils/pynative/variable.h"
 
 namespace mindspore::pynative {
 std::shared_ptr<PyNativeExecutor> PyNativeExecutor::executor_ = nullptr;
@@ -50,7 +50,7 @@ GradExecutorPtr PyNativeExecutor::grad_executor_ = nullptr;
 std::mutex PyNativeExecutor::instance_lock_;
 namespace {
 template <typename T, typename... Args>
-T PyNativeExecutorTry(const std::function<T(const Args &...)> &method, const Args &... args) {
+T PyNativeExecutorTry(const std::function<T(const Args &...)> &method, const Args &...args) {
   const auto &inst = PyNativeExecutor::GetInstance();
   MS_EXCEPTION_IF_NULL(inst);
   MS_EXCEPTION_IF_NULL(method);

@@ -24,7 +24,7 @@
 #include "mindspore/ops/op_def/nn_ops.h"
 #include "ops_utils/op_utils.h"
 #include "include/backend/optimizer/helper.h"
-#include "include/common/pynative/common_utils.h"
+#include "include/utils/pynative/common_utils.h"
 #include "pynative/backward/op_grad/func_builder.h"
 
 namespace mindspore {

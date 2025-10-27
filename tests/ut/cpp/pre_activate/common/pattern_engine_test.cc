@@ -27,7 +27,7 @@
 #include "include/backend/optimizer/helper.h"
 #include "base/base_ref.h"
 #include "ir/anf.h"
-#include "include/common/utils/utils.h"
+#include "include/utils/utils.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 
 namespace mindspore {

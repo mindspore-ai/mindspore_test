@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 #include <utility>
-#include "include/common/pybind_api/api_register.h"
+#include "include/utils/pybind_api/api_register.h"
 #include "tools/profiler/profiling.h"
 #include "tools/profiler/profiler.h"
 

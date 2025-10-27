@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-#include "include/common/pybind_api/api_register.h"
-#include "include/common/utils/tensor_py.h"
-#include "include/common/utils/tensor_utils.h"
+#include "include/utils/pybind_api/api_register.h"
+#include "include/utils/tensor_py.h"
+#include "include/utils/tensor_utils.h"
 #include "pyboost/functions/auto_grad_guard.h"
 #include "pynative/utils/pynative_utils.h"
 #include "pynative/forward/pyboost/forward_task.h"

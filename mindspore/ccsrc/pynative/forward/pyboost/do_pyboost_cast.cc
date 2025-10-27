@@ -18,7 +18,7 @@
 #include "pynative/utils/pynative_utils.h"
 #include "pynative/backward/grad_utils.h"
 #include "mindspore/ccsrc/pyboost/auto_generate/cast.h"
-#include "include/common/pynative/common_utils.h"
+#include "include/utils/pynative/common_utils.h"
 
 namespace mindspore {
 namespace pynative {

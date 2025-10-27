@@ -20,7 +20,7 @@
 #include <memory>
 #include <string>
 #include "abstract/abstract_value.h"
-#include "include/common/utils/python_adapter.h"
+#include "include/utils/python_adapter.h"
 #include "ir/anf.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "mindspore/ops/op_def/structure_ops.h"

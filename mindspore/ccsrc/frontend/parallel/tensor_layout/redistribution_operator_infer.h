@@ -26,7 +26,7 @@
 #include "frontend/parallel/tensor_layout/construct_operator.h"
 #include "frontend/parallel/auto_parallel/costmodel.h"
 #include "frontend/parallel/tensor_layout/redistribution_layout_transfer.h"
-#include "include/common/utils/convert_utils.h"
+#include "include/utils/convert_utils.h"
 
 namespace mindspore {
 namespace parallel {

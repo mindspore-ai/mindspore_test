@@ -19,9 +19,9 @@
 #include "mindspore/ops/op_def/array_ops.h"
 #include "backend/ge_backend/runtime/actor/actor_dump.h"
 #include "include/backend/anf_runtime_algorithm.h"
-#include "include/common/utils/anfalgo.h"
+#include "include/utils/anfalgo.h"
 #include "utils/log_adapter.h"
-#include "include/common/utils/convert_utils.h"
+#include "include/utils/convert_utils.h"
 #include "include/runtime/utils/runtime_conf/runtime_conf.h"
 
 namespace mindspore {

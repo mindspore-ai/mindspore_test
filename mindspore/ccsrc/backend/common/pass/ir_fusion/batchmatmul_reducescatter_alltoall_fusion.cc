@@ -22,7 +22,7 @@
 #include <vector>
 #include "base/base.h"
 #include "backend/common/pass/ir_fusion/mc2_fusion.h"
-#include "include/common/utils/anfalgo.h"
+#include "include/utils/anfalgo.h"
 #include "utils/log_adapter.h"
 #include "utils/ms_context.h"
 #include "op_def/math_ops.h"

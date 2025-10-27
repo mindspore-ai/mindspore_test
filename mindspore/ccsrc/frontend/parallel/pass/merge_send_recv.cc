@@ -22,7 +22,7 @@
 #include <utility>
 #include <memory>
 #include "frontend/optimizer/optimizer.h"
-#include "include/common/utils/parallel_context.h"
+#include "include/utils/parallel_context.h"
 #include "frontend/parallel/step_parallel_utils.h"
 #include "frontend/parallel/graph_util/graph_info.h"
 #include "frontend/parallel/step_parallel.h"

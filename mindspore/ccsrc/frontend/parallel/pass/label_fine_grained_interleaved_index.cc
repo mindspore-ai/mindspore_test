@@ -23,7 +23,7 @@
 #include <queue>
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "mindspore/ops/op_def/array_ops.h"
-#include "include/common/utils/utils.h"
+#include "include/utils/utils.h"
 #include "frontend/parallel/step_parallel.h"
 #include "frontend/parallel/step_parallel_utils.h"
 #include "frontend/parallel/pass/pass_utils.h"

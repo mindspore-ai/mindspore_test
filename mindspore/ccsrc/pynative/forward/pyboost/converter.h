@@ -23,11 +23,11 @@
 #include <Python.h>
 #include "pynative/utils/base.h"
 #include "pynative/utils/pynative_execute.h"
-#include "include/common/utils/tensor_py.h"
-#include "include/common/pybind_api/api_register.h"
-#include "include/common/utils/primfunc_utils.h"
+#include "include/utils/tensor_py.h"
+#include "include/utils/pybind_api/api_register.h"
+#include "include/utils/primfunc_utils.h"
 #include "ops/op_def.h"
-#include "include/common/visible.h"
+#include "include/utils/visible.h"
 
 namespace mindspore {
 namespace pynative {

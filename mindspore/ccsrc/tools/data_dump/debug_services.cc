@@ -30,10 +30,10 @@
 #include <iomanip>
 
 #include "ir/tensor_new.h"
-#include "include/common/debug/common.h"
+#include "include/utils/common.h"
 #include "include/backend/debug/debugger/debugger.h"
 #include "mindspore/ccsrc/utils/ir_dump/anf_dump_utils.h"
-#include "include/common/utils/anfalgo.h"
+#include "include/utils/anfalgo.h"
 #include "tools/data_dump/utils.h"
 #include "nlohmann/json.hpp"
 #include "tools/data_dump/debugger/tensor_summary.h"

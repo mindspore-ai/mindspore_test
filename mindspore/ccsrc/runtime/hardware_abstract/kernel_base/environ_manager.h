@@ -22,7 +22,7 @@
 #include <vector>
 #include <shared_mutex>
 #include "runtime/hardware_abstract/kernel_base/environ.h"
-#include "include/common/utils/anfalgo.h"
+#include "include/utils/anfalgo.h"
 
 namespace mindspore {
 namespace kernel {

@@ -21,14 +21,14 @@
 #include <functional>
 #include <unordered_set>
 #include <utility>
-#include "include/common/utils/utils.h"
+#include "include/utils/utils.h"
 #include "ir/anf.h"
 #include "ir/tensor_new.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "mindspore/ops/op_def/math_ops.h"
 #include "mindspore/ops/op_def/array_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
-#include "include/common/utils/convert_utils.h"
+#include "include/utils/convert_utils.h"
 #include "ir/functor.h"
 #include "ops/primitive_c.h"
 #include "utils/check_convert_utils.h"

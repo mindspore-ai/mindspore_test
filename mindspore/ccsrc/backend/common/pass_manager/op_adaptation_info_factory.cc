@@ -17,8 +17,8 @@
 
 #include "include/runtime/hardware_abstract/kernel_base/oplib/oplib.h"
 #include "utils/log_adapter.h"
-#include "include/common/utils/anfalgo.h"
-#include "include/common/utils/convert_utils.h"
+#include "include/utils/anfalgo.h"
+#include "include/utils/convert_utils.h"
 #include "include/backend/optimizer/helper.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"

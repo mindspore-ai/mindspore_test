@@ -19,7 +19,7 @@
 #include <iostream>
 #include <sstream>
 #include <string>
-#include "include/common/utils/parallel_context.h"
+#include "include/utils/parallel_context.h"
 #include "utils/log_adapter.h"
 #include "utils/ms_utils.h"
 

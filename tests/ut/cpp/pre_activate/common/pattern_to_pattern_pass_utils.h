@@ -22,7 +22,7 @@
 #include "common/common_test.h"
 #include "ir/anf.h"
 #include "ir/value.h"
-#include "include/common/utils/utils.h"
+#include "include/utils/utils.h"
 #include "include/backend/anf_runtime_algorithm.h"
 
 #define private public

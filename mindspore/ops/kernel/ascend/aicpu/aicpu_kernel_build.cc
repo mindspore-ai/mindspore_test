@@ -23,13 +23,13 @@
 #include <climits>
 
 #include "op_def/structure_op_name.h"
-#include "include/common/utils/utils.h"
+#include "include/utils/utils.h"
 #include "kernel/ascend/aicpu/aicpu_kernel_mod.h"
 #include "include/backend/anf_runtime_algorithm.h"
-#include "include/common/utils/anfalgo.h"
+#include "include/utils/anfalgo.h"
 #include "kernel/ascend/aicpu/aicpu_util.h"
 #include "kernel/ascend/aicpu/aicpu_kernel_load.h"
-#include "include/common/kernel_base/common_utils.h"
+#include "include/utils/kernel_base/common_utils.h"
 #include "cce/fwk_adpt_struct.h"
 #include "external/graph/types.h"
 #include "cce/aicpu_engine_struct.h"

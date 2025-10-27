@@ -20,7 +20,7 @@
 #include <string>
 #include "mindspore/ops/op_def/math_ops.h"
 #include "mindspore/ops/op_def/array_ops.h"
-#include "include/common/utils/anfalgo.h"
+#include "include/utils/anfalgo.h"
 #include "utils/anf_utils.h"
 #include "utils/ms_context.h"
 #include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel_flags.h"
@@ -156,9 +156,8 @@ class DvmSupportChecker {
                                  return Callback::Instance()->GetInputType(node, 0) != kNumberTypeInt32;
                                }};
     // select op
-    check_func_["Select"] = {DvmSupportChecker::DvmSelectSupported, [](const AnfNodePtr &node) {
-                               return InputCheck(node, {2, 3});
-                             }};
+    check_func_["Select"] = {DvmSupportChecker::DvmSelectSupported,
+                             [](const AnfNodePtr &node) { return InputCheck(node, {2, 3}); }};
     // int op
     check_func_["Add"] = {int_op_check, input_check_all};
     check_func_["Sub"] = {int_op_check, input_check_all};

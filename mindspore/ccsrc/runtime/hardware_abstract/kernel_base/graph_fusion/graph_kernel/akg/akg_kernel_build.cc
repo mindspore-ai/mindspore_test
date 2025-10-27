@@ -31,7 +31,7 @@
 #include "runtime/hardware_abstract/kernel_base/graph_fusion/framework_utils.h"
 #include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/graph_kernel_json_generator.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_info.h"
-#include "include/common/utils/anfalgo.h"
+#include "include/utils/anfalgo.h"
 #include "tools/profiler/profiling.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 

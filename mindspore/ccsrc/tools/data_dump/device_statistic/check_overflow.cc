@@ -21,7 +21,7 @@
 #include <map>
 #include <set>
 #include "tools/data_dump/debugger/debugger_utils.h"
-#include "include/common/debug/common.h"
+#include "include/utils/common.h"
 #include "tools/data_dump/device_statistic/kernel_factory.h"
 
 namespace mindspore {

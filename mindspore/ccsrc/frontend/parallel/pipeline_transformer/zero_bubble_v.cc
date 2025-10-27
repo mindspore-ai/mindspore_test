@@ -24,7 +24,7 @@
 #include <vector>
 #include <memory>
 
-#include "include/common/utils/utils.h"
+#include "include/utils/utils.h"
 #include "mindspore/core/include/ir/core_ops_primitive.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "ir/graph_utils.h"

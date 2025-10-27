@@ -35,7 +35,7 @@
 #include "frontend/jit/ps/resource.h"
 #include "frontend/jit/ps/parse/data_converter.h"
 #include "frontend/jit/ps/resource.h"
-#include "include/common/utils/convert_utils.h"
+#include "include/utils/convert_utils.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore {

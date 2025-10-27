@@ -22,7 +22,7 @@
 #include <string>
 #include <vector>
 #include <unordered_map>
-#include "include/common/visible.h"
+#include "include/utils/visible.h"
 #include "tools/profiler/mstx/mstx_symbol.h"
 
 namespace mindspore {

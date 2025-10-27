@@ -18,7 +18,7 @@
 #include <string>
 #include "include/backend/visible.h"
 #include "include/backend/optimizer/pass.h"
-#include "include/common/utils/cse.h"
+#include "include/utils/cse.h"
 
 namespace mindspore {
 namespace opt {

@@ -20,7 +20,7 @@
 #include <memory>
 #include "common/common_test.h"
 #include "ir/tensor_new.h"
-#include "include/common/utils/utils.h"
+#include "include/utils/utils.h"
 #include "infer/ops_func_impl/upsample_linear1d.h"
 #include "infer/ops_func_impl/upsample_nearest1d.h"
 #include "infer/ops_func_impl/upsample_nearest2d.h"

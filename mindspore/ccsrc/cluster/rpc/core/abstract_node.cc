@@ -16,7 +16,7 @@
 
 #include "cluster/rpc/core/abstract_node.h"
 
-#include "include/common/debug/common.h"
+#include "include/utils/common.h"
 #include "cluster/rpc/core/communicator/tcp_communicator.h"
 #include "cluster/rpc/core/node_recovery.h"
 

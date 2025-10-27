@@ -23,7 +23,7 @@
 #include "pynative/utils/pynative_utils.h"
 #include "ir/tensor.h"
 #include "ir/tensor_new.h"
-#include "include/common/utils/tensor_py.h"
+#include "include/utils/tensor_py.h"
 
 namespace mindspore {
 namespace pynative {

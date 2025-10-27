@@ -27,12 +27,12 @@
 #include "abstract/symbolic_shape/int_symbol.h"
 #include "abstract/symbolic_shape/symbol_info.h"
 #include "frontend/jit/ps/action.h"
-#include "include/common/utils/parallel_context.h"
+#include "include/utils/parallel_context.h"
 #include "frontend/parallel/graph_util/graph_utils.h"
 #include "ir/anf.h"
 #include "ir/graph_utils.h"
-#include "include/common/utils/comm_manager.h"
-#include "include/common/utils/anfalgo.h"
+#include "include/utils/comm_manager.h"
+#include "include/utils/anfalgo.h"
 #include "utils/ms_context.h"
 
 namespace mindspore {

@@ -17,7 +17,7 @@
 #include <cxxabi.h>
 #include <set>
 #include <string>
-#include "include/common/debug/common.h"
+#include "include/utils/common.h"
 #include "backend/ge_backend/graph_ir/aoe_util.h"
 #include "utils/file_utils.h"
 #include "utils/ms_context.h"

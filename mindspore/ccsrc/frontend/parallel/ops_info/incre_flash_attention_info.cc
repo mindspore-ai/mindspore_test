@@ -24,7 +24,7 @@
 #include "frontend/parallel/device_matrix.h"
 #include "frontend/parallel/dynamic_creator.h"
 #include "frontend/parallel/step_parallel_utils.h"
-#include "mindspore/ccsrc/include/common/utils/utils.h"
+#include "include/utils/utils.h"
 #include "mindspore/ops/infer/ops_func_impl/incre_flash_attention.h"
 #include "mindspore/ops/op_def/array_ops.h"
 #include "frontend/parallel/ops_info/incre_flash_attention_info.h"

@@ -23,7 +23,7 @@
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "mindspore/ops/op_def/nn_op_name.h"
 #include "mindspore/ops/op_def/structure_op_name.h"
-#include "include/common/utils/parallel_context.h"
+#include "include/utils/parallel_context.h"
 #include "backend/common/kernel_graph/session_factory.h"
 #include "include/backend/optimizer/helper.h"
 #include "frontend/jit/ps/action.h"
@@ -32,9 +32,9 @@
 #include "ir/anf.h"
 #include "mindspore/ccsrc/utils/base_ref_py.h"
 #include "pybind_api/pybind_patch.h"
-#include "include/common/utils/callbacks.h"
-#include "include/common/utils/convert_utils.h"
-#include "include/common/utils/convert_utils_py.h"
+#include "include/utils/callbacks.h"
+#include "include/utils/convert_utils.h"
+#include "include/utils/convert_utils_py.h"
 #include "utils/log_adapter.h"
 #include "utils/ms_utils.h"
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
@@ -54,7 +54,7 @@
 #include "backend/common/pass_manager/dynamic_shape_helper.h"
 #include "runtime/pipeline/pipeline.h"
 #include "runtime/pipeline/task/run_graph_task.h"
-#include "include/common/utils/stub_tensor.h"
+#include "include/utils/stub_tensor.h"
 
 namespace mindspore {
 namespace backend {

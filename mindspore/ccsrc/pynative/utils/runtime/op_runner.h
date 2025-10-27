@@ -19,7 +19,7 @@
 
 #include <vector>
 #include <string>
-#include "include/common/pynative/op_runner_info.h"
+#include "include/utils/pynative/op_runner_info.h"
 #include "include/backend/kernel_graph.h"
 #include "pynative/utils/runtime/op_compiler.h"
 #include "runtime/hardware_abstract/device_context/device_context.h"

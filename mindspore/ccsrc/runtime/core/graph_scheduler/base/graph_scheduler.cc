@@ -49,13 +49,13 @@
 #include "async/async.h"
 #include "ir/device_address.h"
 #include "include/backend/anf_runtime_algorithm.h"
-#include "include/common/callback.h"
-#include "include/common/utils/anfalgo.h"
-#include "include/common/utils/parallel_context.h"
+#include "include/utils/callback.h"
+#include "include/utils/anfalgo.h"
+#include "include/utils/parallel_context.h"
 #include "include/backend/optimizer/helper.h"
-#include "include/common/utils/config_manager.h"
+#include "include/utils/config_manager.h"
 #include "utils/log_adapter.h"
-#include "include/common/utils/convert_utils.h"
+#include "include/utils/convert_utils.h"
 #include "utils/ms_context.h"
 #include "utils/profile.h"
 #include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
@@ -67,7 +67,7 @@
 #include "include/backend/debug/debugger/debugger.h"
 #endif
 #include "tools/profiler/profiling.h"
-#include "include/common/debug/common.h"
+#include "include/utils/common.h"
 #include "include/backend/distributed/collective/collective_manager.h"
 #if defined(__linux__) && defined(WITH_BACKEND)
 #include "include/backend/distributed/cluster/cluster_context.h"
@@ -82,7 +82,7 @@
 #endif
 
 #if !defined(_WIN32) && !defined(_WIN64) && !defined(__APPLE__)
-#include "include/common/utils/signal_util.h"
+#include "include/utils/signal_util.h"
 #endif
 
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"

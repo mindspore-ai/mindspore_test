@@ -37,14 +37,14 @@
 #include "frontend/ir/tensor_py.h"
 #include "frontend/operator/ops.h"
 #include "infer/deprecated_infer/infer_functions.h"
-#include "include/common/utils/convert_utils_py.h"
-#include "include/common/utils/utils.h"
+#include "include/utils/convert_utils_py.h"
+#include "include/utils/utils.h"
 #include "infer/mod.h"
 #include "abstract/abstract_function.h"
 #include "utils/ms_context.h"
 #include "mindspore/ops/op_def/op_name.h"
 #ifdef _MSC_VER
-#include "include/common/pybind_api/api_register.h"
+#include "include/utils/pybind_api/api_register.h"
 #endif
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"

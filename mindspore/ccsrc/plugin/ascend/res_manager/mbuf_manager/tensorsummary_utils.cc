@@ -17,12 +17,12 @@
 #include <map>
 #include <memory>
 #include <variant>
-#include "include/common/utils/python_adapter.h"
+#include "include/utils/python_adapter.h"
 #include "ir/tensor.h"
 #include "plugin/ascend/res_manager/mbuf_manager/mbuf_receive_manager.h"
 #include "pybind11/pybind11.h"
 #include "utils/log_adapter.h"
-#include "include/common/utils/tensor_py.h"
+#include "include/utils/tensor_py.h"
 
 namespace py = pybind11;
 

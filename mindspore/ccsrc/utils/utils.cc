@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "include/common/utils/utils.h"
+#include "include/utils/utils.h"
 #include "utils/ms_utils.h"
 
 #if defined(_WIN32) || defined(_WIN64) || defined(__APPLE__)

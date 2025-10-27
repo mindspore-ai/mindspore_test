@@ -23,7 +23,7 @@
 
 #include "mindspore/ccsrc/utils/ir_dump/anf_dump_utils.h"
 #include "include/backend/debug/data_dump/dump_utils.h"
-#include "include/common/debug/common.h"
+#include "include/utils/common.h"
 #include "include/backend/debug/debugger/debugger.h"
 #include "ir/graph_utils.h"
 #include "ir/scope.h"

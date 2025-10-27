@@ -22,7 +22,7 @@
 
 #include "backend/ms_backend/graph_fusion/adapter/callback_impl.h"
 #include "backend/ms_backend/graph_fusion/graph_kernel_helper.h"
-#include "include/common/utils/anfalgo.h"
+#include "include/utils/anfalgo.h"
 #include "ir/tensor_new.h"
 #include "ir/scalar.h"
 #include "ir/tensor.h"

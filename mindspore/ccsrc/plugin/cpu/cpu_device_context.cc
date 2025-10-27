@@ -20,7 +20,7 @@
 #include <unordered_set>
 #include <utility>
 
-#include "include/common/callback.h"
+#include "include/utils/callback.h"
 #include "plugin/cpu/res_manager/mem_manager/cpu_memory_manager.h"
 #include "plugin/cpu/graph_optimizer/pass/base/reg_cpu_const_input_to_attr.h"
 #include "plugin/cpu/graph_optimizer/pass/train/insert_cast_to_pyexecute.h"
@@ -55,7 +55,7 @@
 #include "backend/common/expander/fallback/expander_fallback.h"
 #include "backend/common/pass/value_graph_binder.h"
 #include "include/backend/anf_runtime_algorithm.h"
-#include "include/common/utils/anfalgo.h"
+#include "include/utils/anfalgo.h"
 #include "plugin/cpu/profiler/cpu_profiling.h"
 #if defined(__linux__) && defined(WITH_BACKEND)
 #include "plugin/cpu/res_manager/collective/ms_collective_comm_lib.h"
@@ -65,7 +65,7 @@
 #include "mindspore/ccsrc/utils/ir_dump/anf_ir_dump.h"
 #endif
 #include "tools/profiler/profiler.h"
-#include "include/common/utils/parallel_context.h"
+#include "include/utils/parallel_context.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "ops_utils/op_constants.h"
 #include "include/runtime/hardware_abstract/kernel_base/oplib/oplib.h"

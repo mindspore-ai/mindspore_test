@@ -21,7 +21,7 @@
 #include <map>
 #include <tuple>
 #include <algorithm>
-#include "include/common/utils/anfalgo.h"
+#include "include/utils/anfalgo.h"
 #include "include/backend/optimizer/helper.h"
 #include "mindspore/ops/op_def/other_ops.h"
 #include "mindspore/ops/ops_utils/op_utils.h"

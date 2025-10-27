@@ -23,7 +23,7 @@
 #include <utility>
 #include <unordered_set>
 #include "kernel/gpu/gpu_common.h"
-#include "include/common/callback.h"
+#include "include/utils/callback.h"
 #include "plugin/gpu/kernel_executor/gpu_kernel_build.h"
 #include "plugin/gpu/kernel_executor/gpu_kernel_task.h"
 #include "plugin/gpu/res_manager/gpu_device_manager.h"
@@ -52,7 +52,7 @@
 #include "backend/common/pass_manager/common_backend_optimization.h"
 #include "backend/common/pass_manager/dynamic_shape_helper.h"
 #include "mindspore/ccsrc/utils/ir_dump/anf_ir_dump.h"
-#include "include/common/utils/comm_manager.h"
+#include "include/utils/comm_manager.h"
 #ifdef ENABLE_DEBUGGER
 #include "include/backend/debug/debugger/debugger.h"
 #endif
@@ -67,7 +67,7 @@
 #include "backend/common/device_address_utils.h"
 #include "runtime/pipeline/task/kernel_task.h"
 #include "include/runtime/memory/mem_pool/mem_tracker.h"
-#include "include/common/utils/parallel_context.h"
+#include "include/utils/parallel_context.h"
 #include "tools/profiler/profiling.h"
 #include "include/runtime/utils/runtime_conf/runtime_conf.h"
 #include "mindspore/ops/kernel/gpu/cuda/arrays/contiguous_gpu_kernel.h"

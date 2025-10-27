@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "include/common/utils/anfalgo.h"
+#include "include/utils/anfalgo.h"
 #include <memory>
 #include <algorithm>
 #include <map>
@@ -42,13 +42,13 @@
 #include "ir/func_graph.h"
 #include "ir/tensor_new.h"
 #include "ir/graph_utils.h"
-#include "include/common/utils/convert_utils.h"
-#include "include/common/utils/utils.h"
+#include "include/utils/convert_utils.h"
+#include "include/utils/utils.h"
 #include "utils/shape_utils.h"
 #include "utils/trace_base.h"
 #include "utils/anf_utils.h"
 #include "utils/phase.h"
-#include "include/common/utils/parallel_context.h"
+#include "include/utils/parallel_context.h"
 #include "utils/ms_context.h"
 #include "frontend/operator/primitive_py.h"
 #include "frontend/ir/tensor_py.h"

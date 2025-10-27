@@ -23,7 +23,7 @@
 #include <memory>
 #include <map>
 #include <functional>
-#include "include/common/callback.h"
+#include "include/utils/callback.h"
 #include "tools/error_handler/exit_handler.h"
 #include "runtime/pipeline/pipeline.h"
 #include "utils/ms_exception.h"

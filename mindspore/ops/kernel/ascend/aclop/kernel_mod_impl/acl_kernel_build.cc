@@ -18,7 +18,7 @@
 #include "kernel/ascend/aclop/kernel_mod_impl/acl_kernel_mod.h"
 #include "abstract/ops/primitive_infer_map.h"
 #include "include/backend/anf_runtime_algorithm.h"
-#include "include/common/utils/anfalgo.h"
+#include "include/utils/anfalgo.h"
 #include "runtime/hardware_abstract/kernel_base/graph_fusion/framework_utils.h"
 #include "utils/trace_base.h"
 #include "include/runtime/hardware_abstract/kernel_base/ms_factory.h"

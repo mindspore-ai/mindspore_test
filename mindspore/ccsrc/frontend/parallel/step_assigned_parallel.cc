@@ -30,7 +30,7 @@
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "mindspore/ops/op_def/math_ops.h"
 #include "frontend/parallel/auto_parallel/edge_costmodel.h"
-#include "include/common/utils/parallel_context.h"
+#include "include/utils/parallel_context.h"
 #include "frontend/parallel/graph_util/graph_info.h"
 #include "frontend/parallel/graph_util/graph_utils.h"
 #include "frontend/parallel/ops_info/tmp_identity_info.h"

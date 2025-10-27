@@ -21,7 +21,7 @@
 #include "ir/device_type.h"
 #include "ir/graph_utils.h"
 #include "include/backend/kernel_graph.h"
-#include "include/common/utils/anfalgo.h"
+#include "include/utils/anfalgo.h"
 #include "kernel/ascend/aclnn/kernel_mod_impl/aclnn_kernel_build.h"
 #include "plugin/ascend/res_manager/op_adapter/op_adapter_util.h"
 

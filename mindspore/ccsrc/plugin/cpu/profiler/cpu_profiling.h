@@ -30,7 +30,7 @@
 #include "tools/profiler/data_saver.h"
 #include "actor/actormgr.h"
 #include "ir/anf.h"
-#include "include/common/visible.h"
+#include "include/utils/visible.h"
 
 namespace mindspore {
 namespace profiler {

@@ -17,7 +17,7 @@
 #include <set>
 #include <vector>
 #include <functional>
-#include "include/common/utils/tensor_py.h"
+#include "include/utils/tensor_py.h"
 #include "frontend/jit/pi/python_adapter/pydef.h"
 #include "frontend/jit/pi/graph_capture/node.h"
 #include "frontend/jit/pi/graph_capture/graph.h"

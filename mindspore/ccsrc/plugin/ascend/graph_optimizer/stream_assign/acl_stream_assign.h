@@ -29,7 +29,7 @@
 #include <utility>
 #include <tuple>
 #include "include/backend/kernel_graph.h"
-#include "include/common/utils/contract.h"
+#include "include/utils/contract.h"
 #include "runtime/hardware_abstract/device_context/device_context.h"
 
 namespace mindspore {

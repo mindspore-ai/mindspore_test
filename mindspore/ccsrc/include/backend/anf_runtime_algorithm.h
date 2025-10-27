@@ -30,7 +30,7 @@
 #include "include/runtime/hardware_abstract/kernel_base/kernel.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_build_info.h"
 #include "include/runtime/hardware_abstract/kernel_base/oplib/opinfo.h"
-#include "include/common/utils/contract.h"
+#include "include/utils/contract.h"
 #include "ir/device_address.h"
 #include "include/backend/visible.h"
 

@@ -22,7 +22,7 @@
 #include <string>
 #include "include/backend/optimizer/pass.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_info.h"
-#include "include/common/utils/convert_utils.h"
+#include "include/utils/convert_utils.h"
 
 namespace mindspore::graphkernel {
 struct InplaceAssignerInfo {

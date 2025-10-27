@@ -18,7 +18,7 @@
 #include "backend/common/pass/convert_dynamic_broadcast_to.h"
 #include "mindspore/ops/op_def/array_ops.h"
 #include "ir/anf.h"
-#include "include/common/utils/anfalgo.h"
+#include "include/utils/anfalgo.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
 

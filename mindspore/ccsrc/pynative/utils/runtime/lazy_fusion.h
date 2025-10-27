@@ -21,7 +21,7 @@
 #include <string>
 #include <utility>
 #include <functional>
-#include "include/common/visible.h"
+#include "include/utils/visible.h"
 
 namespace mindspore {
 using LazyFusionInitFunc = std::function<void()>;

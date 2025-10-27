@@ -22,7 +22,7 @@
 #include <vector>
 #include "include/runtime/hardware_abstract/kernel_base/kernel_info.h"
 #include "utils/ms_utils.h"
-#include "include/common/utils/anfalgo.h"
+#include "include/utils/anfalgo.h"
 #include "ir/graph_utils.h"
 #include "backend/ms_backend/graph_fusion/reshape_reduce_for_cse.h"
 

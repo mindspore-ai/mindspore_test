@@ -20,7 +20,7 @@
 #include "pyboost/pyboost_utils.h"
 #include "pyboost/functions/auto_grad_guard.h"
 #include "pyboost/functions/auto_generate/functions.h"
-#include "include/common/pynative/variable.h"
+#include "include/utils/pynative/variable.h"
 
 namespace mindspore::kernel::pyboost {
 void CellBackwardHookCustomize(const std::shared_ptr<OpRunner> &op, const ValueTuplePtr &tensors_list) {

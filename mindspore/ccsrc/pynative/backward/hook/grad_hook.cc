@@ -21,7 +21,7 @@
 #include "pynative/backward/op_grad/func_grad.h"
 #include "pynative/backward/grad_utils.h"
 #include "mindspore/core/include/ir/tensor.h"
-#include "include/common/pynative/hook.h"
+#include "include/utils/pynative/hook.h"
 
 namespace mindspore::pynative::autograd {
 namespace {

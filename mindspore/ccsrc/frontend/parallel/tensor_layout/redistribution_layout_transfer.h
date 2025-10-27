@@ -21,7 +21,7 @@
 #include "frontend/parallel/status.h"
 #include "frontend/parallel/tensor_layout/layout_transfer.h"
 #include "frontend/parallel/tensor_layout/reshape_layout_transfer.h"
-#include "include/common/visible.h"
+#include "include/utils/visible.h"
 
 namespace mindspore {
 namespace parallel {

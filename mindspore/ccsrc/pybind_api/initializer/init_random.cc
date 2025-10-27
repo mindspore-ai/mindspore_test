@@ -16,8 +16,8 @@
 
 #include <cstdint>
 #include <random>
-#include "include/common/random.h"
-#include "include/common/pybind_api/api_register.h"
+#include "include/utils/random.h"
+#include "include/utils/pybind_api/api_register.h"
 #include "utils/log_adapter.h"
 
 namespace mindspore::initializer {

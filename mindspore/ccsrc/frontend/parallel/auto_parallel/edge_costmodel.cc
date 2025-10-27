@@ -20,7 +20,7 @@
 #include <functional>
 #include <iterator>
 #include <utility>
-#include "include/common/utils/parallel_context.h"
+#include "include/utils/parallel_context.h"
 #include "frontend/parallel/auto_parallel/costmodel.h"
 #include "frontend/parallel/auto_parallel/graph_costmodel.h"
 #include "frontend/parallel/tensor_layout/tensor_redistribution.h"

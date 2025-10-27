@@ -29,8 +29,8 @@
 #include "backend/ge_backend/runtime/actor/actor_common.h"
 #include "backend/ge_backend/runtime/actor/abstract_actor.h"
 #include "include/backend/anf_runtime_algorithm.h"
-#include "include/common/utils/anfalgo.h"
-#include "include/common/utils/stub_tensor.h"
+#include "include/utils/anfalgo.h"
+#include "include/utils/stub_tensor.h"
 #include "ir/tensor.h"
 
 namespace mindspore {

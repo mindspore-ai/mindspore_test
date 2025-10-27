@@ -28,7 +28,7 @@
 
 #include "base/base.h"
 #include "frontend/jit/ps/base.h"
-#include "include/common/visible.h"
+#include "include/utils/visible.h"
 
 namespace mindspore {
 // namespace to support pipeline structures definition

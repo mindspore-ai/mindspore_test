@@ -25,7 +25,7 @@
 #include "ir/functor.h"
 #include "include/backend/optimizer/optimizer.h"
 #include "include/backend/optimizer/helper.h"
-#include "include/common/utils/convert_utils.h"
+#include "include/utils/convert_utils.h"
 #include "runtime/hardware_abstract/kernel_base/graph_fusion/framework_utils.h"
 #include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/infershape_functor.h"
 

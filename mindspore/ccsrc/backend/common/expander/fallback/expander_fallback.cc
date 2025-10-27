@@ -24,7 +24,7 @@
 #include "utils/ms_utils.h"
 #include "utils/anf_utils.h"
 #include "utils/ms_context.h"
-#include "include/common/utils/anfalgo.h"
+#include "include/utils/anfalgo.h"
 #include "mindspore/ccsrc/utils/ir_dump/anf_ir_dump.h"
 #include "backend/common/expander/fallback/fallback_irbuilder.h"
 

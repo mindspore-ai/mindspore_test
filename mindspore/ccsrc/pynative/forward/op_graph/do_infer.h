@@ -22,7 +22,7 @@
 #include <shared_mutex>
 #include "pynative/utils/base.h"
 #include "pynative/utils/pynative_cache.h"
-#include "include/common/visible.h"
+#include "include/utils/visible.h"
 
 namespace mindspore {
 namespace pynative {

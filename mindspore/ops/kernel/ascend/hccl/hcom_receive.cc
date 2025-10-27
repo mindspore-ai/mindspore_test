@@ -22,7 +22,7 @@
 #include "include/backend/distributed/rpc/tcp/tcp_server.h"
 #include "cluster/topology/actor_route_table_proxy.h"
 #include "include/backend/distributed/cluster/cluster_context.h"
-#include "include/common/utils/parallel_context.h"
+#include "include/utils/parallel_context.h"
 #include "proto/topology.pb.h"
 #include "runtime/hardware_abstract/kernel_base/graph_fusion/framework_utils.h"
 #include "include/backend/optimizer/helper.h"

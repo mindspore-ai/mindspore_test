@@ -22,7 +22,7 @@
 #include "nnacl/errorcode.h"
 #include "nnacl/gather_parameter.h"
 #include "nnacl/base/gather_base.h"
-#include "include/common/thread_pool.h"
+#include "include/utils/thread_pool.h"
 #include "infer/ops_func_impl/gather.h"
 
 namespace mindspore {

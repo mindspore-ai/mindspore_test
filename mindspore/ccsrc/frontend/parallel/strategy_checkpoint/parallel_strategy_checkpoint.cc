@@ -30,8 +30,8 @@
 #include "ir/dtype/ref.h"
 #include "ir/dtype/tensor_type.h"
 #include "include/backend/distributed/collective/collective_manager.h"
-#include "include/common/debug/common.h"
-#include "include/common/utils/convert_utils.h"
+#include "include/utils/common.h"
+#include "include/utils/convert_utils.h"
 #include "utils/file_utils.h"
 #include "utils/log_adapter.h"
 

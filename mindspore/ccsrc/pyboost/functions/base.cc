@@ -15,7 +15,7 @@
  */
 
 #include "mindspore/ccsrc/pyboost/functions/base.h"
-#include "include/common/utils/utils.h"
+#include "include/utils/utils.h"
 
 namespace mindspore {
 namespace kernel {

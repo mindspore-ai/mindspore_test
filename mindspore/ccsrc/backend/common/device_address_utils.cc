@@ -34,7 +34,7 @@
 #include "ir/device_address.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_info.h"
 #include "include/backend/py_execute_utils.h"
-#include "include/common/utils/anfalgo.h"
+#include "include/utils/anfalgo.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/backend/common/ms_device_shape_transfer.h"
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"

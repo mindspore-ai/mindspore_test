@@ -31,7 +31,7 @@
 #include "utils/somas/somas_stream.h"
 #include "utils/somas/somas_parameter.h"
 #include "include/backend/anf_runtime_algorithm.h"
-#include "include/common/utils/anfalgo.h"
+#include "include/utils/anfalgo.h"
 #include "include/backend/kernel_graph.h"
 #include "ir/device_type.h"
 #include "include/backend/visible.h"

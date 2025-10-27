@@ -23,7 +23,7 @@
 #include <algorithm>
 #include <unordered_set>
 #include "include/backend/anf_runtime_algorithm.h"
-#include "include/common/utils/anfalgo.h"
+#include "include/utils/anfalgo.h"
 #include "backend/ms_backend/graph_fusion/graph_kernel_helper.h"
 #include "utils/anf_utils.h"
 #include "backend/ms_backend/graph_fusion/core/graph_kernel_utils.h"

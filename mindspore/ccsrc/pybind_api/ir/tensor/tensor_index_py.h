@@ -25,8 +25,8 @@
 #include "pybind11/numpy.h"
 #include "pybind11/pytypes.h"
 #include "frontend/ir/tensor_py.h"
-#include "include/common/utils/convert_utils_py.h"
-#include "include/common/utils/tensor_utils.h"
+#include "include/utils/convert_utils_py.h"
+#include "include/utils/tensor_utils.h"
 #include "pynative/utils/base.h"
 
 namespace py = pybind11;

@@ -20,13 +20,13 @@
 #include <numeric>
 #include <sstream>
 #include <iomanip>
-#include "include/common/debug/common.h"
+#include "include/utils/common.h"
 #include "include/backend/distributed/collective/collective_manager.h"
-#include "include/common/utils/anfalgo.h"
+#include "include/utils/anfalgo.h"
 #include "utils/ms_context.h"
 #include "utils/log_adapter.h"
 #include "utils/file_utils.h"
-#include "include/common/utils/utils.h"
+#include "include/utils/utils.h"
 #include "abstract/abstract_value.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_i.h"

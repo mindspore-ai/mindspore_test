@@ -18,7 +18,7 @@
 #define MINDSPORE_CCSRC_PYBIND_API_BACKWARD_NODE_PY_H
 
 #include "pybind11/pybind11.h"
-#include "include/common/pynative/variable.h"
+#include "include/utils/pynative/variable.h"
 
 namespace mindspore::pynative::autograd {
 struct BackwardNodePy {

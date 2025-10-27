@@ -16,7 +16,7 @@
 
 #include <cuda.h>
 #include <cuda_runtime.h>
-#include "include/common/callback.h"
+#include "include/utils/callback.h"
 
 namespace mindspore::device::gpu {
 // Register callback functions for GPU backend.

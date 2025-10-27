@@ -30,7 +30,7 @@
 #include "actor/op_actor.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel.h"
 #include "include/backend/anf_runtime_algorithm.h"
-#include "include/common/utils/anfalgo.h"
+#include "include/utils/anfalgo.h"
 #include "include/backend/kernel_graph.h"
 #include "utils/ms_context.h"
 #include "ir/tensor.h"
@@ -174,7 +174,7 @@ class ActorDispatcher {
   }
 
   template <typename T, typename... Args0, typename... Args1>
-  static void Send(const AID &aid, void (T::*method)(Args0...), Args1 &&... args) {
+  static void Send(const AID &aid, void (T::*method)(Args0...), Args1 &&...args) {
     if (is_multi_thread_execution_) {
       auto tuple = std::make_tuple(std::forward<Args1>(args)...);
       Async(aid, method, std::move(tuple));
@@ -200,7 +200,7 @@ class ActorDispatcher {
   }
 
   template <typename T, typename... Args0, typename... Args1>
-  static void SendSync(const AID &aid, void (T::*method)(Args0...), Args1 &&... args) {
+  static void SendSync(const AID &aid, void (T::*method)(Args0...), Args1 &&...args) {
     auto actor_manager = ActorMgr::GetActorMgrRef();
     auto base_actor = actor_manager->GetActor(aid);
     T *actor = static_cast<T *>(base_actor.get());
@@ -209,7 +209,7 @@ class ActorDispatcher {
   }
 
   template <typename T, typename... Args0, typename... Args1>
-  static void SendSync(OpActor<DeviceTensor> *to_actor, void (T::*method)(Args0...), Args1 &&... args) {
+  static void SendSync(OpActor<DeviceTensor> *to_actor, void (T::*method)(Args0...), Args1 &&...args) {
     T *actor = static_cast<T *>(to_actor);
     MS_EXCEPTION_IF_NULL(actor);
     (actor->*method)(std::forward<Args1>(args)...);

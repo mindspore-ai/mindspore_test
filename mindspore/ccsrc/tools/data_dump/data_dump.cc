@@ -29,11 +29,11 @@
 #include "tools/data_dump/debugger/debugger_utils.h"
 #include "tools/data_dump/device_statistic/mem_manager.h"
 #endif
-#include "include/common/callback.h"
-#include "include/common/debug/common.h"
+#include "include/utils/callback.h"
+#include "include/utils/common.h"
 #include "include/backend/debug/data_dump/dump_json_parser.h"
 #include "tools/silent_detect/checksum/checksum.h"
-#include "include/common/utils/anfalgo.h"
+#include "include/utils/anfalgo.h"
 #include "tools/tensor_dump/tensordump_utils.h"
 
 namespace {

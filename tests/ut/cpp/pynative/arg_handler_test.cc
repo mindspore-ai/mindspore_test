@@ -20,7 +20,7 @@
 #include "pynative/common.h"
 #include "pynative/forward/pyboost/arg_handler.h"
 #include "mindspore/ops/op_def/op_enum.h"
-#include "include/common/utils/tensor_py.h"
+#include "include/utils/tensor_py.h"
 #include "mindspore/core/include/ir/dtype/type.h"
 #include "mindspore/core/include/ir/dtype/type_id.h"
 #include "ops/op_def.h"

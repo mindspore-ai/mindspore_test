@@ -20,7 +20,7 @@
 #include <string>
 #include <algorithm>
 #include <memory>
-#include "include/common/utils/anfalgo.h"
+#include "include/utils/anfalgo.h"
 
 namespace mindspore {
 namespace kernel {

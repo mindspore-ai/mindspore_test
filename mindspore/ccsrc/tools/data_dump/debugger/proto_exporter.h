@@ -20,7 +20,7 @@
 #include <string>
 #include <vector>
 
-#include "include/common/debug/common.h"
+#include "include/utils/common.h"
 #include "include/backend/debug/data_dump/dump_json_parser.h"
 #include "include/backend/debug/debugger/proto_exporter.h"
 #include "utils/symbolic.h"

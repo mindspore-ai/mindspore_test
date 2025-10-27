@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 #include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/kernel_packet/kernel_packet_engine.h"
-#include "include/common/utils/utils.h"
+#include "include/utils/utils.h"
 #include "ir/graph_utils.h"
 
 namespace mindspore {

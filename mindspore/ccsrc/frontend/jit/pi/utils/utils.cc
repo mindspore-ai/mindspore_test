@@ -25,7 +25,7 @@
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "frontend/jit/pi/utils/opcode_declare.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_info.h"
-#include "include/common/utils/tensor_py.h"
+#include "include/utils/tensor_py.h"
 
 namespace mindspore {
 namespace pijit {

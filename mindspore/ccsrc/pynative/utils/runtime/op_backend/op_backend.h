@@ -21,7 +21,7 @@
 #include <map>
 #include <vector>
 #include <string>
-#include "include/common/visible.h"
+#include "include/utils/visible.h"
 #include "backend/common/kernel_graph/session_basic.h"
 #include "pynative/utils/runtime/op_compiler.h"
 #include "pynative/utils/runtime/task/device_task.h"

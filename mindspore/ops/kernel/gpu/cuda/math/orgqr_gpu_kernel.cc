@@ -19,7 +19,7 @@
 #include <map>
 #include <utility>
 #include <vector>
-#include "include/common/utils/convert_utils.h"
+#include "include/utils/convert_utils.h"
 #include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/complex.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/real_to_complex_impl.cuh"

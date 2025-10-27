@@ -31,7 +31,7 @@
 #include "utils/hash_map.h"
 #include "ir/anf.h"
 #include "frontend/jit/ps/parse/parse_base.h"
-#include "include/common/utils/python_adapter.h"
+#include "include/utils/python_adapter.h"
 #include "frontend/jit/ps/parse/function_block.h"
 
 namespace mindspore {
@@ -517,12 +517,12 @@ class ParseFunctionAst {
   AstSubType GetOpType(const py::object &node);
 
   template <class... T>
-  py::object CallParserObjMethod(const std::string &method, const T &... args) {
+  py::object CallParserObjMethod(const std::string &method, const T &...args) {
     return python_adapter::CallPyObjMethod(parser_, method, args...);
   }
 
   template <class... T>
-  py::object CallParseModFunction(const std::string &function, const T &... args) {
+  py::object CallParseModFunction(const std::string &function, const T &...args) {
     return python_adapter::CallPyModFn(module_, function, args...);
   }
 

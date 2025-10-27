@@ -26,11 +26,11 @@
 
 #include "base/base.h"
 #include "include/backend/anf_runtime_algorithm.h"
-#include "include/common/utils/anfalgo.h"
+#include "include/utils/anfalgo.h"
 #include "include/backend/optimizer/optimizer.h"
 #include "backend/ms_backend/graph_fusion/parallel_cost_model.h"
 #include "include/backend/kernel_graph.h"
-#include "include/common/utils/python_adapter.h"
+#include "include/utils/python_adapter.h"
 #include "utils/ms_context.h"
 
 namespace mindspore::graphkernel {

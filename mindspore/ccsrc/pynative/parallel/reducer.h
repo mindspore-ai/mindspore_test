@@ -27,7 +27,7 @@
 #include <unordered_set>
 #include <unordered_map>
 #include "pynative/utils/base.h"
-#include "include/common/pynative//variable.h"
+#include "include/utils/pynative//variable.h"
 #include "include/backend/visible.h"
 #include "mindspore/ccsrc/frontend/ir/tensor_py.h"
 #include "mindspore/ccsrc/pyboost/comm_handle.h"

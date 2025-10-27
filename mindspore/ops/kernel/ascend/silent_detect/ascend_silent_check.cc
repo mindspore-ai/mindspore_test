@@ -28,8 +28,8 @@
 #include <vector>
 #include <string>
 #include "tools/silent_detect/silent_check/silent_check.h"
-#include "include/common/callback.h"
-#include "include/common/utils/utils.h"
+#include "include/utils/callback.h"
+#include "include/utils/utils.h"
 #include "ir/tensor.h"
 #include "ir/scalar.h"
 #include "ir/value.h"

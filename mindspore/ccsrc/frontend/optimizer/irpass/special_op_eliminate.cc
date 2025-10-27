@@ -36,7 +36,7 @@
 #include "frontend/optimizer/irpass.h"
 #include "frontend/optimizer/irpass/prim_eliminate.h"
 #include "frontend/optimizer/optimizer.h"
-#include "include/common/utils/comm_manager.h"
+#include "include/utils/comm_manager.h"
 #include "frontend/parallel/step_parallel_utils.h"
 #include "frontend/jit/ps/parse/resolve.h"
 #include "frontend/parallel/graph_util/graph_utils.h"

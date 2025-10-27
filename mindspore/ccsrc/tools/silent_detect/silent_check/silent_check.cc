@@ -18,8 +18,8 @@
 #include <memory>
 #include <string>
 #include <vector>
-#include "include/common/utils/stream_util.h"
-#include "include/common/callback.h"
+#include "include/utils/stream_util.h"
+#include "include/utils/callback.h"
 #include "mindapi/base/macros.h"
 #include "utils/log_adapter.h"
 #include "utils/ms_context.h"

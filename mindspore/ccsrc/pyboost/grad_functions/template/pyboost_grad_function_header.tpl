@@ -19,11 +19,11 @@
 #include "mindspore/ccsrc/pyboost/grad_functions/value_converter.h"
 #include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "pynative/utils/pynative_utils.h"
-#include "include/common/utils/python_adapter.h"
+#include "include/utils/python_adapter.h"
 #include "pybind_api/gil_scoped_long_running.h"
 #include "mindspore/ccsrc/pyboost/functions/auto_generate/functions.h"
 #include "mindspore/ccsrc/pyboost/functions/auto_grad_guard.h"
-#include "mindspore/ccsrc/include/common/pynative/abstract_converter.h"
+#include "include/utils/pynative/abstract_converter.h"
 
 namespace mindspore::runtime {
 namespace {

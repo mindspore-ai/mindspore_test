@@ -19,7 +19,7 @@
 #include <unistd.h>
 #include <fstream>
 #include <string>
-#include "include/common/debug/common.h"
+#include "include/utils/common.h"
 #include "acl/acl_rt.h"
 #include "utils/distributed_meta.h"
 #include "utils/log_adapter.h"

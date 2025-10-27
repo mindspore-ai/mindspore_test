@@ -19,7 +19,7 @@
 #include <memory>
 #include "abstract/symbolic_shape/utils.h"
 #include "mindspore/ops/op_def/framework_ops.h"
-#include "include/common/utils/anfalgo.h"
+#include "include/utils/anfalgo.h"
 #include "ir/anf.h"
 #include "ir/graph_utils.h"
 #include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/symbol_engine/jit/transform_visitor.h"

@@ -26,8 +26,8 @@
 #include "backend/backend_manager/visible.h"
 #include "backend/backend_manager/backend_jit_config.h"
 #include "ir/tensor.h"
-#include "include/common/pynative/op_runner_info.h"
-#include "include/common/utils/python_adapter.h"
+#include "include/utils/pynative/op_runner_info.h"
+#include "include/utils/python_adapter.h"
 
 namespace mindspore {
 namespace backend {

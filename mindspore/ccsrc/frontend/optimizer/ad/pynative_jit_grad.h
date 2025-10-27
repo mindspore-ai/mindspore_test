@@ -24,7 +24,7 @@
 #include "ir/anf.h"
 #include "ir/tensor.h"
 #include "pynative/utils/base.h"
-#include "include/common/pynative/variable.h"
+#include "include/utils/pynative/variable.h"
 
 namespace mindspore {
 namespace ad {

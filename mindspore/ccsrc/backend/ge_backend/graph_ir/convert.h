@@ -31,7 +31,7 @@
 #include <fstream>
 #include <sstream>
 
-#include "include/common/utils/config_manager.h"
+#include "include/utils/config_manager.h"
 #include "mindspore/ops/op_def/structure_ops.h"
 #include "utils/hash_map.h"
 #include "utils/ms_context.h"
@@ -45,7 +45,7 @@
 #include "graph/operator_reg.h"
 #include "ge/ge_api.h"
 #include "include/backend/visible.h"
-#include "include/common/utils/utils.h"
+#include "include/utils/utils.h"
 
 namespace mindspore::backend::ge_backend {
 using OpAdapterPtr = device::ascend::OpAdapterPtr;

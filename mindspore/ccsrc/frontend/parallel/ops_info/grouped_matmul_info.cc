@@ -24,7 +24,7 @@
 #include <utility>
 #include <vector>
 
-#include "include/common/utils/parallel_context.h"
+#include "include/utils/parallel_context.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "ir/value.h"
 #include "frontend/parallel/auto_parallel/graph_costmodel.h"

@@ -22,7 +22,7 @@
 #include "mindspore/ops/op_def/math_op_name.h"
 #include "mindspore/ops/op_def/nn_optimizer_op_name.h"
 #include "mindspore/ops/ops_utils/op_constants.h"
-#include "include/common/utils/anfalgo.h"
+#include "include/utils/anfalgo.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_info.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_build_info.h"
 #include "mindapi/base/type_id.h"

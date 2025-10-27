@@ -23,7 +23,7 @@
 #include "frontend/operator/ops.h"
 #include "utils/log_adapter.h"
 #include "include/backend/anf_runtime_algorithm.h"
-#include "include/common/utils/anfalgo.h"
+#include "include/utils/anfalgo.h"
 #include "utils/ms_utils.h"
 #include "frontend/jit/ps/resource.h"
 

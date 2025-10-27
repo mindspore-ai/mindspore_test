@@ -22,7 +22,7 @@
 #include <string>
 #include <unordered_map>
 #include <utility>
-#include "include/common/utils/anfalgo.h"
+#include "include/utils/anfalgo.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "backend/common/device_address_utils.h"
 

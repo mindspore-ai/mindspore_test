@@ -29,7 +29,7 @@
 #include "utils/log_adapter.h"
 #include "pynative/utils/pynative_execute.h"
 #include "mindspore/ops/op_def/array_ops.h"
-#include "include/common/pynative/grad_state.h"
+#include "include/utils/pynative/grad_state.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_e.h"

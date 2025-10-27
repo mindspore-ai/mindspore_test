@@ -27,7 +27,7 @@
 #include "abstract/dshape.h"
 #include "frontend/operator/cc_implementations.h"
 #include "ir/anf.h"
-#include "include/common/pybind_api/api_register.h"
+#include "include/utils/pybind_api/api_register.h"
 #include "frontend/jit/ps/fallback.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"

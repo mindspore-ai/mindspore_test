@@ -25,9 +25,9 @@
 #include <unordered_map>
 #include <utility>
 
-#include "include/common/utils/anfalgo.h"
-#include "include/common/utils/parallel_context.h"
-#include "include/common/utils/utils.h"
+#include "include/utils/anfalgo.h"
+#include "include/utils/parallel_context.h"
+#include "include/utils/utils.h"
 #include "frontend/parallel/step_parallel.h"
 #include "frontend/jit/ps/graph_circle_handler.h"
 #include "mindspore/ops/op_def/framework_ops.h"

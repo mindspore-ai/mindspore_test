@@ -34,7 +34,7 @@
 #include "ir/func_graph_cloner.h"
 
 #include "frontend/optimizer/irpass.h"
-#include "include/common/utils/parallel_context.h"
+#include "include/utils/parallel_context.h"
 #include "frontend/parallel/step_parallel_utils.h"
 #include "frontend/parallel/step_auto_parallel.h"
 #include "frontend/parallel/step_parallel.h"
@@ -42,7 +42,7 @@
 #include "frontend/parallel/pass/handle_group_info.h"
 #include "frontend/parallel/step_assigned_parallel.h"
 
-#include "include/common/utils/config_manager.h"
+#include "include/utils/config_manager.h"
 
 #include "utils/log_adapter.h"
 #include "utils/ms_context.h"

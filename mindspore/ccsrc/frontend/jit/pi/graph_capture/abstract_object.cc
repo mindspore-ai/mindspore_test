@@ -32,9 +32,9 @@
 #include "frontend/jit/ps/action.h"
 #include "frontend/jit/ps/parse/data_converter.h"
 #include "mindspore/ops/op_def/math_ops.h"
-#include "include/common/utils/convert_utils_py.h"
+#include "include/utils/convert_utils_py.h"
 #include "frontend/jit/pi/utils/opcode_declare.h"
-#include "include/common/utils/tensor_py.h"
+#include "include/utils/tensor_py.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
@@ -520,11 +520,13 @@ AObject *AbstractObjectBase::MakeAObject(AObject::Type type, PyTypeObject *tp, P
     {kTypeString, [](const py::object &obj,
                      const std::vector<AObject *> &elements) { return ConstructAbstract<AbstractString>(obj); }},
     {kTypeTensor,
-     [](const py::object &obj, const std::vector<AObject *>
-                                 &elements) { return Resource::Current()->pool()->New<AbstractTensor>(obj, false); }},
+     [](const py::object &obj, const std::vector<AObject *> &elements) {
+       return Resource::Current()->pool()->New<AbstractTensor>(obj, false);
+     }},
     {kTypeTuple,
-     [](const py::object &obj,
-        const std::vector<AObject *> &elements) { return ConstructAbstract<AbstractTuple>(obj, elements); }},
+     [](const py::object &obj, const std::vector<AObject *> &elements) {
+       return ConstructAbstract<AbstractTuple>(obj, elements);
+     }},
     {kTypeNamedTuple, [&tp](const py::object &obj,
                             const std::vector<AObject *>
                               &elements) { return Resource::Current()->pool()->New<AbstractNamedTuple>(obj, tp); }},

@@ -16,7 +16,7 @@
 #include "plugin/ascend/graph_optimizer/pass/ir_fusion/grouped_matmul_assignadd_fusion.h"
 #include <vector>
 #include <string>
-#include "include/common/utils/anfalgo.h"
+#include "include/utils/anfalgo.h"
 #include "include/backend/optimizer/helper.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "mindspore/ops/op_def/nn_optimizer_op_name.h"

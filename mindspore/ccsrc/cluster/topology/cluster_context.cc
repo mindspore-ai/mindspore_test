@@ -37,7 +37,7 @@
 #include "include/backend/distributed/ps/ps_context.h"
 #include "cluster/rpc/core/comm_util.h"
 #include "cluster/rpc/core/cluster_config.h"
-#include "include/common/debug/common.h"
+#include "include/utils/common.h"
 #include "utils/ms_exception.h"
 
 namespace mindspore {

@@ -24,7 +24,7 @@
 #include "ir/dtype/tensor_type.h"
 #include "utils/ms_context.h"
 #include "mindspore/ops/op_def/nn_ops.h"
-#include "include/common/utils/anfalgo.h"
+#include "include/utils/anfalgo.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/backend/optimizer/helper.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"

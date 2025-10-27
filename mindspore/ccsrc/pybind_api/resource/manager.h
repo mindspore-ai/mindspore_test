@@ -16,7 +16,7 @@
 
 #ifndef MINDSPORE_MINDSPORE_CCSRC_PYBIND_API_RESOURCE_MANAGER_H_
 #define MINDSPORE_MINDSPORE_CCSRC_PYBIND_API_RESOURCE_MANAGER_H_
-#include "include/common/visible.h"
+#include "include/utils/visible.h"
 namespace mindspore {
 void MemoryRecycle();
 void ClearResAtexit();

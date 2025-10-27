@@ -26,7 +26,7 @@
 #include "utils/core_op_utils.h"
 #include "mindapi/base/type_id.h"
 #include "include/backend/anf_runtime_algorithm.h"
-#include "include/common/pynative/acl_adapter.h"
+#include "include/utils/pynative/acl_adapter.h"
 #include "tools/profiler/profiler.h"
 #include "mindspore/ops/op_def/nn_op_name.h"
 #include "mindspore/ops/op_def/conv_pool_op_name.h"

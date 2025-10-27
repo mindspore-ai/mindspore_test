@@ -21,8 +21,8 @@
 #include "ir/tensor_new.h"
 #include "pybind11/pytypes.h"
 #include "frontend/ir/tensor_py.h"
-#include "include/common/pybind_api/api_register.h"
-#include "include/common/utils/python_adapter.h"
+#include "include/utils/pybind_api/api_register.h"
+#include "include/utils/python_adapter.h"
 #include "frontend/jit/ps/parse/parse_base.h"
 #include "utils/log_adapter.h"
 

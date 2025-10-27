@@ -15,8 +15,8 @@
  */
 #include "include/runtime/memory/mem_pool/mem_pool_util.h"
 
-#include "include/common/debug/common.h"
-#include "include/common/utils/utils.h"
+#include "include/utils/common.h"
+#include "include/utils/utils.h"
 #include "utils/file_utils.h"
 #include "utils/ms_utils.h"
 

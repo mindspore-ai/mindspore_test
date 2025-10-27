@@ -27,7 +27,7 @@
 #include "tools/profiler/profiling.h"
 #include "tools/profiler/mstx/mstx_impl.h"
 #include "include/runtime/memory/mem_pool/mem_tracker.h"
-#include "include/common/utils/comm_manager.h"
+#include "include/utils/comm_manager.h"
 #include "plugin/ascend/res_manager/mem_manager/ascend_vmm_adapter.h"
 #include "plugin/ascend/res_manager/stream_manager/ascend_stream_manager.h"
 #include "utils/log_adapter.h"

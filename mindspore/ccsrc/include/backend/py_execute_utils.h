@@ -18,7 +18,7 @@
 #define MINDSPORE_CCSRC_INCLUDE_BACKEND_PY_EXECUTE_UTILS_H
 
 #include "include/runtime/hardware_abstract/kernel_base/kernel_tensor.h"
-#include "include/common/utils/python_adapter.h"
+#include "include/utils/python_adapter.h"
 #include "include/backend/visible.h"
 
 namespace mindspore {

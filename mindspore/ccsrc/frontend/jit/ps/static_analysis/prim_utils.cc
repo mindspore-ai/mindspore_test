@@ -29,7 +29,7 @@
 #include "frontend/operator/composite/do_signature.h"
 #include "frontend/operator/ops.h"
 #include "frontend/operator/composite/functional_overload.h"
-#include "include/common/utils/primfunc_utils.h"
+#include "include/utils/primfunc_utils.h"
 #include "ir/core_ops_primitive.h"
 #include "frontend/jit/ps/fallback.h"
 #include "frontend/jit/ps/parse/data_converter.h"

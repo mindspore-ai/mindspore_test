@@ -45,7 +45,7 @@
 #include "frontend/operator/primitive_py.h"
 #include "frontend/jit/pi/python_adapter/pydef.h"
 #include "frontend/jit/ps/parse/data_converter.h"
-#include "include/common/utils/tensor_py.h"
+#include "include/utils/tensor_py.h"
 #include "frontend/jit/ps/static_analysis/prim.h"
 #include "frontend/jit/ps/static_analysis/prim_utils.h"
 #include "frontend/operator/composite/composite.h"

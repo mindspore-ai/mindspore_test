@@ -23,7 +23,7 @@
 #include <memory>
 
 #include "include/backend/kernel_graph.h"
-#include "include/common/utils/contract.h"
+#include "include/utils/contract.h"
 #include "ir/device_address.h"
 
 using DeviceTensor = mindspore::device::DeviceAddress;

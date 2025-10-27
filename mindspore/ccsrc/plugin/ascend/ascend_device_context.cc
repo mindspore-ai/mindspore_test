@@ -20,12 +20,12 @@
 #include <sstream>
 #include <map>
 #include <set>
-#include "include/common/utils/utils.h"
-#include "include/common/debug/common.h"
+#include "include/utils/utils.h"
+#include "include/utils/common.h"
 #include "mindspore/ccsrc/utils/ir_dump/anf_ir_dump.h"
-#include "include/common/callback.h"
-#include "include/common/utils/parallel_context.h"
-#include "include/common/utils/scoped_long_running.h"
+#include "include/utils/callback.h"
+#include "include/utils/parallel_context.h"
+#include "include/utils/scoped_long_running.h"
 #include "include/backend/distributed/constants.h"
 #include "include/backend/debug/data_dump/dump_json_parser.h"
 #include "mindspore/ops/op_def/framework_ops.h"
@@ -38,7 +38,7 @@
 #include "tools/profiler/profiling.h"
 #include "plugin/ascend/res_manager/hccl_adapter/hccl_adapter.h"
 #include "pybind_api/gil_scoped_long_running.h"
-#include "include/common/utils/compile_cache_context.h"
+#include "include/utils/compile_cache_context.h"
 #include "utils/file_utils.h"
 #include "utils/ms_utils.h"
 #include "plugin/ascend/graph_optimizer/pass/ascend_pass_optimization.h"

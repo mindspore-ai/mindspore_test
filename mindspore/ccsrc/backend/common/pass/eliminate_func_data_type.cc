@@ -20,7 +20,7 @@
 #include <utility>
 #include "ir/anf.h"
 #include "include/backend/kernel_graph.h"
-#include "include/common/utils/anfalgo.h"
+#include "include/utils/anfalgo.h"
 
 namespace mindspore::opt {
 namespace {

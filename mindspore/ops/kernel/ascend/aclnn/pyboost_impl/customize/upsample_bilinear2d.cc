@@ -15,7 +15,7 @@
  */
 
 #include "kernel/ascend/aclnn/pyboost_impl/customize/upsample_bilinear2d.h"
-#include "include/common/utils/utils.h"
+#include "include/utils/utils.h"
 #include "plugin/ascend/res_manager/stream_manager/ascend_stream_manager.h"
 #include "mindapi/base/types.h"
 #include "mindspore/ccsrc/pyboost/pyboost_utils.h"

@@ -23,7 +23,7 @@
 #include <utility>
 #include <vector>
 #include "include/backend/anf_runtime_algorithm.h"
-#include "include/common/utils/anfalgo.h"
+#include "include/utils/anfalgo.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/gather.cuh"
 #include "kernel/gpu/gpu_kernel.h"

@@ -30,15 +30,15 @@
 #include "frontend/expander/utils.h"
 #include "pynative/utils/pynative_execute.h"
 #include "pynative/forward/pyboost/converter.h"
-#include "include/common/utils/config_manager.h"
-#include "include/common/utils/convert_utils.h"
+#include "include/utils/config_manager.h"
+#include "include/utils/convert_utils.h"
 #include "include/backend/debug/execute_order_tracker/execute_order_tracker.h"
 #include "include/runtime/memory/mem_pool/mem_tracker.h"
 #include "utils/distributed_meta.h"
 #include "utils/log_adapter.h"
 #include "utils/info.h"
 #include "utils/llm_manager.h"
-#include "include/common/utils/comm_manager.h"
+#include "include/utils/comm_manager.h"
 #include "include/backend/common/ms_device_shape_transfer.h"
 #include "utils/interpret_node_recorder.h"
 #include "mindspore/ccsrc/utils/ir_dump/dump_proto.h"
@@ -75,7 +75,7 @@
 #include "frontend/operator/py_execute_py.h"  // Only include one-time in the whole project.
 #include "mindspore/ccsrc/pynative/forward/pyboost/auto_generate/tensor_func_utils.h"
 #include "backend/common/somas/somas.h"
-#include "include/common/utils/pyobj_manager.h"
+#include "include/utils/pyobj_manager.h"
 
 namespace mindspore {
 void RecordExitStatus() { MS_LOG(INFO) << "Status record: system exit."; }

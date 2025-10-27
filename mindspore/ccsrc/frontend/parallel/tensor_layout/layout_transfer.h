@@ -21,7 +21,7 @@
 #include <map>
 #include "frontend/parallel/status.h"
 #include "frontend/parallel/tensor_layout/tensor_layout.h"
-#include "include/common/visible.h"
+#include "include/utils/visible.h"
 
 namespace mindspore {
 namespace parallel {

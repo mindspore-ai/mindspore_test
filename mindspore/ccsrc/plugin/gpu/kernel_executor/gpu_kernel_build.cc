@@ -28,7 +28,7 @@
 #include "frontend/operator/ops.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_info.h"
-#include "include/common/utils/anfalgo.h"
+#include "include/utils/anfalgo.h"
 #include "plugin/gpu/res_manager/symbol_interface/cuda_env_checker.h"
 #include "runtime/hardware_abstract/kernel_base/graph_fusion/framework_utils.h"
 #include "kernel/gpu/gpu_kernel_factory.h"

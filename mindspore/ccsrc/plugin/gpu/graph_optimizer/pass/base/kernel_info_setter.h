@@ -23,7 +23,7 @@
 #include <memory>
 #include <map>
 #include "ir/anf.h"
-#include "include/common/utils/utils.h"
+#include "include/utils/utils.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_build_info.h"
 #include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel_info.h"

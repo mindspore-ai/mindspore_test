@@ -21,7 +21,7 @@
 #include <utility>
 #include <complex>
 #include <functional>
-#include "include/common/thread_pool.h"
+#include "include/utils/thread_pool.h"
 
 #include "mindspore/ops/infer/ops_func_impl/unique_consecutive.h"
 
@@ -339,17 +339,15 @@ void UniqueConsecutiveCpuKernelMod::UpdateOutputShapeAndSize(const std::vector<K
 }
 
 #define CPU_UNIQUE_CONSECUTIVE_KERNEL_REGISTER(ms_index_type, ms_value_type, index_type, value_type) \
-  {                                                                                                  \
-    KernelAttr()                                                                                     \
-      .AddInputAttr(ms_value_type)                                                                   \
-      .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)                                              \
-      .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)                                              \
-      .AddOptionalInputAttr(kObjectTypeNumber, ms_index_type)                                        \
-      .AddOutputAttr(ms_value_type)                                                                  \
-      .AddOutputAttr(ms_index_type)                                                                  \
-      .AddOutputAttr(ms_index_type),                                                                 \
-      &UniqueConsecutiveCpuKernelMod::LaunchKernel<value_type, index_type>                           \
-  }
+  {KernelAttr()                                                                                      \
+     .AddInputAttr(ms_value_type)                                                                    \
+     .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)                                               \
+     .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)                                               \
+     .AddOptionalInputAttr(kObjectTypeNumber, ms_index_type)                                         \
+     .AddOutputAttr(ms_value_type)                                                                   \
+     .AddOutputAttr(ms_index_type)                                                                   \
+     .AddOutputAttr(ms_index_type),                                                                  \
+   &UniqueConsecutiveCpuKernelMod::LaunchKernel<value_type, index_type>}
 
 using UCKernelRunFunc = UniqueConsecutiveCpuKernelMod::KernelRunFunc;
 const std::vector<std::pair<KernelAttr, UCKernelRunFunc>> &UniqueConsecutiveCpuKernelMod::GetFuncList() const {

@@ -18,7 +18,7 @@
 
 #include "frontend/optimizer/cse_pass.h"
 
-#include "include/common/utils/cse.h"
+#include "include/utils/cse.h"
 #include "frontend/optimizer/optimizer.h"
 
 namespace mindspore {

@@ -22,7 +22,7 @@
 
 #include "frontend/expander/bprop/common_utils.h"
 #include "mindspore/ccsrc/include/utils/expander/node.h"
-#include "include/common/utils/utils.h"
+#include "include/utils/utils.h"
 #include "ir/anf.h"
 #include "ir/scope.h"
 #include "mindspore/ops/op_def/array_ops.h"

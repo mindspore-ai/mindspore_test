@@ -32,7 +32,7 @@
 #include "utils/device_manager_conf.h"
 #include "utils/distributed_meta.h"
 #include "include/runtime/utils/runtime_conf/runtime_env.h"
-#include "include/common/callback.h"
+#include "include/utils/callback.h"
 #include "runtime/hardware_abstract/collective/collective_communication_lib.h"
 #include "runtime/hardware_abstract/collective/dummy_collective_communication_lib.h"
 #include "utils/ms_exception.h"

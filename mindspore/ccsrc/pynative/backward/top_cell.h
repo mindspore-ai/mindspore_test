@@ -26,7 +26,7 @@
 #include <set>
 #include <map>
 
-#include "include/common/utils/convert_utils.h"
+#include "include/utils/convert_utils.h"
 #include "tools/profiler/profiler.h"
 #include "utils/hash_map.h"
 #include "pybind11/numpy.h"
@@ -37,7 +37,7 @@
 #include "frontend/jit/ps/resource.h"
 #include "pynative/utils/base.h"
 #include "utils/ms_context.h"
-#include "include/common/pynative/variable.h"
+#include "include/utils/pynative/variable.h"
 
 namespace mindspore {
 namespace pynative {

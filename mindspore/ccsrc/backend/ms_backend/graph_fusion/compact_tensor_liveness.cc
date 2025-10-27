@@ -15,7 +15,7 @@
  */
 
 #include "backend/ms_backend/graph_fusion/compact_tensor_liveness.h"
-#include "include/common/utils/anfalgo.h"
+#include "include/utils/anfalgo.h"
 #include "ir/graph_utils.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_u.h"

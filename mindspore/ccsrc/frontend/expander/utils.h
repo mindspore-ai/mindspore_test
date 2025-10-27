@@ -18,7 +18,7 @@
 #define MINDSPORE_CCSRC_FRONTEND_EXPANDER_UTILS_H
 
 #include "ir/anf.h"
-#include "include/common/visible.h"
+#include "include/utils/visible.h"
 
 namespace mindspore {
 namespace expander {

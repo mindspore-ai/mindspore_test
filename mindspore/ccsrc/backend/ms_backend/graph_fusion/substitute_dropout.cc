@@ -21,7 +21,7 @@
 #include "include/backend/optimizer/helper.h"
 #include "backend/ms_backend/graph_fusion/graph_kernel_helper.h"
 #include "include/backend/anf_runtime_algorithm.h"
-#include "include/common/utils/anfalgo.h"
+#include "include/utils/anfalgo.h"
 #include "ir/tensor.h"
 #include "ir/tensor_new.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_build_info.h"

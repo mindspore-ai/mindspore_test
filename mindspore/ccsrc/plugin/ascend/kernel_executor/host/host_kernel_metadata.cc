@@ -18,7 +18,7 @@
 #include <memory>
 #include <string>
 #include "include/backend/anf_runtime_algorithm.h"
-#include "include/common/utils/anfalgo.h"
+#include "include/utils/anfalgo.h"
 #include "include/runtime/hardware_abstract/kernel_base/oplib/oplib.h"
 
 namespace mindspore {

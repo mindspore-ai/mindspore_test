@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-#include "include/common/utils/cse.h"
+#include "include/utils/cse.h"
 
 #include <vector>
 #include <set>
@@ -28,7 +28,7 @@
 #include "utils/hash_map.h"
 #include "abstract/abstract_function.h"
 #include "utils/flags.h"
-#include "include/common/utils/utils.h"
+#include "include/utils/utils.h"
 #include "utils/anf_utils.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_p.h"

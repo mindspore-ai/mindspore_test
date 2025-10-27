@@ -32,7 +32,7 @@
 
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/runtime/memory/mem_pool/mem_dynamic_allocator.h"
-#include "include/common/utils/utils.h"
+#include "include/utils/utils.h"
 #include "utils/ms_context.h"
 
 namespace mindspore {

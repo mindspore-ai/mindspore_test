@@ -28,7 +28,7 @@
 #include "base/base.h"
 #include "ir/anf.h"
 #include "include/backend/anf_runtime_algorithm.h"
-#include "include/common/utils/anfalgo.h"
+#include "include/utils/anfalgo.h"
 #include "plugin/gpu/graph_optimizer/pass/inference/trt_pass/layer_input.h"
 
 namespace mindspore {

@@ -28,10 +28,10 @@
 
 #include "utils/ordered_map.h"
 #include "frontend/jit/ps/parse/parse_base.h"
-#include "include/common/utils/python_adapter.h"
+#include "include/utils/python_adapter.h"
 #include "utils/log_adapter.h"
 #include "ops/op_def.h"
-#include "include/common/visible.h"
+#include "include/utils/visible.h"
 
 namespace mindspore {
 namespace parse {

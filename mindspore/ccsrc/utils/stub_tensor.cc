@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 #include "utils/ms_exception.h"
-#include "include/common/utils/convert_utils_py.h"
-#include "include/common/utils/convert_utils.h"
-#include "include/common/utils/stub_tensor.h"
+#include "include/utils/convert_utils_py.h"
+#include "include/utils/convert_utils.h"
+#include "include/utils/stub_tensor.h"
 #include "pybind_api/gil_scoped_long_running.h"
 #include "tools/profiler/profiler.h"
-#include "include/common/utils/anfalgo.h"
-#include "include/common/utils/utils.h"
+#include "include/utils/anfalgo.h"
+#include "include/utils/utils.h"
 #include "ir/dtype/tensor_type.h"
 
 namespace mindspore {

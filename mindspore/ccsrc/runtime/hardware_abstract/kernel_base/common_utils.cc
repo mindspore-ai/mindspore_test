@@ -23,10 +23,10 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
-#include "include/common/utils/anfalgo.h"
+#include "include/utils/anfalgo.h"
 #include "include/runtime/hardware_abstract/kernel_base/oplib/oplib.h"
 #include "ir/format_utils.h"
-#include "include/common/debug/common.h"
+#include "include/utils/common.h"
 #include "mindapi/base/type_id.h"
 #include "ir/dtype/tensor_type.h"
 

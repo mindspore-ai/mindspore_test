@@ -21,7 +21,7 @@
 #include <memory>
 #include <unordered_map>
 
-#include "include/common/pybind_api/api_register.h"
+#include "include/utils/pybind_api/api_register.h"
 #include "include/runtime/memory/mem_pool/mem_dynamic_allocator.h"
 
 namespace mindspore {

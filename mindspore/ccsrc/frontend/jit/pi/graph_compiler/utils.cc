@@ -22,7 +22,7 @@
 #include <memory>
 #include <string>
 #include <vector>
-#include "include/common/utils/python_adapter.h"
+#include "include/utils/python_adapter.h"
 #include "frontend/jit/pi/python_adapter/pydef.h"
 #include "frontend/jit/pi/utils/opcode_declare.h"
 #include "abstract/ops/primitive_infer_map.h"
@@ -38,7 +38,7 @@
 #include "frontend/jit/ps/parse/data_converter.h"
 #include "frontend/jit/ps/resource.h"
 #include "frontend/jit/ps/static_analysis/static_analysis.h"
-#include "include/common/utils/tensor_py.h"
+#include "include/utils/tensor_py.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_g.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_i.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
@@ -210,15 +210,10 @@ std::string GraphUtils::OpCodeToGraphName(int op_code) {
 
 std::string GraphUtils::OpCompareArgToGraphName(int oparg) {
   static std::map<int, std::string> compare_arg_2_graph_name = {
-    {Py_LT, "less"},
-    {Py_LE, "less_equal"},
-    {Py_EQ, "equal"},
-    {Py_NE, "not_equal"},
-    {Py_GT, "greater"},
-    {Py_GE, "greater_equal"},
+    {Py_LT, "less"},      {Py_LE, "less_equal"},     {Py_EQ, "equal"},
+    {Py_NE, "not_equal"}, {Py_GT, "greater"},        {Py_GE, "greater_equal"},
 #if (PY_MAJOR_VERSION == 3 && PY_MINOR_VERSION < 9)
-    {PyCmp_IN, "in_"},
-    {PyCmp_NOT_IN, "not_in_"},
+    {PyCmp_IN, "in_"},    {PyCmp_NOT_IN, "not_in_"},
 #endif
   };
   auto iter = compare_arg_2_graph_name.find(oparg);

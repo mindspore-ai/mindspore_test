@@ -21,7 +21,7 @@
 #include "include/runtime/hardware_abstract/kernel_base/kernel_utils.h"
 #include "mindspore/ops/op_def/math_ops.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
-#include "include/common/utils/anfalgo.h"
+#include "include/utils/anfalgo.h"
 
 namespace mindspore {
 namespace kernel {

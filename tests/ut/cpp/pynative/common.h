@@ -24,7 +24,7 @@
 #include "pybind11/pybind11.h"
 
 #include "ir/tensor.h"
-#include "include/common/utils/tensor_py.h"
+#include "include/utils/tensor_py.h"
 
 namespace mindspore {
 class PyCommon : public testing::Test {

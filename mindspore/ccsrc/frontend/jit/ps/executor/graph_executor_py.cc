@@ -44,11 +44,11 @@
 
 #include "mindspore/ccsrc/utils/ir_dump/dump_proto.h"
 #include "mindspore/ccsrc/utils/symbol_engine/utils.h"
-#include "include/common/utils/compile_cache_context.h"
-#include "include/common/utils/tensor_py.h"
-#include "include/common/utils/tensor_py_wrapper.h"
-#include "include/common/utils/parallel_context.h"
-#include "include/common/utils/config_manager.h"
+#include "include/utils/compile_cache_context.h"
+#include "include/utils/tensor_py.h"
+#include "include/utils/tensor_py_wrapper.h"
+#include "include/utils/parallel_context.h"
+#include "include/utils/config_manager.h"
 
 #include "frontend/jit/ps/event_message_print.h"
 #include "frontend/jit/ps/pass_config.h"

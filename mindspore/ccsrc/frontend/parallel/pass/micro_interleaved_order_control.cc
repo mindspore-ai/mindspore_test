@@ -24,7 +24,7 @@
 #include <unordered_map>
 #include <utility>
 #include "mindspore/ops/op_def/framework_ops.h"
-#include "include/common/utils/utils.h"
+#include "include/utils/utils.h"
 #include "mindspore/ops/op_def/math_ops.h"
 #include "mindspore/ops/op_def/array_ops.h"
 #include "frontend/parallel/step_parallel.h"

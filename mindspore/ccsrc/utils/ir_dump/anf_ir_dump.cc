@@ -34,7 +34,7 @@
 #include "utils/trace_base.h"
 #include "utils/trace_info.h"
 #include "utils/anf_utils.h"
-#include "include/common/utils/anfalgo.h"
+#include "include/utils/anfalgo.h"
 #include "mindspore/ccsrc/utils/ir_dump/anf_dump_utils.h"
 #include "utils/file_utils.h"
 #include "ir/meta_func_graph.h"
@@ -45,7 +45,7 @@
 #include "frontend/operator/composite/map.h"
 #include "mindspore/ccsrc/frontend/operator/meta_dsl/common/meta_impl.h"
 #include "frontend/operator/composite/functional_overload.h"
-#include "include/common/utils/parallel_context.h"
+#include "include/utils/parallel_context.h"
 
 using MetaFuncGraph = mindspore::MetaFuncGraph;
 using MetaFuncGraphPtr = std::shared_ptr<MetaFuncGraph>;

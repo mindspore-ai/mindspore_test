@@ -27,7 +27,7 @@
 
 #include "pybind11/pybind11.h"
 #include "frontend/operator/primitive_py.h"
-#include "include/common/visible.h"
+#include "include/utils/visible.h"
 #include "ir/func_graph.h"
 #include "ir/anf.h"
 #include "frontend/jit/ps/parse/resolve.h"

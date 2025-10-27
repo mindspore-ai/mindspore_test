@@ -26,7 +26,7 @@
 #include <type_traits>
 #include "pyboost/custom/tensor.h"
 #include "mindspore/ccsrc/tools/profiler/profiler.h"
-#include "mindspore/ccsrc/include/common/utils/tensor_utils.h"
+#include "include/utils/tensor_utils.h"
 #include "mindspore/ccsrc/pynative/utils/pynative_utils.h"
 
 namespace mindspore {
@@ -141,7 +141,7 @@ void ConvertMsTensor(const std::vector<T> &vec) {
  * @param args The arguments to convert.
  */
 template <typename... Args>
-void ConvertStubNodeToTensor(const Args &... args) {
+void ConvertStubNodeToTensor(const Args &...args) {
   (ConvertMsTensor(args), ...);
 }
 }  // namespace inner
@@ -184,7 +184,7 @@ class PYBOOST_API PyboostRunner : public std::enable_shared_from_this<PyboostRun
    * @throws If the function execution or promise setting fails, the exception is propagated.
    */
   template <int OUT_NUM, typename FuncType, typename... Args>
-  static typename std::enable_if<(OUT_NUM > 0), py::object>::type Call(FuncType func, Args &&... args) {
+  static typename std::enable_if<(OUT_NUM > 0), py::object>::type Call(FuncType func, Args &&...args) {
     auto op_name = inner::GetFunctionName(typeid(FuncType).name());
     mindspore::runtime::ProfilerRecorder profiler(mindspore::runtime::ProfilerModule::kPynative,
                                                   mindspore::runtime::ProfilerEvent::kRunOp, op_name);
@@ -201,7 +201,7 @@ class PYBOOST_API PyboostRunner : public std::enable_shared_from_this<PyboostRun
   }
 
   template <int OUT_NUM, typename FuncType, typename... Args>
-  static typename std::enable_if<(OUT_NUM == 0), py::object>::type Call(FuncType func, Args &&... args) {
+  static typename std::enable_if<(OUT_NUM == 0), py::object>::type Call(FuncType func, Args &&...args) {
     auto op_name = inner::GetFunctionName(typeid(FuncType).name());
     mindspore::runtime::ProfilerRecorder profiler(mindspore::runtime::ProfilerModule::kPynative,
                                                   mindspore::runtime::ProfilerEvent::kRunOp, op_name);

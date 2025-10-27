@@ -17,7 +17,7 @@
 #include <algorithm>
 #include <numeric>
 #include <memory>
-#include "include/common/utils/utils.h"
+#include "include/utils/utils.h"
 #include "utils/convert_utils_base.h"
 #include "utils/ms_context.h"
 #include "utils/ms_utils.h"

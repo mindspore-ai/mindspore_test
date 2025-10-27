@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "include/common/callback.h"
+#include "include/utils/callback.h"
 #include "include/backend/distributed/init.h"
 #include "backend/common/device_address_utils.h"
 #include "runtime/hardware_abstract/device_context/device_context.h"

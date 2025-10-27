@@ -24,7 +24,7 @@
 #include <vector>
 #include "frontend/parallel/status.h"
 #include "frontend/parallel/device_matrix.h"
-#include "include/common/visible.h"
+#include "include/utils/visible.h"
 
 namespace mindspore {
 namespace parallel {

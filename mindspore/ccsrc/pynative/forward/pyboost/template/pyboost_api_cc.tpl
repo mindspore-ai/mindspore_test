@@ -15,7 +15,7 @@
  */
 #include "pynative/forward/pyboost/auto_generate/pyboost_api.h"
 #include "pynative/forward/pyboost/auto_generate/pyboost_core.h"
-#include "include/common/pybind_api/api_register.h"
+#include "include/utils/pybind_api/api_register.h"
 #include "pynative/forward/pyboost/converter.h"
 #include "op_def/auto_generate/gen_ops_def.h"
 #include "frontend/expander/bprop/bprop_irbuilder.h"

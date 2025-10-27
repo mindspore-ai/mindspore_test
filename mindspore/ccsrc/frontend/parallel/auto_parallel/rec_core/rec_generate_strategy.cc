@@ -34,7 +34,7 @@
 #include "frontend/parallel/step_parallel.h"
 #include "frontend/parallel/step_parallel_utils.h"
 #include "frontend/parallel/strategy.h"
-#include "include/common/utils/utils.h"
+#include "include/utils/utils.h"
 #include "ir/value.h"
 #include "ir/graph_utils.h"
 #include "mindspore/ops/infer/ops_func_impl/flash_attention_score.h"

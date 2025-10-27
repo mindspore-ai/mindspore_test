@@ -24,7 +24,7 @@
 #include "include/runtime/hardware_abstract/kernel_base/kernel_info.h"
 #include "backend/common/pass/common_subexpression_elimination.h"
 #include "kernel/kernel_build_info.h"
-#include "include/common/utils/utils.h"
+#include "include/utils/utils.h"
 #include "utils/ms_context.h"
 
 namespace mindspore {

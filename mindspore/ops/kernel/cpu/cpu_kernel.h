@@ -33,7 +33,7 @@
 #include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
 #include "ir/anf.h"
 #include "actor/actormgr.h"
-#include "include/common/thread_pool.h"
+#include "include/utils/thread_pool.h"
 #include "kernel/cpu/utils/visible.h"
 
 using mindspore::kernel::Address;

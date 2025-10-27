@@ -27,7 +27,7 @@
 #include "utils/ms_context.h"
 #include "plugin/ascend/res_manager/op_adapter/op_adapter_util.h"
 #include "plugin/ascend/res_manager/op_adapter/op_adapter_base.h"
-#include "include/common/utils/anfalgo.h"
+#include "include/utils/anfalgo.h"
 #include "mindspore/ops/op_def/other_ops.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"

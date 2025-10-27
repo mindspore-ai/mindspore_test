@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#include "include/common/utils/convert_utils_py.h"
-#include "include/common/utils/tensor_py.h"
+#include "include/utils/convert_utils_py.h"
+#include "include/utils/tensor_py.h"
 #include "pynative/utils/pynative_execute.h"
 #include "pynative/utils/pynative_utils.h"
 #include "pynative/backward/grad_utils.h"

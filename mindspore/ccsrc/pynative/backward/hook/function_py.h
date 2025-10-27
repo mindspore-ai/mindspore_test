@@ -23,8 +23,8 @@
 #include <unordered_map>
 #include <utility>
 #include "pybind11/pybind11.h"
-#include "include/common/pynative/variable.h"
-#include "include/common/visible.h"
+#include "include/utils/pynative/variable.h"
+#include "include/utils/visible.h"
 #include "pynative/backward/grad_utils.h"
 #include "pynative/backward/hook/custom_function.h"
 

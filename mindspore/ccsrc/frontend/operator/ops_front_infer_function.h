@@ -20,7 +20,7 @@
 #include <optional>
 #include "abstract/abstract_value.h"
 #include "abstract/ops/primitive_infer_map.h"
-#include "include/common/visible.h"
+#include "include/utils/visible.h"
 namespace mindspore {
 namespace abstract {
 const std::vector<std::string> kSparsePrimStr = {"PrimitiveAbstractClosure: S_Prim_MakeCSRTensor",

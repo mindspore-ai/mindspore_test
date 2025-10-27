@@ -22,7 +22,7 @@
 #include "utils/ms_context.h"
 #include "pybind11/pybind11.h"
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
-#include "include/common/utils/anfalgo.h"
+#include "include/utils/anfalgo.h"
 #include "include/runtime/hardware_abstract/data_queue/blocking_queue.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_info.h"
 

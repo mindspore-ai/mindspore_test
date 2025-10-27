@@ -28,7 +28,7 @@
 #include "pynative/backward/op_grad/func_builder.h"
 #include "frontend/jit/ps/parse/data_converter.h"
 #include "frontend/operator/primitive_py.h"
-#include "include/common/pynative/variable.h"
+#include "include/utils/pynative/variable.h"
 
 namespace mindspore {
 namespace pynative {

@@ -24,7 +24,7 @@
 #include "ir/map_tensor.h"
 #include "ir/tensor_new.h"
 #include "ir/dtype/tensor_type.h"
-#include "include/common/utils/convert_utils.h"
+#include "include/utils/convert_utils.h"
 #include "include/backend/distributed/collective/collective_manager.h"
 #include "include/runtime/memory/mem_pool/mem_tracker.h"
 

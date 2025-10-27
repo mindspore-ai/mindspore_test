@@ -19,7 +19,7 @@
 #include "ir/tensor.h"
 #include "ir/dtype.h"
 #include "ir/tensor_new.h"
-#include "include/common/visible.h"
+#include "include/utils/visible.h"
 #include "mindspore/ccsrc/pyboost/functions/auto_generate/functions.h"
 
 namespace ms {

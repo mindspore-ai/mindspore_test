@@ -20,7 +20,7 @@
 #include <numeric>
 #include <utility>
 #include <algorithm>
-#include "include/common/utils/anfalgo.h"
+#include "include/utils/anfalgo.h"
 #include "ops_utils/op_constants.h"
 
 namespace mindspore {

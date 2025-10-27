@@ -16,7 +16,7 @@
 
 #include "frontend/optimizer/utils.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
-#include "mindspore/ccsrc/include/common/utils/utils.h"
+#include "include/utils/utils.h"
 #include "utils/ms_context.h"
 #include "utils/compile_config.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"

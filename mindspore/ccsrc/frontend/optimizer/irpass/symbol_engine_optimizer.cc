@@ -24,7 +24,7 @@
 #include "mindspore/ops/op_def/array_ops.h"
 #include "mindspore/ops/op_def/math_ops.h"
 #include "ops/op_def.h"
-#include "include/common/utils/utils.h"
+#include "include/utils/utils.h"
 #include "abstract/symbolic_shape/symbol.h"
 #include "abstract/symbolic_shape/utils.h"
 #include "mindspore/ccsrc/utils/symbol_engine/symbol_engine_impl.h"

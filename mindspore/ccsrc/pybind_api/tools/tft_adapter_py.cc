@@ -15,10 +15,10 @@
  */
 
 #include <vector>
-#include "include/common/pybind_api/api_register.h"
+#include "include/utils/pybind_api/api_register.h"
 #include "include/runtime/utils/runtime_conf/runtime_env.h"
 #include "tools/error_handler/exit_handler.h"
-#include "include/common/utils/tensor_py.h"
+#include "include/utils/tensor_py.h"
 #include "runtime/hardware_abstract/device_context/device_context.h"
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "runtime/core/graph_scheduler/base/parameter_store.h"
@@ -354,10 +354,8 @@ void RegTFT(py::module *m) {
   (void)m->def("_get_uce_mem_info", &mindspore::GetMemUceInfo, "Get UCE mem info.");
   (void)m->def("_get_optimzer_timestamps", &mindspore::GetOptimizerTimestamps,
                "Get optimizer start and finish timestamps.");
-  (void)m->def(
-    "_tft_sem_post", []() { mindspore::tools::TFTWaitSem::GetInstance().Post(); }, "TFT sem start post");
-  (void)m->def(
-    "_tft_sem_enable", []() { mindspore::tools::TFTWaitSem::Enable(); }, "TFT enable sem feature");
+  (void)m->def("_tft_sem_post", []() { mindspore::tools::TFTWaitSem::GetInstance().Post(); }, "TFT sem start post");
+  (void)m->def("_tft_sem_enable", []() { mindspore::tools::TFTWaitSem::Enable(); }, "TFT enable sem feature");
   (void)m->def(
     "_tft_start_record_threads", []() { mindspore::tools::TFTWaitSem::GetInstance().StartRecordThreads(); },
     "TFT start recording newly created threads");

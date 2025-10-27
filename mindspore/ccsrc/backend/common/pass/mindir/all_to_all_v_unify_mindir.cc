@@ -21,8 +21,8 @@
 #include <map>
 #include <tuple>
 #include <algorithm>
-#include "include/common/utils/anfalgo.h"
-#include "include/common/utils/comm_manager.h"
+#include "include/utils/anfalgo.h"
+#include "include/utils/comm_manager.h"
 #include "include/backend/optimizer/helper.h"
 #include "op_def/array_ops.h"
 #include "op_def/other_ops.h"

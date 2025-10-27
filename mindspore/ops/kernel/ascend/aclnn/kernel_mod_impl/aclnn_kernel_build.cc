@@ -20,7 +20,7 @@
 #include "kernel/ascend/aclnn/kernel_mod_impl/aclnn_kernel_mod.h"
 #include "kernel/ascend/aclnn/kernel_mod_impl/customize/custom_aclnn_utils.h"
 #include "include/backend/anf_runtime_algorithm.h"
-#include "include/common/utils/anfalgo.h"
+#include "include/utils/anfalgo.h"
 #include "include/runtime/hardware_abstract/kernel_base/ms_factory.h"
 #include "runtime/hardware_abstract/kernel_base/graph_fusion/framework_utils.h"
 #include "ops/op_def.h"

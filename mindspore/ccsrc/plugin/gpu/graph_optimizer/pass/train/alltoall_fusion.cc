@@ -24,8 +24,8 @@
 #include "mindspore/ops/op_def/array_ops.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/backend/optimizer/helper.h"
-#include "include/common/utils/anfalgo.h"
-#include "include/common/utils/utils.h"
+#include "include/utils/anfalgo.h"
+#include "include/utils/utils.h"
 #include "plugin/gpu/graph_optimizer/pass/base/kernel_info_setter.h"
 #include "include/backend/distributed/init.h"
 #ifndef _WIN32

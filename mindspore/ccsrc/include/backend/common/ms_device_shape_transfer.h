@@ -28,7 +28,7 @@
 #include <unordered_map>
 #include "abstract/dshape.h"
 #include "utils/log_adapter.h"
-#include "include/common/utils/utils.h"
+#include "include/utils/utils.h"
 #include "include/backend/visible.h"
 
 namespace mindspore {

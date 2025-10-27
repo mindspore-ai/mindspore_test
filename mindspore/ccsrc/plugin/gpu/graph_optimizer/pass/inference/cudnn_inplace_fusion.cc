@@ -31,10 +31,10 @@
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "include/backend/anf_runtime_algorithm.h"
-#include "include/common/utils/anfalgo.h"
+#include "include/utils/anfalgo.h"
 #include "ir/graph_utils.h"
-#include "include/common/utils/utils.h"
-#include "include/common/utils/contract.h"
+#include "include/utils/utils.h"
+#include "include/utils/contract.h"
 #include "include/backend/optimizer/helper.h"
 #include "plugin/gpu/graph_optimizer/pass/base/kernel_info_setter.h"
 

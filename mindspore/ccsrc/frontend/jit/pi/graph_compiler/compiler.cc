@@ -20,7 +20,7 @@
 #include <algorithm>
 #include <utility>
 #include "mindspore/ccsrc/utils/ir_dump/anf_ir_dump.h"
-#include "include/common/utils/convert_utils_py.h"
+#include "include/utils/convert_utils_py.h"
 #include "ir/func_graph.h"
 #include "ir/func_graph_cloner.h"
 #include "frontend/jit/pi/graph_compiler/utils.h"
@@ -28,8 +28,8 @@
 #include "frontend/jit/ps/executor/jit_executor_py.h"
 #include "frontend/jit/ps/pipeline.h"
 #include "frontend/jit/pi/utils/utils.h"
-#include "include/common/pynative/grad_state.h"
-#include "include/common/pynative/adapter.h"
+#include "include/utils/pynative/grad_state.h"
+#include "include/utils/pynative/adapter.h"
 #include "utils/convert_utils_base.h"
 
 namespace mindspore {

@@ -26,7 +26,7 @@
 #include <numeric>
 
 #include "include/runtime/memory/mem_pool/mem_pool_util.h"
-#include "include/common/utils/utils.h"
+#include "include/utils/utils.h"
 
 namespace mindspore {
 namespace device {

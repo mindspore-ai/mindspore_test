@@ -20,7 +20,7 @@
 #include <memory>
 #include <map>
 #include <list>
-#include "include/common/utils/anfalgo.h"
+#include "include/utils/anfalgo.h"
 #include "mindspore/ops/op_def/array_ops.h"
 #include "mindspore/ops/op_def/other_ops.h"
 #include "mindspore/ops/infer/ops_func_impl/flash_attention_score.h"

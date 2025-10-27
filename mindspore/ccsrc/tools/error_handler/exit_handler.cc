@@ -24,7 +24,7 @@
 #include <sstream>
 #include <mutex>
 #include "utils/ms_context.h"
-#include "include/common/utils/utils.h"
+#include "include/utils/utils.h"
 
 namespace mindspore {
 namespace tools {

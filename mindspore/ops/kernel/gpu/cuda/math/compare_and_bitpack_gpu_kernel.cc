@@ -23,7 +23,7 @@
 #include "include/curand.h"
 #include "mindspore/ops/infer/compare_and_bitpack.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/compare_and_bitpack_impl.cuh"
-#include "include/common/utils/anfalgo.h"
+#include "include/utils/anfalgo.h"
 
 namespace mindspore {
 namespace kernel {

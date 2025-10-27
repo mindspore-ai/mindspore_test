@@ -17,7 +17,7 @@
 #include "runtime/hardware_abstract/kernel_base/environ_manager.h"
 #include "utils/ms_utils.h"
 #include "utils/log_adapter.h"
-#include "include/common/utils/utils.h"
+#include "include/utils/utils.h"
 
 namespace mindspore {
 namespace kernel {

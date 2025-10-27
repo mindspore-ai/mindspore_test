@@ -15,7 +15,7 @@
  */
 
 #include "plugin/ascend/kernel_executor/rts/reshape_ext.h"
-#include "include/common/utils/anfalgo.h"
+#include "include/utils/anfalgo.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "runtime/hardware_abstract/kernel_base/graph_fusion/framework_utils.h"
 

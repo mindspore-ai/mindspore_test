@@ -26,8 +26,8 @@
 #include <utility>
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "include/backend/anf_runtime_algorithm.h"
-#include "include/common/utils/anfalgo.h"
-#include "include/common/utils/utils.h"
+#include "include/utils/anfalgo.h"
+#include "include/utils/utils.h"
 #include "utils/anf_utils.h"
 #include "runtime/hardware_abstract/kernel_base/graph_fusion/framework_utils.h"
 #include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/infershape_functor.h"

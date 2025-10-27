@@ -16,7 +16,7 @@
 
 #include "runtime/core/graph_scheduler/optimizer/optimizer.h"
 #include "runtime/core/graph_scheduler/base/scheduler_helper.h"
-#include "include/common/debug/common.h"
+#include "include/utils/common.h"
 #include "utils/profile.h"
 #include "utils/file_utils.h"
 

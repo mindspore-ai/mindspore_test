@@ -17,7 +17,7 @@
 #include <memory>
 #include <vector>
 #include "utils/ms_context.h"
-#include "include/common/utils/anfalgo.h"
+#include "include/utils/anfalgo.h"
 #include "ir/primitive.h"
 #include "include/backend/optimizer/helper.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"

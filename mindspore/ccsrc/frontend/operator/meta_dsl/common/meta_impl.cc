@@ -22,7 +22,7 @@
 #include "ops/op_def.h"
 #include "abstract/abstract_value.h"
 #include "mindspore/ccsrc/utils/ir_dump/anf_ir_dump.h"
-#include "include/common/utils/python_adapter.h"
+#include "include/utils/python_adapter.h"
 #include "frontend/operator/ops.h"
 #include "frontend/operator/cc_implementations.h"
 #include "frontend/jit/ps/parse/resolve.h"

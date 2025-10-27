@@ -21,8 +21,8 @@
 #include <string>
 #include <unordered_set>
 #include <mutex>
-#include "include/common/utils/convert_utils.h"
-#include "include/common/utils/utils.h"
+#include "include/utils/convert_utils.h"
+#include "include/utils/utils.h"
 #include "include/runtime/hardware_abstract/kernel_base/oplib/oplib.h"
 #include "mindapi/base/type_id.h"
 #include "mindspore/ops/op_def/arithmetic_ops.h"
@@ -44,7 +44,7 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 #include "include/backend/anf_runtime_algorithm.h"
-#include "include/common/callback.h"
+#include "include/utils/callback.h"
 
 namespace mindspore {
 namespace device {

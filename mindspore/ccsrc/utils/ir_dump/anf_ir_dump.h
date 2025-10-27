@@ -23,8 +23,8 @@
 
 #include "ir/dtype/type.h"
 #include "ir/anf.h"
-#include "include/common/debug/common.h"
-#include "include/common/visible.h"
+#include "include/utils/common.h"
+#include "include/utils/visible.h"
 #include "utils/ordered_map.h"
 
 namespace mindspore {

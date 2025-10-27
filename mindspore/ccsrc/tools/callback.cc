@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "include/common/callback.h"
+#include "include/utils/callback.h"
 #include "tools/debug_func.h"
 #include "tools/silent_detect/checksum/checksum_mgr.h"
 #include "tools/silent_detect/silent_detect_config_parser.h"

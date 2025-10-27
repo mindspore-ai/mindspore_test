@@ -28,7 +28,7 @@
 
 #include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel_flags.h"
 #include "runtime/hardware_abstract/kernel_base/graph_fusion/framework_utils.h"
-#include "include/common/debug/common.h"
+#include "include/utils/common.h"
 #include "utils/file_utils.h"
 
 namespace mindspore::graphkernel::symshape {

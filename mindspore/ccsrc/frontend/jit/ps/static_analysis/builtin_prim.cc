@@ -18,8 +18,8 @@
 
 #include "frontend/jit/ps/static_analysis/builtin_prim.h"
 
-#include "include/common/utils/convert_utils_py.h"
-#include "include/common/fallback.h"
+#include "include/utils/convert_utils_py.h"
+#include "include/utils/fallback.h"
 #include "mindspore/ops/op_def/math_ops.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "frontend/jit/ps/fallback.h"

@@ -18,9 +18,9 @@
 #include <set>
 #include <string>
 
-#include "include/common/utils/anfalgo.h"
+#include "include/utils/anfalgo.h"
 #include "mindspore/ops/op_def/other_ops.h"  // collective communication operations
-#include "include/common/utils/utils.h"
+#include "include/utils/utils.h"
 #include "ir/graph_utils.h"
 
 namespace mindspore::graphkernel {

@@ -24,7 +24,7 @@
 #include <string>
 
 #include "include/runtime/memory/mem_pool/mem_tracker.h"
-#include "include/common/utils/utils.h"
+#include "include/utils/utils.h"
 #include "include/runtime/utils/runtime_conf/runtime_env.h"
 #include "utils/log_adapter.h"
 #include "utils/convert_utils_base.h"

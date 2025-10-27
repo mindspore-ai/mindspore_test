@@ -18,8 +18,8 @@
 #include <string>
 #include <memory>
 #include "mindspore/ops/op_def/framework_ops.h"
-#include "include/common/callback.h"
-#include "include/common/utils/anfalgo.h"
+#include "include/utils/callback.h"
+#include "include/utils/anfalgo.h"
 #include "backend/common/pass_manager/common_backend_optimization.h"
 #include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel_flags.h"
 #include "plugin/ascend/graph_optimizer/pass/ascend_pass_optimization.h"

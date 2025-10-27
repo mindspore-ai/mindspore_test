@@ -26,7 +26,7 @@
 #include "include/runtime/hardware_abstract/kernel_base/oplib/oplib.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_info.h"
 #include "include/backend/anf_runtime_algorithm.h"
-#include "include/common/utils/anfalgo.h"
+#include "include/utils/anfalgo.h"
 #include "include/backend/kernel_graph.h"
 #include "include/backend/optimizer/helper.h"
 #include "kernel/ascend/acl_ir/ge_adapter_info.h"

@@ -25,7 +25,7 @@
 #include "ir/anf.h"
 #include "ir/meta_func_graph.h"
 #include "ops/op_def.h"
-#include "include/common/visible.h"
+#include "include/utils/visible.h"
 
 namespace mindspore {
 namespace prim {

@@ -15,7 +15,7 @@
  */
 
 #include "mindspore/ccsrc/pynative/parallel/reducer.h"
-#include "include/common/pybind_api/api_register.h"
+#include "include/utils/pybind_api/api_register.h"
 #include "mindspore/ccsrc/frontend/ir/tensor_py.h"
 #include "pynative/backward/function.h"
 
