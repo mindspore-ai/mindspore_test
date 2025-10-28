@@ -24,8 +24,10 @@ import numpy
 from tests.mark_utils import arg_mark
 from tests.st.pi_jit.share.utils import match_array, match_value, assert_executed_by_graph_mode
 from tests.st.pi_jit.share.utils import pi_jit_with_config
+from tests.st.pi_jit.conftest import run_in_subprocess
 
 jit_cfg = {"compile_with_try":False}
+
 
 def assert_no_graph_break(func, call_count: int = None):
     jcr = get_code_extra(getattr(func, "__wrapped__", func))
@@ -314,6 +316,7 @@ def test_modify_mix2():
     assert x1 == x2
 
 
+@run_in_subprocess({'MS_SUBMODULE_LOG_v': '{PI:1}'})
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_global_modified_cross_module():
     """
@@ -656,6 +659,7 @@ def test_subgraph_has_side_effect_but_has_no_return_value():
     assert jcr['break_count_'] == 0
 
 
+@run_in_subprocess({'MS_SUBMODULE_LOG_v': '{PI:1}'})
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_list_setitem():
     """
@@ -825,6 +829,7 @@ class Net6(mindspore.nn.Cell):
         return ops.add(x, 1), ops.sub(x, 1)
 
 
+@run_in_subprocess({'GLOG_v': '1', 'MS_SUBMODULE_LOG_v': '{PI:0}'})
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_subgraph_return_const_value_and_has_tuple_side_effect():
     """
