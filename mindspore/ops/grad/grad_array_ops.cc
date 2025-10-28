@@ -20,6 +20,12 @@
 #include <numeric>
 #include <tuple>
 #include <vector>
+#include <memory>
+#include <utility>
+#include <set>
+#include <string>
+#include <functional>
+
 #include "ops_utils/op_utils.h"
 #include "mindspore/ops/op_def/array_op_name.h"
 #include "mindspore/ops/op_def/array_ops.h"
@@ -150,6 +156,7 @@ DEF_PURE_SHAPE_CALC(g_gather_drop_negative)
     auto is_pos_rank = is_pos.size();
     return {SizeToLong(std::max(gather_rank, is_pos_rank))};
   });
+
 NodePtrList GatherDropNegatives(BpropBuilder *ib, const NodePtr &params, const NodePtr &ids,
                                 const NodePtr &zero_clipped_indices_param = nullptr,
                                 const NodePtr &is_positive_param = nullptr) {
@@ -611,53 +618,34 @@ ShapeArray ConcatOffsetCal(const ShapeArray &input_shapes, size_t axis_s) {
 }
 
 NodePtrList ConcatBpropStatic(BpropBuilder *ib, const NodePtr &dout, const ShapeArray &input_shapes, int64_t axis) {
-  auto rank = input_shapes[0].size();
+  auto rank = input_shapes[i0].size();
   auto axis_s = LongToSize(NormalizeAxis(axis, rank));
-
-  bool is_uniform = true;
   auto input_nums = input_shapes.size();
-  auto x = ib->GetInput(kIndex0);
-  auto dout_dtype = ib->GetDtypeId(dout);
+
+  std::vector<int64_t> split_sizes(input_nums);
   for (size_t i = 0; i < input_nums; ++i) {
     if (input_shapes[i].size() != rank) {
       MS_EXCEPTION(ValueError) << "For gradient of 'Concat', input shapes [" << i
                                << "] and input shapes [0] must have same rank, but got: " << input_shapes[i].size()
                                << " vs " << rank;
     }
-    if (input_shapes[i][axis_s] != input_shapes[0][axis_s]) {
-      is_uniform = false;
-    }
+    split_sizes[i] = input_shapes[i][axis_s];
   }
+  auto dx = ib->SplitWithSize(dout, ib->Value(split_sizes), ib->Value(axis));
 
-  if (is_uniform) {
-    auto long_nums = SizeToLong(input_nums);
-    auto dx = ib->Emit(kSplitOpName, {dout, ib->EmitValue(MakeValue(axis)), ib->EmitValue(MakeValue(long_nums))},
-                       {{"num_split", MakeValue(long_nums)}});
-    NodePtrList res;
-    for (size_t i = 0; i < input_nums; ++i) {
-      auto dx_i = ib->TupleGetItem(dx, i);
-      auto x_i = ib->TupleGetItem(x, i);
-      auto x_i_dtype = ib->GetDtype(x_i);
-      if (x_i_dtype->type_id() != dout_dtype) {
-        dx_i = ib->Cast(dx_i, x_i_dtype);
-      }
-      res.push_back(dx_i);
-    }
-    return {ib->MakeTuple(res)};
-  }
-
+  auto dout_dtype = ib->GetDtypeId(dout);
+  auto x = ib->GetInput(i0);
   NodePtrList res;
-  auto offsets = ConcatOffsetCal(input_shapes, axis_s);
   for (size_t i = 0; i < input_nums; ++i) {
-    auto offset_value = ib->Value(offsets[i]);
-    auto slice_out = ib->Slice(dout, offset_value, ib->Value(input_shapes[i]));
+    auto dx_i = ib->TupleGetItem(dx, i);
     auto x_i = ib->TupleGetItem(x, i);
-    auto x_i_dtype = ib->GetDtype(x_i);
-    if (x_i_dtype->type_id() != dout_dtype) {
-      slice_out = ib->Cast(slice_out, x_i_dtype);
+    auto x_i_dtype = ib->GetDtypeId(x_i);
+    if (x_i_dtype != dout_dtype) {
+      dx_i = ib->Cast(dx_i, x_i_dtype);
     }
-    res.push_back(slice_out);
+    res.push_back(dx_i);
   }
+
   return {ib->MakeTuple(res)};
 }
 

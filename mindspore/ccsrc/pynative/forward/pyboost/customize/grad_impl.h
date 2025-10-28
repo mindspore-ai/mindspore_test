@@ -92,5 +92,27 @@ inline void DoGradTransposeExtViewImpl(const mindspore::tensor::TensorPtr &outpu
   };
   pynative::autograd::DoViewGrad(input, output, make_func);
 }
+
+inline void DoGradSplitTensorImpl(const std::vector<mindspore::tensor::TensorPtr> &output,
+                                  const mindspore::tensor::TensorPtr &input, const int64_t &split_size,
+                                  const int64_t &dim) {
+  auto make_func = [&input, split_size, dim, output_size = output.size()]() -> BackwardNodePtr {
+    auto backward_node = std::make_shared<pynative::autograd::SplitTensorBackwardNode>(
+      "SplitTensor", output_size, input->shape(), input->data_type(), split_size, dim);
+    return backward_node;
+  };
+  pynative::autograd::DoViewGrad(input, output, make_func);
+}
+
+inline void DoGradSplitWithSizeImpl(const std::vector<mindspore::tensor::TensorPtr> &output,
+                                    const mindspore::tensor::TensorPtr &input, const std::vector<int64_t> &split_size,
+                                    const int64_t &dim) {
+  auto make_func = [&input, &split_size, dim, output_size = output.size()]() -> BackwardNodePtr {
+    auto backward_node = std::make_shared<pynative::autograd::SplitWithSizeBackwardNode>(
+      "SplitWithSize", output_size, input->shape(), input->data_type(), split_size, dim);
+    return backward_node;
+  };
+  pynative::autograd::DoViewGrad(input, output, make_func);
+}
 }  // namespace mindspore::pynative
 #endif  // MINDSPORE_MINDSPORE_CCSRC_PYNATIVE_OP_FUNCTION_CUSTOMIZE_VIEW_GRAD_IMPL_H_
