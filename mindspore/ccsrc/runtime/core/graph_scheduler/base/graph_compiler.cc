@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "runtime/core/graph_scheduler/base/graph_compiler.h"
+#include "include/runtime/core/graph_scheduler/base/graph_compiler.h"
 #include <algorithm>
 #include <cctype>
 #include <functional>
@@ -23,7 +23,7 @@
 #include <numeric>
 #include <regex>
 #include <utility>
-#include "runtime/core/graph_scheduler/base/graph_scheduler.h"
+#include "include/runtime/core/graph_scheduler/base/graph_scheduler.h"
 #include "backend/common/device_address_utils.h"
 #include "ir/device_address.h"
 #include "include/utils/convert_utils.h"

@@ -25,11 +25,11 @@
 #include <utility>
 
 #include "utils/hash_map.h"
-#include "runtime/core/actors/base/actor_common.h"
+#include "include/runtime/core/actors/base/actor_common.h"
 #include "runtime/core/actors/base/debug_aware_actor.h"
-#include "runtime/core/actors/base/kernel_async_launch_actor.h"
-#include "runtime/core/actors/dynamic_shape/kernel_async_infer_actor.h"
-#include "runtime/core/actors/dynamic_shape/kernel_async_resize_actor.h"
+#include "include/runtime/core/actors/base/kernel_async_launch_actor.h"
+#include "include/runtime/core/actors/dynamic_shape/kernel_async_infer_actor.h"
+#include "include/runtime/core/actors/dynamic_shape/kernel_async_resize_actor.h"
 #include "runtime/hardware_abstract/device_context/device_context.h"
 #include "include/runtime/hardware_abstract/kernel_base/device_tensor_store.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel.h"
@@ -106,8 +106,8 @@ class KernelRunner {
     skip_launch_shape_related_op_ = skip_launch_shape_related_op;
   }
 
-  const std::map<size_t, std::pair<KernelTensorPtr, std::pair<const DeviceContext *, std::vector<KernelTensorPtr>>>>
-    &copy_output_kernel_tensors() const {
+  const std::map<size_t, std::pair<KernelTensorPtr, std::pair<const DeviceContext *, std::vector<KernelTensorPtr>>>> &
+  copy_output_kernel_tensors() const {
     return copy_output_kernel_tensors_;
   }
   std::vector<KernelTensor *> GetOutputDeviceTensors() { return output_launch_tensors_; }

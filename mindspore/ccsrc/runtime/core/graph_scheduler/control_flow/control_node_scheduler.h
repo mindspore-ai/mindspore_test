@@ -27,7 +27,7 @@
 #include <algorithm>
 #include <queue>
 #include "runtime/core/actors/base/actor_set.h"
-#include "runtime/core/graph_scheduler/base/graph_compiler.h"
+#include "include/runtime/core/graph_scheduler/base/graph_compiler.h"
 
 namespace mindspore {
 namespace runtime {

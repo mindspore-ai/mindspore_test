@@ -38,9 +38,9 @@
 #include "utils/log_adapter.h"
 #include "utils/ms_utils.h"
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
-#include "runtime/core/graph_scheduler/base/graph_compiler.h"
+#include "include/runtime/core/graph_scheduler/base/graph_compiler.h"
 #include "runtime/core/graph_scheduler/base/graph_adapter.h"
-#include "runtime/core/actors/base/actor_common.h"
+#include "include/runtime/core/actors/base/actor_common.h"
 #include "pybind_api/gil_scoped_long_running.h"
 #ifdef ENABLE_DEBUGGER
 #include "include/backend/debug/debugger/debugger.h"

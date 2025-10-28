@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CCSRC_RUNTIME_FRAMEWORK_GRAPH_SCHEDULER_H_
-#define MINDSPORE_CCSRC_RUNTIME_FRAMEWORK_GRAPH_SCHEDULER_H_
+#ifndef MINDSPORE_CCSRC_INCLUDE_RUNTIME_CORE_GRAPH_SCHEDULER_BASE_GRAPH_SCHEDULER_H_
+#define MINDSPORE_CCSRC_INCLUDE_RUNTIME_CORE_GRAPH_SCHEDULER_BASE_GRAPH_SCHEDULER_H_
 
 #include <vector>
 #include <string>
@@ -30,7 +30,7 @@
 #include "runtime/core/graph_scheduler/control_flow/control_node_scheduler.h"
 #include "runtime/core/graph_scheduler/dynamic_type/any_type_graph_scheduler.h"
 #include "runtime/core/actors/base/actor_set.h"
-#include "runtime/core/graph_scheduler/base/graph_compiler.h"
+#include "include/runtime/core/graph_scheduler/base/graph_compiler.h"
 #include "runtime/core/graph_scheduler/dump/actor_dump.h"
 #include "thread/actor_threadpool.h"
 
@@ -283,4 +283,4 @@ class BACKEND_EXPORT GraphScheduler {
 }  // namespace runtime
 }  // namespace mindspore
 
-#endif  // MINDSPORE_CCSRC_RUNTIME_FRAMEWORK_GRAPH_SCHEDULER_H_
+#endif  // MINDSPORE_CCSRC_INCLUDE_RUNTIME_CORE_GRAPH_SCHEDULER_BASE_GRAPH_SCHEDULER_H_

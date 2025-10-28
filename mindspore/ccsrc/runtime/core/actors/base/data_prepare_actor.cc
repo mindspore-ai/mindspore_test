@@ -29,7 +29,7 @@
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "backend/common/device_address_utils.h"
 #include "runtime/core/graph_scheduler/base/scheduler_helper.h"
-#include "runtime/core/graph_executor/pipeline/runtime_pipeline.h"
+#include "include/runtime/core/graph_executor/pipeline/runtime_pipeline.h"
 #include "runtime/core/graph_executor/kernel_capture/graph_capture_manager.h"
 #include "async/async.h"
 #include "tools/error_handler/error_handler.h"

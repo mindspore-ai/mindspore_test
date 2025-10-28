@@ -24,7 +24,7 @@
 #include "utils/hash_map.h"
 #include "utils/ms_utils.h"
 #include "include/backend/visible.h"
-#include "runtime/core/graph_scheduler/base/graph_parameter_store.h"
+#include "include/runtime/core/graph_scheduler/base/graph_parameter_store.h"
 
 namespace mindspore {
 namespace runtime {

@@ -25,7 +25,7 @@
 #include "runtime/core/actors/control_flow/condition_switch_runner.h"
 #include "runtime/core/actors/control_flow/condition_gather_runner.h"
 #include "runtime/pipeline/task/batch_launch_kernel_task.h"
-#include "runtime/core/graph_executor/pipeline/runtime_pipeline.h"
+#include "include/runtime/core/graph_executor/pipeline/runtime_pipeline.h"
 #include "include/runtime/utils/runtime_conf/runtime_conf.h"
 #include "runtime/core/graph_executor/kernel_capture/graph_capture_manager.h"
 #include "async/async.h"

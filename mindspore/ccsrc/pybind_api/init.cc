@@ -53,7 +53,7 @@
 #include "frontend/np_dtypes/np_dtypes.h"
 #include "include/utils/amp.h"
 #include "frontend/jit/trace/trace_recorder.h"
-#include "runtime/core/graph_executor/pre_launch/comm_execution_order_check.h"
+#include "include/runtime/core/graph_executor/pre_launch/comm_execution_order_check.h"
 #include "pybind_api/graph/custom_pass_py.h"
 #ifdef _WIN32
 #include "kernel/cpu/utils/cpu_utils.h"

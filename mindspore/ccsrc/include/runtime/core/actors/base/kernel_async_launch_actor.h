@@ -14,13 +14,14 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CCSRC_RUNTIME_FRAMEWORK_ACTOR_KERNEL_ASYNC_RESIZE_ACTOR_H_
-#define MINDSPORE_CCSRC_RUNTIME_FRAMEWORK_ACTOR_KERNEL_ASYNC_RESIZE_ACTOR_H_
+#ifndef MINDSPORE_CCSRC_INCLUDE_RUNTIME_CORE_ACTORS_BASE_KERNEL_ASYNC_LAUNCH_ACTOR_H_
+#define MINDSPORE_CCSRC_INCLUDE_RUNTIME_CORE_ACTORS_BASE_KERNEL_ASYNC_LAUNCH_ACTOR_H_
 
+#include <set>
 #include <vector>
 #include <memory>
 
-#include "runtime/core/actors/base/actor_common.h"
+#include "include/runtime/core/actors/base/actor_common.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel.h"
 #include "runtime/hardware_abstract/device_context/device_context.h"
 #include "include/backend/visible.h"
@@ -30,15 +31,16 @@ namespace runtime {
 class KernelActor;
 class KernelRunner;
 
-class BACKEND_EXPORT KernelAsyncResizeActor : public ActorBase {
+class BACKEND_EXPORT KernelAsyncLaunchActor : public ActorBase {
  public:
-  static std::shared_ptr<KernelAsyncResizeActor> &GetInstance();
-  ~KernelAsyncResizeActor() override = default;
+  static std::shared_ptr<KernelAsyncLaunchActor> &GetInstance();
+  ~KernelAsyncLaunchActor() override = default;
 
   void Initialize();
 
-  void ResizeKernelMod(OpContext<KernelTensor> *const context, KernelActor *kernel_actor);
-  void ResizeKernelModV2(OpContext<KernelTensor> *const context, KernelRunner *kernel_runner, bool high_perf);
+  void LaunchKernel(OpContext<KernelTensor> *const context, KernelActor *kernel_actor);
+  void LaunchKernelV2(OpContext<KernelTensor> *const context, KernelRunner *kernel_runner);
+  void LaunchKernelV2HP(OpContext<KernelTensor> *const context, KernelRunner *kernel_runner);
 
   void Wait();
 
@@ -46,16 +48,22 @@ class BACKEND_EXPORT KernelAsyncResizeActor : public ActorBase {
 
   const std::thread::id &actor_thread_id() const { return thread_id_; }
 
+  void AddDeviceContext(DeviceContext *device_context);
+
+  void BindDevice();
+
  private:
-  KernelAsyncResizeActor() : ActorBase("KernelAsyncResizeActor") {}
-  DISABLE_COPY_AND_ASSIGN(KernelAsyncResizeActor);
+  KernelAsyncLaunchActor() : ActorBase("KernelAsyncLaunchActor") {}
+  DISABLE_COPY_AND_ASSIGN(KernelAsyncLaunchActor);
 
   void GetThreadId() { thread_id_ = std::this_thread::get_id(); }
 
   // The thread id of exclusive thread used by this actor.
   std::thread::id thread_id_;
+
+  std::set<DeviceContext *> device_contexts_;
 };
 }  // namespace runtime
 }  // namespace mindspore
 
-#endif  // MINDSPORE_CCSRC_RUNTIME_FRAMEWORK_ACTOR_KERNEL_ASYNC_RESIZE_ACTOR_H_
+#endif  // MINDSPORE_CCSRC_INCLUDE_RUNTIME_CORE_ACTORS_BASE_KERNEL_ASYNC_LAUNCH_ACTOR_H_

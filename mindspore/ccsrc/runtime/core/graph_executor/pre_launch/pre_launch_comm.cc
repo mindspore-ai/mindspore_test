@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "runtime/core/graph_executor/pre_launch/pre_launch_comm.h"
+#include "include/runtime/core/graph_executor/pre_launch/pre_launch_comm.h"
 
 #include <algorithm>
 #include <unordered_set>

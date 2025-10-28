@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CCSRC_RUNTIME_FRAMEWORK_GRAPH_COMPILER_H_
-#define MINDSPORE_CCSRC_RUNTIME_FRAMEWORK_GRAPH_COMPILER_H_
+#ifndef MINDSPORE_CCSRC_INCLUDE_RUNTIME_CORE_GRAPH_SCHEDULER_BASE_GRAPH_COMPILER_H_
+#define MINDSPORE_CCSRC_INCLUDE_RUNTIME_CORE_GRAPH_SCHEDULER_BASE_GRAPH_COMPILER_H_
 
 #include <vector>
 #include <memory>
@@ -26,7 +26,7 @@
 
 #include "utils/hash_map.h"
 #include "runtime/hardware_abstract/device_context/device_context.h"
-#include "runtime/core/actors/base/actor_common.h"
+#include "include/runtime/core/actors/base/actor_common.h"
 #include "runtime/core/graph_scheduler/control_flow/control_node_parser.h"
 #include "backend/common/kernel_graph/session_basic.h"
 #include "backend/common/kernel_graph/session_factory.h"
@@ -188,4 +188,4 @@ class GraphCompiler {
 
 }  // namespace runtime
 }  // namespace mindspore
-#endif  // MINDSPORE_CCSRC_RUNTIME_FRAMEWORK_GRAPH_COMPILER_H_
+#endif  // MINDSPORE_CCSRC_INCLUDE_RUNTIME_CORE_GRAPH_SCHEDULER_BASE_GRAPH_COMPILER_H_
