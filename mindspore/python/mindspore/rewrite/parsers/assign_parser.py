@@ -26,6 +26,7 @@ from mindspore import log as logger
 from mindspore.nn import Cell, SequentialCell, CellList
 from mindspore.ops.primitive import Primitive
 import mindspore.ops.functional as F
+from mindspore._extends.ast_checker import AstChecker
 from . import Parser, ParserRegister, reg_parser
 from ..symbol_tree import SymbolTree
 from ..node import Node, TreeNode, NodeManager, CallFunction, CellContainer, ControlFlow, LocalPrim
@@ -732,10 +733,12 @@ class AssignParser(Parser):
         node = Node.create_mathops_node(self.ast_assign, targets, op_type, args, name)
         self.stree.append_origin_field(node, self.node_manager)
 
-    def process_ast_constant(self, ast_constant: Union[ast.Constant, ast.NameConstant, ast.Num, ast.Bytes, ast.Str]):
+    def process_ast_constant(self, ast_constant: ast.AST):
         """
-        Convert ast node of constant types (ast.Constant, ast.NameConstant, ast.Num, ast.Bytes, ast.Str) to
-        a symbol tree node.
+        Convert ast node of constant types to a symbol tree node.
+
+        Args:
+            ast_constant ([ast.AST]): for python3.12+, it is ast.Constant; for python3.11 and earlier, it is ast.Constant, ast.Num, ast.Str, ast.Bytes or ast.NameConstant.
         """
         node_name = f"{type(ast_constant).__name__.lower()}_assign"
         targets = AssignParser._create_targets(self.ast_assign.targets[0])
@@ -834,7 +837,9 @@ class AssignParser(Parser):
             self.process_ast_mathops(value)
         elif isinstance(value, ast.Subscript):
             self.process_ast_subscript(value)
-        elif isinstance(value, (ast.Constant, ast.NameConstant, ast.Num, ast.Bytes, ast.Str)):
+        elif isinstance(value, ast.Constant) or AstChecker.check_type(
+            value, 'ast.NameConstant', 'ast.Num', 'ast.Bytes', 'ast.Str'
+        ):
             self.process_ast_constant(value)
         elif isinstance(value, (ast.Name, ast.Attribute)):
             self.process_ast_name(value)

@@ -15,7 +15,11 @@
 import ast
 import re
 import inspect
-import astunparse
+import sys
+if sys.version_info >= (3, 9):
+    import ast as astunparse  # pylint: disable=reimported, ungrouped-imports
+else:
+    import astunparse
 from mindspore import nn
 from mindspore.ops import functional as F
 from mindspore.rewrite.ast_helpers import AstReplacer
