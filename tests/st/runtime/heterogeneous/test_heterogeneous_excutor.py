@@ -14,16 +14,20 @@
 """Test network turn on mix_precision and heterogeneous_excutor."""
 
 import numpy as np
-from mindspore import nn
+from mindspore import nn, jit
 from mindspore import ops
 from mindspore import amp
 from mindspore import Tensor
 from mindspore import context
+from mindspore.nn import Cell
 from mindspore.train.loss_scale_manager import FixedLossScaleManager
 from tests.mark_utils import arg_mark
 
 
 class Net(nn.Cell):
+    """
+    Heterogeneous net cell.
+    """
     def __init__(self, in_c, out_c):
         super().__init__()
         self.relu = nn.ReLU()
@@ -57,6 +61,24 @@ class Net(nn.Cell):
         return x
 
 
+class MulRelu(Cell):
+    """
+    Heterogeneous mul relu cell.
+    """
+    def __init__(self):
+        super().__init__()
+        self.relu1 = ops.ReLU()
+        self.relu2 = ops.ReLU()
+        self.mul = ops.Mul()
+
+    @jit
+    def construct(self, inp1, inp2):
+        x1 = self.relu1(inp1)
+        x2 = self.relu2(inp2)
+        y = self.mul(x1, x2)
+        return y
+
+
 @arg_mark(plat_marks=["platform_ascend", "platform_gpu"], level_mark="level1", card_mark="onecard",
           essential_mark="essential")
 def test_heterogeneous_excutor():
@@ -85,3 +107,23 @@ def test_heterogeneous_excutor():
                                                   loss_scale_manager=FixedLossScaleManager(drop_overflow_update=False))
     out_heter = train_network_heter(Tensor(input_data), Tensor(label_data))
     assert np.allclose(out.asnumpy(), out_heter.asnumpy(), 0.001, 0.001)
+
+
+@arg_mark(plat_marks=['platform_ascend'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
+def test_heterogeneous_default_cpu_prim_ascend_in_graph_mode():
+    """
+    Feature: KBK heterogeneous.
+    Description: Default device target is CPU, the relu1 set to Ascend.
+    Expectation: The output of device is equal to the output of heterogeneous.
+    """
+    context.set_context(device_target="CPU")
+    net = MulRelu()
+    inp1 = Tensor(np.random.randn(2, 2).astype(np.float32))
+    inp2 = Tensor(np.random.randn(2, 2).astype(np.float32))
+    output_device = net(inp1, inp2)
+    net.relu1.set_device("Ascend")
+    output_heter = net(inp1, inp2)
+    assert np.allclose(output_device.asnumpy(), output_heter.asnumpy(), 1e-6, 1e-6)

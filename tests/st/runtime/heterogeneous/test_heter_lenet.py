@@ -12,10 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+"""Test heterogeneous LeNet."""
 import numpy as np
 
-import mindspore.context as context
-import mindspore.nn as nn
+from mindspore import context
+from mindspore import nn
 from mindspore import Tensor
 from mindspore.nn import TrainOneStepCell, WithLossCell
 from mindspore.nn.optim import Momentum
@@ -27,7 +28,7 @@ context.set_context(mode=context.GRAPH_MODE, device_target="Ascend", jit_config=
 
 class LeNet(nn.Cell):
     def __init__(self):
-        super(LeNet, self).__init__()
+        super().__init__()
         self.relu = P.ReLU()
         self.batch_size = 32
 

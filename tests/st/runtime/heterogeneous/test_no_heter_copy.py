@@ -13,6 +13,7 @@
 # limitations under the License.
 # ============================================================================
 # pylint: disable=unused-variable
+"""Test no heterogeneous copy generalization."""
 import re
 import os
 import numpy as np
@@ -31,7 +32,7 @@ def grep(keyword, path):
     files = os.listdir(path)
     for file in files:
         filename = path + file
-        with open(filename, 'r') as file:
+        with open(filename, 'r', encoding='utf-8') as file:
             for line in file:
                 if re.search(keyword, line):
                     return True

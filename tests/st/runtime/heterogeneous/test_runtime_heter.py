@@ -12,11 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-
+"""Test runtime heterogeneous scene."""
 import numpy as np
 import mindspore as ms
-import mindspore.context as context
-import mindspore.nn as nn
+from mindspore import context
+from mindspore import nn
 from mindspore import Tensor
 from mindspore.ops import operations as P
 from mindspore.common.parameter import Parameter
@@ -29,7 +29,7 @@ from tests.mark_utils import arg_mark
 
 class LeNet(nn.Cell):
     def __init__(self):
-        super(LeNet, self).__init__()
+        super().__init__()
         self.batch_size = 32
         self.weight1 = Parameter(Tensor(np.ones([6, 1, 5, 5]).astype(np.float16)), name="weight")
         self.weight2 = Parameter(Tensor(np.ones([16, 6, 5, 5]).astype(np.float16)), name="weight")
