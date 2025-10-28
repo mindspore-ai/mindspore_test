@@ -44,9 +44,6 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 # Add detailed compilation logs
 set(CMAKE_VERBOSE_MAKEFILE ON)
 
-# Set CMake module path - adjusted for mindspore test location
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
-
 # Include directories
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
@@ -55,19 +52,17 @@ if(MINDSPORE_INCLUDE_DIRS)
     # If contains multiple paths (semicolon separated), add them separately
     string(REPLACE ";" " " MINDSPORE_INCLUDE_DIRS_LIST "${MINDSPORE_INCLUDE_DIRS}")
     foreach(include_dir ${MINDSPORE_INCLUDE_DIRS_LIST})
-        include_directories(${include_dir}/..)
         include_directories(${include_dir})
         # Add complete MindSpore include paths to ensure all dependency headers are found
         include_directories(${include_dir}/mindspore)
         include_directories(${include_dir}/mindspore/core/include)
-        # Add MindSpore ccsrc path, contains mindspore/ccsrc/utils/
-        include_directories(${include_dir}/mindspore/ccsrc/utils)
+        # Add MindSpore ccsrc path, contains mindspore/ccsrc/include/
+        include_directories(${include_dir}/mindspore/ccsrc/include)
         # Add MindSpore csrc path, contains mindspore/ccsrc/
         include_directories(${include_dir}/mindspore/ccsrc)
         # Add third_party path, contains securec.h
         include_directories(${include_dir}/third_party)
-        # Add specific securec path
-        include_directories(${include_dir}/third_party/securec/include)
+        include_directories(${include_dir}/third_party/include)
         # Add specific pybind11 path
         include_directories(${include_dir}/third_party/pybind11)
     endforeach()
@@ -112,19 +107,6 @@ target_link_libraries(custom_backend
     ${MINDSPORE_LIB_DIRS}/libmindspore_core.so
     ${MINDSPORE_LIB_DIRS}/libmindspore_common.so
 )
-
-# Default settings
-option(ENABLE_GLIBCXX "enable_glibcxx" OFF)
-
-# System-related overrides
-if(NOT CMAKE_SYSTEM_NAME MATCHES "Linux")
-    set(ENABLE_GLIBCXX ON)
-endif()
-
-# Environment variable overrides
-if(DEFINED ENV{ENABLE_GLIBCXX})
-    set(ENABLE_GLIBCXX $ENV{ENABLE_GLIBCXX})
-endif()
 
 # ABI flag settings
 if(CMAKE_SYSTEM_NAME MATCHES "Linux")

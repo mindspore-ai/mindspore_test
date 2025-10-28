@@ -32,7 +32,10 @@ def register_custom_backend(backend_name: str, backend_path: str) -> bool:
         backend_path (str): Absolute path to the plugin shared library (.so file).
 
     Returns:
-        bool: True if plugin loaded successfully, False otherwise.
+        bool. Return True if the custom backend is successfully registered; otherwise, False is returned.
+
+    Raises:
+        ValueError: If the custom backend path does not exist or the file is invalid.
 
     Examples:
         >>> import mindspore.graph as graph
