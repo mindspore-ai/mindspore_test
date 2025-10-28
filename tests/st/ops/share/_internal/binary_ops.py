@@ -12,37 +12,33 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+"""Utility helpers for operation testing.
+
+This module provides:
+- BinaryOpsFactory: utilities to compare MindSpore binary ops with Benchmark
+  references.
+- Static and dynamic-shape parity checks, with optional gradient comparisons.
+"""
 import torch
+import mindspore as ms
 from tests.st.ops.share._internal.meta import OpsFactory, OpCommonGradNetAllInput
-from tests.st.ops.share._internal.utils import OpSampleInput, make_tensor
-from tests.st.ops.share._op_info.op_info import OpInfo, dtypes_integral
-from typing import Callable
-from functools import partial
+from tests.st.ops.share._op_info.op_info import OpInfo
+from tqdm import tqdm
 
 
 class BinaryOpsFactory(OpsFactory):
+    """Factory for testing binary operations.
+
+    It wires up sample inputs, reference functions, and gradient networks to
+    run value and gradient parity checks between MindSpore and Benchmark.
+    """
     def __init__(
             self,
-            *,
-            op: Callable = None,
-            ref: Callable = None,
-            op_info: OpInfo = None,
-            op_input=None,
-            op_args=(),
-            op_kwargs={},
-            op_name=None,
-            sample_inputs_func=None,
+            op_info: OpInfo,
             **kwargs,
     ):
         super().__init__(
-            op=op,
-            ref=ref,
-            op_info=op_info,
-            op_input=op_input,
-            op_args=op_args,
-            op_kwargs=op_kwargs,
-            op_name=op.__name__ if op is not None else "BinaryOp",
-            sample_inputs_func=sample_inputs_func,
+            op_info,
             **kwargs,
         )
         self.update_op_net_class(op_grad_net_class=OpCommonGradNetAllInput)
@@ -50,15 +46,17 @@ class BinaryOpsFactory(OpsFactory):
         self._douts = None
 
     def grad_pytorch_impl(self):
-        '''
-        Compute the gradient of the binary op with the PyTorch implementation.
+        """Compute gradients using the PyTorch reference.
+
         Args:
             None
+
+        Returns:
+            list: One or two gradients for the input tensors.
+
         Note:
             Use this function while op is Add, Adds, etc.
-        Returns:
-            A list of gradients (one or two gradient) for the input tensors.
-        '''
+        """
         torch_douts = self._generate_random_dout(return_torch_douts=True)
 
         torch_fn = self.ref
@@ -90,15 +88,17 @@ class BinaryOpsFactory(OpsFactory):
         return grads
 
     def grad_pytorch_dynamic_shape_impl(self):
-        '''
-        Compute the gradient of the binary op with the PyTorch implementation for dynamic shape.
+        """Compute gradients with PyTorch for dynamic-shape cases.
+
         Args:
             None
+
         Returns:
-            A list of gradients (one or two gradient) for the input tensors.
+            list: One or two gradients for the input tensors.
+
         Note:
             Use this function while op is Add, Adds, etc.
-        '''
+        """
         torch_fn = self.ref
         grads = []
 
@@ -128,68 +128,61 @@ class BinaryOpsFactory(OpsFactory):
                                  f"but got {type(op_input)} and {type(sample_input.op_args[0])}")
         return grads
 
-    def test_binary_op_nd_same_dtype(
-            self,
-            *,
-            op_kwargs={},
-            dtypes: list = None,
-            backend: str = None,
-            disable_op_info_dtypes: list = None,
-            broad_cast=False,
+    def test_binary_op_reference(
+        self,
+        *,
+        grad_cmp=False
     ):
+        """Run reference parity tests against Benchmark.
 
-        def binary_op_nd_sample_inputs_func(dtype, broad_cast, op_kwargs):
-            shapes = [
-                (2,),
-                (2, 3),
-                (2, 3, 2),
-                (2, 3, 2, 2),
-                (2, 3, 2, 2, 3),
-                (2, 3, 2, 2, 3, 2),
-                (2, 3, 2, 2, 3, 2, 2),
-                (2, 3, 2, 2, 3, 2, 2, 2),
-                (2, 0, 3)
-            ]
-
-            broad_cast_shapes = [
-                (1,),
-                (2, 1),
-                (2, 1, 2),
-                (2, 3, 1, 2),
-                (2, 3, 1, 2, 3),
-                (2, 3, 2, 1, 3, 2),
-                (2, 3, 2, 1, 3, 2, 2),
-                (2, 3, 2, 2, 1, 2, 2, 2),
-                (2, 0, 1)
-            ]
-
-            sample_inputs = []
-            for idx, shape in enumerate(shapes):
-                input_shape = shape
-                other_shape = shape if not broad_cast else broad_cast_shapes[idx]
-                x = make_tensor(input_shape, dtype)
-                y = make_tensor(other_shape, dtype)
-                sample_inputs.append(OpSampleInput(
-                    op_input=x,
-                    op_args=(y,),
-                    op_kwargs=op_kwargs,
-                    op_name=self.op_name,
-                ))
-            return sample_inputs
+        Args:
+            grad_cmp: When True, restrict to floating dtypes and compare
+                first-order gradients in addition to forward results.
+        """
+        try:
+            print(f"\nop_name: {self.op_name}, mode:{self._context_mode}, test_binary_op_reference...")
+            if grad_cmp:
+                self.supported_dtypes = tuple(d for d in self.supported_dtypes if d.is_floating_point)
+            for dtype in tqdm(self.supported_dtypes):
+                for sample_input in self.op_sample_inputs_func(self.op_info, dtype, device=self._device):
+                    if grad_cmp:
+                        self.compare_with_torch(sample_inputs=sample_input, grad_cmp=True)
+                    else:
+                        self.compare_with_torch(sample_inputs=sample_input)
+        except Exception as e:
+            print(f"\ntest_binary_op_reference failed:"
+                  f"\nop_name: {self.op_name}"
+                  f"\nmode: {self._context_mode}"
+                  f"\ndtype: {dtype}"
+                  f"\n{sample_input.summary(True)}")
+            raise e
 
 
-        if not dtypes:
-            dtypes = self.op_info.get_dtypes(backend)
-        if disable_op_info_dtypes:
-            dtypes = [dtype for dtype in dtypes if dtype not in disable_op_info_dtypes]
+    def test_binary_op_dynamic(
+        self,
+        *,
+        dynamic_mode='dynamic_shape',
+        grad_cmp=False,
+    ):
+        """Run dynamic-shape tests against Benchmark.
 
-        is_differentiable = self.op_info.is_differentiable if self.op_info is not None else True
-
-        for dtype in dtypes:
-            sample_inputs_func = partial(binary_op_nd_sample_inputs_func, dtype, broad_cast, self.op_kwargs)
-            self.update_sample_inputs(sample_inputs_func)
-            self.forward_cmp()
-            if is_differentiable and dtype not in dtypes_integral:
-                # generate new douts for each dtype.
-                self._douts = None
-                self.grad_cmp()
+        Args:
+            dynamic_mode: Dynamic mode identifier, e.g. 'dynamic_shape'.
+            grad_cmp: When True, also compare first-order gradients.
+        """
+        try:
+            print(f"\nop_name: {self.op_name}, dynamic_mode={dynamic_mode}, test_binary_op_dynamic...")
+            self.op_sample_inputs_func = self.op_info.op_dynamic_inputs_func
+            sample_input = self.op_sample_inputs_func(self.op_info,
+                                                      dtype=ms.float32,
+                                                      device=self._device,
+                                                      dynamic_mode=dynamic_mode)
+            if grad_cmp:
+                self.compare_with_torch_dynamic(sample_inputs=sample_input, grad_cmp=True)
+            else:
+                self.compare_with_torch_dynamic(sample_inputs=sample_input)
+        except Exception as e:
+            print(f"\test_binary_op_dynamic failed:"
+                  f"\nop_name: {self.op_name}"
+                  f"\ndynamic_mode: {dynamic_mode}")
+            raise e

@@ -12,21 +12,33 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+"""Utility helpers for operation testing.
+
+This module provides:
+- OpsFactory: a base test factory handling context/device, sample inputs,
+  and comparisons.
+- Helper networks: forward/grad nets such as OpsCommonNet, OpsCommonNetNoKwargs,
+  OpCommonGradNetFirstInput, and OpCommonGradNetAllInput.
+- Comparison routines: static and dynamic-shape forward/grad parity checks
+  against reference backends.
+"""
 # pylint: disable=R1705
 import torch
 import numpy as np
 import mindspore as ms
 from mindspore import nn
-from typing import Callable, Optional, final
-from tests.st.utils.test_utils import single_golden_compare, double_golden_compare
+from mindspore._c_expression import MSContext
+from mindspore.common.dtype import _dtype_to_nptype
+from typing import Optional, Union, List, final
+from tests.st.utils.test_utils import single_golden_compare, double_golden_compare, OpTypes
 from tests.st.ops.share._internal.utils import OpSampleInput, make_tensor, ms_asnumpy
 from tests.st.ops.share._op_info.op_info import OpInfo
-
+from tests.st.ops.share._op_info.op_common import get_default_loss, dtypes_extra_uint
 class OpsCommonNet(nn.Cell):
-    '''
-    default forward op net class.
-    Use this class while you don't want to use a Specialized OpNet.
-    '''
+    """Default forward op net wrapper.
+
+    Use this class when a specialized op net is not needed.
+    """
     def __init__(self, op):
         super().__init__()
         self.op = op
@@ -36,10 +48,11 @@ class OpsCommonNet(nn.Cell):
 
 
 class OpsCommonNetNoKwargs(nn.Cell):
-    '''
-    Used for get gradient of the op with graph mode, because op_kwargs must convert to op_args while sens_param is True.
-    So we need to use this class to construct the op net without kwargs.
-    '''
+    """Forward op net wrapper without kwargs for grad/dynamic.
+
+    Used in graph mode where kwargs must be converted to args while
+    sens_param=True.
+    """
     def __init__(self, op):
         super().__init__()
         self.op = op
@@ -49,11 +62,11 @@ class OpsCommonNetNoKwargs(nn.Cell):
 
 
 class OpCommonGradNetFirstInput(nn.Cell):
-    '''
-    Used for get gradient of the op with first input.
-    Before use this class, make sure all op_kwargs are converted to op_args.
-    Use OpSampleInput.convert_to_args() to covert all op_kwargs to op_args and append the dout to the op_args.
-    '''
+    """Gradient network for the first input.
+
+    Before use, ensure op_kwargs are converted to op_args using
+    OpSampleInput.convert_to_args() and append dout to op_args.
+    """
     def __init__(self, network, *, sens_param=True):
         super().__init__()
         self.network = network
@@ -64,11 +77,11 @@ class OpCommonGradNetFirstInput(nn.Cell):
 
 
 class OpCommonGradNetAllInput(nn.Cell):
-    '''
-    Used for get gradient of the op with all inputs.
-    Before use this class, make sure all op_kwargs are converted to op_args.
-    Use OpSampleInput.convert_to_args() to covert all op_kwargs to op_args and append the dout to the op_args.
-    '''
+    """Gradient network for all inputs.
+
+    Before use, ensure op_kwargs are converted to op_args using
+    OpSampleInput.convert_to_args() and append dout to op_args.
+    """
     def __init__(self, network, *, sens_param=True):
         super().__init__()
         self.network = network
@@ -79,120 +92,82 @@ class OpCommonGradNetAllInput(nn.Cell):
 
 
 class OpsFactory():
+    """Base test factory for operators.
+
+    Manages device/context, builds sample inputs, forwards through MindSpore
+    and references, and performs value/gradient comparisons.
+    """
     def __init__(
             self,
-            *,
-            op: Callable = None,
-            ref: Callable = None,
-            op_info: OpInfo = None,
-            op_input=None,
-            op_args: Optional[tuple] = tuple(),
-            op_kwargs: Optional[dict] = dict(),
-            op_name: Optional[str] = None,
-            sample_inputs_func=None,
+            op_info: OpInfo,
             **kwargs,
     ):
-        self.op = op                                 # mindspore interface
-        self.ref = ref                               # reference implementation, such as pytorch, tensorflow, numpy
-        self.op_info = op_info                       # op info, such as add_ext, sum, etc.
-        self.op_input = op_input                     # input for op
-        self.op_args = op_args                       # args for op
-        self.op_kwargs = op_kwargs                   # kwargs for op
-        self.op_name = op_name                       # name of the op
-        self.sample_inputs_func = sample_inputs_func # function to generate sample inputs
-
-        if self.op_name is None:
-            self.op_name = self.op.__name__ if self.op is not None else "UnknownOp"
-
-        if self.op_info is not None:
-            self.op = self.op_info.op
-            self.ref = self.op_info.ref
-            self.op_name = self.op_info.name
-
-        if self.sample_inputs_func is None:
-            self.sample_inputs_func = self._default_sample_inputs_func
-
-        self._sample_inputs = self.sample_inputs_func()
+        self.op_info = op_info
+        # inner params
         self._douts = None
+        self._device = None
+        self._context_mode = 'pynative'
         self._op_net_class = OpsCommonNet
         self._op_net_class_no_kwargs = OpsCommonNetNoKwargs
         self._op_grad_net_class = OpCommonGradNetFirstInput
 
-        # if op is inplace op, set _inplace_op to True. then all tensors will be copied before forward and grad.
-        self._inplace_op = kwargs['inplace_op'] if 'inplace_op' in kwargs else False
-
-        # if op does not support float16 on certain backend of benchmark,
-        # such as sum of torch gpu can't support float16.
-        # set convert_half_to_float to True, then the float16 will be converted to float32 for benchmark calculation,
-        # and convert back to float16 for comparison. op of torch gpu don't support float16 usually.
-        self._convert_half_to_float = ms.context.get_context('device_target').lower() == 'gpu'
-        if 'convert_half_to_float' in kwargs:
-            self._convert_half_to_float = kwargs['convert_half_to_float']
-        # if op need to compare extra uint dtypes, set convert_extra_uint to True.
-        # then the extra uint dtypes will be converted to int64 in torch implementation for comparison.
-        # op of torch don't support extra uint dtypes, so set convert_extra_uint to True by default.
-        self._convert_extra_uint = kwargs['convert_extra_uint'] if 'convert_extra_uint' in kwargs else True
+        self._parse_op_info(self.op_info)
 
     @final
-    def update_op_net_class(
-            self,
-            *,
-            op_net_class=None,
-            op_net_class_no_kwargs=None,
-            op_grad_net_class=None
-    ):
-        '''
-        Update the op net class and op grad net class.
+    def _parse_op_info(self, op_info: OpInfo):
+        """Populate factory fields from `OpInfo` and current device context.
+
         Args:
-            op_net_class: The op net class to use for the op.
-            op_net_class_no_kwargs: The op net class to use for the op without kwargs,
-                                    used for dynamic shape and gradient.
-            op_grad_net_class: The op grad net class to use for the op.
-        Returns:
-            None
-        '''
-        self._op_net_class = op_net_class if op_net_class is not None else self._op_net_class
-        self._op_net_class_no_kwargs = op_net_class_no_kwargs \
-            if op_net_class_no_kwargs is not None else self._op_net_class_no_kwargs
-        self._op_grad_net_class = op_grad_net_class if op_grad_net_class is not None else self._op_grad_net_class
+            op_info: Operator metadata including op callable, reference, dtypes,
+                sample input builder, compare method, etc.
+        """
+        self.op = op_info.op
+        self.op_func_grad = op_info.op_func_grad
+        self.ref = op_info.ref
+        self.op_name = op_info.name
+        self.op_sample_inputs_func = op_info.op_sample_inputs_func
+        self._sample_inputs = None
+
+        # get supported dtypes for the op with entire environment.
+        device = ms.context.get_context('device_target').lower()
+        if device == 'ascend':
+            if MSContext.get_instance().get_ascend_soc_version() == 'ascend910b':
+                self.supported_dtypes = op_info.dtypes_ascend910b
+            else:
+                self.supported_dtypes = op_info.dtypes_ascend
+        elif device == 'cpu':
+            self.supported_dtypes = op_info.dtypes_cpu
+        elif device == 'gpu':
+            self.supported_dtypes = op_info.dtypes_gpu
+        else:
+            raise ValueError(f"Invalid device: {device}, expected: 'ascend', 'cpu', 'gpu'.")
+
+        self._device = device
+        self._inplace_op = getattr(op_info, 'is_inplace_op', False)
+        # op of torch don't support extra uint dtypes, so set convert_extra_uint to True if mindspore supports them.
+        self._convert_extra_uint = bool(set(self.supported_dtypes) & set(dtypes_extra_uint))
+
+        self._convert_half_to_float = getattr(op_info, 'convert_half_to_float', False)
+        if not self._convert_half_to_float:
+            # if op does not support float16 on certain backend of benchmark,
+            # such as sum of torch gpu can't support float16.
+            # the float16 will be converted to float32 for benchmark calculation,
+            # and convert back to float16 for comparison. op of torch gpu don't support float16 usually.
+            self._convert_half_to_float = device == 'gpu'
+
+        self._compare_method = op_info.compare_method
+        self._default_golden_loss_func = op_info.default_golden_loss_func
 
     @final
-    def update_sample_inputs(
-            self,
-            sample_inputs_func,
-    ):
-        '''
-        Update the sample inputs for the op.
-        Args:
-            sample_inputs_func: The function to generate the sample inputs.
-        Returns:
-            None
-        '''
-        self.sample_inputs_func = sample_inputs_func
-        self._sample_inputs = self.sample_inputs_func()
-
-    @final
-    def _default_sample_inputs_func(self):
-        '''
-        Generate the sample inputs for the op by default.
-        Returns:
-            A list of OpSampleInput objects.
-        '''
-        return [OpSampleInput(
-            self.op_input,
-            self.op_args,
-            self.op_kwargs,
-            self.op_name,
-        )]
-
     def _generate_random_dout(self, return_torch_douts=False):
-        '''
-        Generate the random dout for the op.
+        """Generate random dout tensors for the op.
+
         Args:
-            return_torch_douts: Whether to return the torch douts.
+            return_torch_douts (bool): Whether to return PyTorch douts.
+
         Returns:
-            A list of random douts or None.
-        '''
+            list | None: Random douts or None when not requested.
+        """
         if self._douts is None:
             ms_out = self.forward_mindspore_impl()
             self._douts = [make_tensor(outi.shape, outi.dtype, random_method='randn') for outi in ms_out]
@@ -205,20 +180,50 @@ class OpsFactory():
         return None
 
     @final
+    def update_op_net_class(
+            self,
+            *,
+            op_net_class=None,
+            op_net_class_no_kwargs=None,
+            op_grad_net_class=None
+    ):
+        """Update forward/grad network wrappers used by the factory.
+
+        Args:
+            op_net_class: Net class for standard forward execution.
+            op_net_class_no_kwargs: Net class without kwargs (dynamic/grad).
+            op_grad_net_class: Net class for gradient computation.
+        """
+        self._op_net_class = op_net_class if op_net_class is not None else self._op_net_class
+        self._op_net_class_no_kwargs = op_net_class_no_kwargs \
+            if op_net_class_no_kwargs is not None else self._op_net_class_no_kwargs
+        self._op_grad_net_class = op_grad_net_class if op_grad_net_class is not None else self._op_grad_net_class
+
+    @final
+    def update_sample_inputs(
+            self,
+            op_sample_inputs_func=None,
+    ):
+        """Update the sample input generator and refresh samples.
+
+        Args:
+            op_sample_inputs_func: Function that generates sample inputs.
+        """
+        if op_sample_inputs_func is not None:
+            self.op_sample_inputs_func = op_sample_inputs_func
+        self._sample_inputs = self.op_sample_inputs_func()
+
+    @final
     def set_context_mode(
             self,
             *,
-            mode=None,
-            jit_level=None
+            mode=None
     ):
-        '''
-        Set the context mode for the op.
+        """Set the execution context mode for the op.
+
         Args:
-            mode: The mode to use for the op.
-            jit_level: The JIT level to use for the op.
-        Returns:
-            None
-        '''
+            mode: One of 'kbk', 'ge', 'pynative', or a MindSpore mode enum.
+        """
         if mode is not None:
             if isinstance(mode, str):
                 if mode.lower() == 'kbk':
@@ -231,8 +236,7 @@ class OpsFactory():
                     raise ValueError(f"Invalid mode: {mode}, expected: 'kbk', 'ge', 'pynative'.")
             else:
                 ms.context.set_context(mode=mode)
-        if jit_level is not None:
-            ms.context.set_context(jit_level=jit_level)
+            self._context_mode = mode
 
     @final
     def assert_equal(
@@ -247,23 +251,21 @@ class OpsFactory():
             op_type=None,
             secend_expect=None,
     ):
-        '''
-        Assert the equality of the actual and expect outputs.
+        """Assert equality within tolerances using configured comparison.
+
         Args:
-            actual: The actual output of the op.
-            expect: The expect output of the op.
-            rtol: The relative tolerance for the comparison.
-            atol: The absolute tolerance for the comparison.
-            compare_method: The method to use for the comparison.
-            ksize: The kernel size for the comparison.
-            op_type: The type of the op.
-            secend_expect: The second expect output of the op.
-            convert_extra_uint: Whether to compare the extra uint dtype.
+            actual: Actual output.
+            expect: Expected output.
+            rtol: Relative tolerance.
+            atol: Absolute tolerance.
+            compare_method: 'default_golden' | 'single_golden' | 'double_golden'.
+            ksize: Kernel size for certain comparisons.
+            op_type: Operation type enum for golden comparisons.
+            secend_expect: Second expected output (for double golden).
+
         Note:
-            You can override this function to implement the comparison logic with other implementations.
-        Returns:
-            None
-        '''
+            Override to plug in other comparison strategies if needed.
+        """
         def _count_unequal_element(expect, actual, rtol, atol):
             assert expect.shape == actual.shape
             total_count = len(expect.flatten())
@@ -295,26 +297,17 @@ class OpsFactory():
                     return ms_asnumpy(tensor)
                 return tensor
 
-            if actual.dtype in (ms.float16, torch.float16, np.float16):
-                loss = 1e-3
-            elif actual.dtype in (
-                    ms.float32, ms.complex64, torch.float32, torch.complex64,
-                    np.float32, np.complex64):
-                loss = 1e-4
-            elif actual.dtype in (
-                    ms.float64, ms.complex128, torch.float64, torch.complex128,
-                    np.float64, np.complex128):
-                loss = 1e-5
-            elif actual.dtype in (ms.bfloat16, torch.bfloat16):
-                loss = 4e-3
-            else:
-                loss = 0
-
-            rtol = loss if rtol is None else rtol
-            atol = loss if atol is None else atol
-
             actual = convert_tensor_to_nparray(actual)
             expect = convert_tensor_to_nparray(expect)
+
+            if self._convert_extra_uint:
+                if actual.dtype in (map(_dtype_to_nptype, dtypes_extra_uint)) and expect.dtype == np.int64:
+                    expect = expect.astype(actual.dtype)
+                if expect.dtype in (map(_dtype_to_nptype, dtypes_extra_uint)) and actual.dtype == np.int64:
+                    actual = actual.astype(expect.dtype)
+
+            rtol = get_default_loss(actual.dtype) if rtol is None else rtol
+            atol = get_default_loss(actual.dtype) if atol is None else atol
 
             allclose_nparray(expect, actual, rtol, atol)
 
@@ -333,7 +326,7 @@ class OpsFactory():
                     x = x.to(torch.float16)
             return x, y
 
-        if self._convert_extra_uint:
+        if self._convert_extra_uint and compare_method != 'default_golden':
             expect = convert_mindspore_extra_uint_dtype_to_int64(expect)
             actual = convert_mindspore_extra_uint_dtype_to_int64(actual)
 
@@ -343,9 +336,9 @@ class OpsFactory():
         if compare_method == 'default_golden':
             default_golden_compare(expect, actual, rtol, atol)
         elif compare_method == 'single_golden':
-            single_golden_compare(expect, actual, ksize, op_type)
+            assert single_golden_compare(expect, actual, ksize, op_type)
         elif compare_method == 'double_golden':
-            double_golden_compare(expect, secend_expect, actual, op_type)
+            assert double_golden_compare(expect, secend_expect, actual, op_type)
         else:
             raise ValueError(f"Invalid compare_method: {compare_method}, expected: 'default_golden', 'single_golden', \
                               'double_golden'.")
@@ -355,17 +348,16 @@ class OpsFactory():
             *args,
             **kwargs
     ):
-        '''
-        Forward the op with the MindSpore implementation.
+        """Run forward with the MindSpore implementation.
+
         Args:
-            *args: The positional arguments for 'forward_mindspore_impl'.
-            **kwargs: The keyword arguments for 'forward_mindspore_impl'.
-        Note:
-            You can override this function to implement the forward logic with other implementations.
+            *args: Positional arguments (unused; present for API symmetry).
+            **kwargs: Keyword arguments (unused; present for API symmetry).
+
         Returns:
-            A single tensor or a list of tensors
-        '''
-        op_net = self._op_net_class(self.op)
+            list: Outputs per sample input.
+        """
+        op_net = self.op if self._context_mode == 'pynative' else self._op_net_class(self.op)
         out = []
 
         for sample_input in self._sample_inputs:
@@ -382,16 +374,15 @@ class OpsFactory():
             *args,
             **kwargs
     ):
-        '''
-        Forward the op with the PyTorch implementation.
+        """Run forward with the PyTorch reference implementation.
+
         Args:
-            *args: The positional arguments for 'forward_pytorch_impl'.
-            **kwargs: The keyword arguments for 'forward_pytorch_impl'.
-        Note:
-            You can override this function to implement the forward logic with other implementations.
+            *args: Positional arguments (unused; present for API symmetry).
+            **kwargs: Keyword arguments (unused; present for API symmetry).
+
         Returns:
-            A single tensor or a list of tensors.
-        '''
+            list: Outputs per sample input.
+        """
         torch_fn = self.ref
         out = []
 
@@ -411,16 +402,12 @@ class OpsFactory():
             *args,
             **kwargs
     ):
-        '''
-        Forward the op with the TensorFlow implementation.
+        """Run forward with the TensorFlow reference implementation.
+
         Args:
-            *args: The positional arguments for 'forward_tensorflow_impl'.
-            **kwargs: The keyword arguments for 'forward_tensorflow_impl'.
-        Note:
-            You can override this function to implement the forward logic with other implementations.
-        Returns:
-            A single tensor or a list of tensors
-        '''
+            *args: Positional arguments (unused; present for API symmetry).
+            **kwargs: Keyword arguments (unused; present for API symmetry).
+        """
         raise NotImplementedError
 
     def forward_numpy_impl(
@@ -428,16 +415,15 @@ class OpsFactory():
             *args,
             **kwargs
     ):
-        '''
-        Forward the op with the NumPy implementation.
+        """Run forward with the NumPy reference implementation.
+
         Args:
-            *args: The positional arguments for 'forward_numpy_impl'.
-            **kwargs: The keyword arguments for 'forward_numpy_impl'.
-        Note:
-            You can override this function to implement the forward logic with other implementations.
+            *args: Positional arguments (unused; present for API symmetry).
+            **kwargs: Keyword arguments (unused; present for API symmetry).
+
         Returns:
-            A single tensor or a list of tensors
-        '''
+            list: Outputs per sample input.
+        """
         np_fn = self.ref
         out = []
 
@@ -457,19 +443,19 @@ class OpsFactory():
             *args,
             **kwargs
     ):
-        '''
-        Compute the gradient of the op with the MindSpore implementation.
+        """Compute gradients with the MindSpore implementation.
+
         Args:
-            *args: The positional arguments for 'grad_mindspore_impl'.
-            **kwargs: The keyword arguments for 'grad_mindspore_impl'.
-        Note:
-            You should override this function if you don't want to only get the gradient for first input tensor.
+            *args: Positional arguments (unused; present for API symmetry).
+            **kwargs: Keyword arguments (unused; present for API symmetry).
+
         Returns:
-            A list of gradients for op_input.
-        '''
+            list: Gradients per sample input.
+        """
+        self._douts = None
         self._generate_random_dout()
 
-        net = self._op_net_class_no_kwargs(self.op)
+        net = self._op_net_class_no_kwargs(self.op_func_grad)
         grad_net = self._op_grad_net_class(net)
         grads = []
 
@@ -489,16 +475,15 @@ class OpsFactory():
             *args,
             **kwargs
     ):
-        '''
-        Compute the gradient of the op with the PyTorch implementation.
+        """Compute gradients with the PyTorch reference implementation.
+
         Args:
-            *args: The positional arguments for 'grad_pytorch_impl'.
-            **kwargs: The keyword arguments for 'grad_pytorch_impl'.
-        Note:
-            You should override this function if you don't want to only get the gradient for first input tensor.
+            *args: Positional arguments (unused; present for API symmetry).
+            **kwargs: Keyword arguments (unused; present for API symmetry).
+
         Returns:
-            A list of gradients for op_input.
-        '''
+            list: Gradients per sample input.
+        """
         torch_douts = self._generate_random_dout(return_torch_douts=True)
 
         torch_fn = self.ref
@@ -522,16 +507,7 @@ class OpsFactory():
             *args,
             **kwargs
     ):
-        '''
-        Compute the gradient of the op with the TensorFlow implementation.
-        Args:
-            *args: The positional arguments for 'grad_tensorflow_impl'.
-            **kwargs: The keyword arguments for 'grad_tensorflow_impl'.
-        Note:
-            You should override this function if you don't want to only get the gradient for first input tensor.
-        Returns:
-            A list of gradients for op_input.
-        '''
+        """Compute gradients with the TensorFlow reference implementation."""
         raise NotImplementedError
 
     def grad_numpy_impl(
@@ -539,16 +515,7 @@ class OpsFactory():
             *args,
             **kwargs
     ):
-        '''
-        Compute the gradient of the op with the NumPy implementation.
-        Args:
-            *args: The positional arguments for 'grad_numpy_impl'.
-            **kwargs: The keyword arguments for 'grad_numpy_impl'.
-        Note:
-            You should override this function if you don't want to only get the gradient for first input tensor.
-        Returns:
-            A list of gradients for op_input.
-        '''
+        """Compute gradients with the NumPy reference implementation."""
         raise NotImplementedError
 
 
@@ -557,17 +524,16 @@ class OpsFactory():
             *args,
             **kwargs
     ):
-        '''
-        Forward the op with the MindSpore implementation for dynamic shape.
+        """Run forward with MindSpore for dynamic-shape execution.
+
         Args:
-            *args: The positional arguments for 'forward_mindspore_dynamic_shape_impl'.
-            **kwargs: The keyword arguments for 'forward_mindspore_dynamic_shape_impl'.
-        Note:
-            You should override this function if you want to implement the forward logic with other implementations.
+            *args: Positional arguments (unused; present for API symmetry).
+            **kwargs: Keyword arguments (unused; present for API symmetry).
+
         Returns:
-            A list of outputs for the dynamic shape.
-        '''
-        op_net = self._op_net_class_no_kwargs(self.op)
+            list: Outputs per dynamic-shape sample.
+        """
+        op_net = self._op_net_class_no_kwargs(self.op_func_grad)
         compile_input = self._sample_inputs[0]
         compile_input = compile_input.convert_to_args()
         op_net.set_inputs(*compile_input.op_args)
@@ -588,16 +554,15 @@ class OpsFactory():
             *args,
             **kwargs
     ):
-        '''
-        Forward the op with the PyTorch implementation for dynamic shape.
+        """Run forward with PyTorch for dynamic-shape execution.
+
         Args:
-            *args: The positional arguments for 'forward_pytorch_dynamic_shape_impl'.
-            **kwargs: The keyword arguments for 'forward_pytorch_dynamic_shape_impl'.
-        Note:
-            You should override this function if you want to implement the forward logic with other implementations.
+            *args: Positional arguments (unused; present for API symmetry).
+            **kwargs: Keyword arguments (unused; present for API symmetry).
+
         Returns:
-            A list of outputs for the dynamic shape.
-        '''
+            list: Outputs per dynamic-shape sample.
+        """
         torch_fn = self.ref
         out = []
 
@@ -617,17 +582,16 @@ class OpsFactory():
             *args,
             **kwargs
     ):
-        '''
-        Compute the gradient of the op with the MindSpore implementation for dynamic shape.
+        """Compute gradients with MindSpore for dynamic-shape execution.
+
         Args:
-            *args: The positional arguments for 'grad_mindspore_dynamic_shape_impl'.
-            **kwargs: The keyword arguments for 'grad_mindspore_dynamic_shape_impl'.
-        Note:
-            You should override this function if you want to implement the gradient logic with other implementations.
+            *args: Positional arguments (unused; present for API symmetry).
+            **kwargs: Keyword arguments (unused; present for API symmetry).
+
         Returns:
-            A list of gradients for the dynamic shape.
-        '''
-        net = self._op_net_class_no_kwargs(self.op)
+            list: Gradients per dynamic-shape sample.
+        """
+        net = self._op_net_class_no_kwargs(self.op_func_grad)
         grad_net = self._op_grad_net_class(net, sens_param=False)
         compile_sample_input = self._sample_inputs[0]
         compile_sample_input = compile_sample_input.convert_to_args()
@@ -650,16 +614,15 @@ class OpsFactory():
             *args,
             **kwargs
     ):
-        '''
-        Compute the gradient of the op with the PyTorch implementation for dynamic shape.
+        """Compute gradients with PyTorch for dynamic-shape execution.
+
         Args:
-            *args: The positional arguments for 'grad_pytorch_dynamic_shape_impl'.
-            **kwargs: The keyword arguments for 'grad_pytorch_dynamic_shape_impl'.
-        Note:
-            You should override this function if you want to implement the gradient logic with other implementations.
+            *args: Positional arguments (unused; present for API symmetry).
+            **kwargs: Keyword arguments (unused; present for API symmetry).
+
         Returns:
-            A list of gradients for the dynamic shape.
-        '''
+            list: Gradients per dynamic-shape sample.
+        """
         torch_fn = self.ref
         grads = []
 
@@ -678,6 +641,86 @@ class OpsFactory():
 
         return grads
 
+    def compare_with_torch(
+            self,
+            *,
+            sample_inputs: Union[List[OpSampleInput], OpSampleInput],
+            grad_cmp: Optional[bool] = False,
+            ksize: Optional[int] = 1, # ksize for elementwise op, set other value if you want
+    ):
+        """Compare MindSpore outputs/gradients with PyTorch on static shapes.
+
+        Args:
+            sample_inputs: Single or list of sample inputs.
+            grad_cmp: When True and differentiable, compare gradients.
+            ksize: Optional kernel size hint for comparison helpers.
+        """
+        self._sample_inputs = sample_inputs if isinstance(sample_inputs, list) else [sample_inputs]
+
+        if grad_cmp and self.op_info.is_differentiable:
+            ms_out = self.grad_mindspore_impl()
+            pt_out = self.grad_pytorch_impl()
+        else:
+            ms_out = self.forward_mindspore_impl()
+            pt_out = self.forward_pytorch_impl()
+
+        for ms_outi, pt_outi in zip(ms_out, pt_out):
+            if isinstance(ms_outi, (tuple, list)) and isinstance(pt_outi, (tuple, list)):
+                # The output of the op maybe a tuple or list for some multi-output ops.
+                for ms_outi_tensor, pt_outi_tensor in zip(ms_outi, pt_outi):
+                    loss = self._default_golden_loss_func(ms_outi_tensor.dtype)
+                    self.assert_equal(
+                        ms_outi_tensor,
+                        pt_outi_tensor,
+                        rtol=loss,
+                        atol=loss,
+                        compare_method=self._compare_method,
+                        ksize=ksize,
+                        op_type=OpTypes.COMPUTE_FLOAT
+                    )
+            else:
+                loss = self._default_golden_loss_func(ms_outi.dtype)
+                self.assert_equal(
+                    ms_outi,
+                    pt_outi,
+                    rtol=loss,
+                    atol=loss,
+                    compare_method=self._compare_method,
+                    ksize=ksize,
+                    op_type=OpTypes.COMPUTE_FLOAT
+                )
+
+    def compare_with_torch_dynamic(
+            self,
+            *,
+            sample_inputs: Union[List[OpSampleInput], OpSampleInput],
+            grad_cmp: Optional[bool] = False,
+            ksize: Optional[int] = 1, # ksize for elementwise op, set other value if you want
+    ):
+        """Compare MindSpore with PyTorch under dynamic-shape execution.
+
+        Args:
+            sample_inputs: Single or list of sample inputs; first is for compile.
+            grad_cmp: When True and differentiable, compare gradients.
+            ksize: Optional kernel size hint for comparison helpers.
+        """
+        self._sample_inputs = sample_inputs if isinstance(sample_inputs, list) else [sample_inputs]
+
+        if grad_cmp and self.op_info.is_differentiable:
+            ms_out = self.grad_mindspore_dynamic_shape_impl()
+            pt_out = self.grad_pytorch_dynamic_shape_impl()
+        else:
+            ms_out = self.forward_mindspore_dynamic_shape_impl()
+            pt_out = self.forward_pytorch_dynamic_shape_impl()
+
+        for ms_outi, pt_outi in zip(ms_out, pt_out):
+            if isinstance(ms_outi, (tuple, list)) and isinstance(pt_outi, (tuple, list)):
+                # The output of the op maybe a tuple or list for some multi-output ops.
+                for ms_outi_tensor, pt_outi_tensor in zip(ms_outi, pt_outi):
+                    self.assert_equal(ms_outi_tensor, pt_outi_tensor)
+            else:
+                self.assert_equal(ms_outi, pt_outi)
+
     def forward_cmp(
             self,
             *args,
@@ -686,18 +729,13 @@ class OpsFactory():
             benchmark='torch',
             **kwargs,
     ):
-        '''
-        Compare the output of the op with the output of the reference implementation.
+        """Compare MindSpore forward results with a reference implementation.
+
         Args:
-            rtol: The relative tolerance for the comparison.
-            atol: The absolute tolerance for the comparison.
-            benchmark: The benchmark to use for the comparison.
-        Note:
-            The 'forward_cmp' function in OpFactory should be overridden to implement
-            the comparison logic while the output of op is not a single tensor.
-        Returns:
-            None
-        '''
+            rtol: Relative tolerance.
+            atol: Absolute tolerance.
+            benchmark: 'torch' | 'numpy'.
+        """
         ms_out = self.forward_mindspore_impl()
         if benchmark == 'torch':
             pt_out = self.forward_pytorch_impl()
@@ -722,17 +760,13 @@ class OpsFactory():
             benchmark='torch',
             **kwargs,
     ):
-        '''
-        Compare the gradient of the op with the gradient of the reference implementation.
+        """Compare MindSpore gradients with a reference implementation.
+
         Args:
-            rtol: The relative tolerance for the comparison.
-            atol: The absolute tolerance for the comparison.
-            benchmark: The benchmark to use for the comparison.
-        Note:
-            You should override this function if you don't want to only get the gradient for first input tensor.
-        Returns:
-            None
-        '''
+            rtol: Relative tolerance.
+            atol: Absolute tolerance.
+            benchmark: 'torch' | 'numpy'.
+        """
         ms_grads = self.grad_mindspore_impl()
         if benchmark == 'torch':
             pt_grads = self.grad_pytorch_impl()
@@ -757,17 +791,16 @@ class OpsFactory():
             benchmark='torch',
             **kwargs,
     ):
-        '''
-        Compare the output of the op with the output of the reference implementation for dynamic shape.
+        """Compare forward results under dynamic-shape execution.
+
         Args:
-            rtol: The relative tolerance for the comparison.
-            atol: The absolute tolerance for the comparison.
-            benchmark: The benchmark to use for the comparison.
-        Note:
-            You should override this function if you want to implement the forward logic with other implementations.
-        Returns:
-            None
-        '''
+            rtol: Relative tolerance.
+            atol: Absolute tolerance.
+            benchmark: 'torch'.
+        """
+        if self._context_mode == 'pynative':
+            raise RuntimeError("Dynamic shape comparison is not supported in pynative mode.")
+
         ms_outs = self.forward_mindspore_dynamic_shape_impl()
         if benchmark == 'torch':
             pt_outs = self.forward_pytorch_dynamic_shape_impl()
@@ -789,17 +822,16 @@ class OpsFactory():
             benchmark='torch',
             **kwargs,
     ):
-        '''
-        Compare the gradient of the op with the gradient of the reference implementation for dynamic shape.
+        """Compare gradients under dynamic-shape execution.
+
         Args:
-            rtol: The relative tolerance for the comparison.
-            atol: The absolute tolerance for the comparison.
-            benchmark: The benchmark to use for the comparison.
-        Note:
-            You should override this function if you want to implement the gradient logic with other implementations.
-        Returns:
-            None
-        '''
+            rtol: Relative tolerance.
+            atol: Absolute tolerance.
+            benchmark: 'torch'.
+        """
+        if self._context_mode == 'pynative':
+            raise RuntimeError("Dynamic shape comparison is not supported in pynative mode.")
+
         ms_grads = self.grad_mindspore_dynamic_shape_impl()
         if benchmark == 'torch':
             pt_grads = self.grad_pytorch_dynamic_shape_impl()
