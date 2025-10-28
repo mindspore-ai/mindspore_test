@@ -114,11 +114,13 @@ class TestResManager : public device::DeviceResManager {
   void FreePartMemorys(const std::vector<void *> &free_addrs, const std::vector<void *> &keep_addrs,
                        const std::vector<size_t> &keep_addr_sizes) const {}
 
-  bool SyncCopy(const DeviceAddressPtr &dst_device_sync, const DeviceAddressPtr &src_device_sync,
-                size_t stream_id) const override;
+  bool SyncCopy(const DeviceAddressPtr &dst_device_sync, const DeviceAddressPtr &src_device_sync, size_t stream_id,
+                const DeviceAddressMetaData &src_metadata = {},
+                const DeviceAddressMetaData &dst_metadata = {}) const override;
 
   bool AsyncCopy(const DeviceAddressPtr &dst_device_sync, const DeviceAddressPtr &src_device_sync, size_t stream_id,
-                 bool) const override;
+                 bool, const DeviceAddressMetaData &src_metadata = {},
+                 const DeviceAddressMetaData &dst_metadata = {}) const override;
 
   DeviceAddressPtr CreateDeviceAddress(void *const device_ptr, size_t device_size, const string &format, TypeId type_id,
                                        const ShapeVector &shape) const {

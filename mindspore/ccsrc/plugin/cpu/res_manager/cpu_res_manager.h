@@ -43,10 +43,12 @@ class CPUResManager : public DeviceResManager {
                                        TypeId type_id, const std::string &device_name,
                                        uint32_t stream_id) const override;
 
-  bool SyncCopy(const DeviceAddressPtr &dst_device_sync, const DeviceAddressPtr &src_device_sync,
-                size_t stream_id) const override;
+  bool SyncCopy(const DeviceAddressPtr &dst_device_sync, const DeviceAddressPtr &src_device_sync, size_t stream_id,
+                const DeviceAddressMetaData &src_metadata = {},
+                const DeviceAddressMetaData &dst_metadata = {}) const override;
   bool AsyncCopy(const DeviceAddressPtr &dst_device_sync, const DeviceAddressPtr &src_device_sync, size_t stream_id,
-                 bool keep_src) const override;
+                 bool keep_src, const DeviceAddressMetaData &src_metadata = {},
+                 const DeviceAddressMetaData &dst_metadata = {}) const override;
   bool Copy(void *dst, const void *src, uint64_t size, CopyType kind, size_t stream_id) const override;
 
   std::pair<std::vector<size_t>, std::vector<size_t>> AllocDeviceMemoryForTensorList(

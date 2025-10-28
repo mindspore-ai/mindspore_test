@@ -59,8 +59,8 @@ bool CopyToHost(device::DeviceType device_type, void *dst, const void *src, uint
   return g_sync_ptr_func[static_cast<int>(device_type)](dst, src, size, stream_id);
 }
 
-bool SyncCopy(const DeviceAddressPtr &dst_device_address, const DeviceAddressPtr &src_device_address,
-              size_t stream_id) {
+bool SyncCopy(const DeviceAddressPtr &dst_device_address, const DeviceAddressPtr &src_device_address, size_t stream_id,
+              const DeviceAddressMetaData &src_metadata, const DeviceAddressMetaData &dst_metadata) {
   MS_EXCEPTION_IF_NULL(dst_device_address);
   MS_EXCEPTION_IF_NULL(src_device_address);
   if (dst_device_address->GetDeviceType() == device::DeviceType::kUnknown ||
@@ -77,15 +77,15 @@ bool SyncCopy(const DeviceAddressPtr &dst_device_address, const DeviceAddressPtr
       src_device_address->GetDeviceType() == device::DeviceType::kAscend) {
     MS_EXCEPTION_IF_NULL(g_sync_copy_func[static_cast<int>(device::DeviceType::kAscend)]);
     return g_sync_copy_func[static_cast<int>(device::DeviceType::kAscend)](dst_device_address, src_device_address,
-                                                                           stream_id);
+                                                                           stream_id, src_metadata, dst_metadata);
   }
   MS_EXCEPTION_IF_NULL(g_sync_copy_func[static_cast<int>(device::DeviceType::kGPU)]);
-  return g_sync_copy_func[static_cast<int>(device::DeviceType::kGPU)](dst_device_address, src_device_address,
-                                                                      stream_id);
+  return g_sync_copy_func[static_cast<int>(device::DeviceType::kGPU)](dst_device_address, src_device_address, stream_id,
+                                                                      src_metadata, dst_metadata);
 }
 
 bool AsyncCopy(const DeviceAddressPtr &dst_device_address, const DeviceAddressPtr &src_device_address, size_t stream_id,
-               bool keep_host) {
+               bool keep_host, const DeviceAddressMetaData &src_metadata, const DeviceAddressMetaData &dst_metadata) {
   MS_EXCEPTION_IF_NULL(dst_device_address);
   MS_EXCEPTION_IF_NULL(src_device_address);
   if (dst_device_address->GetDeviceType() == device::DeviceType::kUnknown ||
@@ -101,12 +101,12 @@ bool AsyncCopy(const DeviceAddressPtr &dst_device_address, const DeviceAddressPt
   if (dst_device_address->GetDeviceType() == device::DeviceType::kAscend ||
       src_device_address->GetDeviceType() == device::DeviceType::kAscend) {
     MS_EXCEPTION_IF_NULL(g_sync_copy_func[static_cast<int>(device::DeviceType::kAscend)]);
-    return g_async_copy_func[static_cast<int>(device::DeviceType::kAscend)](dst_device_address, src_device_address,
-                                                                            stream_id, keep_host);
+    return g_async_copy_func[static_cast<int>(device::DeviceType::kAscend)](
+      dst_device_address, src_device_address, stream_id, keep_host, src_metadata, dst_metadata);
   }
   MS_EXCEPTION_IF_NULL(g_sync_copy_func[static_cast<int>(device::DeviceType::kGPU)]);
-  return g_async_copy_func[static_cast<int>(device::DeviceType::kGPU)](dst_device_address, src_device_address,
-                                                                       stream_id, keep_host);
+  return g_async_copy_func[static_cast<int>(device::DeviceType::kGPU)](
+    dst_device_address, src_device_address, stream_id, keep_host, src_metadata, dst_metadata);
 }
 namespace device {
 DevicePtrDeleterMakerFunc g_deleter_func[static_cast<int>(device::DeviceType::kDeviceEnd)];
@@ -485,7 +485,8 @@ void CopyData(const DeviceAddressPtr &dst_device_address, const DeviceAddressPtr
 }
 }  // namespace
 
-bool HostCopy(const DeviceAddressPtr &dst_device_address, const DeviceAddressPtr &src_device_address) {
+bool HostCopy(const DeviceAddressPtr &dst_device_address, const DeviceAddressPtr &src_device_address,
+              const DeviceAddressMetaData &src_metadata, const DeviceAddressMetaData &dst_metadata) {
   MS_EXCEPTION_IF_NULL(dst_device_address);
   MS_EXCEPTION_IF_NULL(src_device_address);
   if (dst_device_address->GetSize() == 0 || src_device_address->GetSize() == 0) {
