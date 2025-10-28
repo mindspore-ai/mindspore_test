@@ -546,23 +546,6 @@ bool TCPComm::Disconnect(const std::string &dst_url) {
   return true;
 }
 
-Connection *TCPComm::CreateDefaultConn(const std::string &to) {
-  Connection *conn = new (std::nothrow) Connection();
-  if (conn == nullptr) {
-    MS_LOG(ERROR) << "Failed to create new connection and reconnect fail to: " << to.c_str();
-    return conn;
-  }
-  conn->enable_ssl = enable_ssl_;
-  conn->source = url_.data();
-  conn->destination = to;
-  conn->recv_event_loop = this->recv_event_loop_;
-  conn->send_event_loop = this->send_event_loop_;
-  conn->conn_mutex = conn_mutex_;
-  conn->message_handler = message_handler_;
-  conn->InitSocketOperation();
-  return conn;
-}
-
 void TCPComm::Finalize() {
   if (send_event_loop_ != nullptr) {
     MS_LOG(INFO) << "Delete send event loop";

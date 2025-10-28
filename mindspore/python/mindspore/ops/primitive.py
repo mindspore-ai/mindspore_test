@@ -23,7 +23,7 @@ from mindspore.log import _LogActionOnce
 from mindspore import log as logger
 from mindspore.parallel._utils import _is_in_auto_parallel_mode, _is_in_data_parallel_mode, \
     _is_in_hybrid_parallel_mode, SUPPORTED_TUPLE_IN_TUPLE_STRATEGY
-from mindspore.parallel._ps_context import _is_ps_mode, _is_role_sched
+from mindspore.parallel._ps_context import _is_role_sched
 from mindspore.parallel.shard import Layout
 from mindspore.common.api import _pynative_executor
 from mindspore.common.jit_context import jit_context
@@ -142,7 +142,7 @@ class Primitive(Primitive_):
         flag self.__setattr_flag__ is True.
         """
         cloned = copy.deepcopy(self)
-        init_params = list()
+        init_params = []
         if hasattr(cloned.__init__, 'decorated_func'):
             init_params = inspect.getfullargspec(cloned.__init__.decorated_func).args[1:]
         init_args = self.init_attrs
@@ -303,8 +303,8 @@ class Primitive(Primitive_):
         is_layout = in_is_layout if in_is_layout is not None else out_is_layout
         if out_is_layout is not None and is_layout != out_is_layout and \
                 self.name not in SUPPORTED_TUPLE_IN_TUPLE_STRATEGY and not self.attrs.get("self_define_shard", False):
-            raise ValueError(f'The in_strategy type must equal to the out_strategy type, '
-                             f'one using tuple(tuple) and the other using tuple(Layout) is not allowed.')
+            raise ValueError('The in_strategy type must equal to the out_strategy type, '
+                             'one using tuple(tuple) and the other using tuple(Layout) is not allowed.')
 
         self._check_shard_strategy_in_out_match(in_strategy, out_strategy)
         if is_layout:
@@ -536,11 +536,6 @@ class Primitive(Primitive_):
         # This is because placing operators to arbitrary processes while other distributed training mode
         # is enabled is very unpredictable and may cause fatal error.
         # Some of these cases are under development and others should not be supported.
-        if _is_ps_mode():
-            raise RuntimeError(
-                "You are calling Primitive.place mixed with Parameter Server training. "
-                "This case is not supported yet. "
-                "Please call Primitive.place without Parameter Server training.")
         if _is_in_auto_parallel_mode() or _is_in_data_parallel_mode() or _is_in_hybrid_parallel_mode():
             raise RuntimeError(
                 "You are calling Primitive.place mixed with other parallel features: "
@@ -918,7 +913,7 @@ def constexpr(fn=None, get_instance=True, name=None, reuse_result=True, check=Tr
 
             def __init__(self):
                 op_name = name if name else fn.__name__
-                super(ProxyOp, self).__init__(op_name)
+                super().__init__(op_name)
                 self.set_const_prim(True)
                 self.fn = fn
                 self.add_prim_attr('constexpr_prim', True)

@@ -44,7 +44,7 @@ from mindspore.train.checkpoint_pb2 import Checkpoint
 from mindspore.train.mind_ir_pb2 import ModelProto as mindir_model
 
 import mindspore
-import mindspore.nn as nn
+from mindspore import nn
 from mindspore import context
 from mindspore import log as logger
 from mindspore.log import vlog_print
@@ -66,7 +66,7 @@ from mindspore.parallel._cell_wrapper import get_allgather_cell, _single_paramet
 from mindspore.parallel._tensor import _reshape_param_data
 from mindspore.parallel._utils import _is_in_auto_parallel_mode
 from mindspore.parallel._ps_context import _set_checkpoint_load_status, _store_warm_up_ptr_by_tensor, \
-    _store_warm_up_ptr_by_tensor_list, _cache_enable
+    _store_warm_up_ptr_by_tensor_list
 from mindspore.parallel.checkpoint_transform import sync_pipeline_shared_parameters
 from mindspore.parallel.checkpoint_transform import restore_group_info_list as new_restore_group_info_list
 from mindspore.parallel.checkpoint_transform import load_distributed_checkpoint as new_load_distributed_checkpoint
@@ -1398,21 +1398,21 @@ def load_checkpoint(ckpt_file_name, net=None, strict_load=False, filter_prefix=N
                                  f"the length of the value must be 2, but got {len(value)}.")
             if isinstance(value, str):
                 if crc_check and value[1] != binascii.crc32(np.array(value[0]).tobytes()):
-                    raise ValueError(f"When loading a checkpoint from AITurbo, the value of the string has not "
-                                     f"passed the CRC check and has been corrupted.")
+                    raise ValueError("When loading a checkpoint from AITurbo, the value of the string has not "
+                                     "passed the CRC check and has been corrupted.")
                 parameter_dict[key] = value[0]
             else:
                 if crc_check and value[1] != binascii.crc32(value[0].tobytes()):
-                    raise ValueError(f"When loading a checkpoint from AITurbo, the value of the parameter has not "
-                                     f"passed the CRC check and has been corrupted.")
+                    raise ValueError("When loading a checkpoint from AITurbo, the value of the parameter has not "
+                                     "passed the CRC check and has been corrupted.")
                 parameter_dict[key] = Parameter(Tensor(value[0]), name=key)
     else:
         remove_redundancy = _load_into_param_dict(ckpt_file_name, parameter_dict, specify_prefix, filter_prefix,
                                                   choice_func, dec_key, dec_mode, crc_check, format, remove_redundancy)
 
     if not parameter_dict:
-        raise ValueError(f"The loaded parameter dict is empty after filter or specify, please check whether "
-                         f"'filter_prefix' or 'specify_prefix' are set correctly.")
+        raise ValueError("The loaded parameter dict is empty after filter or specify, please check whether "
+                         "'filter_prefix' or 'specify_prefix' are set correctly.")
 
     if _warm_up_host_cache_enabled(parameter_dict):
         (is_worker, net_dict, warm_up_dict) = _warm_up_host_cache(parameter_dict, net)
@@ -1666,8 +1666,8 @@ def _check_load_param_into_net(net, parameter_dict):
 def _check_remove_redundancy_net(net):
     """Check whether the network is compiled with the remove_redundancy feature."""
     if get_group_size() == 1:
-        raise TypeError(f"The deduplication feature for loading checkpoint can only be used "
-                        f"in parallel scenarios, but got stand_alone.")
+        raise TypeError("The deduplication feature for loading checkpoint can only be used "
+                        "in parallel scenarios, but got stand_alone.")
     if not net.compile_cache and not net.parameter_layout_dict:
         raise ValueError("When loading a parameter dict that has removed redundancy, "
                          "the network should be compiled.")
@@ -1770,8 +1770,6 @@ def load_param_into_net(net, parameter_dict, strict_load=False, remove_redundanc
 
 def _warm_up_host_cache_enabled(parameter_dict):
     """Warm up host cache enabled."""
-    if _cache_enable():
-        return True
     for key in parameter_dict.keys():
         if key.find(".__param_key__") != -1:
             return True
@@ -2050,18 +2048,18 @@ def export(net, *inputs, file_name, file_format, **kwargs):
 
     if check_input_dataset(*inputs, dataset_type=mindspore.dataset.Dataset):
         if len(inputs) != 1:
-            raise RuntimeError(f"You can only serialize one dataset into MindIR, got " + str(len(inputs)) + " datasets")
+            raise RuntimeError("You can only serialize one dataset into MindIR, got " + str(len(inputs)) + " datasets")
         shapes, types, columns = inputs[0].output_shapes(), inputs[0].output_types(), inputs[0].get_col_names()
         kwargs['dataset'] = inputs[0]
         only_support_col = "image"
 
-        inputs_col = list()
+        inputs_col = []
         for c, s, t in zip(columns, shapes, types):
             if only_support_col != c:
                 continue
             inputs_col.append(Tensor(np.random.uniform(-1.0, 1.0, size=s).astype(t)))
         if not inputs_col:
-            raise RuntimeError(f"Only supports parse \"image\" column from dataset now, given dataset has columns: "
+            raise RuntimeError("Only supports parse \"image\" column from dataset now, given dataset has columns: "
                                + str(columns))
         inputs = tuple(inputs_col)
 
@@ -2104,7 +2102,7 @@ def _get_funcgraph(net, *inputs):
 
     """
     if not isinstance(net, nn.Cell):
-        raise ValueError(f"For get_funcgraph's parameter 'net', currently only support Cell right now.")
+        raise ValueError("For get_funcgraph's parameter 'net', currently only support Cell right now.")
     phase_name = "lite_infer_predict" if _is_in_auto_parallel_mode() else "lite_infer_get_func_graph"
     graph_id, _ = _executor.compile(net, *inputs, phase=phase_name, do_convert=False)
     # pylint: disable=protected-access
@@ -2202,7 +2200,7 @@ def _save_onnx(net, file_name, *inputs, **kwargs):
 def _check_dynamic_input(inputs):
     for ele in inputs:
         if isinstance(ele, Tensor) and -1 in ele.shape:
-            raise ValueError(f"Export ONNX format model not support dynamic shape mode.")
+            raise ValueError("Export ONNX format model not support dynamic shape mode.")
 
 
 def _generate_front_info_for_param_data_file(is_encrypt, kwargs):

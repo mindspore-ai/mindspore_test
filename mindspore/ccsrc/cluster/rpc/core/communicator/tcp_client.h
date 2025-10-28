@@ -63,7 +63,6 @@ class BACKEND_COMMON_EXPORT TcpClient {
   void StartWithDelay(int seconds);
   void Stop();
   void Start();
-  void StartWithNoBlock();
   void SetMessageCallback(const OnMessage &cb);
   bool SendMessage(const CommMessage &message) const;
   bool SendMessage(const std::shared_ptr<MessageMeta> &meta, const Protos &protos, const void *data, size_t size);

@@ -152,16 +152,6 @@ bool PSContext::is_scheduler() const {
   return is_sched_;
 }
 
-uint32_t PSContext::initial_worker_num() const { return worker_num_; }
-
-uint32_t PSContext::initial_server_num() const { return server_num_; }
-
-std::string PSContext::scheduler_host() const { return scheduler_host_; }
-
-void PSContext::SetPSRankId(uint32_t rank_id) { rank_id_ = rank_id; }
-
-uint32_t PSContext::ps_rank_id() const { return rank_id_; }
-
 void PSContext::InsertHashTableSize(const std::string &param_name, size_t cache_vocab_size, size_t embedding_size,
                                     size_t vocab_size, int32_t param_key) const {
   return;
@@ -283,17 +273,6 @@ void PSContext::ClearServerPassword() {
   if (ret != 0) {
     MS_LOG(EXCEPTION) << "Clear client password failed, error: " << ret;
   }
-}
-
-std::string PSContext::http_url_prefix() const { return http_url_prefix_; }
-
-void PSContext::set_instance_name(const std::string &instance_name) { instance_name_ = instance_name; }
-
-const std::string &PSContext::instance_name() const { return instance_name_; }
-
-bool PSContext::enable_distributed_mindrt() const {
-  bool ms_cluster_enabled = distributed::cluster::ClusterContext::instance()->initialized();
-  return ms_cluster_enabled;
 }
 
 void PSContext::set_checkpoint_load_status(bool status) { return; }

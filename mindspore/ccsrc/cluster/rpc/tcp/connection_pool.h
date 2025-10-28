@@ -49,7 +49,6 @@ class ConnectionPool {
    * Operations for ConnectionInfo.
    */
   void AddConnInfo(int socket_fd, const std::string &dst_url, DeleteCallBack delcb);
-  bool ReverseConnInfo(int from_socket_fd, int to_socket_fd);
 
   /*
    * Operations for Connection.
@@ -69,8 +68,6 @@ class ConnectionPool {
 
   // Single link or double link.
   void SetLinkPattern(bool linkPattern);
-
-  void ResetAllConnMetrics();
 
  private:
   ConnectionInfo *FindConnInfo(int socket_fd, const std::string &dst_url);

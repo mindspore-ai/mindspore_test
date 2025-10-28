@@ -249,9 +249,6 @@ struct Connection {
   // After ParseMessage, set from url and to url into recv message.
   bool SetUrlForRecvMessage();
 
-  // Make a http message based on given input message.
-  std::string GenerateHttpMessage(MessageBase *msg);
-
   // Change the header body from network byte order to host byte order.
   void ReorderHeader(MessageHeader *header) const;
 
