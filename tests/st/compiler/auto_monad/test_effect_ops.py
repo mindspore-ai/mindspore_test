@@ -1,4 +1,4 @@
-# Copyright 2020-2023 Huawei Technologies Co., Ltd
+# Copyright 2020-2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,16 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
+"""test auto monad"""
+# pylint: disable=C0115
+# pylint: disable=C0116
+# pylint: disable=R1705
+# pylint: disable=R1707
 import os
 import time
 import tempfile
 import scipy
 import numpy as np
-import mindspore.nn as nn
+import mindspore as ms
 import mindspore.ops.operations as P
-from mindspore import context, Tensor
+from mindspore import nn, context, Tensor, ParameterTuple
 from mindspore.common import dtype as mstype
 from mindspore.common.parameter import Parameter
+from mindspore.ops.composite import GradOperation
 from mindspore.train.summary.summary_record import SummaryRecord
 from tests.summary_utils import SummaryReader
 from tests.security_utils import security_off_wrap
@@ -32,7 +38,7 @@ context.set_context(mode=context.GRAPH_MODE)
 
 class AssignAddNet(nn.Cell):
     def __init__(self, para):
-        super(AssignAddNet, self).__init__()
+        super().__init__()
         self.para = Parameter(para, name="para")
         self.assign_add = P.AssignAdd()
 
@@ -59,7 +65,7 @@ def test_assign_add():
 
 class AssignSubNet(nn.Cell):
     def __init__(self, para):
-        super(AssignSubNet, self).__init__()
+        super().__init__()
         self.para = Parameter(para, name="para")
         self.assign_sub = P.AssignSub()
 
@@ -86,7 +92,7 @@ def test_assign_sub():
 
 class ScatterAddNet(nn.Cell):
     def __init__(self, input_x):
-        super(ScatterAddNet, self).__init__()
+        super().__init__()
         self.input_x = Parameter(input_x, name="para")
         self.scatter_add = P.ScatterAdd()
 
@@ -114,7 +120,7 @@ def test_scatter_add():
 
 class ScatterSubNet(nn.Cell):
     def __init__(self, input_x):
-        super(ScatterSubNet, self).__init__()
+        super().__init__()
         self.input_x = Parameter(input_x, name="para")
         self.scatter_sub = P.ScatterSub()
 
@@ -142,7 +148,7 @@ def test_scatter_sub():
 
 class ScatterMulNet(nn.Cell):
     def __init__(self, input_x):
-        super(ScatterMulNet, self).__init__()
+        super().__init__()
         self.input_x = Parameter(input_x, name="para")
         self.scatter_mul = P.ScatterMul()
 
@@ -170,7 +176,7 @@ def test_scatter_mul():
 
 class ScatterDivNet(nn.Cell):
     def __init__(self, input_x):
-        super(ScatterDivNet, self).__init__()
+        super().__init__()
         self.input_x = Parameter(input_x, name="para")
         self.scatter_div = P.ScatterDiv()
 
@@ -198,7 +204,7 @@ def test_scatter_div():
 
 class ScatterMaxNet(nn.Cell):
     def __init__(self, input_x):
-        super(ScatterMaxNet, self).__init__()
+        super().__init__()
         self.input_x = Parameter(input_x, name="para")
         self.scatter_max = P.ScatterMax()
 
@@ -226,7 +232,7 @@ def test_scatter_max():
 
 class ScatterMinNet(nn.Cell):
     def __init__(self, input_x):
-        super(ScatterMinNet, self).__init__()
+        super().__init__()
         self.input_x = Parameter(input_x, name="para")
         self.scatter_min = P.ScatterMin()
 
@@ -254,7 +260,7 @@ def test_scatter_min():
 
 class ScatterUpdateNet(nn.Cell):
     def __init__(self, input_x):
-        super(ScatterUpdateNet, self).__init__()
+        super().__init__()
         self.input_x = Parameter(input_x, name="para")
         self.scatter_update = P.ScatterUpdate()
 
@@ -282,7 +288,7 @@ def test_scatter_update():
 
 class ScatterNdAddNet(nn.Cell):
     def __init__(self, input_x):
-        super(ScatterNdAddNet, self).__init__()
+        super().__init__()
         self.input_x = Parameter(input_x, name="para")
         self.scatter_nd_add = P.ScatterNdAdd()
 
@@ -310,7 +316,7 @@ def test_scatter_nd_add():
 
 class ScatterNdSubNet(nn.Cell):
     def __init__(self, input_x):
-        super(ScatterNdSubNet, self).__init__()
+        super().__init__()
         self.input_x = Parameter(input_x, name="para")
         self.scatter_nd_sub = P.ScatterNdSub()
 
@@ -338,7 +344,7 @@ def test_scatter_nd_sub():
 
 class ScatterNdUpdateNet(nn.Cell):
     def __init__(self, input_x):
-        super(ScatterNdUpdateNet, self).__init__()
+        super().__init__()
         self.input_x = Parameter(input_x, name="para")
         self.scatter_nd_update = P.ScatterNdUpdate()
 
@@ -366,7 +372,7 @@ def test_scatter_nd_update():
 
 class ScatterNonAliasingAddNet(nn.Cell):
     def __init__(self, input_x):
-        super(ScatterNonAliasingAddNet, self).__init__()
+        super().__init__()
         self.input_x = Parameter(input_x, name="para")
         self.scatter_non_aliasing_add = P.ScatterNonAliasingAdd()
 
@@ -452,6 +458,7 @@ def test_igamma():
     Description: Verify igamma operator.
     Expectation: No exception.
     """
+
     class IGammaTest(nn.Cell):
         def __init__(self):
             super().__init__()
@@ -466,3 +473,126 @@ def test_igamma():
     out = net(Tensor(x, mstype.float32), Tensor(a, mstype.float32))
     expect = scipy.special.gammainc(a, x)
     assert np.allclose(out.asnumpy(), expect, rtol=1e-5, atol=1e-5, equal_nan=True)
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_side_effect_scalarsummary_in_bprop():
+    """
+    Feature: Auto monad feature.
+    Description: Verify ScalarSummary operator in bprop.
+    Expectation: No exception.
+    """
+
+    class Net(nn.Cell):
+        def __init__(self):
+            super().__init__()
+            self.summary = P.ScalarSummary()
+
+        def construct(self, x, y):
+            return x, y
+
+        def bprop(self, x, y, out, dout):
+            name_x = "xx"
+            name_y = "yy"
+            self.summary(name_x, x)
+            self.summary(name_y, y)
+            dx = x * 2
+            dy = y * 3
+            return dx, dy
+
+    class GradNet(nn.Cell):
+        def __init__(self, net):
+            super().__init__()
+            self.net = net
+            self.grad_op = ms.ops.GradOperation(get_all=True)
+
+        def construct(self, x, y):
+            gradient_function = self.grad_op(self.net)
+            return gradient_function(x, y)
+
+    x = Tensor([3], dtype=ms.int32)
+    y = Tensor([4], dtype=ms.int32)
+    net = Net()
+    _ = net(x, y)
+    out_grad = GradNet(Net())(x, y)
+    assert out_grad[0].asnumpy() == 6
+    assert out_grad[1].asnumpy() == 12
+
+
+class _Grad(nn.Cell):
+    def __init__(self, grad, network, wrt_params=False, real_inputs_count=None):
+        super().__init__()
+        self.network = network
+        self.grad = grad
+        self.sens_param = self.grad.sens_param
+        self.wrt_params = wrt_params
+        self.real_inputs_count = real_inputs_count
+        if self.wrt_params:
+            self.params = ParameterTuple(self.network.trainable_params())
+
+    def construct(self, *inputs):
+        if self.wrt_params:
+            if self.real_inputs_count is None or self.sens_param is False:
+                return self.grad(self.network, self.params)(*inputs)
+            else:
+                real_inputs = inputs[:self.real_inputs_count]
+                sense_param_inputs = inputs[self.real_inputs_count:]
+                return self.grad(self.network, self.params)(*real_inputs, sense_param_inputs)
+        else:
+            if self.real_inputs_count is None or self.sens_param is False:
+                return self.grad(self.network)(*inputs)
+            else:
+                real_inputs = inputs[:self.real_inputs_count]
+                sense_param_inputs = inputs[self.real_inputs_count:]
+                return self.grad(self.network)(*real_inputs, sense_param_inputs)
+
+
+class GradOfAllInputs(_Grad):
+    """
+    get grads of all inputs
+    """
+
+    def __init__(self, network, sens_param=True, real_inputs_count=None):
+        super().__init__(grad=GradOperation(get_all=True, sens_param=sens_param),
+                         network=network, real_inputs_count=real_inputs_count)
+
+
+class SideEffectOneInputBprop(nn.Cell):
+    def __init__(self):
+        super().__init__()
+        self.relu = P.ReLU()
+        self.mul = P.Mul()
+        self.print1 = P.Print()
+
+    def construct(self, x):
+        return self.relu(x)
+
+    def bprop(self, x, out, dout):
+        x = self.relu(x)
+        x = 5 * x
+        self.print1("x1: ", x)
+        x = self.mul(x, x)
+        self.print1("x2: ", x)
+        return 5 * x,
+
+    def grad_mindspore_impl(self, params1, grad_ys):
+        grad_net = GradOfAllInputs(self, sens_param=True)
+        grad_net.set_train()
+        grad_out = grad_net(params1, grad_ys)
+        return grad_out
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_side_effect_bprop_oneinputbprop():
+    """
+    Feature: Auto monad feature.
+    Description: Verify print operator in bprop.
+    Expectation: No exception.
+    """
+    net = SideEffectOneInputBprop()
+    net.set_grad()
+    grad_ys = Tensor(np.ones([2, 2]), ms.float32)
+    input1 = Tensor(np.ones([2, 2]).astype(np.float32))
+    grads = net.grad_mindspore_impl(input1, grad_ys)
+    assert (grads[0].asnumpy() == np.ones([2, 2]).astype(np.float32) * 125).all()
+    assert len(grads) == 1
