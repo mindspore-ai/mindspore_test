@@ -20,7 +20,7 @@
 
 #include "ir/tensor_new.h"
 #include "plugin/ascend/res_manager/collective/multi_ascend_collective_comm_lib.h"
-#include "include/backend/distributed/collective/collective_manager.h"
+#include "include/cluster/topology/collective_manager.h"
 #include "mindspore/ops/op_def/other_ops.h"
 #include "backend/common/pass/common/gllo_utils.h"
 #include "plugin/ascend/res_manager/hal_manager/ascend_hal_manager.h"

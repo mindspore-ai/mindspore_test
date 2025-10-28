@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "include/backend/distributed/init.h"
+#include "include/cluster/init.h"
 #if ((defined ENABLE_CPU) && (!defined _WIN32) && !defined(__APPLE__))
 #include <signal.h>
 #endif

@@ -20,7 +20,7 @@
 #include "mindspore/ops/op_def/nn_ops.h"
 #include "include/backend/optimizer/helper.h"
 #include "include/backend/anf_runtime_algorithm.h"
-#include "include/backend/distributed/collective/collective_manager.h"
+#include "include/cluster/topology/collective_manager.h"
 #include "include/utils/anfalgo.h"
 #include "include/utils/utils.h"
 #include "include/api/data_type.h"

@@ -47,7 +47,7 @@
 #endif
 #include "include/backend/debug/data_dump/dump_json_parser.h"
 #if defined(__linux__) && defined(WITH_BACKEND)
-#include "include/backend/distributed/ps/ps_context.h"
+#include "include/cluster/topology/ps_context.h"
 #endif
 
 #include "backend/common/device_address_utils.h"

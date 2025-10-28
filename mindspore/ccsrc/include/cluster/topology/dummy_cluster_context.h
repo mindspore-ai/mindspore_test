@@ -25,7 +25,7 @@
 #include <vector>
 #include <optional>
 #include <cstdint>
-#include "include/backend/distributed/constants.h"
+#include "include/cluster/topology/constants.h"
 #include "utils/log_adapter.h"
 #include "utils/ms_utils.h"
 #include "include/backend/visible.h"

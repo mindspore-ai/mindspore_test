@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "include/backend/distributed/cluster/tcp_store.h"
+#include "include/cluster/rpc/tcp_store.h"
 #include "utils/ms_utils.h"
 #include "include/utils/utils.h"
 

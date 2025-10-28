@@ -33,7 +33,7 @@
 
 #include "cluster/rpc/core/cluster_metadata.h"
 #include "cluster/rpc/core/cluster_config.h"
-#include "include/backend/distributed/ps/ps_context.h"
+#include "include/cluster/topology/ps_context.h"
 #include "cluster/rpc/core/node_info.h"
 #include "cluster/rpc/core/communicator/tcp_client.h"
 #include "cluster/rpc/core/communicator/tcp_server.h"

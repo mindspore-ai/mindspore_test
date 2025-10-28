@@ -25,12 +25,12 @@
 #include "proto/ps.pb.h"
 #include "cluster/rpc/core/cluster_metadata.h"
 #include "cluster/rpc/core/cluster_config.h"
-#include "include/backend/distributed/ps/ps_context.h"
+#include "include/cluster/topology/ps_context.h"
 #include "cluster/rpc/core/communicator/task_executor.h"
 #include "cluster/rpc/core/communicator/communicator_base.h"
 #include "cluster/rpc/core/communicator/tcp_msg_handler.h"
 #include "cluster/rpc/core/comm_util.h"
-#include "include/backend/distributed/ps/constants.h"
+#include "include/cluster/rpc/constants.h"
 
 namespace mindspore {
 namespace ps {

@@ -23,7 +23,7 @@
 #include <unordered_map>
 #include <algorithm>
 #include "tools/error_handler/error_config.h"
-#include "include/backend/distributed/collective/collective_manager.h"
+#include "include/cluster/topology/collective_manager.h"
 #include "plugin/ascend/res_manager/hccl_adapter/hccl_adapter.h"
 #include "plugin/ascend/res_manager/error_manager/collective_comm_monitor.h"
 #include "plugin/ascend/res_manager/collective/ascend_collective_comm_lib.h"
@@ -31,7 +31,7 @@
 #include "plugin/ascend/res_manager/symbol_interface/acl_rt_symbol.h"
 #include "plugin/ascend/res_manager/symbol_interface/acl_symbol.h"
 #include "plugin/ascend/res_manager/symbol_interface/symbol_utils.h"
-#include "include/backend/distributed/cluster/cluster_context.h"
+#include "include/cluster/topology/cluster_context.h"
 #include "plugin/ascend/res_manager/hal_manager/ascend_err_manager.h"
 #include "plugin/ascend/res_manager/collective/utils.h"
 

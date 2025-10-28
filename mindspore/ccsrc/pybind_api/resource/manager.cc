@@ -53,7 +53,7 @@
 #include "runtime/core/graph_executor/pipeline/runtime_pipeline.h"
 #include "runtime/core/graph_scheduler/base/graph_scheduler.h"
 #include "tools/profiler/profiler.h"
-#include "include/backend/distributed/collective/collective_manager.h"
+#include "include/cluster/topology/collective_manager.h"
 #include "tools/profiler/profiling.h"
 #include "tools/error_handler/exit_handler.h"
 #include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/graph_kernel_builder_manager.h"
@@ -66,7 +66,7 @@
 #include "include/backend/debug/debugger/debugger.h"
 #endif
 #if defined(__linux__) && defined(WITH_BACKEND)
-#include "include/backend/distributed/cluster/cluster_context.h"
+#include "include/cluster/topology/cluster_context.h"
 #endif
 #ifdef ENABLE_DUMP_IR
 #include "ir/cell.h"

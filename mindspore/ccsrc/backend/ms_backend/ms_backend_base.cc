@@ -66,7 +66,7 @@
 #endif
 #include "tools/profiler/profiling.h"
 #if defined(__linux__) && defined(WITH_BACKEND)
-#include "include/backend/distributed/ps/ps_context.h"
+#include "include/cluster/topology/ps_context.h"
 #endif
 #include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel_flags.h"
 #include "include/backend/optimizer/graph_optimizer.h"
@@ -78,7 +78,7 @@
 #include "include/runtime/utils/runtime_conf/runtime_conf.h"
 #include "include/runtime/utils/runtime_conf/thread_bind_core.h"
 
-#include "include/backend/distributed/collective/collective_manager.h"
+#include "include/cluster/topology/collective_manager.h"
 #include "ir/func_graph_flag.h"
 #include "ir/graph_utils.h"
 

@@ -33,12 +33,12 @@
 #include "utils/profile.h"
 
 #if defined(__linux__) && defined(WITH_BACKEND)
-#include "include/backend/distributed/cluster/cluster_context.h"
-#include "include/backend/distributed/ps/ps_context.h"
+#include "include/cluster/topology/cluster_context.h"
+#include "include/cluster/topology/ps_context.h"
 #endif
 #include "include/utils/compile_cache_context.h"
 #include "include/utils/config_manager.h"
-#include "include/backend/distributed/collective/collective_manager.h"
+#include "include/cluster/topology/collective_manager.h"
 
 namespace mindspore {
 #ifndef MINDIR_EXPORT_TENSOR_LAYOUT_CLIP

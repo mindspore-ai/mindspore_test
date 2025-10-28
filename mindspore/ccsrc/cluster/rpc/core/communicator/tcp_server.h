@@ -39,8 +39,8 @@
 #include "cluster/rpc/core/communicator/ssl_wrapper.h"
 #include "cluster/rpc/core/cluster_config.h"
 #include "cluster/rpc/core/comm_util.h"
-#include "include/backend/distributed/ps/constants.h"
-#include "include/backend/distributed/ps/ps_context.h"
+#include "include/cluster/rpc/constants.h"
+#include "include/cluster/topology/ps_context.h"
 #include "cluster/rpc/core/file_configuration.h"
 
 namespace mindspore {

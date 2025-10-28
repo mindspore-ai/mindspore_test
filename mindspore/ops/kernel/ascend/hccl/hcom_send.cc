@@ -19,13 +19,13 @@
 #include <string>
 #include <utility>
 
-#include "include/backend/distributed/rpc/tcp/tcp_client.h"
+#include "include/cluster/rpc/tcp_client.h"
 #include "cluster/topology/actor_route_table_proxy.h"
-#include "include/backend/distributed/cluster/cluster_context.h"
+#include "include/cluster/topology/cluster_context.h"
 #include "include/utils/parallel_context.h"
 #include "proto/topology.pb.h"
 #include "runtime/core/actors/base/memory_manager_actor.h"
-#include "include/backend/distributed/collective/collective_manager.h"
+#include "include/cluster/topology/collective_manager.h"
 
 namespace mindspore {
 namespace kernel {

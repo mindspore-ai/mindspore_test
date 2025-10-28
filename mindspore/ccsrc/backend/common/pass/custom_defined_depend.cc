@@ -23,7 +23,7 @@
 #include "mindspore/ops/op_def/other_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "utils/file_utils.h"
-#include "include/backend/distributed/collective/collective_manager.h"
+#include "include/cluster/topology/collective_manager.h"
 #include "include/utils/comm_manager.h"
 #include "include/utils/common.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"

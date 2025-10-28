@@ -19,15 +19,15 @@
 #include <mutex>
 #include <string>
 #include <functional>
-#include "include/backend/distributed/rpc/tcp/tcp_server.h"
+#include "include/cluster/rpc/tcp_server.h"
 #include "cluster/topology/actor_route_table_proxy.h"
-#include "include/backend/distributed/cluster/cluster_context.h"
+#include "include/cluster/topology/cluster_context.h"
 #include "include/utils/parallel_context.h"
 #include "proto/topology.pb.h"
 #include "runtime/hardware_abstract/kernel_base/graph_fusion/framework_utils.h"
 #include "include/backend/optimizer/helper.h"
-#include "include/backend/distributed/rpc/tcp/constants.h"
-#include "include/backend/distributed/collective/collective_manager.h"
+#include "cluster/rpc/tcp/constants.h"
+#include "include/cluster/topology/collective_manager.h"
 #include "mindspore/core/include/utils/ms_utils.h"
 namespace mindspore {
 namespace kernel {

@@ -26,7 +26,7 @@
 #include "runtime/core/graph_executor/pre_launch/comm_execution_order_check.h"
 #include "async/async.h"
 #include "utils/log_adapter.h"
-#include "include/backend/distributed/collective/collective_manager.h"
+#include "include/cluster/topology/collective_manager.h"
 
 namespace mindspore {
 namespace runtime {

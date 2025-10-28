@@ -22,7 +22,7 @@
 #include <chrono>
 #include "proto/topology.pb.h"
 #include "include/backend/visible.h"
-#include "include/backend/distributed/cluster/topology/compute_graph_node.h"
+#include "include/cluster/topology/compute_graph_node.h"
 
 namespace mindspore {
 namespace distributed {

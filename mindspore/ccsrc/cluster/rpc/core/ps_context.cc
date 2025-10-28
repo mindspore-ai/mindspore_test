@@ -14,17 +14,17 @@
  * limitations under the License.
  */
 
-#include "include/backend/distributed/ps/ps_context.h"
+#include "include/cluster/topology/ps_context.h"
 
 #include "ir/tensor.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel.h"
 #include "utils/log_adapter.h"
 #include "utils/ms_utils.h"
 #if ((defined ENABLE_CPU) && (!defined _WIN32) && !defined(__APPLE__))
-#include "include/backend/distributed/cluster/cluster_context.h"
+#include "include/cluster/topology/cluster_context.h"
 #include "cluster/rpc/core/cluster_config.h"
 #else
-#include "include/backend/distributed/cluster/dummy_cluster_context.h"
+#include "include/cluster/topology/dummy_cluster_context.h"
 #include "cluster/rpc/core/cluster_config.h"
 #endif
 

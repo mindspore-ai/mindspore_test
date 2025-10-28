@@ -24,9 +24,9 @@
 #include <map>
 #include <shared_mutex>
 #include <limits>
-#include "include/backend/distributed/cluster/topology/common.h"
-#include "include/backend/distributed/rpc/tcp/tcp_client.h"
-#include "include/backend/distributed/cluster/topology/node_base.h"
+#include "include/cluster/topology/common.h"
+#include "include/cluster/rpc/tcp_client.h"
+#include "include/cluster/topology/node_base.h"
 
 namespace mindspore {
 namespace distributed {

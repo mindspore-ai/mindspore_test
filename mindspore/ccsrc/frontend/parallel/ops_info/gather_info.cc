@@ -28,7 +28,7 @@
 #include "frontend/parallel/graph_util/generate_graph.h"
 #include "include/utils/parallel_context.h"
 #if defined(__linux__) && defined(WITH_BACKEND)
-#include "include/backend/distributed/ps/ps_context.h"
+#include "include/cluster/topology/ps_context.h"
 #endif
 
 namespace mindspore {

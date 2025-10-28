@@ -29,7 +29,7 @@
 #include "utils/log_adapter.h"
 #include "utils/ms_utils.h"
 #include "utils/ms_context.h"
-#include "include/backend/distributed/constants.h"
+#include "include/cluster/topology/constants.h"
 #include "include/utils/parallel_context.h"
 #include "include/utils/anfalgo.h"
 #include "mindspore/ops/op_def/ascend_op_name.h"

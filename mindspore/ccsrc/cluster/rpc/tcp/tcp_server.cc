@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "include/backend/distributed/rpc/tcp/tcp_server.h"
+#include "include/cluster/rpc/tcp_server.h"
 #include "include/runtime/utils/runtime_conf/runtime_env.h"
 
 namespace mindspore {

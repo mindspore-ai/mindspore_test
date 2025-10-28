@@ -48,7 +48,7 @@
 #include "include/backend/debug/data_dump/dump_json_parser.h"
 #include "include/backend/optimizer/graph_optimizer.h"
 #if defined(__linux__) && defined(WITH_BACKEND)
-#include "include/backend/distributed/ps/ps_context.h"
+#include "include/cluster/topology/ps_context.h"
 #endif
 #include "tools/profiler/profiler.h"
 #include "include/utils/compile_cache_context.h"

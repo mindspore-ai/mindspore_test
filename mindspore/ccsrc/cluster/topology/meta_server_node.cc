@@ -26,9 +26,9 @@
 #include "utils/ms_context.h"
 #include "utils/ms_exception.h"
 #include "proto/topology.pb.h"
-#include "include/backend/distributed/ps/ps_context.h"
-#include "include/backend/distributed/rpc/tcp/constants.h"
-#include "include/backend/distributed/collective/collective_manager.h"
+#include "include/cluster/topology/ps_context.h"
+#include "cluster/rpc/tcp/constants.h"
+#include "include/cluster/topology/collective_manager.h"
 #include "utils/convert_utils_base.h"
 #include "utils/file_utils.h"
 

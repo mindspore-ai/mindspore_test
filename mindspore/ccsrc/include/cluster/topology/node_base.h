@@ -20,8 +20,8 @@
 #include <chrono>
 #include <string>
 #include <memory>
-#include "include/backend/distributed/cluster/topology/common.h"
-#include "include/backend/distributed/cluster/topology/utils.h"
+#include "include/cluster/topology/common.h"
+#include "include/cluster/topology/utils.h"
 
 namespace mindspore {
 namespace distributed {
