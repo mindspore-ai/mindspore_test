@@ -12,12 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+"""
+script of binding core: msrun --bind_core and mindspore.runtime.set_cpu_affinity
+"""
 import os
 import json
 import numpy as np
 import mindspore as ms
-import mindspore.nn as nn
 import mindspore.ops as P
+from mindspore import nn
 from mindspore import Tensor, jit
 from mindspore import dtype as mstype
 from mindspore.common import Parameter
@@ -41,9 +44,13 @@ else:
     affinity_cpu_list = _get_env_with_json('AFFINITY_CPU_LIST_2', None)
 module_to_cpu_dict = _get_env_with_json('MODULE_TO_CPU_DICT', None)
 
+if os.getenv("DISTRIBUTED") == "1":
+    ms.communication.init()
+
 ms.runtime.set_cpu_affinity(True, affinity_cpu_list, module_to_cpu_dict)
 
 class Net(nn.Cell):
+    """Network with jit and dynamic shape."""
     def __init__(self):
         super().__init__()
         self.param = Parameter(Tensor(2, ms.float32))
