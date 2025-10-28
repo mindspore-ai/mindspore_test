@@ -37,7 +37,11 @@ void *WsAllocCallback(uint64_t size, void *user_data) {
 }  // namespace
 
 void LazyFusionQueue::Push(const runtime::AsyncTaskPtr &task) {
-  FlushLazyFusion();
+  // When the task type is kBpropTask, this task is only for facilitating destruction and does not involve actual
+  // operator offloading, thus no synchronization is required
+  if (task->task_type() != runtime::kBpropTask) {
+    FlushLazyFusion();
+  }
   AsyncRQueue::Push(task);
 }
 
