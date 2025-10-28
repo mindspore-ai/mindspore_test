@@ -196,13 +196,25 @@ def test_allgather_v():
 
 @arg_mark(plat_marks=["platform_ascend910b"], level_mark="level1", card_mark="allcards", essential_mark="essential")
 @test_utils.run_test_with_On
-def test_allgatherv_dts():
+def test_allgatherv_grad():
     """
-    Feature: mpi run 2P case of 'allgather_v' communication operator.
-    Description: mpi run 2P case of 'allgather_v' communication operator.
+    Feature: mpi run 2P case of allgather_v grad communication operator.
+    Description: mpi run 2P case of allgather_v grad communication operator.
     Expectation: success
     """
-    return_code = os.system("msrun --worker_num=2 --local_worker_num=2 --join=True pytest -sv  test_allgatherv_dts.py")
+    return_code = os.system("msrun --worker_num=2 --local_worker_num=2 --join=True pytest -sv  test_allgatherv_grad.py")
+    assert return_code == 0
+
+
+@arg_mark(plat_marks=["platform_ascend910b"], level_mark="level1", card_mark="allcards", essential_mark="essential")
+@test_utils.run_test_with_On
+def test_dynamic_shape():
+    """
+    Feature: mpi run 2P case of communication dynamic shape operator.
+    Description: mpi run 2P case of communication dynamic shape operator.
+    Expectation: success
+    """
+    return_code = os.system("msrun --worker_num=8 --local_worker_num=8 --join=True pytest -sv  test_dynamic_shape.py")
     assert return_code == 0
 
 
@@ -239,6 +251,24 @@ def test_func_all_to_all_v_c():
     Expectation: success
     """
     return_code = os.system("mpirun --allow-run-as-root -n 2 pytest -s test_func_all_to_all_v_c.py")
+    assert return_code == 0
+
+
+@arg_mark(plat_marks=["platform_ascend910b"], level_mark="level1", card_mark="allcards", essential_mark="essential")
+@test_utils.run_test_with_On
+def test_func_all_to_all_v_c1():
+    """
+    Feature: mpi run 2P case of 'func_all_to_all_v_c' communication operator.
+    Description: mpi run 2P case of 'func_all_to_all_v_c' communication operator.
+    Expectation: success
+    """
+    return_code = os.system("mpirun --allow-run-as-root -n 2 pytest -s test_func_all_to_all_v_c.py")
+    return_code = os.system(
+        r"cp  test_func_all_to_all_v_c.py test_func_all_to_all_v_c1.py && "\
+        r"sed -i 's/mindspore\.communication\.comm_func\.distributed/mindspore.ops.communication/g' "\
+        r"test_func_all_to_all_v_c1.py && msrun --worker_num=2 --local_worker_num=2 --master_addr=127.0.0.1 "\
+        r"--master_port=10666 --join=True pytest -s test_func_all_to_all_v_c1.py"
+    )
     assert return_code == 0
 
 
