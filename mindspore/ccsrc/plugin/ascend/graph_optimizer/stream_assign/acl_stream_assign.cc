@@ -405,7 +405,7 @@ void AclStreamAssign::AssignStream(
   }
   uint32_t max_stream_id = kDefaultStreamIndex;
   // Frontend's stream_id --> backend's stream_id
-  mindspore::HashMap<int64_t, size_t> stream_map;
+  static mindspore::HashMap<int64_t, size_t> stream_map;
   // Frontend's event_id --> backend's event_id
   static std::map<uint32_t, uint32_t> event_map;
   // backend's event_id --> backend's aclrt event
