@@ -12,12 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+"""GE backend dump test."""
+
 import subprocess
 from tests.mark_utils import arg_mark
 from tests.security_utils import security_off_wrap
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @security_off_wrap
 def test_ge_backend_dump():
     """
@@ -32,7 +34,8 @@ def test_ge_backend_dump():
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
         text=True,
-        timeout=120
+        timeout=120,
+        check=True
     )
 
     output = result.stdout
