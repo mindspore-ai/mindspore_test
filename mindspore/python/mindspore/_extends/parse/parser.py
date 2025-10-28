@@ -42,6 +42,7 @@ from mindspore.common.api import _JitExecutor
 from mindspore.common import dtype as mstype
 from mindspore.common.parameter import Parameter
 from mindspore.common import mutable
+from mindspore._extends.ast_checker import AstChecker
 from .namespace import Namespace, ModuleNamespace, ClosureNamespace, ClassMemberNamespace
 from .resources import (parse_object_map, parse_augassign_object_map, ops_symbol_map, convert_object_map,
                         convert_class_to_function_map, trope_ns)
@@ -636,7 +637,7 @@ def expand_expr_statement(node):
                 if method in parse_expr_statement_white_list:
                     logger.debug("Expand expr, target:%s, method:%s", target, method)
                     return True, expr_value, target, method in _need_reorder_methods
-        if not isinstance(expr_value, ast.Str):
+        if not AstChecker.check_type(expr_value, "ast.Str"):
             return True, expr_value
     return (False,)
 

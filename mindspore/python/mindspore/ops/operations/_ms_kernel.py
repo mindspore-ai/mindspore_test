@@ -20,6 +20,7 @@ from functools import wraps
 from itertools import product
 import numpy
 from mindspore import context, log
+from mindspore._extends.ast_checker import AstChecker
 
 
 def _allocate(shape, dtype='float32', scope='global'):
@@ -320,12 +321,15 @@ class VariableUsage(ast.NodeVisitor):
                 raise ValueError(
                     "In the function {} written in the Hybrid DSL, two inputs are expected by 'attr', "
                     "but get {}".format(self.func_name, len(context_expr.args)))
-            if not isinstance(context_expr.args[0], ast.Str):
+            if not AstChecker.check_type(context_expr.args[0], "ast.Str"):
                 raise ValueError(
                     "In the function {} written in the Hybrid DSL, the first input of 'attr' should be a string, "
                     "but get {}".format(self.func_name, type(context_expr.args[0])))
-            if not (isinstance(context_expr.args[1], (ast.Str, ast.Num, ast.NameConstant)) and
-                    context_expr.args[1].value is not None):
+            if not (
+                AstChecker.check_type(context_expr.args[1], "ast.Str", "ast.Num", "ast.NameConstant")
+                and hasattr(context_expr.args[1], 'value')
+                and context_expr.args[1].value is not None
+            ):
                 raise ValueError(
                     "In the function {} written in the Hybrid DSL, the second input of 'attr' should be a string, "
                     "number or bool value, but get {}".format(self.func_name, type(context_expr.args[1])))
@@ -345,7 +349,7 @@ class VariableUsage(ast.NodeVisitor):
                 "{} ".format(self.func_name, context_expr.func.id))
 
         for stmt in node.body:
-            if not (isinstance(stmt, ast.Expr) and isinstance(stmt.value, ast.Str)):
+            if not (isinstance(stmt, ast.Expr) and AstChecker.check_type(stmt.value, "ast.Str")):
                 self.visit(stmt)
 
     def visit_Assign(self, node):
