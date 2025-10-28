@@ -62,9 +62,6 @@
 #include "utils/ms_utils.h"
 #include "utils/info.h"
 #include "utils/trace_info.h"
-#ifdef ENABLE_DEBUGGER
-#include "include/backend/debug/debugger/debugger.h"
-#endif
 #include "tools/profiler/profiling.h"
 #if defined(__linux__) && defined(WITH_BACKEND)
 #include "include/cluster/topology/ps_context.h"
@@ -78,7 +75,7 @@
 #include "include/utils/stub_tensor.h"
 #include "include/runtime/utils/runtime_conf/runtime_conf.h"
 #include "include/runtime/utils/runtime_conf/thread_bind_core.h"
-
+#include "include/utils/callback.h"
 #include "include/cluster/topology/collective_manager.h"
 #include "ir/func_graph_flag.h"
 #include "ir/graph_utils.h"
@@ -1693,11 +1690,16 @@ void MSBackendBase::CreateTensorArgs(const VectorRef &args, const GraphCompilerI
 
 #ifdef ENABLE_DEBUGGER
 void MSBackendBase::SetDebuggerInit() const {
-  auto debugger_ = Debugger::GetInstance();
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
-  MS_EXCEPTION_IF_NULL(debugger_);
-  debugger_->Init(device_id_, ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET));
+  constexpr char kInit[] = "DebuggerInit";
+  static auto init_callback =
+    callback::CommonCallback::GetInstance().GetCallback<void, const uint32_t, const std::string &>(kInit);
+  if (init_callback) {
+    init_callback(device_id_, ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET));
+  } else {
+    MS_LOG(WARNING) << "Failed to get DebuggerInit, data dump function may not work.";
+  }
 }
 #endif
 

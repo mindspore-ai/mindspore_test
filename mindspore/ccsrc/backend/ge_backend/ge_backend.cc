@@ -554,11 +554,13 @@ bool GEBackend::OpenTsd(const std::shared_ptr<MsContext> &ms_context_ptr) {
   static auto tensordump_callback =
     callback::CommonCallback::GetInstance().GetCallback<void, const std::string &, const std::vector<MbufDataItem> &>(
       kMbufTensorDumpCallback);
-  if (!tensordump_callback) {
-    MS_LOG(WARNING) << "Failed to get MbufTensorDumpCallback, summary function may not work.";
+  if (tensordump_callback) {
+    device::ascend::MbufDataHandlerManager::GetInstance().AddHandler(std::make_unique<device::ascend::MbufDataHandler>(
+      tensordump_callback, device_id, kTensorDumpChannelName, kTensorDumpOpName));
+  } else {
+    MS_LOG(WARNING) << "Failed to get MbufTensorDumpCallback, tensor dump function may not work.";
   }
-  device::ascend::MbufDataHandlerManager::GetInstance().AddHandler(std::make_unique<device::ascend::MbufDataHandler>(
-    tensordump_callback, device_id, kTensorDumpChannelName, kTensorDumpOpName));
+
   if (device::ascend::TensorReportUtils::IsEnable()) {
     device::ascend::MbufDataHandlerManager::GetInstance().AddHandler(std::make_unique<device::ascend::MbufDataHandler>(
       std::bind(&device::ascend::TensorReportUtils::ReportReceiveData,
@@ -637,10 +639,10 @@ BackendGraphId GEBackend::Build(const FuncGraphPtr &func_graph, const BackendJit
 
   // Register a summary callback function, which is called in the final stages of summary.
   constexpr char kRegisterSummaryCallBackFunc[] = "RegisterSummaryCallBackFunc";
-  static auto RegisterSummaryCallBackFunc_callback =
+  static auto register_summary_callback_func_callback =
     callback::CommonCallback::GetInstance().GetCallback<void>(kRegisterSummaryCallBackFunc);
-  if (RegisterSummaryCallBackFunc_callback) {
-    RegisterSummaryCallBackFunc_callback();
+  if (register_summary_callback_func_callback) {
+    register_summary_callback_func_callback();
   } else {
     MS_LOG(WARNING) << "Failed to get RegisterSummaryCallBackFunc, summary function may not work.";
   }

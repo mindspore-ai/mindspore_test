@@ -13,17 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef MINDSPORE_MINDSPORE_CCSRC_DEBUG_DUMP_CONTROL_H_
-#define MINDSPORE_MINDSPORE_CCSRC_DEBUG_DUMP_CONTROL_H_
+#ifndef MINDSPORE_MINDSPORE_CCSRC_TOOLS_DATA_DUMP_DUMP_CONTROL_H_
+#define MINDSPORE_MINDSPORE_CCSRC_TOOLS_DATA_DUMP_DUMP_CONTROL_H_
 
 #include <string>
 #include <vector>
 #include "utils/ms_utils.h"
-#include "include/backend/visible.h"
+#include "tools/visible.h"
 
 namespace mindspore {
 
-class BACKEND_COMMON_EXPORT DumpControl {
+class TOOLS_EXPORT DumpControl {
  public:
   static DumpControl &GetInstance() {
     static DumpControl instance;

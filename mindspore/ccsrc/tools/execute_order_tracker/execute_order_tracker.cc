@@ -20,6 +20,7 @@
 #include <numeric>
 #include <sstream>
 #include <iomanip>
+#include <limits>
 #include "include/utils/common.h"
 #include "include/cluster/topology/collective_manager.h"
 #include "include/utils/anfalgo.h"

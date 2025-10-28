@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef MINDSPORE_CCSRC_DEBUG_DEBUGGER_DEBUGGER_H_
-#define MINDSPORE_CCSRC_DEBUG_DEBUGGER_DEBUGGER_H_
+#ifndef MINDSPORE_CCSRC_TOOLS_DATA_DUMP_DEBUGGER_DEBUGGER_H_
+#define MINDSPORE_CCSRC_TOOLS_DATA_DUMP_DEBUGGER_DEBUGGER_H_
 
 #include <list>
 #include <memory>
@@ -24,11 +24,12 @@
 #include <map>
 #include <set>
 #include "google/protobuf/repeated_field.h"
-#include "include/backend/debug/tensor_data.h"
 #include "include/backend/kernel_graph.h"
 #include "device_address/device_address.h"
-#include "include/backend/visible.h"
 #include "include/runtime/hardware_abstract/device_context/device_context.h"
+#include "tools/visible.h"
+#include "tools/tensor_data.h"
+#include "tools/data_dump/debug_services.h"
 
 namespace debugger {
 class Chunk;
@@ -48,7 +49,7 @@ namespace mindspore {
 using mindspore::device::DeviceContext;
 
 class DebugServices;
-class BACKEND_COMMON_EXPORT Debugger : public std::enable_shared_from_this<Debugger> {
+class TOOLS_EXPORT Debugger : public std::enable_shared_from_this<Debugger> {
  public:
   static std::shared_ptr<Debugger> GetInstance();
 
@@ -142,7 +143,7 @@ class BACKEND_COMMON_EXPORT Debugger : public std::enable_shared_from_this<Debug
   void CheckDatasetGraph();
 
   // serialize graph and get proto
-  debugger::GraphProto GetGraphProto(const KernelGraphPtr &graph_ptr) const;
+  std::unique_ptr<debugger::GraphProto> GetGraphProto(const KernelGraphPtr &graph_ptr) const;
 
   void LoadSingleAnfnode(const AnfNodePtr &anf_node, const size_t output_index, uint32_t root_graph_id);
 
@@ -157,7 +158,6 @@ class BACKEND_COMMON_EXPORT Debugger : public std::enable_shared_from_this<Debug
   std::mutex access_lock_;
   uint32_t cur_root_graph_id_ = UINT32_MAX;
   uint32_t prev_root_graph_id_ = UINT32_MAX;
-  std::list<debugger::GraphProto> graph_proto_list_;
   std::list<KernelGraphPtr> graph_ptr_list_;
   // The vector of all the kernel graph pointers for the root graph that will execute in the current step.
   std::vector<KernelGraphPtr> graph_ptr_step_vec_;
@@ -179,5 +179,11 @@ class BACKEND_COMMON_EXPORT Debugger : public std::enable_shared_from_this<Debug
   std::string version_;
 };
 using DebuggerPtr = std::shared_ptr<Debugger>;
+
+TOOLS_EXPORT void DebuggerReset();
+TOOLS_EXPORT void DebuggerInit(const uint32_t, const std::string &);
+TOOLS_EXPORT void DumpInGraphCompiler(const KernelGraphPtr &);
+TOOLS_EXPORT bool DebuggerBackendEnabled();
+TOOLS_EXPORT void DebuggerLoadGraphs(const KernelGraphPtr &);
 }  // namespace mindspore
-#endif  // MINDSPORE_CCSRC_DEBUG_DEBUGGER_DEBUGGER_H_
+#endif  // MINDSPORE_CCSRC_TOOLS_DATA_DUMP_DEBUGGER_DEBUGGER_H_

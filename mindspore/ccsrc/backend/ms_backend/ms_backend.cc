@@ -42,10 +42,7 @@
 #include "runtime/core/graph_scheduler/base/graph_adapter.h"
 #include "runtime/core/actors/base/actor_common.h"
 #include "pybind_api/gil_scoped_long_running.h"
-#ifdef ENABLE_DEBUGGER
-#include "include/backend/debug/debugger/debugger.h"
-#endif
-#include "include/backend/debug/data_dump/dump_json_parser.h"
+
 #if defined(__linux__) && defined(WITH_BACKEND)
 #include "include/cluster/topology/ps_context.h"
 #endif

@@ -291,11 +291,11 @@ class TensorData {
         break;
       case TypeId::kNumberTypeUInt:
         this->data_type_ = DbgDataType::DT_BASE_UINT;
-        this->data_type_size_ = sizeof(uint);
+        this->data_type_size_ = sizeof(unsigned int);
         break;
       case TypeId::kNumberTypeFloat:
         this->data_type_ = DbgDataType::DT_BASE_FLOAT;
-        this->data_type_size_ = sizeof(uint);
+        this->data_type_size_ = sizeof(unsigned int);
         break;
       case TypeId::kNumberTypeBFloat16:
         this->data_type_ = DbgDataType::DT_BFLOAT16;

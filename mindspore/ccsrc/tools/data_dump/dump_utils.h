@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_MINDSPORE_CCSRC_DEBUG_DATA_DUMP_DUMP_UTILS_H_
-#define MINDSPORE_MINDSPORE_CCSRC_DEBUG_DATA_DUMP_DUMP_UTILS_H_
+#ifndef MINDSPORE_MINDSPORE_CCSRC_TOOLS_DATA_DUMP_DUMP_UTILS_H_
+#define MINDSPORE_MINDSPORE_CCSRC_TOOLS_DATA_DUMP_DUMP_UTILS_H_
 
 #include <map>
 #include <vector>
@@ -25,6 +25,7 @@
 #include "include/backend/kernel_graph.h"
 #include "include/utils/contract.h"
 #include "device_address/device_address.h"
+#include "tools/visible.h"
 
 using DeviceTensor = mindspore::device::DeviceAddress;
 using DeviceTensorPtr = std::shared_ptr<DeviceTensor>;
@@ -40,8 +41,7 @@ constexpr size_t kValueNodeOutputIndex = 0;
  * Description: Convert int4 data_type into int8 data_type. The int4_data is 2 int4 data stored in 1 int8 data. After
  * split, the int8_data is 1 int4 data stored int 1 int8 data.
  */
-BACKEND_COMMON_EXPORT bool SplitInt8ToInt4x2(const void *int4_data, size_t in_data_len, void *int8_data,
-                                             size_t out_data_len);
+TOOLS_EXPORT bool SplitInt8ToInt4x2(const void *int4_data, size_t in_data_len, void *int8_data, size_t out_data_len);
 
 /*
  * Feature group: Dump.
@@ -103,7 +103,7 @@ mindspore::tensor::TensorPtr ExtractContiguousTensor(const tensor::TensorPtr &or
  * Description: Dump string content into file path. Current purpose is to save operator overflow information in json
  * file in ascend a+m dump mode.
  */
-BACKEND_COMMON_EXPORT void DumpToFile(const std::string &file_name, const std::string &dump_str);
+TOOLS_EXPORT void DumpToFile(const std::string &file_name, const std::string &dump_str);
 }  // namespace mindspore
 
-#endif  // MINDSPORE_MINDSPORE_CCSRC_DEBUG_DATA_DUMP_DUMP_UTILS_H_
+#endif  // MINDSPORE_MINDSPORE_CCSRC_TOOLS_DATA_DUMP_DUMP_UTILS_H_

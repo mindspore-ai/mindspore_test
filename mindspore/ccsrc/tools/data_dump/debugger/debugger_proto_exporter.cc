@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "tools/data_dump/debugger/proto_exporter.h"
+#include "tools/data_dump/debugger/debugger_proto_exporter.h"
 
 #include <fstream>
 #include <map>
@@ -22,16 +22,16 @@
 #include <algorithm>
 
 #include "mindspore/ccsrc/utils/ir_dump/anf_dump_utils.h"
-#include "include/backend/debug/data_dump/dump_utils.h"
 #include "include/utils/common.h"
-#include "include/backend/debug/debugger/debugger.h"
+#include "tools/data_dump/dump_utils.h"
+#include "tools/data_dump/debugger/debugger.h"
 #include "ir/graph_utils.h"
 #include "ir/scope.h"
 #include "ir/dtype/ref.h"
 #include "ir/dtype/tensor_type.h"
 #include "utils/symbolic.h"
 #include "utils/trace_base.h"
-#include "include/backend/debug/data_dump/e2e_dump.h"
+#include "tools/data_dump/e2e_dump.h"
 #include "utils/file_utils.h"
 #include "utils/anf_utils.h"
 #include "tools/data_dump/debugger/debugger_utils.h"
@@ -644,4 +644,8 @@ void DumpIRProtoWithSrcInfo(const FuncGraphPtr &, const std::string &, const std
                   << "please recompile source to enable it. See help of building script.";
 }
 #endif
+void DumpIRProtoWithSrcInfoDebugWholeStack(const FuncGraphPtr &func_graph, const std::string &suffix,
+                                           const std::string &target_dir) {
+  DumpIRProtoWithSrcInfo(func_graph, suffix, target_dir, kDebugWholeStack);
+}
 }  // namespace mindspore

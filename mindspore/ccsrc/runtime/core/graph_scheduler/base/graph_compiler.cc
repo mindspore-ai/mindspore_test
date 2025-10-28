@@ -39,13 +39,11 @@
 #include "base/base_ref_utils.h"
 #include "mindspore/ccsrc/utils/ir_dump/dump_proto.h"
 #include "include/utils/parallel_context.h"
-#ifdef ENABLE_DEBUGGER
-#include "include/backend/debug/debugger/debugger.h"
-#endif
+#include "include/utils/callback.h"
 #ifdef ENABLE_DUMP_IR
 #include "mindspore/ccsrc/utils/ir_dump/anf_ir_dump.h"
 #endif
-#include "include/backend/debug/data_dump/dump_json_parser.h"
+
 #include "include/backend/optimizer/graph_optimizer.h"
 #if defined(__linux__) && defined(WITH_BACKEND)
 #include "include/cluster/topology/ps_context.h"
@@ -216,7 +214,14 @@ void UseCacheToCompileGraphImpl(const KernelGraphPtr &graph, const DeviceContext
   }
 #endif
   // Update needed dump kernels for mindRT.
-  DumpJsonParser::GetInstance().UpdateNeedDumpKernels(*graph.get());
+  constexpr char kUpdateNeedDumpKernels[] = "UpdateNeedDumpKernels";
+  static auto update_need_dump_kernels_callback =
+    callback::CommonCallback::GetInstance().GetCallback<void, const session::KernelGraph &>(kUpdateNeedDumpKernels);
+  if (update_need_dump_kernels_callback) {
+    update_need_dump_kernels_callback(*graph.get());
+  } else {
+    MS_LOG(WARNING) << "Failed to get UpdateNeedDumpKernels";
+  }
   if (graph->is_dynamic_shape()) {
     auto profiler_manage_inst = profiler::ProfilerManager::GetInstance();
     MS_EXCEPTION_IF_NULL(profiler_manage_inst);
@@ -763,7 +768,14 @@ GraphId GraphCompiler::CompileGraphImpl(const KernelGraphPtr &graph, const Devic
 
     session_->RecurseSetSummaryNodesForAllGraphs(graph.get());
     // Update needed dump kernels for mindRT.
-    DumpJsonParser::GetInstance().UpdateNeedDumpKernels(*graph.get());
+    constexpr char kUpdateNeedDumpKernels[] = "UpdateNeedDumpKernels";
+    static auto update_need_dump_kernels_callback =
+      callback::CommonCallback::GetInstance().GetCallback<void, const session::KernelGraph &>(kUpdateNeedDumpKernels);
+    if (update_need_dump_kernels_callback) {
+      update_need_dump_kernels_callback(*graph.get());
+    } else {
+      MS_LOG(WARNING) << "Failed to get UpdateNeedDumpKernels, data dump function may not work.";
+    }
 
     // dynamic shape pass of graphmode
     if (graph->is_dynamic_shape()) {
@@ -803,13 +815,33 @@ GraphId GraphCompiler::CompileGraphImpl(const KernelGraphPtr &graph, const Devic
 #endif
 
 #ifdef ENABLE_DEBUGGER
-  auto debugger = Debugger::GetInstance();
-  MS_EXCEPTION_IF_NULL(debugger);
   // Dump graph for GPU mindRT if dump is enabled.
-  debugger->DumpInGraphCompiler(graph);
-  if (debugger && debugger->DebuggerBackendEnabled()) {
-    // Load graphs for GPU and Ascend mindRT.
-    debugger->LoadGraphs(graph);
+  constexpr char kDumpInGraphCompiler[] = "DumpInGraphCompiler";
+  static auto dump_in_graph_compiler_callback =
+    callback::CommonCallback::GetInstance().GetCallback<void, const KernelGraphPtr &>(kDumpInGraphCompiler);
+  if (!dump_in_graph_compiler_callback) {
+    MS_LOG(WARNING) << "Failed to get DumpInGraphCompiler, data dump function may not work.";
+  } else {
+    dump_in_graph_compiler_callback(graph);
+    bool enabled = false;
+    constexpr char kDebuggerBackendEnabled[] = "DebuggerBackendEnabled";
+    static auto debugger_backend_enabled_callback =
+      callback::CommonCallback::GetInstance().GetCallback<bool>(kDebuggerBackendEnabled);
+    if (debugger_backend_enabled_callback) {
+      enabled = debugger_backend_enabled_callback();
+    } else {
+      MS_LOG(WARNING) << "Failed to get DebuggerBackendEnabled, data dump function may not work.";
+    }
+    if (enabled) {
+      constexpr char kLoadGraphs[] = "DebuggerLoadGraphs";
+      static auto load_graphs_callback =
+        callback::CommonCallback::GetInstance().GetCallback<void, const KernelGraphPtr &>(kLoadGraphs);
+      if (load_graphs_callback) {
+        load_graphs_callback(graph);
+      } else {
+        MS_LOG(WARNING) << "Failed to get DebuggerLoadGraphs, data dump function may not work.";
+      }
+    }
   }
 #endif
 

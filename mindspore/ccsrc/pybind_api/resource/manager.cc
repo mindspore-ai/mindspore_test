@@ -32,6 +32,7 @@
 #include "pynative/forward/pyboost/converter.h"
 #include "include/utils/config_manager.h"
 #include "include/utils/convert_utils.h"
+#include "include/utils/callback.h"
 #include "include/backend/debug/execute_order_tracker/execute_order_tracker.h"
 #include "include/runtime/memory/mem_pool/mem_tracker.h"
 #include "utils/distributed_meta.h"
@@ -61,10 +62,6 @@
 #include "include/runtime/hardware_abstract/data_queue/data_queue_mgr.h"
 #include "frontend/jit/ps/pass_config.h"
 
-#include "include/backend/debug/data_dump/dump_json_parser.h"
-#ifdef ENABLE_DEBUGGER
-#include "include/backend/debug/debugger/debugger.h"
-#endif
 #if defined(__linux__) && defined(WITH_BACKEND)
 #include "include/cluster/topology/cluster_context.h"
 #endif
@@ -170,9 +167,13 @@ void ClearResPart2() {
   abstract::AnalysisSchedule::GetInstance().Stop();
   MS_LOG(INFO) << "End clear AnalysisSchedule...";
 #ifdef ENABLE_DEBUGGER
-  auto debugger = Debugger::GetInstance();
-  MS_EXCEPTION_IF_NULL(debugger);
-  debugger->Reset();
+  constexpr char kReset[] = "DebuggerReset";
+  static auto reset_callback = callback::CommonCallback::GetInstance().GetCallback<void>(kReset);
+  if (reset_callback) {
+    reset_callback();
+  } else {
+    MS_LOG(WARNING) << "Failed to get DebuggerReset, data dump function may not work.";
+  }
 #endif
   pipeline::CleanCache();
 }
@@ -226,7 +227,13 @@ void ClearSingleton() {
   session::SessionFactory::Get().Clear();
   ExecuteOrderTracker::GetInstance().Clear();
   OpPrimPyRegister::GetInstance().Clear();
-  DumpJsonParser::Finalize();
+  constexpr char kFinalize[] = "DumpJsonParserFinalize";
+  static auto finalize_callback = callback::CommonCallback::GetInstance().GetCallback<void>(kFinalize);
+  if (finalize_callback) {
+    finalize_callback();
+  } else {
+    MS_LOG(WARNING) << "Failed to get DumpJsonParserFinalize, data dump function may not work.";
+  }
   CommManager::Clear();
   runtime::KernelCache::GetInstance().ClearBuffers();
 

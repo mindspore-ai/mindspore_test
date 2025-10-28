@@ -35,6 +35,7 @@
 #include "include/runtime/hardware_abstract/kernel_base/kernel_info.h"
 #include "include/backend/py_execute_utils.h"
 #include "include/utils/anfalgo.h"
+#include "include/utils/callback.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/backend/common/ms_device_shape_transfer.h"
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
@@ -43,14 +44,13 @@
 #include "frontend/ir/tensor_py.h"
 #include "include/runtime/memory/mem_pool/mem_tracker.h"
 #ifdef ENABLE_DEBUGGER
-#include "include/backend/debug/debugger/debugger.h"
-#include "include/backend/debug/data_dump/dump_json_parser.h"
 #include "ir/device_type.h"
 #endif
 #include "include/runtime/pipeline/pipeline.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 #include "mindspore/core/include/ir/tensor_new.h"
 #include "utils/stream_guard.h"
+#include "utils/log_adapter.h"
 
 namespace mindspore {
 using tensor::TensorPtr;
@@ -413,8 +413,14 @@ void DeviceAddressUtils::CreateValueNodeDeviceAddress(const DeviceContext *devic
   MS_EXCEPTION_IF_NULL(device_context);
   MS_EXCEPTION_IF_NULL(graph);
 #ifdef ENABLE_DEBUGGER
-  auto &dump_json_parser = DumpJsonParser::GetInstance();
-  bool enable_debug = dump_json_parser.InputNeedDump();
+  constexpr char kInputNeedDump[] = "InputNeedDump";
+  static auto input_need_dump_callback = callback::CommonCallback::GetInstance().GetCallback<bool>(kInputNeedDump);
+  bool enable_debug = false;
+  if (input_need_dump_callback) {
+    enable_debug = input_need_dump_callback();
+  } else {
+    MS_LOG(WARNING) << "Failed to get InputNeedDump, data dump function may not work.";
+  }
 #endif
   // store node without init args, means need device addr
   auto value_nodes_without_init_args = FetchValueNodesNeedDevicePtr(graph);

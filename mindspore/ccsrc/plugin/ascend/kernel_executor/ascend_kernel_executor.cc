@@ -69,7 +69,6 @@
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "pynative/utils/pyboost/pyboost_utils.h"
 #include "pynative/utils/pyboost/op_runner.h"
-#include "include/backend/debug/data_dump/dump_json_parser.h"
 #include "include/backend/optimizer/helper.h"
 #include "plugin/ascend/kernel_executor/kernel_select_ascend.h"
 #include "kernel/ascend/aclnn/kernel_mod_impl/aclnn_kernel_build.h"

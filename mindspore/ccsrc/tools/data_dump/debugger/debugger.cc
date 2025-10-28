@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "include/backend/debug/debugger/debugger.h"
+#include "tools/data_dump/debugger/debugger.h"
 #include <dirent.h>
 #include <tuple>
 #include <vector>
@@ -22,11 +22,11 @@
 #include <iostream>
 #include <map>
 #include <regex>
-#include "include/backend/debug/data_dump/dump_json_parser.h"
+#include "tools/data_dump/dump_json_parser.h"
 #include "backend/common/kernel_graph/session_basic.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/utils/anfalgo.h"
-#include "include/backend/debug/data_dump/e2e_dump.h"
+#include "tools/data_dump/e2e_dump.h"
 #include "include/utils/config_manager.h"
 #include "include/utils/env_config_parser.h"
 #include "include/utils/comm_manager.h"
@@ -34,9 +34,9 @@
 #include "mindspore/ccsrc/utils/ir_dump/anf_ir_dump.h"
 #include "mindspore/ccsrc/utils/ir_dump/anf_dump_utils.h"
 #ifdef ENABLE_DEBUGGER
-#include "tools/data_dump/debugger/proto_exporter.h"
+#include "tools/data_dump/debugger/debugger_proto_exporter.h"
 #endif
-#include "include/backend/debug/debugger/proto_exporter.h"
+#include "tools/data_dump/debugger/proto_exporter.h"
 #include "tools/data_dump/debugger/debugger_utils.h"
 #include "tools/data_dump/debug_services.h"
 #include "tools/dump/utils.h"
@@ -140,7 +140,6 @@ void Debugger::Reset() {
   is_dataset_graph_ = false;
   graph_ptr_ = nullptr;
   debug_services_ = nullptr;
-  graph_proto_list_.clear();
   graph_ptr_list_.clear();
   graph_ptr_step_vec_.clear();
   executed_graph_ptr_set_.clear();
@@ -400,9 +399,7 @@ void Debugger::LoadGraphs(const KernelGraphPtr &graph_ptr) {
     CheckDatasetGraph();
     if (!is_dataset_graph_) {
       // get proto for new graph_ptr
-      auto graph_proto = GetGraphProto(graph_ptr);
       // add new graph proto to graph_proto_list_
-      graph_proto_list_.push_back(graph_proto);
       graph_ptr_list_.push_back(graph_ptr);
       not_dataset_graph_sum_++;
     }
@@ -433,10 +430,10 @@ void Debugger::CheckDatasetGraph() {
   is_dataset_graph_ = false;
 }
 
-GraphProto Debugger::GetGraphProto(const KernelGraphPtr &graph_ptr) const {
+std::unique_ptr<GraphProto> Debugger::GetGraphProto(const KernelGraphPtr &graph_ptr) const {
   // convert kernel graph to debugger modelproto
   ModelProto model = GetDebuggerFuncGraphProto(graph_ptr);
-  return model.graph();
+  return std::make_unique<GraphProto>(model.graph());
 }
 
 std::shared_ptr<TensorData> Debugger::GetTensor(const std::string &tensor_name) const {
@@ -578,5 +575,31 @@ bool Debugger::TensorExistsInCurrent(const std::string &tensor_name) {
     return debug_services_->TensorExistsInCurrent(tensor_name);
   }
   return false;
+}
+
+void DebuggerReset() {
+  auto debugger = Debugger::GetInstance();
+  MS_EXCEPTION_IF_NULL(debugger);
+  debugger->Reset();
+}
+void DebuggerInit(const uint32_t device_id, const std::string &device_target) {
+  auto debugger = Debugger::GetInstance();
+  MS_EXCEPTION_IF_NULL(debugger);
+  debugger->Init(device_id, device_target);
+}
+void DumpInGraphCompiler(const KernelGraphPtr &kernel_graph) {
+  auto debugger = Debugger::GetInstance();
+  MS_EXCEPTION_IF_NULL(debugger);
+  debugger->DumpInGraphCompiler(kernel_graph);
+}
+bool DebuggerBackendEnabled() {
+  auto debugger = Debugger::GetInstance();
+  MS_EXCEPTION_IF_NULL(debugger);
+  return debugger->DebuggerBackendEnabled();
+}
+void DebuggerLoadGraphs(const KernelGraphPtr &graph_ptr) {
+  auto debugger = Debugger::GetInstance();
+  MS_EXCEPTION_IF_NULL(debugger);
+  debugger->LoadGraphs(graph_ptr);
 }
 }  // namespace mindspore
