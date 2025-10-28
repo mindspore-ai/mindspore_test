@@ -12,11 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-
+"""
+test_online_execution_order_check
+"""
 import os
 from tests.mark_utils import arg_mark
 
-@arg_mark(plat_marks=["platform_ascend910b"], level_mark="level0", card_mark="allcards", essential_mark="essential")
 def test_online_execution_order_check():
     """
     Feature: Test online execution order check.
@@ -32,12 +33,12 @@ def test_online_execution_order_check():
         {script}"
     )
     if return_code != 0:
-        os.system(f"echo '\n**************** Worker Log (Errors) ****************'")
-        os.system(f"grep -E 'ERROR|Error|error|CRITICAL' -C 15 ./worker*.log")
-        os.system(f"echo '\n**************** Worker Log (Last 200 Lines) ****************'")
-        os.system(f"tail -n 200 ./worker*.log")
-        os.system(f"echo '\n**************** Scheduler Log (Errors) ****************'")
-        os.system(f"grep -E 'ERROR|Error|error|CRITICAL' -C 15 ./scheduler.log")
-        os.system(f"echo '\n**************** Scheduler Log (Last 200 Lines) ****************'")
-        os.system(f"tail -n 200 ./scheduler.log")
+        os.system("echo '\n**************** Worker Log (Errors) ****************'")
+        os.system("grep -E 'ERROR|Error|error|CRITICAL' -C 15 ./worker*.log")
+        os.system("echo '\n**************** Worker Log (Last 200 Lines) ****************'")
+        os.system("tail -n 200 ./worker*.log")
+        os.system("echo '\n**************** Scheduler Log (Errors) ****************'")
+        os.system("grep -E 'ERROR|Error|error|CRITICAL' -C 15 ./scheduler.log")
+        os.system("echo '\n**************** Scheduler Log (Last 200 Lines) ****************'")
+        os.system("tail -n 200 ./scheduler.log")
     assert return_code == 0
