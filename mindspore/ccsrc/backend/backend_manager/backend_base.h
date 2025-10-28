@@ -26,7 +26,6 @@
 #include "backend/backend_manager/visible.h"
 #include "backend/backend_manager/backend_jit_config.h"
 #include "ir/tensor.h"
-#include "include/utils/pynative/op_runner_info.h"
 #include "include/utils/python_adapter.h"
 
 namespace mindspore {
@@ -125,8 +124,6 @@ struct GraphFragment {
   PyToValueConvertFunc py_to_value_converter_{nullptr};
   ValueToPyConvertFunc value_to_py_converter_{nullptr};
 };
-using IsPyBoostRegisteredFunc = std::function<bool(device::DeviceType device_target, const std::string &op_name)>;
-using RunPyBoostCallFunc = std::function<void(runtime::OpRunnerInfo *, VectorRef *)>;
 
 // The base class of all supported backend.
 class BACKEND_MANAGER_EXPORT BackendBase {
@@ -156,8 +153,6 @@ class BACKEND_MANAGER_EXPORT BackendBase {
 
   // clear the resource, init is in constructor function
   virtual void Clear() {}
-
-  virtual void SetPyBoostRegistered(const IsPyBoostRegisteredFunc &func, const RunPyBoostCallFunc &call_func) {}
 };
 
 using BackendBasePtr = std::shared_ptr<BackendBase>;

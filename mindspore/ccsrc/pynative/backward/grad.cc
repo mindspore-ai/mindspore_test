@@ -20,7 +20,6 @@
 #include <unordered_set>
 
 #include "tools/silent_detect/silent_check/silent_check.h"
-#include "backend/backend_manager/backend_manager.h"
 #include "ir/cell.h"
 #include "ir/func_graph_cloner.h"
 #include "ir/value.h"
@@ -404,16 +403,6 @@ void GradExecutor::Init() {
   MS_LOG(DEBUG) << "Do windows bprop expander register";
 #endif
   init_ = true;
-
-  auto func = [](device::DeviceType device_target, const std::string &op_name) {
-    return runtime::PyBoostOpExecute::GetInstance().IsPyBoostOpRegistered(op_name) &&
-           (kernel::pyboost::PyBoostUtils::IsKernelModRegistered(device_target, op_name) ||
-            kernel::pyboost::PyBoostUtils::IsPyBoostCustomRegistered(device_target, op_name));
-  };
-  auto call_func = [](runtime::OpRunnerInfo *op_runner_info, VectorRef *op_outputs) {
-    runtime::PyBoostOpExecute::GetInstance().RunPyBoostCall(op_runner_info, op_outputs);
-  };
-  backend::BackendManager::GetInstance().SetPyBoostRegistered(func, call_func);
 }
 
 TopCellInfoPtr GradExecutor::PopTopCellStack() {
