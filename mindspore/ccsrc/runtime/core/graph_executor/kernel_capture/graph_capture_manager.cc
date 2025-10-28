@@ -210,7 +210,7 @@ bool GraphCaptureManager::LaunchAllKernelsWithReplayGraph(OpContext<KernelTensor
                                                           SuperKernelActor *super_kernel_actor, bool hp_mode) {
   MS_LOG(INFO) << "Begin launch all kernels with replay graph.";
   size_t executor_num = executors_.size();
-  PreprocessGraphOutputForReplayGraph(kernel_runners);
+  RecoverGraphOutputKernelInfo();
   for (size_t i = 0; i < executor_num; i++) {
     auto &executor = executors_[i];
     if (executor.first == CAPTURE_GRAPH) {
@@ -238,6 +238,7 @@ void GraphCaptureManager::RecordGraphOutputKernelInfo(OpContext<KernelTensor> *c
   const auto &cur_output_kernel_tensors = kernel_actor->output_kernel_tensors();
   const auto &is_output_kernels = kernel_actor->is_output_kernel();
   CaptureKernelInfoList fix_output_graph_kernel_tensors;
+  std::vector<size_t> output_kernel_indices;
   for (size_t i = 0; i < cur_output_kernel_tensors.size(); ++i) {
     if (is_output_kernels[i]) {
       MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
@@ -246,41 +247,27 @@ void GraphCaptureManager::RecordGraphOutputKernelInfo(OpContext<KernelTensor> *c
       fix_output_graph_kernel_tensors.emplace_back(std::make_shared<CaptureKernelInfo>(
         cur_output_kernel_tensors[i]->device_ptr(), cur_output_kernel_tensors[i]->size(),
         cur_output_kernel_tensors[i]->GetShape()->Clone()));
+      output_kernel_indices.emplace_back(i);
     }
   }
-  fix_replay_graph_output_info_[shape_key_][std::make_pair(kernel_actor, index)] = fix_output_graph_kernel_tensors;
-}
-
-void GraphCaptureManager::PreprocessGraphOutputForReplayGraph(const std::vector<KernelRunnerPtr> &kernel_runners) {
-  size_t executor_num = executors_.size();
-  for (size_t i = 0; i < executor_num; i++) {
-    auto &executor = executors_[i];
-    if (executor.first == CAPTURE_GRAPH) {
-      size_t start = capture_kernel_range_positions_[executor.second].first;
-      size_t end = capture_kernel_range_positions_[executor.second].second;
-      for (size_t j = start; j <= end; j++) {
-        const auto &kernel_runner = kernel_runners[j];
-        if (kernel_runner == nullptr) {
-          continue;
-        }
-        RecoverGraphOutputKernelInfo(kernel_runner, j);
-      }
-    }
+  if (!output_kernel_indices.empty()) {
+    fix_replay_graph_output_info_[shape_key_][std::make_pair(kernel_actor, index)] = fix_output_graph_kernel_tensors;
+    recorded_kernel_output_for_graph_output_[shape_key_].emplace_back(std::make_pair(kernel_actor, index),
+                                                                      output_kernel_indices);
   }
 }
 
-void GraphCaptureManager::RecoverGraphOutputKernelInfo(const KernelRunnerPtr &kernel_actor, size_t index) {
-  MS_LOG(INFO) << "Recover current kernel actor: " << kernel_actor->kernel()->fullname_with_scope();
-  size_t tmp = 0;
-  auto kernel_with_idx = std::make_pair(kernel_actor, index);
-  auto cur_output_kernel_tensors = kernel_actor->output_kernel_tensors();
-  const auto &is_output_kernels = kernel_actor->is_output_kernel();
-  const auto &cur_fix_output_graph_kernel_tensor_info = fix_replay_graph_output_info_[shape_key_][kernel_with_idx];
-  for (size_t i = 0; i < cur_output_kernel_tensors.size(); ++i) {
-    if (is_output_kernels[i]) {
-      cur_output_kernel_tensors[i]->set_device_ptr(cur_fix_output_graph_kernel_tensor_info[tmp]->device_ptr);
-      cur_output_kernel_tensors[i]->SetShape(cur_fix_output_graph_kernel_tensor_info[tmp]->shape);
-      cur_output_kernel_tensors[i]->set_size(cur_fix_output_graph_kernel_tensor_info[tmp]->size);
+void GraphCaptureManager::RecoverGraphOutputKernelInfo() {
+  const auto &cur_fix_output_graph_kernel_tensor_infos = recorded_kernel_output_for_graph_output_[shape_key_];
+  for (auto cur_kernel_info : cur_fix_output_graph_kernel_tensor_infos) {
+    auto kernel_with_idx = cur_kernel_info.first;
+    const auto &cur_fix_output_graph_kernel_tensor_info = fix_replay_graph_output_info_[shape_key_][kernel_with_idx];
+    auto cur_output_kernel_tensors = kernel_with_idx.first->output_kernel_tensors();
+    size_t tmp = 0;
+    for (auto cur_idx : cur_kernel_info.second) {
+      cur_output_kernel_tensors[cur_idx]->set_device_ptr(cur_fix_output_graph_kernel_tensor_info[tmp]->device_ptr);
+      cur_output_kernel_tensors[cur_idx]->SetShape(cur_fix_output_graph_kernel_tensor_info[tmp]->shape);
+      cur_output_kernel_tensors[cur_idx]->set_size(cur_fix_output_graph_kernel_tensor_info[tmp]->size);
       tmp++;
     }
   }
