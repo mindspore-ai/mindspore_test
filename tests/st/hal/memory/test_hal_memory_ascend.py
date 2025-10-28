@@ -26,12 +26,12 @@ import sys
 from mindspore import Tensor
 from mindspore import context
 import mindspore as ms
-from mindspore import nn, jit
+from mindspore import nn, jit, Parameter
 from mindspore.ops import operations as P
 from mindspore.common.initializer import TruncatedNormal
 
 from tests.mark_utils import arg_mark
-from tests.device_utils import set_device, get_device_id
+from tests.device_utils import set_device
 
 sys.path.append("..")
 from test_hal_util import run_cmd
@@ -47,6 +47,33 @@ class Net(nn.Cell):
 
     def construct(self, x):
         return self.ops(x)
+
+class Network(nn.Cell):
+    """Simple network
+
+    Args:
+        weight_shape: shape of weight
+
+    Returns:
+        Tensor, output tensor
+
+    Examples:
+        >>> LeNet((10, 10))
+    """
+    def __init__(self, weight_shape, tensor_size_gb=1):
+        super().__init__()
+        self.relu = P.ReLU()
+        self.mul1 = P.Mul()
+        self.weight_1 = Parameter(Tensor(np.ones(weight_shape), dtype=ms.float32), name="weight_1")
+        self.tensor_size = int(1024 / 4 * tensor_size_gb)
+
+    def construct(self, x):
+        x = self.mul1(x, self.weight_1)
+        a = Tensor(np.ones((self.tensor_size, 1024, 1024)), dtype=ms.float32)
+        b = a + 1
+        print(b)
+        z = self.relu(x)
+        return z
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
@@ -154,36 +181,45 @@ def extract_memory_usage(filename):
                 memory_usage = int(match.group(1))
                 return memory_usage
         return None
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_huge_page_reserve_vmm():
     """
     Feature: reserve huge page for vmm.
     Description: Test whether huge page memory is reserved for vmm.
     Expectation: When huge page is reserved, use normal memory.
     """
-    acl_hbm_mem_huge = 4
-    set_device()
-    os.environ['MS_ALLOC_CONF'] = "enable_vmm:false"
-    device_id = get_device_id()
-    acl.rt.set_device(int(device_id))
+    device_id = int(os.getenv("DEVICE_ID", "0"))
+    acl.rt.set_device(device_id)
+    mem_free, _, ret = acl.rt.get_mem_info(4)
+    huge_page_free_gb = round(mem_free / 1024 / 1024 / 1024, 2)
+    reserve_mem = max((huge_page_free_gb - 1) * 0.6, 0.5)
+    ms.runtime.set_memory(huge_page_reserve_size=f"{reserve_mem}GB")
+    net_1 = Network((1024, 1024))
+    input_tensor = Tensor(np.random.randn(1024, 1024).astype(np.float32))
+    net_1(input_tensor)
+    mem_free_after, _, ret_after = acl.rt.get_mem_info(4)
+    mem_free_after_gb = round(mem_free_after / 1024 / 1024 / 1024, 2)
+    assert mem_free_after_gb >= reserve_mem
+    assert ret == 0 and ret_after == 0
 
-    huge_page_free, _, ret = acl.rt.get_mem_info(acl_hbm_mem_huge)
-    assert ret == 0
-    huge_page_free_gb = huge_page_free / GB_TO_BYTE
-    huge_page_available_size_gb = 0.5
-    huge_page_reserve_gb = max(huge_page_free_gb - huge_page_available_size_gb, 0)
-    test_tensor_size_gb = huge_page_available_size_gb * 2
-    tensor_element_num = int(GB_TO_BYTE * test_tensor_size_gb / FLOAT32_SIZE)
-    ms.runtime.set_memory(huge_page_reserve_size=f"{huge_page_reserve_gb}GB")
-
-    net = Net()
-    result = net(Tensor(np.random.rand(tensor_element_num), ms.float32))
-    result.asnumpy()
-    huge_page_free, _, ret = acl.rt.get_mem_info(acl_hbm_mem_huge)
-    assert ret == 0
-    huge_page_free_gb = huge_page_free / GB_TO_BYTE
-    assert huge_page_free_gb >= huge_page_reserve_gb
-
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_huge_page_reserve_with_size_0():
+    """
+    Feature: reserve huge page for vmm.
+    Description: Test when huge page size is 0.
+    Expectation: When huge page is reserved, use normal memory.
+    """
+    device_id = int(os.getenv("DEVICE_ID", "0"))
+    acl.rt.set_device(device_id)
+    _, _, ret = acl.rt.get_mem_info(4)
+    ms.runtime.set_memory(huge_page_reserve_size="0GB")
+    net_1 = Network((1024, 1024))
+    input_tensor = Tensor(np.random.randn(1024, 1024).astype(np.float32))
+    net_1(input_tensor)
+    mem_free_after, _, ret_after = acl.rt.get_mem_info(4)
+    assert mem_free_after >= 0
+    assert ret == 0 and ret_after == 0
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_small_allocator():
