@@ -22,6 +22,7 @@ import socket
 import psutil
 import mindspore.log as logger
 from mindspore.utils import RSCPluginHandle
+from mindspore import _checkparam as Validator
 from ._utils import _generate_cmd_args_list, _generate_cmd_args_list_with_core, _generate_url, \
     _is_local_ip, _convert_addr_to_ip, _send_scale_num, _get_local_ip, _generate_auto_bind_core_strategy, \
     _generate_bind_core_strategy
@@ -72,7 +73,7 @@ class _MetaServerNode(_Node):
         """
         super().run()
         os.environ["MS_ROLE"] = "MS_SCHED"
-        with open(self.output_file, "w") as file_handle:
+        with open(self.output_file, "w", encoding='utf-8') as file_handle:
             return subprocess.Popen(self.args_list, stdout=file_handle, stderr=subprocess.STDOUT)
 
 
@@ -107,7 +108,7 @@ class _ComputeGraphNode(_Node):
                            f"which doesn't contain this worker {self.node_id}."
                            f" So this worker {self.node_id}'s log will not be output to console. Reset "
                            "'--tail_worker_log', if you want to output this worker's log to console.")
-        with open(self.output_file, "w") as file_handle:
+        with open(self.output_file, "w", encoding='utf-8') as file_handle:
             worker_process = subprocess.Popen(self.args_list, preexec_fn=os.setsid, stdout=file_handle,
                                               stderr=subprocess.STDOUT)
             if self.join and is_tail_worker_log:
@@ -192,7 +193,7 @@ class _ProcessManager:
         if self.is_simulation and self.local_worker_num > 128:
             self.local_worker_num = 1
             self.sim_rank_id = 0
-            logger.warning(f"In dryrun case, local worker num is set to larger than 128. "
+            logger.warning("In dryrun case, local worker num is set to larger than 128. "
                            "To avoid a system clash, local worker num is set to 1.")
 
         self.cmd = args.task_script
@@ -203,6 +204,9 @@ class _ProcessManager:
         self.is_scale = False
         self.scheduler_url = _generate_url(self.master_addr, self.master_port)
 
+
+        if self.log_dir:
+            Validator.check_file_name_by_regular(self.log_dir)
         # Create log directory and set the permission if not exists.
         if self.log_dir and not os.path.exists(self.log_dir):
             permissions = os.R_OK | os.W_OK | os.X_OK
@@ -235,11 +239,11 @@ class _ProcessManager:
                                               "MONITOR": self.monitor_rank_status
                                               })
         if not ret:
-            logger.warning(f"Register callback to mindx failed, process controlled by msrun.")
+            logger.warning("Register callback to mindx failed, process controlled by msrun.")
             self.enable_mindx = False
             self.handler = None
             return
-        logger.warning(f"Mindx enabled, process controlled by mindx.")
+        logger.warning("Mindx enabled, process controlled by mindx.")
         os.environ["MS_ENABLE_RECOVERY"] = str(1)
 
     def run(self):
@@ -293,7 +297,7 @@ class _ProcessManager:
         os.environ["DEVICE_ID"] = str(local_rank)
         node_id, log_name = self._get_node_id_and_log_path(local_rank)
         if node_id is None:
-            logger.warning(f"Rank ids will be assigned automatically, "
+            logger.warning("Rank ids will be assigned automatically, "
                            "please use 'grep -rn 'rank id:' command to check each worker log's rank id.")
         else:
             # If node_id is generated in '_get_node_id_and_log_path' method, export 'RANK_ID' environment variable.
@@ -360,19 +364,18 @@ class _ProcessManager:
                 if ret_code is None:
                     # This means the process is still running, poll next process.
                     continue
-                elif ret_code != 0:
+                if ret_code != 0:
                     has_exception = True
                     logger.error(f"Worker process {p.pid} exit with exception. Error code: {ret_code}.")
                     break
-                else:
-                    success_cgn_processes.add(p)
+                success_cgn_processes.add(p)
 
             if has_exception:
                 logger.warning("There's worker exits with exception, kill all other workers.")
                 self.kill_worker_processes()
                 self.kill_tail_log_processes()
                 break
-            elif len(success_cgn_processes) == len(self.cgn_processes):
+            if len(success_cgn_processes) == len(self.cgn_processes):
                 logger.info("All workers successfully exit!")
                 self.kill_tail_log_processes()
                 break
@@ -527,7 +530,7 @@ class _ProcessManager:
                 logger.info(f"Process rank {rank_id} has not been initialized.")
                 return {"pid": None, "status": 200, "global_rank": global_rank_id}
         else:
-            logger.warning(f"Invalid rank id!")
+            logger.warning("Invalid rank id!")
         return {}
 
     def start_all_workers(self):
