@@ -670,7 +670,8 @@ DeviceAddressPtr AscendResManager::CreateDeviceAddress(void *ptr, size_t size, c
 }
 
 bool AscendResManager::SyncCopy(const DeviceAddressPtr &dst_device_sync, const DeviceAddressPtr &src_device_sync,
-                                size_t stream_id) const {
+                                size_t stream_id, const DeviceAddressMetaData &src_metadata,
+                                const DeviceAddressMetaData &dst_metadata) const {
   MS_EXCEPTION_IF_NULL(dst_device_sync);
   MS_EXCEPTION_IF_NULL(src_device_sync);
   if (dst_device_sync->GetDeviceType() == DeviceType::kAscend && src_device_sync->GetDeviceType() == DeviceType::kCPU) {
@@ -683,7 +684,8 @@ bool AscendResManager::SyncCopy(const DeviceAddressPtr &dst_device_sync, const D
 }
 
 bool AscendResManager::AsyncCopy(const DeviceAddressPtr &dst_device_sync, const DeviceAddressPtr &src_device_sync,
-                                 size_t stream_id, bool keep_src) const {
+                                 size_t stream_id, bool keep_src, const DeviceAddressMetaData &src_metadata,
+                                 const DeviceAddressMetaData &dst_metadata) const {
   MS_EXCEPTION_IF_NULL(dst_device_sync);
   MS_EXCEPTION_IF_NULL(src_device_sync);
   if (dst_device_sync->GetDeviceType() == DeviceType::kAscend && src_device_sync->GetDeviceType() == DeviceType::kCPU) {
@@ -1913,19 +1915,8 @@ size_t AscendResManager::GetCommunicationStreamIDByGroup(const std::string &grou
 
 MS_REGISTER_HAL_COPY_FUNC(
   DeviceType::kAscend,
-  ([](const DeviceAddressPtr &dst_device_sync, const DeviceAddressPtr &src_device_sync, size_t stream_id) {
-    auto context = MsContext::GetInstance();
-    MS_EXCEPTION_IF_NULL(context);
-    auto device_id = context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-    device::DeviceContextKey host_key = {DeviceType::kAscend, device_id};
-    device::DeviceContext *host_context =
-      device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
-    MS_EXCEPTION_IF_NULL(host_context);
-    MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
-    return host_context->device_res_manager_->SyncCopy(dst_device_sync, src_device_sync, stream_id);
-  }),
   ([](const DeviceAddressPtr &dst_device_sync, const DeviceAddressPtr &src_device_sync, size_t stream_id,
-      bool keep_src) {
+      const DeviceAddressMetaData &src_metadata, const DeviceAddressMetaData &dst_metadata) {
     auto context = MsContext::GetInstance();
     MS_EXCEPTION_IF_NULL(context);
     auto device_id = context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
@@ -1934,7 +1925,21 @@ MS_REGISTER_HAL_COPY_FUNC(
       device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
     MS_EXCEPTION_IF_NULL(host_context);
     MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
-    return host_context->device_res_manager_->AsyncCopy(dst_device_sync, src_device_sync, stream_id, keep_src);
+    return host_context->device_res_manager_->SyncCopy(dst_device_sync, src_device_sync, stream_id, src_metadata,
+                                                       dst_metadata);
+  }),
+  ([](const DeviceAddressPtr &dst_device_sync, const DeviceAddressPtr &src_device_sync, size_t stream_id, bool keep_src,
+      const DeviceAddressMetaData &src_metadata, const DeviceAddressMetaData &dst_metadata) {
+    auto context = MsContext::GetInstance();
+    MS_EXCEPTION_IF_NULL(context);
+    auto device_id = context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+    device::DeviceContextKey host_key = {DeviceType::kAscend, device_id};
+    device::DeviceContext *host_context =
+      device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
+    MS_EXCEPTION_IF_NULL(host_context);
+    MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
+    return host_context->device_res_manager_->AsyncCopy(dst_device_sync, src_device_sync, stream_id, keep_src,
+                                                        src_metadata, dst_metadata);
   }),
   ([](void *dst, const void *src, uint64_t size, size_t stream_id) {
     auto context = MsContext::GetInstance();
