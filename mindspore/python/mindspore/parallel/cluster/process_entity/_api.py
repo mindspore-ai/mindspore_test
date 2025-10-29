@@ -22,7 +22,6 @@ import socket
 import psutil
 import mindspore.log as logger
 from mindspore.utils import RSCPluginHandle
-from mindspore import _checkparam as Validator
 from ._utils import _generate_cmd_args_list, _generate_cmd_args_list_with_core, _generate_url, \
     _is_local_ip, _convert_addr_to_ip, _send_scale_num, _get_local_ip, _generate_auto_bind_core_strategy, \
     _generate_bind_core_strategy
@@ -204,9 +203,6 @@ class _ProcessManager:
         self.is_scale = False
         self.scheduler_url = _generate_url(self.master_addr, self.master_port)
 
-
-        if self.log_dir:
-            Validator.check_file_name_by_regular(self.log_dir)
         # Create log directory and set the permission if not exists.
         if self.log_dir and not os.path.exists(self.log_dir):
             permissions = os.R_OK | os.W_OK | os.X_OK
