@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+""" Test tensor hook"""
 
 import os
 import subprocess
@@ -19,10 +20,7 @@ import shutil
 import pytest
 import numpy as np
 import mindspore as ms
-import mindspore.context as context
-import mindspore.nn as nn
-import mindspore.ops as ops
-from mindspore import Tensor, Parameter
+from mindspore import Tensor, Parameter, context, nn, ops
 from tests.mark_utils import arg_mark
 
 def hook_double(grad):
@@ -52,7 +50,7 @@ np_input_x = np.array([7.0, 8.0, 9.0])
 
 class GroundNet(nn.Cell):
     def __init__(self):
-        super(GroundNet, self).__init__()
+        super().__init__()
         self.weight0 = Parameter(Tensor(np_weight0, ms.float32), name="weight0")
         self.weight1 = Parameter(Tensor(np_weight1, ms.float32), name="weight1")
 
@@ -63,7 +61,7 @@ class GroundNet(nn.Cell):
 
 class OneTensorOneHookNet(nn.Cell):
     def __init__(self):
-        super(OneTensorOneHookNet, self).__init__()
+        super().__init__()
         self.weight0 = Parameter(Tensor(np_weight0, ms.float32), name="weight0")
         self.weight1 = Parameter(Tensor(np_weight1, ms.float32), name="weight1")
 
@@ -75,7 +73,7 @@ class OneTensorOneHookNet(nn.Cell):
 
 class OneTensorMultiHookNet(nn.Cell):
     def __init__(self):
-        super(OneTensorMultiHookNet, self).__init__()
+        super().__init__()
         self.weight0 = Parameter(Tensor(np_weight0, ms.float32), name="weight0")
         self.weight1 = Parameter(Tensor(np_weight1, ms.float32), name="weight1")
 
@@ -88,7 +86,7 @@ class OneTensorMultiHookNet(nn.Cell):
 
 class MultiTensorMultiHookNet(nn.Cell):
     def __init__(self):
-        super(MultiTensorMultiHookNet, self).__init__()
+        super().__init__()
         self.weight0 = Parameter(Tensor(np_weight0, ms.float32), name="weight0")
         self.weight1 = Parameter(Tensor(np_weight1, ms.float32), name="weight1")
 
@@ -104,7 +102,7 @@ class MultiTensorMultiHookNet(nn.Cell):
 
 class HookPrintNet(nn.Cell):
     def __init__(self):
-        super(HookPrintNet, self).__init__()
+        super().__init__()
         self.weight0 = Parameter(Tensor(np_weight0, ms.float32), name="weight0")
         self.weight1 = Parameter(Tensor(np_weight1, ms.float32), name="weight1")
 
@@ -116,7 +114,7 @@ class HookPrintNet(nn.Cell):
 
 class HookInJITNet(nn.Cell):
     def __init__(self):
-        super(HookInJITNet, self).__init__()
+        super().__init__()
         self.weight0 = Parameter(Tensor(np_weight0, ms.float32), name="weight0")
         self.weight1 = Parameter(Tensor(np_weight1, ms.float32), name="weight1")
 
@@ -133,7 +131,7 @@ class HookInJITNet(nn.Cell):
 
 class CtrlFlowHookInJITNet(nn.Cell):
     def __init__(self):
-        super(CtrlFlowHookInJITNet, self).__init__()
+        super().__init__()
         self.weight0 = Parameter(Tensor(np_weight0, ms.float32), name="weight0")
         self.weight1 = Parameter(Tensor(np_weight1, ms.float32), name="weight1")
 
@@ -150,7 +148,7 @@ class CtrlFlowHookInJITNet(nn.Cell):
 
 class NeedReorderHookStmtNet(nn.Cell):
     def __init__(self):
-        super(NeedReorderHookStmtNet, self).__init__()
+        super().__init__()
         self.weight0 = Parameter(Tensor(np_weight0, ms.float32), name="weight0")
         self.weight1 = Parameter(Tensor(np_weight1, ms.float32), name="weight1")
 

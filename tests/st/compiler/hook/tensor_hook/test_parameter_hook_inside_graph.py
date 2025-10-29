@@ -12,14 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+""" Test tensor hook"""
 
 import numpy as np
 import pytest
 import mindspore as ms
-import mindspore.nn as nn
-import mindspore.ops as ops
-import mindspore.context as context
-from mindspore import Tensor, Parameter
+from mindspore import nn, ops, context, Tensor, Parameter
 from tests.mark_utils import arg_mark
 
 
@@ -28,7 +26,7 @@ def hook_double(grad):
 
 class Net(nn.Cell):
     def __init__(self):
-        super(Net, self).__init__()
+        super().__init__()
         self.weight1 = Parameter(Tensor(np.array([1.0, 2.0, 3.0]), ms.float32), name="weight1")
 
     def construct(self, x):
