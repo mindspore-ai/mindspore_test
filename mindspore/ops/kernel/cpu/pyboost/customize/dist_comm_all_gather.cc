@@ -18,8 +18,8 @@
 #include <memory>
 #include <utility>
 #include <string>
-#include "mindspore/ccsrc/pyboost/customize/op_common.h"
-#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
+#include "mindspore/ccsrc/pynative/utils/pyboost/customize/op_common.h"
+#include "mindspore/ccsrc/pynative/utils/pyboost/pyboost_utils.h"
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
 
 #if defined(__linux__) && defined(WITH_BACKEND)

@@ -37,7 +37,7 @@
 #include "tools/profiler/profiling.h"
 #include "ir/cell.h"
 #include "include/utils/python_utils.h"
-#include "mindspore/ccsrc/pyboost/kernel_mod_cache.h"
+#include "mindspore/ccsrc/pynative/utils/pyboost/kernel_mod_cache.h"
 #include "include/runtime/pipeline/pipeline.h"
 #include "include/utils/convert_utils_py.h"
 #include "include/utils/pynative/adapter.h"

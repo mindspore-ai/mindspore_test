@@ -19,11 +19,11 @@
 #include <memory>
 #include <utility>
 #include <algorithm>
-#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
+#include "mindspore/ccsrc/pynative/utils/pyboost/pyboost_utils.h"
 #include "mindspore/ops/kernel/cpu/pyboost/auto_generate/matmul.h"
 #include "mindspore/ops/kernel/cpu/pyboost/auto_generate/batch_mat_mul.h"
-#include "mindspore/ccsrc/pyboost/functions/auto_generate/functions.h"
-#include "mindspore/ccsrc/pyboost/functions/auto_grad_guard.h"
+#include "mindspore/ccsrc/pynative/utils/pyboost/functions/auto_generate/functions.h"
+#include "mindspore/ccsrc/pynative/utils/pyboost/functions/auto_grad_guard.h"
 #include "mindspore/ops/kernel/cpu/pyboost/auto_generate/contiguous.h"
 #include "infer/ops_func_impl/matmul_ext.h"
 

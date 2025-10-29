@@ -19,8 +19,8 @@
 #include <algorithm>
 
 #include "mindspore/ops/ops_utils/op_constants.h"
-#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
-#include "mindspore/ccsrc/pyboost/functions/auto_generate/functions.h"
+#include "mindspore/ccsrc/pynative/utils/pyboost/pyboost_utils.h"
+#include "mindspore/ccsrc/pynative/utils/pyboost/functions/auto_generate/functions.h"
 
 namespace mindspore {
 namespace kernel {

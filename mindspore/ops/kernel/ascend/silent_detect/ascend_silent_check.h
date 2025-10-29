@@ -29,7 +29,7 @@
 #include "ir/value.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel.h"
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
-#include "mindspore/ccsrc/pyboost/op_runner.h"
+#include "mindspore/ccsrc/pynative/utils/pyboost/op_runner.h"
 #include "tools/silent_detect/silent_check/silent_check.h"
 #include "kernel/ascend/visible.h"
 

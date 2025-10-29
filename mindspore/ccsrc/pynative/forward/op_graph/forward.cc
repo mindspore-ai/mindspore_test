@@ -40,13 +40,13 @@ using mindspore::profiler::ProfilerManager;
 #include "backend/common/kernel_graph/session_basic.h"
 #include "include/runtime/utils/runtime_conf/runtime_conf.h"
 #include "pynative/backward/grad_utils.h"
-#include "mindspore/ccsrc/pyboost/functions/auto_grad_reg.h"
-#include "mindspore/ccsrc/pyboost/auto_generate/contiguous.h"
+#include "mindspore/ccsrc/pynative/utils/pyboost/functions/auto_grad_reg.h"
+#include "mindspore/ccsrc/pynative/utils/pyboost/auto_generate/contiguous.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 #include "include/utils/tensor_py.h"
 #include "mindspore/ccsrc/frontend/expander/bprop/bprop.h"
 #include "utils/stream_guard.h"
-#include "pyboost/functions/auto_grad_guard.h"
+#include "pynative/utils/pyboost/functions/auto_grad_guard.h"
 
 namespace mindspore {
 namespace pynative {

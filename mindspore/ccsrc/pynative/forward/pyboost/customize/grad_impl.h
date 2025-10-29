@@ -20,7 +20,7 @@
 #include <vector>
 #include <memory>
 #include "mindspore/ccsrc/pynative/backward/op_grad/view_grad.h"
-#include "mindspore/ccsrc/pyboost/functions/auto_grad_guard.h"
+#include "mindspore/ccsrc/pynative/utils/pyboost/functions/auto_grad_guard.h"
 
 namespace mindspore::pynative {
 inline void DoGradReshapeImpl(const mindspore::tensor::TensorPtr &output, const mindspore::tensor::TensorPtr &input,

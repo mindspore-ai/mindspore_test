@@ -16,7 +16,7 @@
 
 #include "kernel/ascend/aclnn/pyboost_impl/customize/inplace_stop_gradient.h"
 #include <memory>
-#include "mindspore/ccsrc/pyboost/functions/auto_grad_guard.h"
+#include "mindspore/ccsrc/pynative/utils/pyboost/functions/auto_grad_guard.h"
 #include "include/runtime/pipeline/pipeline.h"
 #include "include/utils/pynative/variable.h"
 

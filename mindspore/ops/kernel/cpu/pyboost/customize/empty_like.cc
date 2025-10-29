@@ -18,8 +18,8 @@
 #include <memory>
 #include <string>
 #include <vector>
-#include "mindspore/ccsrc/pyboost/op_register.h"
-#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
+#include "mindspore/ccsrc/pynative/utils/pyboost/op_register.h"
+#include "mindspore/ccsrc/pynative/utils/pyboost/pyboost_utils.h"
 
 namespace mindspore {
 namespace kernel {

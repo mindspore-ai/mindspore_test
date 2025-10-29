@@ -196,13 +196,13 @@ TENSOR_FUNC_CLASS_REG = Template.load_from_file(
     os.path.join(K.WORK_DIR, './mindspore/ccsrc/pynative/forward/pyboost/template/tensor_func_class_reg.tpl'))
 
 PYBOOST_GRAD_FUNCTION_TEMPLATE = Template.load_from_file(
-    os.path.join(K.WORK_DIR, './mindspore/ccsrc/pyboost/grad_functions/template/pyboost_grad_function.tpl'))
+    os.path.join(K.WORK_DIR, './mindspore/ccsrc/pynative/utils/pyboost/grad_functions/template/pyboost_grad_function.tpl'))
 
 PYBOOST_VIEW_GRAD_FUNCTION_TEMPLATE = Template.load_from_file(
-    os.path.join(K.WORK_DIR, './mindspore/ccsrc/pyboost/grad_functions/template/pyboost_view_grad_function.tpl'))
+    os.path.join(K.WORK_DIR, './mindspore/ccsrc/pynative/utils/pyboost/grad_functions/template/pyboost_view_grad_function.tpl'))
 
 PYBOOST_GRAD_HEADER_TEMPLATE = Template.load_from_file(
-    os.path.join(K.WORK_DIR, './mindspore/ccsrc/pyboost/grad_functions/template/pyboost_grad_function_header.tpl'))
+    os.path.join(K.WORK_DIR, './mindspore/ccsrc/pynative/utils/pyboost/grad_functions/template/pyboost_grad_function_header.tpl'))
 
 PYBOOST_NATIVE_GRAD_FUNCTION_TEMPLATE = Template.load_from_file(
     os.path.join(K.WORK_DIR, './mindspore/ccsrc/pynative/backward/op_grad/template/native_grad_function.tpl'))

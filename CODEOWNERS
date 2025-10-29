@@ -50,7 +50,7 @@
 /mindspore/ccsrc/pybind_api/runtime/ @limingqi107
 /mindspore/ccsrc/pybind_api/tools/ @fary86
 /mindspore/ccsrc/pybind_api/tools/data_dump_py.cc @DavidFFFan
-/mindspore/ccsrc/pyboost/ @chujinjin
+/mindspore/ccsrc/pynative/utils/pyboost/ @chujinjin
 /mindspore/ccsrc/pynative/ @chujinjin
 /mindspore/ccsrc/runtime/ @limingqi107
 /mindspore/ccsrc/runtime/hardware_abstract/kernel_base/graph_fusion/ @gaoxiong1

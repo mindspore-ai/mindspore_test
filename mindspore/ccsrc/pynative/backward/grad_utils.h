@@ -22,8 +22,8 @@
 #include <vector>
 #include <utility>
 #include "pynative/utils/base.h"
-#include "mindspore/ccsrc/pyboost/op_runner.h"
-#include "mindspore/ccsrc/pyboost/op_register.h"
+#include "mindspore/ccsrc/pynative/utils/pyboost/op_runner.h"
+#include "mindspore/ccsrc/pynative/utils/pyboost/op_register.h"
 #include "pynative/forward/pyboost/forward_task.h"
 #include "pynative/backward/op_grad/func_builder.h"
 #include "frontend/jit/ps/parse/data_converter.h"

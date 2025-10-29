@@ -17,7 +17,7 @@
 #include "kernel/gpu/pyboost/customize/grouped_matmul.h"
 #include <memory>
 #include <functional>
-#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
+#include "mindspore/ccsrc/pynative/utils/pyboost/pyboost_utils.h"
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
 
 namespace mindspore {

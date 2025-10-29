@@ -18,8 +18,8 @@
 #include <memory>
 #include "include/utils/pynative/common_utils.h"
 #include "tools/profiler/profiler.h"
-#include "mindspore/ccsrc/pyboost/functions/auto_generate/functions.h"
-#include "mindspore/ccsrc/pyboost/functions/auto_grad_guard.h"
+#include "mindspore/ccsrc/pynative/utils/pyboost/functions/auto_generate/functions.h"
+#include "mindspore/ccsrc/pynative/utils/pyboost/functions/auto_grad_guard.h"
 #include "mindspore/core/include/utils/ms_context.h"
 
 namespace mindspore::pynative::autograd {

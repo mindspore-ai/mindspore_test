@@ -21,12 +21,12 @@
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "include/runtime/pipeline/pipeline.h"
 #include "include/runtime/hardware_abstract/stream/multi_stream_controller.h"
-#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
+#include "mindspore/ccsrc/pynative/utils/pyboost/pyboost_utils.h"
 #include "include/runtime/memory/mem_pool/mem_tracker.h"
 #include "runtime/pipeline/task/task.h"
 #include "pynative/utils/pynative_utils.h"
-#include "mindspore/ccsrc/pyboost/functions/auto_generate/functions.h"
-#include "mindspore/ccsrc/pyboost/functions/auto_grad_guard.h"
+#include "mindspore/ccsrc/pynative/utils/pyboost/functions/auto_generate/functions.h"
+#include "mindspore/ccsrc/pynative/utils/pyboost/functions/auto_grad_guard.h"
 #include "mindspore/core/include/utils/stream_guard.h"
 
 namespace mindspore {

@@ -46,7 +46,7 @@ PYBOOST_NATIVE_GRAD_FUNC_GEN_PATH = "mindspore/ccsrc/pynative/backward/op_grad/a
 PYBOOST_AUTO_GRAD_FUNC_GEN_PATH = "mindspore/ccsrc/pynative/forward/pyboost/auto_generate"
 PIPELINE_PYBOOST_FUNC_GEN_PATH = "mindspore/ccsrc/pynative/forward/pyboost/auto_generate"
 FUNCTIONAL_OVERLOAD_GEN_PATH = "mindspore/ccsrc/frontend/operator/composite/auto_generate"
-PYBOOST_GRAD_FUNC_GEN_PATH = "mindspore/ccsrc/pyboost/grad_functions/auto_generate"
+PYBOOST_GRAD_FUNC_GEN_PATH = "mindspore/ccsrc/pynative/utils/pyboost/grad_functions/auto_generate"
 TENSOR_FUNC_REGISTER_PATH = "mindspore/ccsrc/pynative/forward/pyboost/auto_generate"
 TENSOR_API_PATH = "mindspore/ccsrc/pybind_api/ir/tensor/tensor_api/auto_generate"
 ADD_TENSOR_DOCS_PY_PATH = "mindspore/python/mindspore/common"
@@ -87,9 +87,9 @@ MS_OPS_VIEW_PATH = "mindspore/ops/view"
 
 # kernel
 MS_OPS_KERNEL_PATH = "mindspore/ops/kernel"
-MS_PYBOOST_FUNCTIONS_AUTO_GEN_PATH = "mindspore/ccsrc/pyboost/functions/auto_generate"
+MS_PYBOOST_FUNCTIONS_AUTO_GEN_PATH = "mindspore/ccsrc/pynative/utils/pyboost/functions/auto_generate"
 MS_COMMON_PYBOOST_KERNEL_PATH = os.path.join(MS_OPS_KERNEL_PATH, "common/pyboost")
-MS_PYBOOST_BASE_PATH = "mindspore/ccsrc/pyboost"
+MS_PYBOOST_BASE_PATH = "mindspore/ccsrc/pynative/utils/pyboost"
 MS_PYBOOST_INTERNAL_FUNCTIONS_AUTO_GEN_PATH = os.path.join(MS_OPS_KERNEL_PATH,
                                                            "ascend/aclnn/pyboost_impl/internal/functions")
 MS_INTERNAL_PYBOOST_GEN_PATH = "mindspore/ops/kernel/ascend/internal/pyboost/auto_gen"

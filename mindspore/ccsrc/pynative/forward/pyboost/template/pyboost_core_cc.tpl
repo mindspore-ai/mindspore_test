@@ -29,8 +29,8 @@
 #include "pynative/forward/pyboost/comm_handle_py.h"
 #include "mindspore/ccsrc/pynative/forward/pyboost/auto_generate/tensor_func_utils.h"
 #include "frontend/expander/bprop/bprop_irbuilder.h"
-#include "mindspore/ccsrc/pyboost/functions/auto_grad_guard.h"
-#include "mindspore/ccsrc/pyboost/functions/auto_generate/functions.h"
+#include "mindspore/ccsrc/pynative/utils/pyboost/functions/auto_grad_guard.h"
+#include "mindspore/ccsrc/pynative/utils/pyboost/functions/auto_generate/functions.h"
 ${include_op_header}
 
 namespace mindspore::pynative {

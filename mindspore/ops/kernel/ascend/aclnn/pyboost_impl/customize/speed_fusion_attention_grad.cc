@@ -18,7 +18,7 @@
 #include "kernel/ascend/aclnn/pyboost_impl/auto_generate/dropout_gen_mask_ext.h"
 #include "kernel/ascend/aclnn/pyboost_impl/auto_generate/zeros.h"
 #include "plugin/ascend/res_manager/stream_manager/ascend_stream_manager.h"
-#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
+#include "mindspore/ccsrc/pynative/utils/pyboost/pyboost_utils.h"
 #include "kernel/ascend/aclnn/pyboost_impl/aclnn_utils.h"
 #include "plugin/ascend/res_manager/op_adapter/op_adapter_base.h"
 #include "mindspore/ops/op_def/op_enum.h"

@@ -26,7 +26,7 @@
 #include "ir/tensor_new.h"
 #include "kernel/ascend/dvm/dvm.h"
 #include "mindspore/core/include/ir/tensor.h"
-#include "mindspore/ccsrc/pyboost/op_runner.h"
+#include "mindspore/ccsrc/pynative/utils/pyboost/op_runner.h"
 #include "kernel/ascend/aclnn/pyboost_impl/aclnn_utils.h"
 #include "pynative/utils/runtime/lazy_fusion.h"
 #include "kernel/ascend/dvm/pyboost_impl/lazy_fusion_dump.h"
@@ -176,7 +176,7 @@ class LazyFusionKernelAscend : public dvm::Kernel {
   }
 
   template <typename... Args>
-  void DumpOp(const std::string &op_name, const std::vector<TensorPtr> &outputs, const Args &... inputs) {
+  void DumpOp(const std::string &op_name, const std::vector<TensorPtr> &outputs, const Args &...inputs) {
     auto &op = dump_ops_.emplace_back();
     op.name = op_name;
     // record outputs

@@ -17,9 +17,9 @@
 #include "kernel/ascend/aclnn/pyboost_impl/customize/identity.h"
 #include <memory>
 #include "plugin/ascend/res_manager/stream_manager/ascend_stream_manager.h"
-#include "mindspore/ccsrc/pyboost/op_register.h"
-#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
-#include "mindspore/ccsrc/pyboost/customize/identity.h"
+#include "mindspore/ccsrc/pynative/utils/pyboost/op_register.h"
+#include "mindspore/ccsrc/pynative/utils/pyboost/pyboost_utils.h"
+#include "mindspore/ccsrc/pynative/utils/pyboost/customize/identity.h"
 #include "kernel/ascend/aclnn/pyboost_impl/aclnn_utils.h"
 #include "kernel/ascend/acl_ir/acl_helper.h"
 #include "kernel/ascend/aclop/kernel_mod_impl/acl_kernel_mod.h"

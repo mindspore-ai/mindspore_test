@@ -30,8 +30,8 @@
 #include "include/utils/convert_utils_py.h"
 #include "include/utils/pynative/grad_state.h"
 #include "include/utils/pynative/common_utils.h"
-#include "pyboost/functions/auto_grad_guard.h"
-#include "pyboost/functions/auto_generate/functions.h"
+#include "pynative/utils/pyboost/functions/auto_grad_guard.h"
+#include "pynative/utils/pyboost/functions/auto_generate/functions.h"
 
 namespace mindspore {
 namespace pynative {
