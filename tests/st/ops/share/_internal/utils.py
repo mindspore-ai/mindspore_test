@@ -379,8 +379,8 @@ def make_tensor(
     else:
         result = ms.Tensor(_generate_ndarray(shape, dtype, low, high, random_method), dtype=dtype)
 
-    if device is not None:
-        result = result.to(device)
+    if device is not None and device.lower() in ['ascend', 'cpu']:
+        result = result.to('Ascend' if device.lower() == 'ascend' else device)
 
     if discontiguous:
         result = _tensor_to_discontiguous(result)
@@ -398,8 +398,8 @@ def make_tensor_with_np_array(
     """Wrap a numpy array into a MindSpore Tensor with optional device/memory tweaks."""
     result = ms.Tensor(np_array, dtype=dtype)
 
-    if device is not None:
-        result = result.to(device)
+    if device is not None and device.lower() in ['ascend', 'cpu']:
+        result = result.to('Ascend' if device.lower() == 'ascend' else device)
     if discontiguous:
         result = _tensor_to_discontiguous(result)
 

@@ -12,34 +12,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-"""Operator information schema and registry for tests.
+"""Utility helpers for operation testing.
 
-Defines `OpInfo` dataclass and an in-repo registry for op metadata across
-backends to drive parameterized tests.
+This module provides:
+- OpInfo dataclass describing operator metadata for tests.
+- BinaryOpInfo convenience subclass with defaults for binary ops.
+- sample_inputs_binary_op_func: canonical sample input generator for binary ops.
 """
-import torch
-import mindspore as ms
-from mindspore import mint
-from typing import Callable, Optional, Dict
-from dataclasses import dataclass, field
 import functools
-import inspect
-
-dtypes_as_torch = (
-    ms.bool_, ms.int8, ms.int16, ms.int32, ms.int64, ms.uint8,
-    ms.float16, ms.float32, ms.float64,
-    ms.complex64, ms.complex128,
-    ms.bfloat16,
+from typing import Callable, Optional
+from dataclasses import dataclass, field
+from tests.st.ops.share._op_info.op_common import (
+    MEDIUM_DIM_SIZE, SMALL_DIM_SIZE, EXTRA_SMALL_DIM_SIZE,
+    get_default_loss
 )
-dtypes_extra_uint = (
-    ms.uint16, ms.uint32, ms.uint64,
-)
-
-dtypes_integral = (
-    ms.bool_,
-    ms.int8, ms.int16, ms.int32, ms.int64,
-    ms.uint8, ms.uint16, ms.uint32, ms.uint64,
-)
+from tests.st.ops.share._internal.utils import OpSampleInput, make_tensor
 
 @dataclass
 class OpInfo:
@@ -48,96 +35,124 @@ class OpInfo:
     Attributes:
         name: Short op alias used in logs and test names.
         op: MindSpore callable implementation.
-        ref: Reference implementation (e.g., torch, numpy).
-        tensor_variant: Tensor method variant if applicable.
-        inplace_variant: In-place variant if applicable.
-        dtypes_ascend/cpu/gpu: Supported dtypes on each backend.
-        dtypes_intersection: Intersection of supported dtypes across backends.
-        is_differentiable: Whether gradients are expected/computed.
+        op_func_grad: MindSpore callable used for gradient nets; falls back to
+            ``op`` if not provided (e.g., when kwargs need special handling).
+        ref: Reference implementation (e.g., PyTorch/NumPy callable).
+        tensor_variant: Tensor method variant of the operator, if applicable.
+
+        dtypes_ascend: Supported MindSpore dtypes on Ascend devices.
+        dtypes_ascend910b: Supported dtypes specifically on Ascend 910B.
+        dtypes_cpu: Supported dtypes on CPU.
+        dtypes_gpu: Supported dtypes on GPU.
+        dtypes_intersection: Intersection of supported dtypes across all listed
+            backends. Auto-populated in ``__post_init__`` if left empty.
+
+        op_sample_inputs_func: Function that generates sample inputs for tests.
+        op_error_inputs_func: Function that generates error/negative samples.
+        op_dynamic_inputs_func: Function that generates dynamic-shape samples.
+
+        is_differentiable: Whether gradients are expected/computed for the op.
+        is_inplace_op: Whether the op mutates its input (in-place semantics).
+        convert_extra_uint: Whether to convert extra uint dtypes for references
+            that do not support them (e.g., PyTorch).
+        convert_half_to_float: Whether to cast float16 to float32 for reference
+            computation on backends where half precision is not supported.
+
+        compare_method: Comparison strategy, e.g. 'default_golden',
+            'single_golden', or 'double_golden'.
+        default_golden_loss_func: Callable returning default numeric tolerance
+            (rtol/atol) based on dtype.
     """
+    # name of primitive, defined in xxx_op.yaml file.
     name: str
     op: Optional[Callable] = None
+    op_func_grad: Optional[Callable] = None
     ref: Optional[Callable] = None
     tensor_variant: Optional[Callable] = None
-    inplace_variant: Optional[Callable] = None
+
+    # dtypes supported by each backend
     dtypes_ascend: tuple = field(default_factory=tuple)
+    dtypes_ascend910b: tuple = field(default_factory=tuple)
     dtypes_cpu: tuple = field(default_factory=tuple)
     dtypes_gpu: tuple = field(default_factory=tuple)
     dtypes_intersection: tuple = field(default_factory=tuple)
-    is_differentiable: bool = True
+
+    # function to generate sample inputs for the op.
+    op_sample_inputs_func: Optional[Callable] = None
+    # function to generate error inputs for the op.
+    op_error_inputs_func: Optional[Callable] = None
+    # function to generate dynamic inputs for the op.
+    op_dynamic_inputs_func: Optional[Callable] = None
+
+    # extra options for the op.
+    is_differentiable: Optional[bool] = True
+    is_inplace_op: Optional[bool] = False
+    convert_extra_uint: Optional[bool] = True
+    convert_half_to_float: Optional[bool] = False
+
+    # comparison params
+    compare_method: Optional[str] = 'default_golden'
+    default_golden_loss_func: Optional[Callable] = get_default_loss
 
     def __post_init__(self):
         if not self.dtypes_intersection:
             self.dtypes_intersection = tuple(
-                set(self.dtypes_ascend) & set(self.dtypes_cpu) & set(self.dtypes_gpu)
+                set(self.dtypes_ascend) & set(self.dtypes_ascend910b) & set(self.dtypes_cpu) & set(self.dtypes_gpu)
             )
-
-    def get_dtypes(self, backend: str = None):
-        if backend is None:
-            return self.dtypes_intersection
-        if backend.lower() == 'ascend':
-            return self.dtypes_ascend
-        if backend.lower() == 'cpu':
-            return self.dtypes_cpu
-        if backend.lower() == 'gpu':
-            return self.dtypes_gpu
-        raise ValueError(f"Invalid backend: {backend}, expected: 'ascend', 'cpu', 'gpu'.")
+        if self.op_func_grad is None:
+            self.op_func_grad = self.op
 
 
-op_db: Dict[str, OpInfo] = {
-    'add_ext': OpInfo(
-        name='add_ext',
-        op=mint.add,
-        ref=torch.add,
-        tensor_variant=lambda op_input, *op_args, **op_kwargs: op_input.add(op_args[0], alpha=op_kwargs.get('alpha', 1)),
-        dtypes_ascend=dtypes_as_torch,
-        dtypes_cpu=tuple([d for d in dtypes_as_torch if d != ms.bfloat16] + list(dtypes_extra_uint)),
-        dtypes_gpu=tuple([d for d in dtypes_as_torch if d != ms.bfloat16] + list(dtypes_extra_uint)),
-        is_differentiable=True,
-    ),
-}
+def sample_inputs_binary_op_func(op_info: OpInfo, dtype, device=None, **kwargs):
+    """Yield shape/broadcasting cases for binary ops.
 
-
-def ops_info(op_info: OpInfo):
-    """Decorator factory: can be used as @ops_info(op_db['add_ext']).
-
-    Purpose:
-    - Injects the provided op_info into the decorated function as the last argument.
-    - Adjusts the exported signature to hide the `op_info` parameter for pytest compatibility
-      (works with parametrization and stacked decorators).
-    - Supports being stacked before or after pytest decorators.
+    Generates a variety of tensor shape combinations, including scalars,
+    vectors, broadcasting pairs, and empty-dimension cases.
     """
+    XS = EXTRA_SMALL_DIM_SIZE
+    S = EXTRA_SMALL_DIM_SIZE if kwargs.get("only_small_tensor_size", False) else SMALL_DIM_SIZE
+    M = SMALL_DIM_SIZE if kwargs.get("only_small_tensor_size", False) else MEDIUM_DIM_SIZE
 
-    def _decorator(fn: Callable):
-        # Record the original signature and try to hide the trailing `op_info` parameter from export
-        try:
-            original_sig = inspect.signature(fn)
-            params = list(original_sig.parameters.values())
-        except (TypeError, ValueError):
-            original_sig = None
-            params = []
-        has_opinfo_param = any(p.name == 'op_info' for p in params)
+    make_func = functools.partial(
+        make_tensor,
+        device=device,
+        dtype=dtype,
+    )
 
-        @functools.wraps(fn)
-        def _wrapper(*args, **kwargs):
-            # If caller explicitly provides `op_info` as a keyword, do not override it
-            if 'op_info' in kwargs:
-                return fn(*args, **kwargs)
-            # If function declares `op_info`, pass it as a keyword to avoid conflicts with keyword args
-            if has_opinfo_param:
-                new_kwargs = dict(kwargs)
-                new_kwargs['op_info'] = op_info
-                return fn(*args, **new_kwargs)
-            # Otherwise, append `op_info` as the last positional argument
-            new_args = args + (op_info,)
-            return fn(*new_args, **kwargs)
+    shapes = (
+        ((), ()),
+        ((S,), ()),
+        ((S, 1), (S,)),
+        ((M, S), ()),
+        ((S, M, S), (M, S)),
+        ((S, M, S), (S, M, S)),
+        ((M, 1, S), (M, S)),
+        ((M, 1, S), (1, M, S)),
+        ((0, 1, XS), (0, M, XS)),
+    )
 
-        # Expose a signature without the trailing `op_info` so pytest won't treat it as a fixture/param
-        if has_opinfo_param and params and params[-1].name == 'op_info':
-            try:
-                _wrapper.__signature__ = original_sig.replace(parameters=tuple(params[:-1]))
-            except Exception:  # pylint: disable=W0703
-                pass
-        return _wrapper
+    for input_shape, other_shape in shapes:
+        _input = make_func(input_shape)
+        _other = make_func(other_shape)
 
-    return _decorator
+        yield OpSampleInput(
+            _input,
+            op_args=(_other,),
+            op_name=op_info.name,
+        )
+
+
+class BinaryOpInfo(OpInfo):
+
+    def __init__(
+            self,
+            name: str,
+            *,
+            op_sample_inputs_func: Optional[Callable] = sample_inputs_binary_op_func,
+            **kwargs,
+    ):
+        super().__init__(
+            name,
+            op_sample_inputs_func=op_sample_inputs_func,
+            **kwargs,
+        )
