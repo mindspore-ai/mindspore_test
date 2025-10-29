@@ -17,13 +17,14 @@
 
 #include <algorithm>
 #include <memory>
+#include <vector>
+#include <string>
 #include "abstract/symbolic_shape/utils.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "include/utils/anfalgo.h"
 #include "ir/anf.h"
 #include "ir/graph_utils.h"
 #include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/symbol_engine/jit/transform_visitor.h"
-#include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/symbol_engine/multi_symbol_engine.h"
 #include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/symbol_engine/jit/cpp_visitor.h"
 
 namespace mindspore::graphkernel {

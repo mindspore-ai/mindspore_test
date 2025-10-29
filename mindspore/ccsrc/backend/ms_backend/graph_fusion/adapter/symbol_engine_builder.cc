@@ -20,7 +20,7 @@
 #include <vector>
 #include <string>
 #include "include/utils/anfalgo.h"
-#include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/symbol_engine/multi_symbol_engine.h"
+#include "backend/ms_backend/graph_fusion/multi_symbol_engine.h"
 #include "backend/ms_backend/graph_fusion/core/graph_kernel_utils.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"

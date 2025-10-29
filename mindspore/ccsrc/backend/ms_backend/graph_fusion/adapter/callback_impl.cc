@@ -19,6 +19,7 @@
 #include <vector>
 #include <utility>
 #include <memory>
+#include <string>
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "utils/ms_context.h"
 #include "utils/anf_utils.h"
@@ -26,7 +27,7 @@
 #include "include/runtime/hardware_abstract/kernel_base/kernel_info.h"
 #include "include/utils/anfalgo.h"
 #include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
-#include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/fake_abstract_shape.h"
+#include "backend/ms_backend/graph_fusion/fake_abstract_shape.h"
 #include "runtime/hardware_abstract/kernel_base/graph_fusion/framework_utils.h"
 #include "backend/ms_backend/graph_fusion/convert_input_and_attr.h"
 #include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel_info.h"

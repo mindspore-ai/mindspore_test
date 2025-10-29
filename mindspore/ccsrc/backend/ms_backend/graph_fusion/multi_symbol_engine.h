@@ -13,15 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef MINDSPORE_CCSRC_BACKEND_COMMON_GRAPH_KERNEL_SYMBOL_ENGINE_MULTI_SYMBOL_ENGINE_H_
-#define MINDSPORE_CCSRC_BACKEND_COMMON_GRAPH_KERNEL_SYMBOL_ENGINE_MULTI_SYMBOL_ENGINE_H_
+#ifndef MINDSPORE_CCSRC_BACKEND_MS_BACKEND_GRAPH_FUSION_MULTI_SYMBOL_ENGINE_H_
+#define MINDSPORE_CCSRC_BACKEND_MS_BACKEND_GRAPH_FUSION_MULTI_SYMBOL_ENGINE_H_
 
 #include <string>
 #include <memory>
 #include <vector>
 #include <map>
 #include "mindspore/ccsrc/utils/symbol_engine/symbol_engine_impl.h"
-#include "runtime/hardware_abstract/visible.h"
 
 namespace mindspore {
 namespace graphkernel {
@@ -29,7 +28,7 @@ namespace symshape {
 using mindspore::symshape::SymbolEngineImpl;
 
 /// \brief SymbolEngine for a graph. new symbol engines will be created for subgraphs.
-class RUNTIME_HARDWARE_EXPORT MultiSymbolEngine : public SymbolEngineImpl {
+class MultiSymbolEngine : public SymbolEngineImpl {
  public:
   using SymbolEngineImpl::SymbolEngineImpl;
   ~MultiSymbolEngine() = default;
@@ -53,4 +52,4 @@ class RUNTIME_HARDWARE_EXPORT MultiSymbolEngine : public SymbolEngineImpl {
 using MultiSymbolEnginePtr = std::shared_ptr<symshape::MultiSymbolEngine>;
 }  // namespace graphkernel
 }  // namespace mindspore
-#endif  // MINDSPORE_CCSRC_BACKEND_COMMON_GRAPH_KERNEL_SYMBOL_ENGINE_MULTI_SYMBOL_ENGINE_H_
+#endif  // MINDSPORE_CCSRC_BACKEND_MS_BACKEND_GRAPH_FUSION_MULTI_SYMBOL_ENGINE_H_

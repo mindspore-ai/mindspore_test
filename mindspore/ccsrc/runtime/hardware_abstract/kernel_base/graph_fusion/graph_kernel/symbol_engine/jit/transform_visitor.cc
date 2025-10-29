@@ -19,6 +19,8 @@
 #include <string>
 #include <unordered_map>
 #include <utility>
+#include "abstract/dshape.h"
+#include "ir/func_graph.h"
 #include "mindspore/ops/infer/symbol_ops_impl/scalar_add.h"
 #include "mindspore/ops/infer/symbol_ops_impl/scalar_sub.h"
 #include "mindspore/ops/infer/symbol_ops_impl/scalar_mul.h"

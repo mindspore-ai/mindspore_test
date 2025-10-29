@@ -20,6 +20,9 @@
 #include <set>
 #include <tuple>
 #include <utility>
+#include <memory>
+#include <vector>
+#include <string>
 
 #include "backend/ms_backend/graph_fusion/core/graph_builder.h"
 #include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel_flags.h"
@@ -34,7 +37,7 @@
 #include "ir/func_graph_cloner.h"
 #include "ir/dtype/tensor_type.h"
 #include "runtime/hardware_abstract/kernel_base/graph_fusion/framework_utils.h"
-#include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/fake_abstract_shape.h"
+#include "backend/ms_backend/graph_fusion/fake_abstract_shape.h"
 #include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/graph_kernel_json_generator.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
