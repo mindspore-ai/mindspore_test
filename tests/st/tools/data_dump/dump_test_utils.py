@@ -99,7 +99,7 @@ e2e_async_dump_dict = {
         "input_output": 0,
         "kernels": ["Default/Conv-op12"],
         "support_device": [0, 1, 2, 3, 4, 5, 6, 7],
-        "op_debug_mode": 0
+        "op_debug_mode": 0,
     },
     "e2e_dump_settings": {
         "enable": False,
