@@ -27,6 +27,12 @@ from mindspore import ops
 from mindspore import nn
 from mindspore import context
 from mindspore import Tensor
+from mindspore.common import dtype as msdtype
+from mindspore.common.parameter import Parameter
+from mindspore import dataset
+from mindspore.nn import Momentum
+from mindspore.nn import SoftmaxCrossEntropyWithLogits
+from mindspore.train import Model
 from tests.mark_utils import arg_mark
 from tests.security_utils import security_off_wrap
 from dump_test_utils import generate_dump_json, check_dump_structure
@@ -36,6 +42,7 @@ class ConvNet(nn.Cell):
         super().__init__()
         self.conv2 = ops.Conv2D(out_channel=3, kernel_size=1)
 
+    @mindspore.jit(backend="ms_backend", jit_level="O0")
     def construct(self, x, weight):
         return self.conv2(x, weight)
 
@@ -47,6 +54,7 @@ class NetMulAdd(nn.Cell):
         self.add = ops.Add()
         self.mul = ops.Mul()
 
+    @mindspore.jit(backend="ms_backend", jit_level="O0")
     def construct(self, x_, y_):
         x_ = self.mul(x_, 2)
         y_ = self.mul(y_, 2)
@@ -60,10 +68,60 @@ class ViewNet(nn.Cell):
         super().__init__()
         self.transpose = ops.TransposeView()
 
+    @mindspore.jit(backend="ms_backend", jit_level="O0")
     def construct(self, x, perm):
         out = self.transpose(x, perm)
         return out
 
+class AddMulNet(nn.Cell):
+    """A simple net with mul and add ops."""
+    def __init__(self, fill_value, strategy=None, dtype=np.float32):
+        super().__init__()
+        add_np = np.full((1, 3), fill_value=fill_value, dtype=dtype)
+        self.add_weight = Parameter(Tensor(add_np), name="add_weight")
+        mul_np = np.full((1, 3), fill_value=1, dtype=dtype)
+        self.mul_weight = Parameter(Tensor(mul_np), name="mul_weight")
+        self.add = ops.Add()
+        self.mul = ops.Mul()
+        if strategy is not None:
+            self.add.shard(strategy[0])
+            self.mul.shard(strategy[1])
+
+    @mindspore.jit(backend="ms_backend", jit_level="O0")
+    def construct(self, x):
+        x = self.add(x, self.add_weight)
+        out = self.mul(x, self.mul_weight)
+        return out
+
+def two_dataset_generator_fp32():
+    for num in range(0, 3):
+        yield (np.full((8 + 8 * num, 3), fill_value=num, dtype=np.float32),
+               np.full((8 + 8 * num, 3), fill_value=num, dtype=np.float32))
+
+def check_dump_dynamic_net_sync_overflow_dump(dump_path, dump_config_path, test_name):
+    """check dynamic shape overflow dump"""
+    generate_dump_json(dump_path, dump_config_path, test_name)
+    net_parallel = AddMulNet(fill_value=3.4e38, strategy=None, dtype=np.float32)
+    input_x = Tensor(shape=[None, 3], dtype=msdtype.float32)
+    input_y = Tensor(shape=[None, 3], dtype=msdtype.float32)
+    parallel_dataset = dataset.GeneratorDataset(two_dataset_generator_fp32, ["data", "label"])
+    loss = SoftmaxCrossEntropyWithLogits(reduction='mean')
+    opt_fn = Momentum(learning_rate=0.01, momentum=0.9, params=net_parallel.get_parameters())
+    model = Model(network=net_parallel, loss_fn=loss, optimizer=opt_fn, amp_level="O0")
+    model.train_network.set_inputs(input_x, input_y)
+    model.train(epoch=3, train_dataset=parallel_dataset, dataset_sink_mode=False, sink_size=-1)
+    check_dump_structure(dump_path, dump_config_path, 1, 0, 1)
+    dump_data_path = os.path.join(dump_path, 'rank_0', 'Net', '0', '0')
+    assert os.path.exists(dump_data_path)
+    # tensor data in host format.
+    output_name1 = "TupleToTensor.Gradients_Default_network-WithLossCell__loss_fn-SoftmaxCross"
+    output_name2 = "EntropyWithLogits_Grad_ReduceMean_TupleToTensor-op*.input.0.DefaultFormat.*.npy"
+    output_name = output_name1 + output_name2
+    output_path = glob.glob(os.path.join(dump_data_path, output_name))[0]
+    real_path = os.path.realpath(output_path)
+    output = np.load(real_path)
+    assert output.shape == (1,)
+    assert oct(os.stat(real_path).st_mode)[-3:] == str(400)
 
 def run_trans_flag(test_name):
     """Run e2e dump on scenario, testing trans_flag functionality"""
@@ -129,6 +187,9 @@ def run_trans_flag(test_name):
             overflow_files_num = len(overflow_files)
             assert overflow_files_num == set_overflow_num * 3
 
+        if test_name == "test_dump_dynamic_net_sync_overflow_dump":
+            check_dump_dynamic_net_sync_overflow_dump(dump_path, dump_config_path, test_name)
+
         del os.environ['MINDSPORE_DUMP_CONFIG']
 
 
@@ -140,13 +201,8 @@ def test_ascend_kernel_by_kernel_trans_true_op_debug_mode():
     Description: Test kernel by kernel dump in Ascend with trans_flag is configured to true.
     Expectation: Dump files has tensor data in host format (4 dimensions).
     """
-    context.set_context(jit_level='O0')
-    os.environ['INF_NAN_MODE_ENABLE'] = "1"
-    os.environ['MS_ASCEND_CHECK_OVERFLOW_MODE'] = "INFNAN_MODE"
-    context.set_context(mode=context.GRAPH_MODE, device_target="Ascend")
+    context.set_context(mode=context.GRAPH_MODE)
     run_trans_flag("test_e2e_dump_trans_true_op_debug_mode")
-    del os.environ['INF_NAN_MODE_ENABLE']
-    del os.environ['MS_ASCEND_CHECK_OVERFLOW_MODE']
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
@@ -157,13 +213,8 @@ def test_ascend_kernel_by_kernel_with_uncontiguous_tensor():
     Description: Test kernel by kernel dump in Ascend with uncontiguous tensor.
     Expectation: Dump files has tensor data in host format (3 dimensions).
     """
-    context.set_context(jit_level='O0')
-    os.environ['INF_NAN_MODE_ENABLE'] = "1"
-    os.environ['MS_ASCEND_CHECK_OVERFLOW_MODE'] = "INFNAN_MODE"
-    context.set_context(mode=context.GRAPH_MODE, device_target="Ascend")
+    context.set_context(mode=context.GRAPH_MODE)
     run_trans_flag("test_e2e_dump_with_uncontiguous_tensor")
-    del os.environ['INF_NAN_MODE_ENABLE']
-    del os.environ['MS_ASCEND_CHECK_OVERFLOW_MODE']
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
@@ -174,10 +225,17 @@ def test_e2e_dump_set_overflow_number():
     Description: Test kernel by kernel dump in Ascend with overflow_number is configured.
     Expectation: The number of dump files matches the value of the overflow_number parameter that has been set.
     """
-    context.set_context(jit_level='O0')
-    os.environ['INF_NAN_MODE_ENABLE'] = "1"
-    os.environ['MS_ASCEND_CHECK_OVERFLOW_MODE'] = "INFNAN_MODE"
-    context.set_context(mode=context.GRAPH_MODE, device_target="Ascend")
+    context.set_context(mode=context.GRAPH_MODE)
     run_trans_flag("test_e2e_dump_set_overflow_number")
-    del os.environ['INF_NAN_MODE_ENABLE']
-    del os.environ['MS_ASCEND_CHECK_OVERFLOW_MODE']
+
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@security_off_wrap
+def test_dump_dynamic_net_sync_overflow_dump():
+    """
+    Feature: The number of overflow dump during the training process can be configured.
+    Description: Test kernel by kernel dump in Ascend with overflow_number is configured.
+    Expectation: The number of dump files matches the value of the overflow_number parameter that has been set.
+    """
+    context.set_context(mode=context.GRAPH_MODE)
+    run_trans_flag("test_dump_dynamic_net_sync_overflow_dump")

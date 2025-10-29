@@ -238,6 +238,7 @@ def generate_dump_json(dump_path, json_file_name, test_key, net_name='Net', over
             "test_e2e_dump_trans_true_op_debug_mode",
             "test_e2e_dump_set_overflow_number",
             "test_e2e_dump_with_uncontiguous_tensor",
+            "test_dump_dynamic_net_sync_overflow_dump"
         ]:
         data = e2e_dump_dict
         data["common_dump_settings"]["path"] = dump_path

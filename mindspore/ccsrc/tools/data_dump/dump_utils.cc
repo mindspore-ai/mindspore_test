@@ -162,27 +162,94 @@ const DeviceTensorPtr GetParameterInfo(const AnfNodePtr &node, NotNull<ShapeVect
   return device_addr;
 }
 
-void HostDumpMemToFile(const device::DeviceAddress &addr, const std::string &filepath, const ShapeVector &host_shape,
-                       TypeId host_type) {
+bool CPUDumpMemToFile(const device::DeviceAddress &addr, const std::string &filepath, const std::string &,
+                      const ShapeVector &host_shape, TypeId host_type, bool) {
   bool ret = false;
   if (filepath.empty()) {
     MS_LOG(ERROR) << "Dump file path is null!";
-    return;
+    return ret;
   }
   std::string path = filepath + '.' + addr.format() + "." + TypeIdToString(host_type);
   MS_LOG(DEBUG) << "E2E Dump path is " << path;
   if (addr.GetSize() == 0) {
     MS_VLOG(VL_DUMP) << "Data size is 0 for file: " << path << ", no need to dump.";
-    return;
+    return true;
   }
   if (addr.GetPtr() == nullptr) {
     MS_VLOG(VL_DUMP) << "Data is nullptr for file: " << path << ", skip it.";
-    return;
+    return true;
   }
   ret = DumpJsonParser::DumpToFile(path, addr.GetPtr(), addr.GetSize(), host_shape, host_type);
   if (!ret) {
-    MS_LOG(ERROR) << "Host Dump To File Failed: path:" << filepath << ".!";
-    return;
+    MS_LOG(ERROR) << "Dump to file failed";
+  }
+  return ret;
+}
+
+bool AscendDumpMemToFile(const device::DeviceAddress &addr, const std::string &filepath, const std::string &host_fmt,
+                         const ShapeVector &host_shape, TypeId host_type, bool trans_flag) {
+  bool ret = false;
+  if (filepath.empty()) {
+    MS_LOG(ERROR) << "Dump file path is null!";
+    return ret;
+  }
+  if (addr.GetSize() == 0) {
+    MS_VLOG(VL_DUMP) << "the operator in filepath: " << filepath << ", size == 0";
+    return true;
+  }
+  if (addr.GetPtr() == nullptr) {
+    MS_VLOG(VL_DUMP) << "Data is nullptr for file: " << filepath << ", skip it.";
+    return true;
+  }
+  device::DeviceContextKey host_key = {addr.GetDeviceType(), addr.device_id()};
+  device::DeviceContext *host_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
+  MS_EXCEPTION_IF_NULL(host_context);
+  MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
+  host_context->device_res_manager_->SyncAllStreams();
+  if (trans_flag) {
+    std::string path = filepath + '.' + host_fmt;
+    MS_VLOG(VL_DUMP) << "E2E Dump path is " << path;
+    if (host_type > TypeId::kNumberTypeEnd || host_type < TypeId::kNumberTypeBegin ||
+        host_type == kNumberTypeComplex64) {
+      MS_VLOG(VL_DUMP) << "Cannot create tensor with type: " << TypeIdLabel(host_type);
+      return false;
+    }
+    mindspore::tensor::TensorPtr out_tensor = tensor::from_spec(host_type, host_shape, device::DeviceType::kCPU);
+    MS_EXCEPTION_IF_NULL(out_tensor);
+    size_t host_size = LongToSize(out_tensor->DataNBytes());
+    auto clone_device_address = host_context->device_res_manager_->CreateDeviceAddress(
+      addr.GetMutablePtr(), addr.GetSize(), addr.GetShapeVector(), kernel::GetFormatFromStrToEnum(addr.format()),
+      addr.type_id(), device::GetDeviceNameByType(addr.GetDeviceType()), addr.stream_id());
+    MS_EXCEPTION_IF_NULL(out_tensor->device_address());
+    ret = SyncCopy(out_tensor->device_address(), clone_device_address, addr.stream_id());
+    if (!ret) {
+      MS_LOG(ERROR) << "Copy device mem to host failed";
+      return ret;
+    }
+    ret = DumpJsonParser::DumpToFile(path, out_tensor->data_c(), host_size, host_shape, host_type);
+  } else {
+    auto host_tmp = std::vector<uint8_t>(addr.GetSize());
+    host_context->device_res_manager_->Copy(host_tmp.data(), addr.GetMutablePtr(), addr.GetSize(),
+                                            device::CopyType::kD2H, addr.stream_id());
+    std::string path = filepath + '.' + addr.format();
+    MS_VLOG(VL_DUMP) << "E2E Dump path is " << path;
+    ret = DumpJsonParser::DumpToFile(path, host_tmp.data(), addr.GetSize(), host_shape, addr.type_id());
+  }
+  return ret;
+}
+
+void DumpMemToFile(const std::string &file_path, const device::DeviceAddress &addr, const ShapeVector &int_shapes,
+                   const TypeId &type, bool trans_flag) {
+  auto format = kOpFormat_DEFAULT;
+  bool ret = false;
+  if (addr.GetDeviceType() == device::DeviceType::kCPU) {
+    ret = CPUDumpMemToFile(addr, file_path, format, int_shapes, type, trans_flag);
+  } else if (addr.GetDeviceType() == device::DeviceType::kAscend) {
+    ret = AscendDumpMemToFile(addr, file_path, format, int_shapes, type, trans_flag);
+  }
+  if (!ret) {
+    MS_LOG(ERROR) << "DumpMemToFile Failed: flag:" << trans_flag << ", path:" << file_path << ", host_format:" << format
+                  << ".!";
   }
 }
 
