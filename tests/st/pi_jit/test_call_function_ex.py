@@ -21,6 +21,7 @@ from mindspore import Tensor, jit, ops
 from mindspore._c_expression import get_code_extra
 
 from tests.st.pi_jit.share.utils import assert_equal, assert_executed_by_graph_mode, pi_jit_with_config
+from tests.st.pi_jit.conftest import run_in_subprocess
 
 SYS_VER = (sys.version_info.major, sys.version_info.minor)
 if SYS_VER not in [(3, 7), (3, 8), (3, 9), (3, 10)]:
@@ -87,6 +88,7 @@ def test_call_function_ex_vargs_infer():
         assert_executed_by_graph_mode(compiled_fn)
 
 
+@run_in_subprocess({'MS_SUBMODULE_LOG_v': '{PI:1}'})
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_call_function_ex_with_params_dict_merge_v1():
     """
@@ -116,6 +118,7 @@ def test_call_function_ex_with_params_dict_merge_v1():
     assert_executed_by_graph_mode(compiled_fn)
 
 
+@run_in_subprocess({'MS_SUBMODULE_LOG_v': '{PI:1}'})
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_call_function_ex_with_params_dict_merge_v2():
     """

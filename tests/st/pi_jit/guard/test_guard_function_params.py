@@ -18,8 +18,10 @@ from mindspore import Tensor, jit, nn, ops
 
 from tests.mark_utils import arg_mark
 from tests.st.pi_jit.share.utils import match_array, assert_executed_by_graph_mode
+from tests.st.pi_jit.conftest import run_in_subprocess
 
 
+@run_in_subprocess({'GLOG_v': '1', 'MS_SUBMODULE_LOG_v': '{PI:0}'})
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_guard_for_function_param_of_user_defined_object():
     """

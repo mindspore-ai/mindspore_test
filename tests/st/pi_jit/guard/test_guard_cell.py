@@ -19,11 +19,13 @@ import mindspore as ms
 from mindspore import Tensor, context, jit, nn, ops
 
 from tests.mark_utils import arg_mark
+from tests.st.pi_jit.conftest import run_in_subprocess
 from ..share.utils import match_array, assert_no_graph_break
 
 context.set_context(mode=context.PYNATIVE_MODE)
 
 
+@run_in_subprocess({'GLOG_v': '1', 'MS_SUBMODULE_LOG_v': '{PI:0}'})
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_guard_for_Cell_1():
     """
