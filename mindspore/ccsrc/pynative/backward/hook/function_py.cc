@@ -147,6 +147,7 @@ static TensorPtrSet parse_non_differentiable(const FunctionPtr &fptr) {
 
 static TensorPtrList parse_to_save(const std::shared_ptr<FunctionContext> &context, const FunctionPtr &fptr) {
   auto to_save_obj = fptr->raw_saved_tensors();
+  bool need_do_grad = context->grad_node != nullptr;
   if (!to_save_obj) {
     return {};
   }
@@ -169,8 +170,9 @@ static TensorPtrList parse_to_save(const std::shared_ptr<FunctionContext> &conte
       if (check_is_output(tensor) || has_saved_tensors_hooks) {
         to_save_list_obj[i] = py::object();
       }
-    } else if (!py::isinstance<py::none>(elem)) {
-      continue;
+    } else if (!py::isinstance<py::none>(elem) && need_do_grad) {
+      MS_LOG(EXCEPTION) << "Please check your custom function, that save_for_backward() only support None and tensor, "
+                           "but got other type!";
     }
     to_save_tensors.emplace_back(tensor);
   }
@@ -301,10 +303,16 @@ py::object FunctionBase::apply(const py::object &cls, const py::args &inputs) {
   runtime::Pipeline::Get().WaitBpropStage();  // wait to get inputs value
   ProcessInputs(context, ctx, inputs, &inputs_meta);
   auto type_name = py::cast<std::string>(ctx_obj.get_type().attr("__name__"));
-  const auto custom_fn = BackwardNode::Create<PyBackwardNode>(std::move(type_name), backward_fn, ctx_obj, inputs_meta);
-  UpdateNextEdges(custom_fn, context->inputs);
+
   // Get need grad before forward.
   bool need_do_grad = GradState::Get().RequiresGrad() && AutoGradUtil::NeedGrad(context->inputs);
+
+  PyBackwardNodePtr custom_fn;
+  if (need_do_grad) {
+    custom_fn = BackwardNode::Create<PyBackwardNode>(std::move(type_name), backward_fn, ctx_obj, inputs_meta);
+    UpdateNextEdges(custom_fn, context->inputs);
+  }
+
   // Call forward function.
   py::object outputs;
   {
@@ -314,10 +322,12 @@ py::object FunctionBase::apply(const py::object &cls, const py::args &inputs) {
   bool modified = ensure_obj_tuple(&outputs);
 
   runtime::Pipeline::Get().WaitFrontend();
+
+  if (need_do_grad) {
+    ctx->set_weak_grad_node(custom_fn);
+    context->grad_node = custom_fn;
+  }
   ConstructContextAfterForward(context, ctx, outputs);
-  custom_fn->SetOutputSize(context->flatten_outputs.size());
-  ctx->set_weak_grad_node(custom_fn);
-  context->grad_node = custom_fn;
 
   auto &flatten_outputs = context->flatten_outputs;
   const auto &non_diff_tensors = context->non_diff_tensors;
@@ -369,6 +379,7 @@ py::object FunctionBase::apply(const py::object &cls, const py::args &inputs) {
 
   // Clean device address to reduce the occupation of resources.
   CleanBackwardUnusedTensorDeviceAddress(context);
+  custom_fn->SetOutputSize(context->flatten_outputs.size());
 
   const auto &pynative_executor = PyNativeAlgo::Common::GetPyNativeExecutor();
   const auto &forward_executor = pynative_executor->forward_executor();

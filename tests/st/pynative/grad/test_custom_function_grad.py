@@ -1064,6 +1064,10 @@ class CustomFunctionNotRaiseError(_Function):
                Tensor([[1, 1, 1], [1, 1, 1], [2, 2, 2]], dtype=mindspore.int64)
 
 
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
 def test_custom_function_not_raise_error():
     """
     Feature: Custom autograd function.
@@ -1073,3 +1077,33 @@ def test_custom_function_not_raise_error():
     x = Tensor([3, 3, 3], mindspore.float32)
     y = Tensor([[1, 2, 3], [1, 2, 3], [1, 2, 3]], mindspore.float32)
     _ = CustomFunctionNotRaiseError.apply(x, y)
+
+
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
+def test_custom_function_add_saved_tensor_not_tensor_or_none():
+    """
+    Feature: Custom autograd function.
+    Description: Test saved tensor
+    Expectation: Raise Runtime error.
+    """
+
+    class RaiseErrorNet(_Function):
+        @staticmethod
+        def forward(ctx, x):
+            ctx.age = 7
+            x2 = x * x
+            y = x2 + 1
+            ctx.save_for_backward(x, (x2, y))
+            return y
+
+        @staticmethod
+        def backward(ctx, grad_output):
+            _ = ctx.saved_tensors
+            return grad_output
+
+    x = Tensor([3, 3, 3], mindspore.float32)
+    with pytest.raises(RuntimeError, match="only support None and tensor"):
+        _ = mindspore.grad(RaiseErrorNet.apply)(x)

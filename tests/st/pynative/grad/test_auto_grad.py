@@ -34,7 +34,7 @@ class MultiInputNet(nn.Cell):
 
 class SplitNet(nn.Cell):
     def __init__(self):
-        super(SplitNet, self).__init__()
+        super().__init__()
         self.split = ops.split
 
     def construct(self, x):
@@ -44,7 +44,7 @@ class SplitNet(nn.Cell):
 
 class SplitAddNet(nn.Cell):
     def __init__(self):
-        super(SplitAddNet, self).__init__()
+        super().__init__()
         self.split = ops.split
 
     def construct(self, x):
@@ -56,7 +56,7 @@ class SplitAddNet(nn.Cell):
 
 class ConcatNet(nn.Cell):
     def __init__(self):
-        super(ConcatNet, self).__init__()
+        super().__init__()
         self.concat = ops.concat
 
     def construct(self, x, y):
@@ -66,7 +66,7 @@ class ConcatNet(nn.Cell):
 
 class StackNet(nn.Cell):
     def __init__(self):
-        super(StackNet, self).__init__()
+        super().__init__()
         self.stack = ops.stack
 
     def construct(self, x, y):
@@ -81,7 +81,7 @@ def print_gradient(dx):
 
 class InsertGradientOfNet(nn.Cell):
     def __init__(self):
-        super(InsertGradientOfNet, self).__init__()
+        super().__init__()
         self.insert_gradient_of = ops.InsertGradientOf(print_gradient)
 
     def construct(self, x):
@@ -92,7 +92,7 @@ class InsertGradientOfNet(nn.Cell):
 
 class NormalNet(nn.Cell):
     def __init__(self):
-        super(NormalNet, self).__init__()
+        super().__init__()
         self.p1 = Parameter(Tensor([1], dtype=mindspore.float32))
         self.p2 = Parameter(Tensor([2], dtype=mindspore.float32))
 
@@ -111,7 +111,7 @@ class NoneTensorInputNet(nn.Cell):
 
 class ParamNet(nn.Cell):
     def __init__(self):
-        super(ParamNet, self).__init__()
+        super().__init__()
         self.p1 = Parameter(Tensor([2], dtype=mindspore.float32))
         self.p1.requires_grad = True
 
@@ -131,7 +131,7 @@ class CustomBpropNet(nn.Cell):
 
 class StopGradientNet(nn.Cell):
     def __init__(self):
-        super(StopGradientNet, self).__init__()
+        super().__init__()
         self.p1 = Parameter(Tensor([2], dtype=mindspore.float32))
 
     def construct(self, x):
@@ -423,7 +423,7 @@ class NoneCustomNet(nn.Cell):
 
 class NoneAddNet(nn.Cell):
     def __init__(self):
-        super(NoneAddNet, self).__init__()
+        super().__init__()
         self.net = NoneCustomNet()
 
     def construct(self, x):
@@ -481,7 +481,7 @@ def test_check_run_first_order_net():
 
 class TestRequiresGradMatmulNet(nn.Cell):
     def __init__(self):
-        super(TestRequiresGradMatmulNet, self).__init__()
+        super().__init__()
         self.p1 = Parameter(Tensor(np.ones((5000, 5000), dtype=np.float32)))
         self.p1.register_hook(lambda: "enter hook")
         self.p1.requires_grad = False
@@ -512,7 +512,7 @@ def test_requires_grad_memory_check():
 
 class TestRequiresGradFalseNet(nn.Cell):
     def __init__(self):
-        super(TestRequiresGradFalseNet, self).__init__()
+        super().__init__()
         self.p1 = Parameter(Tensor(2.0, dtype=mindspore.float32))
         self.p2 = Parameter(Tensor(3.0, dtype=mindspore.float32))
 
@@ -602,7 +602,7 @@ def test_grad_operation_no_input():
     """
     class Net(nn.Cell):
         def __init__(self, w, b):
-            super(Net, self).__init__()
+            super().__init__()
             self.w = Parameter(w, name='w')
             self.b = Parameter(b, name='b')
 
@@ -614,3 +614,23 @@ def test_grad_operation_no_input():
     grad_net = C.GradOperation(get_all=True, get_by_list=False)
     grads = grad_net(Net(w, b))()
     assert (isinstance(grads, tuple) and not grads)
+
+
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
+def test_value_and_grad_output_as_input():
+    """
+    Feature: Value and grad.
+    Description: Test feeding the forward output as input into another value_and_grad call.
+    Expectation: Success.
+    """
+    def forward_fn(x):
+        return x * x
+
+    x = ops.rand(5, 5, dtype=mindspore.float32)
+    output, _ = mindspore.value_and_grad(forward_fn)(x)
+
+    _, grad = mindspore.value_and_grad(forward_fn)(output)
+    assert np.allclose(grad.asnumpy(), (output * 2).asnumpy(), 0.00001, 0.00001)

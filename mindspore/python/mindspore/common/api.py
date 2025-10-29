@@ -1619,13 +1619,28 @@ class saved_tensors_hooks:
     A context manager used to customize how saved tensors are packed and unpacked.
 
     Certain tensors from the forward pass are stored for use in the backward process.
-    By using this context, users can specify how these tensors are packed before saving and how they are restored
-    when accessed during gradient computation.
+    By using this context, users can specify:
+
+    - How these tensors are packed before saving (pack stage) .
+    - How they are restored when accessed during gradient computation (unpack stage) .
 
     The hooks should have the following signatures:
 
-        pack_hook(tensor: Tensor) -> Any
-        unpack_hook(packed: Any) -> Tensor
+    - pack_hook(tensor: Tensor) -> Any:
+      Accepts a tensor and returns an arbitrary object that represents the stored form of the tensor.
+
+    - unpack_hook(packed: Any) -> Tensor:
+      Accepts the object returned by `pack_hook` and restores the corresponding tensor.
+
+    .. note::
+        This context manager is currently not supported in Graph and Jit mode.
+
+    .. warning ::
+        - To prevent undefined behavior, in-place modification of the original tensor passed to the `pack_hook`
+          will throw an exception.
+        - To prevent reference cycles, the object returned by `pack_hook` cannot hold a direct reference
+          to the original tensor.
+
 
     Args:
         pack_hook (Callable): A function that defines how to process a tensor before it is saved during the forward
@@ -1635,16 +1650,6 @@ class saved_tensors_hooks:
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
-
-    .. note::
-        This context manager is currently not supported in Graph and Jit mode.
-
-    .. warning ::
-        Performing in-place modifications on the tensor passed into a ``pack_hook`` is not allowed.
-
-    .. warning::
-        To prevent reference cycles, the object returned by ``pack_hook`` cannot hold a
-        direct reference to the original tensor.
 
     Examples:
         >>> import mindspore as ms

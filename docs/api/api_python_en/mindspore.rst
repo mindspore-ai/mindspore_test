@@ -125,11 +125,12 @@ Automatic Differentiation
     :template: classtemplate.rst
 
     mindspore.grad
-    mindspore.value_and_grad
     mindspore.get_grad
     mindspore.jacfwd
     mindspore.jacrev
     mindspore.jvp
+    mindspore.saved_tensors_hooks
+    mindspore.value_and_grad
     mindspore.vjp
 
 Parallel Optimization
