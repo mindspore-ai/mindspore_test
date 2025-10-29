@@ -12,6 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+"""
+The tests of mindspore, used to test communication ops.
+"""
+
 import os
 import subprocess
 from mindspore import context
@@ -80,6 +84,19 @@ def test_lccl_broadcast():
                         jit_config={"jit_level": "O0", "infer_boost": "on"})
     return_code = os.system(
         "msrun --worker_num=8 --local_worker_num=8 --join=True pytest -s test_lccl_broadcast.py")
+    assert return_code == 0
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='allcards', essential_mark='unessential')
+def test_lccl_barrier():
+    """
+    Feature: lccl operator test.
+    Description: msrun lccl barrier 8P case.
+    Expectation: success
+    """
+    os.environ['MS_ENABLE_LCCL'] = "on"
+    return_code = os.system(
+        "msrun --worker_num=8 --local_worker_num=8 --join=True pytest -s test_lccl_barrier.py")
     assert return_code == 0
 
 

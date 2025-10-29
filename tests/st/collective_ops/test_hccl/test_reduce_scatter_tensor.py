@@ -17,10 +17,10 @@
 
 import os
 import numpy as np
-import mindspore.nn as nn
+from mindspore import nn
 from mindspore import Tensor
 from mindspore.ops import operations as P
-from mindspore.communication.management import init
+from mindspore.communication.management import init, get_rank
 from mindspore.communication.comm_func import reduce_scatter_tensor
 from mindspore import context
 from mindspore.ops import ReduceOp
@@ -34,7 +34,7 @@ init()
 
 class ReduceScatterNet(nn.Cell):
     def __init__(self):
-        super(ReduceScatterNet, self).__init__()
+        super().__init__()
         self.reduce_scatter = P.ReduceScatter()
 
     def construct(self, x):
@@ -43,7 +43,7 @@ class ReduceScatterNet(nn.Cell):
 
 class ReduceScatterFuncNet(nn.Cell):
     def __init__(self, op=ReduceOp.SUM):
-        super(ReduceScatterFuncNet, self).__init__()
+        super().__init__()
         self.op = op
 
     def construct(self, x):
@@ -89,3 +89,23 @@ def test_hccl_reduce_scatter_func_8p():
     expect_output = (np.ones([1, 8]) * 8).astype(np.float32)
     print("all_gather_into_tensor func output is", output)
     assert np.allclose(output.asnumpy(), expect_output)
+
+
+def test_hccl_reduce_scatter_diff_reduce_type():
+    """
+    Feature: test reduce_scatter with different reducing type.
+    Description: test reduce_scatter with different reducing type.
+    Expectation: expect type checking exception.
+    """
+    input_tensor = Tensor(np.ones([8, 8]).astype(np.float32))
+    try:
+        if get_rank() in [0, 1, 2, 3]:
+            input_tensor = Tensor(np.ones([8, 8]).astype(np.float32))
+            _ = reduce_scatter_tensor(input_tensor)
+        else:
+            input_tensor = Tensor(np.ones([8, 8]).astype(np.float16))
+            _ = reduce_scatter_tensor(input_tensor)
+    except RuntimeError as e:
+        error_msg = str(e)
+        print(error_msg)
+        assert "inconsistent" in error_msg
