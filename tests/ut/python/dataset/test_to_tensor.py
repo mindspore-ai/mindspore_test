@@ -1,4 +1,4 @@
-# Copyright 2022 Huawei Technologies Co., Ltd
+# Copyright 2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,16 +16,25 @@
 Testing ToTensor op in DE
 """
 import numpy as np
+import os
 import pytest
+from PIL import Image
 
+import mindspore as ms
 import mindspore.common.dtype as mstype
 import mindspore.dataset as ds
-import mindspore.dataset.vision as vision
+import mindspore.dataset.vision.transforms as vision
 
 DATA_DIR = "../data/dataset/testMnistData"
 
 DATA_DIR_TF = ["../data/dataset/test_tf_file_3_images/train-0000-of-0001.data"]
 SCHEMA_DIR_TF = "../data/dataset/test_tf_file_3_images/datasetSchema.json"
+TEST_DATA_DATASET_FUNC ="../data/dataset/"
+
+
+DATA_DIR_1 = os.path.join(TEST_DATA_DATASET_FUNC, "test_data", "imagenet", "imagenet_file_jpg1")
+image_jpg = os.path.join(TEST_DATA_DATASET_FUNC, "test_data", "test_cv_image", "jpg.jpg")
+image_bmp = os.path.join(TEST_DATA_DATASET_FUNC, "test_data", "test_cv_image", "bmp.bmp")
 
 
 def test_to_tensor_float32():
@@ -397,6 +406,157 @@ def test_to_tensor_eager_error_string():
            in str(error_info.value)
 
 
+def test_to_tensor_operation_01():
+    """
+    Feature: ToTensor operation
+    Description: Testing the normal functionality of the ToTensor operator
+    Expectation: The Output is equal to the expected output
+    """
+    # ToTensor pipeline mode, output_type=np.float64
+    output_type = ms.float64
+    ds1 = ds.ImageFolderDataset(DATA_DIR_1)
+    transforms = [vision.Decode(to_pil=True), vision.ToTensor(output_type=output_type)]
+    ds1 = ds1.map(input_columns=["image"], operations=transforms)
+    for data1 in ds1.create_dict_iterator(output_numpy=True):
+        assert data1["image"].dtype == "float64"
+        assert (data1["image"] >= 0).all()
+        assert (data1["image"] <= 1).all()
+
+    # ToTensor pipeline mode, output_type=np.uint8
+    output_type = np.uint8
+    ds1 = ds.ImageFolderDataset(DATA_DIR_1)
+    transforms = [vision.Decode(), vision.ToTensor(output_type=output_type)]
+    ds1 = ds1.map(input_columns=["image"], operations=transforms)
+    for data1 in ds1.create_dict_iterator(output_numpy=True):
+        assert data1["image"].dtype == "uint8"
+        assert (data1["image"] >= 0).all()
+        assert (data1["image"] <= 1).all()
+
+    # ToTensor pipeline mode, output_type=ms.uint8
+    output_type = ms.uint8
+    ds1 = ds.ImageFolderDataset(DATA_DIR_1)
+    transforms = [vision.Decode(), vision.ToType(np.float64), vision.ToTensor(output_type=output_type)]
+    ds1 = ds1.map(input_columns=["image"], operations=transforms)
+    for data1 in ds1.create_dict_iterator(output_numpy=True):
+        assert data1["image"].dtype == "uint8"
+        assert (data1["image"] >= 0).all()
+        assert (data1["image"] <= 1).all()
+
+    # ToTensor pipeline mode, output_type=bool
+    output_type = np.bool_
+    ds1 = ds.ImageFolderDataset(DATA_DIR_1)
+    transforms = [vision.Decode(), vision.ToTensor(output_type=output_type)]
+    ds1 = ds1.map(input_columns=["image"], operations=transforms)
+    for data1 in ds1.create_dict_iterator(output_numpy=True):
+        assert data1["image"].dtype == "bool"
+        assert (data1["image"] >= 0).all()
+        assert (data1["image"] <= 1).all()
+
+    # # ToTensor eager mode, input is pillow
+    image = Image.open(image_jpg)
+    output_type = np.int32
+    totensor_op = vision.ToTensor(output_type=output_type)
+    out = totensor_op(image)
+    assert out.dtype == "int32"
+
+    # # ToTensor eager mode, output_type=np.int32
+    image = np.random.randn(32, 36, 1).astype(np.float64)
+    output_type = np.int32
+    totensor_op = vision.ToTensor(output_type=output_type)
+    out = totensor_op(image)
+    assert (out <= 1).all()
+    assert (out >= 0).all()
+    assert out.shape == (1, 32, 36)
+    assert out.dtype == "int32"
+
+    # # ToTensor eager mode, output_type=np.float16
+    image = np.random.randint(-1000, 1255, (64, 80, 3)).astype(np.float64)
+    output_type = np.float16
+    totensor_op = vision.ToTensor(output_type=output_type)
+    out = totensor_op(image)
+    assert out.shape == (3, 64, 80)
+    assert out.dtype == "float16"
+
+    # # ToTensor eager mode, output_type默认值
+    image = Image.open(image_bmp)
+    totensor_op = vision.ToTensor()
+    out = totensor_op(image)
+    assert (out <= 1).all()
+    assert (out >= 0).all()
+    assert out.dtype == "float32"
+
+    # # ToTensor eager mode, output_type=bool
+    image = np.random.randint(0, 255, (128, 128, 4)).astype(np.int32)
+    output_type = np.bool_
+    totensor_op = vision.ToTensor(output_type=output_type)
+    out = totensor_op(image)
+    assert out.dtype == "bool"
+
+    # ToTensor operation, input is numpy
+    image = np.random.randn(128, 128).astype(np.float16)
+    output_type = np.int32
+    totensor_op = vision.ToTensor(output_type=output_type)
+    totensor_op(image)
+
+    # ToTensor operation, input is list
+    image = list(np.random.randn(18, 12, 3).astype(np.float16))
+    output_type = np.int32
+    totensor_op = vision.ToTensor(output_type=output_type)
+    with pytest.raises(TypeError, match="Input should be NumPy or PIL image, got <class 'list'>."):
+        totensor_op(image)
+
+    # ToTensor operation, input is tuple
+    image = tuple(np.random.randn(18, 12, 3).astype(np.float16))
+    output_type = np.int32
+    totensor_op = vision.ToTensor(output_type=output_type)
+    with pytest.raises(TypeError, match="Input should be NumPy or PIL image, got <class 'tuple'>."):
+        totensor_op(image)
+
+
+def test_to_tensor_exception_01():
+    """
+    Feature: ToTensor operation
+    Description: Testing the ToTensor Operator in Exceptional Scenarios
+    Expectation: Throw an exception
+    """
+    # ToTensor Eager Mode Exception Testing, The input is one-dimensional data.
+    image = np.random.randn(128,)
+    output_type = np.float16
+    totensor_op = vision.ToTensor(output_type=output_type)
+    with pytest.raises(RuntimeError, match="rank of input data should be greater than: 2, but got:1"):
+        totensor_op(image)
+
+    # ToTensor Eager Mode Exception Testing, The input is four-dimensional data.
+    image = np.random.randn(28, 32, 3, 3)
+    output_type = np.float16
+    totensor_op = vision.ToTensor(output_type=output_type)
+    with pytest.raises(RuntimeError, match="image shape should be <H,W,C>, but got rank: 4"):
+        totensor_op(image)
+
+    # ToTensor Eager Mode Exception Testing, input is ms.tensor
+    image = ms.Tensor(np.random.randn(3, 2, 3))
+    output_type = np.float16
+    totensor_op = vision.ToTensor(output_type=output_type)
+    with pytest.raises(TypeError, match="Input should be NumPy or PIL image, got <class"
+                                        " 'mindspore.common.tensor.Tensor'>."):
+        totensor_op(image)
+
+    # ToTensor Eager Mode Exception Testing, input is int64
+    image = np.random.randn(28, 32, 3).astype(np.int64)
+    output_type = ms.float16
+    with pytest.raises(RuntimeError,
+                       match="Input includes unsupported data type in \\[uint32, int64, uint64, string, bytes\\]."):
+        totensor_op = vision.ToTensor(output_type=output_type)
+        totensor_op(image)
+
+    # ToTensor Exception Testing, output_type is list
+    image = np.random.randn(28, 32, 3)
+    output_type = [np.int32]
+    with pytest.raises(TypeError, match="but got <class 'list'>."):
+        totensor_op = vision.ToTensor(output_type=output_type)
+        totensor_op(image)
+
+
 if __name__ == "__main__":
     test_to_tensor_float32()
     test_to_tensor_float64()
@@ -411,3 +571,5 @@ if __name__ == "__main__":
     test_to_tensor_eager_bool()
     test_to_tensor_errors()
     test_to_tensor_eager_error_string()
+    test_to_tensor_operation_01()
+    test_to_tensor_exception_01()

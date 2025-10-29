@@ -1,4 +1,4 @@
-# Copyright 2022 Huawei Technologies Co., Ltd
+# Copyright 2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,9 +17,13 @@ Testing encode_png
 """
 import cv2
 import numpy
+import os
 import pytest
 
 import mindspore
+import mindspore.dataset.vision.utils as v_trans
+
+TEST_DATA_DATASET_FUNC ="../data/dataset/"
 
 
 def test_encode_png_three_channels():
@@ -146,7 +150,217 @@ def test_encode_png_exception():
     test_invalid_param(invalid_image, 6, RuntimeError, error_message)
 
 
+def test_encode_png_operation_01():
+    """
+    Feature: encode_png operation
+    Description: Testing the normal functionality of the encode_png operator
+    Expectation: The Output is equal to the expected output
+    """
+    # use default compression_level value 6, numpy type, jpg photo
+    mode = cv2.IMREAD_UNCHANGED
+    image_dir = os.path.join(TEST_DATA_DATASET_FUNC, "test_data", "test_cv_image", "jpg.jpg")
+    image_numpy = cv2.imread(image_dir, mode)
+    assert image_numpy.shape[2] == 3
+    image_numpy = cv2.cvtColor(image_numpy, cv2.COLOR_BGR2RGB)
+    assert isinstance(image_numpy, numpy.ndarray)
+    encode_png = v_trans.encode_png(image_numpy)
+    assert isinstance(encode_png, numpy.ndarray)
+    assert encode_png.dtype == 'uint8'
+    assert encode_png.shape == (412135,)
+
+    # use default compression_level value 6, tensor type,jpg photo
+    mode = cv2.IMREAD_UNCHANGED
+    image_dir = os.path.join(TEST_DATA_DATASET_FUNC, "test_data", "test_cv_image", "jpg.jpg")
+    image_numpy = cv2.imread(image_dir, mode)
+    assert image_numpy.shape[2] == 3
+    image_numpy = cv2.cvtColor(image_numpy, cv2.COLOR_BGR2RGB)
+    assert isinstance(image_numpy, numpy.ndarray)
+    image_tensor = mindspore.Tensor.from_numpy(image_numpy)
+    encode_png = v_trans.encode_png(image_tensor, 6)
+    assert isinstance(encode_png, numpy.ndarray)
+    assert encode_png.dtype == 'uint8'
+    assert encode_png.shape == (412135,)
+
+    # use default compression_level value 0, tensor type, bmp photo
+    mode = cv2.IMREAD_UNCHANGED
+    data_dir4 = os.path.join(TEST_DATA_DATASET_FUNC, "test_data", "test_cv_image", "bmp.bmp")
+    image_numpy = cv2.imread(data_dir4, mode)
+    assert image_numpy.shape[2] == 3
+    image_numpy = cv2.cvtColor(image_numpy, cv2.COLOR_BGR2RGB)
+    assert isinstance(image_numpy, numpy.ndarray)
+    image_tensor = mindspore.Tensor.from_numpy(image_numpy)
+    encode_png = v_trans.encode_png(image_tensor, 0)
+    assert isinstance(encode_png, numpy.ndarray)
+    assert encode_png.dtype == 'uint8'
+    assert encode_png.shape == (34777,)
+
+    # use default compression_level value 9, tensor type, png photo
+    mode = cv2.IMREAD_UNCHANGED
+    data_dir5 = os.path.join(TEST_DATA_DATASET_FUNC, "test_data", "test_cv_image", "png.PNG")
+    image_numpy = cv2.imread(data_dir5, mode)
+    assert image_numpy.shape[2] == 4
+    image_numpy = cv2.cvtColor(image_numpy, cv2.COLOR_BGRA2RGB)
+    assert isinstance(image_numpy, numpy.ndarray)
+    image_tensor = mindspore.Tensor.from_numpy(image_numpy)
+    encode_png = v_trans.encode_png(image_tensor, 9)
+    assert isinstance(encode_png, numpy.ndarray)
+    assert encode_png.dtype == 'uint8'
+    assert encode_png.shape == (427421,)
+
+    # use default compression_level value 5, tensor type, jpg photo
+    mode = cv2.IMREAD_UNCHANGED
+    image_dir = os.path.join(TEST_DATA_DATASET_FUNC, "test_data", "test_cv_image", "jpg.jpg")
+    image_numpy = cv2.imread(image_dir, mode)
+    assert image_numpy.shape[2] == 3
+    image_numpy = cv2.cvtColor(image_numpy, cv2.COLOR_BGR2RGB)
+    assert isinstance(image_numpy, numpy.ndarray)
+    image_tensor = mindspore.Tensor.from_numpy(image_numpy)
+    encode_png = v_trans.encode_png(image_tensor, 5)
+    assert isinstance(encode_png, numpy.ndarray)
+    assert encode_png.dtype == 'uint8'
+    assert encode_png.shape == (412135,)
+
+    # use default compression_level value 1, tensor type, jpg photo
+    mode = cv2.IMREAD_UNCHANGED
+    image_dir = os.path.join(TEST_DATA_DATASET_FUNC, "test_data", "test_cv_image", "jpg.jpg")
+    image_numpy = cv2.imread(image_dir, mode)
+    assert image_numpy.shape[2] == 3
+    image_numpy = cv2.cvtColor(image_numpy, cv2.COLOR_BGR2RGB)
+    assert isinstance(image_numpy, numpy.ndarray)
+    image_tensor = mindspore.Tensor.from_numpy(image_numpy)
+    encode_png = v_trans.encode_png(image_tensor, 1)
+    assert isinstance(encode_png, numpy.ndarray)
+    assert encode_png.dtype == 'uint8'
+    assert encode_png.shape == (412135,)
+
+    # use default compression_level value 8, tensor type, jpg photo
+    mode = cv2.IMREAD_UNCHANGED
+    image_dir = os.path.join(TEST_DATA_DATASET_FUNC, "test_data", "test_cv_image", "jpg.jpg")
+    image_numpy = cv2.imread(image_dir, mode)
+    assert image_numpy.shape[2] == 3
+    image_numpy = cv2.cvtColor(image_numpy, cv2.COLOR_BGR2RGB)
+    assert isinstance(image_numpy, numpy.ndarray)
+    image_tensor = mindspore.Tensor.from_numpy(image_numpy)
+    encode_png = v_trans.encode_png(image_tensor, 8)
+    assert isinstance(encode_png, numpy.ndarray)
+    assert encode_png.dtype == 'uint8'
+    assert encode_png.shape == (412135,)
+
+    # use random data, compression_level_2
+    image_random = numpy.random.randint(256, size=(1, 1, 3), dtype=numpy.uint8)
+    encode_png = mindspore.dataset.vision.encode_png(image_random, 2)
+    assert isinstance(encode_png, numpy.ndarray)
+    assert encode_png.dtype == 'uint8'
+    assert encode_png.shape == (69,)
+
+
+def test_encode_png_operation_02():
+    """
+    Feature: encode_png operation
+    Description: Testing the normal functionality of the encode_png operator
+    Expectation: The Output is equal to the expected output
+    """
+    # use random data, compression_level_2
+    image_random = numpy.random.randint(256, size=(120, 340, 3), dtype=numpy.uint8)
+    image_tensor = mindspore.Tensor.from_numpy(image_random)
+    encode_png = mindspore.dataset.vision.encode_png(image_tensor, 4)
+    assert isinstance(encode_png, numpy.ndarray)
+    assert encode_png.dtype == 'uint8'
+    assert encode_png.shape == (122791,)
+
+    # use random data, compression_level_2
+    image_random = numpy.random.randint(256, size=(1, 8000, 3), dtype=numpy.uint8)
+    image_tensor = mindspore.Tensor.from_numpy(image_random)
+    encode_png = mindspore.dataset.vision.encode_png(image_tensor, 3)
+    assert isinstance(encode_png, numpy.ndarray)
+    assert encode_png.dtype == 'uint8'
+    assert encode_png.shape == (24098,)
+
+    # use random data, compression_level_2
+    image_random = numpy.random.randint(256, size=(600, 200, 3), dtype=numpy.uint8)
+    image_tensor = mindspore.Tensor.from_numpy(image_random)
+    encode_png = mindspore.dataset.vision.encode_png(image_tensor)
+    assert isinstance(encode_png, numpy.ndarray)
+    assert encode_png.dtype == 'uint8'
+    assert encode_png.shape == (361306,)
+
+    # use random data, compression_level_2
+    image_random = numpy.random.randint(256, size=(876, 543), dtype=numpy.uint8)
+    image_tensor = mindspore.Tensor.from_numpy(image_random)
+    encode_png = mindspore.dataset.vision.encode_png(image_tensor, 7)
+    assert isinstance(encode_png, numpy.ndarray)
+    assert encode_png.dtype == 'uint8'
+    assert encode_png.shape == (477453,)
+
+    # use random data, compression_level_2
+    image_random = numpy.random.randint(256, size=(224, 224, 1), dtype=numpy.uint8)
+    image_tensor = mindspore.Tensor.from_numpy(image_random)
+    encode_png = mindspore.dataset.vision.encode_png(image_tensor)
+    assert isinstance(encode_png, numpy.ndarray)
+    assert encode_png.dtype == 'uint8'
+    assert encode_png.shape == (50555,)
+
+
+def test_encode_png_exception_01():
+    """
+    Feature: encode_png operation
+    Description: Testing the encode_png Operator in Exceptional Scenarios
+    Expectation: Throw an exception
+    """
+    # use channels is not 3/1
+    with pytest.raises(RuntimeError, match="EncodePng: The image has invalid "
+                                           "channels. It should have 1 or 3 channels, but got 2 channels."):
+        image_random = numpy.random.randint(256, size=(876, 543, 2), dtype=numpy.uint8)
+        image_tensor = mindspore.Tensor.from_numpy(image_random)
+        v_trans.encode_png(image_tensor)
+
+    # use dimensions is not 3/2
+    with pytest.raises(RuntimeError, match="EncodePng: The image has invalid "
+                                           "dimensions. It should have two or three dimensions, but got 1 dimensions."):
+        image_random = numpy.random.randint(256, size=(224,), dtype=numpy.uint8)
+        image_tensor = mindspore.Tensor.from_numpy(image_random)
+        v_trans.encode_png(image_tensor)
+
+    # use dimensions is not 3/2
+    try:
+        image_random = numpy.random.randint(256, size=(224, 124, 1), dtype=numpy.uint16)
+        v_trans.encode_png(image_random)
+    except RuntimeError as e:
+        assert "The type of the image data should be UINT8, but got uint16" in str(e)
+
+    # use channels is not 3/1,
+    try:
+        image_random = numpy.random.randint(256, size=(876, 543, 1), dtype=numpy.uint8)
+        mindspore.Tensor.from_numpy(image_random)
+        v_trans.encode_png()
+    except TypeError as e:
+        assert "encode_png() missing 1 required positional argument: 'image'" in str(e)
+
+    # compression_level_value_out_of_range
+    with pytest.raises(RuntimeError, match=r"EncodePng: Invalid compression_level 10, should be in range of \[0, 9\]."):
+        image_random = numpy.random.randint(256, size=(876, 543, 1), dtype=numpy.uint8)
+        mindspore.Tensor.from_numpy(image_random)
+        v_trans.encode_png(image_random, 10)
+
+    # compression_level_type_error
+    with pytest.raises(TypeError, match="Input compression_level is not of type <class 'int'>, "
+                                        "but got: <class 'str'>."):
+        image_random = numpy.random.randint(256, size=(876, 543, 1), dtype=numpy.uint8)
+        mindspore.Tensor.from_numpy(image_random)
+        v_trans.encode_png(image_random, '9')
+
+    # compression_level_type_error
+    with pytest.raises(TypeError, match="Input compression_level is not of type <class 'int'>, "
+                                        "but got: <class 'float'>."):
+        image_random = numpy.random.randint(256, size=(876, 543, 1), dtype=numpy.uint8)
+        mindspore.Tensor.from_numpy(image_random)
+        v_trans.encode_png(image_random, 9.0)
+
+
 if __name__ == "__main__":
     test_encode_png_three_channels()
     test_encode_png_one_channel()
     test_encode_png_exception()
+    test_encode_png_operation_01()
+    test_encode_png_operation_02()
+    test_encode_png_exception_01()

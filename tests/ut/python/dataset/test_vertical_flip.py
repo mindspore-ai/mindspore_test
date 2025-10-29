@@ -1,4 +1,4 @@
-# Copyright 2021-2022 Huawei Technologies Co., Ltd
+# Copyright 2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,9 +17,12 @@ Testing VerticalFlip Python API
 """
 import cv2
 import numpy as np
+import os
+import pytest
+from PIL import Image
 
 import mindspore.dataset as ds
-import mindspore.dataset.vision as vision
+import mindspore.dataset.vision.transforms as vision
 
 from mindspore import log as logger
 from util import visualize_image, diff_mse
@@ -35,6 +38,13 @@ FOUR_DIM_RES = [[[[5, 6, 3], [7, 8, 3]], [[1, 2, 3], [3, 4, 3]]],
                 [[[13, 14, 3], [15, 16, 3]], [[9, 10, 3], [11, 12, 3]]]]
 FIVE_DIM_RES = [[[[[5, 6, 3], [7, 8, 3]], [[1, 2, 3], [3, 4, 3]]],
                  [[[13, 14, 3], [15, 16, 3]], [[9, 10, 3], [11, 12, 3]]]]]
+
+TEST_DATA_DATASET_FUNC ="../data/dataset/"
+
+DATA_DIR_1 = os.path.join(TEST_DATA_DATASET_FUNC, "test_data", "testImageNetData", "train")
+image_jpg = os.path.join(TEST_DATA_DATASET_FUNC, "test_data", "test_cv_image", "jpg.jpg")
+image_png = os.path.join(TEST_DATA_DATASET_FUNC, "test_data", "test_cv_image", "png.PNG")
+image_gif = os.path.join(TEST_DATA_DATASET_FUNC, "test_data", "test_cv_image", "gif.gif")
 
 
 def test_vertical_flip_pipeline(plot=False):
@@ -187,6 +197,191 @@ def test_vertical_flip_video_op_precision_pipeline():
         assert mse < 0.001
 
 
+def test_vertical_flip_operation_01():
+    """
+    Feature: VerticalFlip operation
+    Description: Testing the normal functionality of the VerticalFlip operator
+    Expectation: The Output is equal to the expected output
+    """
+    # VerticalFlip Operator: pipeline mode
+    dataset = ds.ImageFolderDataset(DATA_DIR_1, shuffle=False, decode=True)
+    vertical_flip_op = vision.VerticalFlip()
+    dataset = dataset.map(input_columns=["image"], operations=vertical_flip_op)
+    for _ in dataset.create_dict_iterator(output_numpy=True):
+        pass
+
+    # VerticalFlip Operator: Pipeline Mode, Flip Two Images
+    dataset = ds.ImageFolderDataset(DATA_DIR_1, shuffle=False, decode=True)
+    vertical_flip_op = vision.VerticalFlip()
+    dataset = dataset.map(input_columns=["image"], operations=vertical_flip_op)
+    dataset = dataset.padded_batch(2, pad_info={"image": ([None, None, 3], 0)})
+    for _ in dataset.create_dict_iterator(output_numpy=True):
+        pass
+
+    # VerticalFlip Operator: Eager mode, input PNG image
+    image = Image.open(image_png)
+    vertical_flip_op = vision.VerticalFlip()
+    out = vertical_flip_op(image)
+    out2 = np.flipud(image)
+    assert (out == out2).all()
+
+    # VerticalFlip Operator: Eager mode, input GIF image
+    image = Image.open(image_gif)
+    vertical_flip_op = vision.VerticalFlip()
+    out = vertical_flip_op(image)
+    out2 = np.flipud(image)
+    assert (out == out2).all()
+
+    # VerticalFlip Operator: Eager mode, input JPG image
+    image = Image.open(image_jpg)
+    vertical_flip_op = vision.VerticalFlip()
+    out = vertical_flip_op(image)
+    out2 = np.flipud(image)
+    assert (out == out2).all()
+
+    # VerticalFlip Operator: Eager mode, NumPy shape=20x30x8
+    image = np.random.randint(0, 255, (20, 30, 8)).astype(np.uint8)
+    vertical_flip_op = vision.VerticalFlip()
+    out = vertical_flip_op(image)
+    out2 = np.flipud(image)
+    assert (out == out2).all()
+
+    # VerticalFlip Operator: Test 4D
+    image_reshape = np.random.randint(0, 255, (20, 30, 8, 4)).astype(np.uint8)
+    input_4_shape = image_reshape.shape
+    num_batch = input_4_shape[0]
+    out_4_list = []
+    batch_1d = 0
+    while batch_1d < num_batch:
+        out_4_list.append(cv2.flip(image_reshape[batch_1d], 0))
+        batch_1d += 1
+    out_4_cv = np.array(out_4_list).astype(np.uint8)
+    vertical_flip_op = vision.VerticalFlip()
+    out = vertical_flip_op(image_reshape)
+    assert (out == out_4_cv).all()
+
+    # VerticalFlip Operator: Test 5D
+    image_reshape = np.random.randint(0, 255, (2, 2, 2, 2, 3)).astype(np.uint8)
+    input_5_shape = image_reshape.shape
+    num_batch_1d = input_5_shape[0]  # 2
+    num_batch_2d = input_5_shape[1]
+    out_5_list = []
+    batch_1d = 0
+    while batch_1d < num_batch_1d:
+        batch_2d = 0
+        while batch_2d < num_batch_2d:
+            out_5_list.append(np.flip(image_reshape[batch_1d][batch_2d], 0))
+            batch_2d += 1
+        batch_1d += 1
+    out_5_np = np.array(out_5_list).astype(np.uint8)
+    reshape_np = np.array(out_5_np).reshape((2, 2, 2, 2, 3))
+    vertical_flip_op = vision.VerticalFlip()
+    out = vertical_flip_op(image_reshape)
+    assert (out == reshape_np).all()
+
+
+def test_vertical_flip_operation_02():
+    """
+    Feature: VerticalFlip operation
+    Description: Testing the normal functionality of the VerticalFlip operator
+    Expectation: The Output is equal to the expected output
+    """
+    # VerticalFlip Operator: Test 6D
+    image = np.random.randint(0, 255, (1, 2, 10, 30, 25, 25)).astype(np.uint8)
+    input_5_shape = image.shape
+    num_batch_1d = input_5_shape[0]
+    num_batch_2d = input_5_shape[1]
+    num_batch_3d = input_5_shape[2]
+    out_5_list = []
+    batch_1d = 0
+    while batch_1d < num_batch_1d:
+        batch_2d = 0
+        while batch_2d < num_batch_2d:
+            batch_3d = 0
+            while batch_3d < num_batch_3d:
+                out_5_list.append(np.flip(image[batch_1d][batch_2d][batch_3d], 0))
+                batch_3d += 1
+            batch_2d += 1
+        batch_1d += 1
+    out_5_np = np.array(out_5_list).astype(np.uint8)
+    reshape_np = np.array(out_5_np).reshape((1, 2, 10, 30, 25, 25))
+    vertical_flip_op = vision.VerticalFlip()
+    out = vertical_flip_op(image)
+    assert (out == reshape_np).all()
+
+    # VerticalFlip Operator: Test 7D
+    image = np.random.randint(0, 255, (1, 2, 1, 3, 2, 2, 1)).astype(np.uint8)
+    input_5_shape = image.shape
+    num_batch_1d = input_5_shape[0]
+    num_batch_2d = input_5_shape[1]
+    num_batch_3d = input_5_shape[2]
+    num_batch_4d = input_5_shape[3]
+    out_5_list = []
+    batch_1d = 0
+
+    while batch_1d < num_batch_1d:
+        batch_2d = 0
+        while batch_2d < num_batch_2d:
+            batch_3d = 0
+            while batch_3d < num_batch_3d:
+                batch_4d = 0
+                while batch_4d < num_batch_4d:
+                    out_5_list.append(np.flip(image[batch_1d][batch_2d][batch_3d][batch_4d], 0))
+                    batch_4d += 1
+                batch_3d += 1
+            batch_2d += 1
+        batch_1d += 1
+    out_5_np = np.array(out_5_list).astype(np.uint8)
+    reshape_np = np.array(out_5_np).reshape((1, 2, 1, 3, 2, 2, 1))
+    vertical_flip_op = vision.VerticalFlip()
+    out = vertical_flip_op(image)
+    assert (out == reshape_np).all()
+
+
+def test_vertical_flip_exception_01():
+    """
+    Feature: VerticalFlip operation
+    Description: Testing the VerticalFlip Operator in Exceptional Scenarios
+    Expectation: Throw an exception
+    """
+    # VerticalFlip Operator: int64 data type
+    image = np.random.randint(0, 255, (20, 30, 8)).astype(np.int64)
+    vertical_flip_op = vision.VerticalFlip()
+    with pytest.raises(RuntimeError, match=r"Expecting tensor in type of \(bool, int8, uint8, int16, "
+                                           r"uint16, int32, float16, float32, float64\). But got type int64."):
+        vertical_flip_op(image)
+
+    # VerticalFlip Operator: Anomaly Testing 1D
+    image = np.random.randint(0, 255, (20,)).astype(np.uint8)
+    vertical_flip_op = vision.VerticalFlip()
+    with pytest.raises(RuntimeError,
+                       match=r"the image tensor should have at least two dimensions. "
+                             r"You may need to perform Decode first"):
+        vertical_flip_op(image)
+
+    # VerticalFlip Operator: Exception test: input equals list
+    image = list(np.random.randint(0, 255, (20, 10)).astype(np.uint8))
+    vertical_flip_op = vision.VerticalFlip()
+    with pytest.raises(TypeError, match="Input should be NumPy or PIL image, got \\<class 'list'\\>."):
+        vertical_flip_op(image)
+
+    # VerticalFlip Operator: Anomaly testing, input is 2D data
+    image = tuple(np.random.randint(0, 255, (20, 10)).astype(np.uint8))
+    vertical_flip_op = vision.VerticalFlip()
+    with pytest.raises(TypeError, match="Input should be NumPy or PIL image, got \\<class 'tuple'\\>."):
+        vertical_flip_op(image)
+
+    # VerticalFlip Operator: Exception Testing, Input Parameters
+    with pytest.raises(TypeError, match="positional argument but 2 were given"):
+        vision.VerticalFlip(1)
+
+    # VerticalFlip Operator: Exception testing, input is of type int
+    image = 10
+    vertical_flip_op = vision.VerticalFlip()
+    with pytest.raises(TypeError, match="Input should be NumPy or PIL image, got \\<class 'int'\\>."):
+        vertical_flip_op(image)
+
+
 if __name__ == "__main__":
     test_vertical_flip_pipeline(plot=False)
     test_vertical_flip_eager()
@@ -195,3 +390,6 @@ if __name__ == "__main__":
     test_vertical_flip_video_op_5d()
     test_vertical_flip_video_op_precision_eager()
     test_vertical_flip_video_op_precision_pipeline()
+    test_vertical_flip_operation_01()
+    test_vertical_flip_operation_02()
+    test_vertical_flip_exception_01()

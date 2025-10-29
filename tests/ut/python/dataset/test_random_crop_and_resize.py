@@ -1,4 +1,4 @@
-# Copyright 2019-2022 Huawei Technologies Co., Ltd
+# Copyright 2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,17 +13,19 @@
 # limitations under the License.
 # ==============================================================================
 """
-Testing RandomCropAndResize op in DE
+Testing RandomResizedCrop op in DE
 """
-import numpy as np
 import cv2
+import numpy as np
+import os
 import pytest
 from PIL import Image
 
-import mindspore.dataset.transforms as ops
-import mindspore.dataset.vision as vision
-import mindspore.dataset.vision.utils as mode
+import mindspore as ms
 import mindspore.dataset as ds
+import mindspore.dataset.transforms as ops
+import mindspore.dataset.vision.transforms as vision
+import mindspore.dataset.vision.utils as mode
 from mindspore.dataset.vision.utils import Inter
 from mindspore import log as logger
 from util import diff_mse, save_and_check_md5, save_and_check_md5_pil, visualize_list, \
@@ -31,8 +33,26 @@ from util import diff_mse, save_and_check_md5, save_and_check_md5_pil, visualize
 
 DATA_DIR = ["../data/dataset/test_tf_file_3_images/train-0000-of-0001.data"]
 SCHEMA_DIR = "../data/dataset/test_tf_file_3_images/datasetSchema.json"
+TEST_DATA_DATASET_FUNC ="../data/dataset/"
 
 GENERATE_GOLDEN = False
+
+
+def generator_mc(maxid=3):
+    """ input five image """
+    image_jpg = os.path.join(TEST_DATA_DATASET_FUNC, "test_data", "test_cv_image", "jpg.jpg")
+    image_bmp = os.path.join(TEST_DATA_DATASET_FUNC, "test_data", "test_cv_image", "bmp.bmp")
+    image_gif = os.path.join(TEST_DATA_DATASET_FUNC, "test_data", "test_cv_image", "gif.gif")
+    size = (300, 300)
+    resize_op = vision.Resize(size, Inter.LINEAR)
+    with Image.open(image_jpg) as image:
+        image = np.array(resize_op(image))
+    with Image.open(image_bmp) as image1:
+        image1 = np.array(resize_op(image1))
+    with Image.open(image_gif) as image2:
+        image2 = np.array(resize_op(image2))
+    for _ in range(maxid):
+        yield image, image, image1, image1, image2
 
 
 def test_random_crop_and_resize_callable_numpy():
@@ -576,6 +596,734 @@ def test_random_crop_and_resize_eager_error_02():
     assert "img should be PIL image. Got <class 'numpy.ndarray'>." in str(error_info.value)
 
 
+def test_random_resized_crop_operation_01():
+    """
+    Feature: RandomResizedCrop operation
+    Description: Testing the normal functionality of the RandomResizedCrop operator
+    Expectation: The Output is equal to the expected output
+    """
+    # Test RandomResizedCrop function parameter size is 1
+    data_dir = os.path.join(TEST_DATA_DATASET_FUNC, "testImageNetData", "train")
+    dataset = ds.ImageFolderDataset(data_dir, shuffle=False, decode=True)
+    size = 1
+    random_resize_crop_op = vision.RandomResizedCrop(size=size)
+    dataset = dataset.map(input_columns=["image"],
+                            operations=random_resize_crop_op)
+    for _ in dataset.create_dict_iterator(output_numpy=True):
+        pass
+
+    # Test RandomResizedCrop function parameter size is [500, 520]
+    data_dir = os.path.join(TEST_DATA_DATASET_FUNC, "testImageNetData", "train")
+    dataset = ds.ImageFolderDataset(data_dir, shuffle=False, decode=True)
+    size = [500, 520]
+    random_resize_crop_op = vision.RandomResizedCrop(size=size)
+    dataset = dataset.map(input_columns=["image"],
+                            operations=random_resize_crop_op)
+    for _ in dataset.create_dict_iterator(output_numpy=True):
+        pass
+
+    # Test RandomResizedCrop function parameter max_attempts is 16777216
+    source = generator_mc
+    column_names = ["image1", "image2", "image3", "image4", "image5"]
+    dataset = ds.GeneratorDataset(source, column_names)
+    size = (500, 520)
+    scale = (0.5, 1.0)
+    ratio = (0.5, 1.0)
+    interpolation = Inter.BILINEAR
+    max_attempts = 16777216
+    random_resize_crop_op = vision.RandomResizedCrop(size=size, scale=scale, ratio=ratio, interpolation=interpolation,
+                                                    max_attempts=max_attempts)
+    dataset = dataset.map(
+        input_columns=["image1", "image2", "image3", "image4", "image5"],
+        operations=random_resize_crop_op)
+    image_data = []
+    for data in dataset.create_dict_iterator(output_numpy=True):
+        image_data.append(data["image1"])
+        assert (data["image1"] == data["image2"]).all()
+        assert (data["image3"] == data["image4"]).all()
+    assert ((image_data[0] != image_data[1]).any() or (image_data[0] != image_data[2]).any())
+
+    # Test RandomResizedCrop function all parameter
+    data_dir = os.path.join(TEST_DATA_DATASET_FUNC, "testImageNetData", "train")
+    dataset = ds.ImageFolderDataset(data_dir, shuffle=False, decode=True)
+    size = (500, 520)
+    scale = [0.5, 1.0]
+    ratio = [0.5, 1.0]
+    interpolation = Inter.BILINEAR
+    max_attempts = 1
+    random_resize_crop_op = vision.RandomResizedCrop(size=size, scale=scale, ratio=ratio, interpolation=interpolation,
+                                                    max_attempts=max_attempts)
+    dataset = dataset.map(input_columns=["image"],
+                            operations=random_resize_crop_op)
+    for _ in dataset.create_dict_iterator(output_numpy=True):
+        pass
+
+    # Test RandomResizedCrop function no scale parameter
+    source = generator_mc
+    column_names = ["image1", "image2", "image3", "image4", "image5"]
+    dataset = ds.GeneratorDataset(source, column_names)
+    size = (500, 520)
+    ratio = (0.5, 1.0)
+    interpolation = Inter.BILINEAR
+    max_attempts = 10
+    random_resize_crop_op = vision.RandomResizedCrop(size=size, ratio=ratio, interpolation=interpolation,
+                                                    max_attempts=max_attempts)
+    dataset = dataset.map(input_columns=["image1", "image2", "image5"], operations=random_resize_crop_op)
+    for data in dataset.create_dict_iterator(output_numpy=True):
+        assert (data["image1"] == data["image2"]).all()
+
+
+def test_random_resized_crop_operation_02():
+    """
+    Feature: RandomResizedCrop operation
+    Description: Testing the normal functionality of the RandomResizedCrop operator
+    Expectation: The Output is equal to the expected output
+    """
+    # Test RandomResizedCrop function no ratio parameter
+    data_dir = os.path.join(TEST_DATA_DATASET_FUNC, "testImageNetData", "train")
+    dataset = ds.ImageFolderDataset(data_dir, shuffle=False, decode=True)
+    size = (500, 520)
+    scale = (0.5, 1.0)
+    interpolation = Inter.BILINEAR
+    max_attempts = 10
+    random_resize_crop_op = vision.RandomResizedCrop(size=size, scale=scale, interpolation=interpolation,
+                                                    max_attempts=max_attempts)
+    dataset = dataset.map(input_columns=["image"], operations=random_resize_crop_op)
+    for _ in dataset.create_dict_iterator(output_numpy=True):
+        pass
+
+    # Test RandomResizedCrop function no interpolation parameter
+    data_dir = os.path.join(TEST_DATA_DATASET_FUNC, "testImageNetData", "train")
+    dataset = ds.ImageFolderDataset(data_dir, shuffle=False, decode=True)
+    size = (500, 520)
+    scale = (0.5, 1.0)
+    ratio = [0.5, 1.0]
+    max_attempts = 10
+    random_resize_crop_op = vision.RandomResizedCrop(size=size, scale=scale, ratio=ratio, max_attempts=max_attempts)
+    dataset = dataset.map(input_columns=["image"], operations=random_resize_crop_op)
+    for _ in dataset.create_dict_iterator(output_numpy=True):
+        pass
+
+    # Test RandomResizedCrop function no max_attempts parameter
+    data_dir = os.path.join(TEST_DATA_DATASET_FUNC, "testImageNetData", "train")
+    dataset = ds.ImageFolderDataset(data_dir, shuffle=False, decode=True)
+    size = (500, 520)
+    scale = (0.5, 1.0)
+    ratio = (0.5, 1.0)
+    interpolation = Inter.BILINEAR
+    random_resize_crop_op = vision.RandomResizedCrop(size=size, scale=scale, ratio=ratio, interpolation=interpolation)
+    dataset = dataset.map(input_columns=["image"], operations=random_resize_crop_op)
+    for _ in dataset.create_dict_iterator(output_numpy=True):
+        pass
+
+    # Test RandomResizedCrop function image is jpg
+    image_jpg = os.path.join(TEST_DATA_DATASET_FUNC, "test_data", "test_cv_image", "jpg.jpg")
+    image = Image.open(image_jpg)
+    size = 600
+    scale = (0.5, 1.5)
+    ratio = (0.5, 2)
+    interpolation = Inter.BILINEAR
+    max_attempts = 1
+    random_resize_crop_op = vision.RandomResizedCrop(size=size, scale=scale, ratio=ratio, interpolation=interpolation,
+                                                    max_attempts=max_attempts)
+    _ = random_resize_crop_op(image)
+    image.close()
+
+    # Test RandomResizedCrop function image is bmp
+    image_bmp = os.path.join(TEST_DATA_DATASET_FUNC, "test_data", "test_cv_image", "bmp.bmp")
+    image = Image.open(image_bmp)
+    size = [400, 500]
+    scale = [0.1, 0.1]
+    ratio = (0.2, 1)
+    interpolation = Inter.NEAREST
+    max_attempts = 3
+    random_resize_crop_op = vision.RandomResizedCrop(size=size, scale=scale, ratio=ratio, interpolation=interpolation,
+                                                    max_attempts=max_attempts)
+    _ = random_resize_crop_op(image)
+    image.close()
+
+    # Test RandomResizedCrop function image is png
+    image_png = os.path.join(TEST_DATA_DATASET_FUNC, "test_data", "test_cv_image", "png.PNG")
+    image = Image.open(image_png)
+    size = (40, 50)
+    scale = [1.0, 1.0]
+    ratio = [0.2, 1]
+    interpolation = Inter.BICUBIC
+    max_attempts = 8
+    random_resize_crop_op = vision.RandomResizedCrop(size=size, scale=scale, ratio=ratio, interpolation=interpolation,
+                                                    max_attempts=max_attempts)
+    _ = random_resize_crop_op(image)
+    image.close()
+
+
+def test_random_resized_crop_operation_03():
+    """
+    Feature: RandomResizedCrop operation
+    Description: Testing the normal functionality of the RandomResizedCrop operator
+    Expectation: The Output is equal to the expected output
+    """
+    # Test RandomResizedCrop function image is gif
+    image_gif = os.path.join(TEST_DATA_DATASET_FUNC, "test_data", "test_cv_image", "gif.gif")
+    image = Image.open(image_gif)
+    size = (1400, 2500)
+    scale = (0.01, 0.86)
+    ratio = (1.0, 3.2)
+    interpolation = Inter.BILINEAR
+    max_attempts = 100
+    random_resize_crop_op = vision.RandomResizedCrop(size=size, scale=scale, ratio=ratio, interpolation=interpolation,
+                                                    max_attempts=max_attempts)
+    out = random_resize_crop_op(image, image)
+    assert (out[0] == out[1]).all()
+    image.close()
+
+    # Test RandomResizedCrop function input multiple shapes
+    image1 = np.random.randn(250, 500, 3)
+    image2 = np.random.randn(250, 500, 3)
+    image3 = np.random.randn(250, 500)
+    image4 = np.random.randn(250, 500, 4)
+    size = (400, 300)
+    scale = (0.01, 0.02)
+    ratio = (0.9, 3.2)
+    interpolation = Inter.BILINEAR
+    max_attempts = 1
+    random_resize_crop_op = vision.RandomResizedCrop(size=size, scale=scale, ratio=ratio, interpolation=interpolation,
+                                                    max_attempts=max_attempts)
+    _ = random_resize_crop_op(image1, image2, image3, image4)
+
+    # Test RandomResizedCrop function input data shape is (250, 500, 1)
+    image = np.random.randn(250, 500, 1)
+
+    random_resize_crop_op = vision.RandomResizedCrop(size=100, scale=(0.6, 0.6), ratio=(0.5, 0.5),
+                                                    interpolation=Inter.BILINEAR, max_attempts=2)
+    random_resize_crop_op(image)
+
+    # Test RandomResizedCrop function input data shape is (1000, 1500)
+    image = np.random.randn(1000, 1500)
+
+    random_resize_crop_op = vision.RandomResizedCrop(size=2000, scale=(0.8, 1.0), ratio=(0.7, 2.5),
+                                                    interpolation=Inter.BILINEAR, max_attempts=2)
+    _ = random_resize_crop_op(image)
+
+    # Test RandomResizedCrop function input data shape is (250, 500, 4)
+    image = np.random.randn(250, 500, 4)
+    random_resize_crop_op = vision.RandomResizedCrop(size=[400, 300])
+    _ = random_resize_crop_op(image)
+
+    # Test RandomResizedCrop function input data type is list
+    image = np.random.randint(0, 1, (2, 3, 4), dtype=np.uint8)
+    size = [400, 300]
+    random_resize_crop_op = vision.RandomResizedCrop(size=size)
+    random_resize_crop_op(image)
+
+    # Test RandomResizedCrop function input is list
+    image = np.random.randint(0, 255, (52, 52, 3)).astype(np.uint8).tolist()
+    random_resize_crop_op = vision.RandomResizedCrop(30)
+    with pytest.raises(TypeError, match="Input should be NumPy or PIL image, got <class 'list'>."):
+        random_resize_crop_op(image)
+
+    # Test RandomResizedCrop function size is [500, 50]
+    data_dir = os.path.join(TEST_DATA_DATASET_FUNC, "testImageNetData", "train")
+    dataset = ds.ImageFolderDataset(data_dir, shuffle=False, decode=True)
+    size = [200, 50]
+    scale = (0.2, 2.0)
+    ratio = [0.5, 1.0]
+    interpolation = Inter.AREA
+    random_resize_op = vision.RandomResizedCrop(size=size, scale=scale, ratio=ratio, interpolation=interpolation)
+    dataset = dataset.map(input_columns=["image"], operations=random_resize_op)
+    for _ in dataset.create_dict_iterator(output_numpy=True):
+        pass
+
+    # Test RandomResizedCrop function pepiline interpolation_c is Inter.PILCUBIC
+    data_dir = os.path.join(TEST_DATA_DATASET_FUNC, "testImageNetData", "train")
+    dataset = ds.ImageFolderDataset(data_dir, shuffle=False, decode=True)
+    size = (250, 300)
+    ratio = [0.5, 2.0]
+    interpolation = Inter.PILCUBIC
+    random_resize_op = vision.RandomResizedCrop(size=size, ratio=ratio, interpolation=interpolation)
+    dataset = dataset.map(input_columns=["image"], operations=random_resize_op)
+    for _ in dataset.create_dict_iterator(output_numpy=True):
+        pass
+
+    # Test RandomResizedCrop function eager interpolation_c is Inter.PILCUBIC
+    image = np.random.randint(0, 255, (100, 100, 3)).astype(np.uint8)
+    size = (100, 100)
+    interpolation = Inter.PILCUBIC
+    scale = [1.0, 1.0]
+    random_resize_op = vision.RandomResizedCrop(size, scale=scale, interpolation=interpolation)
+    _ = random_resize_op(image)
+
+
+def test_random_resized_crop_operation_04():
+    """
+    Feature: RandomResizedCrop operation
+    Description: Testing the normal functionality of the RandomResizedCrop operator
+    Expectation: The Output is equal to the expected output
+    """
+    # Test RandomResizedCrop function eager interpolation_c is Inter.NEAREST
+    image = np.random.randint(0, 255, (100, 100, 3)).astype(np.uint8)
+    size = (100, 100)
+    interpolation = Inter.NEAREST
+    scale = [1.0, 1.0]
+    random_resize_op = vision.RandomResizedCrop(size, scale=scale, interpolation=interpolation)
+    _ = random_resize_op(image)
+
+    # Test RandomResizedCrop function eager interpolation_c is Inter.BICUBIC
+    image = np.random.randint(0, 255, (100, 100, 3)).astype(np.uint8)
+    random_resize_op = vision.RandomResizedCrop(size=(100, 100), scale=[1.0, 1.0], interpolation=Inter.BICUBIC)
+    _ = random_resize_op(image)
+
+    # Test RandomResizedCrop function eager interpolation_c is Inter.AREA
+    image = np.random.randint(0, 255, (100, 100, 3)).astype(np.uint8)
+    size = (100, 100)
+    interpolation = Inter.AREA
+    scale = [1.0, 1.0]
+    random_resize_op = vision.RandomResizedCrop(size, scale=scale, interpolation=interpolation)
+    _ = random_resize_op(image)
+
+    # Test RandomResizedCrop function eager interpolation_c is Inter.ANTIALIAS
+    image_jpg = os.path.join(TEST_DATA_DATASET_FUNC, "test_data", "test_cv_image", "jpg.jpg")
+    with Image.open(image_jpg) as image:
+        random_resize_op = vision.RandomResizedCrop(size=(100, 100), scale=[1.0, 1.0], interpolation=Inter.ANTIALIAS)
+        _ = random_resize_op(image)
+
+    # Test RandomResizedCrop function pipeline input datatype is PIL
+    data_dir = os.path.join(TEST_DATA_DATASET_FUNC, "testImageNetData", "train")
+    dataset = ds.ImageFolderDataset(data_dir, shuffle=False)
+    size = 1
+    random_resize_crop_op = [vision.Decode(to_pil=True), vision.RandomResizedCrop(size=size)]
+    dataset = dataset.map(input_columns=["image"],
+                            operations=random_resize_crop_op)
+    for _ in dataset.create_dict_iterator(output_numpy=True):
+        pass
+
+    # Test RandomResizedCrop function pipeline input datatype is Numpy
+    data_dir = os.path.join(TEST_DATA_DATASET_FUNC, "testImageNetData", "train")
+    dataset = ds.ImageFolderDataset(data_dir, shuffle=False)
+    size = 1
+    random_resize_crop_op = [vision.Decode(to_pil=False), vision.RandomResizedCrop(size=size)]
+    dataset = dataset.map(input_columns=["image"],
+                            operations=random_resize_crop_op)
+    for _ in dataset.create_dict_iterator(output_numpy=True):
+        pass
+
+
+def test_random_resized_crop_exception_01():
+    """
+    Feature: RandomResizedCrop operation
+    Description: Testing the RandomResizedCrop Operator in Exceptional Scenarios
+    Expectation: Throw an exception
+    """
+    # Test RandomResizedCrop function parameter size is 0
+    size = 0
+    with pytest.raises(ValueError,
+                       match="Input is not within the required interval"):
+        vision.RandomResizedCrop(size=size)
+
+    # Test RandomResizedCrop function parameter size is 16777217
+    size = 16777217
+    with pytest.raises(ValueError,
+                       match="Input is not within the required interval"):
+        vision.RandomResizedCrop(size=size)
+
+    # Test RandomResizedCrop function parameter size is 500.5
+    size = 500.5
+    with pytest.raises(TypeError, match="Argument size with value 500.5 is not of type \\[<class 'int'>, "
+                                        "<class 'list'>, <class 'tuple'>\\], but got <class 'float'>"):
+        vision.RandomResizedCrop(size=size)
+
+    # Test RandomResizedCrop function parameter size is (500, 500, 520)
+    size = (500, 500, 520)
+    with pytest.raises(TypeError,
+                       match="Size should be a single integer or a list/tuple"):
+        vision.RandomResizedCrop(size=size)
+
+    # Test RandomResizedCrop function parameter size is ""
+    size = ""
+    with pytest.raises(TypeError, match='''Argument size with value "" is not of type \\[<class 'int'>, '''
+                                        '''<class 'list'>, <class 'tuple'>\\], but got <class 'str'>.'''):
+        vision.RandomResizedCrop(size=size)
+
+    # Test RandomResizedCrop function parameter scale is (-0.5, 1.5)
+    size = (500, 520)
+    scale = (-0.5, 1.5)
+    with pytest.raises(ValueError,
+                       match="Input is not within the required interval"):
+        vision.RandomResizedCrop(size=size, scale=scale)
+
+    # Test RandomResizedCrop function parameter scale is (1.5, 0.5)
+    size = (500, 520)
+    scale = (1.5, 0.5)
+    with pytest.raises(ValueError,
+                       match="scale should be in \\(min,max\\) format. Got \\(max,min\\)."):
+        vision.RandomResizedCrop(size=size, scale=scale)
+
+    # Test RandomResizedCrop function parameter scale is ("", "")
+    size = (500, 520)
+    scale = ("", "")
+    with pytest.raises(TypeError, match='''Argument scale\\[0\\] with value "" is not of type \\[<class \'float\'>, '''
+                                        '''<class \'int\'>\\], but got <class \'str\'>.'''):
+        vision.RandomResizedCrop(size=size, scale=scale)
+
+    # Test RandomResizedCrop function parameter scale is ms.Tensor([0.5, 1.0])
+    size = (500, 520)
+    scale = ms.Tensor([0.5, 1.0])
+    with pytest.raises(TypeError) as e:
+        vision.RandomResizedCrop(size=size, scale=scale)
+    assert "Argument scale with value {} is not of type [<class 'tuple'>, <class 'list'>]".format(scale) in str(e)
+
+    # Test RandomResizedCrop function parameter scale is ""
+    size = (500, 520)
+    scale = ""
+    with pytest.raises(TypeError, match='''Argument scale with value "" is not of type \\[<class \'tuple\'>, '''
+                                        '''<class \'list\'>\\], but got <class \'str\'>.'''):
+        vision.RandomResizedCrop(size=size, scale=scale)
+
+    # Test RandomResizedCrop function parameter ratio is (-0.5, 1.0)
+    size = (500, 520)
+    scale = (0.5, 1)
+    ratio = (-0.5, 1.0)
+    with pytest.raises(ValueError,
+                       match="Input ratio\\[0\\] is not within the required interval of \\(0, 16777216\\]."):
+        vision.RandomResizedCrop(size=size, scale=scale, ratio=ratio)
+
+    # Test RandomResizedCrop function parameter ratio is (1.5, 0.5)
+    size = (500, 520)
+    scale = (0.5, 1)
+    ratio = (1.5, 0.5)
+    with pytest.raises(ValueError,
+                       match="ratio should be in \\(min,max\\) format. Got \\(max,min\\)."):
+        vision.RandomResizedCrop(size=size, scale=scale, ratio=ratio)
+
+    # Test RandomResizedCrop function parameter ratio is ("", "")
+    size = (500, 520)
+    scale = (0.5, 1)
+    ratio = ("", "")
+    with pytest.raises(TypeError, match='''Argument ratio\\[0\\] with value "" is not of type \\[<class 'float'>, '''
+                                        '''<class 'int'>\\], but got <class 'str'>.'''):
+        vision.RandomResizedCrop(size=size, scale=scale, ratio=ratio)
+
+    # Test RandomResizedCrop function parameter ratio is ms.Tensor([0.5, 1.0])
+    size = (500, 520)
+    scale = (0.5, 1)
+    ratio = ms.Tensor([0.5, 1.0])
+    with pytest.raises(TypeError) as e:
+        vision.RandomResizedCrop(size=size, scale=scale, ratio=ratio)
+    assert "Argument ratio with value {} is not of type [<class 'tuple'>, <class 'list'>]".format(ratio) in str(e)
+
+
+def test_random_resized_crop_exception_02():
+    """
+    Feature: RandomResizedCrop operation
+    Description: Testing the RandomResizedCrop Operator in Exceptional Scenarios
+    Expectation: Throw an exception
+    """
+    # Test RandomResizedCrop function parameter ratio is ""
+    size = (500, 520)
+    scale = (0.5, 1)
+    ratio = ""
+    msg = r'''Argument ratio with value "" is not of type \[<class 'tuple'>, <class 'list'>\], but got <class 'str'>.'''
+    with pytest.raises(TypeError, match=msg):
+        vision.RandomResizedCrop(size=size, scale=scale, ratio=ratio)
+
+    # Test RandomResizedCrop function parameter interpolation is ""
+    size = (500, 520)
+    scale = (0.5, 1.0)
+    ratio = (0.5, 1.0)
+    interpolation = ""
+    msg = r'''Argument interpolation with value "" is not of type \[<enum 'Inter'>\], but got <class 'str'>.'''
+    with pytest.raises(TypeError, match=msg):
+        vision.RandomResizedCrop(size=size, scale=scale, ratio=ratio, interpolation=interpolation)
+
+    # Test RandomResizedCrop function parameter max_attempts is 0
+    size = (500, 520)
+    scale = (0.5, 1.0)
+    ratio = (0.5, 1.0)
+    interpolation = Inter.BILINEAR
+    max_attempts = 0
+    with pytest.raises(ValueError,
+                       match="Input max_attempts is not within the required interval of \\[1, 2147483647\\]"):
+        vision.RandomResizedCrop(size=size, scale=scale, ratio=ratio, interpolation=interpolation,
+                                  max_attempts=max_attempts)
+
+    # Test RandomResizedCrop function parameter max_attempts is 1.5
+    data_dir = os.path.join(TEST_DATA_DATASET_FUNC, "testImageNetData", "train")
+    dataset1 = ds.ImageFolderDataset(data_dir, shuffle=False, decode=True)
+    dataset = ds.ImageFolderDataset(data_dir, shuffle=False, decode=True)
+    size = (500, 520)
+    scale = (0.5, 1.0)
+    ratio = (0.5, 1.0)
+    interpolation = Inter.BILINEAR
+    max_attempts = 1.5
+    with pytest.raises(TypeError, match="Argument max_attempts with value 1.5 is not of type \\[<class 'int'>\\], "
+                                        "but got <class 'float'>."):
+        random_resize_crop_op = vision.RandomResizedCrop(size=size, scale=scale, ratio=ratio,
+                                                        interpolation=interpolation, max_attempts=max_attempts)
+        dataset = dataset.map(input_columns=["image"],
+                                operations=random_resize_crop_op)
+        for _ in zip(dataset1.create_dict_iterator(output_numpy=True),
+                     dataset.create_dict_iterator(output_numpy=True)):
+            pass
+
+    # Test RandomResizedCrop function parameter max_attempts is ""
+    size = (500, 520)
+    scale = (0.5, 1.0)
+    ratio = (0.5, 1.0)
+    interpolation = Inter.BILINEAR
+    max_attempts = ""
+    with pytest.raises(TypeError, match="""Argument max_attempts with value "" is not of type \\[<class 'int'>\\], """
+                                        "but got <class 'str'>."):
+        vision.RandomResizedCrop(size=size, scale=scale, ratio=ratio, interpolation=interpolation,
+                                  max_attempts=max_attempts)
+
+    # Test RandomResizedCrop function no required argument
+    with pytest.raises(TypeError, match="missing a required argument"):
+        vision.RandomResizedCrop()
+
+    # Test RandomResizedCrop function more para
+    size = (500, 520)
+    scale = (0.5, 1.0)
+    ratio = (0.5, 1.0)
+    interpolation = Inter.BILINEAR
+    max_attempts = 10
+    more_para = None
+    with pytest.raises(TypeError, match="too many positional arguments"):
+        vision.RandomResizedCrop(size, scale, ratio, interpolation, max_attempts, more_para)
+
+    # Test RandomResizedCrop function input data shape is 1d
+    image = np.random.randn(250)
+    size = [400, 300]
+    random_resize_crop_op = vision.RandomResizedCrop(size=size)
+    with pytest.raises(RuntimeError,
+                       match="RandomResizedCrop: input tensor should have at least 2 dimensions"):
+        random_resize_crop_op(image)
+
+    # Test RandomResizedCrop function input data type is Tensor
+    image = ms.Tensor(np.random.randn(25, 50, 3))
+    size = [40, 30]
+    random_resize_crop_op = vision.RandomResizedCrop(size=size)
+    with pytest.raises(TypeError, match="Input should be NumPy or PIL image."):
+        random_resize_crop_op(image)
+
+    # Test RandomResizedCrop function size is {400, 300}
+    size = {400, 300}
+    with pytest.raises(TypeError, match=("Argument size with value {400, 300} is not of type \\[<class "
+                                         "'int'>, <class 'list'>, <class 'tuple'>\\].")):
+        vision.RandomResizedCrop(size=size)
+
+
+def test_random_resized_crop_exception_03():
+    """
+    Feature: RandomResizedCrop operation
+    Description: Testing the RandomResizedCrop Operator in Exceptional Scenarios
+    Expectation: Throw an exception
+    """
+    # Test RandomResizedCrop function size is [400.0, 300]
+    image_jpg = os.path.join(TEST_DATA_DATASET_FUNC, "test_data", "test_cv_image", "jpg.jpg")
+    image = Image.open(image_jpg)
+    size = [400.0, 300]
+    with pytest.raises(TypeError, match="Argument size\\[0\\] with value 400.0 is not of type \\[<class 'int'>\\]."):
+        random_resize_crop_op = vision.RandomResizedCrop(size=size)
+        random_resize_crop_op(image)
+        image.close()
+
+    # Test RandomResizedCrop function size is np.array([400, 300])
+    size = np.array([400, 300])
+    with pytest.raises(TypeError, match=("Argument size with value \\[400 300\\] is not of type \\[<class "
+                                         "'int'>, <class 'list'>, <class 'tuple'>\\].")):
+        vision.RandomResizedCrop(size=size)
+
+    # Test RandomResizedCrop function size is -1
+    size = -1
+    with pytest.raises(ValueError,
+                       match="Input is not within the required interval of \\[1, 16777216\\]."):
+        vision.RandomResizedCrop(size=size)
+
+    # Test RandomResizedCrop function size is [250001, 500000]
+    image = np.random.randn(250, 500, 3)
+    size = [250001, 500000]
+    random_resize_crop_op = vision.RandomResizedCrop(size=size)
+    with pytest.raises(RuntimeError,
+                       match="1\\) is too big, it's up to 1000 times the original image; 2\\) can not be 0."):
+        random_resize_crop_op(image)
+
+    # Test RandomResizedCrop function scale is numpy.ndarray
+    size = [300, 300]
+    scale = np.array([0.3, 0.8])
+    with pytest.raises(TypeError, match="Argument scale with value \\[0.3 0.8\\] is not of "
+                                        "type \\[<class 'tuple'>, <class 'list'>\\]."):
+        vision.RandomResizedCrop(size=size, scale=scale)
+
+    # Test RandomResizedCrop function scale is 0.5
+    size = [300, 300]
+    scale = 0.5
+    with pytest.raises(TypeError,
+                       match="Argument scale with value 0.5 is not of type \\[<class 'tuple'>, <class 'list'>\\]."):
+        vision.RandomResizedCrop(size=size, scale=scale)
+
+    # Test RandomResizedCrop function scale is (0.5, 0.7, 0.8),
+    image = np.random.randn(250, 500, 3)
+    size = [300, 300]
+    scale = (0.5, 0.7, 0.8)
+    with pytest.raises(TypeError, match="scale should be a list/tuple of length 2."):
+        random_resize_crop_op = vision.RandomResizedCrop(size=size, scale=scale)
+        random_resize_crop_op(image)
+
+    # Test RandomResizedCrop function scale is (0.5,)
+    size = [300, 300]
+    scale = (0.5,)
+    with pytest.raises(TypeError, match="scale should be a list/tuple of length 2."):
+        vision.RandomResizedCrop(size=size, scale=scale)
+
+    # Test RandomResizedCrop function scale is (0.5, 16777216.01)
+    size = [300, 300]
+    scale = (0.5, 16777216.01)
+    with pytest.raises(ValueError, match="Input is not within the required interval of \\[0, 16777216\\]."):
+        vision.RandomResizedCrop(size=size, scale=scale)
+
+    # Test RandomResizedCrop function scale is (0.0, 0.0)
+    size = [300, 300]
+    scale = (0.0, 0.0)
+    with pytest.raises(ValueError, match="Input scale\\[1\\] must be greater than 0."):
+        vision.RandomResizedCrop(size=size, scale=scale)
+
+    # Test RandomResizedCrop function ratio is numpy.ndarray
+    size = [300, 300]
+    ratio = np.array([0.5, 2])
+    with pytest.raises(TypeError, match="Argument ratio with value \\[0.5 2. \\] is not "
+                                        "of type \\[<class 'tuple'>, <class 'list'>\\]."):
+        vision.RandomResizedCrop(size=size, ratio=ratio)
+
+    # Test RandomResizedCrop function ratio is 0.8
+    size = [300, 300]
+    ratio = 0.8
+    with pytest.raises(TypeError,
+                       match="Argument ratio with value 0.8 is not of type \\[<class 'tuple'>, <class 'list'>\\]."):
+        vision.RandomResizedCrop(size=size, ratio=ratio)
+
+    # Test RandomResizedCrop function ratio is (0.3, 0.5, 1.2)
+    image = np.random.randn(250, 500, 3)
+    size = [300, 300]
+    ratio = (0.3, 0.5, 1.2)
+    with pytest.raises(TypeError, match="ratio should be a list/tuple of length 2."):
+        random_resize_crop_op = vision.RandomResizedCrop(size=size, ratio=ratio)
+        random_resize_crop_op(image)
+
+    # Test RandomResizedCrop function ratio is (0.3,)
+    size = [300, 300]
+    ratio = (0.3,)
+    with pytest.raises(TypeError, match="ratio should be a list/tuple of length 2."):
+        vision.RandomResizedCrop(size=size, ratio=ratio)
+
+
+def test_random_resized_crop_exception_04():
+    """
+    Feature: RandomResizedCrop operation
+    Description: Testing the RandomResizedCrop Operator in Exceptional Scenarios
+    Expectation: Throw an exception
+    """
+    # Test RandomResizedCrop function ratio is (0.3, 16777216.01)
+    size = [300, 300]
+    ratio = (0.3, 16777216.01)
+    with pytest.raises(ValueError,
+                       match="Input ratio\\[1\\] is not within the required interval of \\(0, 16777216\\]."):
+        vision.RandomResizedCrop(size=size, ratio=ratio)
+
+    # Test RandomResizedCrop function ratio is (0.0, 0.5)
+    size = [300, 300]
+    ratio = (0.0, 0.5)
+    with pytest.raises(ValueError, match="Input ratio\\[0\\] is not within the required interval of \\(0, 16777216\\]"):
+        vision.RandomResizedCrop(size=size, ratio=ratio)
+
+    # Test RandomResizedCrop function interpolation is 1
+    size = [300, 300]
+    interpolation = 1
+    with pytest.raises(TypeError, match="Argument interpolation with value 1 is not of type \\[<enum 'Inter'>\\]."):
+        vision.RandomResizedCrop(size=size, interpolation=interpolation)
+
+    # Test RandomResizedCrop function interpolation is str
+    size = [300, 300]
+    interpolation = "Inter.BILINEAR"
+    with pytest.raises(TypeError,
+                       match="Argument interpolation with value Inter.BILINEAR is not of type \\[<enum 'Inter'>\\]."):
+        vision.RandomResizedCrop(size=size, interpolation=interpolation)
+
+    # Test RandomResizedCrop function interpolation is Inter
+    size = [300, 300]
+    interpolation = Inter
+    with pytest.raises(TypeError,
+                       match="Argument interpolation with value <enum 'Inter'> is not of type \\[<enum 'Inter'>\\]."):
+        vision.RandomResizedCrop(size=size, interpolation=interpolation)
+
+    # Test RandomResizedCrop function interpolation is list
+    size = [300, 300]
+    interpolation = [Inter.BILINEAR]
+    with pytest.raises(TypeError, match=("Argument interpolation with value \\[<Inter.BILINEAR: 2>\\] "
+                                         "is not of type \\[<enum 'Inter'>\\].")):
+        vision.RandomResizedCrop(size=size, interpolation=interpolation)
+
+    # Test RandomResizedCrop function max_attempts is None
+    image = np.random.randn(250, 500, 3)
+    size = [300, 300]
+    max_attempts = None
+    with pytest.raises(TypeError, match="incompatible constructor arguments."):
+        random_resize_crop_op = vision.RandomResizedCrop(size=size, max_attempts=max_attempts)
+        random_resize_crop_op(image)
+
+    # Test RandomResizedCrop function max_attempts is "1"
+    size = [300, 300]
+    max_attempts = "1"
+    with pytest.raises(TypeError, match="Argument max_attempts with value 1 is not of type \\[<class 'int'>\\]"):
+        vision.RandomResizedCrop(size=size, max_attempts=max_attempts)
+
+    # Test RandomResizedCrop function max_attempts is list
+    size = [300, 300]
+    max_attempts = [10]
+    with pytest.raises(TypeError, match="Argument max_attempts with value \\[10\\] is not of type \\[<class 'int'>\\]"):
+        vision.RandomResizedCrop(size=size, max_attempts=max_attempts)
+
+    # Test RandomResizedCrop function max_attempts is 16777217
+    size = [300, 300]
+    max_attempts = 2147483648
+    with pytest.raises(ValueError, match="max_attempts is not within the required interval of \\[1, 2147483647\\]."):
+        vision.RandomResizedCrop(size=size, max_attempts=max_attempts)
+
+    # Test RandomResizedCrop function max_attempts is 5.2
+    image = np.random.randn(250, 500, 3)
+    size = [300, 300]
+    max_attempts = 5.2
+    with pytest.raises(TypeError, match="Argument max_attempts with value 5.2 is not of type \\[<class 'int'>\\]"):
+        random_resize_crop_op = vision.RandomResizedCrop(size=size, max_attempts=max_attempts)
+        random_resize_crop_op(image)
+
+    # Test RandomResizedCrop function input is 1d
+    random_resize_op = vision.RandomResizedCrop(30)
+    with pytest.raises(RuntimeError,
+                       match="RandomResizedCrop: input tensor should have at least 2 dimensions"):
+        random_resize_op(np.array(10))
+
+    # Test RandomResizedCrop function input the same dataset
+    image = np.random.randint(0, 255, (50, 50, 3)).astype(np.uint8)
+    image2 = np.random.randint(0, 255, (51, 50, 3)).astype(np.uint8)
+    random_resize_op = vision.RandomResizedCrop(30)
+    with pytest.raises(RuntimeError,
+                       match="Input tensor in different columns of each row must have the same size."):
+        random_resize_op(image, image2)
+
+    # Test RandomResizedCrop function eager interpolation_c is Inter.PILCUBIC
+    image = np.random.randn(2, 3, 4)
+    random_resize_op = vision.RandomResizedCrop(size=(100, 100), interpolation=Inter.PILCUBIC)
+    with pytest.raises(RuntimeError, match="CropAndResize: Interpolation mode PILCUBIC only "
+                                           "supports image with 3 channels, but got:.*"):
+        random_resize_op(image)
+
+    # Test RandomResizedCrop function eager interpolation_c is Inter.PILCUBIC
+    image = np.random.randint(0, 255, (100, 100)).astype(np.uint8)
+    random_resize_op = vision.RandomResizedCrop(size=(100, 100), interpolation=Inter.PILCUBIC)
+    with pytest.raises(RuntimeError, match="CropAndResize: Interpolation mode PILCUBIC only "
+                                           "supports image with 3 channels, but got:.*"):
+        random_resize_op(image)
+
+
 if __name__ == "__main__":
     test_random_crop_and_resize_callable_numpy()
     test_random_crop_and_resize_callable_pil()
@@ -596,3 +1344,11 @@ if __name__ == "__main__":
     test_random_crop_and_resize_pipeline()
     test_random_crop_and_resize_eager_error_01()
     test_random_crop_and_resize_eager_error_02()
+    test_random_resized_crop_operation_01()
+    test_random_resized_crop_operation_02()
+    test_random_resized_crop_operation_03()
+    test_random_resized_crop_operation_04()
+    test_random_resized_crop_exception_01()
+    test_random_resized_crop_exception_02()
+    test_random_resized_crop_exception_03()
+    test_random_resized_crop_exception_04()

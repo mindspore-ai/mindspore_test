@@ -1,4 +1,4 @@
-# Copyright 2022 Huawei Technologies Co., Ltd
+# Copyright 2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,13 +16,18 @@
 Test ToNumpy op in Dataset
 """
 import numpy as np
+import os
+import pytest
+from PIL import Image
 
 import mindspore.dataset as ds
-import mindspore.dataset.vision as vision
+import mindspore.dataset.vision.transforms as vision
 from util import config_get_set_seed
 
 DATA_DIR = ["../data/dataset/test_tf_file_3_images/train-0000-of-0001.data"]
 SCHEMA_DIR = "../data/dataset/test_tf_file_3_images/datasetSchema.json"
+TEST_DATA_DATASET_FUNC ="../data/dataset/"
+image_jpg = os.path.join(TEST_DATA_DATASET_FUNC, "test_data", "test_cv_image", "jpg.jpg")
 
 
 def test_to_numpy_op_1():
@@ -139,7 +144,78 @@ def test_to_numpy_op_3():
     ds.config.set_seed(original_seed)
 
 
+def test_tonumpy_operation_01():
+    """
+    Feature: ToNumpy operation
+    Description: Testing the normal functionality of the ToNumpy operator
+    Expectation: The Output is equal to the expected output
+    """
+    # ToNumpy input Pillow, eager mode
+    image = Image.open(image_jpg)
+    totensor_op = vision.ToNumpy()
+    out = totensor_op(image)
+    assert isinstance(out, np.ndarray)
+    assert (out == np.array(image)).all()
+
+    # To convert Pillow to NumPy in eager mode, first convert Pillow to NumPy, then convert NumPy back to Pillow.
+    image = np.random.randint(0, 255, (32, 32, 3)).astype(np.uint8)
+    topil_op = vision.ToPIL()
+    pil = topil_op(image)
+    np_ops = vision.ToNumpy()
+    out = np_ops(pil)
+    assert isinstance(out, np.ndarray)
+    assert (out == image).all()
+
+    # ToNumpy input numpy, eager mode, 4-dimensional
+    image = np.random.randn(32, 32, 3, 3)
+    np_ops = vision.ToNumpy()
+    out = np_ops(image)
+    assert isinstance(out, np.ndarray)
+    assert (out == image).all()
+
+    # ToNumpy input numpy, eager mode, 2-dimensional
+    image = list(np.random.randint(0, 255, (32, 32, 3, 3)).astype(np.int32))
+    np_ops = vision.ToNumpy()
+    out = np_ops(image)
+    assert isinstance(out, np.ndarray)
+    assert (out == image).all()
+
+    # ToNumpy input numpy, eager mode, 1-dimensional
+    image = (1.5, 2.5, 3.0, 4)
+    np_ops = vision.ToNumpy()
+    out = np_ops(image)
+    assert isinstance(out, np.ndarray)
+    assert (out == image).all()
+
+    # ToNumpy input number
+    image = 10
+    np_ops = vision.ToNumpy()
+    out = np_ops(image)
+    assert isinstance(out, np.ndarray)
+    assert (out == image).all()
+
+    # Converting a list of string type to Numpy
+    image = ["a", "b", "c"]
+    np_ops = vision.ToNumpy()
+    out = np_ops(image)
+    assert isinstance(out, np.ndarray)
+    assert (out == image).all()
+
+
+def test_tonumpy_exception_01():
+    """
+    Feature: ToNumpy operation
+    Description: Testing the ToNumpy Operator in Exceptional Scenarios
+    Expectation: Throw an exception
+    """
+    # Passing a non-existent parameter to NumPy
+    with pytest.raises(TypeError, match="__init__\\(\\) takes 1 positional argument but 2 were given"):
+        vision.ToNumpy(10)
+
+
 if __name__ == "__main__":
     test_to_numpy_op_1()
     test_to_numpy_op_2()
     test_to_numpy_op_3()
+    test_tonumpy_operation_01()
+    test_tonumpy_exception_01()

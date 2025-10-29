@@ -1,4 +1,4 @@
-# Copyright 2019-2022 Huawei Technologies Co., Ltd
+# Copyright 2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,11 +17,13 @@ Testing the random vertical flip op in DE
 """
 import numpy as np
 import pytest
+import os
+from PIL import Image
 
 from mindspore import log as logger
 import mindspore.dataset as ds
 import mindspore.dataset.transforms as ops
-import mindspore.dataset.vision as vision
+import mindspore.dataset.vision.transforms as vision
 from util import save_and_check_md5, save_and_check_md5_pil, visualize_list, visualize_image, diff_mse, \
     config_get_set_seed, config_get_set_num_parallel_workers
 
@@ -29,6 +31,24 @@ GENERATE_GOLDEN = False
 
 DATA_DIR = ["../data/dataset/test_tf_file_3_images/train-0000-of-0001.data"]
 SCHEMA_DIR = "../data/dataset/test_tf_file_3_images/datasetSchema.json"
+TEST_DATA_DATASET_FUNC ="../data/dataset/"
+
+
+def generator_mc(maxid=3):
+    """Multi-column generator function as callable input"""
+    image_jpg = os.path.join(TEST_DATA_DATASET_FUNC, "test_data", "test_cv_image", "jpg.jpg")
+    image_png = os.path.join(TEST_DATA_DATASET_FUNC, "test_data", "test_cv_image", "png.PNG")
+    image_gif = os.path.join(TEST_DATA_DATASET_FUNC, "test_data", "test_cv_image", "gif.gif")
+
+    with Image.open(image_jpg) as image_data:
+        image = np.array(image_data)
+    with Image.open(image_png) as image_data1:
+        image1 = np.array(image_data1)
+    with Image.open(image_gif) as image_data2:
+        image2 = np.array(image_data2)
+    image3 = np.random.randn(300, 300, 3)
+    for _ in range(maxid):
+        yield image, image, image1, image2, image3
 
 
 def v_flip(image):
@@ -270,6 +290,221 @@ def test_random_vertical_flip_invalid_data():
     assert "input tensor is not in shape of <H,W> or <H,W,C>" in str(error_info.value)
 
 
+def test_random_vertical_flip_operation_01():
+    """
+    Feature: RandomVerticalFlip operation
+    Description: Testing the normal functionality of the RandomVerticalFlip operator
+    Expectation: The Output is equal to the expected output
+    """
+    # RandomVerticalFlip operator:Test prob is 1
+    data_dir = os.path.join(TEST_DATA_DATASET_FUNC, "test_data", "testImageNetData", "train")
+    dataset2 = ds.ImageFolderDataset(data_dir, shuffle=False, decode=True)
+    prob = 1
+    random_vertical_flip_op = vision.RandomVerticalFlip(prob=prob)
+    dataset2 = dataset2.map(input_columns=["image"], operations=random_vertical_flip_op)
+    for _ in dataset2.create_dict_iterator(output_numpy=True):
+        pass
+
+    # RandomVerticalFlip operator:Test prob is 0
+    data_dir = os.path.join(TEST_DATA_DATASET_FUNC, "test_data", "testImageNetData", "train")
+    dataset2 = ds.ImageFolderDataset(data_dir, shuffle=False, decode=True)
+    prob = 0
+    random_vertical_flip_op = vision.RandomVerticalFlip(prob=prob)
+    dataset2 = dataset2.map(input_columns=["image"], operations=random_vertical_flip_op)
+    for _ in dataset2.create_dict_iterator(output_numpy=True):
+        pass
+
+    # RandomVerticalFlip operator:Test prob is 0.1
+    data_dir = os.path.join(TEST_DATA_DATASET_FUNC, "test_data", "imagenet_file_1jpg_noshape")
+    prob = 0.1
+    ds2 = ds.ImageFolderDataset(data_dir, 1)
+    transforms1 = [
+        vision.Decode(),
+        vision.RandomVerticalFlip(prob),
+        vision.ToTensor()
+    ]
+    transform1 = ops.Compose(transforms1)
+    ds2 = ds2.map(input_columns=["image"], operations=transform1)
+
+    for _ in ds2.create_dict_iterator(output_numpy=True):
+        pass
+
+
+def test_random_vertical_flip_operation_02():
+    """
+    Feature: RandomVerticalFlip operation
+    Description: Testing the normal functionality of the RandomVerticalFlip operator
+    Expectation: The Output is equal to the expected output
+    """
+    # RandomVerticalFlip operator:Test prob is 0.9
+    data_dir = os.path.join(TEST_DATA_DATASET_FUNC, "test_data", "imagenet_file_1jpg_noshape")
+    prob = 0.9
+    ds2 = ds.ImageFolderDataset(data_dir, 1)
+    transforms1 = [
+        vision.Decode(to_pil=True),
+        vision.RandomVerticalFlip(prob),
+        vision.ToTensor()
+    ]
+    transform1 = ops.Compose(transforms1)
+    ds2 = ds2.map(input_columns=["image"], operations=transform1)
+
+    for _ in ds2.create_dict_iterator(output_numpy=True):
+        pass
+
+    # RandomVerticalFlip operator:Test input is Multi-column dataset
+    source = generator_mc
+    column_names = ["image1", "image2", "image3", "image4", "image5"]
+    dataset = ds.GeneratorDataset(source, column_names)
+    prob = 0.8
+    random_vertical_flip_op = vision.RandomVerticalFlip(prob=prob)
+    dataset = dataset.map(input_columns=["image1", "image2", "image3", "image4", "image5"],
+                          operations=random_vertical_flip_op)
+    for data in dataset.create_dict_iterator(output_numpy=True):
+        assert (data["image1"] == data["image2"]).all()
+
+    # RandomVerticalFlip operator:Test input is two image
+    image_jpg = os.path.join(TEST_DATA_DATASET_FUNC, "test_data", "test_cv_image", "jpg.jpg")
+    image_gif = os.path.join(TEST_DATA_DATASET_FUNC, "test_data", "test_cv_image", "gif.gif")
+    with Image.open(image_jpg) as image:
+        with Image.open(image_gif) as image2:
+            prob = 1
+            random_vertical_flip_op = vision.RandomVerticalFlip(prob)
+            _ = random_vertical_flip_op(image, image2)
+
+    # RandomVerticalFlip operator:Test input is bmp image
+    image_file3 = os.path.join(TEST_DATA_DATASET_FUNC, "test_data", "test_cv_image", "bmp.bmp")
+    with Image.open(image_file3) as image:
+        prob = 1
+        transforms_op = vision.RandomVerticalFlip(prob)
+        out = transforms_op(image)
+        assert (np.flipud(np.array(out)) == (np.array(image))).all()
+
+    # RandomVerticalFlip operator:Test input is png image
+    image_png = os.path.join(TEST_DATA_DATASET_FUNC, "test_data", "test_cv_image", "png.PNG")
+    with  Image.open(image_png) as image:
+        prob = 0
+        random_vertical_flip_op = vision.RandomVerticalFlip(prob)
+        out = random_vertical_flip_op(image)
+        assert (np.array(image) == out).all()
+
+    # RandomVerticalFlip operator:Test input is gif image
+    image_gif = os.path.join(TEST_DATA_DATASET_FUNC, "test_data", "test_cv_image", "gif.gif")
+    with Image.open(image_gif) as image:
+        prob = 0
+        random_vertical_flip_op = vision.RandomVerticalFlip(prob)
+        out = random_vertical_flip_op(image)
+        assert (np.array(image) == out).all()
+
+    # RandomVerticalFlip operator:Test input is 3d numpy array
+    image = np.random.randn(2500, 3000, 1)
+    prob = 0.956
+    random_vertical_flip_op = vision.RandomVerticalFlip(prob)
+    _ = random_vertical_flip_op(image)
+
+    # RandomVerticalFlip operator:Test 4 channel numpy array
+    image = np.random.randn(32, 32, 4)
+    prob = 0.01
+    random_vertical_flip_op = vision.RandomVerticalFlip(prob)
+    _ = random_vertical_flip_op(image)
+
+    # RandomVerticalFlip operator:Test input is 2d numpy array
+    image = np.random.randint(0, 255, (255, 255)).astype(np.uint8)
+    random_vertical_flip_op = vision.RandomVerticalFlip()
+    _ = random_vertical_flip_op(image)
+
+
+def test_random_vertical_flip_exception_01():
+    """
+    Feature: RandomVerticalFlip operation
+    Description: Testing the RandomVerticalFlip Operator in Exceptional Scenarios
+    Expectation: Throw an exception
+    """
+    # RandomVerticalFlip operator:Test input is 3d tuple
+    image = tuple(np.random.randint(0, 255, (255, 255, 3)).astype(np.uint8))
+    random_vertical_flip_op = vision.RandomVerticalFlip()
+    with pytest.raises(TypeError, match="Input should be NumPy or PIL image, got <class 'tuple'>"):
+        _ = random_vertical_flip_op(image)
+
+    # RandomVerticalFlip operator:Test input is 3d list
+    image = list(np.random.randint(0, 255, (52, 52, 3)).astype(np.uint8))
+    random_vertical_flip_op = vision.RandomVerticalFlip()
+    with pytest.raises(TypeError, match="Input should be NumPy or PIL image, got <class 'list'>"):
+        _ = random_vertical_flip_op(image)
+
+    # RandomVerticalFlip operator:Test prob > 1
+    prob = 1.1
+    with pytest.raises(ValueError, match="Input prob is not within the required interval"):
+        vision.RandomVerticalFlip(prob=prob)
+
+    # RandomVerticalFlip operator:Test prob < 0
+    prob = -0.1
+    with pytest.raises(ValueError, match="Input prob is not within the required interval"):
+        vision.RandomVerticalFlip(prob=prob)
+
+    # RandomVerticalFlip operator:Test prob is None
+    prob = None
+    with pytest.raises(TypeError,
+                       match="Argument prob with value None is not of type \\[<class 'float'>, <class 'int'>\\]."):
+        vision.RandomVerticalFlip(prob=prob)
+
+    # RandomVerticalFlip operator:Test prob is bool
+    prob = True
+    with pytest.raises(TypeError,
+                       match="Argument prob with value True is not of type \\(<class 'float'>, <class 'int'>\\)."):
+        vision.RandomVerticalFlip(prob=prob)
+
+    # RandomVerticalFlip operator:Test prob is str
+    prob = "1"
+    with pytest.raises(TypeError,
+                       match="Argument prob with value 1 is not of type \\[<class 'float'>, <class 'int'>\\]."):
+        vision.RandomVerticalFlip(prob=prob)
+
+    # RandomVerticalFlip operator:Test prob is tuple
+    prob = (0.5, 1)
+    with pytest.raises(TypeError, match=r'is not of type \[\<class \'float\'\>, \<class \'int\'\>\].'):
+        vision.RandomVerticalFlip(prob)
+
+    # RandomVerticalFlip operator:Test prob is list
+    prob = [0.5, 0.9]
+    with pytest.raises(TypeError, match=r'is not of type \[\<class \'float\'\>, \<class \'int\'\>\].'):
+        vision.RandomVerticalFlip(prob)
+
+    # RandomVerticalFlip operator:Test input is not <H,W,C> or <H,W>
+    image_jpg = os.path.join(TEST_DATA_DATASET_FUNC, "test_data", "test_cv_image", "jpg.jpg")
+    image = np.fromfile(image_jpg, dtype=np.uint8)
+    random_vertical_flip_op = vision.RandomVerticalFlip(1)
+    with pytest.raises(RuntimeError,
+                       match="RandomVerticalFlip: input tensor is not in shape of " + \
+                             "<H,W> or <H,W,C>, but got rank: 1. You may need to perform Decode first"):
+        random_vertical_flip_op(image)
+
+    # RandomVerticalFlip operator:Test input is 4d numpy array
+    image = np.random.randint(0, 255, (255, 255, 3, 3)).astype(np.uint8)
+    random_vertical_flip_op = vision.RandomVerticalFlip(1)
+    with pytest.raises(RuntimeError, match="RandomVerticalFlip: input tensor is not in shape of " + \
+                                           "<H,W> or <H,W,C>, but got rank: 4"):
+        random_vertical_flip_op(image)
+
+    # RandomVerticalFlip operator:Test input is numpy list
+    image = np.random.randint(0, 255, (255, 255, 3)).astype(np.uint8).tolist()
+    random_vertical_flip_op = vision.RandomVerticalFlip(1)
+    with pytest.raises(TypeError, match="Input should be NumPy or PIL image, got <class 'list'>"):
+        random_vertical_flip_op(image)
+
+    # RandomVerticalFlip operator:Test input 1d numpy array
+    image = np.random.randint(0, 255, (50,)).astype(np.uint8)
+    prob = 1
+    random_vertical_flip_op = vision.RandomVerticalFlip(prob)
+    with pytest.raises(RuntimeError,
+                       match="RandomVerticalFlip: input tensor is not in shape of <H,W> or " + \
+                             "<H,W,C>, but got rank: 1. You may need to perform Decode first"):
+        random_vertical_flip_op(np.array(image))
+
+    # RandomVerticalFlip operator:Test input a parameter that does not exist
+    with pytest.raises(TypeError, match="got an unexpected keyword argument 'test'"):
+        vision.RandomVerticalFlip(test='test')
+
+
 if __name__ == "__main__":
     test_random_vertical_op(plot=True)
     test_random_vertical_valid_prob_c()
@@ -279,3 +514,6 @@ if __name__ == "__main__":
     test_random_vertical_comp(plot=True)
     test_random_vertical_op_1()
     test_random_vertical_flip_invalid_data()
+    test_random_vertical_flip_operation_01()
+    test_random_vertical_flip_operation_02()
+    test_random_vertical_flip_exception_01()

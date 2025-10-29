@@ -1,4 +1,4 @@
-# Copyright 2020-2022 Huawei Technologies Co., Ltd
+# Copyright 2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,8 +15,11 @@
 """
 Testing the random resize with bounding boxes op in DE
 """
+import os
+import pytest
+
 import mindspore.dataset as ds
-import mindspore.dataset.vision as vision
+import mindspore.dataset.vision.transforms as vision
 
 from mindspore import log as logger
 from util import config_get_set_seed, config_get_set_num_parallel_workers, save_and_check_md5, \
@@ -27,6 +30,7 @@ GENERATE_GOLDEN = False
 DATA_DIR = "../data/dataset/testVOC2012_2"
 DATA_DIR_2 = ["../data/dataset/testCOCO/train/",
               "../data/dataset/testCOCO/annotations/train.json"]  # DATA_DIR, ANNOTATION_DIR
+TEST_DATA_DATASET_FUNC ="../data/dataset/"
 
 
 def test_random_resize_with_bbox_op_voc_c(plot_vis=False):
@@ -174,9 +178,180 @@ def test_random_resize_with_bbox_op_bad_c():
     helper_invalid_bounding_box_test(DATA_DIR, test_op)
 
 
+def test_random_resize_with_bbox_operation_01():
+    """
+    Feature: RandomResizeWithBBox operation
+    Description: Testing the normal functionality of the RandomResizeWithBBox operator
+    Expectation: The Output is equal to the expected output
+    """
+    # Test RandomResizeWithBBox func size is 1
+    data_dir_voc = os.path.join(TEST_DATA_DATASET_FUNC, "testVOC2012_2")
+    dataset = ds.VOCDataset(data_dir_voc, task="Detection", usage="train", decode=True, shuffle=False)
+    size = 1
+    test_op = vision.RandomResizeWithBBox(size=size)
+    dataset = dataset.map(input_columns=["image", "bbox"],
+                            output_columns=["image", "bbox"],
+                            operations=[test_op])
+    dataset = dataset.project(columns=["image", "bbox"])
+    for _ in dataset.create_dict_iterator(output_numpy=True):
+        pass
+
+    # Test RandomResizeWithBBox func size is 500
+    data_dir_voc = os.path.join(TEST_DATA_DATASET_FUNC, "testVOC2012_2")
+    dataset = ds.VOCDataset(data_dir_voc, task="Detection", usage="train", decode=True, shuffle=False)
+    size = 500
+    test_op = vision.RandomResizeWithBBox(size=size)
+    dataset = dataset.map(input_columns=["image", "bbox"],
+                            output_columns=["image", "bbox"],
+                            operations=[test_op])
+    dataset = dataset.project(columns=["image", "bbox"])
+    for _ in dataset.create_dict_iterator(output_numpy=True):
+        pass
+
+    # Test RandomResizeWithBBox func size is [500,520]
+    data_dir_voc = os.path.join(TEST_DATA_DATASET_FUNC, "testVOC2012_2")
+    dataset = ds.VOCDataset(data_dir_voc, task="Detection", usage="train", decode=True, shuffle=False)
+    size = [500, 520]
+    test_op = vision.RandomResizeWithBBox(size=size)
+    dataset = dataset.map(input_columns=["image", "bbox"],
+                            output_columns=["image", "bbox"],
+                            operations=[test_op])
+    dataset = dataset.project(columns=["image", "bbox"])
+    for _ in dataset.create_dict_iterator(output_numpy=True):
+        pass
+
+    # Test RandomResizeWithBBox func all para
+    data_dir_voc = os.path.join(TEST_DATA_DATASET_FUNC, "testVOC2012_2")
+    dataset = ds.VOCDataset(data_dir_voc, task="Detection", usage="train", decode=True, shuffle=False)
+    size = (500, 520)
+    test_op = vision.RandomResizeWithBBox(size=size)
+    dataset = dataset.map(input_columns=["image", "bbox"],
+                            output_columns=["image", "bbox"],
+                            operations=[test_op])
+    dataset = dataset.project(columns=["image", "bbox"])
+    for _ in dataset.create_dict_iterator(output_numpy=True):
+        pass
+
+    # Test RandomResizeWithBBox func input PIL data
+    data_dir_voc = os.path.join(TEST_DATA_DATASET_FUNC, "testVOC2012_2")
+    dataset = ds.VOCDataset(data_dir_voc, task="Detection", usage="train", decode=True, shuffle=False)
+    v_p = vision.ToPIL()
+    dataset = dataset.map(input_columns=["image"], operations=v_p)
+    size = (500, 520)
+    test_op = vision.RandomResizeWithBBox(size=size)
+    dataset = dataset.map(input_columns=["image", "bbox"], output_columns=["image", "bbox"],
+                            operations=[test_op])
+    dataset = dataset.project(columns=["image", "bbox"])
+
+    for _ in dataset.create_dict_iterator(output_numpy=True):
+        pass
+
+
+def test_random_resize_with_bbox_exception_01():
+    """
+    Feature: RandomResizeWithBBox operation
+    Description: Testing the RandomResizeWithBBox Operator in Exceptional Scenarios
+    Expectation: Throw an exception
+    """
+    # Test RandomResizeWithBBox func with image dataset
+    data_dir_image = os.path.join(TEST_DATA_DATASET_FUNC, "testImageNetData", "train")
+    dataset = ds.ImageFolderDataset(data_dir_image, decode=True, shuffle=False)
+    test_op = vision.RandomResizeWithBBox(512)
+    dataset = dataset.map(input_columns=["image", "label"],
+                          output_columns=["image", "label"],
+                          operations=[test_op])
+    dataset = dataset.project(columns=["image", "label"])
+    with pytest.raises(RuntimeError,
+                       match="BoundingBox: bounding boxes should have to be two-dimensional matrix at least."):
+        for _ in dataset.create_dict_iterator(output_numpy=True):
+            pass
+
+    # Test RandomResizeWithBBox func size is 0
+    data_dir_voc = os.path.join(TEST_DATA_DATASET_FUNC, "testVOC2012_2")
+    dataset = ds.VOCDataset(data_dir_voc, task="Detection", usage="train", decode=True, shuffle=False)
+    size = 0
+    with pytest.raises(ValueError, match="Input is not within the required interval"):
+        test_op = vision.RandomResizeWithBBox(size=size)
+        dataset = dataset.map(input_columns=["image", "bbox"],
+                                output_columns=["image", "bbox"],
+                                operations=[test_op])
+        dataset = dataset.project(columns=["image", "bbox"])
+        for _ in dataset.create_dict_iterator(output_numpy=True):
+            pass
+
+    # Test RandomResizeWithBBox func size is 16777217
+    size = 16777217
+    with pytest.raises(ValueError, match="Input is not within the required interval"):
+        vision.RandomResizeWithBBox(size=size)
+
+    # Test RandomResizeWithBBox func size is 500.5
+    size = 500.5
+    with pytest.raises(TypeError, match="Size should be a single integer or a list/tuple"):
+        vision.RandomResizeWithBBox(size=size)
+
+    # Test RandomResizeWithBBox func size is (500, 500, 520)
+    data_dir_voc = os.path.join(TEST_DATA_DATASET_FUNC, "testVOC2012_2")
+    dataset = ds.VOCDataset(data_dir_voc, task="Detection", usage="train", decode=True, shuffle=False)
+    size = (500, 500, 520)
+    with pytest.raises(TypeError, match="Size should be a single integer or a list/tuple"):
+        test_op = vision.RandomResizeWithBBox(size=size)
+        dataset = dataset.map(input_columns=["image", "bbox"],
+                                output_columns=["image", "bbox"],
+                                operations=[test_op])
+        dataset = dataset.project(columns=["image", "bbox"])
+        for _ in dataset.create_dict_iterator(output_numpy=True):
+            pass
+
+    # Test RandomResizeWithBBox func size is ""
+    data_dir_voc = os.path.join(TEST_DATA_DATASET_FUNC, "testVOC2012_2")
+    dataset = ds.VOCDataset(data_dir_voc, task="Detection", usage="train", decode=True, shuffle=False)
+    size = ""
+    with pytest.raises(TypeError, match="Size should be a single integer or a list/tuple"):
+        test_op = vision.RandomResizeWithBBox(size=size)
+        dataset = dataset.map(input_columns=["image", "bbox"],
+                                output_columns=["image", "bbox"],
+                                operations=[test_op])
+        dataset = dataset.project(columns=["image", "bbox"])
+        for _ in dataset.create_dict_iterator(output_numpy=True):
+            pass
+
+    # Test RandomResizeWithBBox func no para
+    data_dir_voc = os.path.join(TEST_DATA_DATASET_FUNC, "testVOC2012_2")
+    dataset = ds.VOCDataset(data_dir_voc, task="Detection", usage="train", decode=True, shuffle=False)
+    with pytest.raises(TypeError, match="missing a required argument"):
+        test_op = vision.RandomResizeWithBBox()
+        dataset = dataset.map(input_columns=["image", "bbox"],
+                                output_columns=["image", "bbox"],
+                                operations=[test_op])
+        dataset = dataset.project(columns=["image", "bbox"])
+        for _ in dataset.create_dict_iterator(output_numpy=True):
+            pass
+
+    # Test RandomResizeWithBBox func more para
+    size = (500, 520)
+    more_para = None
+    with pytest.raises(TypeError, match="too many positional arguments"):
+        vision.RandomResizeWithBBox(size, more_para)
+
+    # Test input is 1-D
+    data_dir_voc = os.path.join(TEST_DATA_DATASET_FUNC, "testVOC2012_2")
+    dataset = ds.VOCDataset(data_dir_voc, task="Detection", usage="train", decode=False, shuffle=False)
+    size = (500, 520)
+    test_op = vision.RandomResizeWithBBox(size=size)
+    dataset = dataset.map(input_columns=["image", "bbox"], output_columns=["image", "bbox"],
+                          operations=[test_op])
+    dataset = dataset.project(columns=["image", "bbox"])
+    with pytest.raises(RuntimeError, match=" Invalid data, input image hasn't been decoded, "
+                                           "you may need to perform Decode first."):
+        for _ in zip(dataset.create_dict_iterator(output_numpy=True)):
+            pass
+
+
 if __name__ == "__main__":
     test_random_resize_with_bbox_op_voc_c(plot_vis=False)
     test_random_resize_with_bbox_op_rand_coco_c(plot_vis=False)
     test_random_resize_with_bbox_op_edge_c(plot_vis=False)
     test_random_resize_with_bbox_op_invalid_c()
     test_random_resize_with_bbox_op_bad_c()
+    test_random_resize_with_bbox_operation_01()
+    test_random_resize_with_bbox_exception_01()

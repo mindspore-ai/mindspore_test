@@ -1,4 +1,4 @@
-# Copyright 2020-2022 Huawei Technologies Co., Ltd
+# Copyright 2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,11 +17,12 @@ Testing ToType op in DE
 """
 import numpy as np
 import pytest
+import mindspore as ms
 import mindspore._c_dataengine as cde
 import mindspore.common.dtype as mstype
 import mindspore.dataset as ds
 import mindspore.dataset.transforms
-import mindspore.dataset.vision as vision
+import mindspore.dataset.vision.transforms as vision
 from mindspore import log as logger
 from mindspore.dataset.core.datatypes import nptype_to_detype
 from util import save_and_check_md5_pil
@@ -359,6 +360,91 @@ def test_np_to_de():
     assert nptype_to_detype(str) == cde.DataType("string")
 
 
+def test_to_type_operation_01():
+    """
+    Feature: ToType operation
+    Description: Testing the normal functionality of the ToType operator
+    Expectation: The Output is equal to the expected output
+    """
+    # ToType operation: np.float16, eager mode
+    image = np.random.randint(0, 255, (20, 30, 8)).astype(np.uint8)
+    totype_op = vision.ToType(np.float16)
+    out = totype_op(image)
+    assert out.dtype == "float16"
+
+    # ToType operation: np.float64 to ms.int16
+    image = np.random.randn(20, 30).astype(np.float64)
+    totype_op = vision.ToType(ms.int16)
+    out = totype_op(image)
+    assert out.dtype == "int16"
+
+    # ToType operation: int to bool
+    image = np.random.randint(-1000, 1000, (10, 6, 8, 5)).astype(np.int32)
+    totype_op = vision.ToType(np.bool_)
+    out = totype_op(image)
+    assert out.dtype == "bool"
+
+    # ToType operation: np.float64 to uint8
+    image = np.random.randn(50, )
+    totype_op = vision.ToType(ms.uint8)
+    out = totype_op(image)
+    assert out.dtype == "uint8"
+
+    # ToType operation: np.int64 to ms.int64
+    image = tuple(np.random.randn(5, 4, 8, 12, 3).astype(np.int64))
+    totype_op = vision.ToType(ms.int64)
+    out = totype_op(image)
+    assert out.dtype == "int64"
+
+    # ToType operation: input equals list
+    image = list(np.random.randn(100, 200).astype(np.int8))
+    totype_op = vision.ToType(int)
+    out = totype_op(image)
+    assert out.dtype in ["int64", "int32"]
+
+    # ToType operation: str t0 str
+    image = np.array(["1", "2", "3"])
+    totype_op = vision.ToType(ms.string)
+    totype_op(image)
+
+    # ToType operation: input equals 10.0
+    image = 10.0
+    totype_op = vision.ToType(np.int32)
+    out = totype_op(image)
+    assert out == 10
+
+
+def test_to_type_exception_01():
+    """
+    Feature: ToType operation
+    Description: Testing the ToType Operator in Exceptional Scenarios
+    Expectation: Throw an exception
+    """
+    # ToType operation: float to int
+    image = np.random.randn(100, 200)
+    image = vision.ToPIL()(image)
+    totype_op = vision.ToType(np.int32)
+    totype_op(image)
+
+    # ToType operation: Missing parameters
+    with pytest.raises(TypeError, match="missing a required argument: 'data_type'"):
+        vision.ToType()
+
+    # ToType operation: The parameter is a list
+    image = np.random.randn(100, 200).astype(np.float32)
+    with pytest.raises(TypeError, match="but got <class 'list'>."):
+        totype_op = vision.ToType([np.int32])
+        totype_op(image)
+
+    # ToType operation: The parameter is a int
+    with pytest.raises(TypeError, match="but got <class 'int'>."):
+        vision.ToType(1)
+
+    # ToType operation: The parameter is a str
+    with pytest.raises(TypeError, match="but got <class 'str'>."):
+        vision.ToType("number")
+
+
 if __name__ == "__main__":
     test_to_type_op()
     test_to_type_data_type()
@@ -370,3 +456,5 @@ if __name__ == "__main__":
     test_to_type_invalid_arg()
     test_to_type_errors()
     test_np_to_de()
+    test_to_type_operation_01()
+    test_to_type_exception_01()

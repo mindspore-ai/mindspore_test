@@ -1,4 +1,4 @@
-# Copyright 2020-2022 Huawei Technologies Co., Ltd
+# Copyright 2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,9 +15,13 @@
 """
 Testing the bounding box augment op in DE
 """
+import os
+import pytest
+
 import mindspore.log as logger
 import mindspore.dataset as ds
 import mindspore.dataset.vision as c_vision
+import mindspore.dataset.vision.transforms as v_trans
 
 from util import config_get_set_seed, config_get_set_num_parallel_workers, save_and_check_md5, \
     helper_perform_ops_bbox, helper_test_visual_bbox, helper_invalid_bounding_box_test, \
@@ -29,6 +33,20 @@ GENERATE_GOLDEN = False
 DATA_DIR = "../data/dataset/testVOC2012_2"
 DATA_DIR_2 = ["../data/dataset/testCOCO/train/",
               "../data/dataset/testCOCO/annotations/train.json"]  # DATA_DIR, ANNOTATION_DIR
+TEST_DATA_DATASET_FUNC ="../data/dataset/"
+
+
+def dir_data():
+    """Obtain the dataset"""
+    data_list = []
+    data_dir_voc = os.path.join(TEST_DATA_DATASET_FUNC,  "testVOC2012_2")
+    data_dir_coco = [os.path.join(TEST_DATA_DATASET_FUNC,  "testCOCO", "train"),
+                     os.path.join(TEST_DATA_DATASET_FUNC,  "testCOCO", "annotations", "train.json")]
+    data_dir_image = os.path.join(TEST_DATA_DATASET_FUNC,  "testImageNetData", "train")
+    data_list.append(data_dir_voc)
+    data_list.append(data_dir_coco)
+    data_list.append(data_dir_image)
+    return data_list
 
 
 def test_bounding_box_augment_with_rotation_op(plot_vis=False):
@@ -221,6 +239,132 @@ def test_bounding_box_augment_invalid_bounds_c():
     helper_invalid_bounding_box_test(DATA_DIR, test_op)
 
 
+def test_bounding_box_augment_operation_01():
+    """
+    Feature: BoundingBoxAugment operation
+    Description: Testing the normal functionality of the BoundingBoxAugment operator
+    Expectation: The Output is equal to the expected output
+    """
+    # BoundingBoxAugment Normal Functionality: transform parameter is RandomCrop
+    transform = v_trans.RandomCrop(50)
+    ratio = 0.9
+    dataset = ds.VOCDataset(dir_data()[0], task="Detection", usage="train", decode=True, shuffle=False)
+    test_op = v_trans.BoundingBoxAugment(transform=transform, ratio=ratio)
+    dataset = dataset.map(input_columns=["image", "bbox"],
+                          output_columns=["image", "bbox"],
+                          operations=[test_op])
+    dataset = dataset.project(columns=["image", "bbox"])
+    for _ in dataset.create_dict_iterator(output_numpy=True):
+        pass
+
+    # BoundingBoxAugment Normal Functionality: ratio is 1
+    transform = v_trans.RandomHorizontalFlip(0.8)
+    ratio = 1
+    dataset = ds.VOCDataset(dir_data()[0], task="Detection", usage="train", decode=True, shuffle=False)
+    test_op = v_trans.BoundingBoxAugment(transform=transform, ratio=ratio)
+    dataset = dataset.map(input_columns=["image", "bbox"],
+                          output_columns=["image", "bbox"],
+                          operations=[test_op])
+    dataset = dataset.project(columns=["image", "bbox"])
+    for _ in dataset.create_dict_iterator(output_numpy=True):
+        pass
+
+    # BoundingBoxAugment Normal Functionality: ratio is 0
+    transform = v_trans.RandomHorizontalFlip(0.8)
+    ratio = 0
+    dataset = ds.VOCDataset(dir_data()[0], task="Detection", usage="train", decode=True, shuffle=False)
+    test_op = v_trans.BoundingBoxAugment(transform=transform, ratio=ratio)
+    dataset = dataset.map(input_columns=["image", "bbox"],
+                          output_columns=["image", "bbox"],
+                          operations=[test_op])
+    dataset = dataset.project(columns=["image", "bbox"])
+    for _ in dataset.create_dict_iterator(output_numpy=True):
+        pass
+
+
+def test_bounding_box_augment_exception_01():
+    """
+    Feature: BoundingBoxAugment operation
+    Description: Testing the BoundingBoxAugment Operator in Exceptional Scenarios
+    Expectation: Throw an exception
+    """
+    # BoundingBoxAugment Exception Scenario: transform is a list
+    transform = [v_trans.RandomCrop(50), v_trans.RandomHorizontalFlip(0.8)]
+    ratio = 0.9
+    dataset = ds.VOCDataset(dir_data()[0], task="Detection", usage="train", decode=True, shuffle=False)
+    with pytest.raises(TypeError, match="Argument transform"):
+        test_op = v_trans.BoundingBoxAugment(transform=transform, ratio=ratio)
+        dataset = dataset.map(input_columns=["image", "bbox"],
+                              output_columns=["image", "bbox"],
+                              operations=[test_op])
+        dataset = dataset.project(columns=["image", "bbox"])
+        for _ in dataset.create_dict_iterator(output_numpy=True):
+            pass
+
+    # BoundingBoxAugment Exception Scenario: transform is ""
+    transform = ""
+    ratio = 0.9
+    dataset = ds.VOCDataset(dir_data()[0], task="Detection", usage="train", decode=True, shuffle=False)
+    with pytest.raises(TypeError, match="Argument transform"):
+        test_op = v_trans.BoundingBoxAugment(transform=transform, ratio=ratio)
+        dataset = dataset.map(input_columns=["image", "bbox"],
+                              output_columns=["image", "bbox"],
+                              operations=[test_op])
+        dataset = dataset.project(columns=["image", "bbox"])
+        for _ in dataset.create_dict_iterator(output_numpy=True):
+            pass
+
+    # BoundingBoxAugment Exception Scenario: ratio is 1.1
+    transform = v_trans.RandomHorizontalFlip(0.8)
+    ratio = 1.1
+    dataset = ds.VOCDataset(dir_data()[0], task="Detection", usage="train", decode=True, shuffle=False)
+    with pytest.raises(ValueError, match="Input ratio is not within the required interval"):
+        test_op = v_trans.BoundingBoxAugment(transform=transform, ratio=ratio)
+        dataset = dataset.map(input_columns=["image", "bbox"],
+                              output_columns=["image", "bbox"],
+                              operations=[test_op])
+        dataset = dataset.project(columns=["image", "bbox"])
+        for _ in dataset.create_dict_iterator(output_numpy=True):
+            pass
+
+    # BoundingBoxAugment Exception Scenario: ratio is -0.5
+    transform = v_trans.RandomHorizontalFlip(0.8)
+    ratio = -0.5
+    dataset = ds.VOCDataset(dir_data()[0], task="Detection", usage="train", decode=True, shuffle=False)
+    with pytest.raises(ValueError, match="Input ratio is not within the required interval"):
+        test_op = v_trans.BoundingBoxAugment(transform=transform, ratio=ratio)
+        dataset = dataset.map(input_columns=["image", "bbox"],
+                              output_columns=["image", "bbox"],
+                              operations=[test_op])
+        dataset = dataset.project(columns=["image", "bbox"])
+        for _ in dataset.create_dict_iterator(output_numpy=True):
+            pass
+
+    # BoundingBoxAugment Exception Scenario: ratio is ""
+    transform = v_trans.RandomHorizontalFlip(0.8)
+    ratio = ""
+    dataset = ds.VOCDataset(dir_data()[0], task="Detection", usage="train", decode=True, shuffle=False)
+    with pytest.raises(TypeError, match="Argument ratio"):
+        test_op = v_trans.BoundingBoxAugment(transform=transform, ratio=ratio)
+        dataset = dataset.map(input_columns=["image", "bbox"],
+                              output_columns=["image", "bbox"],
+                              operations=[test_op])
+        dataset = dataset.project(columns=["image", "bbox"])
+        for _ in dataset.create_dict_iterator(output_numpy=True):
+            pass
+
+    # BoundingBoxAugment Exception Scenario: No Parameters Passed
+    dataset = ds.VOCDataset(dir_data()[0], task="Detection", usage="train", decode=True, shuffle=False)
+    with pytest.raises(TypeError, match="missing a required argument"):
+        test_op = v_trans.BoundingBoxAugment()
+        dataset = dataset.map(input_columns=["image", "bbox"],
+                              output_columns=["image", "bbox"],
+                              operations=[test_op])
+        dataset = dataset.project(columns=["image", "bbox"])
+        for _ in dataset.create_dict_iterator(output_numpy=True):
+            pass
+
+
 if __name__ == "__main__":
     # set to false to not show plots
     test_bounding_box_augment_with_rotation_op(plot_vis=False)
@@ -230,3 +374,5 @@ if __name__ == "__main__":
     test_bounding_box_augment_valid_edge_c(plot_vis=False)
     test_bounding_box_augment_invalid_ratio_c()
     test_bounding_box_augment_invalid_bounds_c()
+    test_bounding_box_augment_operation_01()
+    test_bounding_box_augment_exception_01()

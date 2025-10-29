@@ -1,4 +1,4 @@
-# Copyright 2019-2022 Huawei Technologies Co., Ltd
+# Copyright 2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,15 +16,21 @@
 Testing Normalize op in DE
 """
 import numpy as np
+import os
+import pytest
 from PIL import Image
+
+import mindspore as ms
 import mindspore.dataset as ds
 import mindspore.dataset.transforms
-import mindspore.dataset.vision as vision
+import mindspore.dataset.vision.transforms as vision
+from mindspore.common.tensor import Tensor
 from mindspore import log as logger
 from util import diff_mse, save_and_check_md5, save_and_check_md5_pil, visualize_image
 
 DATA_DIR = ["../data/dataset/test_tf_file_3_images/train-0000-of-0001.data"]
 SCHEMA_DIR = "../data/dataset/test_tf_file_3_images/datasetSchema.json"
+TEST_DATA_DATASET_FUNC ="../data/dataset/"
 
 GENERATE_GOLDEN = False
 
@@ -520,6 +526,396 @@ def test_normalize_op_comp_chw():
         num_iter += 1
 
 
+def test_normalize_operation_01():
+    """
+    Feature: Normalize operation
+    Description: Testing the normal functionality of the Normalize operator
+    Expectation: The Output is equal to the expected output
+    """
+    # Normalize operator: Normal testing,
+    # The results are identical whether the offload parameter is set to True or False.
+    data_dir = os.path.join(TEST_DATA_DATASET_FUNC, "test_data", "testImageNetData", "train")
+    ms.set_seed(1)
+    meanr = 121.0
+    meang = 115.0
+    meanb = 100.0
+    stdr = 70
+    stdg = 68
+    stdb = 71
+    mean = (meanr, meang, meanb)
+    std = (stdr, stdg, stdb)
+    dataset1 = ds.ImageFolderDataset(data_dir, 1, shuffle=False, decode=True)
+    dataset2 = ds.ImageFolderDataset(data_dir, 1, shuffle=False, decode=True)
+    dataset1 = dataset1.map(input_columns=["image"], operations=vision.Normalize(mean=mean, std=std), offload=True)
+    dataset2 = dataset2.map(input_columns=["image"], operations=vision.Normalize(mean=mean, std=std), offload=False)
+    for data1, data2 in zip(dataset1.create_dict_iterator(output_numpy=True),
+                            dataset2.create_dict_iterator(output_numpy=True)):
+        image = data1["image"]
+        image_aug = data2["image"]
+        assert image.shape == image_aug.shape
+        assert np.allclose(image, image_aug)
+
+    # Normalize operator: Normal testing, mean is list
+    data_dir = os.path.join(TEST_DATA_DATASET_FUNC, "test_data", "testImageNetData", "train")
+    meanr = 121
+    meang = 115
+    meanb = 100
+    stdr = 70
+    stdg = 68
+    stdb = 71
+    mean = [meanr, meang, meanb]
+    std = (stdr, stdg, stdb)
+    dataset2 = ds.ImageFolderDataset(data_dir, 1, shuffle=False, decode=True)
+    dataset2 = dataset2.map(input_columns=["image"], operations=vision.Normalize(mean=mean, std=std))
+    for _ in dataset2.create_dict_iterator(output_numpy=True):
+        pass
+
+    # Normalize operator: Normal testing, std is tuple(int)
+    data_dir = os.path.join(TEST_DATA_DATASET_FUNC, "test_data", "testImageNetData", "train")
+    meanr = 121
+    meang = 115
+    meanb = 100
+    stdr = 70
+    stdg = 68
+    stdb = 70
+    mean = (meanr, meang, meanb)
+    std = (stdr, stdg, stdb)
+    dataset2 = ds.ImageFolderDataset(data_dir, 1, shuffle=False, decode=True)
+    dataset2 = dataset2.map(input_columns=["image"], operations=vision.Normalize(mean=mean, std=std))
+    for _ in dataset2.create_dict_iterator(output_numpy=True):
+        pass
+
+    # Normalize operator: Normal testing, std is tuple(float)
+    data_dir = os.path.join(TEST_DATA_DATASET_FUNC, "test_data", "testImageNetData", "train")
+    meanr = 121.0
+    meang = 115.0
+    meanb = 100.0
+    stdr = 70.0
+    stdg = 68.0
+    stdb = 71.0
+    mean = (meanr, meang, meanb)
+    std = (stdr, stdg, stdb)
+    dataset2 = ds.ImageFolderDataset(data_dir, 1, shuffle=False, decode=True)
+    dataset2 = dataset2.map(input_columns=["image"], operations=vision.Normalize(mean=mean, std=std))
+    for _ in dataset2.create_dict_iterator(output_numpy=True):
+        pass
+
+    # Normalize operator: Normal testing, mean and std are tuples of floats
+    data_dir = os.path.join(TEST_DATA_DATASET_FUNC, "test_data", "testImageNetData", "train")
+    meanr = 1.5
+    meang = 1.0
+    meanb = 0.3
+    stdr = 1.5
+    stdg = 1.0
+    stdb = 0.5
+    mean = (meanr, meang, meanb)
+    std = (stdr, stdg, stdb)
+    dataset2 = ds.ImageFolderDataset(data_dir, 1, shuffle=False, decode=True)
+    dataset2 = dataset2.map(input_columns=["image"], operations=vision.Normalize(mean=mean, std=std))
+    for _ in dataset2.create_dict_iterator(output_numpy=True):
+        pass
+
+
+def test_normalize_operation_02():
+    """
+    Feature: Normalize operation
+    Description: Testing the normal functionality of the Normalize operator
+    Expectation: The Output is equal to the expected output
+    """
+    # Normalize operator: Normal testing, std is list(int)
+    data_dir = os.path.join(TEST_DATA_DATASET_FUNC, "test_data", "testImageNetData", "train")
+    meanr = 121
+    meang = 115
+    meanb = 100
+    stdr = 70.0
+    stdg = 68
+    stdb = 71
+    mean = [meanr, meang, meanb]
+    std = [stdr, stdg, stdb]
+    dataset2 = ds.ImageFolderDataset(data_dir, 1, shuffle=False, decode=True)
+    dataset2 = dataset2.map(input_columns=["image"], operations=vision.Normalize(mean=mean, std=std))
+    for _ in dataset2.create_dict_iterator(output_numpy=True):
+        pass
+
+    # Normalize operator: Normal testing, input data is numpy <H,W,1>
+    mean = (255.0,)
+    std = (0.1,)
+    image = np.random.randn(100, 100, 1)
+    normalize_op = vision.Normalize(mean=mean, std=std)
+    out = normalize_op(image)
+    assert out.shape == (100, 100, 1)
+
+    # Normalize operator: Normal testing, input data is numpy <H,W,2>
+    mean = (255.0, 0.0)
+    std = (0.1, 1.2)
+    image = np.random.randn(100, 100, 2)
+    normalize_op = vision.Normalize(mean=mean, std=std)
+    out = normalize_op(image)
+    assert out.shape == (100, 100, 2)
+
+    # Normalize operator: Normal testing, input data is numpy <H,W,3>
+    mean = (255.0, 0.0, 255.0)
+    std = (0.1, 1.2, 0.2)
+    image = np.random.randn(100, 100, 3)
+    normalize_op = vision.Normalize(mean=mean, std=std)
+    out = normalize_op(image)
+    assert out.shape == (100, 100, 3)
+
+    # Normalize operator: Normal testing, input data is numpy <H,W,4>
+    mean = (255.0, 0.0, 255.0, 0.0)
+    std = (0.1, 1.2, 0.2, 1.2)
+    image = np.random.randn(100, 100, 4)
+    normalize_op = vision.Normalize(mean=mean, std=std, is_hwc=True)
+    out = normalize_op(image)
+    assert out.shape == (100, 100, 4)
+
+    # Normalize operator: Normal testing, input data is numpy <1,H,W>
+    mean = (255.0,)
+    std = (0.1,)
+    image = np.random.randn(1, 100, 100)
+    normalize_op = vision.Normalize(mean=mean, std=std, is_hwc=False)
+    out = normalize_op(image)
+    assert out.shape == (1, 100, 100)
+
+    # Normalize operator: Normal testing, input data is numpy <2,H,W>
+    mean = (255.0, 0.0)
+    std = (0.1, 1.2)
+    image = np.random.randn(2, 100, 100)
+    normalize_op = vision.Normalize(mean=mean, std=std, is_hwc=False)
+    out = normalize_op(image)
+    assert out.shape == (2, 100, 100)
+
+    # Normalize operator: Normal testing, input data is numpy <3,H,W>
+    mean = (255.0, 0.0, 255.0)
+    std = (0.1, 1.2, 0.2)
+    image = np.random.randn(3, 100, 100)
+    normalize_op = vision.Normalize(mean=mean, std=std, is_hwc=False)
+    out = normalize_op(image)
+
+    # Normalize operator: Normal testing, input data is numpy <4,H,W>
+    mean = (255.0, 0.0, 255.0, 0.0)
+    std = (0.1, 1.2, 0.2, 1.2)
+    image = np.random.randn(4, 100, 100)
+    normalize_op = vision.Normalize(mean=mean, std=std, is_hwc=False)
+    out = normalize_op(image)
+
+    # Normalize operator: Normal testing, The mean and standard deviation lengths are 1
+    mean = [50]
+    std = [32.0]
+    image = np.random.randn(64, 64, 64)
+    normalize_op = vision.Normalize(mean=mean, std=std)
+    normalize_op(image)
+
+
+def test_normalize_exception_01():
+    """
+    Feature: Normalize operation
+    Description: Testing the Normalize Operator in Exceptional Scenarios
+    Expectation: Throw an exception
+    """
+    # Normalize operator: Exception testing, The elements in the mean are -1.
+    meanr = -1
+    meang = 115
+    meanb = 100
+    stdr = 70
+    stdg = 68
+    stdb = 71
+    mean = (meanr, meang, meanb)
+    std = (stdr, stdg, stdb)
+    with pytest.raises(ValueError,
+                       match=r"Input mean\[0]\ is not within the required interval of \[0, 255\]."):
+        vision.Normalize(mean=mean, std=std)
+
+    # Normalize operator: Exception testing, Element type error in mean
+    meanr = ""
+    meang = 115
+    meanb = 100
+    stdr = 70
+    stdg = 68
+    stdb = 71
+    mean = (meanr, meang, meanb)
+    std = (stdr, stdg, stdb)
+    with pytest.raises(TypeError, match=r"Argument mean\[0\] with value \"\" is not of "
+                                        r"type \[<class 'int'>, <class 'float'>\], but got <class 'str'>."):
+        vision.Normalize(mean=mean, std=std)
+
+    # Normalize operator: Exception testing, The length of the mean does not match that of the standard deviation.
+    stdr = 70
+    stdg = 68
+    stdb = 71
+    mean = (100, 100)
+    std = (stdr, stdg, stdb)
+    with pytest.raises(ValueError,
+                       match="Length of mean and std must be equal"):
+        vision.Normalize(mean=mean, std=std)
+
+    # Normalize operator: Exception testing, The mean type is str
+    stdr = 70
+    stdg = 68
+    stdb = 71
+    mean = ""
+    std = (stdr, stdg, stdb)
+    with pytest.raises(TypeError,
+                       match='Argument mean with value "" is not of type'):
+        vision.Normalize(mean=mean, std=std)
+
+    # Normalize operator: Exception testing, The mean type is int
+    stdr = 70
+    stdg = 68
+    stdb = 71
+    mean = 1
+    std = (stdr, stdg, stdb)
+    with pytest.raises(TypeError,
+                       match="Argument mean with value 1 is not of type"):
+        vision.Normalize(mean=mean, std=std)
+
+    # Normalize operator: Exception testing, The element value in std is -1.
+    meanr = 121
+    meang = 115
+    meanb = 100
+    stdr = -1
+    stdg = 68
+    stdb = 71
+    mean = (meanr, meang, meanb)
+    std = (stdr, stdg, stdb)
+    with pytest.raises(ValueError,
+                       match=r"Input std\[0\] is not within the required interval of \(0, 255\]"):
+        vision.Normalize(mean=mean, std=std)
+
+    # Normalize operator: Exception testing, Element type error in std
+    meanr = 120
+    meang = 115
+    meanb = 100
+    stdr = ""
+    stdg = 68
+    stdb = 71
+    mean = (meanr, meang, meanb)
+    std = (stdr, stdg, stdb)
+    with pytest.raises(TypeError, match=r"Argument std\[0\] with value \"\" is not of "
+                                        r"type \[<class 'int'>, <class 'float'>\], but got <class 'str'>."):
+        vision.Normalize(mean=mean, std=std)
+
+    # Normalize operator: Exception testing, The std type is str
+    mean = (100, 100, 100)
+    std = ""
+    with pytest.raises(TypeError,
+                       match='Argument std with value "" is not of type'):
+        vision.Normalize(mean=mean, std=std)
+
+    # Normalize operator: Exception testing, The std type is int
+    mean = (100, 100, 100)
+    std = 1
+    with pytest.raises(TypeError,
+                       match="Argument std with value 1 is not of type"):
+        vision.Normalize(mean=mean, std=std)
+
+    # Normalize operator: Exception testing, No parameters passed
+    with pytest.raises(TypeError, match="missing a required argument"):
+        vision.Normalize()
+
+
+def test_normalize_exception_02():
+    """
+    Feature: Normalize operation
+    Description: Testing the Normalize Operator in Exceptional Scenarios
+    Expectation: Throw an exception
+    """
+    # Normalize operator: Exception testing, Missing mean parameter
+    with pytest.raises(TypeError, match="missing a required argument"):
+        vision.Normalize(std=(10, 10, 10))
+
+    # Normalize operator: Exception testing, Missing std parameter
+    with pytest.raises(TypeError, match="missing a required argument"):
+        vision.Normalize(mean=(10, 10, 10))
+
+    # Normalize operator: Exception testing, The element value in the mean is 255.1
+    mean = (255.1, 150.0, 126.4)
+    std = (0.6, 85.0, 122.0)
+    image = np.random.randn(64, 128, 3)
+    with pytest.raises(ValueError,
+                       match=r"Input mean\[0\] is not within the required interval of \[0, 255\]."):
+        normalize_op = vision.Normalize(mean=mean, std=std)
+        normalize_op(image)
+
+    # Normalize operator: Exception testing, The element value in the std is 0.0
+    image_file = os.path.join(TEST_DATA_DATASET_FUNC, "test_data", "testImageNetData",
+                              "train", "class1", "1_2.jpg")
+    mean = (56.0, 150.0, 126.4)
+    std = (0.0, 85.0, 122.0)
+    with Image.open(image_file) as image:
+        with pytest.raises(ValueError,
+                           match=r"Input std\[0\] is not within the required interval of \(0, 255\]."):
+            normalize_op = vision.Normalize(mean=mean, std=std)
+            normalize_op(image)
+
+    # Normalize operator: Exception testing, The mean and std do not match the number of input data channels
+    mean = (56.0, 150.0)
+    std = (85.0, 122.0)
+    image = np.random.randn(64, 128, 3)
+    with pytest.raises(RuntimeError,
+                       match="number of channels does not match the size of mean and std vectors."):
+        normalize_op = vision.Normalize(mean=mean, std=std)
+        normalize_op(image)
+
+    # Normalize operator: Exception testing, input data is numpy tolist()
+    mean = [56.0, 150.0, 60.0]
+    std = [85.0, 122.0, 80.0]
+    image = np.random.randn(64, 128, 3).tolist()
+    normalize_op = vision.Normalize(mean=mean, std=std)
+    with pytest.raises(TypeError, match="Input should be NumPy or PIL image, got <class 'list'>."):
+        normalize_op(image)
+
+    # Normalize operator: Exception testing, mean is ms.Tensor
+    mean = Tensor([56.0, 150.0, 100.0])
+    std = [85.0, 122.0, 80.0]
+    image = np.random.randn(64, 128, 3)
+    with pytest.raises(TypeError, match="is not of type "):
+        normalize_op = vision.Normalize(mean=mean, std=std)
+        normalize_op(image)
+
+    # Normalize operator: Exception testing, The mean and standard deviation lengths are inconsistent.
+    mean = [56.0, 150.0, 60.0]
+    std = [0.1, 0.8]
+    image = np.random.randn(64, 128, 3)
+    with pytest.raises(ValueError,
+                       match="Length of mean and std must be equal."):
+        normalize_op = vision.Normalize(mean=mean, std=std)
+        normalize_op(image)
+
+    # Normalize operator: Exception testing, Input data is 4-dimensional.
+    mean = [56.0, 150.0, 60.0]
+    std = [0.1, 0.8, 1.2]
+    image = np.random.randn(32, 32, 3, 3)
+    normalize_op = vision.Normalize(mean=mean, std=std)
+    output = normalize_op(image)
+    assert output.shape == (32, 32, 3, 3)
+
+    # Normalize operator: Exception testing, Input data is missing.
+    mean = [56.0, 150.0, 60.0]
+    std = [0.1, 0.8, 1.2]
+    with pytest.raises(RuntimeError, match="Input Tensor is not valid"):
+        normalize_op = vision.Normalize(mean=mean, std=std)
+        normalize_op()
+
+    # Normalize operator: Exception testing, Input data is 5-dimensional.
+    mean = [56.0, 150.0, 60.0]
+    std = [0.1, 0.8, 1.2]
+    image = np.random.randn(32, 32, 32, 3, 3)
+    normalize_op = vision.Normalize(mean=mean, std=std)
+    output = normalize_op(image)
+    assert output.shape == (32, 32, 32, 3, 3)
+
+    # Normalize operator: Exception testing, Input data is 1-dimensional.
+    mean = [56.0, 150.0, 60.0]
+    std = [0.1, 0.8, 1.2]
+    image = np.random.randn(3)
+    with pytest.raises(RuntimeError,
+                       match="Normalize: input tensor should have at least 2 dimensions, but got: 1"):
+        normalize_op = vision.Normalize(mean=mean, std=std)
+        normalize_op(image)
+
+
+
 if __name__ == "__main__":
     test_decode_op()
     test_decode_normalize_op()
@@ -541,3 +937,7 @@ if __name__ == "__main__":
     test_normalize_eager_hwc()
     test_normalize_eager_chw()
     test_normalize_op_comp_chw()
+    test_normalize_operation_01()
+    test_normalize_operation_02()
+    test_normalize_exception_01()
+    test_normalize_exception_02()

@@ -1,4 +1,4 @@
-# Copyright 2020-2022 Huawei Technologies Co., Ltd
+# Copyright 2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,17 +15,42 @@
 """
 Testing AutoContrast op in DE
 """
+import cv2
 import numpy as np
+import os
+import pytest
+from PIL import Image
+
 import mindspore.dataset as ds
 import mindspore.dataset.transforms
-import mindspore.dataset.vision as vision
+import mindspore.dataset.transforms.transforms as t_trans
+import mindspore.dataset.vision.transforms as vision
 from mindspore import log as logger
 from util import visualize_list, visualize_one_channel_dataset, diff_mse, save_and_check_md5, save_and_check_md5_pil
 
 DATA_DIR = "../data/dataset/testImageNetData/train/"
 MNIST_DATA_DIR = "../data/dataset/testMnistData"
+TEST_DATA_DATASET_FUNC ="../data/dataset/"
 
 GENERATE_GOLDEN = False
+
+
+def dir_data():
+    """Obtain the dataset"""
+    data_list = []
+    data_dir1 = os.path.join(TEST_DATA_DATASET_FUNC, "testImageNetData", "train")
+    data_dir2 = os.path.join(TEST_DATA_DATASET_FUNC, "testImageNetData", "train", "class1", "1_1.jpg")
+    data_dir3 = os.path.join(TEST_DATA_DATASET_FUNC, "test_data", "test_cv_image", "jpg.jpg")
+    data_dir4 = os.path.join(TEST_DATA_DATASET_FUNC, "test_data", "test_cv_image", "bmp.bmp")
+    data_dir5 = os.path.join(TEST_DATA_DATASET_FUNC, "test_data", "test_cv_image", "png.PNG")
+    data_dir6 = os.path.join(TEST_DATA_DATASET_FUNC, "test_data", "test_cv_image", "gif.gif")
+    data_list.append(data_dir1)
+    data_list.append(data_dir2)
+    data_list.append(data_dir3)
+    data_list.append(data_dir4)
+    data_list.append(data_dir5)
+    data_list.append(data_dir6)
+    return data_list
 
 
 def test_auto_contrast_py(plot=False):
@@ -386,6 +411,451 @@ def test_auto_contrast_invalid_cutoff_param_py():
             error)
 
 
+def test_auto_contrast_operation_01():
+    """
+    Feature: AutoContrast operation
+    Description: Testing the normal functionality of the AutoContrast operator
+    Expectation: The Output is equal to the expected output
+    """
+    # AutoContrast Normal Functions: Test Pipeline Mode
+    dataset2 = ds.ImageFolderDataset(dir_data()[0], shuffle=False)
+    cutoff = 10.0
+    ignore = [10, 20]
+    auto_contrast_op = [vision.Decode(to_pil=False), vision.AutoContrast(cutoff=cutoff, ignore=ignore)]
+    dataset2 = dataset2.map(input_columns=["image"], operations=auto_contrast_op)
+    for _ in dataset2.create_dict_iterator(output_numpy=True):
+        pass
+
+    # AutoContrast Normal Function: cutoff set to 0.0
+    dataset2 = ds.ImageFolderDataset(dir_data()[0], shuffle=False)
+    cutoff = 0.0
+    auto_contrast_op = [vision.Decode(to_pil=False), vision.AutoContrast(cutoff=cutoff)]
+    dataset2 = dataset2.map(input_columns=["image"], operations=auto_contrast_op)
+    for _ in dataset2.create_dict_iterator(output_numpy=True):
+        pass
+
+    # AutoContrast Normal Function: cutoff set to 49.99
+    dataset2 = ds.ImageFolderDataset(dir_data()[0], shuffle=False)
+    cutoff = 49.99
+    auto_contrast_op = [vision.Decode(to_pil=False), vision.AutoContrast(cutoff=cutoff)]
+    dataset2 = dataset2.map(input_columns=["image"], operations=auto_contrast_op)
+    for _ in dataset2.create_dict_iterator(output_numpy=True):
+        pass
+
+    # AutoContrast Normal Function: cutoff set to 10
+    dataset2 = ds.ImageFolderDataset(dir_data()[0], shuffle=False)
+    cutoff = 10
+    auto_contrast_op = [vision.Decode(to_pil=False), vision.AutoContrast(cutoff=cutoff)]
+    dataset2 = dataset2.map(input_columns=["image"], operations=auto_contrast_op)
+    for _ in dataset2.create_dict_iterator(output_numpy=True):
+        pass
+
+    # AutoContrast Normal Function: ignore set to 10
+    dataset2 = ds.ImageFolderDataset(dir_data()[0], shuffle=False)
+    cutoff = 10.0
+    ignore = 10
+    auto_contrast_op = [vision.Decode(to_pil=False), vision.AutoContrast(cutoff=cutoff, ignore=ignore)]
+    dataset2 = dataset2.map(input_columns=["image"], operations=auto_contrast_op)
+    for _ in dataset2.create_dict_iterator(output_numpy=True):
+        pass
+
+    # AutoContrast Normal Function: ignore set to 0
+    dataset2 = ds.ImageFolderDataset(dir_data()[0], shuffle=False)
+    cutoff = 10.0
+    ignore = 0
+    auto_contrast_op = [vision.Decode(to_pil=False), vision.AutoContrast(cutoff=cutoff, ignore=ignore)]
+    dataset2 = dataset2.map(input_columns=["image"], operations=auto_contrast_op)
+    for _ in dataset2.create_dict_iterator(output_numpy=True):
+        pass
+
+    # AutoContrast Normal Function: ignore set to 255
+    dataset2 = ds.ImageFolderDataset(dir_data()[0], shuffle=False)
+    cutoff = 10.0
+    ignore = 255
+    auto_contrast_op = [vision.Decode(to_pil=False), vision.AutoContrast(cutoff=cutoff, ignore=ignore)]
+    dataset2 = dataset2.map(input_columns=["image"], operations=auto_contrast_op)
+    for _ in dataset2.create_dict_iterator(output_numpy=True):
+        pass
+
+
+def test_auto_contrast_operation_02():
+    """
+    Feature: AutoContrast operation
+    Description: Testing the normal functionality of the AutoContrast operator
+    Expectation: The Output is equal to the expected output
+    """
+    # AutoContrast Normal Function: ignore set to (10, 20)
+    dataset = ds.ImageFolderDataset(dir_data()[0], shuffle=False)
+    cutoff = 10.0
+    ignore = (10, 20)
+    auto_contrast_op = [vision.Decode(to_pil=False), vision.AutoContrast(cutoff=cutoff, ignore=ignore)]
+    dataset = dataset.map(input_columns=["image"], operations=auto_contrast_op)
+    for _ in dataset.create_dict_iterator(output_numpy=True):
+        pass
+
+    # AutoContrast Normal Function: ignore set to [10, 20]
+    dataset = ds.ImageFolderDataset(dir_data()[0], shuffle=False)
+    cutoff = 10.0
+    ignore = [10, 20]
+    auto_contrast_op = [vision.Decode(to_pil=False), vision.AutoContrast(cutoff=cutoff, ignore=ignore)]
+    dataset = dataset.map(input_columns=["image"], operations=auto_contrast_op)
+    for _ in dataset.create_dict_iterator(output_numpy=True):
+        pass
+
+    # AutoContrast Normal Function: No parameters passed
+    dataset2 = ds.ImageFolderDataset(dir_data()[0], shuffle=False)
+    auto_contrast_op = [vision.Decode(to_pil=False), vision.AutoContrast()]
+    dataset2 = dataset2.map(input_columns=["image"], operations=auto_contrast_op)
+    for _ in dataset2.create_dict_iterator(output_numpy=True):
+        pass
+
+    # AutoContrast Normal Function: cutoff = 0.8, ignore = [0, 20, 15]
+    with Image.open(dir_data()[1]) as image:
+        cutoff = 8.8
+        ignore = [0, 20, 15]
+        auto_contrast_op = vision.AutoContrast(cutoff=cutoff, ignore=ignore)
+        _ = auto_contrast_op(image)
+
+    # AutoContrast normal function: cutoff set to 0.01, ignore set to None
+    image = cv2.imread(dir_data()[1])
+    cutoff = 0.01
+    ignore = None
+    auto_contrast_op = vision.AutoContrast(cutoff=cutoff, ignore=ignore)
+    _ = auto_contrast_op(image)
+
+    # AutoContrast Normal Function: cutoff set to 0, ignore set to 6
+    image = cv2.imread(dir_data()[1])
+    cutoff = 0
+    ignore = 6
+    auto_contrast_op = vision.AutoContrast(cutoff=cutoff, ignore=ignore)
+    _ = auto_contrast_op(image)
+
+    # AutoContrast Normal Function: cutoff set to 49.9, ignore set to (8, 255, 254, 0)
+    image = cv2.imread(dir_data()[1])
+    cutoff = 49.9
+    ignore = (8, 255, 254, 0)
+    auto_contrast_op = vision.AutoContrast(cutoff=cutoff, ignore=ignore)
+    _ = auto_contrast_op(image)
+
+    # AutoContrast normal function: ignore values are [11, 16]
+    image = cv2.imread(dir_data()[1])
+    ignore = [11, 16]
+    auto_contrast_op = vision.AutoContrast(ignore=ignore)
+    _ = auto_contrast_op(image)
+
+
+def test_auto_contrast_operation_03():
+    """
+    Feature: AutoContrast operation
+    Description: Testing the normal functionality of the AutoContrast operator
+    Expectation: The Output is equal to the expected output
+    """
+    # AutoContrast Normal Function: ignore set to 10
+    dataset = ds.ImageFolderDataset(dir_data()[0], shuffle=False)
+    cutoff = 10.0
+    ignore = 10
+    transforms = [
+        vision.Decode(to_pil=True),
+        vision.AutoContrast(cutoff=cutoff, ignore=ignore),
+        vision.ToTensor()
+    ]
+    transform = t_trans.Compose(transforms)
+    dataset = dataset.map(input_columns=["image"], operations=transform)
+    for _ in dataset.create_dict_iterator(output_numpy=True):
+        pass
+
+    # AutoContrast Normal Function: ignore set to (10, 20)
+    ds1 = ds.ImageFolderDataset(dir_data()[0], shuffle=False)
+    transforms = [
+        vision.Decode(to_pil=True),
+        vision.ToTensor()
+    ]
+    transform = t_trans.Compose(transforms)
+    ds1 = ds1.map(input_columns=["image"], operations=transform)
+
+    ds2 = ds.ImageFolderDataset(dir_data()[0], shuffle=False)
+    cutoff = 10.0
+    ignore = (10, 20)
+    transforms1 = [
+        vision.Decode(to_pil=True),
+        vision.AutoContrast(cutoff=cutoff, ignore=ignore),
+        vision.ToTensor()
+    ]
+    transform1 = t_trans.Compose(transforms1)
+    ds2 = ds2.map(input_columns=["image"], operations=transform1)
+
+    for _ in zip(ds1.create_dict_iterator(output_numpy=True), ds2.create_dict_iterator(output_numpy=True)):
+        pass
+
+    # AutoContrast Normal Function: ignore set to (100, 150, 200, 100, 255, 0)
+    with Image.open(dir_data()[2]) as image:
+        cutoff = 49
+        ignore = (100, 150, 200, 100, 255, 0)
+        auto_contrast_op = vision.AutoContrast(cutoff=cutoff, ignore=ignore)
+        out = auto_contrast_op(image)
+
+    # AutoContrast normal function: ignore.len is 100000
+    with Image.open(dir_data()[2]) as image:
+        cutoff = 38.653
+        ignore = np.random.randint(0, 255, (100000,)).astype(np.uint8).tolist()
+        auto_contrast_op = vision.AutoContrast(cutoff=cutoff, ignore=ignore)
+        out = auto_contrast_op(image)
+
+    # AutoContrast normal function: No parameters passed
+    with Image.open(dir_data()[2]) as image:
+        auto_contrast_op = vision.AutoContrast()
+        out = auto_contrast_op(image)
+        assert (np.array(image) == np.array(out)).all()
+
+
+def test_auto_contrast_exception_01():
+    """
+    Feature: AutoContrast operation
+    Description: Testing the AutoContrast Operator in Exceptional Scenarios
+    Expectation: Throw an exception
+    """
+    # AutoContrast Anomaly Scenario: cutoff set to 100.1
+    dataset2 = ds.ImageFolderDataset(dir_data()[0], shuffle=False)
+    cutoff = 100.1
+    with pytest.raises(ValueError, match="Input cutoff is not within the required interval"):
+        auto_contrast_op = [vision.Decode(to_pil=False), vision.AutoContrast(cutoff=cutoff)]
+        dataset2 = dataset2.map(input_columns=["image"], operations=auto_contrast_op)
+        for _ in dataset2.create_dict_iterator(output_numpy=True):
+            pass
+
+    # AutoContrast Anomaly Scenario: cutoff set to -0.1
+    dataset2 = ds.ImageFolderDataset(dir_data()[0], shuffle=False)
+    cutoff = -0.1
+    with pytest.raises(ValueError, match="Input cutoff is not within the required interval"):
+        auto_contrast_op = [vision.Decode(to_pil=False), vision.AutoContrast(cutoff=cutoff)]
+        dataset2 = dataset2.map(input_columns=["image"], operations=auto_contrast_op)
+        for _ in dataset2.create_dict_iterator(output_numpy=True):
+            pass
+
+    # AutoContrast Anomaly Scenario: cutoff set to [10.0]
+    dataset2 = ds.ImageFolderDataset(dir_data()[0], shuffle=False)
+    cutoff = [10.0]
+    with pytest.raises(TypeError, match="Argument cutoff"):
+        auto_contrast_op = [vision.Decode(to_pil=False), vision.AutoContrast(cutoff=cutoff)]
+        dataset2 = dataset2.map(input_columns=["image"], operations=auto_contrast_op)
+        for _ in dataset2.create_dict_iterator(output_numpy=True):
+            pass
+
+    # AutoContrast Anomaly Scenario: cutoff set to ""
+    dataset2 = ds.ImageFolderDataset(dir_data()[0], shuffle=False)
+    cutoff = ""
+    with pytest.raises(TypeError, match="Argument cutoff"):
+        auto_contrast_op = [vision.Decode(to_pil=False), vision.AutoContrast(cutoff=cutoff)]
+        dataset2 = dataset2.map(input_columns=["image"], operations=auto_contrast_op)
+        for _ in dataset2.create_dict_iterator(output_numpy=True):
+            pass
+
+    # AutoContrast Anomaly Scenario: ignore set to 256
+    dataset2 = ds.ImageFolderDataset(dir_data()[0], shuffle=False)
+    cutoff = 10.0
+    ignore = 256
+    with pytest.raises(ValueError, match="Input ignore is not within the required interval"):
+        auto_contrast_op = [vision.Decode(to_pil=False), vision.AutoContrast(cutoff=cutoff, ignore=ignore)]
+        dataset2 = dataset2.map(input_columns=["image"], operations=auto_contrast_op)
+        for _ in dataset2.create_dict_iterator(output_numpy=True):
+            pass
+
+    # AutoContrast Anomaly Scenario: ignore set to -1
+    dataset2 = ds.ImageFolderDataset(dir_data()[0], shuffle=False)
+    cutoff = 10.0
+    ignore = -1
+    with pytest.raises(ValueError, match="Input ignore is not within the required interval"):
+        auto_contrast_op = [vision.Decode(to_pil=False), vision.AutoContrast(cutoff=cutoff, ignore=ignore)]
+        dataset2 = dataset2.map(input_columns=["image"], operations=auto_contrast_op)
+        for _ in dataset2.create_dict_iterator(output_numpy=True):
+            pass
+
+    # AutoContrast Anomaly Scenario: ignore set to ""
+    dataset2 = ds.ImageFolderDataset(dir_data()[0], shuffle=False)
+    cutoff = 1.5
+    ignore = ""
+    with pytest.raises(TypeError, match="Argument ignore"):
+        auto_contrast_op = [vision.Decode(to_pil=False), vision.AutoContrast(cutoff=cutoff, ignore=ignore)]
+        dataset2 = dataset2.map(input_columns=["image"], operations=auto_contrast_op)
+        for _ in dataset2.create_dict_iterator(output_numpy=True):
+            pass
+
+
+def test_auto_contrast_exception_02():
+    """
+    Feature: AutoContrast operation
+    Description: Testing the AutoContrast Operator in Exceptional Scenarios
+    Expectation: Throw an exception
+    """
+    # AutoContrast Anomaly Scenario: Multiple Parameters Transmitted
+    dataset2 = ds.ImageFolderDataset(dir_data()[0], shuffle=False)
+    cutoff = 0.0
+    ignore = 0
+    more_para = None
+    with pytest.raises(TypeError, match="too many positional arguments"):
+        auto_contrast_op = [vision.Decode(to_pil=False), vision.AutoContrast(cutoff, ignore, more_para)]
+        dataset2 = dataset2.map(input_columns=["image"], operations=auto_contrast_op)
+        for _ in dataset2.create_dict_iterator(output_numpy=True):
+            pass
+
+    # AutoContrast Anomaly Scenario: cutoff set to -0.1, ignore range [11, 16]
+    image = cv2.imread(dir_data()[1])
+    cutoff = -0.1
+    ignore = [11, 16]
+    with pytest.raises(ValueError, match="Input cutoff is not within the required interval of"):
+        auto_contrast_op = vision.AutoContrast(cutoff=cutoff, ignore=ignore)
+        auto_contrast_op(image)
+
+    # AutoContrast Anomaly Scenario: cutoff set to 100.01, ignore set to [16]
+    image = cv2.imread(dir_data()[1])
+    cutoff = 100.01
+    ignore = [16]
+    with pytest.raises(ValueError, match="Input cutoff is not within the required interval of"):
+        auto_contrast_op = vision.AutoContrast(cutoff=cutoff, ignore=ignore)
+        auto_contrast_op(image)
+
+    # AutoContrast Anomaly Scenario: cutoff set to [10.0], ignore set to [16]
+    image = cv2.imread(dir_data()[1])
+    cutoff = [10.0]
+    ignore = [16]
+    with pytest.raises(TypeError, match="is not of type"):
+        auto_contrast_op = vision.AutoContrast(cutoff=cutoff, ignore=ignore)
+        auto_contrast_op(image)
+
+    # AutoContrast Anomaly Scenario: cutoff set to (8.2,), ignore set to [16]
+    image = cv2.imread(dir_data()[1])
+    cutoff = (8.2,)
+    ignore = [16]
+    with pytest.raises(TypeError, match="is not of type"):
+        auto_contrast_op = vision.AutoContrast(cutoff=cutoff, ignore=ignore)
+        auto_contrast_op(image)
+
+    # AutoContrast Anomaly Scenario: cutoff set to 8.2, ignore range [16.1, 8]
+    image = cv2.imread(dir_data()[1])
+    cutoff = 8.2
+    ignore = [16.1, 8]
+    with pytest.raises(TypeError, match="Argument item with value 16.1 is not of type"):
+        auto_contrast_op = vision.AutoContrast(cutoff=cutoff, ignore=ignore)
+        auto_contrast_op(image)
+
+    # AutoContrast Anomaly Scenario: cutoff set to 8.2, ignore set to -1
+    image = cv2.imread(dir_data()[1])
+    cutoff = 8.2
+    ignore = -1
+    with pytest.raises(ValueError, match="Input ignore is not within the required interval of"):
+        auto_contrast_op = vision.AutoContrast(cutoff=cutoff, ignore=ignore)
+        auto_contrast_op(image)
+
+    # AutoContrast Anomaly Scenarios: cutoff set to 20, ignore values set to (8, 255, 254, 0)
+    image = cv2.imread(dir_data()[1])
+    image = np.array(image).astype(np.float64)
+    cutoff = 20
+    ignore = (8, 255, 254, 0)
+    auto_contrast_op = vision.AutoContrast(cutoff=cutoff, ignore=ignore)
+    with pytest.raises(RuntimeError):
+        auto_contrast_op(image)
+
+    # AutoContrast Anomaly Scenario: ignore set to 256
+    ds2 = ds.ImageFolderDataset(dir_data()[0], shuffle=False)
+    with pytest.raises(ValueError, match="Input ignore is not within the required interval"):
+        ignore = 256
+        transforms1 = [
+            vision.Decode(to_pil=True),
+            vision.AutoContrast(ignore=ignore),
+            vision.ToTensor()
+        ]
+        transform1 = t_trans.Compose(transforms1)
+        ds2 = ds2.map(input_columns=["image"], operations=transform1)
+        for _ in ds2:
+            pass
+
+
+def test_auto_contrast_exception_03():
+    """
+    Feature: AutoContrast operation
+    Description: Testing the AutoContrast Operator in Exceptional Scenarios
+    Expectation: Throw an exception
+    """
+    # AutoContrast Anomaly Scenario: Multiple Parameters Passed
+    ds2 = ds.ImageFolderDataset(dir_data()[0], shuffle=False)
+    cutoff = 10.0
+    ignore = [10, 20]
+    more_para = None
+    with pytest.raises(TypeError, match="too many positional arguments"):
+        transforms1 = [
+            vision.Decode(to_pil=True),
+            vision.AutoContrast(cutoff, ignore, more_para),
+            vision.ToTensor()
+        ]
+        transform1 = t_trans.Compose(transforms1)
+        ds2 = ds2.map(input_columns=["image"], operations=transform1)
+
+        for _ in ds2.create_dict_iterator(output_numpy=True):
+            pass
+
+    # AutoContrast Anomaly Scenario: Input data is a PNG image
+    with Image.open(dir_data()[4]) as image:
+        auto_contrast_op = vision.AutoContrast()
+        with pytest.raises(OSError, match="not supported for .*"):
+            auto_contrast_op(image)
+
+    # AutoContrast Anomaly Scenario: Input data is a list
+    image = np.array(Image.open(dir_data()[4])).tolist()
+    auto_contrast_op = vision.AutoContrast()
+    with pytest.raises(TypeError, match="Input should be NumPy or PIL image, got <class 'list'>."):
+        auto_contrast_op(image)
+
+    # AutoContrast Anomaly Scenario: cutoff set to -1
+    cutoff = -1
+    with pytest.raises(ValueError, match="Input cutoff is not within the required interval of \\[0, 50\\)."):
+        vision.AutoContrast(cutoff=cutoff)
+
+    # AutoContrast Anomaly Scenario: cutoff set to -100.1
+    cutoff = 100.1
+    with pytest.raises(ValueError, match="Input cutoff is not within the required interval of \\[0, 50\\)."):
+        vision.AutoContrast(cutoff=cutoff)
+
+    # AutoContrast Anomaly Scenario: cutoff set to [20]
+    cutoff = [20]
+    with pytest.raises(TypeError,
+                       match="Argument cutoff with value \\[20\\] is not of type \\[<class 'int'>, <class 'float'>\\]"):
+        vision.AutoContrast(cutoff=cutoff)
+
+    # AutoContrast Anomaly Scenario: cutoff set to True
+    cutoff = True
+    with pytest.raises(TypeError,
+                       match="Argument cutoff with value True is not of type \\(<class 'int'>, <class 'float'>\\)"):
+        vision.AutoContrast(cutoff=cutoff)
+
+    # AutoContrast Anomaly Scenario: ignore set to {5, 6}
+    cutoff = 10
+    ignore = {5, 6}
+    with pytest.raises(TypeError, match="Argument ignore with value {5, 6} is not of type \\[<class"
+                                        " 'list'>, <class 'tuple'>, <class 'int'>\\]."):
+        vision.AutoContrast(cutoff=cutoff, ignore=ignore)
+
+    # AutoContrast Anomaly Scenario: ignore set to -1
+    cutoff = 10
+    ignore = -1
+    with pytest.raises(ValueError, match="Input ignore is not within the required interval of \\[0, 255\\]."):
+        vision.AutoContrast(cutoff=cutoff, ignore=ignore)
+
+    # AutoContrast Anomaly Scenario: ignore set to 20.6
+    cutoff = 10
+    ignore = 20.6
+    with pytest.raises(TypeError, match="Argument ignore with value 20.6 is not of "
+                                        "type \\[<class 'list'>, <class 'tuple'>, <class 'int'>\\]."):
+        vision.AutoContrast(cutoff=cutoff, ignore=ignore)
+
+    # AutoContrast Anomaly Scenario: ignore set to True
+    cutoff = 10
+    ignore = True
+    with pytest.raises(TypeError, match="Argument ignore with value True is not of "
+                                        "type \\(<class 'list'>, <class 'tuple'>, <class 'int'>\\)."):
+        vision.AutoContrast(cutoff=cutoff, ignore=ignore)
+
+
+
 if __name__ == "__main__":
     test_auto_contrast_py(plot=True)
     test_auto_contrast_c(plot=True)
@@ -395,3 +865,9 @@ if __name__ == "__main__":
     test_auto_contrast_invalid_ignore_param_py()
     test_auto_contrast_invalid_cutoff_param_c()
     test_auto_contrast_invalid_cutoff_param_py()
+    test_auto_contrast_operation_01()
+    test_auto_contrast_operation_02()
+    test_auto_contrast_operation_03()
+    test_auto_contrast_exception_01()
+    test_auto_contrast_exception_02()
+    test_auto_contrast_exception_03()

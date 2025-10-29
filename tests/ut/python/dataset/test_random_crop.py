@@ -1,4 +1,4 @@
-# Copyright 2019-2022 Huawei Technologies Co., Ltd
+# Copyright 2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,14 +15,17 @@
 """
 Testing RandomCrop op in DE
 """
+import cv2
 import numpy as np
+import os
 import pytest
 from PIL import Image
 
-import mindspore.dataset.transforms as ops
-import mindspore.dataset.vision as vision
-import mindspore.dataset.vision.utils as mode
 import mindspore.dataset as ds
+import mindspore.dataset.transforms as ops
+import mindspore.dataset.vision.transforms as vision
+import mindspore.dataset.vision.utils as mode
+from mindspore.dataset.vision import Border
 from mindspore import log as logger
 from util import save_and_check_md5, save_and_check_md5_pil, visualize_list, config_get_set_seed, \
     config_get_set_num_parallel_workers, diff_mse
@@ -31,6 +34,21 @@ GENERATE_GOLDEN = False
 
 DATA_DIR = ["../data/dataset/test_tf_file_3_images/train-0000-of-0001.data"]
 SCHEMA_DIR = "../data/dataset/test_tf_file_3_images/datasetSchema.json"
+TEST_DATA_DATASET_FUNC ="../data/dataset/"
+
+DATA_DIR_1 = os.path.join(TEST_DATA_DATASET_FUNC, "testImageNetData", "train")
+image_file = os.path.join(TEST_DATA_DATASET_FUNC, "testImageNetData", "train", "class1", "1_1.jpg")
+image_bmp = os.path.join(TEST_DATA_DATASET_FUNC, "test_data", "test_cv_image", "bmp.bmp")
+image_png = os.path.join(TEST_DATA_DATASET_FUNC, "test_data", "test_cv_image", "png.PNG")
+image_gif = os.path.join(TEST_DATA_DATASET_FUNC, "test_data", "test_cv_image", "gif.gif")
+
+
+def generator_mc(maxid=3, h=500, w=500):
+    """ Multi-column generator function as callable input """
+
+    image = np.random.randn(h, w, 3)
+    for _ in range(maxid):
+        yield image, image, image, image, image
 
 
 def test_random_crop_op_c(plot=False):
@@ -662,6 +680,653 @@ def test_random_crop_high_dimensions():
         assert shape[-1] == original_channel
 
 
+def test_random_crop_operation_01():
+    """
+    Feature: RandomCrop operation
+    Description: Testing the normal functionality of the RandomCrop operator
+    Expectation: The Output is equal to the expected output
+    """
+    # When the parameter size is 1, the RandomCrop interface call succeeds.
+    dataset = ds.ImageFolderDataset(DATA_DIR_1, shuffle=False, decode=True)
+    size = 1
+    random_crop_op = vision.RandomCrop(size=size)
+    dataset = dataset.map(input_columns=["image"], operations=random_crop_op)
+    for _ in dataset.create_dict_iterator(output_numpy=True):
+        pass
+
+    # When the parameter size is (400, 600), the RandomCrop interface call succeeds.
+    source = generator_mc
+    column_names = ["image1", "image2", "image3", "image4", "image5"]
+    dataset = ds.GeneratorDataset(source, column_names)
+    size = (400, 600)
+    padding = (100, 100, 100, 100)
+    pad_if_needed = True
+    random_crop_op = vision.RandomCrop(size=size, padding=padding, pad_if_needed=pad_if_needed)
+    dataset = dataset.map(input_columns=["image1", "image2", "image3", "image4", "image5"], operations=random_crop_op)
+    image_data = []
+    for data in dataset.create_dict_iterator(output_numpy=True):
+        image_data.append(data["image1"])
+        assert (data["image1"] == data["image2"]).all()
+        assert (data["image1"] == data["image3"]).all()
+        assert (data["image1"] == data["image4"]).all()
+        assert (data["image1"] == data["image5"]).all()
+    assert (image_data[0] != image_data[1]).any()
+    assert (image_data[0] != image_data[2]).any()
+    assert (image_data[1] != image_data[2]).any()
+
+    # When the parameter size is [500, 520], the RandomCrop interface call succeeds.
+    dataset = ds.ImageFolderDataset(DATA_DIR_1, shuffle=False, decode=True)
+    size = [500, 520]
+    random_crop_op = vision.RandomCrop(size=size)
+    dataset = dataset.map(input_columns=["image"], operations=random_crop_op)
+    for _ in dataset.create_dict_iterator(output_numpy=True):
+        pass
+
+    # When the parameter padding is [1, 1, 1, 1], the RandomCrop interface call succeeds.
+    dataset = ds.ImageFolderDataset(DATA_DIR_1, shuffle=False, decode=True)
+    size = (500, 520)
+    padding = [1, 1, 1, 1]
+    fill_value = 0
+    random_crop_op = vision.RandomCrop(size=size, padding=padding, fill_value=fill_value)
+    dataset = dataset.map(input_columns=["image"], operations=random_crop_op)
+    for _ in dataset.create_dict_iterator(output_numpy=True):
+        pass
+
+    # When the parameter "pad_if_needed" is set to True, the RandomCrop interface call succeeds.
+    dataset = ds.ImageFolderDataset(DATA_DIR_1, shuffle=False, decode=True)
+    size = 3000
+    padding = 100
+    pad_if_needed = True
+    fill_value = (255, 255, 255)
+    padding_mode = mode.Border.CONSTANT
+    random_crop_op = vision.RandomCrop(size=size, padding=padding, pad_if_needed=pad_if_needed,
+                                      fill_value=fill_value,
+                                      padding_mode=padding_mode)
+    dataset = dataset.map(input_columns=["image"], operations=random_crop_op)
+    for _ in dataset.create_dict_iterator(output_numpy=True):
+        pass
+
+    # When the input image format is PNG, the RandomCrop interface call succeeds.
+    with Image.open(image_png) as image:
+        size = 10000
+        padding = 0
+        pad_if_needed = True
+        fill_value = 0
+        padding_mode = Border.CONSTANT
+        random_crop_op = vision.RandomCrop(size=size, padding=padding, pad_if_needed=pad_if_needed,
+                                          fill_value=fill_value, padding_mode=padding_mode)
+        _ = random_crop_op(image)
+
+
+def test_random_crop_operation_02():
+    """
+    Feature: RandomCrop operation
+    Description: Testing the normal functionality of the RandomCrop operator
+    Expectation: The Output is equal to the expected output
+    """
+    # When the input image format is GIF, the RandomCrop interface call succeeds.
+    with Image.open(image_gif).convert("RGB") as image:
+        size = 1
+        padding = 2000
+        pad_if_needed = False
+        fill_value = 255
+        padding_mode = Border.CONSTANT
+        random_crop_op = vision.RandomCrop(size=size, padding=padding, pad_if_needed=pad_if_needed,
+                                          fill_value=fill_value, padding_mode=padding_mode)
+        _ = random_crop_op(image)
+
+    # When no padding parameter is specified, the RandomCrop interface call succeeds.
+    dataset = ds.ImageFolderDataset(DATA_DIR_1, shuffle=False, decode=True)
+    size = 3000
+    pad_if_needed = True
+    fill_value = (255, 255, 255)
+    padding_mode = mode.Border.CONSTANT
+    random_crop_op = vision.RandomCrop(size=size, pad_if_needed=pad_if_needed, fill_value=fill_value,
+                                      padding_mode=padding_mode)
+    dataset = dataset.map(input_columns=["image"], operations=random_crop_op)
+    for _ in dataset.create_dict_iterator(output_numpy=True):
+        pass
+
+    # When no padding parameter is specified, the RandomCrop interface call succeeds.
+    dataset = ds.ImageFolderDataset(DATA_DIR_1, shuffle=False, decode=True)
+    size = 300
+    padding = 100
+    fill_value = (255, 255, 255)
+    padding_mode = mode.Border.CONSTANT
+    random_crop_op = vision.RandomCrop(size=size, padding=padding, fill_value=fill_value, padding_mode=padding_mode)
+    dataset = dataset.map(input_columns=["image"], operations=random_crop_op)
+    for _ in dataset.create_dict_iterator(output_numpy=True):
+        pass
+
+    # When no fill_value parameter is provided, the RandomCrop interface call succeeds.
+    dataset = ds.ImageFolderDataset(DATA_DIR_1, shuffle=False, decode=True)
+    size = 3000
+    padding = (100, 100, 100, 100)
+    pad_if_needed = True
+    padding_mode = mode.Border.CONSTANT
+    random_crop_op = vision.RandomCrop(size=size, padding=padding, pad_if_needed=pad_if_needed,
+                                      padding_mode=padding_mode)
+    dataset = dataset.map(input_columns=["image"], operations=random_crop_op)
+    for _ in dataset.create_dict_iterator(output_numpy=True):
+        pass
+
+    # When the padding_mode parameter is omitted, the RandomCrop interface call succeeds.
+    dataset = ds.ImageFolderDataset(DATA_DIR_1, shuffle=False, decode=True)
+    size = 3000
+    padding = (100, 100, 100, 100)
+    pad_if_needed = True
+    fill_value = (255, 255, 255)
+    random_crop_op = vision.RandomCrop(size=size, padding=padding, pad_if_needed=pad_if_needed, fill_value=fill_value)
+    dataset = dataset.map(input_columns=["image"], operations=random_crop_op)
+    for _ in dataset.create_dict_iterator(output_numpy=True):
+        pass
+
+    # When the parameter size is 600, the RandomCrop interface call succeeds.
+    with Image.open(image_file) as image:
+        size = 600
+        padding = 100
+        pad_if_needed = True
+        fill_value = 250
+        padding_mode = Border.CONSTANT
+        random_crop_op = vision.RandomCrop(size=size, padding=padding, pad_if_needed=pad_if_needed,
+                                          fill_value=fill_value, padding_mode=padding_mode)
+        _ = random_crop_op(image, image)
+
+    # The parameter size is (2500, 2000), and pad_if_needed is True.
+    image = np.random.randn(560, 560)
+    size = (2500, 2000)
+    padding = (300, 400)
+    pad_if_needed = True
+    fill_value = (100, 50, 128)
+    padding_mode = Border.CONSTANT
+    random_crop_op = vision.RandomCrop(size=size, padding=padding, pad_if_needed=pad_if_needed, fill_value=fill_value,
+                                      padding_mode=padding_mode)
+    _ = random_crop_op(image)
+
+
+def test_random_crop_operation_03():
+    """
+    Feature: RandomCrop operation
+    Description: Testing the normal functionality of the RandomCrop operator
+    Expectation: The Output is equal to the expected output
+    """
+    # The parameter size is (600, 700), which is smaller than the input shape. pad_if_needed is set to False.
+    image = np.random.randint(0, 255, (800, 700, 3)).astype(np.uint8)
+    image2 = np.random.randint(0, 255, (800, 700)).astype(np.float32)
+    size = (600, 700)
+    padding = (100, 200, 300, 400)
+    pad_if_needed = False
+    fill_value = 0
+    padding_mode = Border.CONSTANT
+    random_crop_op = vision.RandomCrop(size=size, padding=padding, pad_if_needed=pad_if_needed, fill_value=fill_value,
+                                      padding_mode=padding_mode)
+    out = random_crop_op(image, image, image2)
+    assert (out[0] == out[1]).all()
+    assert out[2].shape == (600, 700)
+
+    # The parameter size equals the input image dimensions plus padding.
+    image = cv2.imread(image_file)
+    size = [1884, 1168]
+    padding = [50, 200, 400, 800]
+    pad_if_needed = False
+    fill_value = 0
+    padding_mode = Border.EDGE
+    random_crop_op = vision.RandomCrop(size=size, padding=padding, pad_if_needed=pad_if_needed, fill_value=fill_value,
+                                      padding_mode=padding_mode)
+    _ = random_crop_op(image)
+
+    # The parameter size[0] equals image.shape[0] plus padding[0] plus padding[1].
+    with Image.open(image_file) as image:
+        size = [1184, 1018]
+        padding = [100, 200]
+        pad_if_needed = True
+        fill_value = 0
+        padding_mode = Border.CONSTANT
+        random_crop_op = vision.RandomCrop(size=size, padding=padding, pad_if_needed=pad_if_needed,
+                                          fill_value=fill_value, padding_mode=padding_mode)
+        _ = random_crop_op(image)
+
+    # The padding parameter has only one value. If the size is smaller than the input image dimensions plus padding.
+    image = np.random.randint(0, 255, (658, 714, 1)).astype(np.uint8)
+    size = 800
+    padding = 300
+    pad_if_needed = True
+    fill_value = 0
+    padding_mode = Border.SYMMETRIC
+    random_crop_op = vision.RandomCrop(size=size, padding=padding, pad_if_needed=pad_if_needed, fill_value=fill_value,
+                                      padding_mode=padding_mode)
+    _ = random_crop_op(image)
+
+    # The parameter size is greater than the input image dimensions plus padding, with pad_if_needed set to true.
+    with Image.open(image_file) as image:
+        size = 10000
+        padding = 0
+        pad_if_needed = True
+        fill_value = 0
+        padding_mode = Border.CONSTANT
+        random_crop_op = vision.RandomCrop(size=size, padding=padding, pad_if_needed=pad_if_needed,
+                                          fill_value=fill_value, padding_mode=padding_mode)
+        _ = random_crop_op(image)
+
+    # When the parameter size is 1 and padding is 2000, the RandomCrop interface call succeeds.
+    with Image.open(image_file) as image:
+        size = 1
+        padding = 2000
+        pad_if_needed = False
+        fill_value = 255
+        padding_mode = Border.CONSTANT
+        random_crop_op = vision.RandomCrop(size=size, padding=padding, pad_if_needed=pad_if_needed,
+                                          fill_value=fill_value, padding_mode=padding_mode)
+        _ = random_crop_op(image)
+
+    # In eager mode, when the parameter size is 710, the RandomCrop interface call succeeds.
+    with Image.open(image_file) as image:
+        size = 710
+        random_crop_op = vision.RandomCrop(size=size)
+        _ = random_crop_op(image)
+
+    # When input data is converted to a PIL image, the RandomCrop interface call succeeds.
+    image = np.random.randint(0, 255, (658, 714, 3)).astype(np.uint8)
+    image = vision.ToPIL()(image)
+    size = (600, 70)
+    padding = (100, 200, 300, 400)
+    pad_if_needed = False
+    fill_value = 0
+    padding_mode = Border.CONSTANT
+    random_crop_op = vision.RandomCrop(size=size, padding=padding, pad_if_needed=pad_if_needed,
+                                      fill_value=fill_value, padding_mode=padding_mode)
+    _ = random_crop_op(image)
+
+
+def test_random_crop_operation_04():
+    """
+    Feature: RandomCrop operation
+    Description: Testing the normal functionality of the RandomCrop operator
+    Expectation: The Output is equal to the expected output
+    """
+    # The parameter size[0] equals image.shape[0] plus padding[0] plus padding[1].
+    with Image.open(image_bmp) as image:
+        size = [333, 128]
+        padding = [100, 200]
+        pad_if_needed = False
+        fill_value = 0
+        padding_mode = Border.EDGE
+        random_crop_op = vision.RandomCrop(size=size, padding=padding, pad_if_needed=pad_if_needed,
+                                          fill_value=fill_value, padding_mode=padding_mode)
+        _ = random_crop_op(image)
+
+    # When the input image is in PNG format, the RandomCrop interface call succeeds.
+    with Image.open(image_png) as image:
+        size = [10, 200]
+        padding = [100, 200]
+        pad_if_needed = False
+        fill_value = 0
+        padding_mode = Border.REFLECT
+        random_crop_op = vision.RandomCrop(size=size, padding=padding, pad_if_needed=pad_if_needed,
+                                          fill_value=fill_value, padding_mode=padding_mode)
+        _ = random_crop_op(image)
+
+    # When the input image format is GIF, the RandomCrop interface call succeeds.
+    with Image.open(image_gif) as image:
+        size = [500, 400]
+        padding = [100, 200]
+        pad_if_needed = False
+        fill_value = 0
+        padding_mode = Border.SYMMETRIC
+        random_crop_op = vision.RandomCrop(size=size, padding=padding, pad_if_needed=pad_if_needed,
+                                          fill_value=fill_value,
+                                          padding_mode=padding_mode)
+        _ = random_crop_op(image)
+
+
+def test_random_crop_exception_01():
+    """
+    Feature: RandomCrop operation
+    Description: Testing the RandomCrop Operator in Exceptional Scenarios
+    Expectation: Throw an exception
+    """
+    # When the size parameter is 0, the RandomCrop interface call fails.
+    size = 0
+    with pytest.raises(ValueError, match="Input is not within the required interval"):
+        vision.RandomCrop(size=size)
+
+    # When the parameter size exceeds 16777216, the RandomCrop interface call fails.
+    size = 16777217
+    with pytest.raises(ValueError, match="Input is not within the required interval"):
+        vision.RandomCrop(size=size)
+
+    # When the parameter size is a 3-tuple, the RandomCrop interface call fails.
+    size = (500, 500, 520)
+    with pytest.raises(TypeError, match="Size should be a single integer or a list/tuple"):
+        vision.RandomCrop(size=size)
+
+    # When the size parameter is empty, the RandomCrop interface call fails.
+    size = ""
+    with pytest.raises(TypeError, match="Argument size"):
+        vision.RandomCrop(size=size)
+
+    # When the padding parameter is negative, the RandomCrop interface call fails.
+    size = (500, 520)
+    padding = -1
+    with pytest.raises(ValueError, match="Input padding is not within the required interval"):
+        vision.RandomCrop(size=size, padding=padding)
+
+    # When the padding parameter exceeds the maximum value, the RandomCrop interface call fails.
+    size = (500, 520)
+    padding = 21474836488
+    with pytest.raises(ValueError,
+                       match=r"Input padding is not within the required interval of \[0, 2147483647\]."):
+        vision.RandomCrop(size=size, padding=padding)
+
+    # When the padding parameter is a 3-tuple, the RandomCrop interface call fails.
+    size = (500, 520)
+    padding = (1, 1, 1)
+    with pytest.raises(ValueError, match="The size of the padding list or tuple should be 2 or 4."):
+        vision.RandomCrop(size=size, padding=padding)
+
+    # When the padding parameter is empty, the RandomCrop interface call fails.
+    size = (500, 520)
+    padding = ""
+    with pytest.raises(TypeError, match="Argument padding"):
+        vision.RandomCrop(size=size, padding=padding)
+
+    # The parameter size is larger than the image dimensions, and pad_if_needed is set to False.
+    dataset = ds.ImageFolderDataset(DATA_DIR_1, shuffle=False, decode=True)
+    size = 3000
+    padding = 100
+    pad_if_needed = False
+    with pytest.raises(RuntimeError,
+                       match="RandomCrop: invalid crop size, crop size is bigger than the image dimensions."):
+        random_crop_op = vision.RandomCrop(size=size, padding=padding, pad_if_needed=pad_if_needed)
+        dataset = dataset.map(input_columns=["image"], operations=random_crop_op)
+        for _ in dataset.create_dict_iterator(output_numpy=True):
+            pass
+
+    # When the parameter "pad_if_needed" is empty, the RandomCrop interface call fails.
+    size = 3000
+    padding = 100
+    pad_if_needed = ""
+    with pytest.raises(TypeError, match="Argument pad_if_needed"):
+        vision.RandomCrop(size=size, padding=padding, pad_if_needed=pad_if_needed)
+
+    # When the fill_value parameter is set to 256, the RandomCrop interface call fails.
+    size = 3000
+    padding = 100
+    pad_if_needed = True
+    fill_value = 256
+    with pytest.raises(ValueError, match="Input fill_value is not within the required interval"):
+        vision.RandomCrop(size=size, padding=padding, pad_if_needed=pad_if_needed, fill_value=fill_value)
+
+    # When the fill_value parameter is a list, the RandomCrop interface call fails.
+    size = 3000
+    padding = 100
+    pad_if_needed = True
+    fill_value = [255, 255, 255]
+    with pytest.raises(TypeError, match="fill_value should be a single integer or a 3-tuple."):
+        vision.RandomCrop(size=size, padding=padding, pad_if_needed=pad_if_needed, fill_value=fill_value)
+
+    # When the fill_value parameter is a float, the RandomCrop interface call fails.
+    size = 3000
+    padding = 100
+    pad_if_needed = True
+    fill_value = 1.5
+    with pytest.raises(TypeError, match="fill_value should be a single integer or a 3-tuple."):
+        vision.RandomCrop(size=size, padding=padding, pad_if_needed=pad_if_needed, fill_value=fill_value)
+
+
+def test_random_crop_exception_02():
+    """
+    Feature: RandomCrop operation
+    Description: Testing the RandomCrop Operator in Exceptional Scenarios
+    Expectation: Throw an exception
+    """
+    # When the parameter "padding_mode" is empty, the RandomCrop interface call fails.
+    size = 3000
+    padding = 100
+    pad_if_needed = True
+    fill_value = (255, 255, 255)
+    padding_mode = ""
+    with pytest.raises(TypeError, match="Argument padding_mode"):
+        vision.RandomCrop(size=size, padding=padding, pad_if_needed=pad_if_needed, fill_value=fill_value,
+                          padding_mode=padding_mode)
+
+    # When no size parameter is provided, the RandomCrop interface call fails.
+    padding = (100, 100, 100, 100)
+    pad_if_needed = True
+    fill_value = (255, 255, 255)
+    padding_mode = mode.Border.CONSTANT
+    with pytest.raises(TypeError, match="missing a required argument"):
+        vision.RandomCrop(padding=padding, pad_if_needed=pad_if_needed, fill_value=fill_value,
+                          padding_mode=padding_mode)
+
+    # When setting redundant parameters, the RandomCrop interface call fails.
+    size = 3000
+    padding = 100
+    pad_if_needed = True
+    fill_value = (255, 255, 255)
+    padding_mode = mode.Border.CONSTANT
+    more_para = None
+    with pytest.raises(TypeError, match="too many positional arguments"):
+        vision.RandomCrop(size, padding, pad_if_needed, fill_value, padding_mode, more_para)
+
+    # When input data is 4-dimensional, the RandomCrop interface call fails.
+    image = np.random.randint(0, 255, (658, 714, 3, 3)).astype(np.uint8)
+    size = (500, 500)
+    random_crop_op = vision.RandomCrop(size=size)
+    with pytest.raises(RuntimeError,
+                       match=r"RandomCrop: invalid crop size, crop size is bigger than the image dimensions, "
+                             r"got crop height: 500, crop width: 500"):
+        random_crop_op(image)
+
+    # When input data is 1-dimensional, the RandomCrop interface call fails.
+    image = np.random.randint(0, 255, (658,)).astype(np.uint8)
+    size = (500, 500)
+    random_crop_op = vision.RandomCrop(size=size)
+    with pytest.raises(RuntimeError,
+                       match="RandomCropOp: input tensor should have at least 2 dimensions, but got: 1"):
+        random_crop_op(image)
+
+    # When the size parameter is a float, the RandomCrop interface call fails.
+    size = 500.5
+    with pytest.raises(TypeError, match=("Argument size with value 500.5 is not of type \\[<class "
+                                         "'int'>, <class 'list'>, <class 'tuple'>\\].")):
+        vision.RandomCrop(size=size)
+
+    # When the size parameter is a NumPy array, the RandomCrop interface call fails.
+    size = np.array([500, 500])
+    with pytest.raises(TypeError, match=("Argument size with value \\[500 500\\] is not of "
+                                         "type \\[<class 'int'>, <class 'list'>, <class 'tuple'>\\].")):
+        vision.RandomCrop(size=size)
+
+    # When the parameter size is greater than 2, the RandomCrop interface call fails.
+    size = [500, 500, 500]
+    with pytest.raises(TypeError, match="Size should be a single integer or a list/tuple \\(h, w\\) of length 2."):
+        vision.RandomCrop(size=size)
+
+    # When the size parameter is not set, the RandomCrop interface call fails.
+    with pytest.raises(TypeError, match="missing a required argument: 'size'"):
+        vision.RandomCrop()
+
+    # When the parameter size exceeds 16777216, the RandomCrop interface call fails.
+    size = (2147483647, 500)
+    with pytest.raises(ValueError, match="Input is not within the required interval of \\[1, 16777216\\]."):
+        vision.RandomCrop(size=size)
+
+    # When the parameter padding exceeds 2147483647, the RandomCrop interface call fails.
+    size = 500
+    padding = 2147483648
+    with pytest.raises(ValueError, match="Input padding is not within the required interval of \\[0, 2147483647\\]."):
+        vision.RandomCrop(size=size, padding=padding)
+
+    # When the parameter "padding" is a list containing only one value, the RandomCrop interface call fails.
+    size = 500
+    padding = [100]
+    with pytest.raises(ValueError, match="The size of the padding list or tuple should be 2 or 4."):
+        vision.RandomCrop(size=size, padding=padding)
+
+
+def test_random_crop_exception_03():
+    """
+    Feature: RandomCrop operation
+    Description: Testing the RandomCrop Operator in Exceptional Scenarios
+    Expectation: Throw an exception
+    """
+    # When the padding parameter is a list containing three values, the RandomCrop interface call fails.
+    size = 500
+    padding = [100, 100, 100]
+    with pytest.raises(ValueError, match="The size of the padding list or tuple should be 2 or 4."):
+        vision.RandomCrop(size=size, padding=padding)
+
+    # When the padding parameter is a float, the RandomCrop interface call fails.
+    size = 500
+    padding = [100.0, 100]
+    with pytest.raises(TypeError,
+                       match="Argument padding\\[0\\] with value 100.0 is not of type \\[<class 'int'>\\]."):
+        vision.RandomCrop(size=size, padding=padding)
+
+    # When the padding parameter is set to 5 values, the RandomCrop interface call fails.
+    size = 500
+    padding = [100, 100, 100, 100, 100]
+    with pytest.raises(ValueError, match="The size of the padding list or tuple should be 2 or 4."):
+        vision.RandomCrop(size=size, padding=padding)
+
+    # When the parameter "padding" is set to "set", the RandomCrop interface call fails.
+    size = 500
+    padding = {100}
+    with pytest.raises(TypeError, match=("Argument padding with value \\{100\\} is not of type \\[<class "
+                                         "'tuple'>, <class 'list'>, <class 'numbers.Number'>\\].")):
+        vision.RandomCrop(size=size, padding=padding)
+
+    # When the padding parameter is a numpy array, the RandomCrop interface call fails.
+    size = 500
+    padding = np.array([100, 100])
+    with pytest.raises(TypeError, match=("Argument padding with value \\[100 100\\] is not of type \\[<class "
+                                         "'tuple'>, <class 'list'>, <class 'numbers.Number'>\\].")):
+        vision.RandomCrop(size=size, padding=padding)
+
+    # When the parameter "pad_if_needed" is set to 0, the RandomCrop interface call fails.
+    size = 500
+    padding = [100, 100]
+    pad_if_needed = 0
+    with pytest.raises(TypeError, match="Argument pad_if_needed with value 0 is not of type"):
+        vision.RandomCrop(size=size, padding=padding, pad_if_needed=pad_if_needed)
+
+    # When the parameter "pad_if_needed" is a list, the RandomCrop interface call fails.
+    size = 500
+    padding = [100, 100]
+    pad_if_needed = [True]
+    with pytest.raises(TypeError, match="Argument pad_if_needed with value \\[True\\] is not of type"):
+        vision.RandomCrop(size=size, padding=padding, pad_if_needed=pad_if_needed)
+
+    # When the parameter "pad_if_needed" is a string, the RandomCrop interface call fails.
+    size = 500
+    padding = [100, 100]
+    pad_if_needed = "True"
+    with pytest.raises(TypeError, match="Argument pad_if_needed with value True is not of type"):
+        vision.RandomCrop(size=size, padding=padding, pad_if_needed=pad_if_needed)
+
+    # When the parameter "fill_value" is a list, the RandomCrop interface call fails.
+    size = 500
+    fill_value = [120, 150, 148]
+    with pytest.raises(TypeError, match="fill_value should be a single integer or a 3-tuple."):
+        vision.RandomCrop(size=size, fill_value=fill_value)
+
+    # When the length of the fill_value parameter exceeds 3, the RandomCrop interface call fails.
+    size = 500
+    fill_value = (120, 150, 150, 168)
+    with pytest.raises(TypeError, match="fill_value should be a single integer or a 3-tuple."):
+        vision.RandomCrop(size=size, fill_value=fill_value)
+
+    # When the parameter "fill_value" is a float, the RandomCrop interface call fails.
+    size = 500
+    fill_value = 100.5
+    with pytest.raises(TypeError, match="fill_value should be a single integer or a 3-tuple."):
+        vision.RandomCrop(size=size, fill_value=fill_value)
+
+    # When the fill_value parameter is negative, the RandomCrop interface call fails.
+    size = 500
+    fill_value = -1
+    with pytest.raises(ValueError, match="Input fill_value is not within the required interval of \\[0, 255\\]."):
+        vision.RandomCrop(size=size, fill_value=fill_value)
+
+    # When the fill_value parameter exceeds 255, the RandomCrop interface call fails.
+    size = 500
+    fill_value = (256, 88, 132)
+    with pytest.raises(ValueError, match=r"Input fill_value\[0\] is not within the required interval of \[0, 255\]."):
+        vision.RandomCrop(size=size, fill_value=fill_value)
+
+    # When the fill_value parameter is a 1-tuple, the RandomCrop interface call fails.
+    size = 500
+    fill_value = (200,)
+    with pytest.raises(TypeError, match="fill_value should be a single integer or a 3-tuple."):
+        vision.RandomCrop(size=size, fill_value=fill_value)
+
+    # When the parameter "padding_mode" is set to 0, the RandomCrop interface call fails.
+    size = 500
+    padding_mode = 0
+    with pytest.raises(TypeError, match="Argument padding_mode with value 0 is not of type \\[<enum 'Border'>\\]."):
+        vision.RandomCrop(size=size, padding_mode=padding_mode)
+
+
+def test_random_crop_exception_04():
+    """
+    Feature: RandomCrop operation
+    Description: Testing the RandomCrop Operator in Exceptional Scenarios
+    Expectation: Throw an exception
+    """
+    # When the parameter "padding_mode" is set to "string", the RandomCrop interface call fails.
+    size = 500
+    padding_mode = "Border.CONSTANT"
+    with pytest.raises(TypeError,
+                       match="Argument padding_mode with value Border.CONSTANT is not of type \\[<enum 'Border'>\\]"):
+        vision.RandomCrop(size=size, padding_mode=padding_mode)
+
+    # When the parameter "padding_mode" is a list, the RandomCrop interface call fails.
+    size = 500
+    padding_mode = [Border.CONSTANT]
+    with pytest.raises(TypeError, match=("Argument padding_mode with value \\[<Border.CONSTANT: 'constant'>\\] "
+                                         "is not of type \\[<enum 'Border'>\\].")):
+        vision.RandomCrop(size=size, padding_mode=padding_mode)
+
+    # When the input data shape differs, the RandomCrop interface call fails.
+    image = np.random.randint(0, 255, (658, 714, 3)).astype(np.uint8)
+    image2 = np.random.randint(0, 255, (800,)).astype(np.uint8)
+    size = (600, 700)
+    random_crop_op = vision.RandomCrop(size=size)
+    with pytest.raises(RuntimeError, match="RandomCropOp: input tensor should have at least 2 dimensions, but got: 1"):
+        random_crop_op(image, image2)
+
+    # The input image's shape is not <H, W> or <H, W, C>. The RandomCrop interface call failed.
+    image = np.random.randint(0, 255, (658, 714, 3)).astype(np.uint8)
+    size = (600, 700)
+    random_crop_op = vision.RandomCrop(size=size)
+    with pytest.raises(RuntimeError, match="RandomCropOp: input tensor should have at least 2 dimensions, but got: 0"):
+        random_crop_op(np.array(10), image)
+
+    # When input data is a list, the RandomCrop interface call fails.
+    image = np.random.randint(0, 255, (658, 714, 3)).astype(np.uint8).tolist()
+    size = 200
+    random_crop_op = vision.RandomCrop(size=size)
+    with pytest.raises(TypeError, match="Input should be NumPy or PIL image, got <class 'list'>."):
+        random_crop_op(image)
+
+    # When the input channel is not 3, the RandomCrop interface call fails.
+    image = np.random.randint(0, 255, (658, 714, 4)).astype(np.uint8)
+    size = (600, 700)
+    random_crop_op = vision.RandomCrop(size=size)
+    with pytest.raises(RuntimeError, match=r"Pad: the channel of image tensor does not match "
+                                           r"the requirement of operator. Expecting tensor in channel of \(1, 3\). "
+                                           r"But got channel 4."):
+        random_crop_op(image)
+
+    # When the padding parameter is set to 1.5, the RandomCrop interface call fails.
+    size = (500, 520)
+    padding = 1.5
+    with pytest.raises(TypeError, match="Argument padding with value 1.5 is not of type "
+                                        "\\[<class 'int'>\\], but got <class 'float'>."):
+        vision.RandomCrop(size=size, padding=padding)
+
+
 if __name__ == "__main__":
     test_random_crop_01_c()
     test_random_crop_02_c()
@@ -686,3 +1351,11 @@ if __name__ == "__main__":
     test_random_crop_comp(True)
     test_random_crop_09_c()
     test_random_crop_high_dimensions()
+    test_random_crop_operation_01()
+    test_random_crop_operation_02()
+    test_random_crop_operation_03()
+    test_random_crop_operation_04()
+    test_random_crop_exception_01()
+    test_random_crop_exception_02()
+    test_random_crop_exception_03()
+    test_random_crop_exception_04()

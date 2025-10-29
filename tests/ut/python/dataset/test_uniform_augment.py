@@ -1,4 +1,4 @@
-# Copyright 2020-2022 Huawei Technologies Co., Ltd
+# Copyright 2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,15 +16,30 @@
 Testing UniformAugment in DE
 """
 import numpy as np
+import os
+import platform
 import pytest
+from PIL import Image
 
 import mindspore.dataset as ds
 import mindspore.dataset.transforms
-import mindspore.dataset.vision as vision
+import mindspore.dataset.vision.transforms as vision
 from mindspore import log as logger
 from util import visualize_list, diff_mse, config_get_set_seed
 
 DATA_DIR = "../data/dataset/testImageNetData/train/"
+TEST_DATA_DATASET_FUNC ="../data/dataset/"
+
+
+image_jpg = os.path.join(TEST_DATA_DATASET_FUNC, "test_data", "test_cv_image", "jpg.jpg")
+image_bmp = os.path.join(TEST_DATA_DATASET_FUNC, "test_data", "test_cv_image", "bmp.bmp")
+image_png = os.path.join(TEST_DATA_DATASET_FUNC, "test_data", "test_cv_image", "png.PNG")
+image_gif = os.path.join(TEST_DATA_DATASET_FUNC, "test_data", "test_cv_image", "gif.gif")
+
+
+def py_func(x):
+    '''Python custom methods'''
+    return x
 
 
 def test_uniform_augment_callable(num_ops=2):
@@ -389,6 +404,171 @@ def test_cpp_uniform_augment_random_crop_badinput(num_ops=1):
     assert "map operation: [UniformAugment] failed." in str(error_info.value)
 
 
+def test_uniform_augment_operation_01():
+    """
+    Feature: UniformAugment operation
+    Description: Testing the normal functionality of the UniformAugment operator
+    Expectation: The Output is equal to the expected output
+    """
+    # UniformAugment: Handling Operator Redundancy
+    dataset = ds.ImageFolderDataset(DATA_DIR, shuffle=False, decode=True)
+    transforms = [vision.RandomHorizontalFlip(),
+                  vision.RandomColorAdjust(),
+                  vision.RandomColorAdjust(),
+                  vision.RandomRotation(degrees=45),
+                  vision.RandomRotation(degrees=45)]
+    ua_op = vision.UniformAugment(transforms=transforms, num_ops=2)
+    dataset = dataset.map(input_columns=["image"], operations=ua_op)
+    for _ in dataset.create_dict_iterator(output_numpy=True):
+        pass
+
+    # UniformAugment: num_ops equals the number of operators processed
+    dataset = ds.ImageFolderDataset(DATA_DIR, shuffle=False, decode=True)
+    transforms = [vision.RandomHorizontalFlip(),
+                  vision.RandomColorAdjust(),
+                  vision.RandomColorAdjust(),
+                  vision.RandomRotation(degrees=45)]
+    ua_op = vision.UniformAugment(transforms=transforms, num_ops=4)
+    dataset = dataset.map(input_columns=["image"], operations=ua_op)
+    for _ in dataset.create_dict_iterator(output_numpy=True):
+        pass
+
+    # UniformAugment: Processing operators are Python-side operators.
+    dataset = ds.ImageFolderDataset(DATA_DIR, shuffle=False)
+    transforms = [vision.RandomHorizontalFlip(0.5),
+                  vision.RandomHorizontalFlip(0.5)]
+    ua_op = vision.UniformAugment(transforms=transforms, num_ops=2)
+    dataset = dataset.map(input_columns=["image"], operations=vision.Decode(to_pil=True))
+    dataset = dataset.map(input_columns=["image"], operations=ua_op)
+    for _ in dataset.create_dict_iterator(output_numpy=True):
+        pass
+
+    # UniformAugment: Eager mode, input is Pillow
+    image = Image.open(image_jpg)
+    transforms = [vision.RandomRotation((45, 45)), vision.RandomVerticalFlip(), vision.RandomColorAdjust(),
+                  vision.RandomRotation((90, 90))]
+    num_ops = 3
+    ua_op = vision.UniformAugment(transforms, num_ops)
+    _ = ua_op(image)
+
+    # UniformAugment: Eager mode, input is a NumPy array
+    image = np.random.randint(0, 255, (464, 464, 3)).astype(np.uint8)
+    transforms = (vision.RandomVerticalFlip(),)
+    num_ops = 1
+    ua_op = vision.UniformAugment(transforms, num_ops)
+    ua_op(image)
+
+
+def test_uniform_augment_exception_01():
+    """
+    Feature: UniformAugment operation
+    Description: Testing the UniformAugment Operator in Exceptional Scenarios
+    Expectation: Throw an exception
+    """
+    # UniformAugment: Abnormal Testing, transforms are empty
+    transforms = []
+    with pytest.raises(ValueError, match="num_ops is greater than transforms list size."):
+        vision.UniformAugment(transforms=transforms, num_ops=2)
+
+    # UniformAugment: Abnormal Testing, The transforms parameter is a string.
+    transforms = "12345"
+    with pytest.raises(TypeError, match="Argument transforms list with value 12345 is not of type \\[<class"
+                                        " 'list'>, <class 'tuple'>\\], but got <class 'str'>."):
+        vision.UniformAugment(transforms=transforms, num_ops=2)
+
+    # UniformAugment: Abnormal Testing, num_ops is greater than the length of transforms
+    transforms = [vision.RandomHorizontalFlip(),
+                  vision.RandomColorAdjust(),
+                  vision.RandomColorAdjust(),
+                  vision.RandomRotation(degrees=45)]
+    with pytest.raises(ValueError, match="num_ops is greater than transforms list size."):
+        vision.UniformAugment(transforms=transforms, num_ops=5)
+
+    # UniformAugment: Abnormal Testing, num_ops equals 0
+    transforms = [vision.RandomHorizontalFlip(),
+                  vision.RandomColorAdjust(),
+                  vision.RandomColorAdjust(),
+                  vision.RandomRotation(degrees=45)]
+    with pytest.raises(ValueError, match="Input num_ops must be greater than 0."):
+        vision.UniformAugment(transforms=transforms, num_ops=0)
+
+    # UniformAugment: Abnormal Testing, num_ops equals 2.1
+    transforms = [vision.RandomHorizontalFlip(),
+                  vision.RandomColorAdjust(),
+                  vision.RandomColorAdjust(),
+                  vision.RandomRotation(degrees=45)]
+    with pytest.raises(TypeError, match="Argument num_ops with value 2.1 is not of type \\[<class"
+                                        " 'int'>\\], but got <class 'float'>."):
+        vision.UniformAugment(transforms=transforms, num_ops=2.1)
+
+    # UniformAugment: Abnormal Testing, num_ops equals ""
+    transforms = [vision.RandomHorizontalFlip(),
+                  vision.RandomColorAdjust(),
+                  vision.RandomColorAdjust(),
+                  vision.RandomRotation(degrees=45)]
+    with pytest.raises(TypeError, match="is not of type \\[<class 'int'>\\], but got <class 'str'>."):
+        vision.UniformAugment(transforms=transforms, num_ops="")
+
+    # UniformAugment: Abnormal Testing, transforms equals int
+    image = np.random.randint(0, 255, (464, 464, 3)).astype(np.uint8)
+    with pytest.raises(TypeError, match="object of type 'int' has no len\\(\\)"):
+        ua_op = vision.UniformAugment(1)
+        ua_op(image)
+
+    # UniformAugment: Abnormal Testing, Multi-parameter
+    transforms = [vision.RandomHorizontalFlip(),
+                  vision.RandomColorAdjust(),
+                  vision.RandomColorAdjust(),
+                  vision.RandomRotation(degrees=45)]
+    num_ops = 1
+    more_para = None
+    with pytest.raises(TypeError, match="too many positional arguments"):
+        vision.UniformAugment(transforms, num_ops, more_para)
+
+    # UniformAugment: Abnormal Testing, input equals list
+    ds.config.set_seed(10)
+    image = 1
+    transforms = [vision.RandomColorAdjust((1, 10.4), 0.2, (0, 10.8), (-0.5, 0.5))]
+    num_ops = 1
+    ua_op = vision.UniformAugment(transforms, num_ops)
+    if platform.system() == "Linux":
+        with pytest.raises(RuntimeError):
+            ua_op(image)
+    else:
+        ua_op(image)
+
+    # UniformAugment: Abnormal Testing, Transforms are two-dimensional.
+    transforms = [[vision.AutoContrast()],
+                  [vision.Invert()]]
+    num_ops = 2
+    with pytest.raises(TypeError, match="transforms\\[0\\] is neither a transforms"
+                                        " op \\(TensorOperation\\) nor a callable pyfunc."):
+        vision.UniformAugment(transforms, num_ops)
+
+    # UniformAugment: Abnormal Testing, Transforms are one-dimensional.
+    transforms = [vision.AutoContrast(), vision.Invert(), 1]
+    num_ops = 1
+    with pytest.raises(TypeError, match="transforms\\[2\\] is neither a transforms"
+                                        " op \\(TensorOperation\\) nor a callable pyfunc."):
+        vision.UniformAugment(transforms, num_ops)
+
+    # UniformAugment: Abnormal Testing, num_ops equals list
+    transforms = [vision.AutoContrast(), vision.Invert()]
+    num_ops = [1]
+    with pytest.raises(TypeError, match="Argument num_ops with value \\[1\\] is not of type \\[<class 'int'>\\]."):
+        vision.UniformAugment(transforms, num_ops)
+
+    # UniformAugment: Abnormal Testing, transforms equals operator
+    transforms = vision.AutoContrast()
+    num_ops = 1
+    with pytest.raises(TypeError, match="object of type 'AutoContrast' has no len\\(\\)"):
+        vision.UniformAugment(transforms, num_ops)
+
+    # UniformAugment: Abnormal Testing, transforms equals custom operators
+    transforms = [vision.RandomVerticalFlip(), py_func]
+    vision.UniformAugment(transforms, 1)
+
+
 if __name__ == "__main__":
     test_uniform_augment_callable()
     test_uniform_augment_callable_pil()
@@ -401,3 +581,5 @@ if __name__ == "__main__":
     test_cpp_uniform_augment_exception_nonpositive_numops(num_ops=0)
     test_cpp_uniform_augment_exception_float_numops(num_ops=2.5)
     test_cpp_uniform_augment_random_crop_badinput(num_ops=1)
+    test_uniform_augment_operation_01()
+    test_uniform_augment_exception_01()

@@ -1,4 +1,4 @@
-# Copyright 2020-2022 Huawei Technologies Co., Ltd
+# Copyright 2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,10 +16,12 @@
 Testing the MixUpBatch op in DE
 """
 import numpy as np
+import os
 import pytest
 import mindspore.dataset as ds
-import mindspore.dataset.vision as vision
-import mindspore.dataset.transforms as transforms
+import mindspore.dataset.transforms.transforms as t_trans
+import mindspore.dataset.vision.transforms as vision
+from mindspore.dataset.vision import Inter as v_Inter
 from mindspore import log as logger
 from util import save_and_check_md5, diff_mse, visualize_list, config_get_set_seed, \
     config_get_set_num_parallel_workers
@@ -27,6 +29,7 @@ from util import save_and_check_md5, diff_mse, visualize_list, config_get_set_se
 DATA_DIR = "../data/dataset/testCifar10Data"
 DATA_DIR2 = "../data/dataset/testImageNetData2/train/"
 DATA_DIR3 = "../data/dataset/testCelebAData/"
+TEST_DATA_DATASET_FUNC ="../data/dataset/"
 
 GENERATE_GOLDEN = False
 
@@ -53,7 +56,7 @@ def test_mixup_batch_success1(plot=False):
     # MixUp Images
     data1 = ds.Cifar10Dataset(DATA_DIR, num_samples=10, shuffle=False)
 
-    one_hot_op = transforms.OneHot(num_classes=10)
+    one_hot_op = t_trans.OneHot(num_classes=10)
     data1 = data1.map(operations=one_hot_op, input_columns=["label"])
     mixup_batch_op = vision.MixUpBatch(2)
     data1 = data1.batch(5, drop_remainder=True)
@@ -102,7 +105,7 @@ def test_mixup_batch_success2(plot=False):
     decode_op = vision.Decode()
     data1 = data1.map(operations=[decode_op], input_columns=["image"])
 
-    one_hot_op = transforms.OneHot(num_classes=10)
+    one_hot_op = t_trans.OneHot(num_classes=10)
     data1 = data1.map(operations=one_hot_op, input_columns=["label"])
 
     mixup_batch_op = vision.MixUpBatch(2.0)
@@ -147,7 +150,7 @@ def test_mixup_batch_success3(plot=False):
     # MixUp Images
     data1 = ds.Cifar10Dataset(DATA_DIR, num_samples=10, shuffle=False)
 
-    one_hot_op = transforms.OneHot(num_classes=10)
+    one_hot_op = t_trans.OneHot(num_classes=10)
     data1 = data1.map(operations=one_hot_op, input_columns=["label"])
     mixup_batch_op = vision.MixUpBatch()
     data1 = data1.batch(5, drop_remainder=True)
@@ -196,7 +199,7 @@ def test_mixup_batch_success4(plot=False):
     decode_op = vision.Decode()
     data1 = data1.map(operations=[decode_op], input_columns=["image"])
 
-    one_hot_op = transforms.OneHot(num_classes=100)
+    one_hot_op = t_trans.OneHot(num_classes=100)
     data1 = data1.map(operations=one_hot_op, input_columns=["attr"])
 
     mixup_batch_op = vision.MixUpBatch()
@@ -232,7 +235,7 @@ def test_mixup_batch_md5():
     # MixUp Images
     data = ds.Cifar10Dataset(DATA_DIR, num_samples=10, shuffle=False)
 
-    one_hot_op = transforms.OneHot(num_classes=10)
+    one_hot_op = t_trans.OneHot(num_classes=10)
     data = data.map(operations=one_hot_op, input_columns=["label"])
     mixup_batch_op = vision.MixUpBatch()
     data = data.batch(5, drop_remainder=True)
@@ -256,8 +259,8 @@ def test_mixup_batch_float_label():
 
     image = np.random.randint(0, 255, (3, 28, 28, 1), dtype=np.uint8)
     label = np.random.randint(0, 5, (3, 1))
-    decode_label = transforms.OneHot(5)(label)
-    float_label = transforms.TypeCast(float)(decode_label)
+    decode_label = t_trans.OneHot(5)(label)
+    float_label = t_trans.TypeCast(float)(decode_label)
     _, mix_label = vision.MixUpBatch()(image, float_label)
     expected_label = np.array([[0., 0.8252811, 0., 0., 0.1747189],
                                [0., 0., 0., 0., 1.],
@@ -276,7 +279,7 @@ def test_mixup_batch_then_cut_mix_batch():
     original_seed = config_get_set_seed(1)
 
     dataset = ds.Cifar10Dataset(DATA_DIR, num_samples=3, shuffle=False)
-    one_hot = transforms.OneHot(num_classes=10)
+    one_hot = t_trans.OneHot(num_classes=10)
     dataset = dataset.map(operations=one_hot, input_columns=["label"])
     mix_up_batch = vision.MixUpBatch()
     cut_mix_batch = vision.CutMixBatch(vision.ImageBatchFormat.NHWC, 2.0, 0.5)
@@ -315,7 +318,7 @@ def test_mixup_batch_fail1():
     # MixUp Images
     data1 = ds.Cifar10Dataset(DATA_DIR, num_samples=10, shuffle=False)
 
-    one_hot_op = transforms.OneHot(num_classes=10)
+    one_hot_op = t_trans.OneHot(num_classes=10)
     data1 = data1.map(operations=one_hot_op, input_columns=["label"])
     mixup_batch_op = vision.MixUpBatch(0.1)
     with pytest.raises(RuntimeError) as error:
@@ -351,7 +354,7 @@ def test_mixup_batch_fail2():
     # MixUp Images
     data1 = ds.Cifar10Dataset(DATA_DIR, num_samples=10, shuffle=False)
 
-    one_hot_op = transforms.OneHot(num_classes=10)
+    one_hot_op = t_trans.OneHot(num_classes=10)
     data1 = data1.map(operations=one_hot_op, input_columns=["label"])
     with pytest.raises(ValueError) as error:
         vision.MixUpBatch(-1)
@@ -380,7 +383,7 @@ def test_mixup_batch_fail3():
     # MixUp Images
     data1 = ds.Cifar10Dataset(DATA_DIR, num_samples=10, shuffle=False)
 
-    one_hot_op = transforms.OneHot(num_classes=10)
+    one_hot_op = t_trans.OneHot(num_classes=10)
     data1 = data1.map(operations=one_hot_op, input_columns=["label"])
     mixup_batch_op = vision.MixUpBatch()
     data1 = data1.batch(5, drop_remainder=True)
@@ -419,7 +422,7 @@ def test_mixup_batch_fail4():
     # MixUp Images
     data1 = ds.Cifar10Dataset(DATA_DIR, num_samples=10, shuffle=False)
 
-    one_hot_op = transforms.OneHot(num_classes=10)
+    one_hot_op = t_trans.OneHot(num_classes=10)
     data1 = data1.map(operations=one_hot_op, input_columns=["label"])
     with pytest.raises(ValueError) as error:
         vision.MixUpBatch(0.0)
@@ -478,6 +481,290 @@ def test_mix_up_batch_invalid_label_type():
     assert error_message in str(error.value)
 
 
+def test_mixup_operation_01():
+    """
+    Feature: MixUp operation
+    Description: Testing the normal functionality of the MixUp operator
+    Expectation: The Output is equal to the expected output
+    """
+    # MixUp Operator: Normal testing, alpha=1.0
+    ds1 = ds.ImageFolderDataset(os.path.join(TEST_DATA_DATASET_FUNC,
+                                             "test_data", "imagenet_file_10_jpgs"), shuffle=False)
+    ds1 = ds1.map(input_columns=["image"], operations=[vision.Decode(), vision.Resize(224, v_Inter.LINEAR)])
+    ds1 = ds1.map(input_columns="label", operations=t_trans.OneHot(10))
+    # apply batch operations
+    batch_size = 3
+    ds1 = ds1.batch(batch_size, drop_remainder=True)
+    ds2 = ds1
+    ds1 = ds1.map(input_columns=["image", "label"],
+                  operations=vision.MixUp(batch_size=batch_size, alpha=1.0, is_single=False))
+    for data1, data2 in zip(ds1.create_dict_iterator(output_numpy=True), ds2.create_dict_iterator(output_numpy=True)):
+        image1 = data1["image"]
+        label1 = data1["label"]
+        image2 = data2["image"]
+        label2 = data2["label"]
+        lam = np.abs(label2 - label1)
+        for index in range(batch_size - 1):
+            if np.square(lam[index]).mean() != 0:
+                lam_value = 1 - np.sum(lam[index]) / 2
+                img_golden = lam_value * image2[index] + (1 - lam_value) * image2[index + 1]
+                assert image1[index].all() == img_golden.all()
+
+    # MixUp Operator: Normal testing, alpha=2
+    ds1 = ds.ImageFolderDataset(os.path.join(TEST_DATA_DATASET_FUNC,
+                                             "test_data", "imagenet_file_10_jpgs"), shuffle=False)
+
+    ds1 = ds1.map(input_columns=["image"], operations=[vision.Decode(), vision.Resize(224, v_Inter.LINEAR)])
+    ds1 = ds1.map(input_columns="label", operations=t_trans.OneHot(10))
+
+    # apply batch operations
+    batch_size = 3
+    ds1 = ds1.batch(batch_size, drop_remainder=True)
+
+    ds2 = ds1
+    ds1 = ds1.map(input_columns=["image", "label"],
+                  operations=vision.MixUp(batch_size=batch_size, alpha=2, is_single=False))
+    for data1, data2 in zip(ds1.create_dict_iterator(output_numpy=True), ds2.create_dict_iterator(output_numpy=True)):
+        image1 = data1["image"]
+        label1 = data1["label"]
+
+        image2 = data2["image"]
+        label2 = data2["label"]
+
+        lam = np.abs(label2 - label1)
+        for index in range(batch_size - 1):
+            if np.square(lam[index]).mean() != 0:
+                lam_value = 1 - np.sum(lam[index]) / 2
+                img_golden = lam_value * image2[index] + (1 - lam_value) * image2[index + 1]
+                assert image1[index].all() == img_golden.all()
+
+    # MixUp Operator: Normal testing, Do not transmit is_single
+    # define map operations
+    ds1 = ds.ImageFolderDataset(os.path.join(TEST_DATA_DATASET_FUNC, "test_data",
+                                             "imagenet_file_10_jpgs"), shuffle=False)
+
+    ds1 = ds1.map(input_columns=["image"], operations=[vision.Decode(), vision.Resize(224, v_Inter.LINEAR)])
+    ds1 = ds1.map(input_columns="label", operations=t_trans.OneHot(10))
+
+    # apply batch operations
+    batch_size = 3
+    ds1 = ds1.batch(batch_size, drop_remainder=True)
+
+    ds2 = ds1
+    ds1 = ds1.map(input_columns=["image", "label"], operations=vision.MixUp(batch_size=batch_size, alpha=0.2))
+    for data1, data2 in zip(ds1.create_dict_iterator(output_numpy=True), ds2.create_dict_iterator(output_numpy=True)):
+        image1 = data1["image"]
+        label1 = data1["label"]
+
+        image2 = data2["image"]
+        label2 = data2["label"]
+
+        lam = np.abs(label2 - label1)
+        for index in range(batch_size - 1):
+            if np.square(lam[index]).mean() != 0:
+                lam_value = 1 - np.sum(lam[index]) / 2
+                img_golden = lam_value * image2[index] + (1 - lam_value) * image2[index + 1]
+                assert image1[index].all() == img_golden.all()
+
+    # MixUp Operator: Normal testing, batch_size=1, is_single=True
+    image = np.random.randint(0, 255, (10, 10, 3)).astype(np.uint8)
+    label = np.array([0, 1])
+    mixup_op = vision.MixUp(batch_size=1, alpha=0.2, is_single=True)
+    out = mixup_op(image, label)
+    assert len(out) == 2
+    assert out[0].shape == (1, 10, 10, 3)
+
+    # MixUp Operator: Normal testing, batch_size=2, is_single=False
+    image = np.random.randint(0, 255, (3, 10, 10)).astype(np.uint8)
+    label = np.array([[0, 1]])
+    mixup_op = vision.MixUp(batch_size=2, alpha=0.2, is_single=False)
+    out = mixup_op(image, label)
+    assert len(out) == 2
+    assert out[0].shape == (2, 3, 10, 10)
+
+    # MixUp Operator: Normal testing, batch_size=4, is_single=False
+    image = np.random.randint(0, 255, (3, 16, 16)).astype(np.uint8)
+    label = np.array([[[[0, 1]]]])
+    mixup_op = vision.MixUp(batch_size=4, alpha=0.2, is_single=False)
+    out = mixup_op(image, label)
+    assert len(out) == 2
+    assert out[0].shape == (4, 3, 16, 16)
+
+
+def test_mixup_exception_01():
+    """
+    Feature: MixUp operation
+    Description: Testing the MixUp Operator in Exceptional Scenarios
+    Expectation: Throw an exception
+    """
+    # MixUp Operator: Exception Testing, alpha=0.0
+    with pytest.raises(ValueError, match="Input alpha must be greater than 0"):
+        vision.MixUp(batch_size=3, alpha=0.0, is_single=False)
+
+    # MixUp Operator: Exception Testing, alpha=-0.5
+    with pytest.raises(ValueError, match="Input alpha must be greater than 0"):
+        vision.MixUp(batch_size=3, alpha=-0.5)
+
+    # MixUp Operator: Exception Testing, alpha=0
+    with pytest.raises(ValueError, match="Input alpha must be greater than 0"):
+        vision.MixUp(batch_size=3, alpha=0, is_single=False)
+
+    # MixUp Operator: Exception Testing, alpha= 'afd ^%$ 123'
+    alpha = "afd ^%$ 123"
+    with pytest.raises(TypeError, match="123 is not of type \\[<class 'int'>, <class 'float'>\\]."):
+        vision.MixUp(batch_size=3, alpha=alpha)
+
+    # MixUp Operator: Exception Testing, The batch_size parameter is missing.
+    with pytest.raises(TypeError, match="missing a required argument: 'batch_size'"):
+        vision.MixUp(alpha=1.0, is_single=True)
+
+    # MixUp Operator: Exception Testing, The alpha parameter is missing.
+    with pytest.raises(TypeError, match="missing a required argument: 'alpha'"):
+        vision.MixUp(batch_size=3, is_single=True)
+
+    # MixUp Operator: Exception Testing, No parameters passed
+    with pytest.raises(TypeError, match="missing a required argument: 'batch_size'"):
+        vision.MixUp()
+
+    # MixUp Operator: Exception Testing, batch_size = 0
+    with pytest.raises(ValueError, match=r"Input is not within the required interval of \[1, 16777216\]."):
+        vision.MixUp(batch_size=0, alpha=1.0, is_single=False)
+
+    # MixUp Operator: Exception Testing, batch_size = 16777217
+    with pytest.raises(ValueError, match=r"Input is not within the required interval of \[1, 16777216\]."):
+        vision.MixUp(batch_size=16777217, alpha=1.0, is_single=False)
+
+    # MixUp Operator: Normal testing, is_single is of type int
+    with pytest.raises(TypeError, match=r'Argument is_single with value 1 is not of type \[\<class \'bool\'\>\].'):
+        _ = vision.MixUp(batch_size=16, alpha=True, is_single=1)
+
+    # MixUp Operator: Normal testing, is_single is of type str
+    with pytest.raises(TypeError, match=r'Argument is_single with value true is not of type \[\<class \'bool\'\>\].'):
+        _ = vision.MixUp(batch_size=16, alpha=1, is_single='true')
+
+    # MixUp Operator: Normal testing, batch_size is of type bool
+    with pytest.raises(TypeError, match="Argument batch_size with value True is not "
+                                        "of type \\(<class 'int'>,\\), but got <class 'bool'>."):
+        vision.MixUp(batch_size=True, alpha=0.2, is_single=False)
+
+    # MixUp Operator: Normal testing, batch_size is of type str
+    with pytest.raises(TypeError, match="Argument batch_size with value true is not of type \\[<class "
+                                        "'int'>\\], but got <class 'str'>."):
+        vision.MixUp(batch_size='true', alpha=0.2, is_single=False)
+
+    # MixUp Operator: Normal testing, batch_size is of type float
+    with pytest.raises(TypeError, match="Argument batch_size with value 0.1 is not of "
+                                        "type \\[<class 'int'>\\], but got <class 'float'>."):
+        _ = vision.MixUp(batch_size=0.1, alpha=0.2, is_single=False)
+
+    # MixUp Operator: Normal testing, alpha is of type bool
+    with pytest.raises(TypeError, match="Argument alpha with value True is not of type \\(<class 'int'>, "
+                                        "<class 'float'>\\), but got <class 'bool'>."):
+        _ = vision.MixUp(batch_size=16, alpha=True, is_single=False)
+
+
+def test_mixup_batch_operation_01():
+    """
+    Feature: MixUpBatch operation
+    Description: Testing the normal functionality of the MixUpBatch operator
+    Expectation: The Output is equal to the expected output
+    """
+    # MixUpBatch Operator: Normal testing, alpha = 0.1
+    data_dir1 = os.path.join(TEST_DATA_DATASET_FUNC, "testCifar10Data")
+    dataset2 = ds.Cifar10Dataset(data_dir1, num_samples=8, shuffle=False)
+    dataset2 = dataset2.map(input_columns=["label"], operations=t_trans.OneHot(num_classes=10))
+    dataset2 = dataset2.map(input_columns=["image"], operations=vision.Resize(size=256))
+    dataset2 = dataset2.batch(4, drop_remainder=True)
+    dataset2 = dataset2.map(input_columns=["image", "label"], operations=vision.MixUpBatch(alpha=0.1))
+    for _ in dataset2.create_dict_iterator(output_numpy=True):
+        pass
+
+    # MixUpBatch Operator: Normal testing, alpha = 16777216
+    data_dir1 = os.path.join(TEST_DATA_DATASET_FUNC, "testCifar10Data")
+    dataset2 = ds.Cifar10Dataset(data_dir1, num_samples=8, shuffle=False)
+    dataset2 = dataset2.map(input_columns=["label"], operations=t_trans.OneHot(num_classes=10))
+    dataset2 = dataset2.map(input_columns=["image"], operations=vision.Resize(size=256))
+    dataset2 = dataset2.batch(4, drop_remainder=True)
+    dataset2 = dataset2.map(input_columns=["image", "label"], operations=vision.MixUpBatch(alpha=16777216))
+    for _ in dataset2.create_dict_iterator(output_numpy=True):
+        pass
+
+    # MixUpBatch Operator: Normal testing, 不传alpha
+    data_dir1 = os.path.join(TEST_DATA_DATASET_FUNC, "testCifar10Data")
+    dataset2 = ds.Cifar10Dataset(data_dir1, num_samples=8, shuffle=False)
+    dataset2 = dataset2.map(input_columns=["label"], operations=t_trans.OneHot(num_classes=10))
+    dataset2 = dataset2.map(input_columns=["image"], operations=vision.Resize(size=256))
+    dataset2 = dataset2.batch(4, drop_remainder=True)
+    dataset2 = dataset2.map(input_columns=["image", "label"], operations=vision.MixUpBatch())
+    for _ in dataset2.create_dict_iterator(output_numpy=True):
+        pass
+
+    # MixUpBatch Operator: Normal testing, eager模式，alpha=1
+    image = np.random.randint(0, 255, (2, 10, 10, 3)).astype(np.uint8)
+    label = np.array([[0, 1], [1, 0]])
+    mixup_batch_op = vision.MixUpBatch(1)
+    out = mixup_batch_op(image, label)
+    assert len(out) == 2
+    assert out[0].shape == (2, 10, 10, 3)
+
+    # MixUpBatch Operator: Normal testing, eager模式，alpha=0.9
+    image = np.random.randint(0, 255, (2, 32, 32, 3)).astype(np.uint8)
+    label = np.array([[0, 1], [1, 0]])
+    mixup_batch_op = vision.MixUpBatch(0.9)
+    out = mixup_batch_op(image, label)
+    assert len(out) == 2
+    assert out[0].shape == (2, 32, 32, 3)
+
+
+def test_mixup_batch_exception_01():
+    """
+    Feature: MixUpBatch operation
+    Description: Testing the MixUpBatch Operator in Exceptional Scenarios
+    Expectation: Throw an exception
+    """
+    # MixUpBatch Operator: Exception testing, alpha = 0
+    with pytest.raises(ValueError, match="Input alpha must be greater than 0."):
+        vision.MixUpBatch(alpha=0)
+
+    # MixUpBatch Operator: Exception testing, alpha = 16777217
+    with pytest.raises(ValueError, match="Input is not within the required interval"):
+        vision.MixUpBatch(alpha=16777217)
+
+    # MixUpBatch Operator: Exception testing, alpha = ''
+    with pytest.raises(TypeError, match="Argument alpha with value "):
+        vision.MixUpBatch(alpha='')
+
+    # MixUpBatch Operator: Exception testing
+    data_dir1 = os.path.join(TEST_DATA_DATASET_FUNC, "testCifar10Data")
+    dataset2 = ds.Cifar10Dataset(data_dir1, num_samples=8, shuffle=False)
+    dataset2 = dataset2.map(input_columns=["label"], operations=t_trans.OneHot(num_classes=10))
+    dataset2 = dataset2.map(input_columns=["image"], operations=vision.Resize(size=256))
+    mixup_batch_op = vision.MixUpBatch(alpha=1.0)
+    with pytest.raises(RuntimeError, match=r"map operation: \[MixUpBatch\] failed."):
+        dataset2 = dataset2.map(input_columns=["image", "label"], operations=mixup_batch_op)
+        for _ in dataset2.create_dict_iterator(output_numpy=True):
+            pass
+
+    # MixUpBatch Operator: Exception testing, alpha is of type bool
+    with pytest.raises(TypeError, match="Argument alpha with value True is not of type \\(<class 'int'>, "
+                                        "<class 'float'>\\), but got <class 'bool'>."):
+        vision.MixUpBatch(alpha=True)
+
+    # MixUpBatch Operator: Exception testing, alpha is of type str
+    with pytest.raises(TypeError, match="Argument alpha with value true is not of type \\[<class "
+                                        "'int'>, <class 'float'>\\], but got <class 'str'>."):
+        vision.MixUpBatch(alpha='true')
+
+    # MixUpBatch Operator: Exception testing, input data is 4-dimensional NumPy data
+    image = np.random.randint(0, 255, (4, 10, 10, 3)).astype(np.uint8)
+    label = np.array([[0, 1], [1, 0]])
+    mixup_batch_op = vision.MixUpBatch(1.0)
+    with pytest.raises(RuntimeError,
+                       match="MixUpBatch: rank of image shape should be: 4, but got: 4, make "
+                             "sure image shape are <H,W,C> or <C,H,W> and batched before calling MixUpBatch."):
+        _ = mixup_batch_op(image, label)
+
+
 if __name__ == "__main__":
     test_mixup_batch_success1(plot=True)
     test_mixup_batch_success2(plot=True)
@@ -492,3 +779,7 @@ if __name__ == "__main__":
     test_mixup_batch_fail4()
     test_mixup_batch_fail5()
     test_mix_up_batch_invalid_label_type()
+    test_mixup_operation_01()
+    test_mixup_exception_01()
+    test_mixup_batch_operation_01()
+    test_mixup_batch_exception_01()

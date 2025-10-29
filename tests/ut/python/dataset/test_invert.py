@@ -1,4 +1,4 @@
-# Copyright 2020-2022 Huawei Technologies Co., Ltd
+# Copyright 2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,15 +15,20 @@
 """
 Testing Invert op in DE
 """
+import cv2
 import numpy as np
+import os
+import pytest
+from PIL import Image
 
 import mindspore.dataset as ds
 import mindspore.dataset.transforms
-import mindspore.dataset.vision as vision
+import mindspore.dataset.vision.transforms as vision
 from mindspore import log as logger
 from util import visualize_list, save_and_check_md5, save_and_check_md5_pil, diff_mse
 
 DATA_DIR = "../data/dataset/testImageNetData/train/"
+TEST_DATA_DATASET_FUNC ="../data/dataset/"
 
 GENERATE_GOLDEN = False
 
@@ -272,6 +277,106 @@ def test_invert_md5_c():
     save_and_check_md5(data, filename, generate_golden=GENERATE_GOLDEN)
 
 
+def test_invert_operation_01():
+    """
+    Feature: Invert operation
+    Description: Testing the normal functionality of the Invert operator
+    Expectation: The Output is equal to the expected output
+    """
+    # Invert operator: Normal testing, eager mode, input is a PIL image
+    image_file = os.path.join(TEST_DATA_DATASET_FUNC, "test_data", "testImageNetData", "train", "class1",
+                              "1_1.jpg")
+    with Image.open(image_file) as image:
+        invert_op = vision.Invert()
+        _ = invert_op(image)
+
+    # Invert operator: Normal testing, eager mode, input is a numpy image
+    image_file = os.path.join(TEST_DATA_DATASET_FUNC, "test_data", "testImageNetData", "train", "class1",
+                              "1_1.jpg")
+    image = cv2.imread(image_file)
+    invert_op = vision.Invert()
+    _ = invert_op(image)
+
+    # Invert operator: Normal testing, eager mode, input is a random numpy
+    image = np.random.randn(468, 368, 3).astype(np.uint8)
+    invert_op = vision.Invert()
+    _ = invert_op(image)
+
+    # Invert operator: Normal testing, pipeline mode
+    data_dir = os.path.join(TEST_DATA_DATASET_FUNC, "test_data", "testImageNetData", "train")
+    dataset = ds.ImageFolderDataset(data_dir, shuffle=False, decode=True)
+    invert_op = vision.Invert()
+    dataset = dataset.map(input_columns=["image"], operations=invert_op)
+    for _ in dataset.create_dict_iterator(output_numpy=True):
+        pass
+
+    # Invert operator: Normal testing, pipeline mdoe
+    data_dir = os.path.join(TEST_DATA_DATASET_FUNC, "test_data", "testImageNetData", "train")
+    dataset = ds.ImageFolderDataset(data_dir, shuffle=False, decode=False)
+    invert_op = [vision.Decode(to_pil=True), vision.Invert()]
+    dataset = dataset.map(input_columns=["image"], operations=invert_op)
+    for _ in dataset.create_dict_iterator(output_numpy=True):
+        pass
+
+
+def test_invert_exception_01():
+    """
+    Feature: Invert operation
+    Description: Testing the Invert Operator in Exceptional Scenarios
+    Expectation: Throw an exception
+    """
+    # Invert Operator: Anomaly Testing, Parameter redundancy
+    data_dir = os.path.join(TEST_DATA_DATASET_FUNC, "test_data", "testImageNetData", "train")
+    dataset = ds.ImageFolderDataset(data_dir, shuffle=False, decode=True)
+    with pytest.raises(TypeError, match=r"__init__\(\) takes 1 positional argument but 2 were given"):
+        invert_op = vision.Invert(None)
+        dataset = dataset.map(input_columns=["image"], operations=invert_op)
+        for _ in dataset.create_dict_iterator(output_numpy=True):
+            pass
+
+    # Invert Operator: Anomaly Testing, eager mode, Single-channel image
+    image = np.random.randint(0, 255, (128, 128, 1)).astype(np.uint8)
+    invert_op = vision.Invert()
+    with pytest.raises(RuntimeError, match="the number of channels of input tensor is not 3, but got: 1"):
+        invert_op(image)
+
+    # Invert Operator: Anomaly Testing, eager mode, Two-dimensional data
+    image = np.random.randint(-255, 255, (256, 128)).astype(np.uint8)
+    invert_op = vision.Invert()
+    with pytest.raises(RuntimeError, match="input tensor is not in shape of <H,W,C>, but got rank: 2"):
+        invert_op(image)
+
+    # Invert Operator: Anomaly Testing, eager mode, One-dimensional data
+    image = np.random.randn(200,).astype(np.uint8)
+    invert_op = vision.Invert()
+    with pytest.raises(RuntimeError):
+        invert_op(image)
+
+    # Invert Operator: Anomaly Testing, eager mode, Four-channel data
+    image = np.random.randn(128, 128, 4).astype(np.uint8)
+    invert_op = vision.Invert()
+    with pytest.raises(RuntimeError, match='the number of channels of input tensor is not 3, but got: 4'):
+        invert_op(image)
+
+    # Invert Operator: Anomaly Testing, eager mode, Input data is a list of data
+    image = np.random.randn(128, 128, 3).astype(np.uint8).tolist()
+    invert_op = vision.Invert()
+    with pytest.raises(TypeError, match="Input should be NumPy or PIL image, got <class 'list'>."):
+        invert_op(image)
+
+    # Invert Operator: Anomaly Testing, eager mode, Input data is integer data
+    image = 10
+    invert_op = vision.Invert()
+    with pytest.raises(TypeError, match="Input should be NumPy or PIL image, got <class 'int'>."):
+        invert_op(image)
+
+    # Invert Operator: Anomaly Testing, eager mode, Input data is a tuple of data
+    image = (10,)
+    invert_op = vision.Invert()
+    with pytest.raises(TypeError, match="Input should be NumPy or PIL image, got <class 'tuple'>."):
+        invert_op(image)
+
+
 if __name__ == "__main__":
     test_invert_callable()
     test_invert_py(plot=False)
@@ -280,3 +385,5 @@ if __name__ == "__main__":
     test_invert_one_channel()
     test_invert_md5_py()
     test_invert_md5_c()
+    test_invert_operation_01()
+    test_invert_exception_01()

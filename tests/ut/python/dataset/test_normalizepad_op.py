@@ -1,4 +1,4 @@
-# Copyright 2020-2022 Huawei Technologies Co., Ltd
+# Copyright 2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,17 +16,19 @@
 Testing Normalize op in DE
 """
 import numpy as np
+import os
 import pytest
 
 import mindspore.dataset as ds
 import mindspore.dataset.transforms
-import mindspore.dataset.vision as vision
+import mindspore.dataset.vision.transforms as vision
 from mindspore import log as logger
 from util import diff_mse, visualize_image
 
 DATA_DIR = ["../data/dataset/test_tf_file_3_images/train-0000-of-0001.data"]
 SCHEMA_DIR = "../data/dataset/test_tf_file_3_images/datasetSchema.json"
 MNIST_DATA_DIR = "../data/dataset/testMnistData"
+TEST_DATA_DATASET_FUNC ="../data/dataset/"
 
 GENERATE_GOLDEN = False
 
@@ -352,6 +354,320 @@ def test_normalize_pad_invalid_param():
     assert "Argument std[2] with value 0.22 is not of type [<class 'int'>, <class 'float'>]" in str(error_info.value)
 
 
+def test_normalize_pad_operation_01():
+    """
+    Feature: NormalizePad operation
+    Description: Testing the normal functionality of the NormalizePad operator
+    Expectation: The Output is equal to the expected output
+    """
+    # NormalizePad operator: Normal testing, numpy image, <H,W,C>
+    image = np.random.randint(0, 255, (128, 128, 3))
+    op = vision.NormalizePad(mean=[120, 150, 200], std=[20, 30, 40], is_hwc=True)
+    out = op(image)
+    assert out.shape == (128, 128, 4)
+    assert out.dtype == 'float32'
+
+    # NormalizePad operator: Normal testing, numpy image, <C,H,W>
+    image = np.random.randint(0, 255, (3, 128, 128))
+    op = vision.NormalizePad(mean=(120, 150, 200), std=(20, 30, 40), is_hwc=False)
+    out = op(image)
+    assert out.shape == (4, 128, 128)
+    assert out.dtype == 'float32'
+
+    # NormalizePad operator: Normal testing, PIL image, <H,W,C>
+    image = np.random.randint(0, 255, (128, 128, 3)).astype(np.uint8)
+    image = vision.ToPIL()(image)
+    op = vision.NormalizePad(mean=[120, 150, 200], std=[20, 30, 40], is_hwc=True)
+    out = op(image)
+    assert out.shape == (128, 128, 4)
+    assert out.dtype == 'float32'
+
+    # NormalizePad operator: Normal testing, PIL image, <C,H,W>
+    image = np.random.randint(0, 255, (128, 128, 3)).astype(np.uint8)
+    image = vision.ToPIL()(image)
+    image = vision.HWC2CHW()(image)
+    op = vision.NormalizePad(mean=[120, 150, 200], std=[20, 30, 40], is_hwc=False)
+    out = op(image)
+    assert out.shape == (4, 128, 128)
+    assert out.dtype == 'float32'
+
+    # NormalizePad operator: Normal testing, pipeline: PIL image <H,W,C>, output float32
+    dataset_dir = os.path.join(TEST_DATA_DATASET_FUNC, 'testImageNetData2', 'train')
+    dataset = ds.ImageFolderDataset(dataset_dir, num_samples=10, shuffle=False, decode=True)
+    transforms = [vision.ToPIL(),
+                  vision.NormalizePad(mean=[120, 150, 200], std=[20, 30, 40], dtype='float32', is_hwc=True)]
+    dataset = dataset.map(operations=transforms, input_columns=["image"])
+    for data in dataset.create_dict_iterator(num_epochs=1, output_numpy=True):
+        assert data["image"].shape[2] == 4
+        assert data["image"].dtype == 'float32'
+
+    # NormalizePad operator: Normal testing, pipeline: PIL image <C,H,W>, output float16
+    dataset_dir = os.path.join(TEST_DATA_DATASET_FUNC, 'testImageNetData2', 'train')
+    dataset = ds.ImageFolderDataset(dataset_dir, num_samples=10, shuffle=False)
+    transforms = [vision.Decode(to_pil=True),
+                  vision.HWC2CHW(),
+                  vision.NormalizePad(mean=[120, 150, 200], std=[20, 30, 40], dtype='float16', is_hwc=False)]
+    dataset = dataset.map(operations=transforms, input_columns=["image"])
+    for data in dataset.create_dict_iterator(num_epochs=1, output_numpy=True):
+        assert data["image"].shape[0] == 4
+        assert data["image"].dtype == 'float16'
+
+    # NormalizePad operator: Normal testing, pipeline: numpy image <H,W,C>, output float32
+    dataset_dir = os.path.join(TEST_DATA_DATASET_FUNC, 'testImageNetData2', 'train')
+    dataset = ds.ImageFolderDataset(dataset_dir, num_samples=10, shuffle=False)
+    transforms = [vision.Decode(to_pil=False),
+                  vision.NormalizePad(mean=[120, 150, 200], std=[20, 30, 40], dtype='float32', is_hwc=True)]
+    dataset = dataset.map(operations=transforms, input_columns=["image"])
+    for data in dataset.create_dict_iterator(num_epochs=1, output_numpy=True):
+        assert data["image"].shape[2] == 4
+        assert data["image"].dtype == 'float32'
+
+    # NormalizePad operator: Normal testing, pipeline: numpy image <C,H,W>, output float16
+    dataset_dir = os.path.join(TEST_DATA_DATASET_FUNC, 'testImageNetData2', 'train')
+    dataset = ds.ImageFolderDataset(dataset_dir, num_samples=10, shuffle=False)
+    transforms = [vision.Decode(to_pil=False),
+                  vision.HWC2CHW(),
+                  vision.NormalizePad(mean=[120, 150, 200], std=[20, 30, 40], dtype='float16', is_hwc=False)]
+    dataset = dataset.map(operations=transforms, input_columns=["image"])
+    for data in dataset.create_dict_iterator(num_epochs=1, output_numpy=True):
+        assert data["image"].shape[0] == 4
+        assert data["image"].dtype == 'float16'
+
+    # NormalizePad operator: Normal testing, <C,H,W>, output float16
+    image = np.random.randint(0, 255, (3, 128, 128))
+    op = vision.NormalizePad(mean=[120, 150, 200], std=[20, 30, 40], dtype='float16', is_hwc=False)
+    out = op(image)
+    assert out.shape == (4, 128, 128)
+    assert out.dtype == 'float16'
+
+    # NormalizePad operator: Normal testing, default parameter
+    image = np.random.randint(0, 255, (20, 40, 3))
+    op1 = vision.NormalizePad(mean=[120, 150, 200], std=[20, 30, 40])
+    op2 = vision.NormalizePad(mean=[120, 150, 200], std=[20, 30, 40], dtype='float32', is_hwc=True)
+    out1 = op1(image)
+    out2 = op2(image)
+    assert out1.shape == (20, 40, 4) == out2.shape
+    assert out1.dtype == 'float32' == out2.dtype
+    assert (out1 == out2).all()
+
+    # NormalizePad operator: Normal testing, PIL image channels 4
+    image = np.random.randint(0, 255, (128, 128, 4)).astype(np.uint8)
+    image = vision.ToPIL()(image)
+    op = vision.NormalizePad(mean=[120, 150, 200, 200], std=[20, 30, 20, 30], is_hwc=True)
+    out = op(image)
+    assert out.shape == (128, 128, 5)
+
+
+def test_normalize_pad_operation_02():
+    """
+    Feature: NormalizePad operation
+    Description: Testing the normal functionality of the NormalizePad operator
+    Expectation: The Output is equal to the expected output
+    """
+    # NormalizePad operator: Normal testing, Input data is two-dimensional NumPy data.
+    image = np.random.randint(0, 255, (128, 128))
+    op = vision.NormalizePad(mean=[0.120], std=[0.20])
+    out = op(image)
+    assert out.shape == (128, 128, 2)
+
+    # NormalizePad operator: Normal testing, numpy image channels 4, is_hwc=False
+    image = np.random.randn(4, 128, 128)
+    op = vision.NormalizePad(mean=[0.120, 0.160, 0.150, 0.180], std=[0.20, 0.40, 0.30, 0.60], is_hwc=False)
+    out = op(image)
+    assert isinstance(out, np.ndarray)
+    assert out.shape == (5, 128, 128)
+
+    # NormalizePad operator: Normal testing, PIL image channels 4, is_hwc=True
+    image = np.random.randn(128, 128, 4).astype(np.uint8)
+    image = vision.ToPIL()(image)
+    op = vision.NormalizePad(mean=[0.120, 0.160, 0.150, 0.180], std=[0.20, 0.40, 0.30, 0.60], is_hwc=True)
+    out = op(image)
+    assert isinstance(out, np.ndarray)
+    assert out.shape == (128, 128, 5)
+    assert out.dtype == np.float32
+
+    # NormalizePad operator: Normal testing, numpy image channels 3, is_hwc=False
+    image = np.random.randn(3, 128, 128).astype(np.float32)
+    op = vision.NormalizePad(mean=[0.120, 0.160, 0.150], std=[0.20, 0.40, 0.30], is_hwc=False)
+    out = op(image)
+    assert isinstance(out, np.ndarray)
+    assert out.shape == (4, 128, 128)
+    assert out.dtype == np.float32
+
+    # NormalizePad operator: Normal testing, numpy image channels 3, is_hwc=True
+    image = np.random.randn(128, 128, 3)
+    op = vision.NormalizePad(mean=[0.120, 0.160, 0.150], std=[0.20, 0.40, 0.30], is_hwc=True)
+    out = op(image)
+    assert isinstance(out, np.ndarray)
+    assert out.shape == (128, 128, 4)
+    assert out.dtype == np.float32
+
+    # NormalizePad operator: Normal testing, numpy image channels 2, is_hwc=False
+    image = np.random.randn(2, 128, 128)
+    op = vision.NormalizePad(mean=[0.120, 0.160], std=[0.20, 0.40], is_hwc=False)
+    out = op(image)
+    assert isinstance(out, np.ndarray)
+    assert out.shape == (3, 128, 128)
+    assert out.dtype == np.float32
+
+    # NormalizePad operator: Normal testing, numpy image channels 2, is_hwc=True
+    image = np.random.randn(128, 128, 2)
+    op = vision.NormalizePad(mean=[0.120, 0.160], std=[0.20, 0.40], is_hwc=True)
+    out = op(image)
+    assert isinstance(out, np.ndarray)
+    assert out.shape == (128, 128, 3)
+    assert out.dtype == np.float32
+
+    # NormalizePad operator: Normal testing, numpy image channels 1, is_hwc=False
+    image = np.random.randn(1, 128, 128)
+    op = vision.NormalizePad(mean=[0.120], std=[0.20], is_hwc=False)
+    out = op(image)
+    assert isinstance(out, np.ndarray)
+    assert out.shape == (2, 128, 128)
+    assert out.dtype == np.float32
+
+    # NormalizePad operator: Normal testing, numpy image channels 1, is_hwc=True
+    image = np.random.randn(128, 128, 1)
+    op = vision.NormalizePad(mean=[0.120], std=[0.20], is_hwc=True)
+    out = op(image)
+    assert isinstance(out, np.ndarray)
+    assert out.shape == (128, 128, 2)
+    assert out.dtype == np.float32
+
+
+def test_normalize_pad_exception_01():
+    """
+    Feature: NormalizePad operation
+    Description: Testing the NormalizePad Operator in Exceptional Scenarios
+    Expectation: Throw an exception
+    """
+    # NormalizePad Operator: Anomaly Testing, input data is int
+    image = 10
+    op = vision.NormalizePad(mean=[120, 160, 120], std=[20, 40, 20])
+    with pytest.raises(TypeError, match="Input should be NumPy or PIL image, got <class 'int'>."):
+        op(image)
+
+    # NormalizePad Operator: Anomaly Testing, input data is str
+    image = "abc"
+    op = vision.NormalizePad(mean=[120, 160, 120], std=[20, 40, 20])
+    with pytest.raises(TypeError, match="Input should be NumPy or PIL image, got <class 'str'>."):
+        op(image)
+
+    # NormalizePad Operator: Anomaly Testing, input data is list
+    image = np.random.randint(0, 255, (128, 128, 3)).tolist()
+    op = vision.NormalizePad(mean=[120, 160, 120], std=[20, 40, 20], is_hwc=True)
+    with pytest.raises(TypeError, match="Input should be NumPy or PIL image, got <class 'list'>."):
+        op(image)
+
+    # NormalizePad Operator: Anomaly Testing, The input data is a one-dimensional NumPy array.
+    image = np.random.randint(0, 255, (128,))
+    op = vision.NormalizePad(mean=[120, 120, 100], std=[20, 30, 40], is_hwc=True)
+    with pytest.raises(RuntimeError, match="NormalizePad: input tensor is not in shape of <H,W> "
+                                           "or <H,W,C>, but got rank: 1. You may need to perform Decode first."):
+        op(image)
+
+    # NormalizePad Operator: Anomaly Testing, The input data is a four-dimensional NumPy array.
+    image = np.random.randint(0, 255, (128, 128, 3, 3))
+    op = vision.NormalizePad(mean=[120, 120, 100], std=[20, 30, 40], is_hwc=True)
+    with pytest.raises(RuntimeError, match="NormalizePad: input tensor is not in shape of <H,W> "
+                                           "or <H,W,C>, but got rank: 4"):
+        op(image)
+
+    # NormalizePad Operator: Anomaly Testing, Input image is a numpy string data
+    image = np.random.randn(128, 128, 1).astype("S")
+    op = vision.NormalizePad(mean=[0.120], std=[0.20], is_hwc=True)
+    with pytest.raises(RuntimeError, match=r"NormalizePad: unsupported type, currently supported "
+                                           r"types include \[bool,int8_t,uint8_t,int16_t,uint16_t,int32_t,"
+                                           r"uint32_t,int64_t,uint64_t,float16,float,double\]."):
+        op(image)
+
+    # NormalizePad Operator: Anomaly Testing, dtype=1
+    with pytest.raises(TypeError, match='dtype should be string.'):
+        vision.NormalizePad(mean=[120, 150, 200], std=[20, 30, 40], dtype=1, is_hwc=True)
+
+    # NormalizePad Operator: Anomaly Testing, dtype=True
+    with pytest.raises(TypeError, match='dtype should be string.'):
+        vision.NormalizePad(mean=[120, 150, 200], std=[20, 30, 40], dtype=True, is_hwc=True)
+
+    # NormalizePad Operator: Anomaly Testing, dtype='aaa'
+    with pytest.raises(ValueError, match='dtype only supports float32 or float16.'):
+        vision.NormalizePad(mean=[120, 150, 200], std=[20, 30, 40], dtype='aaa', is_hwc=True)
+
+    # NormalizePad Operator: Anomaly Testing, is_hwc='aaa'
+    with pytest.raises(TypeError, match=r"Argument is_hwc with value aaa is not of type \[<class 'bool'>\], "
+                                        r"but got <class 'str'>."):
+        vision.NormalizePad(mean=[120, 150, 200], std=[20, 30, 40], dtype='float32', is_hwc='aaa')
+
+    # NormalizePad Operator: Anomaly Testing, is_hwc=True but input image <C,H,W>
+    image = np.random.randint(0, 255, (3, 10, 10))
+    op = vision.NormalizePad(mean=[120, 150, 200], std=[20, 30, 40], dtype='float32', is_hwc=True)
+    with pytest.raises(RuntimeError, match=r"NormalizePad: number of channels does not match "
+                                           r"the size of mean and std vectors, got channels: 10, size of mean: 3"):
+        op(image)
+
+    # NormalizePad Operator: Anomaly Testing, the length of std is 2, while  mean is 3
+    with pytest.raises(ValueError, match="Length of mean and std must be equal."):
+        vision.NormalizePad(mean=[120, 150, 200], std=[20, 30])
+
+    # NormalizePad Operator: Anomaly Testing, the length of std is 1, while  mean is 3
+    with pytest.raises(ValueError, match="Length of mean and std must be equal."):
+        vision.NormalizePad(mean=[120, 150, 200], std=[20])
+
+    # NormalizePad Operator: Anomaly Testing, std TypeError str
+    with pytest.raises(TypeError, match=r"Argument std with value 20 is not of type \[<class 'list'>, "
+                                        r"<class 'tuple'>\], but got <class 'str'>."):
+        vision.NormalizePad(mean=[120, 150, 200], std='20')
+
+    # NormalizePad Operator: Anomaly Testing, std TypeError int
+    with pytest.raises(TypeError, match=r"Argument std with value 20 is not of type \[<class 'list'>, "
+                                        r"<class 'tuple'>\], but got <class 'int'>."):
+        vision.NormalizePad(mean=[120, 150, 200], std=20)
+
+    # NormalizePad Operator: Anomaly Testing, std ValueError 0
+    with pytest.raises(ValueError, match=r"Input std\[2\] is not within the required interval of \(0, 255\]."):
+        vision.NormalizePad(mean=[120, 150, 200], std=[20, 20, 0])
+
+    # NormalizePad Operator: Anomaly Testing, std ValueError 256
+    with pytest.raises(ValueError, match=r"Input std\[2\] is not within the required interval of \(0, 255\]."):
+        vision.NormalizePad(mean=[120, 150, 200], std=[20, 20, 256])
+
+    # NormalizePad Operator: Anomaly Testing, element in std TypeError
+    with pytest.raises(TypeError, match=r"Argument std\[2\] with value 20 is not of type \[<class 'int'>, "
+                                        r"<class 'float'>\], but got <class 'str'>."):
+        vision.NormalizePad(mean=[0.120, 0.150, 0.200], std=[0.20, 0.20, '20'])
+
+    # NormalizePad Operator: Anomaly Testing, mean TypeError str
+    with pytest.raises(TypeError, match=r"Argument mean with value 20 is not of type \[<class 'list'>, "
+                                        r"<class 'tuple'>\], but got <class 'str'>."):
+        vision.NormalizePad(mean='20', std=[120, 150, 200])
+
+
+def test_normalize_pad_exception_02():
+    """
+    Feature: NormalizePad operation
+    Description: Testing the NormalizePad Operator in Exceptional Scenarios
+    Expectation: Throw an exception
+    """
+    # NormalizePad Operator: Anomaly Testing, mean TypeError int
+    with pytest.raises(TypeError, match=r"Argument mean with value 20 is not of type \[<class 'list'>, "
+                                        r"<class 'tuple'>\], but got <class 'int'>."):
+        vision.NormalizePad(mean=20, std=[120, 150, 200])
+
+    # NormalizePad Operator: Anomaly Testing, mean ValueError -1
+    with pytest.raises(ValueError, match=r"Input mean\[2\] is not within the required interval of \[0, 255\]."):
+        vision.NormalizePad(mean=[20, 20, -1], std=[120, 150, 200])
+
+    # NormalizePad Operator: Anomaly Testing, mean ValueError 256
+    with pytest.raises(ValueError, match=r"Input mean\[2\] is not within the required interval of \[0, 255\]."):
+        vision.NormalizePad(mean=[20, 20, 256], std=[120, 150, 200])
+
+    # NormalizePad Operator: Anomaly Testing, element in mean TypeError
+    with pytest.raises(TypeError, match=r"Argument mean\[2\] with value 20 is not of type \[<class 'int'>, "
+                                        r"<class 'float'>\], but got <class 'str'>."):
+        vision.NormalizePad(mean=[20, 20, '20'], std=[120, 150, 200])
+
+
+
 if __name__ == "__main__":
     test_normalize_pad_op_hwc(plot=True)
     test_normalize_pad_op_chw(plot=True)
@@ -365,3 +681,7 @@ if __name__ == "__main__":
     test_normalize_pad_op_1channel()
     test_normalize_pad_runtime_error()
     test_normalize_pad_invalid_param()
+    test_normalize_pad_operation_01()
+    test_normalize_pad_operation_02()
+    test_normalize_pad_exception_01()
+    test_normalize_pad_exception_02()

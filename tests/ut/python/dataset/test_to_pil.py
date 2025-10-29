@@ -1,4 +1,4 @@
-# Copyright 2020-2022 Huawei Technologies Co., Ltd
+# Copyright 2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,11 +16,13 @@
 Testing ToPIL op in DE
 """
 import numpy as np
+import os
 import pytest
 
+import mindspore as ms
 import mindspore.dataset as ds
 import mindspore.dataset.transforms
-import mindspore.dataset.vision as vision
+import mindspore.dataset.vision.transforms as vision
 from mindspore import log as logger
 from util import save_and_check_md5_pil
 
@@ -28,6 +30,8 @@ GENERATE_GOLDEN = False
 
 DATA_DIR = ["../data/dataset/test_tf_file_3_images/train-0000-of-0001.data"]
 SCHEMA_DIR = "../data/dataset/test_tf_file_3_images/datasetSchema.json"
+TEST_DATA_DATASET_FUNC ="../data/dataset/"
+DATA_DIR_1 = os.path.join(TEST_DATA_DATASET_FUNC, "test_data", "imagenet_file_10_jpgs")
 
 
 def test_to_pil_01():
@@ -126,9 +130,94 @@ def test_to_pil_invalid_dtype():
     assert "image type int16 is not supported" in str(error_info.value)
 
 
+def test_to_pil_operation_01():
+    """
+    Feature: ToPIL operation
+    Description: Testing the normal functionality of the ToPIL operator
+    Expectation: The Output is equal to the expected output
+    """
+    # ToPIL operation: After flipping, call totensor
+    transforms = [vision.ToPIL(),
+                  vision.RandomHorizontalFlip(0.5),
+                  vision.ToTensor()]
+    ds1 = ds.ImageFolderDataset(DATA_DIR_1, decode=True)
+    ds1 = ds1.map(input_columns=["image"], operations=transforms)
+    for _ in ds1.create_dict_iterator(output_numpy=True):
+        pass
+
+    # ToPIL operation: input equals numpy, uint8 format
+    image = np.random.randint(0, 255, (32, 32, 3)).astype(np.uint8)
+    topil_op = vision.ToPIL()
+    out = topil_op(image)
+    assert out.mode == "RGB"
+
+    # ToPIL operation: input equals a two-dimensional numpy array
+    image = np.random.randint(0, 255, (32, 32)).astype(np.uint8)
+    topil_op = vision.ToPIL()
+    topil_op(image)
+
+    # ToPIL operation: input equals 4 channels
+    with pytest.raises(TypeError, match="The input image type int32 is not supported when image shape is"):
+        image = np.random.randint(0, 255, (32, 32, 4)).astype(np.int32)
+        topil_op = vision.ToPIL()
+        topil_op(image)
+
+    # ToPIL operation: input equals 4 dimensions
+    with pytest.raises(ValueError, match="The dimension of input image should be 2 or 3. Got 4."):
+        image = np.random.randint(0, 255, (32, 32, 4, 3)).astype(np.uint8)
+        topil_op = vision.ToPIL()
+        topil_op(image)
+
+    # ToPIL operation: input is list
+    with pytest.raises(TypeError, match="The input image should be of type numpy.ndarray"
+                                        " or PIL.Image.Image. Got <class 'list'>."):
+        image = list(np.random.randint(0, 255, (32, 32, 3)).astype(np.uint8))
+        topil_op = vision.ToPIL()
+        topil_op(image)
+
+    # ToPIL operation: input is tuple
+    with pytest.raises(TypeError, match="The input image should be of type numpy.ndarray"
+                                        " or PIL.Image.Image. Got <class 'tuple'>."):
+        image = tuple(np.random.randint(0, 255, (200, 123, 3)).astype(np.uint8))
+        topil_op = vision.ToPIL()
+        topil_op(image)
+
+    # ToPIL operation: input is ms.tensor
+    with pytest.raises(TypeError, match="The input image should be of type numpy.ndarray or "
+                                        "PIL.Image.Image. Got <class 'mindspore.common.tensor.Tensor'>."):
+        image = ms.Tensor(np.random.randint(0, 255, (200, 123, 3)).astype(np.uint8))
+        topil_op = vision.ToPIL()
+        topil_op(image)
+
+    # ToPIL operation: input is int64
+    with pytest.raises(TypeError, match="The input image type int64 is not supported when image"
+                                        " shape is \\[H, W, 2\\], \\[H, W, 3\\] or \\[H, W, 4\\]."):
+        image = np.random.randint(0, 255, (200, 123, 3)).astype(np.int64)
+        topil_op = vision.ToPIL()
+        topil_op(image)
+
+    # ToPIL operation: input is float64
+    with pytest.raises(TypeError, match="The input image type float64 is not supported when image"
+                                        " shape is \\[H, W, 2\\], \\[H, W, 3\\] or \\[H, W, 4\\]."):
+        image = np.random.randint(0, 255, (200, 123, 3)).astype(np.float64)
+        topil_op = vision.ToPIL()
+        topil_op(image)
+
+    # ToPIL operation: input is 10
+    with pytest.raises(TypeError, match="The input image should be of type numpy.ndarray"
+                                        " or PIL.Image.Image. Got <class 'int'>."):
+        topil_op = vision.ToPIL()
+        topil_op(10)
+
+    # ToPIL operation: Passing extra parameters
+    with pytest.raises(TypeError, match="takes 1 positional argument but 2 were given"):
+        vision.ToPIL(True)
+
+
 if __name__ == "__main__":
     test_to_pil_01()
     test_to_pil_02()
     test_to_pil_invalid_type()
     test_to_pil_invalid_shape()
     test_to_pil_invalid_dtype()
+    test_to_pil_operation_01()
