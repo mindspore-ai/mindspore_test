@@ -196,7 +196,7 @@ class SamplerFn(cde.PythonMultiprocessingRuntime):
     """
 
     def __init__(self, dataset, num_worker, multi_process, max_rowsize):
-        super(SamplerFn, self).__init__()
+        super().__init__()
         self.workers = []
         self.dataset = dataset
         self.num_worker = num_worker
@@ -229,9 +229,9 @@ class SamplerFn(cde.PythonMultiprocessingRuntime):
             # Event for end of epoch
             try:
                 self.eof = multiprocessing.Event()
-            except Exception:
+            except Exception as exc:
                 raise RuntimeError("Init multiprocessing.Event() failed, This might be caused by insufficient shm,"
-                                   + " and the recommended shm size is at least 5 GB.")
+                                   + " and the recommended shm size is at least 5 GB.") from exc
 
             # Create workers
             # get default queue size and adjust queue size per worker if there are large # workers
@@ -247,7 +247,7 @@ class SamplerFn(cde.PythonMultiprocessingRuntime):
             self.count = multiprocessing.Value('i', 0)
             for worker_id in range(self.num_worker):
                 try:
-                    logger.info("Multiprocessing start method: {}".format(multiprocessing.get_start_method()))
+                    logger.info(f"Multiprocessing start method: {multiprocessing.get_start_method()}")
                     worker = _GeneratorWorkerMp(self.dataset, self.eof, self.max_rowsize, queue_size, self.ppid,
                                                 self.count, worker_id)
                     worker.daemon = True
@@ -255,22 +255,22 @@ class SamplerFn(cde.PythonMultiprocessingRuntime):
                     # which may cause deadlock. Therefore, the subprocess startup is performed in the initialization
                     # phase. In this phase, the main process is not locked.
                     worker.start()
-                except OSError as e:
-                    if e.errno == errno.EMFILE:
+                except OSError as exc:
+                    if exc.errno == errno.EMFILE:
                         raise RuntimeError("Failed to launch multiprocessing of GeneratorDataset: "
                                            "Too many open files. Please check if `num_parallel_workers` "
                                            "is set too large, or you are creating iterators multiple times. "
                                            "You can also increase the limit using `ulimit -n` in the shell "
-                                           "to avoid this error.")
+                                           "to avoid this error.") from exc
                     raise
-                except Exception as e:
-                    raise RuntimeError("Failed to launch multiprocessing of GeneratorDataset: {0}".format(e))
+                except Exception as exc:
+                    raise RuntimeError("Failed to launch multiprocessing of GeneratorDataset.") from exc
                 self.pids.append(worker.pid)
                 self.need_join = True
                 self.workers.append(worker)
             multiprocessing.set_start_method("fork", True)
 
-            logger.info("Launch generator worker process(es): {}".format([worker.pid for worker in self.workers]))
+            logger.info(f"Launch generator worker process(es): {[worker.pid for worker in self.workers]}")
             if platform.system().lower() != 'windows':
                 self._launch_monitor()
         else:
@@ -377,12 +377,12 @@ class SamplerFn(cde.PythonMultiprocessingRuntime):
                 result = self.workers[i % self.num_worker].get()
                 if isinstance(result, ExceptionHandler):
                     result.reraise()
-            except queue.Empty:
+            except queue.Empty as exc:
                 self._stop_subprocess()
-                raise Exception("Generator worker process timeout.")
-            except KeyboardInterrupt:
+                raise RuntimeError("Generator worker process timeout.") from exc
+            except KeyboardInterrupt as exc:
                 self._stop_subprocess()
-                raise Exception("Generator worker receives KeyboardInterrupt.")
+                raise RuntimeError("Generator worker receives KeyboardInterrupt.") from exc
             if self.eof.is_set():
                 self._stop_subprocess()
                 return
@@ -957,7 +957,7 @@ class GeneratorDataset(MappableDataset, UnionBaseDataset):
                          shuffle=shuffle, num_shards=num_shards, shard_id=shard_id)
         if isinstance(source, builtins.zip):
             # Although zip is iterable, it does not have the feature of repeated iteration, so pass it to the array.
-            self.source = [item for item in source]
+            self.source = list(source)
         else:
             self.source = source
 
@@ -1016,7 +1016,7 @@ class GeneratorDataset(MappableDataset, UnionBaseDataset):
 
     def _check_windows(self, num_parallel_workers, python_multiprocessing):
         """disable multiprocess when windows"""
-        if platform.system().lower() == 'windows' and num_parallel_workers > 1 and self.python_multiprocessing:
+        if platform.system().lower() == 'windows' and num_parallel_workers > 1 and python_multiprocessing:
             logger.warning("Python multiprocessing is not supported on Windows platform.")
         self.python_multiprocessing = python_multiprocessing if platform.system().lower() != 'windows' else False
 
