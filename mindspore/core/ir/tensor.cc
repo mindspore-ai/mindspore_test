@@ -24,6 +24,10 @@
 #include <utility>
 #include <algorithm>
 #include <map>
+#include <vector>
+#include <memory>
+#include <string>
+
 #include "mindapi/base/type_id.h"
 #include "abstract/abstract_value.h"
 #include "base/complex_storage.h"
@@ -38,6 +42,7 @@
 #include "utils/stream_guard.h"
 #include "base/float16.h"
 #include "ir/dtype/type_id.h"
+#include "ir/format_utils.h"
 
 namespace mindspore {
 namespace tensor {
@@ -551,6 +556,20 @@ void Tensor::UnPinMemory() {
 
 const ShapeVector &Tensor::shape_c() const { return shape(); }
 
+std::string Tensor::format() const {
+  if (device_sync_ == nullptr) {
+    MS_LOG(EXCEPTION) << "Cannot access format of uninitialized tensor";
+  }
+  return device_sync_->format();
+}
+
+void Tensor::set_format(const std::string &format) {
+  if (device_sync_ == nullptr) {
+    MS_LOG(EXCEPTION) << "Cannot set format for uninitialized tensor";
+  }
+  device_sync_->set_format(format);
+}
+
 ssize_t Tensor::DataItemSize() const {
   if (device_sync_ != nullptr && device_sync_->has_data()) {
     return device_sync_->data()->itemsize();
@@ -786,4 +805,22 @@ std::string ShapeToString(const ShapeVector &shape) {
   return str.append("]");
 }
 }  // namespace tensor
+namespace {
+DeviceAddressMetaData MakeDeviceAddressMetaData(const tensor::TensorPtr &tensor) {
+  DeviceAddressMetaData meta_data = {true, kernel::GetFormatFromStrToEnum(tensor->format()), tensor->data_type(),
+                                     tensor->shape()};
+  return meta_data;
+}
+}  // namespace
+bool SyncCopy(const tensor::TensorPtr &dst, const tensor::TensorPtr &src, size_t stream_id) {
+  auto dst_meta_data = MakeDeviceAddressMetaData(dst);
+  auto src_meta_data = MakeDeviceAddressMetaData(src);
+  return SyncCopy(dst->device_address(), src->device_address(), stream_id, src_meta_data, dst_meta_data);
+}
+
+bool AsyncCopy(const tensor::TensorPtr &dst, const tensor::TensorPtr &src, size_t stream_id, bool keep_src) {
+  auto dst_meta_data = MakeDeviceAddressMetaData(dst);
+  auto src_meta_data = MakeDeviceAddressMetaData(src);
+  return AsyncCopy(dst->device_address(), src->device_address(), stream_id, keep_src, src_meta_data, dst_meta_data);
+}
 }  // namespace mindspore
