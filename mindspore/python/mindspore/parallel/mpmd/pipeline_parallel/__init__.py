@@ -14,5 +14,5 @@
 # ============================================================================
 """Interfaces for pipeline parallel-related"""
 from .stage import PipelineStage, SharedParameterInfo
-from .schedule import Schedule1F1B, ScheduleGPipe
+from .schedule import Schedule1F1B, ScheduleGPipe, ScheduleInterleaved1F1B
 from ._utils import BatchDimSpec

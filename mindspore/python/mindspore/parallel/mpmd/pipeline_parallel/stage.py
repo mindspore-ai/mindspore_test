@@ -78,7 +78,7 @@ class PipelineStage(ABC):
     def __init__(self, submodule: HSDPCell, stage_index: int, stage_num: int, group=None,
                  src_stage=None, dst_stage=None, dyn_shape=False, has_backward=True, shared_parameters=None):
         super().__init__()
-        if not isinstance(submodule, HSDPCell):
+        if not isinstance(submodule, HSDPCell) and has_backward:
             raise TypeError(f"Argument submodule must be of type HSDPCell, but got type {type(submodule)}.")
         self.submodule = submodule
         self.stage_index = stage_index
@@ -112,7 +112,26 @@ class PipelineStage(ABC):
         self._shape_cache = []
         self._dyn_shape = dyn_shape
         self._shared_parameters = self._check_shared_parameters(shared_parameters)
+        self._virtual_chunk_num = 1
+
+    def init(self, virtual_chunk_num):
+        self._virtual_chunk_num = virtual_chunk_num
+        self._init_pp_group()
         self._sync_shared_parameters()
+
+    def _init_pp_group(self):
+        """init pipeline parallel communication group."""
+        if self.pp_group is None:
+            rank_id = get_rank()
+            device_num = get_group_size()
+            real_stage_num = self.stage_num // self._virtual_chunk_num
+            device_num_per_stage = device_num // real_stage_num
+            index = self.stage_index % real_stage_num
+            rank_ids = [rank_id + device_num_per_stage * (i - index) for i in range(real_stage_num)]
+            # if the names are the same, an error will be reported
+            pp_group = f"pipeline_group_{rank_ids}"
+            create_group(pp_group, rank_ids)
+            self.pp_group = pp_group
 
     def clear_cache(self):
         """clear cache."""
@@ -131,14 +150,7 @@ class PipelineStage(ABC):
     def _check_pp_group(self, group):
         """check the type of pipeline group, if it is None, perform default initialization."""
         if group is None:
-            rank_id = get_rank()
-            device_num = get_group_size()
-            device_num_per_stage = device_num // self.stage_num
-            rank_ids = [rank_id + device_num_per_stage * (i - self.stage_index) for i in range(self.stage_num)]
-            # if the names are the same, an error will be reported
-            pp_group = f"pipeline_group_{rank_ids}"
-            create_group(pp_group, rank_ids)
-            return pp_group
+            return None
         if not isinstance(group, str):
             raise TypeError("Argument 'group' must be type of str, but got type of {type(group)}.")
         return group
@@ -168,15 +180,20 @@ class PipelineStage(ABC):
         for shared_param_info in self._shared_parameters:
             param = shared_param_info.parameter
             shared_stage = shared_param_info.shared_stage
-            group, group_ranks = self._init_group(shared_stage)
+            group, group_ranks = self._init_shared_parameter_group(shared_stage)
             shared_param_info.group = group
             broadcast(param, group_ranks[0], group)
 
-    def _init_group(self, shared_stage):
+    def _global_rank(self, stage_index):
+        real_stage_num = self.stage_num // self._virtual_chunk_num
+        real_stage_index = stage_index % real_stage_num
+        return get_global_rank(self.pp_group, real_stage_index)
+
+    def _init_shared_parameter_group(self, shared_stage):
         """init group of shared parameter."""
         group_ranks = []
         for stage in shared_stage:
-            global_rank = get_global_rank(self.pp_group, stage)
+            global_rank = self._global_rank(stage)
             group_ranks.append(global_rank)
         group = "group_" + str(group_ranks)
         create_group(group, group_ranks)
@@ -267,8 +284,10 @@ class PipelineStage(ABC):
     def _update_layout(self, layout):
         """update the received layout."""
         device_num = get_group_size()
-        device_num_per_stage = device_num // self.stage_num
-        rank_list = list(range(self.stage_index * device_num_per_stage, (self.stage_index + 1) * device_num_per_stage))
+        real_stage_num = self.stage_num // self._virtual_chunk_num
+        device_num_per_stage = device_num // real_stage_num
+        index = self.stage_index % real_stage_num
+        rank_list = list(range(index * device_num_per_stage, (index + 1) * device_num_per_stage))
         layout.rank_list = rank_list
         layout.update_mesh()
         layout.update_compact_str()
@@ -296,12 +315,15 @@ class PipelineStage(ABC):
 
     def forward_one_chunk(self, micro_index, args=None, kwargs=None):
         """Execution a forward function."""
-        composite_args = args or []
+        if self.is_first_stage:
+            composite_args = args
+        else:
+            if micro_index in self.args_recv_info:
+                composite_args = [recv_info.buffer for recv_info in self.args_recv_info[micro_index]]
+            else:
+                raise RuntimeError(f"The exec order is wrong. The corresponding forward calculation \
+                                    is executed before the Receive operation. micro is {micro_index}.")
         composite_kwargs = kwargs or {}
-        recv_args = []
-        if micro_index in self.args_recv_info:
-            recv_args = [recv_info.buffer for recv_info in self.args_recv_info[micro_index]]
-        composite_args.extend(recv_args)
         out = self.submodule(*composite_args, **composite_kwargs)
         out_tuple = out if isinstance(out, tuple) else (out,)
         self.fwd_inputs_cache[micro_index] = (composite_args, composite_kwargs)
@@ -351,7 +373,7 @@ class PipelineStage(ABC):
             grad_out = self._backward_func(*fwd_args, **fwd_kwargs, sens=recv_args)
         self._clear_recv_buffer(micro_index)
         if not self.is_first_stage:
-            self.bwd_cache[micro_index] = grad_out[0][-self._recv_num:]
+            self.bwd_cache[micro_index] = grad_out[0][:self._recv_num]
         # return grads for parameters
         if self.is_first_stage:
             return grad_out
@@ -359,22 +381,20 @@ class PipelineStage(ABC):
 
     def _construct_forward_recv_info(self, micro_index, idx, global_rank):
         """construct forward recv info."""
-        if self._dyn_shape or micro_index not in self.args_recv_info:
-            shape = self._communicate_shape(global_rank, idx)
-            layout, dtype = self._communicate_layout(global_rank, idx)
-            dtensor = mint.empty(shape, dtype=dtype).local_to_global(layout)
-            if micro_index in self.args_recv_info:
-                recv_info = self.args_recv_info[micro_index][idx]
-                recv_info.buffer = dtensor
-                return recv_info
-            return _RecvInfo(global_rank, dtensor)
-        return self.args_recv_info[micro_index][idx]
+        shape = self._communicate_shape(global_rank, idx)
+        layout, dtype = self._communicate_layout(global_rank, idx)
+        dtensor = mint.empty(shape, dtype=dtype).local_to_global(layout)
+        if micro_index in self.args_recv_info:
+            recv_info = self.args_recv_info[micro_index][idx]
+            recv_info.buffer = dtensor
+            return recv_info
+        return _RecvInfo(global_rank, dtensor)
 
     def exec_fwd_recv_ops(self, micro_index):
         """Execute the forward recv operation."""
         recv_infos = []
         for idx in range(self._recv_num):
-            global_rank = get_global_rank(self.pp_group, self._src_stage[idx])
+            global_rank = self._global_rank(self._src_stage[idx])
             recv_info = self._construct_forward_recv_info(micro_index, idx, global_rank)
             if micro_index not in self.args_recv_info:
                 recv_infos.append(recv_info)
@@ -390,9 +410,8 @@ class PipelineStage(ABC):
         if micro_index not in self.grad_recv_info:
             buffer = mint.empty(tensor_send.local_shape, dtype=tensor_send.dtype)
             return _RecvInfo(global_rank, buffer)
-        if self._dyn_shape:
-            recv_info = self.grad_recv_info[micro_index][idx]
-            recv_info.buffer = mint.empty(tensor_send.local_shape, dtype=tensor_send.dtype)
+        recv_info = self.grad_recv_info[micro_index][idx]
+        recv_info.buffer = mint.empty(tensor_send.local_shape, dtype=tensor_send.dtype)
         return None
 
     def exec_fwd_send_ops(self, micro_index):
@@ -406,7 +425,7 @@ class PipelineStage(ABC):
                 dst_stage = self._dst_stage[idx]
             else:
                 dst_stage = self._dst_stage[0]
-            global_rank = get_global_rank(self.pp_group, dst_stage)
+            global_rank = self._global_rank(dst_stage)
             self._communicate_shape(global_rank, idx, tensor_send=cur_out)
             self._communicate_layout(global_rank, idx, tensor_send=cur_out)
             if self._has_backward:
