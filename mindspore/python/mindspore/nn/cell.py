@@ -3523,17 +3523,14 @@ class Cell(Cell_):
         The effective scope of this method is limited to the :func:`mindspore.nn.Cell.construct` function.
         For more details, please refer to :class:`mindspore.saved_tensors_hooks` .
 
+        .. note::
+            This method is currently not supported in Graph and Jit mode.
+
         Args:
             pack_hook (Callable): A function that defines how to process a tensor
                                   before it is saved during the forward pass.
             unpack_hook (Callable): A function that defines how to recover the tensor
                                     when it is needed during the backward computation.
-
-        Returns:
-            None.
-
-        .. note::
-            This method is currently not supported in Graph and Jit mode.
         """
         self._saved_tensor_pack_hook = pack_hook
         self._saved_tensor_unpack_hook = unpack_hook
