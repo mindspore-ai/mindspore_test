@@ -60,7 +60,7 @@ struct Common {
                                                                   bool need_contiguous, bool requires_grad);
   static ValueNodePtr CreateValueNodeByValue(const ValuePtr &v, const abstract::AbstractBasePtr &abs = nullptr);
   static void SetOutputUsedInBpropGraph(const ValuePtr &value);
-  static ValuePtr CreateFakeValueWithoutDeviceAddress(const ValuePtr &value, bool is_force_create_fake = false);
+  static ValuePtr CreateFakeValueWithoutDeviceAddress(const ValuePtr &value);
   static void ClearDeviceAddress(const ValuePtr &value);
   static inline bool IsConstant(InputType grad_type) { return grad_type == InputType::kConstant; }
   static void SetGraphInputAndWeightsInfo(const FrontendOpRunInfoPtr &op_run_info, const FuncGraphPtr &func_graph);

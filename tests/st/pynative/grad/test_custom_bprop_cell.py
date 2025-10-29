@@ -209,6 +209,46 @@ def test_custom_function_return_self_net():
     assert id(output) != id(x)
 
 
+class CustomFunctionReturnSelfWithUsedMapNet(nn.Cell):
+    def __init__(self):
+        super().__init__()
+        self.used_bprop_inputs = [0]
+
+    def construct(self, x):
+        z = x * x
+        return x, z
+
+    def bprop(self, *args):
+        output = args[1]
+        assert output is None
+
+        output_grad = args[-1]
+        assert len(output_grad) == 2
+        return output_grad[0] + output_grad[1] + args[0]
+
+
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
+def test_custom_function_return_self_with_used_map_net():
+    """
+    Feature: Custom bprop function.
+    Description: Test bprop function return self with used map.
+    Expectation: success.
+    """
+    x = Tensor([3, 3, 3], ms.float32)
+    net = CustomFunctionReturnSelfWithUsedMapNet()
+    net.set_grad()
+    output = net(x)
+    assert np.allclose(output[0].asnumpy(), x.asnumpy(), 0.00001, 0.00001)
+    assert np.allclose(output[1].asnumpy(), (x * x).asnumpy(), 0.00001, 0.00001)
+
+    grad_net = C.GradOperation(get_all=True)
+    grad_x = grad_net(net)(x)[0]
+    assert np.allclose(grad_x.asnumpy(), np.array([5, 5, 5], dtype=np.float32), 0.00001, 0.00001)
+
+
 class CustomFunctionMultiOutputReturnSelfNet(nn.Cell):
     def construct(self, x):
         return x, Tensor([3, 3, 3], ms.float32)

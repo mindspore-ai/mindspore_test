@@ -205,7 +205,7 @@ std::string GetInputArgsId(const py::args &args) {
   return input_args_id;
 }
 
-void SetCustomBpropInputs(const py::object &obj, const TopCellInfoPtr top_cell, autograd::CustomContext *context) {
+void SetCustomBpropInputs(const py::object &obj, autograd::CustomContext *context) {
   if (py::hasattr(obj, kUsedBpropInputs)) {
     py::object object = py::getattr(obj, kUsedBpropInputs);
     if (!py::isinstance<py::tuple>(object) && !py::isinstance<py::list>(object)) {
@@ -223,19 +223,19 @@ void SetCustomBpropInputs(const py::object &obj, const TopCellInfoPtr top_cell, 
     const size_t input_size = context->inputs.size();
     for (size_t i = 0; i < input_size; ++i) {
       const auto &input_value = context->inputs[i];
-      if (used_inputs.find(i) == used_inputs.end()) {
+      if (used_inputs.find(static_cast<int64_t>(i)) == used_inputs.end()) {
         auto fake_value = PyNativeAlgo::Common::CreateFakeValueWithoutDeviceAddress(input_value);
         context->inputs[i] = fake_value;
-        py::list origin_inputs = context->original_inputs.cast<py::list>();
-        origin_inputs[i] = py::none();
         MS_LOG(DEBUG) << "Clear input value" << i << "device address";
       }
     }
-    if (used_inputs.find(input_size) == used_inputs.end()) {
-      auto fake_value = PyNativeAlgo::Common::CreateFakeValueWithoutDeviceAddress(context->output);
+    if (used_inputs.find(static_cast<int64_t>(input_size)) == used_inputs.end()) {
+      const auto &fake_value = PyNativeAlgo::Common::CreateFakeValueWithoutDeviceAddress(context->output);
       context->output = fake_value;
       MS_LOG(DEBUG) << "Clear output value device address";
     }
+
+    context->used_inputs_set = std::move(used_inputs);
   }
 
   if (py::hasattr(obj, kInternalParams)) {
@@ -1073,14 +1073,11 @@ py::object GradExecutor::CallCustomBprop(const py::object &obj, const py::object
   (void)CheckBpropWithJit(context.bprop_fn);
   context.inputs.reserve(args.size() + kSizeEight);
   context.input_value_grad_type.reserve(args.size() + kSizeEight);
-  py::list list_inputs(args.size());
   for (size_t i = 0; i < args.size(); ++i) {
     auto input = PyNativeAlgo::Common::StubNodeToValue(parse::data_converter::PyObjToValue(args[i], true));
     (void)context.input_value_grad_type.emplace_back(AutoGradUtil::SetValueGradInfo(input, InputType::kConstant));
     (void)context.inputs.emplace_back(std::move(input));
-    list_inputs[i] = args[i];
   }
-  context.original_inputs = list_inputs;
   auto output = PyNativeAlgo::Common::StubNodeToValue(parse::data_converter::PyObjToValue(out, true));
   if (context.is_recompute) {
     output = ConvertOutputValueToTensor(output, !top_cell()->jit_out_has_dict());
@@ -1088,8 +1085,8 @@ py::object GradExecutor::CallCustomBprop(const py::object &obj, const py::object
   bool is_return_self = false;
   output = CheckAndUpdateOutput(output, context.inputs, &is_return_self);
   (void)AutoGradUtil::SetValueGradInfo(output, InputType::kOpOutput);
-  context.output = std::move(output);
-  SetCustomBpropInputs(obj, top_cell(), &context);
+  context.output = output;
+  SetCustomBpropInputs(obj, &context);
   RecordCustomBprop(context);
   forward()->WaitForwardTask();
   if (forward()->enable_async()) {
@@ -1099,7 +1096,7 @@ py::object GradExecutor::CallCustomBprop(const py::object &obj, const py::object
     (void)autograd::CallCustomBprop(std::move(context));
   }
   MS_LOG(DEBUG) << "End CallCustomBprop";
-  return (is_return_self ? CValueToPybindObj(context.output) : out);
+  return is_return_self ? CValueToPybindObj(output) : out;
 }
 
 void GradExecutor::SaveOutputNodeMap(const std::string &obj_id, const OpGradInfoPtr &grad_info, const CNodePtr &cnode,

@@ -89,7 +89,9 @@ class RUNTIME_PIPELINE_EXPORT AsyncRQueue {
 
   void SetSpin(bool spin);
 
-  void DisableMultiThread() { disable_multi_thread_ = true; }
+  bool IsMultiThreadDisabled() const { return disable_multi_thread_; }
+
+  void SetMultiThreadDisabled(bool disabled) { disable_multi_thread_ = disabled; }
 
  protected:
   void WorkerLoop();
