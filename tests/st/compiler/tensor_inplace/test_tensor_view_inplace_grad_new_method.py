@@ -12,13 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
+"""Test tensor view inplace grad"""
 import pytest
 import os
 import numpy as np
 import mindspore as ms
-import mindspore.nn as nn
 import mindspore.ops.operations as P
-from mindspore import ops, Tensor
+from mindspore import ops, Tensor, nn
 from mindspore.nn import ReLU
 from mindspore.common.parameter import Parameter
 from mindspore import dtype as mstype
@@ -621,12 +621,19 @@ def test_tensor_view_inplace_grad_with_tuple_output():
     input_x = Tensor(x_np)
     y_np = 2 * np.ones([2, 4]).astype(np.float32)
     input_y = Tensor(y_np)
-    net = Net()
 
-    out_expect = grad(net)(input_x, input_y)
+    net = Net()
+    out_forword_expect = net(input_x, input_y)
+    out_back_expect = grad(net)(input_x, input_y)
+    out_back_expect_1 = grad(net, 1)(input_x, input_y)
     net.construct = ms.jit(net.construct, backend="ms_backend")
-    out_jit = grad(net)(input_x, input_y)
-    assert np.allclose(out_expect.asnumpy(), out_jit.asnumpy())
+    out_forword_jit = net(input_x, input_y)
+    out_back_jit = grad(net)(input_x, input_y)
+    out_back_jit_1 = grad(net, 1)(input_x, input_y)
+    assert np.allclose(out_forword_expect[0].asnumpy(), out_forword_jit[0].asnumpy())
+    assert np.allclose(out_forword_expect[1].asnumpy(), out_forword_jit[1].asnumpy())
+    assert np.allclose(out_back_expect.asnumpy(), out_back_jit.asnumpy())
+    assert np.allclose(out_back_expect_1.asnumpy(), out_back_jit_1.asnumpy())
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')

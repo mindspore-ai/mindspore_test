@@ -13,10 +13,11 @@
 # limitations under the License.
 # ============================================================================
 """ test graph raise """
+# pylint: disable=f-string-without-interpolation
+import os
 import pytest
 import numpy as np
-import mindspore.nn as nn
-from mindspore import Tensor, context
+from mindspore import Tensor, context, jit, nn
 from mindspore.common.api import _cell_graph_executor
 
 context.set_context(mode=context.GRAPH_MODE)
@@ -146,7 +147,7 @@ def test_raise_8():
     """
     class RaiseNet(nn.Cell):
         def __init__(self):
-            super(RaiseNet, self).__init__()
+            super().__init__()
             self.x = [1, 3, 5, 7]
 
         def construct(self):
@@ -346,7 +347,7 @@ def test_raise_18():
     """
     class RaiseNet(nn.Cell):
         def __init__(self):
-            super(RaiseNet, self).__init__()
+            super().__init__()
             self.input = Tensor(1)
 
         def construct(self):
@@ -582,3 +583,21 @@ def test_raise_joinedstr_tensor():
         print("res:", res)
     assert "The input should not be Tensor(shape=[1], dtype=Int64, value=[1])" in str(
         raise_info_joinedstr_tensor.value)
+
+
+def test_joined_str_raise():
+    """
+    Feature: joined str
+    Description: Test joined str
+    Expectation: Raise expected exception
+    """
+    @jit
+    def func():
+        x = Tensor([3])
+        raise ValueError(f"x is {x}.")
+
+    os.environ['MS_DEV_JIT_SYNTAX_LEVEL'] = '0'
+    with pytest.raises(ValueError) as e:
+        func()
+    assert "x is Tensor(shape=[1], dtype=Int64, value=[3])." in str(e.value)
+    os.environ['MS_DEV_JIT_SYNTAX_LEVEL'] = '2'

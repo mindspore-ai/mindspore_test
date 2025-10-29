@@ -12,9 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+"""Test enable_dynamic api"""
 # pylint: disable=unused-variable
 import os
+import glob
 import pytest
+import shutil
 import subprocess
 import numpy as np
 import mindspore as ms
@@ -26,10 +29,10 @@ def generate_dyn(file_name, func_name, dyn_file_name, expected_num):
     assert not os.path.exists(dyn_file_name)
 
     dirname = os.path.dirname(os.path.abspath(__file__))
-    cmd = f"VLOG_v=1 python " + dirname + "/" + file_name + " " + func_name + " > " + dyn_file_name + " 2>&1"
+    cmd = "VLOG_v=1 python " + dirname + "/" + file_name + " " + func_name + " > " + dyn_file_name + " 2>&1"
     subprocess.check_output(cmd, shell=True)
     assert os.path.exists(dyn_file_name)
-    with open(dyn_file_name, "r") as v_file:
+    with open(dyn_file_name, "r", encoding='utf-8') as v_file:
         data = v_file.read()
 
     assert data.count("Start compiling") == expected_num
@@ -258,7 +261,7 @@ def test_invalid_cell_in_graph_mode():
     """
     class Net(ms.nn.Cell):
         def __init__(self):
-            super(Net, self).__init__()
+            super().__init__()
             self.num = 2
 
         @ms.jit
@@ -298,3 +301,65 @@ def test_invalid_set_inputs():
     with pytest.raises(ValueError) as raise_info:
         net(a, b)
     assert "When `enable_dynamic` is provided, the `set_inputs()` cannot be set!" in str(raise_info.value)
+
+
+def save_ir(ir_path):
+    if os.path.exists(ir_path):
+        shutil.rmtree(ir_path)
+    os.environ['MS_DEV_SAVE_GRAPHS'] = "1"
+    os.environ['MS_DEV_SAVE_GRAPHS_PATH'] = ir_path
+
+
+def check_ir(expect_ir_num, ir_path, expect_dict):
+    try:
+        ir_files = sorted(glob.glob(os.path.join(ir_path, '*validate*.ir')))
+        assert len(ir_files) == expect_ir_num
+        if len(ir_files) == 2:
+            file = ir_files[1]
+        elif len(ir_files) == 1:
+            file = ir_files[0]
+        elif len(ir_files) == 3:
+            file = ir_files[2]
+        else:
+            raise RuntimeError("Check ir failed.")
+        for key in expect_dict:
+            cmd = f"grep '^%para' {file} | grep '{key}' | wc -l"
+            output = subprocess.check_output(cmd, shell=True)
+            output = str(output, 'utf-8').strip()
+            assert int(output) == expect_dict[key]
+
+    finally:
+        os.unsetenv('MS_DEV_SAVE_GRAPHS')
+        os.unsetenv('MS_DEV_SAVE_GRAPHS_PATH')
+        if os.path.exists(ir_path):
+            shutil.rmtree(ir_path)
+
+
+def test_jit_enable_dynamic_002():
+    """
+    Feature: ms.enable_dynamic
+    Description: Test ms.enable_dynamic with jit
+    Expectation: No exception.
+    """
+    case_name = "test_jit_enable_dynamic_002"
+    ir_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), case_name)
+    save_ir(ir_path)
+
+    d = ms.Tensor(shape=[None, 4], dtype=ms.float32)
+
+    @ms.jit(backend="ms_backend")
+    @ms.enable_dynamic(x=d)
+    def my_mul(x):
+        return x * x
+
+    def my_mul_nojit(x):
+        return x * x
+
+    tensors = [
+        ms.Tensor(np.random.randn(2, 4), ms.float32),
+        ms.Tensor(np.random.randn(3, 4), ms.float32),
+        ms.Tensor(np.random.randn(4, 4), ms.float32)
+    ]
+    for tensor in tensors:
+        my_mul(tensor)
+    check_ir(1, ir_path, {"(-1, 4)": 1})
