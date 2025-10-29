@@ -12,6 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+"""
+The tests of mindspore, used to test communication for cpu.
+"""
 import os
 import numpy as np
 import hashlib
@@ -50,7 +53,7 @@ if init_approach == "INIT_METHOD":
     init_process_group(init_method=init_method, rank=node_id, world_size=worker_num)
 elif init_approach == "TCPSTORE":
     print("Entry calling init_process_group with provided TcpStore!", flush=True)
-    is_master = (node_id == 0)
+    is_master = node_id == 0
     store = TCPStore("127.0.0.1", 10666, worker_num, is_master)
     init_process_group(rank=node_id, world_size=worker_num, store=store)
 else:
@@ -227,6 +230,37 @@ def test_cpu_broadcast():
 
 
 @log_function_entry_exit
+def test_cpu_broadcast_dtype():
+    """
+    Feature: test distributed op
+    Description: test comm op in python native
+    Expectation: success
+    """
+    def test_cpu_broadcast_dtype_inner(dtype=np.float32):
+        """
+        Feature: test distributed op
+        Description: test broadcast dtype
+        Expectation: success
+        """
+        name = "mccl_" + str(size) + "_" + hashlib.sha1(bytes("_".join(map(str, range(size))), "utf-8")).hexdigest()
+        group = new_group(list(range(size)), backend="mccl")
+        assert group == name
+        # 同步场景
+        tensor = ms.Tensor(np.arange(8).reshape([2, 4]).astype(dtype))
+        if rank != 0:
+            tensor = ms.Tensor(np.zeros([2, 4]).astype(dtype))
+        output_handle = broadcast(tensor, src=0, group=group)
+        assert output_handle is None
+        except_output_tensor = ms.Tensor(np.arange(8).reshape([2, 4]).astype(dtype))
+        assert np.allclose(tensor.asnumpy(), except_output_tensor.asnumpy())
+
+
+    types = [np.int8, np.uint8, np.uint16, np.int32, np.uint32, np.int64, np.uint64, np.float16, np.float32, np.float64]
+    for type_i in types:
+        test_cpu_broadcast_dtype_inner(type_i)
+
+
+@log_function_entry_exit
 def test_cpu_all_gather():
     """
     Feature: test distributed op
@@ -294,6 +328,40 @@ def test_cpu_all_gather():
         assert np.allclose(
             output_tensor1[1].asnumpy(), except_output_tensor[1].asnumpy()
         )
+
+
+@log_function_entry_exit
+def test_cpu_all_gather_dtype():
+    """
+    Feature: test distributed op
+    Description: test comm op in python native
+    Expectation: success
+    """
+    def test_cpu_all_gather_dtype_inner(dtype=np.float32):
+        """
+        Feature: test distributed op
+        Description: test allgather dtype
+        Expectation: success
+        """
+        name = "mccl_" + str(size) + "_" + hashlib.sha1(bytes("_".join(map(str, range(size))), "utf-8")).hexdigest()
+        group = new_group(list(range(size)), backend="mccl")
+        assert group == name
+        # 同步场景
+        input_tensor = ms.Tensor(np.ones([3, 3]).astype(dtype))
+        output_tensor = []
+        except_output_tensor = []
+        for _ in range(size):
+            output_tensor.append(ms.Tensor(np.zeros([3, 3]).astype(dtype)))
+            except_output_tensor.append(ms.Tensor(np.ones([3, 3]).astype(dtype)))
+
+        output_handle = all_gather(output_tensor, input_tensor, group=group)
+        assert output_handle is None
+        assert np.allclose(output_tensor[0].asnumpy(), except_output_tensor[0].asnumpy())
+        assert np.allclose(output_tensor[1].asnumpy(), except_output_tensor[1].asnumpy())
+
+    types = [np.int8, np.uint8, np.uint16, np.int32, np.uint32, np.int64, np.uint64, np.float16, np.float32, np.float64]
+    for type_i in types:
+        test_cpu_all_gather_dtype_inner(type_i)
 
 
 @log_function_entry_exit
@@ -379,6 +447,42 @@ def test_cpu_gather():
 
 
 @log_function_entry_exit
+def test_cpu_gather_dtype():
+    """
+    Feature: test distributed op
+    Description: test comm op in python native
+    Expectation: success
+    """
+    def test_cpu_gather_dtype_inner(dtype=np.float32):
+        """
+        Feature: test distributed op
+        Description: test gather dtype
+        Expectation: success
+        """
+        name = "mccl_" + str(size) + "_" + hashlib.sha1(bytes("_".join(map(str, range(size))), "utf-8")).hexdigest()
+        group = new_group(list(range(size)), backend="mccl")
+        assert group == name
+        # 同步场景
+        input_tensor = ms.Tensor(np.ones([3, 3]).astype(dtype))
+        output_tensor = []
+        except_output_tensor = []
+        for _ in range(size):
+            output_tensor.append(ms.Tensor(np.zeros([3, 3]).astype(dtype)))
+            if rank == 0:
+                except_output_tensor.append(ms.Tensor(np.ones([3, 3]).astype(dtype)))
+            else:
+                except_output_tensor.append(ms.Tensor(np.zeros([3, 3]).astype(dtype)))
+        output_handle = gather(input_tensor, output_tensor, group=group)
+        assert output_handle is None
+        assert np.allclose(output_tensor[0].asnumpy(), except_output_tensor[0].asnumpy())
+        assert np.allclose(output_tensor[1].asnumpy(), except_output_tensor[1].asnumpy())
+
+    types = [np.int8, np.uint8, np.uint16, np.int32, np.uint32, np.int64, np.uint64, np.float16, np.float32, np.float64]
+    for type_i in types:
+        test_cpu_gather_dtype_inner(type_i)
+
+
+@log_function_entry_exit
 def test_cpu_scatter():
     """
     Feature: test distributed op
@@ -432,6 +536,42 @@ def test_cpu_scatter():
         except_output_tensor = ms.Tensor(np.ones([3, 3]).astype(np.int8))
         assert output_handle is None
         assert np.allclose(output_tensor1.asnumpy(), except_output_tensor.asnumpy())
+
+
+@log_function_entry_exit
+def test_cpu_scatter_dtype():
+    """
+    Feature: test distributed op
+    Description: test comm op in python native
+    Expectation: success
+    """
+    def test_cpu_scatter_dtype_inner(dtype=np.float32):
+        """
+        Feature: test distributed op
+        Description: test scatter dtype
+        Expectation: success
+        """
+        name = "mccl_" + str(size) + "_" + hashlib.sha1(bytes("_".join(map(str, range(size))), "utf-8")).hexdigest()
+        group = new_group(list(range(size)), backend="mccl")
+        assert group == name
+        # 同步场景
+        input_tensor = []
+        for _ in range(size):
+            input_tensor.append(ms.Tensor(np.ones([3, 3]).astype(dtype)))
+        if rank != 0:
+            input_tensor = []
+            for _ in range(size):
+                input_tensor.append(ms.Tensor(np.zeros([3, 3]).astype(dtype)))
+        output_tensor = ms.Tensor(np.zeros([3, 3]).astype(dtype))
+        except_output_tensor = ms.Tensor(np.ones([3, 3]).astype(dtype))
+        output_handle = scatter(output_tensor, input_tensor, src=0, group=group)
+        assert output_handle is None
+        assert np.allclose(output_tensor.asnumpy(), except_output_tensor.asnumpy())
+
+    types = [np.int8, np.uint8, np.uint16, np.int32, np.uint32, np.int64, np.uint64, np.float16, np.float32, np.float64]
+    for type_i in types:
+        test_cpu_scatter_dtype_inner(type_i)
+
 
 
 @log_function_entry_exit
@@ -533,6 +673,38 @@ def test_cpu_send():
             out = recv(output, src=1, group=group)
             assert out == 0
             assert np.allclose(output.asnumpy(), input_tensor.asnumpy())
+
+
+@log_function_entry_exit
+def test_cpu_send_dtype():
+    """
+    Feature: test distributed op
+    Description: test comm op in python native
+    Expectation: success
+    """
+    def test_cpu_send_dtype_inner(dtype=np.float32):
+        """
+        Feature: test distributed op
+        Description: test send dtype
+        Expectation: success
+        """
+        # 同步场景
+        name = "mccl_" + str(size) + "_" + hashlib.sha1(bytes("_".join(map(str, range(size))), "utf-8")).hexdigest()
+        group = new_group(list(range(size)), backend="mccl")
+        assert group == name
+
+        input_tensor = ms.Tensor(np.arange(8).reshape([2, 4]).astype(dtype))
+        output = ms.Tensor(np.zeros([2, 4]).astype(dtype))
+        if rank % 2 == 0:
+            send(input_tensor, rank + 1 % size, group=group)
+        else:
+            out = recv(output, src=rank - 1, group=group)
+            assert out == 0
+            assert np.allclose(output.asnumpy(), input_tensor.asnumpy())
+
+    types = [np.int8, np.uint8, np.uint16, np.int32, np.uint32, np.int64, np.uint64, np.float16, np.float32, np.float64]
+    for type_i in types:
+        test_cpu_send_dtype_inner(type_i)
 
 
 @log_function_entry_exit
@@ -642,3 +814,32 @@ def test_cpu_all_reduce():
         except_sum_output = input_tensor * (sum(list(range(3, 5))))
         assert np.allclose(sum_input_tensor.asnumpy(), except_sum_output.asnumpy())
         assert sum_output_handle is None
+
+
+@log_function_entry_exit
+def test_cpu_all_reduce_dtype():
+    """
+    Feature: test distributed op
+    Description: test comm op in python native
+    Expectation: success
+    """
+    def test_cpu_all_reduce_dtype_inner(dtype=np.float32):
+        """
+        Feature: test distributed op
+        Description: test allreduce dtype
+        Expectation: success
+        """
+        name = "mccl_" + str(size) + "_" + hashlib.sha1(bytes("_".join(map(str, range(size))), "utf-8")).hexdigest()
+        group = new_group(list(range(size)), backend="mccl")
+        assert group == name
+        input_tensor = ms.Tensor(np.arange(9).reshape(3, 3).astype(dtype))
+        # 同步场景
+        sum_input_tensor = input_tensor * (rank + 1)
+        sum_output_handle = all_reduce(sum_input_tensor, group=group)
+        except_sum_output = input_tensor * (sum(list(range(1, size + 1))))
+        assert np.allclose(sum_input_tensor.asnumpy(), except_sum_output.asnumpy())
+        assert sum_output_handle is None
+
+    types = [np.int8, np.int16, np.int32, np.int64, np.float16, np.float32]
+    for type_i in types:
+        test_cpu_all_reduce_dtype_inner(type_i)
