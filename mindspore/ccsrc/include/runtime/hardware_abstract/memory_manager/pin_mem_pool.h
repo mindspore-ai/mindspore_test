@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef MINDSPORE_CCSRC_RUNTIME_DEVICE_GSM_PIN_MEM_POOL_H_
-#define MINDSPORE_CCSRC_RUNTIME_DEVICE_GSM_PIN_MEM_POOL_H_
+#ifndef MINDSPORE_CCSRC_INCLUDE_RUNTIMR_HARDWARE_ABSTRACT_MEMORY_MANAGER_PIN_MEM_POOL_H_
+#define MINDSPORE_CCSRC_INCLUDE_RUNTIMR_HARDWARE_ABSTRACT_MEMORY_MANAGER_PIN_MEM_POOL_H_
 
 #include <memory>
 #include <mutex>
@@ -53,4 +53,4 @@ class RUNTIME_HARDWARE_EXPORT PinMemPool : public DynamicMemPoolBestFit, public 
 }  // namespace device
 }  // namespace mindspore
 
-#endif  // MINDSPORE_CCSRC_RUNTIME_DEVICE_GSM_PIN_MEM_POOL_H_
+#endif  // MINDSPORE_CCSRC_INCLUDE_RUNTIMR_HARDWARE_ABSTRACT_MEMORY_MANAGER_PIN_MEM_POOL_H_

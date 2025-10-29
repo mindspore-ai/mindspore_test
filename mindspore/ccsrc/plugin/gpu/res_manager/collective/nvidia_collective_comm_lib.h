@@ -23,7 +23,7 @@
 #include <vector>
 #include <string>
 #include "utils/dlopen_macro.h"
-#include "runtime/hardware_abstract/collective/collective_communication_lib.h"
+#include "include/runtime/hardware_abstract/collective/collective_communication_lib.h"
 #include "plugin/gpu/res_manager/collective/nvidia_communication_group.h"
 
 #ifndef EXPORT_NCCL_WRAPPER

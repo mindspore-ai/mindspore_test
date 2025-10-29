@@ -25,7 +25,7 @@
 #include "pynative/backward/op_grad/func_grad.h"
 #include "pyboost/functions/auto_grad_guard.h"
 #include "pynative/backward/grad_utils.h"
-#include "runtime/pipeline/pipeline.h"
+#include "include/runtime/pipeline/pipeline.h"
 
 namespace mindspore::pynative::autograd {
 template <typename Func>

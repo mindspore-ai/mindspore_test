@@ -43,7 +43,7 @@
 #include "runtime/hardware_abstract/device_context/device_context.h"
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "runtime/hardware_abstract/utils.h"
-#include "runtime/hardware_abstract/stream/multi_stream_controller.h"
+#include "include/runtime/hardware_abstract/stream/multi_stream_controller.h"
 #include "backend/common/device_address_utils.h"
 
 constexpr int kFailure = 1;

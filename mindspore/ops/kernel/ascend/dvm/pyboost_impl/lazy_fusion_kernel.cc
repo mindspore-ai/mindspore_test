@@ -19,9 +19,9 @@
 #include "kernel/ascend/dvm/pyboost_impl/lazy_fusion_flags.h"
 #include "plugin/ascend/res_manager/stream_manager/ascend_stream_manager.h"
 #include "tools/profiler/profiling.h"
-#include "runtime/pipeline/pipeline.h"
+#include "include/runtime/pipeline/pipeline.h"
 #include "utils/file_utils.h"
-#include "runtime/hardware_abstract/stream/multi_stream_controller.h"
+#include "include/runtime/hardware_abstract/stream/multi_stream_controller.h"
 
 namespace mindspore {
 namespace kernel {

@@ -13,13 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef MINDSPORE_MINDSPORE_CCSRC_RUNTIME_PIPELINE_PIPELINE_H_
-#define MINDSPORE_MINDSPORE_CCSRC_RUNTIME_PIPELINE_PIPELINE_H_
+#ifndef MINDSPORE_CCSRC_INCLUDE_RUNTIME_PIPELINE_PIPELINE_H_
+#define MINDSPORE_CCSRC_INCLUDE_RUNTIME_PIPELINE_PIPELINE_H_
 
 #include <utility>
 #include "utils/ms_utils.h"
 #include "runtime/pipeline/visible.h"
-#include "runtime/pipeline/async_rqueue.h"
+#include "include/runtime/pipeline/async_rqueue.h"
 
 namespace mindspore {
 namespace runtime {
@@ -73,4 +73,4 @@ class RUNTIME_PIPELINE_EXPORT Pipeline {
 };
 }  // namespace runtime
 }  // namespace mindspore
-#endif  // MINDSPORE_MINDSPORE_CCSRC_RUNTIME_PIPELINE_PIPELINE_H_
+#endif  // MINDSPORE_CCSRC_INCLUDE_RUNTIME_PIPELINE_PIPELINE_H_

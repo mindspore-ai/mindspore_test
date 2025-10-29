@@ -16,7 +16,7 @@
 
 #include "pynative/backward/hook/custom_function.h"
 #include "pynative/backward/hook/function_py.h"
-#include "runtime/pipeline/pipeline.h"
+#include "include/runtime/pipeline/pipeline.h"
 #include "pynative/backward/op_grad/func_builder.h"
 #include "pynative/utils/pynative_execute.h"
 #include "include/utils/python_adapter.h"

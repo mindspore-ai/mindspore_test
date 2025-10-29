@@ -13,14 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef MINDSPORE_CCSRC_RUNTIME_HARDWARE_COLLECTIVE_DUMMY_COLLECTIVE_COMMUNICATION_LIB_H_
-#define MINDSPORE_CCSRC_RUNTIME_HARDWARE_COLLECTIVE_DUMMY_COLLECTIVE_COMMUNICATION_LIB_H_
+#ifndef MINDSPORE_CCSRC_INCLUDE_RUNTIME_HARDWARE_ABSTRACT_COLLECTIVE_DUMMY_COLLECTIVE_COMMUNICATION_LIB_H_
+#define MINDSPORE_CCSRC_INCLUDE_RUNTIME_HARDWARE_ABSTRACT_COLLECTIVE_DUMMY_COLLECTIVE_COMMUNICATION_LIB_H_
 
 #include <string>
 #include <vector>
 
-#include "runtime/hardware_abstract/collective/communication_group.h"
-#include "runtime/hardware_abstract/collective/collective_communication_lib.h"
+#include "include/runtime/hardware_abstract/collective/communication_group.h"
+#include "include/runtime/hardware_abstract/collective/collective_communication_lib.h"
 #include "utils/ms_context.h"
 #include "runtime/hardware_abstract/visible.h"
 
@@ -83,4 +83,4 @@ class RUNTIME_HARDWARE_EXPORT DummyCollectiveCommunicationLib : public Collectiv
 };
 }  // namespace device
 }  // namespace mindspore
-#endif  // MINDSPORE_CCSRC_RUNTIME_HARDWARE_COLLECTIVE_DUMMY_COLLECTIVE_COMMUNICATION_LIB_H_
+#endif  // MINDSPORE_CCSRC_INCLUDE_RUNTIME_HARDWARE_ABSTRACT_COLLECTIVE_DUMMY_COLLECTIVE_COMMUNICATION_LIB_H_

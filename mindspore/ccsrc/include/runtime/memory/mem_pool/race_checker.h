@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CCSRC_BACKEND_MEM_REUSE_RACE_CHECKER_H_
-#define MINDSPORE_CCSRC_BACKEND_MEM_REUSE_RACE_CHECKER_H_
+#ifndef MINDSPORE_CCSRC_INCLUDE_RUNTIME_MEMORY_MEM_POOL_RACE_CHECKER_H_
+#define MINDSPORE_CCSRC_INCLUDE_RUNTIME_MEMORY_MEM_POOL_RACE_CHECKER_H_
 
 #include <string>
 #include <unordered_map>
@@ -61,4 +61,4 @@ class RaceChecker {
 }  // namespace device
 }  // namespace mindspore
 
-#endif  // MINDSPORE_CCSRC_BACKEND_MEM_REUSE_RACE_CHECKER_H_
+#endif  // MINDSPORE_CCSRC_INCLUDE_RUNTIME_MEMORY_MEM_POOL_RACE_CHECKER_H_

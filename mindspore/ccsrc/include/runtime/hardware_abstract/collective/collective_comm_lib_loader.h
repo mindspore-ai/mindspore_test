@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CCSRC_RUNTIME_HARDWARE_COLLECTIVE_COLLECTIVE_LIB_LOADER_H_
-#define MINDSPORE_CCSRC_RUNTIME_HARDWARE_COLLECTIVE_COLLECTIVE_LIB_LOADER_H_
+#ifndef MINDSPORE_CCSRC_INCLUDE_RUNTIME_HARDWARE_ABSTRACT_COLLECTIVE_COLLECTIVE_LIB_LOADER_H_
+#define MINDSPORE_CCSRC_INCLUDE_RUNTIME_HARDWARE_ABSTRACT_COLLECTIVE_COLLECTIVE_LIB_LOADER_H_
 
 #include <string>
 #include <memory>
 #include "utils/dlopen_macro.h"
-#include "runtime/hardware_abstract/collective/collective_communication_lib.h"
+#include "include/runtime/hardware_abstract/collective/collective_communication_lib.h"
 #include "runtime/hardware_abstract/visible.h"
 
 namespace mindspore {
@@ -57,4 +57,4 @@ ORIGIN_METHOD(communication_lib_instance, mindspore::device::CollectiveCommunica
 ORIGIN_METHOD(ascend_communication_lib_instance, mindspore::device::CollectiveCommunicationLib *)
 ORIGIN_METHOD(lowlatency_communication_lib_instance, mindspore::device::CollectiveCommunicationLib *)
 ORIGIN_METHOD(multi_ascend_communication_lib_instance, mindspore::device::CollectiveCommunicationLib *)
-#endif  // MINDSPORE_CCSRC_RUNTIME_HARDWARE_COLLECTIVE_COLLECTIVE_LIB_LOADER_H_
+#endif  // MINDSPORE_CCSRC_INCLUDE_RUNTIME_HARDWARE_ABSTRACT_COLLECTIVE_COLLECTIVE_LIB_LOADER_H_

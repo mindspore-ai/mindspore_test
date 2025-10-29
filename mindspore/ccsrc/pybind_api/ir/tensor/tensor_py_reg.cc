@@ -31,7 +31,7 @@
 #include "include/utils/pynative/adapter.h"
 #include "include/utils/exception.h"
 #include "include/utils/pyobj_manager.h"
-#include "runtime/pipeline/pipeline.h"
+#include "include/runtime/pipeline/pipeline.h"
 #include "pynative/utils/runtime/op_executor.h"
 #include "frontend/jit/trace/trace_recorder.h"
 #include "pybind_api/ir/tensor/storage/storage_py.h"

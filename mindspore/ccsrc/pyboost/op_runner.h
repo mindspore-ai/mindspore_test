@@ -33,7 +33,7 @@
 #include "ops/infer_info/infer_info_utils.h"
 #include "include/runtime/memory/mem_pool/mem_tracker.h"
 #include "mindspore/ccsrc/pyboost/comm_handle.h"
-#include "runtime/pipeline/pipeline.h"
+#include "include/runtime/pipeline/pipeline.h"
 
 namespace mindspore {
 namespace tensor {
@@ -83,14 +83,14 @@ class PYBOOST_API OpRunner : public std::enable_shared_from_this<OpRunner> {
   }
 
   template <typename... T>
-  void GenerateInputAbstract(T &... args) {
+  void GenerateInputAbstract(T &...args) {
     input_abs_.clear();
     (input_abs_.emplace_back(kAbstractConverter.ConvertAbstract(args)), ...);
   }
 
   // Member function for Infer and creating output tensors.
   template <typename... T>
-  void InferOutput(T &... args) {
+  void InferOutput(T &...args) {
     runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kPynative, runtime::ProfilerEvent::kPyBoostInferOutput,
                                        primitive_->name(), false);
     if (output_value_simple_info_ = ops::DoGeneralInfer(primitive_, args...); output_value_simple_info_ != nullptr) {
@@ -116,7 +116,7 @@ class PYBOOST_API OpRunner : public std::enable_shared_from_this<OpRunner> {
 
   // A static function used for the "customize" operator to generate the operator's output Tensor.
   template <typename... T>
-  static void InferOpOutput(const std::shared_ptr<OpRunner> &op, T &... args) {
+  static void InferOpOutput(const std::shared_ptr<OpRunner> &op, T &...args) {
     op->InferOutput(args...);
   }
 
@@ -136,7 +136,7 @@ class PYBOOST_API OpRunner : public std::enable_shared_from_this<OpRunner> {
   }
 
   template <typename... Args>
-  void ProfileTrackerInput(const Args &... args) {
+  void ProfileTrackerInput(const Args &...args) {
     if (MS_UNLIKELY(mindspore::runtime::ProfilerAnalyzer::GetInstance().profiler_enable())) {
       static auto ascend_profiler = mindspore::profiler::Profiler::GetInstance(kAscendDevice);
       if (ascend_profiler != nullptr && ascend_profiler->EnableRecordShapes()) {
@@ -186,7 +186,7 @@ class PYBOOST_API OpRunner : public std::enable_shared_from_this<OpRunner> {
       return;
     }
     std::vector<tensor::TensorPtr> tensors;
-    std::apply([this, &tensors](const Args &... args) { (CollectTrackerTensor(args, &tensors), ...); }, tuple);
+    std::apply([this, &tensors](const Args &...args) { (CollectTrackerTensor(args, &tensors), ...); }, tuple);
     TrackerOutputTensors(tensors);
   }
 

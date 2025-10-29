@@ -20,7 +20,7 @@
 #include <string>
 #include "external/ge/ge_allocator.h"
 #include "ir/device_address.h"
-#include "runtime/hardware_abstract/memory_manager/memory_manager.h"
+#include "include/runtime/hardware_abstract/memory_manager/memory_manager.h"
 
 namespace mindspore {
 namespace backend {

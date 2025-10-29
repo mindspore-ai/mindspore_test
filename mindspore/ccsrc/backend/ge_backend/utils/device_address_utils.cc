@@ -27,7 +27,7 @@
 #include "ir/graph_utils.h"
 #include "utils/shape_utils.h"
 #include "frontend/ir/tensor_py.h"
-#include "runtime/pipeline/pipeline.h"
+#include "include/runtime/pipeline/pipeline.h"
 #include "runtime/hardware_abstract/utils.h"
 #include "runtime/hardware_abstract/device_context/device_context.h"
 #include "pybind_api/gil_scoped_long_running.h"

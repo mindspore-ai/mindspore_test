@@ -31,7 +31,7 @@
 #include "runtime/core/actors/dynamic_shape/kernel_async_infer_actor.h"
 #include "runtime/core/actors/dynamic_shape/kernel_async_resize_actor.h"
 #include "runtime/hardware_abstract/device_context/device_context.h"
-#include "runtime/pipeline/async_rqueue.h"
+#include "include/runtime/pipeline/async_rqueue.h"
 #include "tools/profiler/profiling.h"
 #include "ir/anf.h"
 
@@ -115,8 +115,8 @@ class SuperKernelActor : public DebugAwareActor {
     const {
     return kernel_input_to_graph_input_indices_;
   }
-  const mindspore::HashMap<AnfNode *, std::vector<std::pair<size_t, std::vector<size_t>>>>
-    &kernel_input_to_actor_output_indices() const {
+  const mindspore::HashMap<AnfNode *, std::vector<std::pair<size_t, std::vector<size_t>>>> &
+  kernel_input_to_actor_output_indices() const {
     return kernel_input_to_actor_output_indices_;
   }
   const std::set<std::pair<size_t, ParameterInfo>> &input_params_no_user() const { return input_params_no_user_; }

@@ -19,7 +19,7 @@
 #include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "mindspore/ccsrc/pyboost/op_runner.h"
 #include "mindspore/ccsrc/pyboost/customize/op_common.h"
-#include "runtime/pipeline/pipeline.h"
+#include "include/runtime/pipeline/pipeline.h"
 #include "include/runtime/utils/runtime_conf/runtime_conf.h"
 
 namespace mindspore {

@@ -20,7 +20,7 @@
 #include "pynative/utils/runtime/op_executor.h"
 #include "pynative/utils/runtime/task/device_task.h"
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
-#include "runtime/hardware_abstract/stream/multi_stream_controller.h"
+#include "include/runtime/hardware_abstract/stream/multi_stream_controller.h"
 namespace mindspore {
 namespace kernel {
 namespace pyboost {

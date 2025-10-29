@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CCSRC_KERNEL_PHILOX_RANDOM_H_
-#define MINDSPORE_CCSRC_KERNEL_PHILOX_RANDOM_H_
+#ifndef MINDSPORE_CCSRC_INCLUDE_RUNTIMR_HARDWARE_ABSTRACT_KERNEL_BASE_PHILOX_RANDOM_H_
+#define MINDSPORE_CCSRC_INCLUDE_RUNTIMR_HARDWARE_ABSTRACT_KERNEL_BASE_PHILOX_RANDOM_H_
 
 #include <iostream>
 #include <random>
@@ -152,4 +152,4 @@ RUNTIME_HARDWARE_EXPORT uint64_t GetSeed(const uint64_t &global_seed, const uint
 }  // namespace random
 }  // namespace kernel
 }  // namespace mindspore
-#endif  // MINDSPORE_CCSRC_KERNEL_PHILOX_RANDOM_H_
+#endif  // MINDSPORE_CCSRC_INCLUDE_RUNTIMR_HARDWARE_ABSTRACT_KERNEL_BASE_PHILOX_RANDOM_H_

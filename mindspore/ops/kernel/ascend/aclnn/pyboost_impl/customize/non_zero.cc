@@ -21,7 +21,7 @@
 #include "mindspore/ccsrc/pyboost/customize/op_common.h"
 #include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "mindspore/ccsrc/pyboost/op_runner.h"
-#include "runtime/pipeline/pipeline.h"
+#include "include/runtime/pipeline/pipeline.h"
 
 namespace mindspore {
 namespace kernel {

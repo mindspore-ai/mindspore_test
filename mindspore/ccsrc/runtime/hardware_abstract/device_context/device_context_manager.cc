@@ -30,7 +30,7 @@
 #include "utils/dlopen_macro.h"
 #include "utils/os.h"
 #include "include/utils/anfalgo.h"
-#include "runtime/hardware_abstract/stream/multi_stream_controller.h"
+#include "include/runtime/hardware_abstract/stream/multi_stream_controller.h"
 #include "utils/ms_exception.h"
 
 namespace mindspore {

@@ -24,7 +24,7 @@
 #include "include/utils/pynative/adapter.h"
 #include "include/utils/pynative/hook.h"
 #include "frontend/jit/ps/pipeline.h"
-#include "runtime/pipeline/pipeline.h"
+#include "include/runtime/pipeline/pipeline.h"
 #include "pynative/backward/grad_utils.h"
 #include "pynative/backward/op_grad/func_grad.h"
 

@@ -30,7 +30,7 @@
 #include "runtime/hardware_abstract/device_context/device_context.h"
 #include "include/utils/visible.h"
 #include "pynative/utils/runtime/task/device_task.h"
-#include "runtime/pipeline/async_rqueue.h"
+#include "include/runtime/pipeline/async_rqueue.h"
 
 namespace mindspore {
 using Tensor = tensor::Tensor;

@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CCSRC_MEMORY_MEM_POOL_MEM_ENV_H_
-#define MINDSPORE_CCSRC_MEMORY_MEM_POOL_MEM_ENV_H_
+#ifndef MINDSPORE_CCSRC_INCLUDE_RUNTIME_MEMORY_MEM_POOL_MEM_ENV_H_
+#define MINDSPORE_CCSRC_INCLUDE_RUNTIME_MEMORY_MEM_POOL_MEM_ENV_H_
 
 #include <memory>
 #include <utility>
@@ -45,4 +45,4 @@ BACKEND_EXPORT bool IsDisableAllocConfig(const std::string &alloc_config);
 }  // namespace mem_pool
 }  // namespace memory
 }  // namespace mindspore
-#endif  // MINDSPORE_CCSRC_MEMORY_MEM_POOL_MEM_ENV_H_
+#endif  // MINDSPORE_CCSRC_INCLUDE_RUNTIME_MEMORY_MEM_POOL_MEM_ENV_H_

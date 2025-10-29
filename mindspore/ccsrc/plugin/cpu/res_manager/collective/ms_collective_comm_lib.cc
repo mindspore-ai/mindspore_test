@@ -19,7 +19,7 @@
 #include <set>
 #include "utils/ms_context.h"
 #include "include/cluster/topology/constants.h"
-#include "runtime/hardware_abstract/collective/collective_communication_lib.h"
+#include "include/runtime/hardware_abstract/collective/collective_communication_lib.h"
 #include "plugin/cpu/res_manager/collective/allreduce_impl.h"
 
 namespace mindspore {

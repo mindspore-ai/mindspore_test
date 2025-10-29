@@ -41,7 +41,7 @@
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "include/runtime/utils/runtime_conf/runtime_conf.h"
 #include "include/runtime/utils/runtime_conf/thread_bind_core.h"
-#include "runtime/pipeline/pipeline.h"
+#include "include/runtime/pipeline/pipeline.h"
 #include "runtime/core/graph_executor/pipeline/runtime_pipeline.h"
 #include "tools/error_handler/error_handler.h"
 #include "tools/profiler/profiler.h"

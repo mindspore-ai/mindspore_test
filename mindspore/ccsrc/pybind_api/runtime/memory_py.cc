@@ -17,11 +17,11 @@
 #include <fstream>
 #include <vector>
 #include <map>
-#include "runtime/pipeline/pipeline.h"
+#include "include/runtime/pipeline/pipeline.h"
 #include "ir/device_address.h"
 #include "runtime/hardware_abstract/device_context/device_context.h"
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
-#include "runtime/hardware_abstract/memory_manager/memory_manager.h"
+#include "include/runtime/hardware_abstract/memory_manager/memory_manager.h"
 
 namespace mindspore {
 namespace hal {

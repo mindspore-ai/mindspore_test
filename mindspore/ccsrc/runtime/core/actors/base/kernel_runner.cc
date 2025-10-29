@@ -29,7 +29,7 @@
 #include "runtime/core/actors/base/debug_actor.h"
 #include "include/backend/debug/execute_order_tracker/kernel_cache.h"
 #include "runtime/core/graph_executor/kernel_capture/graph_capture_manager.h"
-#include "runtime/hardware_abstract/stream/multi_stream_controller.h"
+#include "include/runtime/hardware_abstract/stream/multi_stream_controller.h"
 #include "async/async.h"
 #include "utils/log_adapter.h"
 #include "utils/ms_exception.h"

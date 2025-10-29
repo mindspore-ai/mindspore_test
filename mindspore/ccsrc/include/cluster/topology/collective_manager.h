@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CCSRC_DISTRIBUTED_COLLECTIVE_COLLECTIVE_MANAGER_H_
-#define MINDSPORE_CCSRC_DISTRIBUTED_COLLECTIVE_COLLECTIVE_MANAGER_H_
+#ifndef MINDSPORE_CCSRC_INCLUDE_RUNTIME_HARDWARE_ABSTRACT_COLLECTIVE_COLLECTIVE_MANAGER_H_
+#define MINDSPORE_CCSRC_INCLUDE_RUNTIME_HARDWARE_ABSTRACT_COLLECTIVE_COLLECTIVE_MANAGER_H_
 
 #include <string>
 #include <memory>
@@ -34,8 +34,8 @@
 #else
 #include "include/cluster/topology/dummy_cluster_context.h"
 #endif
-#include "runtime/hardware_abstract/collective/collective_communication_lib.h"
-#include "runtime/hardware_abstract/collective/communication_group.h"
+#include "include/runtime/hardware_abstract/collective/collective_communication_lib.h"
+#include "include/runtime/hardware_abstract/collective/communication_group.h"
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "runtime/hardware_abstract/visible.h"
 
@@ -305,4 +305,4 @@ class RUNTIME_HARDWARE_EXPORT CollectiveManager {
 }  // namespace collective
 }  // namespace distributed
 }  // namespace mindspore
-#endif  // MINDSPORE_CCSRC_DISTRIBUTED_COLLECTIVE_COLLECTIVE_MANAGER_H_
+#endif  // MINDSPORE_CCSRC_INCLUDE_RUNTIME_HARDWARE_ABSTRACT_COLLECTIVE_COLLECTIVE_MANAGER_H_

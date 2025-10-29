@@ -15,7 +15,7 @@
  */
 
 #include "kernel/gpu/cuda/math/multinomial_gpu_kernel.h"
-#include "runtime/hardware_abstract/kernel_base/philox_random.h"
+#include "include/runtime/hardware_abstract/kernel_base/philox_random.h"
 
 namespace mindspore {
 namespace kernel {

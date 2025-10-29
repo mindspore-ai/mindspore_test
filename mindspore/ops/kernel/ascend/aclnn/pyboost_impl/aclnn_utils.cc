@@ -17,7 +17,7 @@
 #include <thread>
 #include <future>
 #include "kernel/ascend/acl_ir/op_api_util.h"
-#include "runtime/pipeline/pipeline.h"
+#include "include/runtime/pipeline/pipeline.h"
 namespace mindspore {
 namespace kernel {
 namespace pyboost {

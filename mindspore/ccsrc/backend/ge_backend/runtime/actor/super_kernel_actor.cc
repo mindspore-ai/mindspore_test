@@ -22,7 +22,7 @@
 #include "backend/ge_backend/runtime/actor/output_actor.h"
 #include "backend/ge_backend/runtime/actor/memory_manager_actor.h"
 #include "backend/ge_backend/runtime/actor/debug_actor.h"
-#include "runtime/hardware_abstract/stream/multi_stream_controller.h"
+#include "include/runtime/hardware_abstract/stream/multi_stream_controller.h"
 #include "async/async.h"
 #include "utils/llm_manager.h"
 #include "utils/log_adapter.h"

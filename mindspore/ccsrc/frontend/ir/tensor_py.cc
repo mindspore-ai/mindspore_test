@@ -29,7 +29,7 @@
 #include "tools/profiler/profiler.h"
 #include "include/utils/pynative/adapter.h"
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
-#include "runtime/pipeline/pipeline.h"
+#include "include/runtime/pipeline/pipeline.h"
 #include "include/backend/mbuf_device_address.h"
 #include "runtime/core/graph_scheduler/base/move_to.h"
 #include "utils/value_utils.h"

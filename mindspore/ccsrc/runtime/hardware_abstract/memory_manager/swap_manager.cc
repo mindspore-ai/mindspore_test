@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "runtime/hardware_abstract/memory_manager/swap_manager.h"
+#include "include/runtime/hardware_abstract/memory_manager/swap_manager.h"
 
 #include <functional>
 #include <string>

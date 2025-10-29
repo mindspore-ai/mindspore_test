@@ -21,7 +21,7 @@
 #include "utils/log_adapter.h"
 #include "mindapi/base/format.h"
 #include "include/utils/pybind_api/api_register.h"
-#include "runtime/hardware_abstract/stream/multi_stream_controller.h"
+#include "include/runtime/hardware_abstract/stream/multi_stream_controller.h"
 #include "pynative/utils/pynative_utils.h"
 #include "include/utils/convert_utils_py.h"
 

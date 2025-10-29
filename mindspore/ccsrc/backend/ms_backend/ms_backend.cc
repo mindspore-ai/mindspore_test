@@ -52,7 +52,7 @@
 
 #include "backend/common/device_address_utils.h"
 #include "backend/common/pass_manager/dynamic_shape_helper.h"
-#include "runtime/pipeline/pipeline.h"
+#include "include/runtime/pipeline/pipeline.h"
 #include "runtime/pipeline/task/run_graph_task.h"
 #include "include/utils/stub_tensor.h"
 

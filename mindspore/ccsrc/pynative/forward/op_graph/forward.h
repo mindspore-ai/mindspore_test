@@ -29,7 +29,7 @@
 #include "pynative/forward/op_graph/do_infer.h"
 #include "ir/cell.h"
 #include "mindspore/ops/view/view_strides_calculator.h"
-#include "runtime/pipeline/async_rqueue.h"
+#include "include/runtime/pipeline/async_rqueue.h"
 #include "pynative/utils/runtime/op_backend/op_backend.h"
 #include "ir/device_type.h"
 
