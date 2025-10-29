@@ -158,9 +158,9 @@ def _tft_clean_callback(is_uce_error, args, ctx):
     logger.warning("Finish _tft_clean_callback, ret: {}".format(ret))
     if ctx.tft.tft_get_repair_type() == "recover":
         _reset_snapshot_state()
-        logger.warning(f"Destroy hcom")
+        logger.warning("Destroy hcom")
         _finalize_comm()
-        logger.warning(f"Destroy hcom end")
+        logger.warning("Destroy hcom end")
     return ret
 
 
@@ -172,7 +172,7 @@ def _tft_stop_callback(args, cb_ctx):
     cb_ctx.is_uce_rank = False
     _stop_device(cb_ctx.device_id)
     if cb_ctx.tft.tft_get_repair_type() == "recover":
-        logger.warning(f"Reset limit step")
+        logger.warning("Reset limit step")
         cb_ctx.tft.tft_reset_limit_step()
     logger.warning("Finish _tft_stop_callback")
 
@@ -183,9 +183,9 @@ def _tft_rebuild_sub_groups(fault_ranks, args, ctx):
     _rebuild_world_group()
     _rebuild_sub_group()
     set_is_arf(True)
-    logger.warning(f"try to pre launch send recv before real launch")
+    logger.warning("try to pre launch send recv before real launch")
     _pre_launch_send_recv(context.get_context('device_id'))
-    logger.warning(f"Pre launch send recv before real launch end")
+    logger.warning("Pre launch send recv before real launch end")
     logger.warning("Enter _tft_rebuild_sub_groups ok ")
 
 
@@ -310,7 +310,7 @@ class TrainFaultTolerance(Callback):
     """
 
     def __init__(self, ckpt_save_path=None, **kwargs):
-        super(TrainFaultTolerance, self).__init__()
+        super(TrainFaultTolerance, self).__init__()  # pylint: disable=R1725
         logger.info(f"MS_ENABLE_TFT: {os.getenv('MS_ENABLE_TFT', '')}")
         if self._only_enable_tsp():
             self.tft = _tft_handler.get_tft()
@@ -393,10 +393,10 @@ class TrainFaultTolerance(Callback):
             tft_env = os.getenv("MS_ENABLE_TFT", "")
             if "ARF:1" in tft_env:
                 raise ValueError("Must init by _tft_handler.init(config=params) if use ARF.")
-            logger.warning(f"TFT handle not init, try to init")
+            logger.warning("TFT handle not init, try to init")
             _tft_handler.init(config=None)
             self.tft = _tft_handler.get_tft()
-            logger.warning(f"TFT handle init ok.")
+            logger.warning("TFT handle init ok.")
         device_target = context.get_context("device_target")
         if device_target != "Ascend":
             raise ValueError(f"MindIO adataper only support on Ascend device but got device {device_target}!")
@@ -446,7 +446,7 @@ class TrainFaultTolerance(Callback):
             """
 
             def __init__(self, *args, **kwargs):
-                super(TFTOptSubCls, self).__init__(*args, **kwargs)
+                super(TFTOptSubCls, self).__init__(*args, **kwargs)  # pylint: disable=R1725
                 self.report = TensorReport()
                 self.report_end = TensorReport()
                 self.report_end.add_prim_attr("optimizer_end", True)
@@ -459,7 +459,7 @@ class TrainFaultTolerance(Callback):
                 tft_g_one_flag = self.depend(self.tft_g_one_flag, gradients)
                 self.tft_g_one_flag = self.allreduce_sum(tft_g_one_flag)
                 grads = self.depend(gradients, self.report("tft_report", self.tft_g_one_flag))
-                opt_ret = super(TFTOptSubCls, self).construct(grads, **kwargs)
+                opt_ret = super(TFTOptSubCls, self).construct(grads, **kwargs)  # pylint: disable=R1725
                 self.report_end("tft_report", self.tft_g_one_flag)
                 return opt_ret
 
@@ -469,7 +469,7 @@ class TrainFaultTolerance(Callback):
             """
 
             def __init__(self, *args, **kwargs):
-                super(TFTOptSnapShotCls, self).__init__(*args, **kwargs)
+                super(TFTOptSnapShotCls, self).__init__(*args, **kwargs)  # pylint: disable=R1725
                 self.report = TensorReport()
                 self.report.add_prim_attr("side_effect_mem", True).add_prim_attr("snapshot", True)
                 self.dummy_input = Tensor([1], dtype=mstype.int32)
@@ -477,12 +477,12 @@ class TrainFaultTolerance(Callback):
             def construct(self, gradients, **kwargs):
                 """Add fake op TensorReport to insert wait event for copying parameters"""
                 self.report("tft_report", self.dummy_input)
-                opt_ret = super(TFTOptSnapShotCls, self).construct(gradients, **kwargs)
+                opt_ret = super(TFTOptSnapShotCls, self).construct(gradients, **kwargs)  # pylint: disable=R1725
                 return opt_ret
 
         env_tft = os.getenv('MS_ENABLE_TFT', '')
         features = ['TTP:1', 'UCE:1', 'ARF:1']
-        need_redundancy = any([env_tft.find(feat) >= 0 for feat in features])
+        need_redundancy = any([env_tft.find(feat) >= 0 for feat in features])  # pylint: disable=R1729
         return TFTOptSubCls if need_redundancy else TFTOptSnapShotCls
 
     def _tft_register(self):
@@ -584,7 +584,7 @@ class TrainFaultTolerance(Callback):
         sink_size = cb_params.get("sink_size", 0)
         if sink_size > 1:
             raise ValueError("TFT feature doesn't support sink_size > 1.")
-        logger.info("Set set args to TFT.")
+        logger.info("Set args to TFT.")
         self.tft.tft_set_step_args(cb_params)
         self.cb_params = cb_params
 
