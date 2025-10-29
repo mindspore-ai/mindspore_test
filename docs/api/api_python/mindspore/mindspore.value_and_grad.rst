@@ -7,8 +7,8 @@ mindspore.value_and_grad
 
     函数求导包含以下三种场景：
 
-    1. 对输入求导，此时 `grad_position` 非 ``None``，而 `weights` 是 ``None``;
-    2. 对网络变量求导，此时 `grad_position` 是 ``None``，而 `weights` 非 ``None``;
+    1. 对输入求导，此时 `grad_position` 非 ``None``，而 `weights` 是 ``None``；
+    2. 对网络变量求导，此时 `grad_position` 是 ``None``，而 `weights` 非 ``None``；
     3. 同时对输入和网络变量求导，此时 `grad_position` 和 `weights` 都非 ``None``。
 
     参数：
