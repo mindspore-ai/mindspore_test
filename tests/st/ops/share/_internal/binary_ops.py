@@ -19,10 +19,16 @@ This module provides:
   references.
 - Static and dynamic-shape parity checks, with optional gradient comparisons.
 """
+import functools
+import pytest
 import torch
+import numpy as np
 import mindspore as ms
+from mindspore.common.api import _pynative_executor
 from tests.st.ops.share._internal.meta import OpsFactory, OpCommonGradNetAllInput
+from tests.st.ops.share._internal.utils import OpSampleInput, OpDynamicInput, make_tensor, make_tensor_with_np_array
 from tests.st.ops.share._op_info.op_info import OpInfo
+from tests.st.ops.share._op_info.op_common import dtypes_as_torch, SMALL_DIM_SIZE
 from tqdm import tqdm
 
 
@@ -87,11 +93,14 @@ class BinaryOpsFactory(OpsFactory):
                                  f"but got {type(op_input)} and {type(sample_input.op_args[0])}")
         return grads
 
-    def grad_pytorch_dynamic_shape_impl(self):
+    def grad_pytorch_dynamic_shape_impl(
+        self,
+        op_dynamic_inputs: OpDynamicInput,
+    ):
         """Compute gradients with PyTorch for dynamic-shape cases.
 
         Args:
-            None
+            op_dynamic_inputs: OpDynamicInput object.
 
         Returns:
             list: One or two gradients for the input tensors.
@@ -102,7 +111,7 @@ class BinaryOpsFactory(OpsFactory):
         torch_fn = self.ref
         grads = []
 
-        for sample_input in self._sample_inputs[1:]:
+        for sample_input in op_dynamic_inputs.op_running_inputs:
             if self._inplace_op:
                 sample_input = sample_input.copy()
             sample_input = sample_input.astorch()
@@ -144,11 +153,15 @@ class BinaryOpsFactory(OpsFactory):
             if grad_cmp:
                 self.supported_dtypes = tuple(d for d in self.supported_dtypes if d.is_floating_point)
             for dtype in tqdm(self.supported_dtypes):
-                for sample_input in self.op_sample_inputs_func(self.op_info, dtype, device=self._device):
-                    if grad_cmp:
+                if grad_cmp:
+                    for sample_input in self.op_sample_inputs_func(self.op_info, dtype, device=self._device):
                         self.compare_with_torch(sample_inputs=sample_input, grad_cmp=True)
-                    else:
+                else:
+                    for sample_input in self.op_sample_inputs_func(self.op_info, dtype, device=self._device):
                         self.compare_with_torch(sample_inputs=sample_input)
+                    if self.op_reference_inputs_func is not None:
+                        for sample_input in self.op_reference_inputs_func(self.op_info, dtype, device=self._device):
+                            self.compare_with_torch(sample_inputs=sample_input)
         except Exception as e:
             print(f"\ntest_binary_op_reference failed:"
                   f"\nop_name: {self.op_name}"
@@ -157,32 +170,352 @@ class BinaryOpsFactory(OpsFactory):
                   f"\n{sample_input.summary(True)}")
             raise e
 
+    def test_binary_op_tensor_type_promotion(self):
+        """Test tensor-tensor type promotion across mixed dtypes.
+
+        Builds pairs of tensors with different dtypes supported by both
+        MindSpore and the benchmark backend, then compares forward results.
+        """
+        def sample_inputs_binary_tensor_type_promotion_func(op_info: OpInfo, dtypes, device=None):
+            for input_dtype in dtypes:
+                for other_dtype in dtypes:
+                    if input_dtype == other_dtype:
+                        continue
+
+                    S = SMALL_DIM_SIZE
+                    yield OpSampleInput(
+                            op_input=make_tensor(shape=(S, S), dtype=input_dtype, device=device),
+                            op_args=(make_tensor(shape=(S, S), dtype=other_dtype, device=device),),
+                            op_kwargs={},
+                            op_name=op_info.name,
+                        )
+        try:
+            if not self.op_info.support_tensor_type_promotion:
+                print(f"\nop_name: {self.op_name} does not support tensor type promotion, "
+                      f"skip test_binary_op_tensor_type_promotion.")
+                return
+
+            print(f"\nop_name: {self.op_name}, mode:{self._context_mode}, test_binary_op_tensor_type_promotion...")
+            self.supported_dtypes = tuple(set(self.supported_dtypes) & set(dtypes_as_torch))
+            self.op_sample_inputs_func = sample_inputs_binary_tensor_type_promotion_func
+            for sample_input in self.op_sample_inputs_func(self.op_info, self.supported_dtypes, device=self._device):
+                self.compare_with_torch(sample_inputs=sample_input)
+        except Exception as e:
+            print(f"\ntest_binary_op_tensor_type_promotion failed:"
+                  f"\nop_name: {self.op_name}"
+                  f"\nmode: {self._context_mode}"
+                  f"\ndtypes: {self.supported_dtypes}"
+                  f"\n{sample_input.summary(True)}")
+            raise e
+
+
+    def test_binary_op_scalar_type_promotion(self):
+        """Test scalar type promotion with tensor-scalar combinations.
+
+        Covers left/right Python scalar, scalar tensors, and combinations across
+        integer, floating, and complex dtypes based on support flags.
+        """
+        def test_intxfloat_scalar_type_promotion(right_python_scalar=True):
+            """int64 tensor x float scalar(type/tensor) promotion cases.
+
+            Args:
+                right_python_scalar (bool): If True, place scalar on the right;
+                    otherwise place scalar on the left.
+            """
+            if not {ms.int64, ms.float32}.issubset(set(self.supported_dtypes)):
+                return
+
+            try:
+                print(f"\nop_name: {self.op_name}, mode:{self._context_mode}, "
+                      f"{'right_python_scalar' if right_python_scalar else 'left_python_scalar'}, "
+                      f"test_intxfloat_scalar_type_promotion...")
+                # int tensor x float scalar
+                _tensor = make_tensor_func(dtype=ms.int64)
+                _scalar = 1.0
+                _sample_input = OpSampleInput(
+                    op_input=_tensor if right_python_scalar else _scalar,
+                    op_args=(_scalar,) if right_python_scalar else (_tensor,),
+                    op_kwargs={},
+                    op_name=self.op_info.name,
+                )
+                self.compare_with_torch(sample_inputs=_sample_input)
+                # int tensor x float scalar tensor
+                _scalar_tensor = make_scalar_tensor_func(dtype=ms.float32)
+                _sample_input = OpSampleInput(
+                    op_input=_tensor if right_python_scalar else _scalar_tensor,
+                    op_args=(_scalar_tensor,) if right_python_scalar else (_tensor,),
+                    op_kwargs={},
+                    op_name=self.op_info.name,
+                )
+                self.compare_with_torch(sample_inputs=_sample_input)
+                # int tensor x float64 scalar tensor
+                if ms.float64 in self.supported_dtypes:
+                    _scalar_tensor = make_scalar_tensor_func(dtype=ms.float64)
+                    _sample_input = OpSampleInput(
+                        op_input=_tensor if right_python_scalar else _scalar_tensor,
+                        op_args=(_scalar_tensor,) if right_python_scalar else (_tensor,),
+                        op_kwargs={},
+                        op_name=self.op_info.name,
+                    )
+                    self.compare_with_torch(sample_inputs=_sample_input)
+            except Exception as e:
+                print(f"\test_intxfloat_scalar_type_promotion failed:"
+                      f"\nop_name: {self.op_name}"
+                      f"\nmode: {self._context_mode}"
+                      f"\n{'right_python_scalar' if right_python_scalar else 'left_python_scalar'}, "
+                      f"\n{_sample_input.summary(True)}")
+                raise e
+
+        def test_floatxcomplex_scalar_type_promotion(right_python_scalar=True):
+            """float32 tensor x complex scalar(tensor) promotion cases.
+
+            Args:
+                right_python_scalar (bool): If True, place scalar on the right;
+                    otherwise place scalar on the left.
+            """
+            if not {ms.float32, ms.complex64}.issubset(set(self.supported_dtypes)):
+                return
+
+            try:
+                print(f"\nop_name: {self.op_name}, mode:{self._context_mode}, "
+                      f"{'right_python_scalar' if right_python_scalar else 'left_python_scalar'}, "
+                      f"test_floatxcomplex_scalar_type_promotion...")
+                # float tensor x complex64 scalar tensor
+                _tensor = make_tensor_func(dtype=ms.float32)
+                _scalar_tensor = make_scalar_tensor_func(dtype=ms.complex64)
+                _sample_input = OpSampleInput(
+                    op_input=_tensor if right_python_scalar else _scalar_tensor,
+                    op_args=(_scalar_tensor,) if right_python_scalar else (_tensor,),
+                    op_kwargs={},
+                    op_name=self.op_info.name,
+                )
+                self.compare_with_torch(sample_inputs=_sample_input)
+                # float tensor x complex128 scalar tensor
+                if ms.complex128 in self.supported_dtypes:
+                    _scalar_tensor = make_scalar_tensor_func(dtype=ms.complex128)
+                    _sample_input = OpSampleInput(
+                        op_input=_tensor if right_python_scalar else _scalar_tensor,
+                        op_args=(_scalar_tensor,) if right_python_scalar else (_tensor,),
+                        op_kwargs={},
+                        op_name=self.op_info.name,
+                    )
+                    self.compare_with_torch(sample_inputs=_sample_input)
+            except Exception as e:
+                print(f"\test_floatxcomplex_scalar_type_promotion failed:"
+                      f"\nop_name: {self.op_name}"
+                      f"\nmode: {self._context_mode}"
+                      f"\n{'right_python_scalar' if right_python_scalar else 'left_python_scalar'}, "
+                      f"\n{_sample_input.summary(True)}")
+                raise e
+
+        def test_floatxfloat_scalar_type_promotion(right_python_scalar=True):
+            """float32 tensor x float64 scalar(tensor) promotion cases.
+
+            Args:
+                right_python_scalar (bool): If True, place scalar on the right;
+                    otherwise place scalar on the left.
+            """
+            if not {ms.float32, ms.float64}.issubset(set(self.supported_dtypes)):
+                return
+
+            try:
+                print(f"\nop_name: {self.op_name}, mode:{self._context_mode}, "
+                      f"{'right_python_scalar' if right_python_scalar else 'left_python_scalar'}, "
+                      f"test_floatxfloat_scalar_type_promotion...")
+                _tensor = make_tensor_func(dtype=ms.float32)
+                _scalar_tensor = make_scalar_tensor_func(dtype=ms.float64)
+                _sample_input = OpSampleInput(
+                    op_input=_tensor if right_python_scalar else _scalar_tensor,
+                    op_args=(_scalar_tensor,) if right_python_scalar else (_tensor,),
+                    op_kwargs={},
+                    op_name=self.op_info.name,
+                )
+                self.compare_with_torch(sample_inputs=_sample_input)
+            except Exception as e:
+                print(f"\test_floatxfloat_scalar_type_promotion failed:"
+                      f"\nop_name: {self.op_name}"
+                      f"\nmode: {self._context_mode}"
+                      f"\n{'right_python_scalar' if right_python_scalar else 'left_python_scalar'}, "
+                      f"\n{_sample_input.summary(True)}")
+                raise e
+
+        def test_complexxcomplex_scalar_type_promotion(right_python_scalar=True):
+            """complex64 tensor x complex128 scalar(tensor) promotion cases.
+
+            Args:
+                right_python_scalar (bool): If True, place scalar on the right;
+                    otherwise place scalar on the left.
+            """
+            if not {ms.complex64, ms.complex128}.issubset(set(self.supported_dtypes)):
+                return
+
+            try:
+                print(f"\nop_name: {self.op_name}, mode:{self._context_mode}, "
+                      f"{'right_python_scalar' if right_python_scalar else 'left_python_scalar'}, "
+                      f"test_complexxcomplex_scalar_type_promotion...")
+                # complex64 tensor x complex128 scalar tensor
+                _tensor = make_tensor_func(dtype=ms.complex64)
+                _scalar_tensor = make_scalar_tensor_func(dtype=ms.complex128)
+                _sample_input = OpSampleInput(
+                    op_input=_tensor if right_python_scalar else _scalar_tensor,
+                    op_args=(_scalar_tensor,) if right_python_scalar else (_tensor,),
+                    op_kwargs={},
+                    op_name=self.op_info.name,
+                )
+                self.compare_with_torch(sample_inputs=_sample_input)
+            except Exception as e:
+                print(f"\test_complexxcomplex_scalar_type_promotion failed:"
+                      f"\nop_name: {self.op_name}"
+                      f"\nmode: {self._context_mode}"
+                      f"\n{'right_python_scalar' if right_python_scalar else 'left_python_scalar'}, "
+                      f"\n{_sample_input.summary(True)}")
+                raise e
+
+        def test_all_scalar_type_promotion():
+            """Pure Python scalar x scalar promotion cases (int/float)."""
+            if not {ms.int64, ms.float32}.issubset(set(self.supported_dtypes)):
+                return
+
+            try:
+                print(f"\nop_name: {self.op_name}, mode:{self._context_mode}, test_all_scalar_type_promotion...")
+                # int scalar x float scalar
+                _r_scalar = 2.0
+                for _l_scalar in (1, 1.0):
+                    _sample_input = OpSampleInput(
+                        op_input=_l_scalar,
+                        op_args=(_r_scalar,),
+                        op_kwargs={},
+                        op_name=self.op_info.name,
+                    )
+                    self.compare_with_torch(sample_inputs=_sample_input)
+            except Exception as e:
+                print(f"\test_all_scalar_type_promotion failed:"
+                      f"\nop_name: {self.op_name}"
+                      f"\nmode: {self._context_mode}"
+                      f"\n{_sample_input.summary(True)}")
+                raise e
+
+        S = SMALL_DIM_SIZE
+        make_tensor_func = functools.partial(make_tensor, shape=(S,), device=self._device)
+        make_scalar_tensor_func = functools.partial(make_tensor, shape=(), device=self._device)
+        if self.op_info.supports_right_python_scalar:
+            test_intxfloat_scalar_type_promotion()
+            test_floatxcomplex_scalar_type_promotion()
+            test_floatxfloat_scalar_type_promotion()
+            test_complexxcomplex_scalar_type_promotion()
+        if self.op_info.supports_left_python_scalar:
+            test_intxfloat_scalar_type_promotion(right_python_scalar=False)
+            test_floatxcomplex_scalar_type_promotion(right_python_scalar=False)
+            test_floatxfloat_scalar_type_promotion(right_python_scalar=False)
+            test_complexxcomplex_scalar_type_promotion(right_python_scalar=False)
+        if self.op_info.supports_both_python_scalar:
+            test_all_scalar_type_promotion()
+
+    def test_binary_op_extremal_values_reference(
+        self,
+        *,
+        grad_cmp=False,
+    ):
+        """Run reference parity tests against Benchmark with extremal value inputs.
+
+        Args:
+            grad_cmp: When True, restrict to floating dtypes and compare
+                first-order gradients in addition to forward results.
+        """
+        def sample_inputs_binary_op_extra_value_func(op_info: OpInfo, dtype, device=None):
+            S = SMALL_DIM_SIZE
+            yield OpSampleInput(
+                op_input=make_tensor_with_np_array(np.full((S, S), np.inf), dtype=dtype, device=device),
+                op_args=(make_tensor_with_np_array(np.full((S, S), np.inf), dtype=dtype, device=device),),
+                op_kwargs={},
+                op_name=op_info.name,
+            )
+            yield OpSampleInput(
+                op_input=make_tensor_with_np_array(np.full((S, S), -np.inf), dtype=dtype, device=device),
+                op_args=(make_tensor_with_np_array(np.full((S, S), -np.inf), dtype=dtype, device=device),),
+                op_kwargs={},
+                op_name=op_info.name,
+            )
+            yield OpSampleInput(
+                op_input=make_tensor_with_np_array(np.full((S, S), np.nan), dtype=dtype, device=device),
+                op_args=(make_tensor_with_np_array(np.full((S, S), np.nan), dtype=dtype, device=device),),
+                op_kwargs={},
+                op_name=op_info.name,
+            )
+
+        try:
+            print(f"\nop_name: {self.op_name}, mode:{self._context_mode}, test_binary_op_extremal_values_reference...")
+            for dtype in self.supported_dtypes:
+                if not dtype.is_floating_point:
+                    continue
+                for sample_input in sample_inputs_binary_op_extra_value_func(self.op_info, dtype, device=self._device):
+                    self.compare_with_torch(sample_inputs=sample_input, grad_cmp=grad_cmp)
+        except Exception as e:
+            print(f"\ntest_binary_op_extremal_values_reference failed:"
+                  f"\nop_name: {self.op_name}"
+                  f"\nmode: {self._context_mode}"
+                  f"\ndtype: {dtype}"
+                  f"\n{sample_input.summary()}")
+            raise e
 
     def test_binary_op_dynamic(
         self,
         *,
-        dynamic_mode='dynamic_shape',
         grad_cmp=False,
+        only_dynamic_shape=False,
+        only_dynamic_rank=False,
     ):
         """Run dynamic-shape tests against Benchmark.
 
         Args:
-            dynamic_mode: Dynamic mode identifier, e.g. 'dynamic_shape'.
             grad_cmp: When True, also compare first-order gradients.
+            only_dynamic_shape: If True, only run dynamic-shape cases (fixed rank).
+            only_dynamic_rank: If True, only run dynamic-rank cases (shape varies in rank).
         """
+        if self.op_info.op_dynamic_inputs_func is None:
+            print(f"\nop_name: {self.op_name} has no op_dynamic_inputs_func, "
+                  f"skip test_binary_op_dynamic.")
+            return
+
         try:
-            print(f"\nop_name: {self.op_name}, dynamic_mode={dynamic_mode}, test_binary_op_dynamic...")
-            self.op_sample_inputs_func = self.op_info.op_dynamic_inputs_func
-            sample_input = self.op_sample_inputs_func(self.op_info,
-                                                      dtype=ms.float32,
-                                                      device=self._device,
-                                                      dynamic_mode=dynamic_mode)
-            if grad_cmp:
-                self.compare_with_torch_dynamic(sample_inputs=sample_input, grad_cmp=True)
-            else:
-                self.compare_with_torch_dynamic(sample_inputs=sample_input)
+            print(f"\nop_name: {self.op_name}, mode:{self._context_mode}, test_binary_op_dynamic...")
+            for op_dynamic_input in self.op_info.op_dynamic_inputs_func(self.op_info, dtype=ms.float32,
+                                                                        device=self._device,
+                                                                        only_dynamic_shape=only_dynamic_shape,
+                                                                        only_dynamic_rank=only_dynamic_rank):
+                if grad_cmp:
+                    self.compare_with_torch_dynamic(op_dynamic_inputs=op_dynamic_input, grad_cmp=True)
+                else:
+                    self.compare_with_torch_dynamic(op_dynamic_inputs=op_dynamic_input)
         except Exception as e:
             print(f"\test_binary_op_dynamic failed:"
                   f"\nop_name: {self.op_name}"
-                  f"\ndynamic_mode: {dynamic_mode}")
+                  f"\nmode: {self._context_mode}"
+                  f"\n{op_dynamic_input.summary()}")
+            raise e
+
+    def test_binary_op_error(self):
+        '''
+        Test binary op error cases.
+        '''
+        if self.op_error_inputs_func is None:
+            print(f"\nop_name: {self.op_name} has no op_error_inputs_func, "
+                  f"skip test_binary_op_error.")
+            return
+
+        try:
+            print(f"\nop_name: {self.op_name}, mode:{self._context_mode}, test_binary_op_error...")
+            for error_input in self.op_error_inputs_func(self.op_info, device=self._device):
+                _sample_input = error_input.op_sample_input
+                _error_type = error_input.op_error_type
+
+                with pytest.raises(_error_type):
+                    self.op(_sample_input.op_input, *_sample_input.op_args, **_sample_input.op_kwargs)
+                    _pynative_executor.sync()
+        except Exception as e:
+            print(f"\ntest_binary_op_error catch expect {_error_type.__name__} failed, but got {type(e).__name__}:"
+                  f"\nop_name: {self.op_name}"
+                  f"\nmode: {self._context_mode}"
+                  f"\nsample_input: {_sample_input.summary()}"
+                  f"\nerror_info: {error_input.op_error_info}")
             raise e

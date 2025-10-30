@@ -31,7 +31,7 @@ from mindspore._c_expression import MSContext
 from mindspore.common.dtype import _dtype_to_nptype
 from typing import Optional, Union, List, final
 from tests.st.utils.test_utils import single_golden_compare, double_golden_compare, OpTypes
-from tests.st.ops.share._internal.utils import OpSampleInput, make_tensor, ms_asnumpy
+from tests.st.ops.share._internal.utils import OpSampleInput, OpDynamicInput, make_tensor, ms_asnumpy
 from tests.st.ops.share._op_info.op_info import OpInfo
 from tests.st.ops.share._op_info.op_common import get_default_loss, dtypes_extra_uint
 class OpsCommonNet(nn.Cell):
@@ -126,12 +126,17 @@ class OpsFactory():
         self.ref = op_info.ref
         self.op_name = op_info.name
         self.op_sample_inputs_func = op_info.op_sample_inputs_func
+        self.op_reference_inputs_func = op_info.op_reference_inputs_func
+        self.op_dynamic_inputs_func = op_info.op_dynamic_inputs_func
+        self.op_error_inputs_func = op_info.op_error_inputs_func
         self._sample_inputs = None
+        self._dynamic_inputs = None
 
         # get supported dtypes for the op with entire environment.
         device = ms.context.get_context('device_target').lower()
         if device == 'ascend':
-            if MSContext.get_instance().get_ascend_soc_version() == 'ascend910b':
+            self.ascend_name = MSContext.get_instance().get_ascend_soc_version()
+            if self.ascend_name == 'ascend910b':
                 self.supported_dtypes = op_info.dtypes_ascend910b
             else:
                 self.supported_dtypes = op_info.dtypes_ascend
@@ -163,7 +168,7 @@ class OpsFactory():
         """Generate random dout tensors for the op.
 
         Args:
-            return_torch_douts (bool): Whether to return PyTorch douts.
+            return_torch_douts (bool): Whether to return Pytorch douts.
 
         Returns:
             list | None: Random douts or None when not requested.
@@ -301,9 +306,12 @@ class OpsFactory():
             expect = convert_tensor_to_nparray(expect)
 
             if self._convert_extra_uint:
-                if actual.dtype in (map(_dtype_to_nptype, dtypes_extra_uint)) and expect.dtype == np.int64:
+                # Normalize dtype pairs when one side has been cast to int64 for
+                # extra uint compatibility. Make membership explicit and stable.
+                extra_uint_np_dtypes = tuple(map(_dtype_to_nptype, dtypes_extra_uint))
+                if actual.dtype in extra_uint_np_dtypes and expect.dtype == np.int64:
                     expect = expect.astype(actual.dtype)
-                if expect.dtype in (map(_dtype_to_nptype, dtypes_extra_uint)) and actual.dtype == np.int64:
+                if expect.dtype in extra_uint_np_dtypes and actual.dtype == np.int64:
                     actual = actual.astype(expect.dtype)
 
             rtol = get_default_loss(actual.dtype) if rtol is None else rtol
@@ -521,12 +529,14 @@ class OpsFactory():
 
     def forward_mindspore_dynamic_shape_impl(
             self,
+            op_dynamic_inputs: OpDynamicInput,
             *args,
             **kwargs
     ):
         """Run forward with MindSpore for dynamic-shape execution.
 
         Args:
+            op_dynamic_inputs: OpDynamicInput object.
             *args: Positional arguments (unused; present for API symmetry).
             **kwargs: Keyword arguments (unused; present for API symmetry).
 
@@ -534,12 +544,12 @@ class OpsFactory():
             list: Outputs per dynamic-shape sample.
         """
         op_net = self._op_net_class_no_kwargs(self.op_func_grad)
-        compile_input = self._sample_inputs[0]
+        compile_input = op_dynamic_inputs.op_compile_input
         compile_input = compile_input.convert_to_args()
         op_net.set_inputs(*compile_input.op_args)
         out = []
 
-        for sample_input in self._sample_inputs[1:]:
+        for sample_input in op_dynamic_inputs.op_running_inputs:
             if self._inplace_op:
                 sample_input = sample_input.copy()
 
@@ -551,12 +561,14 @@ class OpsFactory():
 
     def forward_pytorch_dynamic_shape_impl(
             self,
+            op_dynamic_inputs: OpDynamicInput,
             *args,
             **kwargs
     ):
         """Run forward with PyTorch for dynamic-shape execution.
 
         Args:
+            op_dynamic_inputs: OpDynamicInput object.
             *args: Positional arguments (unused; present for API symmetry).
             **kwargs: Keyword arguments (unused; present for API symmetry).
 
@@ -566,7 +578,7 @@ class OpsFactory():
         torch_fn = self.ref
         out = []
 
-        for sample_input in self._sample_inputs[1:]:
+        for sample_input in op_dynamic_inputs.op_running_inputs:
             if self._inplace_op:
                 sample_input = sample_input.copy()
             sample_input = sample_input.astorch(convert_half_to_float=self._convert_half_to_float,
@@ -579,12 +591,14 @@ class OpsFactory():
 
     def grad_mindspore_dynamic_shape_impl(
             self,
+            op_dynamic_inputs: OpDynamicInput,
             *args,
             **kwargs
     ):
         """Compute gradients with MindSpore for dynamic-shape execution.
 
         Args:
+            op_dynamic_inputs: OpDynamicInput object.
             *args: Positional arguments (unused; present for API symmetry).
             **kwargs: Keyword arguments (unused; present for API symmetry).
 
@@ -593,12 +607,12 @@ class OpsFactory():
         """
         net = self._op_net_class_no_kwargs(self.op_func_grad)
         grad_net = self._op_grad_net_class(net, sens_param=False)
-        compile_sample_input = self._sample_inputs[0]
+        compile_sample_input = op_dynamic_inputs.op_compile_input
         compile_sample_input = compile_sample_input.convert_to_args()
         grad_net.set_inputs(*compile_sample_input.op_args)
         grads = []
 
-        for sample_input in self._sample_inputs[1:]:
+        for sample_input in op_dynamic_inputs.op_running_inputs:
             if self._inplace_op:
                 sample_input = sample_input.copy()
             sample_input = sample_input.convert_to_args()
@@ -611,12 +625,14 @@ class OpsFactory():
 
     def grad_pytorch_dynamic_shape_impl(
             self,
+            op_dynamic_inputs: OpDynamicInput,
             *args,
             **kwargs
     ):
         """Compute gradients with PyTorch for dynamic-shape execution.
 
         Args:
+            op_dynamic_inputs: OpDynamicInput object.
             *args: Positional arguments (unused; present for API symmetry).
             **kwargs: Keyword arguments (unused; present for API symmetry).
 
@@ -626,7 +642,7 @@ class OpsFactory():
         torch_fn = self.ref
         grads = []
 
-        for sample_input in self._sample_inputs[1:]:
+        for sample_input in op_dynamic_inputs.op_running_inputs:
             if self._inplace_op:
                 sample_input = sample_input.copy()
             sample_input = sample_input.astorch(convert_half_to_float=self._convert_half_to_float)
@@ -693,25 +709,23 @@ class OpsFactory():
     def compare_with_torch_dynamic(
             self,
             *,
-            sample_inputs: Union[List[OpSampleInput], OpSampleInput],
+            op_dynamic_inputs: OpDynamicInput,
             grad_cmp: Optional[bool] = False,
             ksize: Optional[int] = 1, # ksize for elementwise op, set other value if you want
     ):
         """Compare MindSpore with PyTorch under dynamic-shape execution.
 
         Args:
-            sample_inputs: Single or list of sample inputs; first is for compile.
+            op_dynamic_inputs: OpDynamicInput object.
             grad_cmp: When True and differentiable, compare gradients.
             ksize: Optional kernel size hint for comparison helpers.
         """
-        self._sample_inputs = sample_inputs if isinstance(sample_inputs, list) else [sample_inputs]
-
         if grad_cmp and self.op_info.is_differentiable:
-            ms_out = self.grad_mindspore_dynamic_shape_impl()
-            pt_out = self.grad_pytorch_dynamic_shape_impl()
+            ms_out = self.grad_mindspore_dynamic_shape_impl(op_dynamic_inputs)
+            pt_out = self.grad_pytorch_dynamic_shape_impl(op_dynamic_inputs)
         else:
-            ms_out = self.forward_mindspore_dynamic_shape_impl()
-            pt_out = self.forward_pytorch_dynamic_shape_impl()
+            ms_out = self.forward_mindspore_dynamic_shape_impl(op_dynamic_inputs)
+            pt_out = self.forward_pytorch_dynamic_shape_impl(op_dynamic_inputs)
 
         for ms_outi, pt_outi in zip(ms_out, pt_out):
             if isinstance(ms_outi, (tuple, list)) and isinstance(pt_outi, (tuple, list)):
@@ -785,6 +799,7 @@ class OpsFactory():
 
     def forward_dynamic_shape_cmp(
             self,
+            op_dynamic_inputs: OpDynamicInput,
             *args,
             rtol=None,
             atol=None,
@@ -794,6 +809,7 @@ class OpsFactory():
         """Compare forward results under dynamic-shape execution.
 
         Args:
+            op_dynamic_inputs: OpDynamicInput object.
             rtol: Relative tolerance.
             atol: Absolute tolerance.
             benchmark: 'torch'.
@@ -801,9 +817,9 @@ class OpsFactory():
         if self._context_mode == 'pynative':
             raise RuntimeError("Dynamic shape comparison is not supported in pynative mode.")
 
-        ms_outs = self.forward_mindspore_dynamic_shape_impl()
+        ms_outs = self.forward_mindspore_dynamic_shape_impl(op_dynamic_inputs)
         if benchmark == 'torch':
-            pt_outs = self.forward_pytorch_dynamic_shape_impl()
+            pt_outs = self.forward_pytorch_dynamic_shape_impl(op_dynamic_inputs)
         else:
             raise ValueError(f"Invalid benchmark: {benchmark}, expected: 'torch'.")
         for ms_outi, pt_outi in zip(ms_outs, pt_outs):
@@ -816,6 +832,7 @@ class OpsFactory():
 
     def grad_dynamic_shape_cmp(
             self,
+            op_dynamic_inputs: OpDynamicInput,
             *args,
             rtol=None,
             atol=None,
@@ -825,6 +842,7 @@ class OpsFactory():
         """Compare gradients under dynamic-shape execution.
 
         Args:
+            op_dynamic_inputs: OpDynamicInput object.
             rtol: Relative tolerance.
             atol: Absolute tolerance.
             benchmark: 'torch'.
@@ -832,9 +850,9 @@ class OpsFactory():
         if self._context_mode == 'pynative':
             raise RuntimeError("Dynamic shape comparison is not supported in pynative mode.")
 
-        ms_grads = self.grad_mindspore_dynamic_shape_impl()
+        ms_grads = self.grad_mindspore_dynamic_shape_impl(op_dynamic_inputs)
         if benchmark == 'torch':
-            pt_grads = self.grad_pytorch_dynamic_shape_impl()
+            pt_grads = self.grad_pytorch_dynamic_shape_impl(op_dynamic_inputs)
         else:
             raise ValueError(f"Invalid benchmark: {benchmark}, expected: 'torch'.")
         for ms_gradi, pt_gradi in zip(ms_grads, pt_grads):
