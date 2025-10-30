@@ -71,6 +71,8 @@ void DoViewGrad(const TensorPtr &input_tensor, const std::vector<TensorPtr> &out
         output_meta_data->set_output_index(i);
       }
     }
+    (void)std::for_each(output_tensors.begin(), output_tensors.end(),
+                        [](const TensorPtr &tensor) { UpdateVersion(tensor); });
   }
 }
 

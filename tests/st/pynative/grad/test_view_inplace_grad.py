@@ -780,6 +780,30 @@ def test_view_inplace_with_unsafe_view():
           level_mark='level1',
           card_mark='onecard',
           essential_mark='essential')
+def test_view_inplace_with_multiout_view_and_version_update():
+    """
+    Feature: Test view inplace valid.
+    Description: Test version update of multi output view.
+    Expectation: The calculation result is correct.
+    """
+
+    def fn(input_tensor):
+        x = input_tensor + 1.0
+        x.mul_(2.0)
+        y = x.split((1, 1), 0)
+        z = y[0].mul(2.0)
+        return z
+
+    input_tensor = Tensor(([1.0, 2.0], [1.0, 2.0]))
+    grad_op = GradOfFirstInput(fn, sens_param=False)
+    grad = grad_op(input_tensor)
+    assert np.allclose(grad.asnumpy(), np.array([[4., 4.], [0., 0.]], dtype=np.float32), 0.000001, 0.000001)
+
+
+@arg_mark(plat_marks=['platform_ascend'],
+          level_mark='level1',
+          card_mark='onecard',
+          essential_mark='essential')
 def test_view_inplace_view_rebase_error():
     """
     Feature: Test view inplace valid.

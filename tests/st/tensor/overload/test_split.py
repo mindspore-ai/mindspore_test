@@ -20,7 +20,7 @@ from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.st.utils import test_utils
 
 import mindspore as ms
-import mindspore.nn as nn
+from mindspore import nn
 from mindspore.common.api import _pynative_executor
 
 
@@ -137,12 +137,6 @@ def test_method_split_pyboost(mode):
     a = np.array(np.arange(20).reshape((10, 2)), dtype=np.float32)
     x = ms.Tensor(a, dtype=ms.float32)
     split_size = (2, 3, 5)
-
-    if mode == 0 and ms.get_context('device_target') != 'Ascend':
-        with pytest.raises(RuntimeError) as error_info:
-            net(x, split_size, dim=0)
-            _pynative_executor.sync()
-        assert "Unsupported op [SplitWithSize] on" in str(error_info.value)
 
     out = net1(x, split_size, dim=0)
     expect = [np.array([[0, 1], [2, 3]], dtype=np.float32),

@@ -114,6 +114,7 @@
 "mindspore/mindspore/ops/grad/grad_array_ops.cc"        "whitespace/indent_namespace"
 "mindspore/mindspore/ops/kernel/cpu/eigen/random_poisson_cpu_kernel.cc"                          "whitespace/indent"
 "mindspore/mindspore/ops/kernel/cpu/native/random_categorical_cpu_kernel.cc"                     "whitespace/indent"
+"mindspore/mindspore/ops/fallback/array_ops.cc"                                                  "whitespace/indent_namespace"
 
 # Modelzoo
 "mindspore/model_zoo/official/cv/yolov4_tiny/infer/mxbase/src/Yolov4TinyDetection.h"                 "runtime/references"
