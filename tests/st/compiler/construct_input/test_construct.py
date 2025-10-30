@@ -15,17 +15,19 @@
 """ test outermost net pass non_tensor inputs"""
 # pylint: disable=W0235
 # pylint: disable=E1003
+# pylint: disable=C0115
+# pylint: disable=C0116
 import pytest
 import numpy as np
 import torch
 import torch.nn as nn_torch
 import mindspore as ms
-import mindspore.nn as nn
-from mindspore import context, ParameterTuple, Parameter
+from mindspore import nn, context, ParameterTuple, Parameter
 import mindspore.ops.operations as ops
 from mindspore.ops.composite import GradOperation
 from mindspore.common.tensor import Tensor
 from tests.mark_utils import arg_mark
+
 
 class _Grad(nn.Cell):
     def __init__(self, grad, network, wrt_params=False, real_inputs_count=None):
@@ -92,6 +94,7 @@ def test_parser_construct_no_tensor_028():
     Description: Support different input types for the construct method.
     Expectation:No exception.
     """
+
     class Net(nn.Cell):
         def __init__(self, input_1):
             super().__init__()
@@ -127,6 +130,7 @@ def test_parser_construct_no_tensor_029():
     Description: Support different input types for the construct method.
     Expectation:No exception.
     """
+
     class Net(nn.Cell):
         def __init__(self):
             super().__init__()
@@ -160,6 +164,7 @@ def test_parser_construct_no_tensor_041():
     Description: Support different input types for the construct method.
     Expectation:No exception.
     """
+
     class Net(nn.Cell):
         def __init__(self):
             super().__init__()
@@ -186,6 +191,7 @@ def test_parser_construct_no_tensor_042():
     Description: Support different input types for the construct method.
     Expectation:No exception.
     """
+
     class Net(nn.Cell):
         def __init__(self):
             super().__init__()
@@ -212,6 +218,7 @@ def test_parser_construct_no_tensor_043(dst_type):
     Description: Support different input types for the construct method.
     Expectation:No exception.
     """
+
     class Net(nn.Cell):
         def __init__(self):
             super().__init__()
@@ -253,6 +260,7 @@ def test_parser_construct_001():
     Description: Test the invocation relationships between different methods of parent and child classes.
     Expectation:No exception.
     """
+
     class ParentNet(nn.Cell):
         def __init__(self):
             super().__init__()
@@ -296,6 +304,7 @@ def test_parser_construct_002():
     Description: Test the invocation relationships between different methods of parent and child classes.
     Expectation:No exception.
     """
+
     class ParentNet(nn.Cell):
         def __init__(self):
             super().__init__()
@@ -346,6 +355,7 @@ def test_parser_construct_005():
     Description: Test the invocation relationships between different methods of parent and child classes.
     Expectation:No exception.
     """
+
     class ParentNet(nn.Cell):
         def __init__(self):
             super().__init__()
@@ -397,6 +407,7 @@ def test_parser_construct_006():
     Description: Test the invocation relationships between different methods of parent and child classes.
     Expectation:No exception.
     """
+
     class ParentNet(nn.Cell):
         def __init__(self):
             super().__init__()
@@ -418,7 +429,6 @@ def test_parser_construct_006():
 
     input_np_x = np.random.randn(2, 3, 4, 5).astype(np.float32)
     out_np = np.random.randn(2, 3, 4, 5).astype(np.float32)
-
 
     input_me = Tensor(input_np_x)
     output_grad_me = Tensor(out_np)
@@ -448,6 +458,7 @@ def test_parser_construct_007():
     Description: Test the invocation relationships between different methods of parent and child classes.
     Expectation:No exception.
     """
+
     class ParentNet(nn.Cell):
         def __init__(self):
             super().__init__()
@@ -461,7 +472,7 @@ def test_parser_construct_007():
 
     class UncleNet(ParentNet):
         def __init__(self):
-            super(UncleNet, self).__init__()
+            super().__init__()
             self.relu = ops.ReLU()
 
         def func(self, x):
@@ -501,6 +512,7 @@ def test_parser_construct_009():
     Description: Test the invocation relationships between different methods of parent and child classes.
     Expectation:No exception.
     """
+
     class ParentNet(nn.Cell):
         def __init__(self):
             super().__init__()
@@ -517,23 +529,19 @@ def test_parser_construct_009():
             super().__init__()
             self.relu = ops.ReLU()
 
-
         def func(self, x):
             return self.relu(x)
-
 
         def construct(self, x):
             return self.func(x)
 
-
     class Net(UncleNet, ParentNet):
         def __init__(self):
-            super(Net, self).__init__()
+            super().__init__()
             super(ParentNet, self).__init__()
 
         def construct(self, x):
             return super().construct(x)
-
 
     input_np_x = np.random.randn(2, 3, 4, 5).astype(np.float32)
     out_np = np.random.randn(2, 3, 4, 5).astype(np.float32)
@@ -565,9 +573,10 @@ def test_parser_construct_010():
     Description: Test the invocation relationships between different methods of parent and child classes.
     Expectation:No exception.
     """
+
     class ParentNet(nn.Cell):
         def __init__(self):
-            super(ParentNet, self).__init__()
+            super().__init__()
             self.sigmoid = ops.Sigmoid()
 
         def func(self, x):
@@ -578,7 +587,7 @@ def test_parser_construct_010():
 
     class UncleNet(nn.Cell):
         def __init__(self):
-            super(UncleNet, self).__init__()
+            super().__init__()
             self.relu = ops.ReLU()
 
         def func(self, x):
@@ -618,9 +627,10 @@ def test_parser_construct_011():
     Description: Test the invocation relationships between different methods of parent and child classes.
     Expectation:No exception.
     """
+
     class ParentNet(nn.Cell):
         def __init__(self):
-            super(ParentNet, self).__init__()
+            super().__init__()
             self.softmax = ops.Softmax(axis=1)
 
         def func(self, x):
@@ -631,7 +641,7 @@ def test_parser_construct_011():
 
     class UncleNet(nn.Cell):
         def __init__(self):
-            super(UncleNet, self).__init__()
+            super().__init__()
             self.sigmoid = ops.Sigmoid()
 
         def func(self, x):
@@ -639,7 +649,7 @@ def test_parser_construct_011():
 
     class Net(UncleNet, ParentNet):
         def __init__(self):
-            super(Net, self).__init__()
+            super().__init__()
             self.relu = ops.ReLU()
 
         def func(self, x):
@@ -678,9 +688,10 @@ def test_parser_construct_012():
     Description: Test the invocation relationships between different methods of parent and child classes.
     Expectation:No exception.
     """
+
     class ParentNet(nn.Cell):
         def __init__(self):
-            super(ParentNet, self).__init__()
+            super().__init__()
             self.relu = ops.ReLU()
 
         def func(self, x):
@@ -691,7 +702,7 @@ def test_parser_construct_012():
 
     class UncleNet(nn.Cell):
         def __init__(self):
-            super(UncleNet, self).__init__()
+            super().__init__()
             self.sigmoid = ops.Sigmoid()
 
         def func(self, x):
@@ -740,9 +751,10 @@ def test_parser_construct_014():
     Description: Test the invocation relationships between different methods of parent and child classes.
     Expectation:No exception.
     """
+
     class ParentNet(nn.Cell):
         def __init__(self):
-            super(ParentNet, self).__init__()
+            super().__init__()
             self.sigmoid = ops.Sigmoid()
 
         def func(self, x):
@@ -750,7 +762,7 @@ def test_parser_construct_014():
 
     class UncleNet(nn.Cell):
         def __init__(self):
-            super(UncleNet, self).__init__()
+            super().__init__()
             self.op = ops.Softmax()
 
         def func(self, x):
@@ -761,7 +773,7 @@ def test_parser_construct_014():
 
     class Net(UncleNet, ParentNet):
         def __init__(self):
-            super(Net, self).__init__()
+            super().__init__()
             self.op = ops.ReLU()
 
         def construct(self, x):
@@ -788,3 +800,62 @@ def test_parser_construct_014():
     grad_pt = input_pt.grad.numpy()
     assert np.allclose(out_pt.detach().numpy(), out_me.asnumpy(), 0.001, 0.001)
     assert np.allclose(grad_pt, grad_me.asnumpy(), 0.001, 0.001)
+
+
+@pytest.mark.skip(reason="has not supported")
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_parser_one_default_arg_tensor():
+    """
+    Feature: Test construct.
+    Description: Test the input of construct has default arg.
+    Expectation:No exception.
+    """
+    tensor_a = Tensor(np.full((3, 2), 4).astype(np.float32))
+
+    class NetAbnormalDefaultTensorArg(nn.Cell):
+        def __init__(self):
+            super().__init__()
+            self.relu = nn.ReLU()
+
+        def construct(self, x, x1=tensor_a):
+            x = self.relu(x)
+            x1 = self.relu(x1)
+            return x, x1
+
+    net = NetAbnormalDefaultTensorArg()
+    tensor1 = Tensor(np.full((2, 3), 2).astype(np.float32))
+    context.set_context(mode=context.GRAPH_MODE)
+    net(tensor1)
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_parser_key_value_not_defined():
+    """
+    Feature: Test construct.
+    Description: Test the input of construct is dict.
+    Expectation:No exception.
+    """
+
+    class NetKeyValueArg(nn.Cell):
+        def construct(self, y, **x):
+            if x["a"] == 5:
+                y = y + y
+            return y + x["b"][0]
+
+    class Netout(nn.Cell):
+        def __init__(self):
+            super().__init__()
+            self.in_net = NetKeyValueArg()
+
+        def construct(self, x):
+            x = self.in_net(x, c=5, b=(x,))
+            return x
+
+    net = Netout()
+    tensor1 = Tensor(np.full((2, 3), 2).astype(np.float32))
+    if context.get_context("mode") == 0:
+        with pytest.raises(ValueError):
+            net(tensor1)
+    else:
+        with pytest.raises(KeyError):
+            net(tensor1)
