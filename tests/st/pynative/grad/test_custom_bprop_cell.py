@@ -16,8 +16,7 @@
 import numpy as np
 import pytest
 import mindspore as ms
-import mindspore.nn as nn
-from mindspore import Tensor, Parameter, ops
+from mindspore import Tensor, Parameter, ops, nn
 from mindspore.ops import composite as C
 from mindspore.ops import GradOperation
 from tests.mark_utils import arg_mark
@@ -67,7 +66,7 @@ class NoneCustomNet(nn.Cell):
 
 class NoneAddNet(nn.Cell):
     def __init__(self):
-        super(NoneAddNet, self).__init__()
+        super().__init__()
         self.net = NoneCustomNet()
 
     def construct(self, x):
@@ -268,7 +267,7 @@ def tensor_hook(grad):
 
 class MyNet(pynn.Module):
     def __init__(self):
-        super(MyNet, self).__init__()
+        super().__init__()
         self.p1 = pynn.Parameter(torch.Tensor(np.array([2.0], dtype=np.float32)))
         self.f2 = MyMean()
         self.inputs = None
@@ -282,7 +281,7 @@ class MyNet(pynn.Module):
 
 class MyNet2(pynn.Module):
     def __init__(self):
-        super(MyNet2, self).__init__()
+        super().__init__()
         self.f1 = MyNet()
         self.f2 = MyMul()
 
@@ -300,7 +299,7 @@ class MEMul(nn.Cell):
 
 class MEMul1(nn.Cell):
     def __init__(self):
-        super(MEMul1, self).__init__()
+        super().__init__()
         self.f = MEMul()
         self.f.set_grad()
         self.grad = GradOfAllInputs(self.f, sens_param=False)
@@ -317,7 +316,7 @@ class MEMul1(nn.Cell):
 
 class CustomNetWithParam(nn.Cell):
     def __init__(self):
-        super(CustomNetWithParam, self).__init__()
+        super().__init__()
         self.w = Parameter(Tensor(np.array([2.0], dtype=np.float32)), name='weight')
         self.grad = GradOperation(get_all=True, get_by_list=True, sens_param=True)
         self.internal_params = [self.w]
@@ -332,7 +331,7 @@ class CustomNetWithParam(nn.Cell):
 
 class NetWithParam(nn.Cell):
     def __init__(self):
-        super(NetWithParam, self).__init__()
+        super().__init__()
         self.w = Parameter(Tensor(np.array([2.0], dtype=np.float32)), name='weight')
         self.grad = GradOperation(get_all=True, get_by_list=True, sens_param=True)
         self.internal_params = [self.w]
@@ -350,7 +349,7 @@ class MEMean(nn.Cell):
 
 class MENet1(nn.Cell):
     def __init__(self):
-        super(MENet1, self).__init__()
+        super().__init__()
         self.p1 = Parameter(Tensor(np.array([2.0], dtype=np.float32)), name='weight')
         self.f2 = MEMean()
 
@@ -362,7 +361,7 @@ class MENet1(nn.Cell):
 
 class MENet2(nn.Cell):
     def __init__(self):
-        super(MENet2, self).__init__()
+        super().__init__()
         self.f1 = MENet1()
         self.f2 = MEMul1()
 
@@ -374,7 +373,7 @@ class MENet2(nn.Cell):
 
 class SelfDefineNoneNet(nn.Cell):
     def __init__(self):
-        super(SelfDefineNoneNet, self).__init__()
+        super().__init__()
         self.f = MEMul()
 
     def construct(self, x):
@@ -387,7 +386,7 @@ class SelfDefineNoneNet(nn.Cell):
 
 class TestNoneNet(nn.Cell):
     def __init__(self):
-        super(TestNoneNet, self).__init__()
+        super().__init__()
         self.define_net = SelfDefineNoneNet()
 
     def construct(self, x):
@@ -455,7 +454,7 @@ def test_bprop_with_weight():
 
 class MEMul1WithUsedMap(nn.Cell):
     def __init__(self):
-        super(MEMul1WithUsedMap, self).__init__()
+        super().__init__()
         self.f = MEMul()
         self.used_bprop_inputs = [0]
 
@@ -478,7 +477,7 @@ class BpropNet(nn.Cell):
 
 class NestedBpropNet(nn.Cell):
     def __init__(self):
-        super(NestedBpropNet, self).__init__()
+        super().__init__()
         self.sub_cell = BpropNet()
         self.used_bprop_inputs = [0]
 
@@ -492,7 +491,7 @@ class NestedBpropNet(nn.Cell):
 
 class TupleScalarBpropNet(nn.Cell):
     def __init__(self):
-        super(TupleScalarBpropNet, self).__init__()
+        super().__init__()
         self.used_bprop_inputs = [0]
 
     def construct(self, x):
@@ -504,7 +503,7 @@ class TupleScalarBpropNet(nn.Cell):
 
 class TestTupleScalarBpropNet(nn.Cell):
     def __init__(self):
-        super(TestTupleScalarBpropNet, self).__init__()
+        super().__init__()
         self.sub_cell = TupleScalarBpropNet()
 
     def construct(self, x):
@@ -614,7 +613,7 @@ class MulAdd(nn.Cell):
 
 class Ms_Cell(nn.Cell):
     def __init__(self):
-        super(Ms_Cell, self).__init__()
+        super().__init__()
         self.relu = ops.ReLU()
 
     def construct(self, x):
@@ -661,3 +660,60 @@ def test_pynative_custom_bprop_and_Cell_Ms_Cell():
     ms_cell = custom_cell.test_custom_cell_function(Ms_Cell())
     ms_cell.bprop_debug = True
     assert grad_all(ms_cell)(Tensor(1, ms.float32)) == (Tensor(0.0, ms.float32),)
+
+
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
+def test_custom_bprop_dynamic_shape():
+    """
+    Feature: Custom bprop function.
+    Description: Test bprop function contains dynamic-shape logic.
+    Expectation: Success.
+    """
+
+    class SubNet(nn.Cell):
+        def __init__(self):
+            super().__init__()
+            self.f = nn.ReLU()
+            self.grad = GradOfAllInputs(self.f, sens_param=True)
+
+        def construct(self, x):
+            return self.f(x)
+
+        def bprop(self, x, out, dout):
+            grads = self.grad(x, dout)
+            expand = ops.ExpandDims()
+            squezze0 = ops.Squeeze(0)
+            squezze1 = ops.Squeeze(1)
+            if x[0, 0, 0] > 0:
+                out = expand(grads[0], 0)
+            else:
+                out = expand(grads[0], 1)
+
+            if x[0, 0, 0] > 0:
+                out = squezze0(out)
+            else:
+                out = squezze1(out)
+
+            return out
+
+    net = SubNet()
+    net.set_grad()
+    grad_net = GradOfAllInputs(net, sens_param=True)
+    inputs = Tensor(np.ones([2, 3, 4]).astype(np.float32))
+    grad = Tensor(np.random.randn(2, 3, 4).astype(np.float32))
+    out = grad_net(inputs, grad)
+    np.allclose(out[0].asnumpy(), grad.asnumpy(), 0.00001, 0.00001)
+
+    inputs = Tensor(np.ones([5, 4, 2]).astype(np.float32) * (-1))
+    grad = Tensor(np.random.randn(5, 4, 2).astype(np.float32))
+    out = grad_net(inputs, grad)
+    np.allclose(out[0].asnumpy(),
+                np.zeros_like(grad.asnumpy()).astype(np.float32), 0.00001, 0.00001)
+
+    inputs = Tensor(np.ones([5, 4, 2]).astype(np.float32))
+    grad = Tensor(np.random.randn(5, 4, 2).astype(np.float32))
+    out = grad_net(inputs, grad)
+    np.allclose(out[0].asnumpy(), grad.asnumpy(), 0.00001, 0.00001)

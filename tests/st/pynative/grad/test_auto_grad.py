@@ -15,10 +15,11 @@
 """ test_auto_grad """
 
 import numpy as np
-import mindspore
+import torch
+import torch.nn as nn_pt
+import mindspore as ms
 from mindspore.ops import composite as C
-from mindspore import Tensor, Parameter, _Function
-from mindspore import nn
+from mindspore import nn, Tensor, Parameter, _Function
 from mindspore.nn.optim import Momentum
 from mindspore import ops, COOTensor, CSRTensor
 from mindspore.common.api import _pynative_executor
@@ -36,15 +37,15 @@ def test_grad_operation_no_input():
     """
     class Net(nn.Cell):
         def __init__(self, w, b):
-            super(Net, self).__init__()
+            super().__init__()
             self.w = Parameter(w, name='w')
             self.b = Parameter(b, name='b')
 
         def construct(self):
             return self.w + self.b
 
-    w = Tensor([6], mindspore.int32)
-    b = Tensor([2], mindspore.int32)
+    w = Tensor([6], ms.int32)
+    b = Tensor([2], ms.int32)
     grad_net = C.GradOperation(get_all=True, get_by_list=False)
     grads = grad_net(Net(w, b))()
     assert (isinstance(grads, tuple) and not grads)
@@ -63,9 +64,9 @@ def test_auto_grad_input_asnumpy():
     Description: Test multi input with asnumpy.
     Expectation: Success.
     """
-    x = Tensor([0], mindspore.float32) + 1
-    y = Tensor([0], mindspore.float32) + 2
-    z = Tensor([0], mindspore.float32) + 3
+    x = Tensor([0], ms.float32) + 1
+    y = Tensor([0], ms.float32) + 2
+    z = Tensor([0], ms.float32) + 3
     # convert tensor and device to host.
     x.asnumpy()
     y.asnumpy()
@@ -82,9 +83,9 @@ def test_auto_grad_multi_input():
     Description: Test multi input.
     Expectation: Success.
     """
-    x = Tensor([1], mindspore.float32)
-    y = Tensor([2], mindspore.float32)
-    z = Tensor([3], mindspore.float32)
+    x = Tensor([1], ms.float32)
+    y = Tensor([2], ms.float32)
+    z = Tensor([3], ms.float32)
     net = MultiInputNet()
     grad_net = C.GradOperation(get_all=True)
     grads = grad_net(net)(x, (y, z))
@@ -103,8 +104,8 @@ def test_auto_grad_tuple_inputs_and_no_weights():
             z = y * x[0]
             return z
 
-    x = Tensor([1], mindspore.float32)
-    y = Tensor([2], mindspore.float32)
+    x = Tensor([1], ms.float32)
+    y = Tensor([2], ms.float32)
     net = NoneTensorInputNet()
     grad_net = C.GradOperation(get_all=True, get_by_list=True)
     grads = grad_net(net)((x, y))
@@ -125,8 +126,8 @@ def test_auto_grad_dict_inputs_and_no_weights():
             z = z * x[0]
             return z
 
-    x = Tensor([1], mindspore.float32)
-    y = Tensor([2], mindspore.float32)
+    x = Tensor([1], ms.float32)
+    y = Tensor([2], ms.float32)
     net = DictTensorInputNet()
     grad_net = C.GradOperation(get_all=True, get_by_list=True)
     grads = grad_net(net)({'x': x, 'y': y})
@@ -153,8 +154,8 @@ def test_auto_grad_object_inputs_and_no_weights():
             z = z * x[0]
             return z
 
-    x = Tensor([1], mindspore.float32)
-    y = Tensor([2], mindspore.float32)
+    x = Tensor([1], ms.float32)
+    y = Tensor([2], ms.float32)
     net = DictTensorInputNet()
     new_data = Data(x, y)
     grad_net = C.GradOperation(get_all=True, get_by_list=True)
@@ -172,15 +173,15 @@ def test_auto_grad_multi_input_op():
     """
     class ConcatNet(nn.Cell):
         def __init__(self):
-            super(ConcatNet, self).__init__()
+            super().__init__()
             self.concat = ops.concat
 
         def construct(self, x, y):
             output = self.concat((x, y), 0)
             return output
 
-    x = Tensor([1], mindspore.float32)
-    y = Tensor([2], mindspore.float32)
+    x = Tensor([1], ms.float32)
+    y = Tensor([2], ms.float32)
     net = ConcatNet()
     grad_net = C.GradOperation(get_all=True)
     grads = grad_net(net)(x, y)
@@ -196,15 +197,15 @@ def test_auto_grad_stack_op():
     """
     class StackNet(nn.Cell):
         def __init__(self):
-            super(StackNet, self).__init__()
+            super().__init__()
             self.stack = ops.stack
 
         def construct(self, x, y):
             output = self.stack((x, y), 0)
             return output
 
-    x = Tensor([1], mindspore.float32)
-    y = Tensor([2], mindspore.float32)
+    x = Tensor([1], ms.float32)
+    y = Tensor([2], ms.float32)
     net = StackNet()
     grad_net = C.GradOperation(get_all=True)
     grads = grad_net(net)(x, y)
@@ -224,7 +225,7 @@ def test_auto_grad_not_register_expander_op():
 
     class InsertGradientOfNet(nn.Cell):
         def __init__(self):
-            super(InsertGradientOfNet, self).__init__()
+            super().__init__()
             self.insert_gradient_of = ops.InsertGradientOf(print_gradient)
 
         def construct(self, x):
@@ -232,9 +233,9 @@ def test_auto_grad_not_register_expander_op():
             y = self.insert_gradient_of(output)
             return y * y
 
-    input1 = Tensor([2], mindspore.float32)
+    input1 = Tensor([2], ms.float32)
     net = InsertGradientOfNet()
-    grad = mindspore.grad(net)(input1)
+    grad = ms.grad(net)(input1)
     assert np.allclose(grad.asnumpy(), np.array([32], dtype=np.float32), 0.00001, 0.00001)
 
 
@@ -246,7 +247,7 @@ def test_autograd_no_output():
     """
     class NoOutputNet(nn.Cell):
         def __init__(self):
-            super(NoOutputNet, self).__init__()
+            super().__init__()
             self.split = ops.split
 
         def construct(self, x):
@@ -254,7 +255,7 @@ def test_autograd_no_output():
 
     input1 = Tensor(np.arange(9).astype("float32"))
     net = NoOutputNet()
-    grad = mindspore.grad(net)(input1)
+    grad = ms.grad(net)(input1)
     assert np.allclose(grad.asnumpy(), np.array([0, 0, 0, 0, 0, 0, 0, 0, 0], dtype=np.float32), 0.00001, 0.00001)
 
 
@@ -266,7 +267,7 @@ def test_split_multi_output():
     """
     class SplitNet(nn.Cell):
         def __init__(self):
-            super(SplitNet, self).__init__()
+            super().__init__()
             self.split = ops.split
 
         def construct(self, x):
@@ -275,7 +276,7 @@ def test_split_multi_output():
 
     input1 = Tensor(np.arange(9).astype("float32"))
     net = SplitNet()
-    grad = mindspore.grad(net)(input1)
+    grad = ms.grad(net)(input1)
     assert np.allclose(grad.asnumpy(), np.array([1, 1, 1, 1, 1, 1, 1, 1, 1], dtype=np.float32), 0.00001, 0.00001)
 
 
@@ -287,7 +288,7 @@ def test_auto_grad_multi_output_add_gradient():
     """
     class SplitAddNet(nn.Cell):
         def __init__(self):
-            super(SplitAddNet, self).__init__()
+            super().__init__()
             self.split = ops.split
 
         def construct(self, x):
@@ -298,7 +299,7 @@ def test_auto_grad_multi_output_add_gradient():
 
     input1 = Tensor(np.arange(9).astype("float32"))
     net = SplitAddNet()
-    grad = mindspore.grad(net)(input1)
+    grad = ms.grad(net)(input1)
     assert np.allclose(grad.asnumpy(), np.array([3, 3, 3, 2, 2, 2, 0, 0, 0], dtype=np.float32), 0.00001, 0.00001)
 
 
@@ -394,14 +395,14 @@ def test_auto_grad_return_param():
     """
     class ParamNet(nn.Cell):
         def __init__(self):
-            super(ParamNet, self).__init__()
-            self.p1 = Parameter(Tensor([2], dtype=mindspore.float32))
+            super().__init__()
+            self.p1 = Parameter(Tensor([2], dtype=ms.float32))
             self.p1.requires_grad = True
 
         def construct(self, x):
             return self.p1
 
-    x = Tensor([2], mindspore.float32)
+    x = Tensor([2], ms.float32)
     net = ParamNet()
     grad_net = C.GradOperation(get_all=True, get_by_list=True)
     grads = grad_net(net)(x)
@@ -410,9 +411,9 @@ def test_auto_grad_return_param():
 
 class NormalNet(nn.Cell):
     def __init__(self):
-        super(NormalNet, self).__init__()
-        self.p1 = Parameter(Tensor([1], dtype=mindspore.float32))
-        self.p2 = Parameter(Tensor([2], dtype=mindspore.float32))
+        super().__init__()
+        self.p1 = Parameter(Tensor([1], dtype=ms.float32))
+        self.p2 = Parameter(Tensor([2], dtype=ms.float32))
 
     def construct(self, x):
         y = x + self.p1
@@ -426,7 +427,7 @@ def test_auto_grad_weights_grad():
     Description: Test auto grad weights grad.
     Expectation: Success.
     """
-    x = Tensor([1], mindspore.float32)
+    x = Tensor([1], ms.float32)
     net = NormalNet()
     grad_net = C.GradOperation(get_all=True, get_by_list=True)
     grads = grad_net(net, [net.p1, net.p2])(x)
@@ -441,7 +442,7 @@ def test_auto_grad_single_weight():
     Description: Test auto grad single input.
     Expectation: Success.
     """
-    x = Tensor([1], mindspore.float32)
+    x = Tensor([1], ms.float32)
     net = NormalNet()
     grad_net = C.GradOperation(get_all=True, get_by_list=True)
     grads = grad_net(net, [net.p1])(x)
@@ -455,8 +456,8 @@ def test_auto_grad_with_sens():
     Description: Test auto grad single input.
     Expectation: Success.
     """
-    x = Tensor([2], mindspore.float32)
-    sens = Tensor([1], mindspore.float32)
+    x = Tensor([2], ms.float32)
+    sens = Tensor([1], ms.float32)
     net = NormalNet()
     grad_net = C.GradOperation(get_all=True, get_by_list=True, sens_param=True)
     grads = grad_net(net, [net.p1])(x, sens)
@@ -471,8 +472,8 @@ def test_auto_grad_stop_gradient():
     """
     class StopGradientNet(nn.Cell):
         def __init__(self):
-            super(StopGradientNet, self).__init__()
-            self.p1 = Parameter(Tensor([2], dtype=mindspore.float32))
+            super().__init__()
+            self.p1 = Parameter(Tensor([2], dtype=ms.float32))
 
         def construct(self, x):
             y = x * x
@@ -480,7 +481,7 @@ def test_auto_grad_stop_gradient():
             z = y * self.p1
             return z
 
-    x = Tensor([2], mindspore.float32)
+    x = Tensor([2], ms.float32)
     net = StopGradientNet()
     grad_net = C.GradOperation(get_all=True, get_by_list=True)
     grads = grad_net(net)(x)
@@ -506,8 +507,8 @@ def test_check_run_first_order_net():
         grads = _pynative_executor.grad(first_grad_net, grad_param, None, None, x)
         return grads + x
 
-    x = Tensor([2], mindspore.float32)
-    grad = mindspore.grad(nested_grad_net)(x)
+    x = Tensor([2], ms.float32)
+    grad = ms.grad(nested_grad_net)(x)
     assert np.allclose(grad.asnumpy(), np.array([1.0], dtype=np.float32), 0.00001, 0.00001)
 
 
@@ -534,7 +535,7 @@ def test_pynative_requires_grad():
     Description: Test the code for requires grad
     Expectation: success
     """
-    x = Tensor([1], mindspore.float32)
+    x = Tensor([1], ms.float32)
     net = CustomNet()
     output = GradOfAllInputsAndParams(net, sens_param=False)(x)
     assert (output[1][0].asnumpy() == np.array([1.0], dtype=np.float32)).all()
@@ -548,7 +549,7 @@ def test_pynative_requires_grad_use_grad_operation():
     """
 
     # Cell object to be differentiated
-    x = Tensor([1], mindspore.float32)
+    x = Tensor([1], ms.float32)
     net = CustomNet()
     output = GradOperation(get_all=True, get_by_list=True)(net, [net.p1, net.p2, net.p3])(x)
     assert (output[1][0].asnumpy() == np.array([0.0], dtype=np.float32)).all()
@@ -564,7 +565,7 @@ def test_pynative_requires_grad_without_params():
     """
 
     # Cell object to be differentiated
-    x = Tensor([1], mindspore.float32)
+    x = Tensor([1], ms.float32)
     net = CustomNet()
     output = GradOperation(get_all=True, get_by_list=True)(net)(x)
     assert len(output[1]) == 1
@@ -579,7 +580,7 @@ def test_pynative_requires_grad_partial_params():
     """
 
     # Cell object to be differentiated
-    x = Tensor([1], mindspore.float32)
+    x = Tensor([1], ms.float32)
     net = CustomNet()
     output = GradOperation(get_all=True, get_by_list=True)(net, [net.p1])(x)
     assert (output[1][0].asnumpy() == np.array([0.0], dtype=np.float32)).all()
@@ -594,9 +595,9 @@ def test_requires_grad_set_false_in_construct():
     """
     class TestRequiresGradFalseNet(nn.Cell):
         def __init__(self):
-            super(TestRequiresGradFalseNet, self).__init__()
-            self.p1 = Parameter(Tensor(2.0, dtype=mindspore.float32))
-            self.p2 = Parameter(Tensor(3.0, dtype=mindspore.float32))
+            super().__init__()
+            self.p1 = Parameter(Tensor(2.0, dtype=ms.float32))
+            self.p2 = Parameter(Tensor(3.0, dtype=ms.float32))
 
         def construct(self, x):
             y = ops.mul(x, self.p1)
@@ -604,9 +605,9 @@ def test_requires_grad_set_false_in_construct():
             self.p2.requires_grad = False
             return z
 
-    x = Tensor([4.], dtype=mindspore.float32)
+    x = Tensor([4.], dtype=ms.float32)
     net = TestRequiresGradFalseNet()
-    grads = mindspore.grad(net, weights=[net.p1, net.p2])(x)
+    grads = ms.grad(net, weights=[net.p1, net.p2])(x)
     assert np.allclose(grads[1][0].asnumpy(), np.array([12.0], dtype=np.float32))
     assert np.allclose(grads[1][1].asnumpy(), np.array([0.0], dtype=np.float32))
 
@@ -619,9 +620,9 @@ def test_requires_grad_set_true_in_construct():
     """
     class TestRequiresGradTrueNet(nn.Cell):
         def __init__(self):
-            super(TestRequiresGradTrueNet, self).__init__()
-            self.p1 = Parameter(Tensor(2.0, dtype=mindspore.float32))
-            self.p2 = Parameter(Tensor(3.0, dtype=mindspore.float32), requires_grad=False)
+            super().__init__()
+            self.p1 = Parameter(Tensor(2.0, dtype=ms.float32))
+            self.p2 = Parameter(Tensor(3.0, dtype=ms.float32), requires_grad=False)
 
         def construct(self, x):
             y = ops.mul(x, self.p1)
@@ -629,9 +630,9 @@ def test_requires_grad_set_true_in_construct():
             z = y * self.p2
             return z
 
-    x = Tensor([4.], dtype=mindspore.float32)
+    x = Tensor([4.], dtype=ms.float32)
     net = TestRequiresGradTrueNet()
-    grads = mindspore.grad(net, weights=[net.p1, net.p2])(x)
+    grads = ms.grad(net, weights=[net.p1, net.p2])(x)
     assert np.allclose(grads[1][0].asnumpy(), np.array([12.0], dtype=np.float32))
     assert np.allclose(grads[1][1].asnumpy(), np.array([8.0], dtype=np.float32))
 
@@ -644,7 +645,7 @@ def test_requires_grad_memory_check():
     """
     class TestRequiresGradMatmulNet(nn.Cell):
         def __init__(self):
-            super(TestRequiresGradMatmulNet, self).__init__()
+            super().__init__()
             self.p1 = Parameter(Tensor(np.ones((5000, 5000), dtype=np.float32)))
             self.p1.register_hook(lambda: "enter hook")
             self.p1.requires_grad = False
@@ -657,9 +658,9 @@ def test_requires_grad_memory_check():
 
     x = Tensor(np.ones((5000, 5000), dtype=np.float32))
     net = TestRequiresGradMatmulNet()
-    _ = mindspore.grad(net)(x)
-    print('memory', mindspore.hal.max_memory_allocated())
-    assert mindspore.hal.max_memory_allocated() < 500100000
+    _ = ms.grad(net)(x)
+    print('memory', ms.hal.max_memory_allocated())
+    assert ms.hal.max_memory_allocated() < 500100000
 
 
 def test_backward_final_callback_recompute():
@@ -703,7 +704,7 @@ def test_backward_final_callback_recompute():
     x.register_hook(lambda _: record.append(0))
     net = Net()
     net.recompute()
-    grad_fn = mindspore.grad(net, grad_position=(0,), weights=net.trainable_params())
+    grad_fn = ms.grad(net, grad_position=(0,), weights=net.trainable_params())
     grad_fn(x)
     assert record == [2, 0, 1]
 
@@ -947,6 +948,7 @@ def test_all_tests():
     test_cootensor_values_abs_train()
     test_csrtensor_values_sum_train()
     test_pynative_temporary_cell_variables()
+    test_pynative_autograd_change_input_shape_in_diff_call()
 
 
 @arg_mark(plat_marks=['platform_ascend910b'],
@@ -976,12 +978,101 @@ def test_auto_grad_tuple_input_need_compute_grad_out():
         return res[0] + 1.0
 
     m, k, n, e = 10, 20, 8, 5
-    x = ops.rand(m, k, dtype=mindspore.float32)
-    w = ops.rand(e, k, n, dtype=mindspore.float32)
-    group_list = Tensor(np.arange(0, m, m // e) + m // e, dtype=mindspore.int64)
+    x = ops.rand(m, k, dtype=ms.float32)
+    w = ops.rand(e, k, n, dtype=ms.float32)
+    group_list = Tensor(np.arange(0, m, m // e) + m // e, dtype=ms.int64)
 
-    mindspore.value_and_grad(forward_fn, grad_position=(0, 1))(x, w, group_list)
+    ms.value_and_grad(forward_fn, grad_position=(0, 1))(x, w, group_list)
     assert count == 2
 
-    mindspore.value_and_grad(forward_fn, grad_position=(1,))(x, w, group_list)
+    ms.value_and_grad(forward_fn, grad_position=(1,))(x, w, group_list)
     assert count == 3
+
+
+def test_pynative_autograd_change_input_shape_in_diff_call():
+    """
+    Features: Support changing input shapes across iterations in pynative mode.
+    Description: Verify that forward and backward results remain correct when input shapes vary between calls.
+    Expectation: Success.
+    """
+    class LoopNet(nn.Cell):
+        def __init__(self):
+            super().__init__()
+            self.add = ops.Add()
+            self.para = para
+            self.relu = ops.ReLU()
+
+        def construct(self, inputs, para, flag):
+            while flag > 0:
+                x = self.add(inputs, para)
+                if flag == 1:
+                    x = self.relu(x)
+                flag = flag - 1
+            return x
+
+    class CompareNet(nn_pt.Module):
+        def __init__(self, ):
+            super().__init__()
+
+            self.relu = nn_pt.ReLU()
+
+        def forward(self, inputs, para, flag):
+            while flag > 0:
+                x = torch.add(inputs, para)
+                if flag == 1:
+                    x = self.relu(x)
+                flag = flag - 1
+            return x
+
+    # first call
+    inputs = Tensor(np.ones([1, 1, 2, 2]).astype(np.float32))
+    para = Tensor(np.ones([1, 1, 2, 2]).astype(np.float32))
+    flag = Tensor(2, ms.int32)
+    net = LoopNet()
+    out = net(inputs, para, flag)
+    net.set_grad()
+    backnet = GradOfAllInputs(net, sens_param=False)
+    backout = backnet(inputs, para, flag)
+    comparenet = CompareNet()
+    torch_para = torch.from_numpy(para.asnumpy())
+    torch_para.requires_grad = True
+    torch_input = torch.from_numpy(inputs.asnumpy())
+    torch_input.requires_grad = True
+    torch_flag = torch.from_numpy(np.array(2))
+    torch_flag.requires_grad = False
+    out_good = comparenet(torch_input, torch_para, torch_flag)
+    grad = torch.from_numpy(np.ones([1, 1, 2, 2]).astype(np.float32))
+    out_good.backward(gradient=grad)
+    np.allclose(out_good.detach().numpy(), out.asnumpy(), 0.0001, 0.0001)
+    np.allclose(torch_input.grad.numpy(), backout[0].asnumpy(), 0.0001, 0.0001)
+    np.allclose(torch_para.grad.numpy(), backout[1].asnumpy(), 0.0001, 0.0001)
+
+    # second call change input_shape
+    for _ in range(0, 5):
+        n = int(np.random.randint(20, 50, []))
+        dim = int(np.random.randint(1, 5, []))
+        shape = []
+
+        for _ in range(0, dim):
+            shape.append(n)
+        inputs = Tensor(np.random.randn(*shape).astype(np.float32))
+        para = Tensor(np.random.randn(*shape).astype(np.float32))
+        flag = Tensor(2, ms.int32)
+
+        out = net(inputs, para, flag)
+        backout = backnet(inputs, para, flag)
+
+        torch_para = torch.from_numpy(para.asnumpy())
+        torch_para.requires_grad = True
+        torch_input = torch.from_numpy(inputs.asnumpy())
+        torch_input.requires_grad = True
+        torch_flag = torch.from_numpy(np.array(2))
+        torch_flag.requires_grad = False
+        out_good = comparenet(torch_input, torch_para, torch_flag)
+
+        grad = torch.from_numpy(np.ones(shape).astype(np.float32))
+        out_good.backward(gradient=grad)
+
+        np.allclose(out_good.detach().numpy(), out.asnumpy(), 0.0001, 0.0001)
+        np.allclose(torch_input.grad.numpy(), backout[0].asnumpy(), 0.0001, 0.0001)
+        np.allclose(torch_para.grad.numpy(), backout[1].asnumpy(), 0.0001, 0.0001)
