@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CCSRC_RUNTIME_FRAMEWORK_ACTOR_ACTOR_COMMON_H_
-#define MINDSPORE_CCSRC_RUNTIME_FRAMEWORK_ACTOR_ACTOR_COMMON_H_
+#ifndef MINDSPORE_CCSRC_INCLUDE_RUNTIME_CORE_ACTORS_BASE_ACTOR_COMMON_H_
+#define MINDSPORE_CCSRC_INCLUDE_RUNTIME_CORE_ACTORS_BASE_ACTOR_COMMON_H_
 
 #include <string>
 #include <vector>
@@ -584,4 +584,4 @@ inline bool NeedCheckInputContiguous(const CNodePtr &cnode) {
 }  // namespace runtime
 }  // namespace mindspore
 
-#endif  // MINDSPORE_CCSRC_RUNTIME_FRAMEWORK_ACTOR_ACTOR_COMMON_H_
+#endif  // MINDSPORE_CCSRC_INCLUDE_RUNTIME_CORE_ACTORS_BASE_ACTOR_COMMON_H_

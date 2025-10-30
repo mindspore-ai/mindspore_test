@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CCSRC_RUNTIME_FRAMEWORK_GRAPH_PARAMETER_STORE_H_
-#define MINDSPORE_CCSRC_RUNTIME_FRAMEWORK_GRAPH_PARAMETER_STORE_H_
+#ifndef MINDSPORE_CCSRC_INCLUDE_RUNTIME_CORE_GRAPH_SCHEDULER_GRAPH_PARAMETER_STORE_H_
+#define MINDSPORE_CCSRC_INCLUDE_RUNTIME_CORE_GRAPH_SCHEDULER_GRAPH_PARAMETER_STORE_H_
 
 #include <memory>
 #include <map>
@@ -27,7 +27,7 @@
 #include "utils/ms_utils.h"
 #include "include/backend/visible.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel.h"
-#include "runtime/core/graph_scheduler/base/graph_compiler.h"
+#include "include/runtime/core/graph_scheduler/base/graph_compiler.h"
 namespace mindspore {
 namespace runtime {
 using mindspore::tensor::Tensor;
@@ -282,4 +282,4 @@ using GraphParameterStorePtr = std::shared_ptr<GraphParameterStore>;
 }  // namespace runtime
 }  // namespace mindspore
 
-#endif  // MINDSPORE_CCSRC_RUNTIME_FRAMEWORK_GRAPH_PARAMETER_STORE_H_
+#endif  // MINDSPORE_CCSRC_INCLUDE_RUNTIME_CORE_GRAPH_SCHEDULER_GRAPH_PARAMETER_STORE_H_

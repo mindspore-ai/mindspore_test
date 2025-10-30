@@ -18,11 +18,11 @@
 #include "include/cluster/init.h"
 #include "backend/common/device_address_utils.h"
 #include "runtime/hardware_abstract/device_context/device_context.h"
-#include "runtime/core/actors/dynamic_shape/kernel_async_infer_actor.h"
-#include "runtime/core/actors/dynamic_shape/kernel_async_resize_actor.h"
-#include "runtime/core/actors/base/kernel_async_launch_actor.h"
-#include "runtime/core/graph_scheduler/base/graph_scheduler.h"
-#include "runtime/core/graph_executor/pipeline/runtime_pipeline.h"
+#include "include/runtime/core/actors/dynamic_shape/kernel_async_infer_actor.h"
+#include "include/runtime/core/actors/dynamic_shape/kernel_async_resize_actor.h"
+#include "include/runtime/core/actors/base/kernel_async_launch_actor.h"
+#include "include/runtime/core/graph_scheduler/base/graph_scheduler.h"
+#include "include/runtime/core/graph_executor/pipeline/runtime_pipeline.h"
 #include "tools/profiler/profiler.h"
 
 namespace mindspore {

@@ -27,7 +27,7 @@
 #include <sstream>
 #include "runtime/core/graph_executor/kernel_capture/capture_graph.h"
 #include "runtime/core/actors/base/kernel_runner.h"
-#include "runtime/core/graph_scheduler/base/graph_parameter_store.h"
+#include "include/runtime/core/graph_scheduler/base/graph_parameter_store.h"
 #include "runtime/core/actors/base/super_kernel_actor.h"
 
 namespace mindspore {
