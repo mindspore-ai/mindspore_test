@@ -60,6 +60,15 @@ inline void DoGradExpandDimsImpl(const mindspore::tensor::TensorPtr &output,
   pynative::autograd::DoViewGrad(input_x, output, make_func);
 }
 
+inline void DoGradExpandDimsViewImpl(const mindspore::tensor::TensorPtr &output,
+                                     const mindspore::tensor::TensorPtr &input_x, const int64_t &axis) {
+  auto make_func = [&input_x]() -> BackwardNodePtr {
+    auto backward_node = std::make_shared<pynative::autograd::ViewBackwardNode>("ExpandDimsView", input_x->shape());
+    return backward_node;
+  };
+  pynative::autograd::DoViewGrad(input_x, output, make_func);
+}
+
 inline void DoGradSelectExtViewImpl(const mindspore::tensor::TensorPtr &output,
                                     const mindspore::tensor::TensorPtr &input, const int64_t &dim,
                                     const int64_t &index) {

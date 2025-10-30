@@ -23,6 +23,7 @@
 namespace mindspore {
 namespace kernel {
 ops::OldTensorInfoPtr GetOldTensorInfo(const KernelTensor *tensor);
+std::vector<int64_t> GetTensorStride(const KernelTensor *tensor);
 }  // namespace kernel
 }  // namespace mindspore
 

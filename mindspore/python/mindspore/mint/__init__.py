@@ -61,7 +61,7 @@ from mindspore.ops.auto_generate import cumsum_ext as cumsum
 from mindspore.ops.auto_generate import stack_ext as stack
 
 # 7
-from mindspore.ops.function.array_func import unsqueeze
+from mindspore.ops.function.array_func import unsqueeze_view as unsqueeze
 # 8
 from mindspore.ops.auto_generate import transpose_ext_view as transpose
 from mindspore.ops.auto_generate import batch_norm_elemt

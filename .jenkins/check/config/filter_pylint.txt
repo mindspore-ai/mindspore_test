@@ -139,6 +139,7 @@
 "mindspore/mindspore/python/mindspore/mint/nn/layer/conv.py"
 "mindspore/mindspore/python/mindspore/nn/layer/container.py"                                         "access-member-before-definition"
 "mindspore/mindspore/python/mindspore/ops_generate/common/template.py"                              "line-too-long"
+"mindspore/mindspore/python/mindspore/ops/function/array_func.py"                                   "consider-using-generator"
 
 
 "mindspore/mindspore/ccsrc/plugin/device/ascend/kernel/ascendc/cmake/util"                                               "missing-docstring"
@@ -307,6 +308,7 @@
 "mindspore/tests/st/tensor/test_setitem.py"                                                             "multiple-statements"
 "mindspore/tests/st/ops/test_ops_lin_space_ext.py"                                                      "not-callable"
 "mindspore/tests/st/ops/test_ops_cosh.py"                                                               "not-callable"
+"mindspore/tests/st/mint/test_unsqueeze.py"                                                             "missing-module-docstring"
 
 #MindSpore Lite
 "mindspore/mindspore/ops/kernel/cpu/nnacl/experimental/HPC-generator/generator.py"                                         "redefined-builtin"

@@ -33,5 +33,13 @@ ops::OldTensorInfoPtr GetOldTensorInfo(const KernelTensor *tensor) {
                                                 storage_info->ori_strides, storage_info->storage_offset);
   }
 }
+
+std::vector<int64_t> GetTensorStride(const KernelTensor *tensor) {
+  const auto &storage_info = tensor->tensor_storage_info();
+  if (storage_info != nullptr) {
+    return storage_info->strides;
+  }
+  return ops::GetOriStrides(tensor->GetShapeVector());
+}
 }  // namespace kernel
 }  // namespace mindspore
