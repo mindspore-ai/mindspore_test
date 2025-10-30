@@ -118,6 +118,7 @@ class AstModifier(ast.NodeTransformer):
             ast_father.body.append(ast_son)
             ast.fix_missing_locations(ast_father)
             return ast_son
+        # pylint: disable=consider-using-enumerate
         for index in range(0, len(ast_father.body)):
             if id(ast_father.body[index]) == id(index_ast):
                 if insert_before:

@@ -416,7 +416,7 @@ def _is_numpy_bool_number(obj):
 def _convert_tuple_to_args_kwargs(params):
     """Convert tuple to args and kwargs."""
     args = tuple()
-    kwargs = dict()
+    kwargs = {}
     for param in params:
         if isinstance(param, dict):
             kwargs.update(param)
@@ -507,7 +507,7 @@ def convert_cell_list_to_sequence(obj):
     if not hasattr(obj, "__cell_as_list__"):
         raise TypeError(f"Obj should be nn.CellList, but got {obj}")
     if not hasattr(obj, "_cells"):
-        raise AttributeError(f"nn.CellList is missing _cells property.")
+        raise AttributeError("nn.CellList is missing _cells property.")
     cells = getattr(obj, "_cells")
     return list(cells.values())
 
@@ -614,7 +614,7 @@ def get_object_description(obj, fname, fline):
     if isinstance(obj, ast.FunctionDef):
         return f"function '{obj.name}' at {fname}:{fline}"
     if isinstance(obj, ast.Attribute):
-        return f"attribute "
+        return "attribute "
     return str(obj)
 
 
@@ -1020,7 +1020,7 @@ class Parser:
             return
         if not os.access(self.filename, os.W_OK):
             raise PermissionError(f"Don't have the write permission on the file {self.filename}.")
-        with open(self.filename, 'a') as f:
+        with open(self.filename, 'a', encoding='utf-8') as f:
             logger.debug(f"setattr for {self.fn}, attr: {attr_name}, value: {source_lines}")
             f.write(f"\n# Set source attribute for function {self.function_name} "
                     f"to support run so or pyc file in Graph Mode."
@@ -1041,8 +1041,8 @@ class Parser:
                 if hasattr(self.fn, attr_name):
                     source_lines = getattr(self.fn, attr_name)
                 elif e.__str__() == "could not get source code":
-                    raise OSError(f"Mindspore can not compile temporary source code in terminal. "
-                                  f"Please write source code to a python file and run the file.")
+                    raise OSError("Mindspore can not compile temporary source code in terminal. "
+                                  "Please write source code to a python file and run the file.") from e
                 else:
                     raise e
             self.lines, self.line_offset = source_lines
@@ -1052,7 +1052,7 @@ class Parser:
             if not ast_tokens_cache:
                 src = dedent(original_src)
                 self.col_offset = \
-                    len(original_src.split('\n')[0]) - len(src.split('\n')[0])
+                    len(original_src.split('\n', maxsplit=1)[0]) - len(src.split('\n')[0])
                 logger.debug("Get source: %s", src)
                 if not hasattr(self.fn, attr_name):
                     self.check_lambda(src)
@@ -1251,6 +1251,8 @@ class Parser:
         """
         res = [self.filename]
         err_exit = 0
+        start_node = None
+        end_node = None
         if isinstance(node, (list, tuple)):
             node_size = len(node)
             if node_size == 0:

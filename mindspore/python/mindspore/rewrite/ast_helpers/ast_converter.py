@@ -43,15 +43,7 @@ class AstConverter():
 
     @staticmethod
     def get_ast_constant_value(node: ast.AST):
-        """
-        Get value from ast constant node.
-
-        Args:
-            node ([ast.AST]): for python3.12+, it is ast.Constant; for python3.11 and earlier, it is ast.Constant, ast.Num, ast.Str, ast.Bytes or ast.NameConstant.
-
-        Returns:
-            The constant value.
-        """
+        """Get value from ast constant"""
         # In Python 3.12+, all constants use ast.Constant
         if isinstance(node, ast.Constant):
             return node.value
