@@ -13,6 +13,7 @@
 # limitations under the License.
 # ============================================================================
 # pylint: disable=unused-variable
+"""Tests for mint.empty: size/dtype/device, pin_memory behavior, and dynamic shape."""
 
 import pytest
 import numpy as np
@@ -28,7 +29,7 @@ class Net(ms.nn.Cell):
         return mint.empty(*size, dtype=dtype, device=device, pin_memory=pin_memory)
 
 
-@arg_mark(plat_marks=['platform_ascend'],
+@arg_mark(plat_marks=['platform_ascend', 'cpu_linux'],
           level_mark='level1',
           card_mark='onecard',
           essential_mark='essential')
