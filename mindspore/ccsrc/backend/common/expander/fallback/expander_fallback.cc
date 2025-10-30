@@ -211,6 +211,7 @@ void InsertLoadForInplaceFallback(const CNodePtr &cnode) {
     return;
   }
   // insert Load op
+  bool is_inserted = false;
   for (size_t i = 1; i < cnode->inputs().size(); i++) {
     auto &input_node = cnode->input(i);
     const auto abs = input_node->abstract();
@@ -221,6 +222,11 @@ void InsertLoadForInplaceFallback(const CNodePtr &cnode) {
     MS_EXCEPTION_IF_NULL(load_cnode);
     load_cnode->set_abstract(input_node->abstract());
     manager->SetEdge(cnode, i, load_cnode);
+    is_inserted = true;
+  }
+  if (!is_inserted) {
+    MS_LOG(WARNING) << "In-place inputs need to be RefTensor, cnode: " << cnode->DebugString()
+                    << ", Load can not be added to keep order which may cause a precision issue.";
   }
 }
 
@@ -258,6 +264,13 @@ bool IbTryExpandCNode(const IRBuilderHandle &handle, const CNodePtr &cnode, cons
     MS_LOG(WARNING) << "After expanding cnode " << cnode->fullname_with_scope() << ", the new abstract of "
                     << output->fullname_with_scope() << " does not match original cnode's abstract. "
                     << "new: " << output->abstract()->ToString() << ", old: " << cnode->abstract()->ToString();
+    if (cnode->abstract()->isa<abstract::AbstractRefTensor>() && output->abstract()->isa<abstract::AbstractTensor>()) {
+      const auto &ref_abs = cnode->abstract()->cast<std::shared_ptr<abstract::AbstractRefTensor>>();
+      auto new_abs = std::make_shared<abstract::AbstractRefTensor>(
+        output->abstract()->cast<abstract::AbstractTensorPtr>(), ref_abs->ref_key_value());
+      output->set_abstract(new_abs);
+      MS_LOG(WARNING) << "Restore new abstract to AbstractRefTensor new:" << new_abs->ToString();
+    }
   }
 
   if (enable_augassign_inplace_fallback && fallback_users.size() > 1) {
