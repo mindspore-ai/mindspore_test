@@ -16,7 +16,6 @@
 
 #include <string>
 #include "ir/tensor.h"
-#include "frontend/ir/tensor_py.h"
 #include "common/common_test.h"
 #include "common/py_func_graph_fetcher.h"
 #include "frontend/jit/pi/graph_build/func_graph_builder.h"

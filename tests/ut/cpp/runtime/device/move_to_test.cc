@@ -26,13 +26,11 @@
 #include "include/securec.h"
 #include "ir/tensor.h"
 #include "ir/tensor_new.h"
-#include "frontend/ir/tensor_py.h"
 
 
 namespace mindspore {
 namespace device {
 using device::DeviceAddressPtr;
-using mindspore::tensor::TensorPy;
 class MoveToTest : public UT::Common {
  public:
   MoveToTest() = default;

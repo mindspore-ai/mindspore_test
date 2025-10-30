@@ -22,7 +22,6 @@
 #include "include/utils/tensor_utils.h"
 #include "mindspore/ccsrc/pynative/utils/pynative_utils.h"
 #include "mindspore/ccsrc/frontend/jit/ps/parse/data_converter.h"
-#include "frontend/ir/tensor_py.h"
 #include "mindspore/ccsrc/pynative/utils/pyboost/functions/auto_generate/functions.h"
 
 namespace ms {

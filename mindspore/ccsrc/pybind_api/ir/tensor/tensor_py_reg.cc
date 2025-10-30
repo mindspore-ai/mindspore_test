@@ -21,7 +21,7 @@
 #include <memory>
 
 #include "pybind11/complex.h"
-#include "frontend/ir/tensor_py.h"
+#include "pybind_api/ir/tensor/tensor_py.h"
 #include "include/utils/pybind_api/api_register.h"
 #include "abstract/abstract_value.h"
 #include "pybind_api/ir/tensor/tensor_index_py.h"
@@ -628,7 +628,8 @@ extern PyObject *TensorPython_numpy_non_blocking(PyObject *self, PyObject *args)
   }
   TensorPy &tensorPy = py_tensor->value;
   auto tensor = tensorPy.GetTensor();
-  np_array = TensorPybind::NumpyNonBlocking(*tensor);
+  runtime::Pipeline::Get().WaitForward();
+  np_array = tensor::NumpyNonBlocking(*tensor);
   return np_array.release().ptr();
   HANDLE_MS_EXCEPTION_END
 }
@@ -660,7 +661,7 @@ extern PyObject *TensorPython_from_numpy(PyObject *self, PyObject *args) {
     return nullptr;
   }
   py::array input = py::cast<py::array>(numpy_array);
-  return tensor::PackTensor(TensorPybind::MakeTensorOfNumpy(input));
+  return tensor::PackTensor(tensor::MakeTensorOfNumpy(input));
   HANDLE_MS_EXCEPTION_END
 }
 

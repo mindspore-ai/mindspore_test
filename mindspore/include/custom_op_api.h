@@ -18,7 +18,6 @@
 #include "pybind11/pybind11.h"
 #include "pybind11/stl.h"
 #include "ir/tensor.h"
-#include "mindspore/ccsrc/frontend/ir/tensor_py.h"
 
 // pyboost headfiles
 #include "mindspore/ccsrc/pynative/utils/pyboost/op_register.h"

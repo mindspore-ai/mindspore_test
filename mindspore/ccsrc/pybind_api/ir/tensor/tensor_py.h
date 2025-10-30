@@ -22,99 +22,14 @@
 #include <vector>
 
 #include "pybind11/numpy.h"
-#include "frontend/ir/dlpack_utils.h"
+#include "pybind_api/ir/tensor/dlpack_utils.h"
 
 #include "ir/tensor.h"
 #include "include/utils/tensor_py.h"
 #include "include/utils/visible.h"
-#include "frontend/np_dtypes/np_dtypes.h"
+#include "include/utils/np_dtypes.h"
 
 namespace py = pybind11;
-namespace pybind11 {
-namespace detail {
-// Similar to enums in `pybind11/numpy.h`. Determined by doing:
-// python3 -c 'import numpy as np; print(np.dtype(np.float16).num)'
-constexpr int NPY_FLOAT16 = 23;
-
-template <typename T>
-struct npy_scalar_caster {
-  PYBIND11_TYPE_CASTER(T, _("PleaseOverride"));
-  using Array = array_t<T>;
-
-  bool load(handle src, bool convert) const {
-    // Taken from Eigen casters. Permits either scalar dtype or scalar array.
-    handle type = dtype::of<T>().attr("type");
-    if (!convert && !isinstance<Array>(src) && !isinstance(src, type)) {
-      return false;
-    }
-
-    Array tmp = Array::ensure(src);
-    if (tmp && tmp.size() == 1 && tmp.ndim() == 0) {
-      this->value = *tmp.data();
-      return true;
-    }
-
-    return false;
-  }
-
-  static handle cast(T src, return_value_policy, handle) {
-    Array tmp({1});
-    tmp.mutable_at(0) = src;
-    tmp.resize({});
-
-    // You could also just return the array if you want a scalar array.
-    object scalar = tmp[tuple()];
-    return scalar.release();
-  }
-};
-
-template <>
-struct npy_format_descriptor<float16> {
-  static constexpr auto name = "float16";
-  static pybind11::dtype dtype() {
-    handle ptr = npy_api::get().PyArray_DescrFromType_(NPY_FLOAT16);
-    return reinterpret_borrow<pybind11::dtype>(ptr);
-  }
-  virtual ~npy_format_descriptor<float16>() {}
-};
-
-template <>
-struct type_caster<float16> : public npy_scalar_caster<float16> {
-  static constexpr auto name = "float16";
-};
-
-template <>
-struct npy_format_descriptor<bfloat16> {
-  static constexpr auto name = "bfloat16";
-  static pybind11::dtype dtype() {
-    handle ptr = npy_api::get().PyArray_DescrFromType_(mindspore::GetBFloat16NpDType());
-    return reinterpret_borrow<pybind11::dtype>(ptr);
-  }
-  virtual ~npy_format_descriptor<bfloat16>() {}
-};
-
-template <>
-struct type_caster<bfloat16> : public npy_scalar_caster<bfloat16> {
-  static constexpr auto name = "bfloat16";
-};
-
-template <>
-struct type_caster<mindspore::tensor::TensorPtr> {
-  PYBIND11_TYPE_CASTER(mindspore::tensor::TensorPtr, _("Tensor"));
-  bool load(handle src, bool) {
-    if (mindspore::tensor::IsTensorPy(src)) {
-      value = mindspore::tensor::ConvertToTensor(src);
-      return true;
-    }
-    return false;
-  }
-  static handle cast(const mindspore::tensor::TensorPtr &src, return_value_policy, handle) {
-    return handle(mindspore::tensor::Wrap(src));
-  }
-};
-}  // namespace detail
-}  // namespace pybind11
-
 // brief mindspore namespace.
 //
 // mindspore namespace is the top level namespace of Mindsporeession project.
@@ -126,26 +41,13 @@ namespace mindspore {
 namespace tensor {
 
 // Tensor python wrapper and adapter class.
-class FRONTEND_EXPORT TensorPybind {
+class PYBIND_EXPORT TensorPybind {
  public:
-  /// \brief Create Tensor from a numpy array object.
-  ///
-  /// \param[in] input [py::array] Data value of the tensor.
-  /// \param[in] type_ptr [TypePtr] Data type of the tensor.
-  static TensorPtr MakeTensor(const py::array &input, const TypePtr &type_ptr = nullptr);
-
-  /// \brief Create Tensor from a numpy array without copy.
-  ///
-  /// \param[in] input [py::array] Data value of the tensor.
-  static TensorPtr MakeTensorOfNumpy(const py::array &input);
-
   static bool IsPinned(const TensorPy &tensor);
 
   static TensorPtr MakePinMemoryTensor(const TensorPy &tensor);
 
   static py::bytes GetBytes(const Tensor &tensor);
-
-  static py::buffer_info GetPyBufferFromPyArray(const py::array &input);
 
   static TensorPtr ConvertBytesToTensor(const py::bytes &bytes_obj, const py::tuple &dims,
                                         const TypePtr &type_ptr = nullptr);
@@ -155,10 +57,6 @@ class FRONTEND_EXPORT TensorPybind {
   static py::object Item(const TensorPtr &tensor);
 
   static py::array SyncAsNumpy(const Tensor &tensor);
-
-  static py::array NumpyNonBlocking(const Tensor &tensor);
-
-  static py::array AsNumpy(const Tensor &tensor);
 
   static TensorPtr FromDLPack(const py::object &dlpack_capsule);
 
@@ -195,7 +93,7 @@ class FRONTEND_EXPORT TensorPybind {
 };
 
 // CSRTensor python wrapper and adapter class.
-class FRONTEND_EXPORT CSRTensorPy {
+class CSRTensorPy {
  public:
   static py::tuple GetPyTupleShape(const CSRTensor &csr_tensor);
   static py::object GetIndptr(const CSRTensorPtr &csr_tensor);
@@ -204,7 +102,7 @@ class FRONTEND_EXPORT CSRTensorPy {
 };
 
 // COOTensor python wrapper and adapter class.
-class FRONTEND_EXPORT COOTensorPy {
+class COOTensorPy {
  public:
   static py::tuple GetPyTupleShape(const COOTensor &coo_tensor);
   static py::object GetIndices(const COOTensorPtr &coo_tensor);
@@ -212,14 +110,14 @@ class FRONTEND_EXPORT COOTensorPy {
 };
 
 // RowTensor python wrapper and adapter class.
-class FRONTEND_EXPORT RowTensorPy {
+class RowTensorPy {
  public:
   static py::tuple GetPyTupleShape(const RowTensor &row_tensor);
   static py::object GetIndices(const RowTensorPtr &row_tensor);
   static py::object GetValues(const RowTensorPtr &row_tensor);
 };
 
-class FRONTEND_EXPORT TensorPyImpl {
+class PYBIND_EXPORT TensorPyImpl {
  public:
   /// \brief Create a C++ Tensor.
   ///

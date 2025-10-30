@@ -41,7 +41,6 @@
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "runtime/hardware_abstract/utils.h"
 #include "pybind_api/gil_scoped_long_running.h"
-#include "frontend/ir/tensor_py.h"
 #include "include/runtime/memory/mem_pool/mem_tracker.h"
 #ifdef ENABLE_DEBUGGER
 #include "ir/device_type.h"

@@ -14,23 +14,22 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CCSRC_UTILS_DLPACK_UTILS_H_
-#define MINDSPORE_CCSRC_UTILS_DLPACK_UTILS_H_
+#ifndef MINDSPORE_CCSRC_FRONTEND_IR_DEVICE_TYPE_UTILS_H_
+#define MINDSPORE_CCSRC_FRONTEND_IR_DEVICE_TYPE_UTILS_H_
 
-#include "frontend/ir/dlpack.h"
-#include "mindspore/core/include/mindapi/base/type_id.h"
-#include "ir/tensor.h"
+#include <string>
+#include "pybind_api/ir/tensor/dlpack.h"
+#include "ir/device_type.h"
 
 namespace mindspore {
-namespace tensor {
-class DLPackUtils {
+class DeviceTypeUtils {
  public:
-  static DLDataType GetDLDataType(const TypeId &type_id);
-  static DLDevice GetDLDevice(size_t device_id, device::DeviceType device_type);
-  static TypeId GetTypeId(const DLDataType &dtype);
-  static TensorPtr FromDLPack(DLManagedTensor *dlpack);
-  static DLManagedTensor *ToDLPack(const TensorPtr &src);
+  // Convert DL device target string to device::DeviceType
+  static device::DeviceType DLDeviceTypeToMsDeviceTarget(DLDeviceType dl_device);
+
+  // Convert MindSpore context device target string to DLPack DLDeviceType
+  static DLDeviceType MsDeviceTargetToDLDeviceType(device::DeviceType device_type);
 };
-}  // namespace tensor
 }  // namespace mindspore
-#endif  // MINDSPORE_CCSRC_UTILS_DLPACK_UTILS_H_
+
+#endif  // MINDSPORE_CCSRC_FRONTEND_IR_DEVICE_TYPE_UTILS_H_

@@ -51,7 +51,7 @@
 #include "pybind_api/resource/manager.h"
 
 #include "frontend/jit/pi/external.h"
-#include "frontend/np_dtypes/np_dtypes.h"
+#include "include/utils/np_dtypes.h"
 #include "include/utils/amp.h"
 #include "frontend/jit/trace/trace_recorder.h"
 #include "include/runtime/core/graph_executor/pre_launch/comm_execution_order_check.h"

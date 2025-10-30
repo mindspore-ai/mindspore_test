@@ -25,9 +25,11 @@
 #include <tuple>
 #include <Python.h>
 #include "pybind11/pybind11.h"
+#include "pybind11/numpy.h"
 #include "ir/tensor.h"
 #include "include/utils/visible.h"
 #include "include/utils/stub_tensor.h"
+#include "include/utils/np_dtypes.h"
 
 namespace py = pybind11;
 
@@ -400,6 +402,37 @@ COMMON_EXPORT TensorPtr ConvertPyObjectToTensor(PyObject *obj);
 COMMON_EXPORT const ValuePtr ConvertToValue(const py::handle &obj);
 COMMON_EXPORT const ValuePtr ConvertPyObjectToValue(PyObject *obj);
 
+/// \brief Create Tensor from a numpy array object.
+///
+/// \param[in] input [py::array] Data value of the tensor.
+/// \param[in] type_ptr [TypePtr] Data type of the tensor.
+/// \return A pointer address of C++ Tensor.
+COMMON_EXPORT TensorPtr MakeTensor(const py::array &input, const TypePtr &type_ptr = nullptr);
+
+/// \brief Create Tensor from a numpy array without copy.
+///
+/// \param[in] input [py::array] Data value of the tensor.
+/// \return A pointer address of C++ Tensor.
+COMMON_EXPORT TensorPtr MakeTensorOfNumpy(const py::array &input);
+
+/// \brief Create a numpy array from tensor nonblocking.
+///
+/// \param[in] tensor_value [TensorPtr] C++ Tensor.
+/// \return [py::array] Data value of the tensor.
+COMMON_EXPORT py::array NumpyNonBlocking(const Tensor &tensor);
+
+/// \brief Create a numpy array from tensor.
+///
+/// \param[in] tensor_value [TensorPtr] C++ Tensor.
+/// \return [py::array] Data value of the tensor.
+COMMON_EXPORT py::array AsNumpy(const Tensor &tensor);
+
+/// \brief Get buffer info from a py array.
+///
+/// \param[in] input [py::array] Data value of the tensor.
+/// \return [py::buffer_info] Pybind buffer info.
+COMMON_EXPORT py::buffer_info GetPyBufferFromPyArray(const py::array &input);
+
 template <typename T>
 struct PyType {
   PyObject_HEAD T value;
@@ -449,5 +482,90 @@ PyObject *Wrap(const std::tuple<Args...> &tuple) {
 COMMON_EXPORT PyObject *Wrap(const ValuePtr &value);
 }  // namespace tensor
 }  // namespace mindspore
+
+namespace pybind11 {
+namespace detail {
+// Similar to enums in `pybind11/numpy.h`. Determined by doing:
+// python3 -c 'import numpy as np; print(np.dtype(np.float16).num)'
+constexpr int NPY_FLOAT16 = 23;
+
+template <typename T>
+struct npy_scalar_caster {
+  PYBIND11_TYPE_CASTER(T, _("PleaseOverride"));
+  using Array = array_t<T>;
+
+  bool load(handle src, bool convert) const {
+    // Taken from Eigen casters. Permits either scalar dtype or scalar array.
+    handle type = dtype::of<T>().attr("type");
+    if (!convert && !isinstance<Array>(src) && !isinstance(src, type)) {
+      return false;
+    }
+
+    Array tmp = Array::ensure(src);
+    if (tmp && tmp.size() == 1 && tmp.ndim() == 0) {
+      this->value = *tmp.data();
+      return true;
+    }
+
+    return false;
+  }
+
+  static handle cast(T src, return_value_policy, handle) {
+    Array tmp({1});
+    tmp.mutable_at(0) = src;
+    tmp.resize({});
+
+    // You could also just return the array if you want a scalar array.
+    object scalar = tmp[tuple()];
+    return scalar.release();
+  }
+};
+
+template <>
+struct npy_format_descriptor<float16> {
+  static constexpr auto name = "float16";
+  static pybind11::dtype dtype() {
+    handle ptr = npy_api::get().PyArray_DescrFromType_(NPY_FLOAT16);
+    return reinterpret_borrow<pybind11::dtype>(ptr);
+  }
+  virtual ~npy_format_descriptor<float16>() {}
+};
+
+template <>
+struct type_caster<float16> : public npy_scalar_caster<float16> {
+  static constexpr auto name = "float16";
+};
+
+template <>
+struct npy_format_descriptor<bfloat16> {
+  static constexpr auto name = "bfloat16";
+  static pybind11::dtype dtype() {
+    handle ptr = npy_api::get().PyArray_DescrFromType_(mindspore::GetBFloat16NpDType());
+    return reinterpret_borrow<pybind11::dtype>(ptr);
+  }
+  virtual ~npy_format_descriptor<bfloat16>() {}
+};
+
+template <>
+struct type_caster<bfloat16> : public npy_scalar_caster<bfloat16> {
+  static constexpr auto name = "bfloat16";
+};
+
+template <>
+struct type_caster<mindspore::tensor::TensorPtr> {
+  PYBIND11_TYPE_CASTER(mindspore::tensor::TensorPtr, _("Tensor"));
+  bool load(handle src, bool) {
+    if (mindspore::tensor::IsTensorPy(src)) {
+      value = mindspore::tensor::ConvertToTensor(src);
+      return true;
+    }
+    return false;
+  }
+  static handle cast(const mindspore::tensor::TensorPtr &src, return_value_policy, handle) {
+    return handle(mindspore::tensor::Wrap(src));
+  }
+};
+}  // namespace detail
+}  // namespace pybind11
 
 #endif  // MINDSPORE_CCSRC_INCLUDE_COMMON_UTILS_TENSOR_PY_H_

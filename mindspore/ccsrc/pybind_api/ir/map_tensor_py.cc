@@ -20,9 +20,10 @@
 #include <utility>
 #include "ir/tensor_new.h"
 #include "pybind11/pytypes.h"
-#include "frontend/ir/tensor_py.h"
+#include "pybind_api/ir/tensor/tensor_py.h"
 #include "include/utils/pybind_api/api_register.h"
 #include "include/utils/python_adapter.h"
+#include "include/utils/tensor_py.h"
 #include "frontend/jit/ps/parse/parse_base.h"
 #include "utils/log_adapter.h"
 
@@ -62,9 +63,9 @@ void MapTensorPy::UpdateFromNumpy(const MapTensorPtr &map_tensor,
   constexpr size_t key_index = 0;
   constexpr size_t value_index = 1;
   constexpr size_t status_index = 2;
-  data.key_tensor = TensorPybind::MakeTensorOfNumpy(std::get<key_index>(numpy_data));
-  data.value_tensor = TensorPybind::MakeTensorOfNumpy(std::get<value_index>(numpy_data));
-  data.status_tensor = TensorPybind::MakeTensorOfNumpy(std::get<status_index>(numpy_data));
+  data.key_tensor = tensor::MakeTensorOfNumpy(std::get<key_index>(numpy_data));
+  data.value_tensor = tensor::MakeTensorOfNumpy(std::get<value_index>(numpy_data));
+  data.status_tensor = tensor::MakeTensorOfNumpy(std::get<status_index>(numpy_data));
   map_tensor->Update(data);
 }
 
@@ -72,8 +73,8 @@ std::tuple<py::array, py::array, py::array> MapTensorPy::ExportAsNumpy(const Map
                                                                        bool incremental) {
   MS_EXCEPTION_IF_NULL(map_tensor);
   auto data = map_tensor->Export(incremental);
-  return std::make_tuple(TensorPybind::AsNumpy(*data.key_tensor), TensorPybind::AsNumpy(*data.value_tensor),
-                         TensorPybind::AsNumpy(*data.status_tensor));
+  return std::make_tuple(tensor::AsNumpy(*data.key_tensor), tensor::AsNumpy(*data.value_tensor),
+                         tensor::AsNumpy(*data.status_tensor));
 }
 
 std::tuple<py::bytes, py::bytes, py::bytes> MapTensorPy::ExportBytes(const MapTensorPtr &map_tensor, bool incremental) {
@@ -88,8 +89,8 @@ std::tuple<py::array, py::array, py::array, bool> MapTensorPy::ExportSliceAsNump
   MS_EXCEPTION_IF_NULL(map_tensor);
   bool last_slice = false;
   auto data = map_tensor->ExportSlice(incremental, &last_slice);
-  return std::make_tuple(TensorPybind::AsNumpy(*data.key_tensor), TensorPybind::AsNumpy(*data.value_tensor),
-                         TensorPybind::AsNumpy(*data.status_tensor), last_slice);
+  return std::make_tuple(tensor::AsNumpy(*data.key_tensor), tensor::AsNumpy(*data.value_tensor),
+                         tensor::AsNumpy(*data.status_tensor), last_slice);
 }
 
 std::tuple<py::array, py::array, py::array, bool> MapTensorPy::ExportPersistentSliceAsNumpy(

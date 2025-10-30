@@ -98,7 +98,10 @@ file(GLOB_RECURSE UT_OTHERS_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ./debug/*.
 file(GLOB_RECURSE UT_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ./stub/*.cc ./common/*.cc ./mock/*.cc
         ../../../mindspore/ccsrc/pybind_api/resource/manager.cc
         ../../../mindspore/ccsrc/common/python_utils.cc
-        ../../../mindspore/ccsrc/pybind_api/utils/log_adapter_py.cc)
+        ../../../mindspore/ccsrc/pybind_api/utils/log_adapter_py.cc
+        ../../../mindspore/ccsrc/pybind_api/ir/tensor/tensor_py.cc
+        ../../../mindspore/ccsrc/pybind_api/ir/tensor/dlpack_utils.cc
+        ../../../mindspore/ccsrc/pybind_api/ir/tensor/device_type_utils.cc)
 
 if(NOT ENABLE_CPU OR WIN32 OR APPLE)
     file(GLOB_RECURSE UT_DISTRIBUTED_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
@@ -258,7 +261,7 @@ include_directories("${CMAKE_BINARY_DIR}/plugin/device/ascend/kernel/aicpu")
 add_library(_ut_obj_static STATIC ${UT_SRCS})
 target_link_libraries(_ut_obj_static PRIVATE mindspore_ms_backend mindspore_pyboost mindspore_backend_manager
                       mindspore_hardware_abstract mindspore_profiler mindspore_backend_common
-                      mindspore_pynative_utils)
+                      mindspore_pynative_utils mindspore_runtime_pipeline)
 foreach(comp ${ALL_UT_COMPS})
     add_executable(ut_${comp}_tests ${UT_${comp}_SRCS})
 

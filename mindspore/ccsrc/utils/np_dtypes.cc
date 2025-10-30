@@ -21,7 +21,7 @@ limitations under the License.
  * Additional modifications are made by Huawei Technologies Co., Ltd in 2024.
  */
 #define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
-#include "frontend/np_dtypes/np_dtypes.h"
+#include "include/utils/np_dtypes.h"
 #include <algorithm>
 #include <string>
 #include <memory>

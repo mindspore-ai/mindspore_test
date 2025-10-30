@@ -14,14 +14,13 @@
  * limitations under the License.
  */
 
-#include "frontend/ir/dlpack_utils.h"
-
+#include "pybind_api/ir/tensor/dlpack_utils.h"
 #include <memory>
 #include <string>
 #include <utility>
 #include <vector>
 
-#include "frontend/ir/device_type_utils.h"
+#include "pybind_api/ir/tensor/device_type_utils.h"
 #include "pynative/utils/pyboost/functions/auto_grad_guard.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel.h"
 #include "ir/device_type.h"

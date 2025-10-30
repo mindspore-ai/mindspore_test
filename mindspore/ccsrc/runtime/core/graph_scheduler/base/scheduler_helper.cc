@@ -24,7 +24,6 @@
 #include "include/utils/convert_utils.h"
 #include "include/runtime/utils/runtime_conf/runtime_conf.h"
 #include "include/runtime/core/graph_scheduler/base/parameter_store.h"
-#include "frontend/ir/tensor_py.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
