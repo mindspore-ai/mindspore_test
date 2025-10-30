@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+"""Test cases for GroupedMatmul operations."""
 
 from mindspore.ops.auto_generate import GroupedMatmul
 from mindspore import Tensor, nn, ops, context, mint
@@ -22,6 +23,7 @@ from tests.mark_utils import arg_mark
 
 
 class GroupedMatmulNetGroupType0(nn.Cell):
+    """Neural network for testing GroupedMatmul with group type 0."""
     def __init__(self):
         super().__init__()
         self.gmm = GroupedMatmul(split_item=3, group_type=0)
@@ -32,6 +34,7 @@ class GroupedMatmulNetGroupType0(nn.Cell):
 
 
 class GroupedMatmulNetGroupType2(nn.Cell):
+    """Neural network for testing GroupedMatmul with group type 2."""
     def __init__(self):
         super().__init__()
         self.gmm = GroupedMatmul(split_item=3, group_type=2)
@@ -47,6 +50,7 @@ class GroupedMatmulNetGroupType2(nn.Cell):
 
 
 def get_output(net, args, args_dyn=None, enable_graph_kernel=False):
+    """Get output from network with optional dynamic shape and graph kernel settings."""
     if enable_graph_kernel:
         context.set_context(jit_config={"jit_level": "O1"})
         context.set_context(graph_kernel_flags="--enable_cluster_ops=GroupedMatmul,Reshape")
@@ -126,6 +130,12 @@ def test_dvm_grouped_matmul_splititem3_grouptype2(M0, K0, N0, E0, group_list_np)
     expect = get_output(
         GroupedMatmulNetGroupType2, [x, w, group_list], enable_graph_kernel=False
     )
+    # Produce dirty data
+    a = ms.Tensor(np.full([1024, 1024], np.nan, np.float16))
+    b = ms.Tensor(np.full([1024, 1024], np.nan, np.float16))
+    c = ms.ops.MatMul()(a, b)
+    c.asnumpy()
+
     output = get_output(
         GroupedMatmulNetGroupType2, [x, w, group_list], enable_graph_kernel=True
     )
