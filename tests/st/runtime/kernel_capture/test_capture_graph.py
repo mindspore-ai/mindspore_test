@@ -11,10 +11,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+# ============================================================================
+"""
+The tests of mindspore, used to test aclgraph.
+"""
 import os
 import subprocess
-from tests.st.runtime.kernel_capture.run_capture_graph import Net1, SeqNet, expected_output
+from tests.st.runtime.kernel_capture.run_capture_graph import Net1, SeqNet, expected_output, SimpleWrapperNet
 from tests.mark_utils import arg_mark
 import numpy as np
 import mindspore.ops as P
@@ -37,7 +40,7 @@ input_len = 10
 
 @arg_mark(
     plat_marks=['platform_ascend910b'],
-    level_mark='level1',
+    level_mark='level0',
     card_mark='onecard',
     essential_mark='essential'
 )
@@ -67,6 +70,47 @@ def test_dynamic_shape_for_capture_graph():
             expected = expected_output(i)
             assert np.allclose(output_np, expected), \
                 f"Output {output_np} does not match expected {expected} at step {i}"
+
+@arg_mark(
+    plat_marks=['platform_ascend910b'],
+    level_mark='level0',
+    card_mark='onecard',
+    essential_mark='essential'
+)
+def test_dynamic_shape_with_view_ops_for_capture_graph():
+    """
+    Feature: graph mode support capture graph
+    Description: Test view op in aclgraph
+    Expectation: No exception and results are correct at each step
+    """
+    rt.set_kernel_launch_capture(True)
+
+    ori_shape = (2, 3)
+    fixed_shape = (3, 2)
+    ori_input_data = Tensor(np.ones(ori_shape).astype(np.float32))
+
+    dyn_input = Tensor(shape=[3, None], dtype=mstype.float32)
+
+    net = SimpleWrapperNet()
+    net.set_inputs(dyn_input)
+    net.phase = "increment"
+
+    param = np.array([[1.0, 4.0], [2.0, 5.0], [3.0, 6.0]])
+    expected = np.ones(fixed_shape) + param
+
+    results = []
+    input_data = P.Transpose()(ori_input_data, (1, 0))
+    for step in range(1, 4):
+        output = net(input_data)
+        output_np = output.asnumpy()
+
+        assert np.allclose(output_np, expected), \
+            f"At step {step}, output {output_np} does not match expected {expected}"
+
+        print(f"Step {step} passed, output shape: {output_np.shape}")
+        results.append(output_np)
+
+    return results
 
 @arg_mark(
     plat_marks=['platform_ascend910b'],

@@ -12,13 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+"""
+Construct class and common functions for testing aclgraph feature.
+"""
 import os
 import numpy as np
 import mindspore as ms
-import mindspore.nn as nn
+from mindspore import nn
 import mindspore.ops as P
 import mindspore.runtime as rt
-from mindspore import Tensor, context
+from mindspore import Tensor, context, jit
 from mindspore.common import Parameter
 from mindspore import dtype as mstype
 
@@ -36,6 +39,10 @@ steps = 20
 input_len = 10
 
 class Net(nn.Cell):
+    """
+    Net definition
+    """
+
     def __init__(self):
         super().__init__()
         self.param = Parameter(Tensor(2, ms.float32))
@@ -51,7 +58,41 @@ class Net(nn.Cell):
         x = self.add(x, 0.5)
         return x
 
+
+class Simple_Net(nn.Cell):
+    """
+    Simple_Net definition
+    """
+
+    def __init__(self):
+        super().__init__()
+        self.param = Parameter(Tensor([[1.0, 4.0], [2.0, 5.0], [3.0, 6.0]], mstype.float32))
+        self.add = P.Add()
+
+    def construct(self, x):
+        output = self.add(x, self.param)
+        return output
+
+class SimpleWrapperNet(nn.Cell):
+    """
+    SimpleWrapperNet definition
+    """
+
+    def __init__(self):
+        super().__init__()
+        self.net = Simple_Net()
+
+    @jit
+    def construct(self, x):
+        output = self.net(x)
+        return output
+
+
 class SeqNet(nn.Cell):
+    """
+    SeqNet definition
+    """
+
     def __init__(self):
         super().__init__()
         self.net = Net()
@@ -61,6 +102,10 @@ class SeqNet(nn.Cell):
         return output
 
 class Net1(nn.Cell):
+    """
+    Net1 definition
+    """
+
     def __init__(self):
         super().__init__()
         self.add = P.Add()
@@ -70,6 +115,9 @@ class Net1(nn.Cell):
         self.reshape = P.Reshape()
 
     def construct(self, x, key_cache_list, value_cache_list):
+        """
+        define construct for base network
+        """
         y = x
         x = self.reshape(x, (1, -1))
         for i in range(g_block_num):
@@ -101,6 +149,9 @@ def expected_output(x):
     return (x + 3.5) * 2 + 0.5
 
 def run_multi_graph_save():
+    """
+    py script to test multi graph cache with num limit for capture graph
+    """
     rt.set_kernel_launch_capture(True)
     new_input1 = Tensor(np.ones((2, 5)).astype(np.float32))
     new_input2 = Tensor((np.ones((2, 6)) * 2).astype(np.float32))
