@@ -250,7 +250,7 @@ class VariableUsage(ast.NodeVisitor):
         - whether it is used inside its scope
         """
         # If it is from the argument list or loop variable, we do not worry about it!
-        if node.id in self.args_index.keys():
+        if node.id in self.args_index:
             return
         fors = list(loop.target.id for loop in self.scope_level if isinstance(loop, ast.For))
         if node.id in fors:
@@ -261,7 +261,7 @@ class VariableUsage(ast.NodeVisitor):
                     "iter var cannot be overwritten: {}".format(self.func_name, node.id))
             return
 
-        if node.id not in self.status.keys():
+        if node.id not in self.status:
             if not isinstance(node.ctx, ast.Store):
                 raise ValueError(
                     "In the function {} written in the Hybrid DSL, there is "
@@ -296,13 +296,13 @@ class VariableUsage(ast.NodeVisitor):
                 "In the function [{}], function call id [{}] is not available on the "
                 "device {}. For the full support list, please refer to 'Hybrid DSL' "
                 "at https://www.mindspore.cn.".format(self.func_name, func_id, self.device))
-        if func_id in list(VariableUsage.intrin_unary_op.keys()) + list(VariableUsage.intrin_general_unary_op.keys()) \
+        if func_id in list(VariableUsage.intrin_unary_op) + list(VariableUsage.intrin_general_unary_op) \
                 and len(node.args) != 1:
             raise TypeError(
                 "In the function [{}], function [{}] "
                 "expects one input, but get {}.".format(self.func_name, func_id, len(node.args)))
-        if func_id in list(VariableUsage.intrin_bin_op.keys()) + list(VariableUsage.intrin_general_bin_op.keys()) + \
-                list(VariableUsage.intrin_buffer.keys()) and len(node.args) != 2:
+        if func_id in list(VariableUsage.intrin_bin_op) + list(VariableUsage.intrin_general_bin_op) + \
+                list(VariableUsage.intrin_buffer) and len(node.args) != 2:
             raise TypeError(
                 "In the function [{}], function [{}] "
                 "expects two inputs, but get {}.".format(self.func_name, func_id, len(node.args)))
@@ -418,7 +418,7 @@ class VariableUsage(ast.NodeVisitor):
                 "In the function {} written in the Hybrid DSL, getattr is only supported for a tensor object, "
                 "not for the object with type: {}".format(self.func_name, type(node.value)))
 
-        if node.value.id not in self.output_tensor + self.temp_tensor + list(self.args_index.keys()):
+        if node.value.id not in self.output_tensor + self.temp_tensor + list(self.args_index):
             raise ValueError(
                 "In the function {} written in the Hybrid DSL, getattr is only supported for a tensor variable "
                 "after its declaration, not for: {}".format(self.func_name, node.value.id))
@@ -448,7 +448,7 @@ class VariableUsage(ast.NodeVisitor):
                                     "should be the name of a tensor, but get a {}.".format(self.func_name, type(i)))
             symbols = list(i.id for i in node.value.elts)
         for sy in symbols:
-            if sy not in list(self.args_index.keys()) + self.output_tensor:
+            if sy not in list(self.args_index) + self.output_tensor:
                 raise TypeError("In the function {} written in the Hybrid DSL, the element in the return value "
                                 "should be either an input tensor or a tensor allocated by output_tensor, "
                                 "but get name: {}".format(self.func_name, sy))

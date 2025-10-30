@@ -521,7 +521,7 @@ class AssignParser(Parser):
         if isinstance(function_object, Primitive):
             # when primitive instance is not a local variable, it will be a global object which need to be imported
             if not isinstance(function_object, LocalPrim):
-                import_name = str(func_scope_name).split('.')[0]
+                import_name = str(func_scope_name).split('.', maxsplit=1)[0]
                 self._add_import(import_name)
             # create CallPrimitive node
             self.process_primitive(func_scope_name, func_scope_name.value, function_object)
@@ -735,10 +735,8 @@ class AssignParser(Parser):
 
     def process_ast_constant(self, ast_constant: ast.AST):
         """
-        Convert ast node of constant types to a symbol tree node.
-
-        Args:
-            ast_constant ([ast.AST]): for python3.12+, it is ast.Constant; for python3.11 and earlier, it is ast.Constant, ast.Num, ast.Str, ast.Bytes or ast.NameConstant.
+        Convert ast node of constant types (ast.Constant, ast.NameConstant, ast.Num, ast.Bytes, ast.Str) to
+        a symbol tree node.
         """
         node_name = f"{type(ast_constant).__name__.lower()}_assign"
         targets = AssignParser._create_targets(self.ast_assign.targets[0])
@@ -821,7 +819,7 @@ class AssignParser(Parser):
             node_manager (NodeManager): NodeManager those asts belong to.
         """
         if len(node.targets) != 1:
-            logger.info(error_str(f"Continuous assignment statement(e.g. 'a = b = 1') should be flatten before.",
+            logger.info(error_str("Continuous assignment statement(e.g. 'a = b = 1') should be flatten before.",
                                   child_node=node))
             stree.try_append_python_node(node, node, node_manager)
             return

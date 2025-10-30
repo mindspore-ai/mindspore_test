@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+"""AST type checker compatible with Python 3.7-3.12+."""
+
 import ast
 import sys
 from typing import Dict, Tuple
@@ -56,7 +58,8 @@ class AstChecker:
             True if node matches any of the specified types, False otherwise.
 
         Raises:
-            ValueError: If argument type is not in ["ast.Str", "ast.Num", "ast.Bytes", "ast.NameConstant", "ast.Ellipsis"].
+            ValueError: If argument type is not in ["ast.Str", "ast.Num", "ast.Bytes",
+            "ast.NameConstant", "ast.Ellipsis"].
 
         Examples:
             >>> AstChecker.check_type(node, "ast.Str")

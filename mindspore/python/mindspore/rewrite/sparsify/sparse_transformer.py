@@ -167,6 +167,7 @@ class SparseTransformer(ast.NodeTransformer):
     def make_sparse_func(self, func, node_type, inputs):
         """Returns SparseFunc by looking up sparse_rules."""
         rules = {}
+        func_name = ''
         if node_type == ast.Call:
             if isinstance(func, nn.Cell):
                 func_name = func.__class__.__name__.lower()

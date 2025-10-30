@@ -47,7 +47,7 @@ class ClassDefParser(Parser):
 
     def __init__(self):
         """Constructor"""
-        super(ClassDefParser, self).__init__()
+        super().__init__()
         self._cell_namespace = ModuleNamespace('mindspore.nn')
 
     @staticmethod

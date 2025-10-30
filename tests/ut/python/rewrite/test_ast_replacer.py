@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+"""Test mindspore.rewrite.ast_helpers.AstReplacer"""
 import ast
 import re
 import inspect
@@ -32,7 +33,7 @@ class SimpleNet2(nn.Cell):
 
 class SimpleNet(nn.Cell):
     def __init__(self):
-        super(SimpleNet, self).__init__()
+        super().__init__()
         SimpleNet._get_int()
         self.aaa = SimpleNet._get_int()
         self.bbb = SimpleNet._get_int() + 1
@@ -62,16 +63,16 @@ def test_replacer():
     """
 
     original_code = inspect.getsource(SimpleNet)
-    assert len(re.findall("SimpleNet", original_code)) == 11
+    assert len(re.findall("SimpleNet", original_code)) == 10
     assert len(re.findall("SimpleNet2", original_code)) == 1
 
     ast_root = ast.parse(original_code)
     replacer = AstReplacer(ast_root)
     replacer.replace_all("SimpleNet", "SimpleNet2")
     replaced_code = astunparse.unparse(ast_root)
-    assert len(re.findall("SimpleNet", replaced_code)) == 11
-    assert len(re.findall("SimpleNet2", replaced_code)) == 11
+    assert len(re.findall("SimpleNet", replaced_code)) == 10
+    assert len(re.findall("SimpleNet2", replaced_code)) == 10
 
     replacer.undo_all()
-    assert len(re.findall("SimpleNet", original_code)) == 11
+    assert len(re.findall("SimpleNet", original_code)) == 10
     assert len(re.findall("SimpleNet2", original_code)) == 1
