@@ -12,10 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+"""
+Test heterogeneous control flow.
+"""
 import numpy as np
 
-import mindspore.context as context
-import mindspore.nn as nn
+from mindspore import context
+from mindspore import nn
 from mindspore import Tensor
 from mindspore.ops import operations as P
 
@@ -25,8 +28,11 @@ context.set_context(mode=context.GRAPH_MODE, device_target="Ascend", jit_config=
 
 
 class Net1(nn.Cell):
+    """
+    Test heterogeneous control flow class.
+    """
     def __init__(self):
-        super(Net1, self).__init__()
+        super().__init__()
         self.relu1 = P.ReLU()
         self.relu2 = P.ReLU()
         self.mul = P.Mul()
@@ -41,8 +47,11 @@ class Net1(nn.Cell):
 
 
 class Net2(nn.Cell):
+    """
+    Test heterogeneous control flow class.
+    """
     def __init__(self):
-        super(Net2, self).__init__()
+        super().__init__()
         self.relu1 = P.ReLU()
         self.relu2 = P.ReLU().set_device("CPU")
         self.mul = P.Mul()
@@ -58,6 +67,11 @@ class Net2(nn.Cell):
 
 @arg_mark(plat_marks=["platform_ascend"], level_mark="level1", card_mark="onecard", essential_mark="unessential")
 def test_net():
+    """
+    Feature: Heter scene support control flow.
+    Description: Test heterogeneous control flow.
+    Expectation: No exception.
+    """
     x = np.random.randn(2, 3, 3, 4).astype(np.float32)
     y = np.random.randn(2, 3, 3, 4).astype(np.float32)
     net1 = Net1()

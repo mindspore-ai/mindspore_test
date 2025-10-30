@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+"""Test runtime heterogeneous scene."""
 import os
 from mindspore import Tensor, jit, ops
 from mindspore.common import dtype as mstype
@@ -76,8 +76,8 @@ def test_single_if_twice():
 
     x = Tensor(5, mstype.int32)
     y = Tensor(7, mstype.int32)
-    ret1 = foo(x, y)
-    ret2 = foo(y, x)
+    ret1 = foo(x=x, y=y)
+    ret2 = foo(x=y, y=x)
     assert ret1 == (Tensor(2, mstype.int32), Tensor(184, mstype.int32))
     assert ret2 == (Tensor(4, mstype.int32), Tensor(3, mstype.int32))
 
@@ -110,8 +110,8 @@ def test_single_if_twice_in_somas():
 
     x = Tensor(5, mstype.int32)
     y = Tensor(7, mstype.int32)
-    ret1 = foo(x, y)
-    ret2 = foo(y, x)
+    ret1 = foo(x=x, y=y)
+    ret2 = foo(x=y, y=x)
     assert ret1 == (Tensor(2, mstype.int32), Tensor(184, mstype.int32))
     assert ret2 == (Tensor(4, mstype.int32), Tensor(3, mstype.int32))
 
@@ -146,8 +146,8 @@ def test_single_if_twice_inplace_condition():
 
     x = Tensor(5, mstype.int32)
     y = Tensor(7, mstype.int32)
-    ret1 = foo(x, y)
-    ret2 = foo(y, x)
+    ret1 = foo(x=x, y=y)
+    ret2 = foo(x=y, y=x)
     os.unsetenv('MS_DEV_SIDE_EFFECT_LOAD_ELIM')
     assert ret1 == (Tensor(2, mstype.int32), Tensor(18, mstype.int32))
     assert ret2 == (Tensor(4, mstype.int32), Tensor(65, mstype.int32))

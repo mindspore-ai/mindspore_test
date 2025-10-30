@@ -12,6 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+"""
+Test heterogeneous control flow.
+"""
 import pytest
 import mindspore as ms
 from mindspore import Tensor, nn, dtype
