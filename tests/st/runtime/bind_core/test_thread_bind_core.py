@@ -12,6 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+"""
+test feature of binding core: msrun --bind_core and mindspore.runtime.set_cpu_affinity
+"""
 import re
 import os
 import pytest
@@ -21,6 +24,9 @@ from tests.mark_utils import arg_mark
 
 
 def _check_env_valid_cpu_resource():
+    """
+    Check if the program can correctly recognize the CPU resources on the environment.
+    """
     try:
         result = subprocess.run(
             ["cat", "/sys/fs/cgroup/cpuset/cpuset.cpus"],
@@ -54,11 +60,11 @@ def test_bind_core_auto():
     output = real_path + "/thread_bind_core_auto.log"
     assert os.path.exists(script)
 
-    cmd = (f"{env}; python {script} > {output} 2>&1")
+    cmd = f"{env}; python {script} > {output} 2>&1"
     os.system(cmd)
 
     assert os.path.exists(output)
-    with open(output, "r") as f:
+    with open(output, "r", encoding="utf-8") as f:
         output_log = f.read()
         print(output_log, flush=True)
     assert re.search(r"Module bind core policy generated: \{'main': \[([\d, ]*)\]\}", output_log)
@@ -92,11 +98,11 @@ def test_bind_core_manual():
     assert os.path.exists(script)
     output = real_path + "/thread_bind_core_manual.log"
 
-    cmd = (f"{env} python {script} > {output} 2>&1")
+    cmd = f"{env} python {script} > {output} 2>&1"
     os.system(cmd)
 
     assert os.path.exists(output)
-    with open(output, "r") as f:
+    with open(output, "r", encoding="utf-8") as f:
         output_log = f.read()
         print(output_log, flush=True)
     manual_policy_str = ("Module bind core policy generated: {'main': [0, 1, 2, 3], "
@@ -128,11 +134,11 @@ def test_bind_core_empty_module_assigned():
     assert os.path.exists(script)
     output = real_path + "/thread_bind_core_empty_module.log"
 
-    cmd = (f"{env} python {script} > {output} 2>&1")
+    cmd = f"{env} python {script} > {output} 2>&1"
     os.system(cmd)
 
     assert os.path.exists(output)
-    with open(output, "r") as f:
+    with open(output, "r", encoding="utf-8") as f:
         output_log = f.read()
         print(output_log, flush=True)
     assert "Module bind core policy generated: {}" in output_log
@@ -174,7 +180,8 @@ def test_msrun_bind_true_thread_bind_auto():
     Description: Test runtime.set_cpu_affinity and msrun --bind_core with auto bind core policy.
     Expectation: Expected log in stdout.
     """
-    env = "export GLOG_v=1;"
+    env = "export DISTRIBUTED=1;"
+    env += "export GLOG_v=1;"
 
     real_path = os.path.realpath(os.getcwd())
     script = real_path + "/run_thread_bind_core.py"
@@ -191,14 +198,14 @@ def test_msrun_bind_true_thread_bind_auto():
     assert os.path.exists(worker_0)
 
     # check results of msrun --bind_core arg.
-    with open(output, "r") as f:
+    with open(output, "r", encoding="utf-8") as f:
         output_log = f.read()
         print(output_log, flush=True)
     assert return_code == 0
     assert re.search(r"Launch process with command: taskset -c (\d+)-(\d+) .*", output_log)
 
     # check results of mindspore.runtime.set_cpu_affinity API.
-    with open(worker_0, "r") as f:
+    with open(worker_0, "r", encoding="utf-8") as f:
         worker_0_log = f.read()
     assert re.search(r"Module bind core policy from msrun: \{'main': \[([\d, ]*)\]\}", worker_0_log)
     assert re.search(r"This module: 0 is assigned a bind core list: .+?", worker_0_log)
@@ -219,7 +226,8 @@ def test_msrun_bind_manual_thread_bind_manual():
     module_to_cpu_dict = '{"main": [0, 1, 2, 3], "minddata": [4, 5], "other": [6], \
                          "runtime": [7, 8], "pynative": [9, 10, 11, 21, 100]}'
 
-    env = "export GLOG_v=1;"
+    env = "export DISTRIBUTED=1;"
+    env += "export GLOG_v=1;"
     env += f"export AFFINITY_CPU_LIST='{affinity_cpu_list}';"
     env += f"export AFFINITY_CPU_LIST_2='{affinity_cpu_list_2}';"
     env += f"export MODULE_TO_CPU_DICT='{module_to_cpu_dict}';"
@@ -240,7 +248,7 @@ def test_msrun_bind_manual_thread_bind_manual():
     assert os.path.exists(worker_1)
 
     # check results of msrun --bind_core arg.
-    with open(output, "r") as f:
+    with open(output, "r", encoding="utf-8") as f:
         output_log = f.read()
         print(output_log, flush=True)
     assert return_code == 0
@@ -248,7 +256,7 @@ def test_msrun_bind_manual_thread_bind_manual():
     assert "Launch process with command: taskset -c 31-35" in output_log
 
     # check results of mindspore.runtime.set_cpu_affinity API.
-    with open(worker_0, "r") as f:
+    with open(worker_0, "r", encoding="utf-8") as f:
         worker_0_log = f.read()
     manual_policy_str = ("Module bind core policy generated: {'main': [0, 1, 2, 3], "
                          "'minddata': [4, 5], 'runtime': [7, 8], 'pynative': [9, 10]}")
@@ -257,7 +265,7 @@ def test_msrun_bind_manual_thread_bind_manual():
     assert re.search(r"This module: 1 is assigned a bind core list: .*?\{7, 8\}", worker_0_log)
     assert re.search(r"Success to bind core to .*?\{7, 8\} for thread \d+", worker_0_log)
     assert re.search(r"This module: 2 is assigned a bind core list: .*?\{9, 10\}", worker_0_log)
-    with open(worker_1, "r") as f:
+    with open(worker_1, "r", encoding="utf-8") as f:
         worker_1_log = f.read()
     manual_policy_str = ("Module bind core policy generated: {'main': [20, 21, 22, 23], "
                          "'minddata': [24, 25], 'runtime': [27, 28], 'pynative': [29, 30]}")
