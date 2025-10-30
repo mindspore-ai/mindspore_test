@@ -21,15 +21,249 @@ import logging
 import os
 import re
 import subprocess
+import threading
+import time
 
 import pandas as pd
+
 import mindspore as ms
 from mindspore import log as logger
 from mindspore._c_expression import MSContext
+from mindspore.profiler import ProfilerLevel, ProfilerActivity, AicoreMetrics, ExportType
+from mindspore.profiler import Profiler
+from mindspore.train.callback import Callback
 
 
 de = MSContext.get_instance().get_ascend_soc_version()
 JIT_LEVEL = "O0"
+
+
+class StopAtEpochNew(Callback):
+    """for onconditions_ascend StopAtEpoch"""
+    def __init__(self, start_epoch, stop_epoch, **kwargs):
+        """init"""
+        self.start_profile = kwargs.get('start_profile', False)
+        self.activities = kwargs.get('activities', [ProfilerActivity.CPU, ProfilerActivity.NPU])
+        self.with_stack = kwargs.get('with_stack', False)
+        self.data_process = kwargs.get('data_process', False)
+        self.parallel_strategy = kwargs.get('parallel_strategy', False)
+        self.hbm_ddr = kwargs.get('hbm_ddr', False)
+        self.pcie = kwargs.get('pcie', False)
+        self.dir_name = kwargs.get('dir_name', "./data")
+        self.worker_name = kwargs.get('worker_name', "pro_callback")
+        self.analyse_flag = kwargs.get('analyse_flag', True)
+        self.async_mode = kwargs.get('async_mode', False)
+        self.wait = kwargs.get('wait', 0)
+        self.warmup = kwargs.get('warmup', 0)
+        self.active = kwargs.get('active', 1)
+        self.repeat = kwargs.get('repeat', 1)
+        self.skip_first = kwargs.get('skip_first', 0)
+        self.profiler_level = kwargs.get('profiler_level', ProfilerLevel.Level0)
+        self.profile_memory = kwargs.get('profile_memory', False)
+        self.mstx = kwargs.get('mstx', False)
+        self.data_simplification = kwargs.get('data_simplification', True)
+        self.aic_metrics = kwargs.get('aic_metrics', AicoreMetrics.AiCoreNone)
+        self.l2_cache = kwargs.get('l2_cache', False)
+        self.export_type = kwargs.get('export_type', [ExportType.Db, ExportType.Text])
+        super().__init__()
+        self.start_epoch = start_epoch
+        self.stop_epoch = stop_epoch
+        self.profiler = mindspore.profiler.profile(start_profile=self.start_profile,
+                                                   activities=self.activities, with_stack=self.with_stack,
+        profile_memory=self.profile_memory, data_process=self.data_process, parallel_strategy=self.parallel_strategy,
+        hbm_ddr=self.hbm_ddr, pcie=self.pcie, on_trace_ready=mindspore.profiler.tensorboard_trace_handler(
+                dir_name=self.dir_name, worker_name=self.worker_name, analyse_flag=self.analyse_flag,
+                async_mode=self.async_mode), schedule=mindspore.profiler.schedule(
+                wait=self.wait, warmup=self.warmup, active=self.active, repeat=self.repeat, skip_first=self.skip_first),
+                                                   experimental_config=mindspore.profiler._ExperimentalConfig(
+                                                       profiler_level=self.profiler_level, mstx=True,
+                                                       data_simplification=self.data_simplification,
+                                                       aic_metrics=self.aic_metrics, l2_cache=self.l2_cache,
+                                                       export_type=self.export_type))
+
+    def on_train_epoch_begin(self, run_context):
+        """epoch_begin"""
+        cb_params = run_context.original_args()
+        epoch_num = cb_params.cur_epoch_num
+        if epoch_num == self.start_epoch:
+            self.profiler.start()
+
+    def on_train_epoch_end(self, run_context):
+        """epoch_stop"""
+        cb_params = run_context.original_args()
+        epoch_num = cb_params.cur_epoch_num
+        if epoch_num == self.stop_epoch:
+            self.profiler.step()
+
+
+class StopAtStepNew(Callback):
+    """for onconditions ascend StopAtStep"""
+
+    def __init__(self, **kwargs):
+        """init"""
+        self.start_profile = kwargs.get('start_profile', False)
+        self.activities = kwargs.get('activities', [ProfilerActivity.CPU, ProfilerActivity.NPU])
+        self.with_stack = kwargs.get('with_stack', False)
+        self.data_process = kwargs.get('data_process', False)
+        self.parallel_strategy = kwargs.get('parallel_strategy', False)
+        self.hbm_ddr = kwargs.get('hbm_ddr', False)
+        self.pcie = kwargs.get('pcie', False)
+        self.dir_name = kwargs.get('dir_name', "./data")
+        self.worker_name = kwargs.get('worker_name', "pro_callback")
+        self.analyse_flag = kwargs.get('analyse_flag', True)
+        self.async_mode = kwargs.get('async_mode', False)
+        self.wait = kwargs.get('wait', 0)
+        self.warmup = kwargs.get('warmup', 0)
+        self.active = kwargs.get('active', 1)
+        self.repeat = kwargs.get('repeat', 1)
+        self.skip_first = kwargs.get('skip_first', 0)
+        self.profiler_level = kwargs.get('profiler_level', ProfilerLevel.Level0)
+        self.mstx = kwargs.get('mstx', False)
+        self.profile_memory = kwargs.get('profile_memory', False)
+        self.data_simplification = kwargs.get('data_simplification', True)
+        self.aic_metrics = kwargs.get('aic_metrics', AicoreMetrics.AiCoreNone)
+        self.l2_cache = kwargs.get('l2_cache', False)
+        self.export_type = kwargs.get('export_type', [ExportType.Db, ExportType.Text])
+        self.host_sys = kwargs.get('host_sys', [])
+        self.record_shapes = kwargs.get('record_shapes', False)
+        self.mstx_domain_include = kwargs.get('mstx_domain_include', [])
+        self.mstx_domain_exclude = kwargs.get('mstx_domain_exclude', [])
+        super().__init__()
+        self.start_step = self.skip_first
+        self.stop_step = self.skip_first + self.repeat * (self.wait + self.warmup + self.active)
+        self.profiler = mindspore.profiler.profile(start_profile=self.start_profile, activities=self.activities,
+                                                   with_stack=self.with_stack,
+                                                   profile_memory=self.profile_memory, data_process=self.data_process,
+                                                   parallel_strategy=self.parallel_strategy,
+                                                   hbm_ddr=self.hbm_ddr, pcie=self.pcie,
+                                                   record_shapes=self.record_shapes,
+                                                   on_trace_ready=mindspore.profiler.tensorboard_trace_handler(
+                                                       dir_name=self.dir_name, worker_name=self.worker_name,
+                                                       analyse_flag=self.analyse_flag,
+                                                       async_mode=self.async_mode),
+                                                   schedule=mindspore.profiler.schedule(
+                                                       wait=self.wait, warmup=self.warmup, active=self.active,
+                                                       repeat=self.repeat, skip_first=self.skip_first),
+                                                   experimental_config=mindspore.profiler._ExperimentalConfig(
+                                                       profiler_level=self.profiler_level, mstx=True,
+                                                       data_simplification=self.data_simplification,
+                                                       aic_metrics=self.aic_metrics, l2_cache=self.l2_cache,
+                                                       export_type=self.export_type, host_sys=self.host_sys,
+                                                       mstx_domain_include=self.mstx_domain_include,
+                                                       mstx_domain_exclude=self.mstx_domain_exclude))
+        data = {"world_size": 2, "sequence_parallel": False, "hooks": "dajl"}
+        self.profiler.add_metadata("gsfa", "13")
+        self.profiler.add_metadata("q3123", "12%")
+        self.profiler.add_metadata_json("distribute_args", json.dumps(data))
+
+    def on_train_step_begin(self, run_context):
+        """step_begin"""
+        cb_params = run_context.original_args()
+        step_num = cb_params.cur_step_num
+        if step_num == self.start_step:
+            self.profiler.start()
+
+    def on_train_step_end(self, run_context):
+        """epoch_stop"""
+        cb_params = run_context.original_args()
+        step_num = cb_params.cur_step_num
+        if self.start_step <= step_num <= self.stop_step:
+            self.profiler.step()
+        if step_num == self.stop_step:
+            self.profiler.stop()
+
+
+class StopAtEpoch(Callback):
+    """for onconditions_ascend StopAtEpoch."""
+
+    def __init__(self, start_epoch, stop_epoch, **kwargs):
+        """init"""
+        self.profiler_dir = kwargs.get('profiler_dir', './profiler_data')
+        self.start_profile = kwargs.get('start_profile', False)
+        self.profile_communication = kwargs.get('profile_communication', False)
+        self.profile_memory = kwargs.get('profile_memory', False)
+        super().__init__()
+        self.start_epoch = start_epoch
+        self.stop_epoch = stop_epoch
+        self.profiler = Profiler(output_path=self.profiler_dir,
+                                 start_profile=self.start_profile,
+                                 profile_communication=self.profile_communication,
+                                 profile_memory=self.profile_memory)
+
+    def on_train_epoch_begin(self, run_context):
+        """epoch_begin"""
+        cb_params = run_context.original_args()
+        epoch_num = cb_params.cur_epoch_num
+        if epoch_num == self.start_epoch:
+            self.profiler.start()
+
+    def on_train_epoch_end(self, run_context):
+        """epoch_stop"""
+        cb_params = run_context.original_args()
+        epoch_num = cb_params.cur_epoch_num
+        if epoch_num == self.stop_epoch:
+            self.profiler.stop()
+            self.profiler.analyse()
+
+
+class StopAtStep(Callback):
+    """for onconditions_ascend StopAtStep"""
+
+    def __init__(self, start_step, stop_step, **kwargs):
+        """init"""
+        self.profiler_dir = kwargs.get('profiler_dir', './profiler_data')
+        self.start_profile = kwargs.get('start_profile', False)
+        self.profile_communication = kwargs.get('profile_communication', False)
+        self.profile_memory = kwargs.get('profile_memory', False)
+        super().__init__()
+        self.start_step = start_step
+        self.stop_step = stop_step
+        self.profiler = Profiler(output_path=self.profiler_dir,
+                                 start_profile=self.start_profile,
+                                 profile_communication=self.profile_communication,
+                                 profile_memory=self.profile_memory)
+
+    def on_train_step_begin(self, run_context):
+        """step_begin"""
+        cb_params = run_context.original_args()
+        step_num = cb_params.cur_step_num
+        if step_num == self.start_step:
+            self.profiler.start()
+
+    def on_train_step_end(self, run_context):
+        """epoch_stop"""
+        cb_params = run_context.original_args()
+        step_num = cb_params.cur_step_num
+        if step_num == self.stop_step:
+            self.profiler.stop()
+            self.profiler.analyse()
+
+
+class DynProfileCtrler(threading.Thread):
+    """DynProfileCtrler"""
+    def __init__(self, cfg_path, delay_list, cfg_list):
+        super().__init__()
+        self.cfg_path = cfg_path
+        self.delay_list = delay_list
+        self.cfg_list = cfg_list
+        self._is_running = True
+
+    def run(self):
+        """run"""
+        for i, delay in enumerate(self.delay_list):
+            while not os.path.exists(self.cfg_path) and self._is_running:
+                time.sleep(1)
+            time.sleep(delay)
+            with open(self.cfg_path, 'r', encoding='utf-8') as f:
+                src_cfg = json.load(f)
+                for k, v in self.cfg_list[i].items():
+                    src_cfg[k] = v
+            with open(self.cfg_path, 'w', encoding='utf-8') as f2:
+                json.dump(src_cfg, f2)
+
+    def finish(self):
+        """set is running"""
+        self._is_running = False
 
 
 def check_is_directory_empty(path):

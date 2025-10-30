@@ -1,0 +1,86 @@
+# Copyright 2025 Huawei Technologies Co., Ltd
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ============================================================================
+"""build net"""
+
+import os
+import json
+import argparse
+import numpy as np
+
+import mindspore as ms
+import mindspore.dataset as ds
+from mindspore import nn
+from mindspore.profiler.dynamic_profiler import DynamicProfilerMonitor
+
+
+class Net(nn.Cell):
+    """net"""
+    def __init__(self):
+        super().__init__()
+        self.fc = nn.Dense(2, 2)
+
+    def construct(self, x):
+        """construct"""
+        return self.fc(x)
+
+
+def generator_net():
+    """generator net"""
+    for _ in range(20):
+        yield np.ones([2, 2]).astype(np.float32), np.ones([2]).astype(np.int32)
+
+
+def train(net):
+    """train"""
+    optimizer = nn.Momentum(net.trainable_params(), 1, 0.9)
+    loss = nn.SoftmaxCrossEntropyWithLogits(sparse=True)
+    data = ds.GeneratorDataset(generator_net(), ["data", "label"])
+    model = ms.train.Model(net, loss, optimizer)
+    model.train(1, data)
+
+
+def train_net_with_dynamic_profiler(output_path, cfg_path, start, stop):
+    """train net"""
+    net = Net()
+    step_num = 15
+    dp = DynamicProfilerMonitor(cfg_path=cfg_path, output_path=output_path)
+    for i in range(step_num):
+        train(net)
+        if i == 5:
+            change_cfg_json(os.path.join(cfg_path, "profiler_config.json"), start, stop)
+        dp.step()
+
+
+def change_cfg_json(json_path, start, stop):
+    """change json"""
+    with open(json_path, 'r', encoding='utf-8') as file:
+        data = json.load(file)
+
+    data['start_step'] = start
+    data['stop_step'] = stop
+
+    with open(json_path, 'w', encoding='utf-8') as file:
+        json.dump(data, file, ensure_ascii=False, indent=4)
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='Run net with dynamic profiler.')
+    parser.add_argument('--output_path', type=str)
+    parser.add_argument('--cfg_path', type=str)
+    parser.add_argument('--start', type=int)
+    parser.add_argument('--stop', type=int)
+    args = parser.parse_args()
+    train_net_with_dynamic_profiler(output_path=args.output_path, cfg_path=args.cfg_path,
+                                    start=args.start, stop=args.stop)

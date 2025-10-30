@@ -661,7 +661,7 @@ class Profiler:
             raise TypeError(f"For 'Profiler.op_analyse()', the parameter op_name must be str or list, "
                             f"but got type {type(op_name)}")
         if not op_name:
-            raise TypeError(f"For 'Profiler.op_analyse()', the parameter op_name cannot be "", '' or [].")
+            raise TypeError("For 'Profiler.op_analyse()', the parameter op_name cannot be None.")
 
         from mindspore.profiler.common.profiler_op_analyse import OpAnalyser
         dev_id = self._prof_context.device_id if device_id is None else device_id
@@ -1167,7 +1167,7 @@ def analyse(profiler_path: str, max_process_number: int = os.cpu_count() // 2, p
         >>> from mindspore.profiler.profiler import analyse
         >>> analyse(profiler_path="./profiling_path")
     """
-    if not isinstance(max_process_number, int) or isinstance(max_process_number, bool) or max_process_number <= 0:
+    if not isinstance(max_process_number, int) or max_process_number <= 0:
         logger.warning(f"Parameter 'max_process_number' should be of type int, but got "
                        f"{type(max_process_number).__name__}. reset to int {os.cpu_count() // 2}.")
         max_process_number = os.cpu_count() // 2
@@ -1181,6 +1181,8 @@ def analyse(profiler_path: str, max_process_number: int = os.cpu_count() // 2, p
                "or a parent directory of multiple *_ascend_ms_*")
         logger.error(msg)
         return
+
+    max_process_number = min(max_process_number, len(ascend_ms_path_list))
 
     with ProcessPoolExecutor(max_workers=max_process_number) as executor:
         futures = [
