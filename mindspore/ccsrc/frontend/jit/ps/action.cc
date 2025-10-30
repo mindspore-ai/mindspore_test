@@ -2266,6 +2266,7 @@ std::vector<PassItem> JitPipeline(const ResourcePtr &resource, bool build_top_gr
     (void)jit_passes.emplace(kRewriterBeforeOptA, RewriterBeforeOptAPass);
     (void)jit_passes.emplace(kExpandDumpFlag, ExpandDumpFlagPass);
     (void)jit_passes.emplace(kJitOptA, JitOptPassAGroup);
+    (void)jit_passes.emplace(kMutableEliminate, MutableEliminatePass);
     (void)jit_passes.emplace(kPyInterpretToExecuteAfterOptA, PyInterpretToExecutePass);
     (void)jit_passes.emplace(kRewriterAfterOptA, RewriterAfterOptAPass);
     (void)jit_passes.emplace(kConvertAfterRewriter, ConvertAfterRewriterPass);
