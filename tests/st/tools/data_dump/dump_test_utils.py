@@ -21,6 +21,8 @@ import os
 import glob
 import csv
 import numpy as np
+from mindspore import log as logger
+import shutil
 
 async_dump_dict = {
     "common_dump_settings": {
@@ -201,6 +203,8 @@ async_dump_dict_acl_assign_ops_by_regex = {
         "op_debug_mode": 0
     }
 }
+
+ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 def generate_dump_json(dump_path, json_file_name, test_key, net_name='Net', overflow_number=0):
     """
@@ -422,3 +426,32 @@ def check_data_dump(dump_file_path):
     output = np.load(real_path)
     expect = np.array([[8, 10, 12], [14, 16, 18]], np.float32)
     assert np.array_equal(output, expect)
+
+
+def migrate_resnet50(case_path):
+    """
+    Args:
+        case_path (str): dump文件路径。
+    """
+    try:
+        shutil.copytree(os.path.join(os.path.dirname(ROOT_DIR), "networks", "models", "resnet50", "src"),
+                        os.path.join(case_path, "src"))
+    except Exception as e:
+        logger.error(f"An error has occurred, the error message is {e}")
+        raise e
+    src_file = os.path.join(case_path, "src", "resnet.py")
+    old_code = "def _weight_variable(shape, factor=0.01):"
+    new_code = "def _weight_variable(shape, factor=26000):"
+    replace_code(src_file, old_code, new_code)
+
+
+def replace_code(source_file, old_str, new_str):
+    """replace_code,适用整行代码替换"""
+    dst_file = f'{source_file}.bak'
+    with open(source_file, 'r', encoding="utf-8") as old_file, open(dst_file, 'w', encoding="utf-8") as new_file:
+        for line in old_file:
+            if old_str in line:
+                line = line.replace(old_str, new_str)
+            new_file.write(line)
+    os.remove(source_file)
+    os.rename('%s.bak' % source_file, source_file)
