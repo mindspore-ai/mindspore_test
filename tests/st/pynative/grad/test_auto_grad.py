@@ -16,7 +16,7 @@
 
 import numpy as np
 import torch
-import torch.nn as nn_pt
+import torch.nn as pynn
 import mindspore as ms
 from mindspore.ops import composite as C
 from mindspore import nn, Tensor, Parameter, _Function
@@ -903,6 +903,53 @@ def test_pynative_temporary_cell_variables():
     assert np.allclose(grad_second[0].asnumpy(), compare_grad_second[0].asnumpy(), 0.01, 0.01)
 
 
+def test_pynative_grad_func_conv():
+    """
+    Feature: Test conv grad func
+    Description: Run conv grad func
+    Expectation: No exception.
+    """
+    def tensor_add(x):
+        conv = nn.Conv2d(1, 1, 3, weight_init='ones', pad_mode='pad')
+        conv.set_grad()
+        z = conv(x)
+        return z
+
+    x = Tensor(np.random.randn(1, 1, 224, 224).astype(np.float32))
+    grad = Tensor(np.random.randn(1, 1, 222, 222).astype(np.float32))
+
+    out = tensor_add(x)
+    backout = GradOfAllInputs(tensor_add)(x, grad)
+
+    class CompareNet(pynn.Module):
+        def __init__(self):
+            super().__init__()
+            self.conv = pynn.Conv2d(in_channels=1, out_channels=1,
+                                    kernel_size=(3, 3),
+                                    stride=1, padding=0,
+                                    bias=False)
+
+            self.weight = pynn.Parameter(torch.from_numpy(
+                np.ones([1, 1, 3, 3]).astype(np.float32)))
+            self.conv.register_parameter('weight', self.weight)
+
+        def forward(self, x):
+            x = self.conv(x)
+            return x
+
+    comparenet = CompareNet()
+    torch_input = torch.from_numpy(x.asnumpy())
+    torch_input.requires_grad = True
+
+    out_good = comparenet(torch_input)
+
+    grad = torch.from_numpy(grad.asnumpy())
+    out_good.backward(gradient=grad)
+
+    assert np.allclose(out_good.detach().numpy(), out.asnumpy(), 0.01, 0.01)
+    assert np.allclose(torch_input.grad.numpy(), backout[0].asnumpy(), 0.01, 0.01)
+
+
 @arg_mark(plat_marks=['cpu_linux'],
           level_mark='level0',
           card_mark='onecard',
@@ -949,6 +996,7 @@ def test_all_tests():
     test_csrtensor_values_sum_train()
     test_pynative_temporary_cell_variables()
     test_pynative_autograd_change_input_shape_in_diff_call()
+    test_pynative_grad_func_conv()
 
 
 @arg_mark(plat_marks=['platform_ascend910b'],
@@ -1010,11 +1058,11 @@ def test_pynative_autograd_change_input_shape_in_diff_call():
                 flag = flag - 1
             return x
 
-    class CompareNet(nn_pt.Module):
+    class CompareNet(pynn.Module):
         def __init__(self, ):
             super().__init__()
 
-            self.relu = nn_pt.ReLU()
+            self.relu = pynn.ReLU()
 
         def forward(self, inputs, para, flag):
             while flag > 0:
