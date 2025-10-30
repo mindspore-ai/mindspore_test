@@ -670,14 +670,22 @@ void AclStreamAssign::UpdateEventsToExecutionOrder(
   std::vector<CNodePtr> new_exec_orders;
 
   std::set<size_t> streams_set;
+  std::set<size_t> streams_usr_set;
   for (auto &kernel : exec_kernels) {
     auto process_stream_id = AnfAlgo::GetStreamId(kernel);
     if (process_stream_id != kDefaultStreamIndex) {
       streams_set.insert(process_stream_id);
     }
+    if (IsUsersSetStreamsOp(kernel)) {
+      streams_usr_set.insert(process_stream_id);
+    }
     no_event_streams[process_stream_id] = {};
   }
   for (const auto &stream : streams_set) {
+    auto it = streams_usr_set.find(stream);
+    if (it != streams_usr_set.end()) {
+      continue;
+    }
     AddBoundarySendRecvKernel(kernel_graph, kDefaultStreamIndex, stream, &new_exec_orders, &no_event_streams);
   }
   CNodePtr last_kernel = nullptr;
@@ -735,6 +743,10 @@ void AclStreamAssign::UpdateEventsToExecutionOrder(
                     std::back_inserter(new_exec_orders));
   }
   for (const auto &stream : streams_set) {
+    auto it = streams_usr_set.find(stream);
+    if (it != streams_usr_set.end()) {
+      continue;
+    }
     AddBoundarySendRecvKernel(kernel_graph, stream, kDefaultStreamIndex, &new_exec_orders, &no_event_streams);
   }
   kernel_graph->set_execution_order(new_exec_orders);
