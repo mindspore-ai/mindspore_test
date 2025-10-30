@@ -21,6 +21,7 @@
 #include <memory>
 #include <array>
 #include <algorithm>
+#include <vector>
 
 #include "abstract/ops/primitive_infer_map.h"
 #include "mindspore/ops/op_def/nn_ops.h"
@@ -38,26 +39,12 @@ constexpr size_t kInputFlashAttentionScoreQuerySBHRank = 3;
 constexpr size_t kInputFlashAttentionScoreQueryTNDRank = 3;
 constexpr size_t kInputFlashAttentionScoreQueryBNSDRank = 4;
 constexpr size_t kInputFlashAttentionScoreQueryBSNDRank = 4;
-constexpr size_t kFAGRealShiftCompressionDim = 1024;
-constexpr size_t kInputFlashAttentionScoreAttnMaskCompressionDim = 2048;
 constexpr auto kEnableRingAttention = "enable_ring_attention";
 constexpr auto kEnableFlashSP = "enable_flash_sp";
 constexpr auto kEnableRASendRecv = "enable_ra_send_recv";
 
-namespace {
-static const std::array<int64_t, 7> kNeedCompressAttnMaskMode = {
-  kSparseLeftUpCausal, kSparseRightDownCausal, kSparseBand,      kSparsePrefix,
-  kSparseGlobal,       kSparseDilated,         kSparseBlockLocal};
-}
-
 // None indicates that the optional input is not passed
 bool IsFlashAttentionScoreOptionalInputNotPass(const InferInfoPtr &input) { return input->IsNone(); }
-
-static inline void EnsurePaddingMaskNone(const InferInfoPtr &padding_mask, const std::string &op_name) {
-  if (!IsFlashAttentionScoreOptionalInputNotPass(padding_mask)) {
-    MS_LOG(EXCEPTION) << op_name << ": 'padding_mask' must be None currently.";
-  }
-}
 
 static inline void ValidateKeepProbAndDropMask(const InferInfoPtrList &input_infos, const std::string &op_name) {
   auto keep_prob_opt = input_infos[kFlashAttentionScoreInputKeepProbIndex]->GetScalarValue<float>();
@@ -65,127 +52,41 @@ static inline void ValidateKeepProbAndDropMask(const InferInfoPtrList &input_inf
     return;
   }
   const auto keep_prob = keep_prob_opt.value();
-  if (keep_prob > 1 || keep_prob < 0) {
-    MS_LOG(EXCEPTION) << op_name << ": attribute `keep_prob` must be a floating point number in [0, 1], but got "
+  if (keep_prob > 1 || keep_prob <= 0) {
+    MS_LOG(EXCEPTION) << op_name << ": attribute `keep_prob` must be a floating point number in (0, 1], but got "
                       << keep_prob;
   }
-  if (common::IsFloatEqual(keep_prob, 1.0)) {
-    if (!IsFlashAttentionScoreOptionalInputNotPass(input_infos[kFlashAttentionScoreInputDropMaskIndex])) {
-      MS_LOG(EXCEPTION) << op_name << ": 'drop_mask' must be None when keep_prob is 1.0.";
-    }
-    return;
-  }
+
   if (!IsFlashAttentionScoreOptionalInputNotPass(input_infos[kFlashAttentionScoreInputDropMaskIndex])) {
     const auto drop_mask_type = input_infos[kFlashAttentionScoreInputDropMaskIndex]->GetType();
     CheckAndConvertUtils::CheckTypeIdValid("drop_mask", drop_mask_type, {kNumberTypeUInt8}, op_name);
   }
 }
 
-void CheckFlashAttentionScoreInputShape(const InferInfoPtr &input, const ShapeVector &expect_shape,
-                                        const std::string &op_name, const std::string &input_name,
-                                        bool optional = false) {
-  if (IsFlashAttentionScoreOptionalInputNotPass(input) && optional) {
-    return;
-  }
-  const auto input_shape = input->GetShape();
-  if (input_shape != expect_shape) {
-    MS_LOG(EXCEPTION) << op_name << ": The shape of input `" << input_name << "' must be " << expect_shape
-                      << ", but got shape is " << input_shape;
-  }
-}
-
-void CheckFlashAttentionScoreInputShape(const InferInfoPtr &input, const std::vector<ShapeVector> &expect_shape_list,
-                                        const std::string &op_name, const std::string &input_name,
-                                        bool optional = false) {
-  if (IsFlashAttentionScoreOptionalInputNotPass(input) && optional) {
-    return;
-  }
-  const auto input_shape = input->GetShape();
-  if (std::all_of(expect_shape_list.begin(), expect_shape_list.end(),
-                  [&input_shape](const ShapeVector &expect_shape) { return input_shape != expect_shape; })) {
-    MS_LOG(EXCEPTION) << op_name << ": The shape of input " << input_name << " must be one of " << expect_shape_list
-                      << ", but got shape is " << input_shape;
-  }
-}
-
-void CheckFlashAttentionScoreAttnMaskShape(const InferInfoPtr &attn_mask, const std::string &op_name,
-                                           int64_t sparse_mode, int64_t batch_size, int64_t q_head_num,
-                                           int64_t q_seq_len, int64_t kv_seq_len) {
-  if (std::find(kNeedCompressAttnMaskMode.begin(), kNeedCompressAttnMaskMode.end(), sparse_mode) !=
-      kNeedCompressAttnMaskMode.end()) {
-    CheckFlashAttentionScoreInputShape(
-      attn_mask, {kInputFlashAttentionScoreAttnMaskCompressionDim, kInputFlashAttentionScoreAttnMaskCompressionDim},
-      op_name, "attn_mask");
-  } else {
-    auto is_attn_mask_optional = (sparse_mode == kSparseDefaultMask || sparse_mode == kSparseAllMask);
-    CheckFlashAttentionScoreInputShape(attn_mask,
-                                       {{batch_size, q_head_num, q_seq_len, kv_seq_len},
-                                        {batch_size, 1, q_seq_len, kv_seq_len},
-                                        {1, 1, q_seq_len, kv_seq_len},
-                                        {q_seq_len, kv_seq_len}},
-                                       op_name, "attn_mask", is_attn_mask_optional);
-  }
-}
-
-void CheckFlashAttentionScorePrefix(const InferInfoPtr &prefix, const std::string &op_name, int64_t sparse_mode,
-                                    int64_t batch_size) {
-  if (sparse_mode == kSparsePrefix) {
-    auto arr_opt = prefix->GetArrayValue<int64_t>();
-    if (!arr_opt.has_value() || arr_opt->HasUnknownValue()) {
-      MS_LOG(EXCEPTION) << "For [" << op_name << "], prefix list must be known and not None.";
-    }
-    auto vec = arr_opt->ToVector();
-    if (SizeToLong(vec.size()) != batch_size) {
-      MS_LOG(EXCEPTION) << "For [" << op_name << "], prefix list size should be equal to " << batch_size << ", but got "
-                        << vec.size();
-    }
-  } else {
-    if (!IsFlashAttentionScoreOptionalInputNotPass(prefix)) {
-      MS_LOG(EXCEPTION) << op_name << ": 'prefix' must be None if sparse_mode is not " << kSparsePrefix;
-    }
-  }
-}
-
 void CheckFlashAttentionScoreSparseMode(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos,
                                         const std::vector<int64_t> &shape_info, int64_t q_head_num) {
   auto op_name = primitive->name();
-  int64_t batch_size = shape_info[kIndex0];
-  int64_t q_seq_len = shape_info[kIndex1];
-  int64_t kv_seq_len = shape_info[kIndex2];
   auto sparse_mode_opt = input_infos[kFlashAttentionScoreInputSparseModeIndex]->GetScalarValue<int64_t>();
   if (sparse_mode_opt.has_value()) {
-    auto sparse_mode = sparse_mode_opt.value();
-
-    bool enable_ring_attention = false;
     if (primitive->HasAttr(kEnableRingAttention)) {
       auto enable_ring_attention_valueptr = primitive->GetAttr(kEnableRingAttention);
-      if (enable_ring_attention_valueptr->isa<BoolImm>()) {
-        enable_ring_attention = enable_ring_attention_valueptr->cast<BoolImmPtr>()->value();
-      } else {
-        MS_LOG(EXCEPTION) << "enable_ring_attention should be bool";
+      if (!(enable_ring_attention_valueptr->isa<BoolImm>())) {
+        MS_LOG(EXCEPTION) << "For '" << op_name << "', the attribute 'enable_ring_attention' must be a bool";
       }
     }
     if (primitive->HasAttr(kEnableRASendRecv)) {
       auto enable_ra_sendrecv_valueptr = primitive->GetAttr(kEnableRASendRecv);
       if (!(enable_ra_sendrecv_valueptr->isa<BoolImm>())) {
-        MS_LOG(EXCEPTION) << "enable_ra_send_recv should be bool";
+        MS_LOG(EXCEPTION) << "For '" << op_name << "', the attribute 'enable_ra_send_recv' must be a bool";
       }
     }
-    bool enable_flash_sp = false;
+
     if (primitive->HasAttr(kEnableFlashSP)) {
       auto enable_flash_sp_valueptr = primitive->GetAttr(kEnableFlashSP);
-      if (enable_flash_sp_valueptr->isa<BoolImm>()) {
-        enable_flash_sp = enable_flash_sp_valueptr->cast<BoolImmPtr>()->value();
-      } else {
-        MS_LOG(ERROR) << "enable_flash_sp should be bool";
+      if (!(enable_flash_sp_valueptr->isa<BoolImm>())) {
+        MS_LOG(EXCEPTION) << "For '" << op_name << "', the attribute 'enable_flash_sp' must be a bool";
       }
     }
-    if ((!enable_ring_attention && !enable_flash_sp) ||
-        !IsFlashAttentionScoreOptionalInputNotPass(input_infos[kFlashAttentionScoreInputAttnMaskIndex])) {
-      CheckFlashAttentionScoreAttnMaskShape(input_infos[kFlashAttentionScoreInputAttnMaskIndex], op_name, sparse_mode,
-                                            batch_size, q_head_num, q_seq_len, kv_seq_len);
-    }
-    CheckFlashAttentionScorePrefix(input_infos[kFlashAttentionScoreInputPrefixIndex], op_name, sparse_mode, batch_size);
   }
 }
 
@@ -327,11 +228,6 @@ ShapeArray FlashAttentionScoreFuncImpl::InferShape(const PrimitivePtr &primitive
 
   auto input_layout = input_layout_opt.value();
   if (input_layout == FASInputLayoutMode::TND || input_layout == FASInputLayoutMode::TH) {
-    if (IsFlashAttentionScoreOptionalInputNotPass(input_infos[kFlashAttentionScoreInputActualSeqQlenIndex]) ||
-        IsFlashAttentionScoreOptionalInputNotPass(input_infos[kFlashAttentionScoreInputActualSeqKVlenIndex])) {
-      MS_LOG(EXCEPTION) << op_name << ": actual_seq_qlen and actual_seq_kvlen should be not none.";
-    }
-
     if (input_layout == FASInputLayoutMode::TND) {
       if (IsDynamicRank(query_shape)) {
         return ConstructInferShape(
@@ -345,6 +241,7 @@ ShapeArray FlashAttentionScoreFuncImpl::InferShape(const PrimitivePtr &primitive
         return ConstructInferShape(ShapeVector{abstract::Shape::kShapeDimAny, abstract::Shape::kShapeDimAny},
                                    query_shape, key_shape, value_shape, input_layout_opt);
       }
+
       if (!head_num_opt_cached.has_value()) {
         MS_LOG(EXCEPTION) << op_name << ": 'head_num' must be provided when input layout is TH.";
       }
@@ -382,69 +279,21 @@ ShapeArray FlashAttentionScoreFuncImpl::InferShape(const PrimitivePtr &primitive
   }
 
   auto shape_info = GetFASInfoFromInputLayout(input_layout, q_head_num, op_name, query_shape, key_shape, value_shape);
-  int64_t batch_size = shape_info[kIndex0];
-  int64_t q_seq_len = shape_info[kIndex1];
-  int64_t kv_seq_len = shape_info[kIndex2];
 
-  CheckFlashAttentionScoreInputShape(input_infos[kFlashAttentionScoreInputRealShiftIndex],
-                                     {{batch_size, q_head_num, q_seq_len, kv_seq_len},
-                                      {1, q_head_num, q_seq_len, kv_seq_len},
-                                      {batch_size, q_head_num, kFAGRealShiftCompressionDim, kv_seq_len},
-                                      {1, q_head_num, kFAGRealShiftCompressionDim, kv_seq_len}},
-                                     op_name, "real_shift", true);
-  CheckFlashAttentionScoreInputShape(input_infos[kFlashAttentionScoreInputDropMaskIndex],
-                                     {batch_size, q_head_num, q_seq_len, kv_seq_len / 8}, op_name, "drop_mask", true);
   CheckFlashAttentionScoreSparseMode(primitive, input_infos, shape_info, q_head_num);
 
+  int64_t batch_size = shape_info[kIndex0];
+  int64_t q_seq_len = shape_info[kIndex1];
   return ConstructInferShape(ShapeVector{batch_size, q_head_num, q_seq_len, kFlashAttentionScoreSoftmaxLastDim},
                              query_shape, key_shape, value_shape, input_layout_opt);
 }
 
 std::vector<TypeId> FlashAttentionScoreFuncImpl::InferType(const PrimitivePtr &prim,
                                                            const InferInfoPtrList &input_infos) const {
-  auto ms_context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(ms_context);
-  const bool enable_infer_boost = ms_context->IsEnableInferBoost();
   auto op_name = prim->name();
-
-  // 1) Q/K/V must have same dtype
-  const auto q_type = input_infos[kFlashAttentionScoreInputQueryIndex]->GetType();
-  const auto k_type = input_infos[kFlashAttentionScoreInputKeyIndex]->GetType();
-  const auto v_type = input_infos[kFlashAttentionScoreInputValueIndex]->GetType();
-  std::vector<TypeId> qkv_types{q_type, k_type, v_type};
-  CheckAndConvertUtils::CheckTypeIdsSame("query/key/value", qkv_types, op_name);
-
-  // 2) Validate QKV dtype set depending on infer boost
-  std::set<TypeId> valid_qkv_types = {kNumberTypeFloat16, kNumberTypeBFloat16};
-  if (!enable_infer_boost) {
-    (void)valid_qkv_types.emplace(kNumberTypeFloat32);
-  }
-  CheckAndConvertUtils::CheckTypeIdValid("query", q_type, valid_qkv_types, op_name);
-
-  // 3) padding_mask must be None currently
-  EnsurePaddingMaskNone(input_infos[kFlashAttentionScoreInputPaddingMaskIndex], op_name);
-
-  // 4) real_shift, if provided, must share dtype with QKV
-  if (!IsFlashAttentionScoreOptionalInputNotPass(input_infos[kFlashAttentionScoreInputRealShiftIndex])) {
-    const auto real_shift_type = input_infos[kFlashAttentionScoreInputRealShiftIndex]->GetType();
-    std::vector<TypeId> types{q_type, real_shift_type};
-    CheckAndConvertUtils::CheckTypeIdsSame("query/real_shift", types, op_name);
-  }
-
-  // 5) attn_mask dtype must be valid when provided
-  if (!IsFlashAttentionScoreOptionalInputNotPass(input_infos[kFlashAttentionScoreInputAttnMaskIndex])) {
-    const auto attn_mask_type = input_infos[kFlashAttentionScoreInputAttnMaskIndex]->GetType();
-    std::set<TypeId> valid_attn_types = {kNumberTypeUInt8, kNumberTypeBool};
-    if (enable_infer_boost) {
-      (void)valid_attn_types.emplace(kNumberTypeFloat16);
-      (void)valid_attn_types.emplace(kNumberTypeBFloat16);
-    }
-    CheckAndConvertUtils::CheckTypeIdValid("attn_mask", attn_mask_type, valid_attn_types, op_name);
-  }
-
-  // 6) keep_prob/drop_mask rule
   ValidateKeepProbAndDropMask(input_infos, op_name);
 
+  const auto q_type = input_infos[kFlashAttentionScoreInputQueryIndex]->GetType();
   std::vector<TypeId> outs(kFlashAttentionScoreOutputsNum);
   outs[kFlashAttentionScoreOutputSoftmaxMaxIndex] = kNumberTypeFloat32;
   outs[kFlashAttentionScoreOutputSoftmaxSumIndex] = kNumberTypeFloat32;
