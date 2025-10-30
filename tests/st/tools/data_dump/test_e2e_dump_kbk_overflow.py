@@ -13,10 +13,11 @@
 # limitations under the License.
 # ============================================================================
 """
-Tests the data dump overflow for non-contiguous data
+Tests sync data dump overflow
 """
 
 import os
+import json
 import sys
 import tempfile
 import glob
@@ -36,6 +37,8 @@ from mindspore.train import Model
 from tests.mark_utils import arg_mark
 from tests.security_utils import security_off_wrap
 from dump_test_utils import generate_dump_json, check_dump_structure
+from dump_test_utils import migrate_resnet50
+from dump_check import SyncDumpCheck
 
 class ConvNet(nn.Cell):
     def __init__(self):
@@ -122,6 +125,37 @@ def check_dump_dynamic_net_sync_overflow_dump(dump_path, dump_config_path, test_
     output = np.load(real_path)
     assert output.shape == (1,)
     assert oct(os.stat(real_path).st_mode)[-3:] == str(400)
+
+def run_trans_flag_dvm(test_name):
+    """Run e2e dump on scenario, testing trans_flag functionality"""
+    if sys.platform != 'linux':
+        return
+    with tempfile.TemporaryDirectory(dir='/tmp') as tmp_dir:
+        dump_path = os.path.join(tmp_dir, test_name)
+        dump_config_path = os.path.join(tmp_dir, '{}.json'.format(test_name))
+        generate_dump_json(dump_path, dump_config_path, test_name)
+        os.environ['MINDSPORE_DUMP_CONFIG'] = dump_config_path
+        if os.path.isdir(dump_path):
+            shutil.rmtree(dump_path)
+
+        migrate_resnet50(tmp_dir)
+        src_dir = os.path.join(tmp_dir, "src")
+        sys.path.append(os.path.dirname(src_dir))
+        from src.resnet import resnet50
+        generate_dump_json(dump_path, dump_config_path, test_name)
+        net = resnet50()
+        predict = Tensor(np.ones([32, 3, 32, 32]).astype(np.float32) * 65534)
+        net(predict)
+        check_dump_structure(dump_path, dump_config_path, 1, 0, 1)
+        dump_data_path = os.path.join(dump_path, 'rank_0', 'Net', '0', '0')
+        assert os.path.exists(dump_data_path)
+        with open(dump_config_path, 'r', encoding="utf-8") as f:
+            dump_json = json.load(f)
+        dump_check = SyncDumpCheck(dump_json, iteration_id_list=1)
+        dump_check.dump_result_check()
+        del os.environ['MINDSPORE_DUMP_CONFIG']
+        sys.path.remove(os.path.dirname(src_dir))
+
 
 def run_trans_flag(test_name):
     """Run e2e dump on scenario, testing trans_flag functionality"""
@@ -215,6 +249,19 @@ def test_ascend_kernel_by_kernel_with_uncontiguous_tensor():
     """
     context.set_context(mode=context.GRAPH_MODE)
     run_trans_flag("test_e2e_dump_with_uncontiguous_tensor")
+
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@security_off_wrap
+def test_ascend_sync_overflow_dvm():
+    """
+    Feature: Ascend kernel by kernel dump with overflow support for uncontiguous tensor.
+    Description: Test kernel by kernel dump in Ascend with uncontiguous tensor.
+    Expectation: Dump files has tensor data in host format (3 dimensions).
+    """
+    context.set_context(jit_level='O1')
+    context.set_context(mode=context.GRAPH_MODE, device_target="Ascend")
+    run_trans_flag_dvm("test_e2e_dump_trans_true_op_debug_mode")
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
