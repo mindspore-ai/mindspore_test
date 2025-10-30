@@ -179,17 +179,9 @@ class BACKEND_COMMON_EXPORT DeviceShapeTransfer {
   static ShapeVector NCHWDeviceShape(const ShapeVector &shape, const TypeId &);
   static ShapeVector NHWCDeviceShape(const ShapeVector &shape, const TypeId &);
   static ShapeVector HWCNDeviceShape(const ShapeVector &shape, const TypeId &);
-  static ShapeVector NCDHWDeviceShape(const ShapeVector &shape, const TypeId &);
-  static ShapeVector NC1HWC04DeviceShape(const ShapeVector &shape, const TypeId &);
-  static ShapeVector FRAC_ZC04DeviceShape(const ShapeVector &shape, const TypeId &);
-  static ShapeVector ChannelLastDeviceShape(const ShapeVector &shape, const TypeId &);
-  static ShapeVector FRAC_ZN_LSTMDeviceShape(const ShapeVector &shape, const TypeId &);
   static ShapeVector FRAC_ZDeviceShape(const ShapeVector &shape, const TypeId &type);
   static ShapeVector FRAC_NZDeviceShape(const ShapeVector &shape, const TypeId &type);
   static ShapeVector NC1HWC0DeviceShape(const ShapeVector &shape, const TypeId &type);
-  static ShapeVector NDC1HWC0DeviceShape(const ShapeVector &shape, const TypeId &type);
-  static ShapeVector FRAC_Z3DDeviceShape(const ShapeVector &shape, const TypeId &type);
-  static ShapeVector C1HWNCOC0DeviceShape(const ShapeVector &shape, const TypeId &type);
   static ShapeVector NDRNNBiasDeviceShape(const ShapeVector &shape, const TypeId &type, int64_t hidden_size = 16);
   static ShapeVector FRAC_ZDeviceShapeWithGroups(const ShapeVector &shape, const TypeId &type, int64_t groups = 1);
   static ShapeVector FRAC_ZN_RNNDeviceShape(const ShapeVector &shape, const TypeId &type,
@@ -215,22 +207,12 @@ class FormatTransfer {
                                                                    {kOpFormat_NHWC, NCHW_TO_4D},
                                                                    {kOpFormat_FRAC_Z, NCHW_TO_FRAC_Z},
                                                                    {kOpFormat_FRAC_NZ, NCHW_TO_FRAC_NZ},
-                                                                   {kOpFormat_NC1HWC0, NCHW_TO_NC1HWC0},
-                                                                   {kOpFormat_NDC1HWC0, NCDHW_TO_NDC1HWC0},
-                                                                   {kOpFormat_C1HWNCoC0, NCHW_TO_C1HWNCOC0},
-                                                                   {kOpFormat_NC1HWC0_C04, NCHW_TO_NC1HWC04},
-                                                                   {kOpFormat_FRACTAL_Z_3D, NCDHW_TO_FRAC_Z3D},
-                                                                   {kOpFormat_FRACTAL_Z_C04, NCHW_TO_FRAC_ZC04}};
+                                                                   {kOpFormat_NC1HWC0, NCHW_TO_NC1HWC0}};
   // bp map
   const std::map<std::string, TransferCore> format_trans_bp_map = {{kOpFormat_HWCN, TO_NCHW},
                                                                    {kOpFormat_NHWC, TO_NCHW},
                                                                    {kOpFormat_FRAC_Z, FRAC_Z_TO_NCHW},
-                                                                   {kOpFormat_FRAC_NZ, FRAC_NZ_TO_NCHW},
-                                                                   {kOpFormat_NC1HWC0, NC1HWC0_TO_NCHW},
-                                                                   {kOpFormat_NDC1HWC0, NDC1HWC0_TO_NCDHW},
-                                                                   {kOpFormat_C1HWNCoC0, C1HWNCOC0_TO_NCHW},
-                                                                   {kOpFormat_NC1HWC0_C04, NC1HWC04_TO_NCHW},
-                                                                   {kOpFormat_FRACTAL_Z_3D, FRAC_Z3D_TO_NCDHW}};
+                                                                   {kOpFormat_FRAC_NZ, FRAC_NZ_TO_NCHW}};
 
   static bool CheckArgs(const FormatArgs &args, int64_t *size);
   static bool TransShapeToHW_NZ(const ShapeVector &host_shape, ShapeVector *hw_shape);
@@ -239,22 +221,12 @@ class FormatTransfer {
   static bool NCHW_TO_FRAC_Z(const FormatArgs &args, void *result);
   static bool NCHW_TO_NC1HWC0(const FormatArgs &args, void *result);
   static bool NCHW_TO_FRAC_NZ(const FormatArgs &args, void *result);
-  static bool NCHW_TO_NC1HWC04(const FormatArgs &args, void *result);
-  static bool NCHW_TO_FRAC_ZC04(const FormatArgs &args, void *result);
-  static bool NCHW_TO_C1HWNCOC0(const FormatArgs &args, void *result);
-  static bool NCDHW_TO_NDC1HWC0(const FormatArgs &args, void *result);
-  static bool NCDHW_TO_FRAC_Z3D(const FormatArgs &args, void *result);
   static bool NCHW_TO_FRAC_Z_WITH_GROUPS(const FormatArgs &args, void *result, bool to_device, int64_t groups);
 
   // DEVICE TO HOST
   static bool TO_NCHW(const FormatArgs &args, void *result);
   static bool FRAC_Z_TO_NCHW(const FormatArgs &args, void *result);
   static bool FRAC_NZ_TO_NCHW(const FormatArgs &args, void *result);
-  static bool NC1HWC0_TO_NCHW(const FormatArgs &args, void *result);
-  static bool NC1HWC04_TO_NCHW(const FormatArgs &args, void *result);
-  static bool C1HWNCOC0_TO_NCHW(const FormatArgs &args, void *result);
-  static bool FRAC_Z3D_TO_NCDHW(const FormatArgs &args, void *result);
-  static bool NDC1HWC0_TO_NCDHW(const FormatArgs &args, void *result);
   static bool FRAC_Z_TO_NCHW_WITH_GROUPS(const FormatArgs &args, void *result, int64_t groups);
 
   // common check_func
@@ -272,17 +244,7 @@ class BACKEND_COMMON_EXPORT ShapeRangeTransfer {
                          const std::string &padding_str = {""}) const;
 
  private:
-  static RangePair NHWCRange(const RangePair &ori_range, const TypeId &);
-  static RangePair HWCNRange(const RangePair &ori_range, const TypeId &);
-  static RangePair NC1HWC04Range(const RangePair &ori_range, const TypeId &);
-  static RangePair FRAC_ZC04Range(const RangePair &ori_range, const TypeId &);
-  static RangePair FRAC_ZN_LSTMRange(const RangePair &ori_range, const TypeId &);
   static RangePair FRAC_ZRange(const RangePair &ori_range, const TypeId &type);
-  static RangePair FRAC_NZRange(const RangePair &ori_range, const TypeId &type);
-  static RangePair NC1HWC0Range(const RangePair &ori_range, const TypeId &type);
-  static RangePair NDC1HWC0Range(const RangePair &ori_range, const TypeId &type);
-  static RangePair C1HWNCOC0Range(const RangePair &ori_range, const TypeId &type);
-  static RangePair FRAC_Z_3DRange(const RangePair &ori_range, const TypeId &type);
 };
 
 /**
