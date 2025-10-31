@@ -21,9 +21,67 @@ from tests.mark_utils import arg_mark
 from tests.st.pi_jit.share.utils import get_code_extra, has_graph
 
 import mindspore as ms
-import mindspore.nn as nn
+from mindspore import nn
 from mindspore import Tensor, ops
+import torch
+import torch.nn as nn_pt
 
+
+class Net(nn.Cell):
+    """test setitem use net"""
+    def __init__(self, index, value):
+        super().__init__()
+        self.index = index
+        self.value = value
+        self.relu = nn.ReLU()
+
+    def construct(self, input_x):
+        input_x[self.index] = self.value
+        out = self.relu(input_x)
+        return out
+
+class NetPytorch1(nn_pt.Module):
+    """test setitem use net"""
+    def __init__(self, index, value):
+        super().__init__()
+        self.index = index
+        self.value = value
+        self.relu = nn_pt.ReLU()
+
+    def forward(self, input_x):
+        input_x[self.index] = self.value
+        out = self.relu(input_x)
+        return out
+
+@arg_mark(plat_marks=['platform_ascend910b'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
+@pytest.mark.parametrize('mode', [ms.PYNATIVE_MODE, ms.GRAPH_MODE])
+def test_tensor_fancy_index_set_item_032(mode):
+    """
+    Feature: tensor setitem
+    Description: Verify the result of tensor setitem with fancy index tuple list
+    Expectation: success
+    """
+    ms.set_context(mode=mode, jit_config={"jit_level": "O0"})
+
+    input_np = np.random.randn(2, 3, 4, 5).astype(np.float32)
+    value_np = np.ones((2, 3, 4, 5), np.float32)
+
+    index = (slice(None, None), ..., [True, True, True, True], slice(0, 5))
+    value_mx = Tensor(value_np)
+    value_pt = torch.tensor(value_np)
+    net_ms = Net(index, value_mx)
+    net_pt = NetPytorch1(index, value_pt)
+
+    input_ms = Tensor(input_np)
+    input_pt = torch.from_numpy(input_np)
+
+    output_ms = net_ms(input_ms)
+    output_pt = net_pt(input_pt)
+
+    assert np.allclose(output_pt.numpy(), output_ms.asnumpy(), 0.001, 0.001)
 
 def assert_executed_by_graph_mode(func, x, index, value):
     jcr = get_code_extra(getattr(func, "__wrapped__", func))
