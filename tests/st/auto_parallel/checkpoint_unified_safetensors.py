@@ -59,7 +59,7 @@ def setup_function():
     initializes the distributed communication framework.
     """
     ms.set_context(mode=0)
-    ms.set_context(save_graphs=True, save_graphs_path="./ir")
+    ms.set_context(save_graphs=True, save_graphs_path="./test_checkpoint_unified/ir")
     init()
 
 
@@ -70,6 +70,7 @@ class MatMulNet(Cell):
     across multiple devices according to a specified strategy. It is used as a
     building block for more complex network architectures in distributed training scenarios.
     """
+
     def __init__(self, strategy=None):
         """Initialize the MatMulNet cell.
         
@@ -109,6 +110,7 @@ class MatMulStageNet(Cell):
         layer1: First MatMulNet layer for initial processing.
         layer2: Second MatMulNet layer for further processing.
     """
+
     @lazy_inline
     def __init__(self, matmul_weight, strategy=None):
         """Initialize the MatMulStageNet with shared parameters.
@@ -270,10 +272,11 @@ def test_unified_safetensors_pp_shared_param():
     # Configure automatic parallel context for distributed training
     context.reset_auto_parallel_context()
     context.set_auto_parallel_context(device_num=8, pipeline_stages=2,
-                                     parallel_mode="semi_auto_parallel",
-                                     strategy_ckpt_config={"save_file": f"./strategy_{rank_id}.ckpt"},
-                                     enable_parallel_optimizer=True,
-                                     parallel_optimizer_config={'parallel_optimizer_threshold': 0})
+                                      parallel_mode="semi_auto_parallel",
+                                      strategy_ckpt_config={
+                                          "save_file": f"./test_checkpoint_unified/strategy_{rank_id}.ckpt"},
+                                      enable_parallel_optimizer=True,
+                                      parallel_optimizer_config={'parallel_optimizer_threshold': 0})
 
     # Create network with shared weight parameter
     matmul_weight = Tensor(0.1 * np.random.randn(16, 16).astype(np.float32))
@@ -291,14 +294,15 @@ def test_unified_safetensors_pp_shared_param():
     parallel_model = modeltrainbase.create_train_model(net, loss=None)
 
     # Train and save checkpoints in safetensors format
-    safetensors_path = f"./parallel_weight/rank_{rank_id}"
+    safetensors_path = f"./test_checkpoint_unified/parallel_weight/rank_{rank_id}"
     save_checkpoint_and_model_train(parallel_model, 1, dataset_parallel, ckpt_path=safetensors_path,
                                     keep_checkpoint_max=1, format_='safetensors')
 
     # Synchronize all ranks before unification
-    check_checkpoint_file_by_rank(rank_id, 8, "parallel_weight")
+    check_checkpoint_file_by_rank(rank_id, 8, "./test_checkpoint_unified/parallel_weight")
 
     # Rank 0 unifies checkpoints from all ranks into a single unified checkpoint
     if rank_id == 0:
-        unified_safetensors("./parallel_weight", f"./strategy_{rank_id}.ckpt",
-                            "./unified_safetensors")
+        unified_safetensors("./test_checkpoint_unified/parallel_weight",
+                            f"./test_checkpoint_unified/strategy_{rank_id}.ckpt",
+                            "./test_checkpoint_unified/unified_safetensors")

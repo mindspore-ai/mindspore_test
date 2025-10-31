@@ -53,9 +53,10 @@ from mindspore.communication.management import get_rank
 from tests.st.auto_parallel.model_parallel import FakeData
 from tests.st.auto_parallel.utils.modeltrain_base import modeltrainbase
 
+
 def setup_function():
     ms.set_context(mode=0)
-    ms.set_context(save_graphs=True, save_graphs_path="./ir")
+    ms.set_context(save_graphs=True, save_graphs_path="./parallel_batchmatmul_high_dim/ir")
     init()
 
 
@@ -94,5 +95,5 @@ def test_parallel_batchmatmul_enable_nd_tp_002():
         modeltrainbase.load_newest_ckpt_from_model_train(parallel_model, epoch=1,
                                                          dataset=parallel_dataset,
                                                          dataset_sink_mode=False,
-                                                         ckpt_path=f"./rank_{rank_id}",
+                                                         ckpt_path=f"./parallel_batchmatmul_high_dim/rank_{rank_id}",
                                                          ckpt_prefix="parallel")

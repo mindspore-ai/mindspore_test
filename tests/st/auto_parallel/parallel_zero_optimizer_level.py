@@ -35,7 +35,7 @@ def setup_function():
     initializes the distributed communication framework.
     """
     ms.set_context(mode=0)
-    ms.set_context(save_graphs=True, save_graphs_path="./ir")
+    ms.set_context(save_graphs=True, save_graphs_path="./parallel_zero_optimizer_level/ir")
     init()
 
 
@@ -166,5 +166,5 @@ def test_parallel_optimizer_dp4vpp2_zero3():
                                                      dataset=parallel_dataset,
                                                      dataset_sink_mode=False,
                                                      integrated_save=False,
-                                                     ckpt_path=f"./rk_{rank_id}_ckpt",
+                                                     ckpt_path=f"./parallel_zero_optimizer_level/rk_{rank_id}_ckpt",
                                                      ckpt_prefix="parallel")

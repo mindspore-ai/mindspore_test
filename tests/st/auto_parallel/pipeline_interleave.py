@@ -80,7 +80,7 @@ def setup_function():
     initializes the distributed communication framework.
     """
     ms.set_context(mode=0)
-    ms.set_context(save_graphs=True, save_graphs_path="./ir")
+    ms.set_context(save_graphs=True, save_graphs_path="./pipeline_interleave/ir")
     init()
 
 
@@ -173,9 +173,9 @@ def test_pipeline_interleave_001():
 
     # Configure pipeline parallelism with GPipe interleaving scheduler
     context.set_auto_parallel_context(device_num=8, parallel_mode="semi_auto_parallel",
-                                     pipeline_stages=2,
-                                     pipeline_config={"pipeline_interleave": True,
-                                                      "pipeline_scheduler": "gpipe"})
+                                      pipeline_stages=2,
+                                      pipeline_config={"pipeline_interleave": True,
+                                                       "pipeline_scheduler": "gpipe"})
 
     # Create network and apply sharding strategy
     net1 = Net()
@@ -202,7 +202,7 @@ def test_pipeline_interleave_001():
                                                      dataset=parallel_dataset,
                                                      dataset_sink_mode=False,
                                                      integrated_save=False,
-                                                     ckpt_path=f"./rk_{rank_id}_ckpt",
+                                                     ckpt_path=f"./pipeline_interleave/rk_{rank_id}_ckpt",
                                                      ckpt_prefix="parallel")
 
 
@@ -229,9 +229,9 @@ def test_pipeline_interleave_004():
 
     # Configure pipeline parallelism with 1F1B interleaving scheduler
     context.set_auto_parallel_context(device_num=8, parallel_mode="semi_auto_parallel",
-                                     pipeline_stages=2,
-                                     pipeline_config={"pipeline_interleave": True,
-                                                      "pipeline_scheduler": "1f1b"})
+                                      pipeline_stages=2,
+                                      pipeline_config={"pipeline_interleave": True,
+                                                       "pipeline_scheduler": "1f1b"})
 
     # Create network and apply sharding strategy
     net1 = Net()
@@ -258,5 +258,5 @@ def test_pipeline_interleave_004():
                                                      dataset=parallel_dataset,
                                                      dataset_sink_mode=False,
                                                      integrated_save=False,
-                                                     ckpt_path=f"./rk_{rank_id}_ckpt",
+                                                     ckpt_path=f"./pipeline_interleave/rk_{rank_id}_ckpt",
                                                      ckpt_prefix="parallel")

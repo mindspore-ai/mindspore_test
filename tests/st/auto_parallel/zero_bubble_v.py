@@ -210,7 +210,6 @@ def check_checkpoint_file_by_rank(rank_id, global_rank, dst_path):
                 break
 
 
-
 def predict_each_rank(net, ckpt_file, predict_data):
     """Execute model prediction after loading checkpoint for each rank.
     
@@ -242,7 +241,7 @@ def setup_function():
     initializes the distributed communication framework.
     """
     ms.set_context(mode=0)
-    ms.set_context(save_graphs=True, save_graphs_path="./ir")
+    ms.set_context(save_graphs=True, save_graphs_path="./zero_bubble/ir")
     init()
 
 
@@ -338,7 +337,7 @@ def test_pipeline_zero_bubble_v_001():
                                              '_backbone.block.3': 1, '_backbone.relu_block.3': 1})
     parallel_net = AutoParallel(net_with_loss, parallel_mode="semi_auto")
     parallel_net.pipeline(stages=2, interleave=True, scheduler='zero_bubble_v')
-    parallel_net.save_param_strategy_file(f"./pipe_strategy/pipeline_segment_{rank_id}.ckpt")
+    parallel_net.save_param_strategy_file(f"./zero_bubble/pipe_strategy/pipeline_segment_{rank_id}.ckpt")
     pipeline_dataset = FakeData(size=64, batch_size=16, image_size=(96,), num_classes=16)
     opt = Momentum(learning_rate=0.00001, momentum=0.09, params=parallel_net.trainable_params())
     pipeline_model = modeltrainbase.create_train_model(parallel_net, loss=None, opt=opt)
@@ -347,13 +346,13 @@ def test_pipeline_zero_bubble_v_001():
                                                      dataset_sink_mode=False,
                                                      integrated_save=False,
                                                      format_="safetensors",
-                                                     ckpt_path=f"./pipe/rank_{rank_id}",
+                                                     ckpt_path=f"./zero_bubble/pipe/rank_{rank_id}",
                                                      ckpt_prefix="pipeline")
 
     # ===== Phase 2: Non-pipeline training with different sharding strategy =====
     net = StageNet(weight_list=weight_list, micro_size=4, strategy1=((2, 1), (1, 2)), strategy2=((2, 1), (1, 2)))
     parallel_net = AutoParallel(net, parallel_mode="semi_auto")
-    parallel_net.save_param_strategy_file("./parallel.ckpt")
+    parallel_net.save_param_strategy_file("./zero_bubble/parallel.ckpt")
     parallel_dataset = FakeData(size=64, batch_size=16, image_size=(96,), num_classes=16)
     opt = Momentum(learning_rate=0.00001, momentum=0.09, params=parallel_net.trainable_params())
     _ = modeltrainbase.create_model_and_train(parallel_net, dataset=parallel_dataset, loss=loss_fn,
@@ -368,7 +367,7 @@ def test_pipeline_zero_bubble_v_001():
                                            '_backbone.block.3': 1, '_backbone.relu_block.3': 1})
     pipeline_net = AutoParallel(net_with_loss, parallel_mode="semi_auto")
     pipeline_net.pipeline(stages=2)
-    pipeline_net.save_param_strategy_file(f"./pipeline/pipeline{rank_id}.ckpt")
+    pipeline_net.save_param_strategy_file(f"./zero_bubble/pipeline/pipeline{rank_id}.ckpt")
     pipeline_dataset = FakeData(size=64, batch_size=16, image_size=(96,), num_classes=16)
     opt = Momentum(learning_rate=0.00001, momentum=0.09, params=pipeline_net.trainable_params())
     pipeline_model = modeltrainbase.create_model_and_train(pipeline_net, dataset=pipeline_dataset, loss=None,
@@ -377,26 +376,26 @@ def test_pipeline_zero_bubble_v_001():
     # ===== Phase 4: Transform checkpoints (only rank 0 does the transformation) =====
     if rank_id == 0:
         # Merge strategy files
-        merge_pipeline_strategys("./pipe_strategy", "./pipe_strategy/pipe_strategy.ckpt")
-        merge_pipeline_strategys("./pipeline", "./pipeline/pipeline.ckpt")
+        merge_pipeline_strategys("./zero_bubble/pipe_strategy", "./zero_bubble/pipe_strategy/pipe_strategy.ckpt")
+        merge_pipeline_strategys("./zero_bubble/pipeline", "./zero_bubble/pipeline/pipeline.ckpt")
 
         # Transform pipeline checkpoints to parallel format
-        transform_checkpoints(src_checkpoints_dir="./pipe",
-                              dst_checkpoints_dir="./change",
+        transform_checkpoints(src_checkpoints_dir="./zero_bubble/pipe",
+                              dst_checkpoints_dir="./zero_bubble/change",
                               ckpt_prefix="parallel_changed",
-                              src_strategy_file="./pipe_strategy/pipe_strategy.ckpt",
-                              dst_strategy_file="./parallel.ckpt")
+                              src_strategy_file="./zero_bubble/pipe_strategy/pipe_strategy.ckpt",
+                              dst_strategy_file="./zero_bubble/parallel.ckpt")
 
         # Transform pipeline checkpoints to pipeline format without segment
-        transform_checkpoints(src_checkpoints_dir="./pipe",
-                              dst_checkpoints_dir="./change_pipe",
+        transform_checkpoints(src_checkpoints_dir="./zero_bubble/pipe",
+                              dst_checkpoints_dir="./zero_bubble/change_pipe",
                               ckpt_prefix="pipeline_changed",
-                              src_strategy_file="./pipe_strategy/pipe_strategy.ckpt",
-                              dst_strategy_file="./pipeline/pipeline.ckpt")
+                              src_strategy_file="./zero_bubble/pipe_strategy/pipe_strategy.ckpt",
+                              dst_strategy_file="./zero_bubble/pipeline/pipeline.ckpt")
 
     # ===== Phase 5: Synchronize checkpoint files across all ranks =====
-    check_checkpoint_file_by_rank(rank_id, 8, "change")
-    check_checkpoint_file_by_rank(rank_id, 8, "change_pipe")
+    check_checkpoint_file_by_rank(rank_id, 8, "./zero_bubble/change")
+    check_checkpoint_file_by_rank(rank_id, 8, "./zero_bubble/change_pipe")
     init()
 
     # ===== Phase 6: Inference with transformed pipeline checkpoints =====
@@ -406,14 +405,14 @@ def test_pipeline_zero_bubble_v_001():
                                            'block.2': 1, 'relu_block.2': 1, 'block.3': 1, 'relu_block.3': 1})
     pipeline_net = AutoParallel(net_with_loss, parallel_mode="semi_auto")
     pipeline_net.pipeline(stages=2)
-    ckpt_file = f'./change_pipe/rank_{rank_id}/pipeline_changed{rank_id}.ckpt'
+    ckpt_file = f'./zero_bubble/change_pipe/rank_{rank_id}/pipeline_changed{rank_id}.ckpt'
     infer_pipe = predict_each_rank(pipeline_net, ckpt_file, predict_data)
 
     # ===== Phase 7: Inference with transformed parallel checkpoints =====
     net_parallel = StageNet(weight_list=weight_list, micro_size=4, strategy1=((2, 1), (1, 2)),
                             strategy2=((2, 1), (1, 2)))
     parallel_net = AutoParallel(net_parallel, parallel_mode="semi_auto")
-    ckpt_file = f'./change/rank_{rank_id}/parallel_changed{rank_id}.ckpt'
+    ckpt_file = f'./zero_bubble/change/rank_{rank_id}/parallel_changed{rank_id}.ckpt'
     infer_parallel = predict_each_rank(parallel_net, ckpt_file, predict_data)
 
     # ===== Phase 8: Verify inference consistency =====

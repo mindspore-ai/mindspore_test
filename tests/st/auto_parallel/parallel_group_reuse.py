@@ -44,7 +44,7 @@ def setup_function():
     initializes the distributed communication framework.
     """
     ms.set_context(mode=0)
-    ms.set_context(save_graphs=True, save_graphs_path="./ir")
+    ms.set_context(save_graphs=True, save_graphs_path="./parallel_group_reuse/ir")
     init()
 
 
@@ -176,7 +176,7 @@ class Net1(nn.Cell):
         return x
 
 
-def check_ir(rank_id, rank_list, group_name, ir_path="ir", exist_flag=True):
+def check_ir(rank_id, rank_list, group_name, ir_path="./parallel_group_reuse/ir", exist_flag=True):
     """Verify that a communication group name exists (or doesn't exist) in IR graphs.
     
     This function checks the generated IR (intermediate representation) files for a specific
@@ -211,7 +211,7 @@ def check_ir(rank_id, rank_list, group_name, ir_path="ir", exist_flag=True):
         else:
             assert result is None
 
-def save_graphs_func(save_graphs_flag=0, save_graphs_path="."):
+def save_graphs_func(save_graphs_flag=0, save_graphs_path="./parallel_group_reuse/"):
     """Configure environment variables for saving computation graphs during compilation.
     
     This utility function sets environment variables to control whether MindSpore should
@@ -252,7 +252,7 @@ def test_parallel_creat_group_reuse_001():
     D.init()
     rank_id = get_rank()
     # Enable IR graph saving for verification
-    save_graphs_func(save_graphs_flag=1, save_graphs_path="./ir")
+    save_graphs_func(save_graphs_flag=1, save_graphs_path="./parallel_group_reuse/ir")
 
     # Define custom communication groups
     rank_ids0 = [0, 1]
@@ -275,7 +275,7 @@ def test_parallel_creat_group_reuse_001():
     standalone_model = modeltrainbase.create_train_model(standalone_net, loss=None)
     standalone_ckpt = modeltrainbase.load_newest_ckpt_from_model_train(
         standalone_model, epoch=2, dataset=standalone_dataset, dataset_sink_mode=False,
-        ckpt_path="./rank_{}_ckpt".format(rank_id),
+        ckpt_path="./parallel_group_reuse/rank_{}_ckpt".format(rank_id),
         ckpt_prefix="ckpt_standalone", load_format="name")
 
     # ===== Phase 3: Parallel training with sharding strategy =====
@@ -286,7 +286,7 @@ def test_parallel_creat_group_reuse_001():
     parallel_model = modeltrainbase.create_train_model(parallel_net, loss=None)
     parallel_ckpt = modeltrainbase.load_newest_ckpt_from_model_train(
         parallel_model, epoch=2, dataset=parallel_dataset, dataset_sink_mode=False,
-        ckpt_path="./rank_{}_ckpt".format(rank_id),
+        ckpt_path="./parallel_group_reuse/rank_{}_ckpt".format(rank_id),
         ckpt_prefix="ckpt_parallel", load_format="name")
 
     # ===== Phase 4: Verify checkpoint equivalence =====
