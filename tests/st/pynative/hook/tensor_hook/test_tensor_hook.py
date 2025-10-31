@@ -12,12 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+""" test_tensor_hook """
 import os
 import numpy as np
 import pytest
 import mindspore as ms
-import mindspore.nn as nn
-from mindspore import Tensor, Parameter, ops
+from mindspore import Tensor, Parameter, ops, nn
 from tests.st.pynative.utils import GradOfAllParams, GradOfFirstInput, GradOfAllInputs
 from tests.mark_utils import arg_mark
 
@@ -32,6 +32,11 @@ def hook_fn_mul_3(grad):
 
 def hook_fn_return_tuple(grad):
     return grad, grad
+
+
+def hook_fn_print_and_return_self(grad):
+    print(grad.asnumpy())
+    return grad
 
 
 def test_tensor_backward_hook_with_op_output():
@@ -128,7 +133,7 @@ def test_tensor_backward_hook_with_net_input_register_multi():
 
 class Net(nn.Cell):
     def __init__(self):
-        super(Net, self).__init__()
+        super().__init__()
         self.weight1 = Parameter(Tensor(np.array([1.0, 2.0, 3.0]), ms.float32), name="weight1")
         self.weight2 = Parameter(Tensor(np.array([1.0, 2.0, 3.0]), ms.float32), name="weight2")
         self.handle1 = self.weight1.register_hook(hook_fn_mul_2)
@@ -197,7 +202,7 @@ def test_tensor_backward_hook_with_weight_register_multi():
 
 class NetRemove(nn.Cell):
     def __init__(self):
-        super(NetRemove, self).__init__()
+        super().__init__()
         self.weight1 = Parameter(Tensor(np.array([1.0, 2.0, 3.0]), ms.float32), name="weight1")
         self.handle = self.weight1.register_hook(hook_fn_mul_2)
 
@@ -238,7 +243,7 @@ def tensor_hook_fn2(grad):
 
 class NetWithParameterNotInGrad(nn.Cell):
     def __init__(self):
-        super(NetWithParameterNotInGrad, self).__init__()
+        super().__init__()
         self.weight1 = Parameter(Tensor(np.array([1.0, 2.0, 3.0]), ms.float32), name="weight1")
         self.weight2 = Parameter(Tensor(np.array([1.0, 2.0, 3.0]), ms.float32), name="weight2")
         self.handle1 = self.weight1.register_hook(tensor_hook_fn2)
@@ -260,7 +265,6 @@ def test_tensor_backward_hook_with_weight_not_in_grad():
     net1 = NetWithParameterNotInGrad()
     ms_grad = GradOfAllParams(net1, False)
     ms_grad(input_x)
-    global not_in_grad
     assert not_in_grad == 3
 
 
@@ -339,6 +343,29 @@ def test_tensor_backward_hook_return_none():
     assert record == 1
 
 
+def test_tensor_backward_hook_print_and_return_self():
+    """
+    Feature: Tensor backward hook.
+    Description: Test hook print and return self.
+    Expectation: Success.
+    """
+
+    class Net1(nn.Cell):
+        def __init__(self):
+            super().__init__()
+            self.n = 2
+
+        def construct(self, x):
+            return x * self.n
+
+    net = Net1()
+    x = ms.Tensor(np.random.rand(3, ), dtype=ms.float32)
+    x.register_hook(hook_fn_print_and_return_self)
+    grad_net = GradOfFirstInput(net, sens_param=False)
+    grad = grad_net(x)
+    assert np.allclose(grad.asnumpy(), np.array([2.0, 2.0, 2.0]), 0.00001, 0.00001)
+
+
 @arg_mark(plat_marks=['cpu_linux'],
           level_mark='level0',
           card_mark='onecard',
@@ -360,6 +387,7 @@ def test_tensor_backward_hook():
     test_tensor_backward_hook_multi_output()
     test_tensor_backward_hook_leaf()
     test_tensor_backward_hook_return_none()
+    test_tensor_backward_hook_print_and_return_self()
 
 
 @arg_mark(plat_marks=['cpu_linux'],
