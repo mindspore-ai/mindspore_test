@@ -12,6 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+"""
+Tests the kernel-by-kernel dump functionalities with LeNet5 model.
+"""
 
 import os
 import sys
@@ -19,8 +22,9 @@ import tempfile
 import glob
 import shutil
 import re
+import json
 import numpy as np
-import mindspore.nn as nn
+from mindspore import nn
 from mindspore import context, _c_expression, Callback, dataset, Model
 from mindspore.common.tensor import Tensor
 from mindspore.common.initializer import TruncatedNormal
@@ -30,6 +34,7 @@ from mindspore.ops import composite as C
 from tests.mark_utils import arg_mark
 from tests.security_utils import security_off_wrap
 from dump_test_utils import generate_dump_json, check_dump_structure
+from dump_check import SyncDumpCheck
 
 
 def weight_variable():
@@ -51,7 +56,7 @@ def fc_with_initialize(input_channels, out_channels):
 
 class LeNet5(nn.Cell):
     def __init__(self):
-        super(LeNet5, self).__init__()
+        super().__init__()
         self.batch_size = 32
         self.conv1 = conv(1, 6, 5)
         self.conv2 = conv(6, 16, 5)
@@ -80,7 +85,7 @@ class LeNet5(nn.Cell):
 
 class WithLossCell(nn.Cell):
     def __init__(self, network):
-        super(WithLossCell, self).__init__(auto_prefix=False)
+        super().__init__(auto_prefix=False)
         self.loss = nn.SoftmaxCrossEntropyWithLogits()
         self.network = network
 
@@ -91,7 +96,7 @@ class WithLossCell(nn.Cell):
 
 class TrainOneStepCell(nn.Cell):
     def __init__(self, network):
-        super(TrainOneStepCell, self).__init__(auto_prefix=False)
+        super().__init__(auto_prefix=False)
         self.network = network
         self.network.set_train()
         self.weights = ParameterTuple(network.trainable_params())
@@ -156,7 +161,7 @@ def run_trans_flag_execution_order(test_name):
         dump_execution_order_path = os.path.join(dump_path, 'rank_0', 'execution_order',
                                                  'ms_execution_order_graph_0.csv')
         assert os.path.exists(dump_execution_order_path)
-        with open(dump_execution_order_path, 'r') as f:
+        with open(dump_execution_order_path, 'r', encoding='utf-8') as f:
             execution_order_content = f.read()
         check_fullname("ReLU-op", 4, execution_order_content)
         check_fullname("MaxPool-op", 2, execution_order_content)
@@ -178,7 +183,7 @@ def test_ascend_kernel_by_kernel_lenet():
 class Net(nn.Cell):
     """The test net"""
     def __init__(self):
-        super(Net, self).__init__()
+        super().__init__()
         self.fc = nn.Dense(2, 2)
 
     def construct(self, x_):
@@ -193,7 +198,7 @@ class StopAtStep(Callback):
         stop_step (int): The stop step number.
     """
     def __init__(self, start_step, stop_step):
-        super(StopAtStep, self).__init__()
+        super().__init__()
         self.start_step = start_step
         self.stop_step = stop_step
         # pylint: disable=W0212
@@ -215,7 +220,7 @@ class StopAtStep(Callback):
 
 
 def generator():
-    for _ in range(3):
+    for _ in range(1):
         yield (np.ones([2, 2]).astype(np.float32), np.ones([2]).astype(np.int32))
 
 
@@ -241,6 +246,55 @@ def run_kbk_data_dump_dynamic(test_name):
         dump_data_path = os.path.join(dump_path, 'rank_0', 'Net', '0', '2')
         assert os.path.exists(dump_data_path)
         del os.environ['MINDSPORE_DUMP_CONFIG']
+
+
+def run_lenet_sink_false_kbk_dump_sync(test_name):
+    if sys.platform != 'linux':
+        return
+    with tempfile.TemporaryDirectory(dir='/tmp') as tmp_dir:
+        dump_path = os.path.join(tmp_dir, test_name)
+        dump_config_path = os.path.join(tmp_dir, '{}.json'.format(test_name))
+        generate_dump_json(dump_path, dump_config_path, test_name)
+        os.environ['MINDSPORE_DUMP_CONFIG'] = dump_config_path
+        if os.path.isdir(dump_path):
+            shutil.rmtree(dump_path)
+        network = Net()
+        optimizer = nn.Momentum(network.trainable_params(), 1, 0.9)
+        loss = nn.SoftmaxCrossEntropyWithLogits(sparse=True)
+        data = dataset.GeneratorDataset(generator, ["data", "label"])
+        model = Model(network, loss, optimizer)
+        model.train(3, data, dataset_sink_mode=False)
+        with open(dump_config_path, 'r', encoding="utf-8") as f:
+            dump_json = json.load(f)
+        dump_check = SyncDumpCheck(dump_json, iteration_id_list=3)
+        dump_check.dump_result_check()
+        del os.environ['MINDSPORE_DUMP_CONFIG']
+
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@security_off_wrap
+def test_lenet_O0_sink_false_kbk_dump_sync():
+    """
+    Feature: Ascend kernel by kernel dump with lenet5 in non-data sinking mode.
+    Description: Test kernel by kernel dump in tensor dump mode.
+    Expectation: Dump files has tensor data.
+    """
+    context.set_context(mode=context.GRAPH_MODE, device_target="Ascend")
+    context.set_context(jit_level="O0")
+    run_lenet_sink_false_kbk_dump_sync("test_lenet_sink_false_kbk_dump_sync")
+
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@security_off_wrap
+def test_lenet_O1_sink_false_kbk_dump_sync():
+    """
+    Feature: Ascend kernel by kernel dump with lenet5 in non-data sinking mode.
+    Description: Test kernel by kernel dump in tensor dump mode.
+    Expectation: Dump files has tensor data.
+    """
+    context.set_context(mode=context.GRAPH_MODE, device_target="Ascend")
+    context.set_context(jit_level="O1")
+    run_lenet_sink_false_kbk_dump_sync("test_lenet_sink_false_kbk_dump_sync")
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')

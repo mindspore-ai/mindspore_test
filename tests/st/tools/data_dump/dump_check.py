@@ -15,7 +15,12 @@
 """
 Check the dump result functionality
 """
+
+import math
 import os
+import re
+import numpy as np
+import ast
 from mindspore import log as logger
 
 FILE_RWGR_MODE = '640'
@@ -184,6 +189,8 @@ class SyncDumpCheck(DumpCheck):
             self.check_net_name_correct(rank_dir)
             if self.op_debug_mode == 0:
                 self.check_iteration_correct()
+            if self.check_details:
+                self.check_dump_mode(rank_dir)
         if len(self.exceptions) > 0:
             for expt in self.exceptions:
                 print(expt)
@@ -208,3 +215,245 @@ class SyncDumpCheck(DumpCheck):
         if actual_iteration_list != expect_iteration_list:
             self.exceptions.append(Exception(f"Iteration lack iteration_id:" \
                                                  f" {expect_iteration_list - actual_iteration_list}"))
+
+    def check_dump_mode(self, rank_dir):
+        # 对应config字段dump_mode, kernels
+        self.parse_execution_order_files(os.path.join(rank_dir.abs_path, "execution_order"))
+        self.parse_graphs_files(os.path.join(rank_dir.abs_path, "graphs"))
+
+        for iteration_dir in self.target_dir.level_idx[4]:
+            if not iteration_dir.isfile:
+                self.check_iteration_files_correct(iteration_dir)
+
+    def check_iteration_files_correct(self, iteration_dir):
+        current_graph_id = int(os.path.basename(os.path.dirname(iteration_dir.abs_path)))
+        if self.dump_mode == 0 and self.op_debug_mode == 0:
+            for k in self.net_info[current_graph_id].keys():
+                op_name = k.replace(".", "_").replace("/", "_").replace("\\", "_").replace(" ", "_")
+                skip_flag = False
+                for skip_name in IGNORE_OPNAME_LIST:
+                    if skip_name in op_name:
+                        skip_flag = True
+                        break
+                if skip_flag:
+                    continue
+                if self.input_output == "0" or self.input_output == "1":
+                    for input_id in range(self.net_info[current_graph_id][k][0]):
+                        self.dump_op_list.append(f"{op_name}.input.{input_id}")
+                if self.input_output == "0" or self.input_output == "2":
+                    for output_id in range(self.net_info[current_graph_id][k][1]):
+                        self.dump_op_list.append(f"{op_name}.output.{output_id}")
+        elif self.dump_mode == 1 and self.op_debug_mode == 0:
+            for kernel_name in self.kernels:
+                for k in self.net_info[current_graph_id].keys():
+                    op_name = k.replace(".", "_").replace("/", "_").replace("\\", "_").replace(" ", "_")
+                    skip_flag = False
+                    for skip_name in IGNORE_OPNAME_LIST:
+                        if skip_name in op_name:
+                            skip_flag = True
+                            break
+                    if skip_flag:
+                        continue
+                    if kernel_name.startswith("name-regex") and not re.search(kernel_name[11: -1], op_name):
+                        continue
+                    if kernel_name not in op_name.lower() or kernel_name != op_name:
+                        continue
+                    for input_id in range(self.net_info[current_graph_id][k][0]):
+                        self.dump_op_list.append(f"{op_name}.input.{input_id}")
+                    for output_id in range(self.net_info[current_graph_id][k][0]):
+                        self.dump_op_list.append(f"{op_name}.output.{output_id}")
+        else:
+            self.dump_op_list = self.expect_dump_op
+        mapping_path = os.path.join(iteration_dir.abs_path, "mapping.csv")
+        if os.path.exists(mapping_path):
+            with open(mapping_path, 'r', encoding="utf-8") as f:
+                content = f.readlines()
+                for line in content:
+                    self.file_map_dict[line.split(",")[0]] = line.split(",")[1]
+        self.check_saved_data_correct(iteration_dir)
+        self.check_sample_mode(iteration_dir)
+        self.check_save_kernel_args(iteration_dir)
+
+    def check_saved_data_correct(self, iteration_dir):
+        statistic_records = []
+        npy_files = []
+        for file in iteration_dir.subfiles:
+            if file.name == 'mapping.csv':
+                continue
+            if file.name == "statistic.csv":
+                with open(file.abs_path, 'r', encoding="utf-8") as f:
+                    statistic_records = f.readlines()
+            if file.name.endswith("npy"):
+                if re.match(r"^[0-9]{3,}", file.name) and file.name not in self.file_map_dict:
+                    self.exceptions.append(Exception("Mapping csv lack data."))
+                npy_files.append(file.name)
+        if self.saved_data == "statistic" and len(statistic_records) <= 1:
+            self.exceptions.append(Exception("Dump config saved_data is statistic but no statistic.csv."))
+        if self.saved_data == "full" and (len(npy_files) == 0 or len(statistic_records) <= 1):
+            self.exceptions.append(Exception("Dump config saved_data is full but file not exist."))
+        if self.saved_data == "tensor" and len(npy_files) == 0:
+            self.exceptions.append(Exception("Dump config saved_data is npy but no *.npy."))
+        self.check_tensor_data_correct(npy_files)
+        self.check_statistic_data_correct(iteration_dir, statistic_records)
+
+    def check_tensor_data_correct(self, npy_files):
+        if self.saved_data == "tensor" or self.saved_data == "full":
+            actual_dump_op_list = set()
+            for file in npy_files:
+                if re.match(r"^[0-9]{3,}", file):
+                    file = self.file_map_dict[file]
+                actual_dump_op_list.add(f'{file.split(".")[1]}.{file.split(".")[5]}.{file.split(".")[6]}')
+            if len(self.dump_op_list) > 0:
+                if not set(self.dump_op_list).issubset(actual_dump_op_list):
+                    logger.warning(f'actual more:{actual_dump_op_list - set(self.dump_op_list)}')
+                    logger.warning(f'ir graph more:{set(self.dump_op_list) - actual_dump_op_list}')
+                    self.exceptions.append(
+                        Exception(f"Dump op list lack:{set(self.dump_op_list) - actual_dump_op_list}"))
+            if len(actual_dump_op_list) == 0:
+                self.exceptions.append(
+                    Exception("Dump file is null."))
+
+    def check_statistic_data_correct(self, iteration_dir, statistic_records):
+        if self.saved_data == "statistic" or self.saved_data == "full":
+            actual_dump_op_list = set()
+            for record in statistic_records[1:]:
+                actual_dump_op_list.add(f'{record.split(",")[1]}.{record.split(",")[5]}.{record.split(",")[6]}')
+            if len(self.dump_op_list) > 0:
+                if not set(self.dump_op_list).issubset(actual_dump_op_list):
+                    self.exceptions.append(Exception(f"Dump op list in statistic lack:" \
+                                                         f"{set(self.dump_op_list) - actual_dump_op_list}"))
+            if len(actual_dump_op_list) == 0:
+                self.exceptions.append(
+                    Exception("Dump statistic file is null."))
+            actual_statistic_head = statistic_records[0].strip()
+            expect_statistic_head = STATISTIC_HEAD
+            if "hash:md5" in self.statistic_category:
+                self.statistic_category[self.statistic_category.index("hash:md5")] = "md5"
+            if "hash:sha1" in self.statistic_category:
+                self.statistic_category[self.statistic_category.index("hash:sha1")] = "hash"
+            self.statistic_category = list(dict.fromkeys(self.statistic_category))
+            if "md5" in self.statistic_category and "hash" in self.statistic_category:
+                self.statistic_category.remove("md5")
+                self.statistic_category.append("md5")
+            for title in self.statistic_category:
+                if self.stat_calc_mode == 'device' and self.saved_data == 'statistic' and \
+                        title not in ['max', 'min', 'avg', 'l2norm'] and self.op_debug_mode == 0:
+                    continue
+                expect_statistic_head += "," + HEAD_DICT[title]
+            if actual_statistic_head != expect_statistic_head:
+                self.exceptions.append(Exception(f"Statistic head wrong, actual:{actual_statistic_head}, expect:" \
+                                                     f"{expect_statistic_head}"))
+        if self.saved_data == "full" and self.sample_mode == 0:
+            right_idx = min(6, len(statistic_records))
+            for record in statistic_records[1: right_idx]:
+                record = record.replace("/", "_").replace("[", "(").replace("]", ")")
+                npy_file_name = ".".join(record.split(",")[0: 7]) + f".DefaultFormat.{record.split(',')[8]}.npy"
+                if len(os.path.join(iteration_dir.abs_path, npy_file_name)) >= 255:
+                    for k, v in self.file_map_dict.items():
+                        if v.strip() == ".".join(record.split(",")[0: 7]) + \
+                                f".DefaultFormat.{record.split(',')[8]}.npy":
+                            npy_file_name = str(k)
+                            break
+                array = np.load(os.path.join(iteration_dir.abs_path, npy_file_name))
+                exp_data_size = array.itemsize * array.size
+                exp_data_type = str(array.dtype)
+                exp_data_shape = array.shape
+                exp_min_value = np.amin(array)
+                exp_max_value = np.amax(array)
+                # numpy转换时，溢出数据需要转成fp32计算才不会出错
+                exp_avg_value = np.mean(array.astype(np.float32))
+                exp_l2norm_value = np.linalg.norm(array.astype(np.float64))
+
+                act_data_shape = re.findall(r'"(\([\w\W]*?\))"', record)[0]
+                if len(exp_data_shape) == 1:
+                    act_data_shape = act_data_shape.replace(")", ",)")
+                if ast.literal_eval(act_data_shape) != exp_data_shape:
+                    self.exceptions.append(Exception(f"{record}'s shape is error."))
+                record = record.replace(act_data_shape, "")
+                act_data_type = record.split(",")[8]
+                if act_data_type.lower() != exp_data_type.lower() and act_data_type.lower() not in ["bfloat16", "int4"]:
+                    self.exceptions.append(Exception(f"{record}'s data_type is error."))
+                act_data_size = int(record.split(",")[7])
+                if act_data_size != exp_data_size and \
+                        act_data_type.lower() == "bfloat16" and act_data_size != exp_data_size // 2:
+                    self.exceptions.append(Exception(f"{record}'s data_size is error."))
+
+                if "min" in self.statistic_category:
+                    act_min_value = float(record.split(",")[10 + self.statistic_category.index("min")])
+                    if not math.isclose(act_min_value, exp_min_value, abs_tol=1e-4, rel_tol=1e-4):
+                        self.exceptions.append(Exception(f"{record}'s min_value is error."))
+                if "max" in self.statistic_category:
+                    act_max_value = float(record.split(",")[10 + self.statistic_category.index("max")])
+                    if not math.isclose(act_max_value, exp_max_value, abs_tol=1e-4, rel_tol=1e-4):
+                        self.exceptions.append(Exception(f"{record}'s max_value is error."))
+                if "avg" in self.statistic_category:
+                    act_avg_value = float(record.split(",")[10 + self.statistic_category.index("avg")])
+                    if not math.isclose(act_avg_value, exp_avg_value, abs_tol=1e-4, rel_tol=1e-4):
+                        self.exceptions.append(Exception(f"{record}'s avg_value is error."))
+                if "l2norm" in self.statistic_category:
+                    act_l2norm_value = float(record.split(",")[10 + self.statistic_category.index("l2norm")])
+                    if not math.isclose(act_l2norm_value, exp_l2norm_value,
+                                        abs_tol=1e-4 * max(act_l2norm_value, exp_l2norm_value), rel_tol=1e-2):
+                        self.exceptions.append(Exception(f"{record}'s l2norm_value is error. exp:{exp_l2norm_value}"))
+
+    def check_sample_mode(self, iteration_dir):
+        if self.sample_mode == 1 and (self.saved_data == "tensor" or self.saved_data == "full"):
+            right_idx = min(5, len(iteration_dir.subfiles))
+            for file in iteration_dir.subfiles[0: right_idx]:
+                if file.name.endswith("npy"):
+                    array = np.load(file.abs_path)
+                    # shape 可能为空
+                    if array.shape != () and self.op_debug_mode == 0:
+                        if array.shape[0] > self.sample_num:
+                            self.exceptions.append(Exception(f"Sample_mode is useless, error file:{file.abs_path}"))
+
+    def check_save_kernel_args(self, iteration_dir):
+        exist_json = False
+        for file in os.listdir(iteration_dir.abs_path):
+            if file.endswith("json"):
+                exist_json = True
+        if self.save_kernel_args and not exist_json:
+            self.exceptions.append(Exception("Dump config saved_data is npy but no *.npy."))
+
+    def parse_graphs_files(self, graphs_dir):
+        graph_ids = set()
+        for file in os.listdir(graphs_dir):
+            tmp = re.findall(r"ms_output_trace_code_graph_([0-9]+?).ir", file)
+            if tmp:
+                graph_ids.add(int(tmp[0]))
+        if len(graph_ids) != len(self.net_info.keys()):
+            self.exceptions.append(Exception("Graphs dir lacks graph file."))
+        for graph_id in graph_ids:
+            with open(
+                os.path.join(graphs_dir, f"ms_output_trace_code_graph_{graph_id}.ir"),
+                'r',
+                encoding="utf-8"
+            ) as f:
+                content = f.read()
+            node_infos = re.split(r"  %[0-9]+?\(\w+?\) = .+\n", content)
+            for node_info in node_infos[1:]:
+                in_list, out_list = re.findall(r"      : (\(.*\)) -> (\(.*\))", node_info)[0]
+                in_num = len(re.findall(r"<[\w\W]+?>", in_list))
+                out_num = len(re.findall(r"<[\w\W]+?>", out_list))
+                fullname = re.findall(r"      # Fullname with scope:[\w\W]*?\(([\w\W]*?)\)", node_info)[0]
+                if not self.net_info[graph_id].get(fullname):
+                    logger.info(f"Execution order file lack op fullname:{fullname}.")
+                    continue
+                self.net_info[graph_id][fullname] = [in_num, out_num]
+
+    def parse_execution_order_files(self, execution_order_dir):
+        graph_ids = set()
+        for file in os.listdir(execution_order_dir):
+            tmp = re.findall(r"ms_execution_order_graph_([0-9]+?).csv", file)
+            if tmp:
+                graph_ids.add(int(tmp[0]))
+        for graph_id in graph_ids:
+            self.net_info[graph_id] = {}
+            with open(
+                os.path.join(execution_order_dir, f"ms_execution_order_graph_{graph_id}.csv"),
+                'r',
+                encoding="utf-8"
+            ) as f:
+                content = f.readlines()
+            for line in content[1:]:
+                self.net_info[graph_id][line.strip()] = [0, 0]
