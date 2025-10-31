@@ -36,8 +36,8 @@
 #include "pynative/backward/hook/primitive_hook.h"
 #include "pynative/backward/hook/function_py.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
-#include "mindspore/ccsrc/pyboost/functions/auto_grad_guard.h"
-#include "mindspore/ccsrc/pyboost/functions/auto_generate/functions.h"
+#include "mindspore/ccsrc/pynative/utils/pyboost/functions/auto_grad_guard.h"
+#include "mindspore/ccsrc/pynative/utils/pyboost/functions/auto_generate/functions.h"
 
 namespace mindspore::pynative::autograd {
 namespace {

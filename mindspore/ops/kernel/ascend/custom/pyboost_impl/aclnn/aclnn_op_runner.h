@@ -23,7 +23,7 @@
 #include <utility>
 #include <functional>
 #include <string>
-#include "pyboost/custom/pyboost_extension.h"
+#include "pynative/utils/pyboost/custom/pyboost_extension.h"
 #include "kernel/ascend/aclnn/pyboost_impl/aclnn_utils.h"
 #include "plugin/ascend/res_manager/stream_manager/ascend_stream_manager.h"
 
@@ -61,12 +61,12 @@ inline constexpr T Arg(const T &arg) {
   return arg;
 }
 
-#define LAUNCH_ACLNN_FUNC(aclnn_api, ...)                                                                     \
-  [](auto &&... args) {                                                                                       \
-    auto args_t = std::make_tuple(ms::pynative::Arg(std::forward<decltype(args)>(args))...);                  \
-    return [args_t](auto __dev_ctx, auto __stream_id) {                                                       \
-      std::apply([&](auto &&... args) { LAUNCH_ACLNN(aclnn_api, __dev_ctx, __stream_id, args...); }, args_t); \
-    };                                                                                                        \
+#define LAUNCH_ACLNN_FUNC(aclnn_api, ...)                                                                    \
+  [](auto &&...args) {                                                                                       \
+    auto args_t = std::make_tuple(ms::pynative::Arg(std::forward<decltype(args)>(args))...);                 \
+    return [args_t](auto __dev_ctx, auto __stream_id) {                                                      \
+      std::apply([&](auto &&...args) { LAUNCH_ACLNN(aclnn_api, __dev_ctx, __stream_id, args...); }, args_t); \
+    };                                                                                                       \
   }(__VA_ARGS__)
 }  // namespace ms::pynative
 #endif  // MINDSPORE_CCSRC_EXTENSION_ASCEND_ACLNN_OP_RUNNER_H_

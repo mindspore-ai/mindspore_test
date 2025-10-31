@@ -20,7 +20,7 @@
 #include <memory>
 #include <tuple>
 #include "ir/tensor.h"
-#include "mindspore/ccsrc/pyboost/op_runner.h"
+#include "mindspore/ccsrc/pynative/utils/pyboost/op_runner.h"
 
 namespace mindspore {
 namespace kernel {

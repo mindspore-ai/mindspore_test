@@ -16,7 +16,7 @@
 
 #include "mindspore/ops/kernel/gpu/pyboost/customize/any_ext.h"
 #include <optional>
-#include "mindspore/ccsrc/pyboost/customize/any.h"
+#include "mindspore/ccsrc/pynative/utils/pyboost/customize/any.h"
 
 namespace mindspore {
 namespace kernel {

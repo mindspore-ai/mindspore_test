@@ -4,7 +4,7 @@
 #include <map>
 #include <string>
 #include <vector>
-#include "mindspore/ccsrc/pyboost/op_runner.h"
+#include "mindspore/ccsrc/pynative/utils/pyboost/op_runner.h"
 #include "pynative/utils/runtime/op_runner.h"
 #include "frontend/expander/bprop/bprop_irbuilder.h"
 

@@ -21,12 +21,12 @@
 #include "mindspore/ccsrc/frontend/ir/tensor_py.h"
 
 // pyboost headfiles
-#include "mindspore/ccsrc/pyboost/op_register.h"
-#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
+#include "mindspore/ccsrc/pynative/utils/pyboost/op_register.h"
+#include "mindspore/ccsrc/pynative/utils/pyboost/pyboost_utils.h"
 #include "backend/common/device_address_utils.h"
 #include "mindspore/ccsrc/pynative/utils/runtime/op_runner.h"
-#include "mindspore/ccsrc/pyboost/op_runner.h"
-#include "mindspore/ccsrc/pyboost/functions/auto_generate/functions.h"
+#include "mindspore/ccsrc/pynative/utils/pyboost/op_runner.h"
+#include "mindspore/ccsrc/pynative/utils/pyboost/functions/auto_generate/functions.h"
 #include "mindspore/ccsrc/tools/profiler/profiler.h"
 
 // ascend files
@@ -39,9 +39,9 @@
 #endif  // CUSTOM_ASCEND_OP
 
 // custom api
-#include "pyboost/custom/tensor.h"
-#include "pyboost/custom/tensor_utils.h"
-#include "pyboost/custom/pyboost_extension.h"
+#include "pynative/utils/pyboost/custom/tensor.h"
+#include "pynative/utils/pyboost/custom/tensor_utils.h"
+#include "pynative/utils/pyboost/custom/pyboost_extension.h"
 #include "kernel/ascend/custom/kernel_mod_impl/custom_register.h"
 #include "kernel/ascend/custom/kernel_mod_impl/custom_kernel_factory.h"
 

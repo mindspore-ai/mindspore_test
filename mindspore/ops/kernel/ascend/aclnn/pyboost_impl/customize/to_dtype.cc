@@ -15,7 +15,7 @@
  */
 
 #include "mindspore/ops/kernel/ascend/aclnn/pyboost_impl/customize/to_dtype.h"
-#include "pyboost/customize/to.h"
+#include "pynative/utils/pyboost/customize/to.h"
 #include "ir/tensor_new.h"
 
 namespace mindspore {

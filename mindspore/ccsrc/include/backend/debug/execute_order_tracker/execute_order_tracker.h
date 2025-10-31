@@ -24,7 +24,7 @@
 #include <unordered_map>
 #include <utility>
 #include "include/backend/visible.h"
-#include "mindspore/ccsrc/pyboost/op_runner.h"
+#include "mindspore/ccsrc/pynative/utils/pyboost/op_runner.h"
 #include "ir/anf.h"
 
 namespace mindspore {

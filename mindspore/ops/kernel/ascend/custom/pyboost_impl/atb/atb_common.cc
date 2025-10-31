@@ -16,9 +16,9 @@
 
 #include "kernel/ascend/custom/pyboost_impl/atb/atb_common.h"
 #include <map>
-#include "pyboost/custom/tensor.h"
+#include "pynative/utils/pyboost/custom/tensor.h"
 #include "ir/tensor.h"
-#include "mindspore/ccsrc/pyboost/functions/auto_generate/functions.h"
+#include "mindspore/ccsrc/pynative/utils/pyboost/functions/auto_generate/functions.h"
 
 namespace ms::pynative {
 atb::Tensor AtbTensor(const ms::Tensor &t) {

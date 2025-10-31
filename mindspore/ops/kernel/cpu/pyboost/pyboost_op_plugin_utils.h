@@ -19,8 +19,8 @@
 #include <vector>
 #include <memory>
 #include <type_traits>
-#include "mindspore/ccsrc/pyboost/op_runner.h"
-#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
+#include "mindspore/ccsrc/pynative/utils/pyboost/op_runner.h"
+#include "mindspore/ccsrc/pynative/utils/pyboost/pyboost_utils.h"
 #include "kernel/cpu/custom/kernel_mod_impl/op_plugin_utils.h"
 
 // Helper to check if a type is optional
@@ -61,14 +61,14 @@ constexpr bool is_value_tuple_ptr_v = std::is_same_v<std::decay_t<T>, ValueTuple
 // These functions are mainly view functions, which do not really have an op plugin kernel.
 template <std::size_t... InplaceIndices, typename... Args>
 std::enable_if_t<has_int_or_vector_int_v<Args...>, std::vector<tensor::TensorPtr>> PyboostLaunchOpPluginKernel(
-  std::shared_ptr<OpRunner> op, Args &&... args) {
+  std::shared_ptr<OpRunner> op, Args &&...args) {
   return {};
 }
 
 // The InplaceIndex indicates the input tensor the output corresponds to in a inplace operation.
 template <std::size_t... InplaceIndices, typename... Args>
 std::enable_if_t<!has_int_or_vector_int_v<Args...>, std::vector<tensor::TensorPtr>> PyboostLaunchOpPluginKernel(
-  std::shared_ptr<OpRunner> op, Args &&... args) {
+  std::shared_ptr<OpRunner> op, Args &&...args) {
   MS_EXCEPTION_IF_NULL(op->primitive());
   const auto &op_name = op->primitive()->name();
   MS_LOG(DEBUG) << op_name << " calls op plugin kernel.";

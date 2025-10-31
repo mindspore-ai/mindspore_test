@@ -18,7 +18,7 @@
 #include <memory>
 #include <utility>
 #include <string>
-#include "mindspore/ccsrc/pyboost/customize/op_common.h"
+#include "mindspore/ccsrc/pynative/utils/pyboost/customize/op_common.h"
 #if defined(__linux__) && defined(WITH_BACKEND)
 #include "include/cluster/topology/collective_manager.h"
 #include "utils/misc.h"

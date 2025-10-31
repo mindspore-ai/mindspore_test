@@ -16,7 +16,7 @@
 
 #include "mindspore/ops/kernel/cpu/pyboost/customize/inplace_copy.h"
 #include <memory>
-#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
+#include "mindspore/ccsrc/pynative/utils/pyboost/pyboost_utils.h"
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
 
 namespace mindspore {

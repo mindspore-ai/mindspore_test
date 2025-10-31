@@ -17,8 +17,8 @@
 #include "mindspore/ops/kernel/cpu/pyboost/customize/round.h"
 #include "mindspore/ops/kernel/cpu/pyboost/auto_generate/cast.h"
 #include "mindspore/ops/kernel/cpu/pyboost/auto_generate/round.h"
-#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
-#include "mindspore/ccsrc/pyboost/op_runner.h"
+#include "mindspore/ccsrc/pynative/utils/pyboost/pyboost_utils.h"
+#include "mindspore/ccsrc/pynative/utils/pyboost/op_runner.h"
 
 namespace mindspore {
 namespace kernel {

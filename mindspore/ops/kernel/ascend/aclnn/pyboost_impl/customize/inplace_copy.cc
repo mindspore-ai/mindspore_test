@@ -19,10 +19,10 @@
 #include <memory>
 #include <string>
 #include "plugin/ascend/res_manager/stream_manager/ascend_stream_manager.h"
-#include "mindspore/ccsrc/pyboost/op_register.h"
-#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
+#include "mindspore/ccsrc/pynative/utils/pyboost/op_register.h"
+#include "mindspore/ccsrc/pynative/utils/pyboost/pyboost_utils.h"
 #include "kernel/ascend/aclnn/pyboost_impl/aclnn_utils.h"
-#include "mindspore/ccsrc/pyboost/auto_generate/inplace_copy.h"
+#include "mindspore/ccsrc/pynative/utils/pyboost/auto_generate/inplace_copy.h"
 #include "runtime/hardware_abstract/utils.h"
 #include "include/runtime/pipeline/pipeline.h"
 #include "mindspore/ops/ops_utils/memory_overlap.h"

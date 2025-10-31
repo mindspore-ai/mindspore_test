@@ -19,7 +19,7 @@
 
 #include <memory>
 #include "ir/scalar.h"
-#include "mindspore/ccsrc/pyboost/op_runner.h"
+#include "mindspore/ccsrc/pynative/utils/pyboost/op_runner.h"
 
 namespace mindspore {
 namespace kernel {

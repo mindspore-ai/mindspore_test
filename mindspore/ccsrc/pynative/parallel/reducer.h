@@ -30,7 +30,7 @@
 #include "include/utils/pynative//variable.h"
 #include "include/backend/visible.h"
 #include "mindspore/ccsrc/frontend/ir/tensor_py.h"
-#include "mindspore/ccsrc/pyboost/comm_handle.h"
+#include "mindspore/ccsrc/pynative/utils/pyboost/comm_handle.h"
 
 namespace mindspore {
 namespace pynative {

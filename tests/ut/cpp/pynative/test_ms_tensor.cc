@@ -17,7 +17,7 @@
 #include <vector>
 #include "gtest/gtest.h"
 #include "mindapi/base/type_id.h"
-#include "mindspore/ccsrc/pyboost/custom/tensor.h"
+#include "mindspore/ccsrc/pynative/utils/pyboost/custom/tensor.h"
 #include "ir/tensor.h"
 #include "ir/tensor_new.h"
 #include "include/utils/tensor_utils.h"

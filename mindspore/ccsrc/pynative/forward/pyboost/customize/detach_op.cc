@@ -17,10 +17,10 @@
 #include "include/utils/pybind_api/api_register.h"
 #include "include/utils/tensor_py.h"
 #include "include/utils/tensor_utils.h"
-#include "pyboost/functions/auto_grad_guard.h"
+#include "pynative/utils/pyboost/functions/auto_grad_guard.h"
 #include "pynative/utils/pynative_utils.h"
 #include "pynative/forward/pyboost/forward_task.h"
-#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
+#include "mindspore/ccsrc/pynative/utils/pyboost/pyboost_utils.h"
 
 namespace mindspore::pynative {
 static const char *OP_NAME = "Detach";
