@@ -168,7 +168,9 @@ AbstractWrapperPtr GradGraphBuildHelper::Build(GraphBuilder *graph_builder, Call
     MS_LOG(INFO) << "input wrapper is: " << input_wrapper->ToString();
   }
   auto ret = BuildGradNode(graph_builder->FGBuilder(), grad_net_wrapper, forward_fg, inputs_wrapper);
-  MS_EXCEPTION_IF_NULL(ret);
+  if (ret == nullptr) {
+    return nullptr;
+  }
   HandleGradForwardSideEffect(graph_builder, forward_fg, ret, graph_builder->get_prev_call_builder(), call_node);
   return ret;
 }
@@ -176,7 +178,7 @@ AbstractWrapperPtr GradGraphBuildHelper::Build(GraphBuilder *graph_builder, Call
 AbstractWrapperPtr GradGraphBuildHelper::BuildGradNode(const FuncGraphBuilderPtr &func_graph_builder,
                                                        const AbstractWrapperPtr &key, const FuncGraphPtr &forward_fg,
                                                        const AbstractWrapperPtrList &inputs) {
-  AbstractWrapperPtr ret;
+  AbstractWrapperPtr ret = nullptr;
   try {
     MS_LOG_TRY_CATCH_SCOPE;
     ret = HandleGrad(func_graph_builder, key, forward_fg, inputs);
