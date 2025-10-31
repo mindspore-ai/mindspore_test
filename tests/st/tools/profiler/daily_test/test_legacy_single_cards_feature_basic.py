@@ -12,10 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-"""legacy single"""
-
+"""legacy single cards feature."""
 import tempfile
-from mindspore import context
 from mindspore import Profiler
 from mindspore.profiler import ProfilerLevel, ProfilerActivity, AicoreMetrics
 import mindspore.profiler as Prof
@@ -23,42 +21,38 @@ import mindspore.profiler as Prof
 from tests.mark_utils import arg_mark
 from tests.st.tools.profiler.model_zoo import TinyTransformer
 from tests.st.tools.profiler.fake_dataset import FakeDataset
+from tests.st.tools.profiler.daily_test.profiler_check import MSProfilerChecker
 
 
-def generator_profiler_data(tmpdir):
+class Config:
+    def __init__(self, output_path):
+        self.profiler_dir = output_path
+        self.profiler_level = ProfilerLevel.Level2
+        self.activities = [ProfilerActivity.CPU, ProfilerActivity.NPU]
+        self.aicore_metrics = AicoreMetrics.PipeUtilization
+        self.with_stack = True
+        self.profile_memory = False
+        self.data_process = True
+        self.parallel_strategy = True
+        self.start_profile = True
+        self.l2_cache = True
+        self.hbm_ddr = True
+        self.pcie = True
+        self.sync_enable = True
+        self.data_simplification = False
+        self.mstx = False
+
+
+def generator_profiler_data(tmpdir, cfg):
     """
     Collect profiler data.
     """
-    context.set_context(mode=context.GRAPH_MODE, device_target="Ascend")
-    context.set_context(jit_config={"jit_level": "O2"})
-
-    class Config:
-        """config"""
-        def __init__(self, output_path):
-            self.profiler_dir = output_path
-            self.profiler_level = ProfilerLevel.Level1
-            self.activities = [ProfilerActivity.CPU, ProfilerActivity.NPU]
-            self.aicore_metrics = AicoreMetrics.ArithmeticUtilization
-            self.with_stack = False
-            self.profile_memory = False
-            self.data_process = True
-            self.parallel_strategy = False
-            self.start_profile = True
-            self.l2_cache = False
-            self.hbm_ddr = False
-            self.pcie = False
-            self.sync_enable = True
-            self.data_simplification = True
-            self.mstx = False
-
-    cfg = Config(tmpdir)
-
     # Create Profiler instance with all parameters
     profiler = Profiler(
         output_path=cfg.profiler_dir,
         profiler_level=cfg.profiler_level,
         activities=cfg.activities,
-        aicore_metrics=cfg.aicore_metrics,
+        aic_metrics=cfg.aicore_metrics,
         with_stack=cfg.with_stack,
         profile_memory=cfg.profile_memory,
         data_process=cfg.data_process,
@@ -72,22 +66,74 @@ def generator_profiler_data(tmpdir):
         mstx=cfg.mstx,
         on_trace_ready=Prof.tensorboard_trace_handler()
     )
-
+    profiler.start()
     net = TinyTransformer(d_model=2, nhead=1, num_encoder_layers=1, num_decoder_layers=1, dim_feedforward=4)
-    nlp_dataset = FakeDataset.create_fake_nlp_dataset(seq_len=1, batch_size=1, d_model=2, tgt_len=1, num_samples=1)
+    nlp_dataset = FakeDataset.create_fake_nlp_dataset(seq_len=1, batch_size=1, d_model=2, tgt_len=1, num_samples=5)
     for src, tgt in nlp_dataset:
         net(src, tgt)
-
-    profiler.analyse()
     profiler.stop()
+    profiler.analyse()
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_func_profiler_single_card_resnet_sink_false_framework_all_14():
     """
-    Feature: Profiler iterator data
-    Description: Test the profiler analyse method with pretty_on=False to generate compressed JSON output.
-    Expectation: run success.
+    Feature: Legacy Profiler Single Card
+    Description: Test single card ResNet profiling with sink_mode=False at Level0.
+    Expectation: Generate profiling data with L2 cache and minddata metrics.
     """
     with tempfile.TemporaryDirectory() as tmpdir:
-        generator_profiler_data(tmpdir)
+        cfg = Config(tmpdir)
+        cfg.profile_memory = False
+        cfg.profiler_level = ProfilerLevel.Level0
+        generator_profiler_data(tmpdir, cfg)
+        prof_config = {"output_path": cfg.profiler_dir,
+                       "profile_memory": False,
+                       "profile_level": 0,
+                       "l2_cache": True,
+                       "minddata": True}
+        profiler_check = MSProfilerChecker(prof_config, 1)
+        profiler_check()
+
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_func_profiler_pynative_host_timeline_set_host_stack_true():
+    """
+    Feature: Profiler PyNative Host Timeline
+    Description: Test PyNative mode profiling with host timeline and stack enabled.
+    Expectation: Generate profiling data with memory, L2 cache, HBM DDR, and PCIe metrics.
+    """
+    with tempfile.TemporaryDirectory() as tmpdir:
+        cfg = Config(tmpdir)
+        cfg.with_stack = True
+        cfg.profile_memory = True
+        generator_profiler_data(tmpdir, cfg)
+        prof_config = {"output_path": cfg.profiler_dir,
+                       "profile_memory": True,
+                       "profile_level": 2,
+                       "l2_cache": True,
+                       "hbm_ddr": True,
+                       "pcie": True}
+        profiler_check = MSProfilerChecker(prof_config, 1)
+        profiler_check()
+
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_func_profiler_single_card_resnet_sink_false_framework_memory_16():
+    """
+    Feature: Profiler Single Card Memory
+    Description: Test single card ResNet profiling with memory UB metrics.
+    Expectation: Generate profiling data with memory, L2 cache, and minddata metrics.
+    """
+    with tempfile.TemporaryDirectory() as tmpdir:
+        cfg = Config(tmpdir)
+        cfg.aicore_metrics = AicoreMetrics.MemoryUB
+        cfg.profile_memory = True
+        generator_profiler_data(tmpdir, cfg)
+        prof_config = {"output_path": cfg.profiler_dir,
+                       "profile_memory": True,
+                       "profile_level": 2,
+                       "l2_cache": True,
+                       "minddata": True}
+        profiler_check = MSProfilerChecker(prof_config, 1)
+        profiler_check()
