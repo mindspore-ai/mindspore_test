@@ -17,10 +17,12 @@
 import time
 import numpy as np
 import mindspore as ms
+from mindspore._c_expression import NoFallbackGuard
 import mindspore.communication.management as D
 from mindspore import nn, Tensor
 from mindspore.parallel import Layout
 from mindspore.parallel.spmd.hsdp.hsdp import hsdp
+from tests.st.auto_parallel.utils import create_dtensor
 
 learning_rate = 0.01
 epochs = 2
@@ -28,12 +30,18 @@ epochs = 2
 
 class SimpleModel(nn.Cell):
     """simple model"""
-    def __init__(self, input_size, output_size):
+    def __init__(self, input_size, output_size, w_layout=None):
         super().__init__()
-        self.weight = ms.Parameter(
-            Tensor(np.ones([input_size, output_size]).astype(np.float32)),
-            name='weight'
-        )
+        if not w_layout:
+            self.weight = ms.Parameter(
+                Tensor(np.ones([input_size, output_size]).astype(np.float32)),
+                name='weight'
+            )
+        else:
+            self.weight = ms.Parameter(
+                ms.parallel.DTensor.from_local(Tensor(np.ones([input_size, output_size]).astype(np.float32)), w_layout),
+                name='weight'
+            )
 
         self.relu = ms.mint.nn.ReLU()
 
@@ -43,13 +51,6 @@ class SimpleModel(nn.Cell):
         x = ms.mint.matmul(x, self.weight)
         x = self.relu(x)
         return x
-
-
-def create_dtensor(data, layout):
-    """create_dtensor"""
-    tensor = Tensor(data, dtype=ms.float32)
-    return tensor.local_to_global(layout)
-
 
 def create_tensor(data):
     """create tensor"""
@@ -85,9 +86,8 @@ def run_standalone(x, input_size, output_size):
 
 def run_parallel(local_x, local_input_size, local_output_size, x_layout, w_layout, relu_strategy, hsdp_shard_size):
     """run parallel"""
-    model = SimpleModel(local_input_size, local_output_size)
+    model = SimpleModel(local_input_size, local_output_size, w_layout)
 
-    model.weight = model.weight.local_to_global(w_layout)
     model.shard(in_strategy=(x_layout,))
     model.relu.shard(in_strategy=relu_strategy[0], out_strategy=relu_strategy[1])
     model = hsdp(model, shard_size=hsdp_shard_size)
@@ -106,7 +106,8 @@ def run_parallel(local_x, local_input_size, local_output_size, x_layout, w_layou
     for epoch in range(epochs):
         start = time.time()
         (loss_value, grads) = grad_fn(x)
-        optimizer(grads)
+        with NoFallbackGuard():
+            optimizer(grads)
         end = time.time()
         ret_loss = loss_value
         ret_grads = grads

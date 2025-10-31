@@ -18,18 +18,23 @@ import mindspore as ms
 from mindspore import nn, Tensor, mint
 from mindspore.communication.management import init, get_rank, get_group_size
 from mindspore.parallel.mpmd.pipeline_parallel import Schedule1F1B, PipelineStage, SharedParameterInfo
-from mindspore.parallel import Layout
+from mindspore.parallel import Layout, DTensor
 from mindspore.parallel.spmd.hsdp import hsdp
 
 
 class MLP(nn.Cell):
     """MLP net."""
-    def __init__(self, in_size, out_size, compute_dtype=np.float32):
+    def __init__(self, in_size, out_size, compute_dtype=np.float32, w_layout=None):
         super().__init__()
         # initializing with "ones" is for the convenience of precision compare
-        self.weight = ms.Parameter(
-            Tensor(np.ones([in_size, out_size]).astype(compute_dtype)),
-            name="weight")
+        if not w_layout:
+            self.weight = ms.Parameter(
+                Tensor(np.ones([in_size, out_size]).astype(compute_dtype)),
+                name="weight")
+        else:
+            self.weight = ms.Parameter(
+                ms.parallel.DTensor.from_local(Tensor(np.ones([in_size, out_size]).astype(compute_dtype)), w_layout),
+                name="weight")
         self.relu = mint.nn.ReLU()
 
     def construct(self, x):
@@ -72,11 +77,11 @@ class SimpleMLPSingle(nn.Cell):
 
 class SimpleMLP(nn.Cell):
     """Simple MLP net."""
-    def __init__(self, num_layers, in_size, out_size):
+    def __init__(self, num_layers, in_size, out_size, w_layout=None):
         super().__init__()
         self.mlp_layers = nn.CellDict()
         for mlp_id in range(num_layers):
-            self.mlp_layers[str(mlp_id)] = MLP(in_size, out_size)
+            self.mlp_layers[str(mlp_id)] = MLP(in_size, out_size, w_layout=w_layout)
 
     def construct(self, x):
         for mlp in self.mlp_layers.values():
@@ -120,22 +125,20 @@ def run_parallel():
     device_num = get_group_size()
     device_num_per_stage = device_num // num_stages
     stage_index = rank_id // device_num_per_stage
-
-    model = SimpleMLP(4, 16, 16)
-    model_split_manual(model, stage_index, num_stages)
-
     dp = 2
     mp = 1
     layout = Layout((dp, mp), ("dp", "mp"),
                     rank_list=[device_num_per_stage*stage_index + i for i in range(device_num_per_stage)])
     x_layout = layout("dp", "None")
-    local_x = Tensor(np.ones((8, 16)), dtype=ms.float32)
-    local_x.local_to_global(x_layout)
+    local_x = DTensor.from_local(Tensor(np.ones((8, 16)), dtype=ms.float32), x_layout)
     w_layout = layout("None", "None")
+    model = SimpleMLP(4, 16, 16, w_layout=w_layout)
+    model_split_manual(model, stage_index, num_stages)
+
+
     shared_params = None
     if stage_index in [0, 3]:
         shared_params = [SharedParameterInfo(model.mlp_layers[str(stage_index)].weight, [0, 3])]
-    model.mlp_layers[str(stage_index)].weight.local_to_global(w_layout)
 
     model = hsdp(model, 2, 0, "level1", True)
 

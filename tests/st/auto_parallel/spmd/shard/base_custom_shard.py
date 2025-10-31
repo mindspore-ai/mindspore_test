@@ -17,12 +17,14 @@
 import time
 import numpy as np
 import mindspore as ms
+from mindspore._c_expression import NoFallbackGuard
 import mindspore.communication as comm
 import mindspore.communication.management as D
 from mindspore import nn, Tensor
 from mindspore.parallel import Layout, hsdp, init_parameters, custom_shard
 from mindspore.nn.utils import no_init_parameters
 from mindspore.common.initializer import initializer
+from tests.st.auto_parallel.utils import create_dtensor
 
 learning_rate = 0.01
 epochs = 2
@@ -62,7 +64,8 @@ class MLP(nn.Cell):
         if activation is not None:
             x = x + activation
         x = ms.mint.sum(x)
-        x = x.reduce_partial()
+        if isinstance(x, ms.parallel.DTensor):
+            x = x.reduce_partial()
         x = x + extra_loss
         return x
 
@@ -85,12 +88,6 @@ class ParallelModel(nn.Cell):
         return out
 
 
-def create_dtensor(data, layout):
-    """create_dtensor"""
-    tensor = Tensor(data, dtype=ms.float32)
-    return tensor.local_to_global(layout)
-
-
 def run_model(x, model, parallel=False):
     """rum model"""
     def forward_fn(data):
@@ -108,7 +105,8 @@ def run_model(x, model, parallel=False):
     for epoch in range(epochs):
         start = time.time()
         (loss_value, grads) = grad_fn(x)
-        optimizer(grads)
+        with NoFallbackGuard():
+            optimizer(grads)
         end = time.time()
         ret_loss = loss_value
         ret_grads = grads
@@ -154,7 +152,7 @@ def base_case(dp, mp, hsdp_shard_size):
     model.shard(in_strategy=(x_layout,), out_strategy=(out_layout,), parameter_plan={"weight": w_layout})
     model.mlp.shard(in_strategy=(mlp_x_layout,),
                     optional_in_strategy={"activation": mlp_activation_layout, "extra_loss": layout()},
-                    parameter_plan={"mlp.weight": mlp_w_layout})
+                    parameter_plan={"weight": mlp_w_layout})
     model.relu.shard(in_strategy=relu_strategy[0], out_strategy=relu_strategy[1])
 
     # step 3: hsdp

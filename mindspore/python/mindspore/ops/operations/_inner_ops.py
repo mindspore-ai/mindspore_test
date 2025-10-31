@@ -1048,7 +1048,7 @@ class DynamicStitch(PrimitiveWithCheck):
             data_dim = len(data_shape[i])
             extra = data_dim - indices_dim
             validator.check(f"extra dim of data[{i}]", extra,
-                            f"extra dim of data[0]", base_extra, validator.EQ, self.name)
+                            "extra dim of data[0]", base_extra, validator.EQ, self.name)
             validator.check(f"data[0].shape[{indices_dim0}:]", data_shape[0][indices_dim0:],
                             f"data[{i}].shape[{len(indices_shape[i])}:]",
                             data_shape[i][indices_dim:], validator.EQ, self.name)
@@ -1064,7 +1064,7 @@ class DynamicStitch(PrimitiveWithCheck):
             validator.check_tensor_dtype_valid(f'indices[{i}]', indices_type[i], mstype.int32, self.name)
             validator.check_tensor_dtype_valid(f'data[{i}]', data_type[i],
                                                mstype.number_type + (mstype.bool_,), self.name)
-            validator.check(f"type of data[{i}]", data_type[i], f"type of data[0]",
+            validator.check(f"type of data[{i}]", data_type[i], "type of data[0]",
                             data_type[0], validator.EQ, self.name)
         return data_type[0]
 
@@ -1495,7 +1495,7 @@ class PartitionedCall(PrimitiveWithInfer):
 
     @prim_attr_register
     def __init__(self, graph, executor_type=""):
-        super(PartitionedCall, self).__init__(self.__class__.__name__)
+        super().__init__(self.__class__.__name__)
         self.add_prim_attr("executor_type", executor_type)
         self.graph = graph
 
@@ -1559,7 +1559,7 @@ class CellBackwardHook(PrimitiveWithInfer):
 
     def __init__(self, cell_id="", cell=None, hook_dict=None):
         """Initialize CellBackwardHook"""
-        super(CellBackwardHook, self).__init__(self.__class__.__name__)
+        super().__init__(self.__class__.__name__)
         self.cell_id = cell_id
         self.cell = cell
         self.hook_dict = weakref.ref(hook_dict)
@@ -1585,11 +1585,6 @@ class CellBackwardHook(PrimitiveWithInfer):
             return args if is_tuple else args[0]
 
         new_tensors = pyboost_cell_backward_hook(self, (tensors,))
-
-        # Restore layout attribute
-        for new_t, origin_t in zip(new_tensors, tensors):
-            if hasattr(origin_t, "_layout"):
-                new_t.local_to_global(origin_t.layout)
         # Replace the original Tensor arguments with the processed ones
         arg_list = list(args)
         for idx, val in zip(tensors_idx, new_tensors):
@@ -1719,8 +1714,8 @@ class Format(PrimitiveWithInfer):
             return {'dtype': mstype.string, 'shape': [], 'value': None}
 
         str_value = str_['value']
-        kwargs = dict()
-        var_value = list()
+        kwargs = {}
+        var_value = []
 
         for item in var:
             if isinstance(item["dtype"], typing.Keyword):
@@ -2018,7 +2013,7 @@ class CheckBprop(PrimitiveWithInfer):
 
     def infer_shape(self, xshapes, yshapes):
         """infer shape"""
-        tips = f"user defined method 'bprop'"
+        tips = "user defined method 'bprop'"
         validator.check_value_type('grads', xshapes, (tuple,), tips)
         validator.check_value_type('params', yshapes, (tuple,), tips)
         if not len(xshapes) == len(yshapes):
@@ -2050,7 +2045,7 @@ class CheckBprop(PrimitiveWithInfer):
 
     def infer_dtype(self, xdtypes, ydtypes):
         """infer dtype"""
-        tips = f"user defined method 'bprop'"
+        tips = "user defined method 'bprop'"
         validator.check_value_type('grads', xdtypes, (tuple,), tips)
         validator.check_value_type('params', ydtypes, (tuple,), tips)
         if not len(xdtypes) == len(ydtypes):
@@ -2245,7 +2240,6 @@ class GetGrad(Primitive):
                 else:
                     nonlocal output
                     output = grads[1]
-                    return
 
         _get_grad(gradients, hash_id)
         if output is None:

@@ -12,13 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+"""test parallel embedding"""
 
 import numpy as np
 import mindspore as ms
 import mindspore.communication.management as D
 from mindspore import nn, Tensor
-from mindspore.parallel import Layout
-import mindspore.ops as ops
+from mindspore.parallel import Layout, DTensor
+from mindspore import ops
 
 D.init()
 ms.set_context(pynative_synchronize=True)
@@ -37,13 +38,6 @@ class SimpleNet(nn.Cell):
         x = ms.mint.nn.ReLU()(x)
         x = x + 1
         return x
-
-
-def create_dtensor(data, layout):
-    """create_dtensor"""
-    tensor = Tensor(data, dtype=ms.float32)
-    return tensor.local_to_global(layout)
-
 
 def print_layout_info(tensor, name):
     """print_layout_info"""
@@ -65,10 +59,10 @@ def run_scenario(scenario_name, x_layout, w_layout, x_shape, w_shape):
     print("=" * 80)
 
     # Create Dtensor
-    x = Tensor(np.ones(x_shape), ms.int32).local_to_global(x_layout)
-    w = Tensor(
+    x = DTensor.from_local(Tensor(np.ones(x_shape), ms.int32), x_layout)
+    w = DTensor.from_local(Tensor(
         np.random.randn(*w_shape).astype(np.float32), dtype=ms.float32
-    ).local_to_global(w_layout)
+    ), w_layout)
 
     print_layout_info(x, "Input X")
     print_layout_info(w, "Input W")

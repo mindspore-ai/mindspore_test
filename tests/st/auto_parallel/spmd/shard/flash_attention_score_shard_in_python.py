@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+"""test flash attention score shard in python"""
 
 import numpy as np
 import math
@@ -23,7 +24,7 @@ from mindspore import Tensor
 from mindspore.parallel import Layout
 from mindspore.parallel.spmd.ops.parallel_flash_attention_score import ParallelFlashAttention
 from mindspore.ops import flash_attention_score
-from tests.st.auto_parallel.python_shard.utils import global_to_local, local_to_global
+from tests.st.auto_parallel.utils import global_to_local, local_to_global
 
 
 def setup_module():
@@ -32,6 +33,7 @@ def setup_module():
 
 
 def generate_inputs(B, N1, N2, S1, S2, Dqkv, input_layout, dtype, return_tensor=True):
+    """generate inputs"""
     min_value = -1
     max_value = 1
     if input_layout == "BSH":
@@ -55,7 +57,7 @@ def generate_inputs(B, N1, N2, S1, S2, Dqkv, input_layout, dtype, return_tensor=
         key = np.random.uniform(min_value, max_value, [B * S2, N2, Dqkv])
         value = np.random.uniform(min_value, max_value, [B * S2, N2, Dqkv])
     else:
-        raise ValueError(f"input_layout is invalid.")
+        raise ValueError("input_layout is invalid.")
     real_shift = None
     attn_mask = np.triu(np.ones([B, 1, S1, S2]))
     prefix = None

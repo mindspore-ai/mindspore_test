@@ -16,19 +16,28 @@
 import time
 import numpy as np
 import mindspore as ms
+from mindspore._c_expression import NoFallbackGuard
 from mindspore import nn, Tensor, mint
 from mindspore.nn.utils import no_init_parameters
 from mindspore.communication.management import init, get_rank, get_group_size
 from mindspore.parallel.mpmd.pipeline_parallel import Schedule1F1B, PipelineStage
-from mindspore.parallel import Layout, hsdp, init_parameters
+from mindspore.parallel import Layout, hsdp, init_parameters, DTensor
 from mindspore.common.initializer import initializer
 
 
 class MLP(nn.Cell):
     """MLP net."""
-    def __init__(self, hidden_size):
+    def __init__(self, hidden_size, compute_dtype=np.float32, w_layout=None):
         super().__init__()
-        self.weight = ms.Parameter(initializer("ones", [hidden_size, hidden_size], ms.float32), name='weight')
+        # initializing with "ones" is for the convenience of precision compare
+        if not w_layout:
+            self.weight = ms.Parameter(
+                initializer("ones", [hidden_size, hidden_size], ms.float32),
+                name="weight")
+        else:
+            self.weight = ms.Parameter(
+                ms.parallel.DTensor.from_local(initializer("ones", [hidden_size, hidden_size], ms.float32), w_layout),
+                name="weight")
         self.relu = mint.nn.ReLU()
 
     def construct(self, x):
@@ -39,11 +48,11 @@ class MLP(nn.Cell):
 
 class SimpleMLP(nn.Cell):
     """SimpleMLP net."""
-    def __init__(self, num_layers, hidden_size):
+    def __init__(self, num_layers, hidden_size, w_layout=None):
         super().__init__()
         self.mlp_layers = nn.CellDict()
         for mlp_id in range(num_layers):
-            self.mlp_layers[str(mlp_id)] = MLP(hidden_size)
+            self.mlp_layers[str(mlp_id)] = MLP(hidden_size, w_layout=w_layout)
 
     def construct(self, x):
         for mlp in self.mlp_layers.values():
@@ -114,8 +123,8 @@ def test_base_pp():
         w_layout = layout("None", "None")
         out_layout = layout("dp", "None")
 
-    model.mlp_layers[str(stage_index)].shard(in_strategy=(in_layout,), out_strategy=(out_layout,),
-                                             parameter_plan={f"{stage_index}.weight": w_layout})
+    model.shard(in_strategy=(in_layout,), out_strategy=(out_layout,),
+                parameter_plan={f"{stage_index}.weight": w_layout})
 
     # step 4: hsdp
     model = hsdp(model, shard_size=2, threshold=0, optimizer_level="level1", enable_grad_accumulation=True)
@@ -133,8 +142,7 @@ def test_base_pp():
     x_layout = layout("dp", "mp")
     local_batch_size = 8
     local_hidden_size = 16
-    local_x = Tensor(np.ones((local_batch_size, local_hidden_size)), dtype=ms.float32)
-    x = create_dtensor(local_x, x_layout)
+    x = DTensor.from_local(Tensor(np.ones((local_batch_size, local_hidden_size)), dtype=ms.float32), x_layout)
 
     optimizer = nn.Adam(model.trainable_params(), learning_rate=0.01)
 
@@ -147,7 +155,8 @@ def test_base_pp():
             loss, grads = schedule.run(x)
         else:
             loss, grads = schedule.run()
-        optimizer(grads)
+        with NoFallbackGuard():
+            optimizer(grads)
         end = time.time()
         print(f"[parallel] Epoch: {epoch+1}/{epochs}, Loss: {loss}, Time: {end - start}")
 

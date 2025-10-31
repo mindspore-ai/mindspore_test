@@ -18,12 +18,15 @@ import time
 import pytest
 import numpy as np
 import mindspore as ms
+from mindspore._c_expression import NoFallbackGuard
 import mindspore.communication.management as D
 import mindspore.common.dtype as mstype
-from mindspore import nn, Tensor, Parameter, ops
+from mindspore import nn, Tensor, Parameter
 from mindspore.parallel import Layout
+from mindspore.parallel import init_parameters
 from mindspore.common.initializer import initializer
-from tests.st.auto_parallel.python_shard.utils import global_to_local, local_to_global
+from mindspore import ops
+from tests.st.auto_parallel.utils import create_dtensor, global_to_local, local_to_global
 
 
 def setup_module():
@@ -56,19 +59,21 @@ class SimpleNet(nn.Cell):
     def construct(self, x):
         for cell in self.cell_list:
             x = cell(x)
+            x = x.contiguous()
         return x
 
 
 class SimpleModel(nn.Cell):
     """simple model"""
-    def __init__(self, input_size, output_size, strategy_list):
+    def __init__(self, input_size, output_size, strategy_list, w_layout=None, gamma_layout=None):
         super().__init__()
         self.weight = ms.Parameter(
-            Tensor(np.random.randn(input_size, output_size).astype(np.float16)),
+            ms.parallel.DTensor.from_local(Tensor(np.random.randn(input_size, output_size).astype(np.float32)),
+                                           w_layout),
             name='weight'
         )
         self.gamma = ms.Parameter(
-            Tensor(np.random.randn(output_size).astype(np.float16)),
+            ms.parallel.DTensor.from_local(Tensor(np.random.randn(output_size).astype(np.float32)), gamma_layout),
             name='gamma'
         )
         self.cell_list = ms.nn.CellList()
@@ -83,12 +88,6 @@ class SimpleModel(nn.Cell):
         for cell in self.cell_list:
             x = cell(x)
         return x
-
-
-def create_dtensor(data, layout):
-    """create_dtensor"""
-    tensor = Tensor(data, dtype=ms.float16)
-    return tensor.local_to_global(layout)
 
 
 def print_layout_info(tensor, name):
@@ -135,8 +134,8 @@ def run_scenario_with_bprop(x_layout, w_layout, target_layout, strategy_list):
     learning_rate = 0.01
     epochs = 10
 
-    model = SimpleModel(input_size, output_size, strategy_list)
-    loss_fn = nn.MSELoss()
+    model = SimpleModel(input_size, output_size, strategy_list, w_layout = w_layout, gamma_layout = w_layout("None"))
+    loss_fn = nn.MSELoss(reduction='none')
 
     def forward_fn(data, label):
         logits = model(data)
@@ -150,14 +149,13 @@ def run_scenario_with_bprop(x_layout, w_layout, target_layout, strategy_list):
     x = create_dtensor(np_x, x_layout)
     target = create_dtensor(np_target, target_layout)
     print_layout_info(x, "Input X")
-    model.weight = model.weight.local_to_global(w_layout)
-    model.gamma = model.gamma.local_to_global(w_layout('None'))
     print_layout_info(model.weight, "Input w")
     print_layout_info(target, "Input target")
     for epoch in range(epochs):
         start = time.time()
         (loss_value, grads) = grad_fn(x, target)
-        optimizer(grads)
+        with NoFallbackGuard():
+            optimizer(grads)
         end = time.time()
         print(f"Epoch: {epoch+1}/{epochs}, Loss: {loss_value}, Time: {end - start}")
 
@@ -435,6 +433,7 @@ def test_cell_shard_with_parameter_plan(lazy_init):
     x_local = global_to_local(x, x_layout)
     parallel_net.shard(in_strategy=(layout("dp", "mp"),), parameter_plan={"weight": w_layout})
     parallel_net.relu_net.shard(in_strategy=(layout("dp", "mp"),))
+    init_parameters(parallel_net)
     parallel_output = parallel_net(x_local)
 
     # Validate

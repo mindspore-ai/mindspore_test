@@ -21,15 +21,17 @@ from mindspore.ops.operations import _inner_ops as inner
 import mindspore.communication.management as D
 from mindspore import nn, Tensor
 from mindspore.parallel import Layout
+from tests.st.auto_parallel.utils import create_dtensor
 
 ms.set_context(mode=ms.PYNATIVE_MODE)
 D.init()
 class SimpleModel(nn.Cell):
     """simple model"""
-    def __init__(self, input_size, output_size):
+    def __init__(self, input_size, output_size, w_layout):
         super().__init__()
         self.weight = ms.Parameter(
-            Tensor(np.random.randn(input_size, output_size).astype(np.float32)),
+            ms.parallel.DTensor.from_local(Tensor(np.random.randn(input_size, output_size).astype(np.float32)),
+                                           w_layout),
             name='weight'
         )
 
@@ -38,11 +40,6 @@ class SimpleModel(nn.Cell):
         x = ms.mint.nn.ReLU()(x)
         x = x + 1
         return x
-
-def create_dtensor(data, layout):
-    """create_dtensor"""
-    tensor = Tensor(data, dtype=ms.float32)
-    return tensor.local_to_global(layout)
 
 def print_layout_info(tensor, name):
     """print_layout_info"""
@@ -64,7 +61,7 @@ def run_network(x_layout, w_layout, target_layout):
     learning_rate = 0.01
     epochs = 10
 
-    model = SimpleModel(input_size, output_size)
+    model = SimpleModel(input_size, output_size, w_layout)
     loss_fn = nn.MSELoss()
 
     def forward_fn(data, label):
@@ -79,7 +76,6 @@ def run_network(x_layout, w_layout, target_layout):
     x = create_dtensor(np_x, x_layout)
     target = create_dtensor(np_target, target_layout)
     print_layout_info(x, "Input X")
-    model.weight = model.weight.local_to_global(w_layout)
     print_layout_info(model.weight, "Input w")
     print_layout_info(target, "Input target")
     for epoch in range(epochs):

@@ -39,7 +39,7 @@ from typing import (
 
 import weakref
 import mindspore as ms
-import mindspore.ops as ops
+from mindspore import ops
 from mindspore._checkparam import args_type_check, check_hook_fn
 from mindspore.common.dynamic_shape._auto_dynamic import is_auto_dynamic, convert_inputs_to_dynamic
 from mindspore import log as logger
@@ -237,7 +237,7 @@ class Cell(Cell_):
         super().__setattr__("_lazy_user_parameters", None)
         super().__setattr__("_dynamic_shape_inputs", None)
         super().__setattr__("_has_mutable_args_list", None)
-        super().__setattr__("_jit_config_dict", dict())
+        super().__setattr__("_jit_config_dict", {})
         super().__setattr__("grad_ops_label", False)
         super().__setattr__("_is_check_and_refresh", False)
         super().__setattr__("_amp_level", "")
@@ -318,7 +318,7 @@ class Cell(Cell_):
     def phase_cache(self):
         """phase_cache"""
         if self._phase_cache is None:
-            super().__setattr__("_phase_cache", dict())
+            super().__setattr__("_phase_cache", {})
         return self._phase_cache
 
     @property
@@ -1042,7 +1042,7 @@ class Cell(Cell_):
         .. warning::
             This interface will be deprecated in future versions.
         """
-        logger.warning(f"'cast_inputs' will be deprecated in future versions.")
+        logger.warning("'cast_inputs' will be deprecated in future versions.")
 
     def run_construct(self, cast_inputs, kwargs):
         """
@@ -1119,14 +1119,14 @@ class Cell(Cell_):
         if len(args) > positional_args + default_args:
             construct_inputs_names = self.construct.__code__.co_varnames
             if 'self' not in construct_inputs_names:
-                raise TypeError(f"For 'Cell', the method 'construct' must have parameter 'self'. ")
+                raise TypeError("For 'Cell', the method 'construct' must have parameter 'self'. ")
 
             raise TypeError(f"For 'Cell', the function construct requires {positional_args} positional argument and "
                             f"{default_args} default argument, total {positional_args + default_args}, "
                             f"but got {len(args)}.")
 
     def _get_prims_recursively(self):
-        all_prims = list()
+        all_prims = []
         for _, value in self._primitives.items():
             if value:
                 all_prims.append(value)
@@ -1321,19 +1321,23 @@ class Cell(Cell_):
             self._out_strategy = shard_fn.out_strategy
         else:
             if parameter_plan is not None:
+
                 for param_name, layout in parameter_plan.items():
-                    param = self._search_parameter_by_name(param_name)
-                    if param is None:
-                        logger.warning(
-                            f"{param_name} is not exist, ignored its setting.")
-                        continue
                     if not isinstance(layout, Layout):
                         raise ValueError(f"In python shard, the type of setting in parameter_plan must be Layout, "
                                          f"but got type {type(layout)}")
-                    if param.layout is not None:
+                    result = self._search_parameter_by_name(param_name)
+                    if not result:
+                        logger.warning(
+                            f"{param_name} is not exist, ignored its setting.")
+                        continue
+                    _, _, param = result
+
+                    if isinstance(param, ms.parallel.DTensor):
                         raise ValueError(f"Parameter {param.name} has been configured layout, "
                                          f"cannot be set repeatedly.")
-                    Shard._set_layout_into_parameter(param, layout)
+                    param = Shard._set_layout_into_parameter(param, layout)
+                    self._update_parameter_by_name(result, param)
             self._check_parallel_strategy(in_strategy, "in_strategy")
             if out_strategy is not None:
                 self._check_parallel_strategy(out_strategy, "out_strategy")
@@ -1349,8 +1353,56 @@ class Cell(Cell_):
         self.out_layout = out_strategy
         self.optional_in_layout = optional_in_strategy
 
-    def _search_parameter_by_name(self, param_name):
-        return self.parameters_dict().get(param_name.replace("self.", ""), None)
+    def _search_parameter_by_name(self, param_name: str):
+        """
+        Find the parent Cell of the parameter, the parameter's name in the parent Cell, and the parameter object itself
+        Return value: (parent Cell instance, parameter's name in parent Cell, parameter object).
+        Returns None if not found.
+        """
+        # Remove the "self." prefix from param_name (to maintain compatibility with original logic)
+        param_name = param_name.replace("self.", "")
+        # Case 1: The parameter is a direct parameter of the current Cell (not in any sub-Cell)
+        if param_name in self._params:
+            return (self, param_name, self._params[param_name])
+
+        # Case 2: The parameter is in a sub-Cell (supports multi-level nesting, e.g., "net_b.dense1.weight")
+        if "." in param_name:
+            # Split into: sub-Cell path + parameter name (e.g., "net_b.dense1" + "weight")
+            cell_path, param_key = param_name.rsplit(".", 1)
+            try:
+                # Locate the sub-Cell where the parameter resides (supports multi-level paths)
+                target_cell = self.get_sub_cell(cell_path)
+                # Check if the sub-Cell directly contains this parameter
+                if param_key in target_cell._params:
+                    return (target_cell, param_key, target_cell._params[param_key])
+            except AttributeError:
+                # Sub-Cell path does not exist or the parameter is not in that sub-Cell
+                pass
+
+        # Traverse all sub-Cells (recursively) to search for the parameter
+        for _, child_cell in self._cells.items():
+            if isinstance(child_cell, Cell):
+                # Recursively search within the sub-Cell
+                result = child_cell._search_parameter_by_name(param_name)
+                if result is not None:
+                    return result
+
+        return None
+
+    def _update_parameter_by_name(self, result: tuple, new_param: Parameter) -> bool:
+        """
+        Modify the original parameter in a Cell or sub-Cell using the search result
+        Args:
+            result: The tuple returned by _search_parameter_by_name (contains parent Cell, parameter key, old parameter)
+            new_param: New Parameter object (used to replace the original parameter)
+        """
+        parent_cell, param_key, _ = result
+        # Key operation: directly modify the _params dictionary of the parent Cell (original storage location)
+        parent_cell._params[param_key] = new_param
+
+        if param_key in parent_cell.__dict__:
+            parent_cell.__dict__[param_key] = new_param
+        parent_cell._params_list[param_key] = new_param
 
     def _init_check(self):
         for param in self.get_parameters(expand=False):
@@ -1524,7 +1576,7 @@ class Cell(Cell_):
 
     def _add_attr(self, name, value):
         if name and name[:2] != '__' and name not in Cell.IGNORE_LIST:
-            super(Cell, self)._add_attr(name, value)
+            super()._add_attr(name, value)
 
     def _set_attr_for_param_or_param_tuple(self, name, value):
         """Set attr for param and tensor."""
@@ -1716,8 +1768,8 @@ class Cell(Cell_):
             >>> output = net2(input)
         """
         if self.grad_ops_label:
-            logger.warning(f'For Cell, set_inputs must be set before the gradient function of the network is '
-                           f'generated.')
+            logger.warning('For Cell, set_inputs must be set before the gradient function of the network is '
+                           'generated.')
         if kwargs and inputs:
             raise ValueError('For Cell, set_inputs should only set inputs or kwargs(inputs: %s, kwargs: %s)!'
                              % (inputs, kwargs))
@@ -1878,11 +1930,11 @@ class Cell(Cell_):
             Parameter(name=bias, shape=(3,), dtype=Int64, requires_grad=True)
         """
         if not param_name:
-            raise KeyError(f"For 'insert_param_to_cell', the argument 'param_name' should not be None.")
+            raise KeyError("For 'insert_param_to_cell', the argument 'param_name' should not be None.")
         if check_name_contain_dot and '.' in param_name:
-            raise KeyError(f"For 'insert_param_to_cell', the argument 'param_name' should not contain'.' ")
+            raise KeyError("For 'insert_param_to_cell', the argument 'param_name' should not contain'.' ")
         if '_params' not in self.__dict__:
-            raise AttributeError(f"For 'insert_param_to_cell', please call Cell.__init__() firstly.")
+            raise AttributeError("For 'insert_param_to_cell', please call Cell.__init__() firstly.")
         if hasattr(self, param_name) and param_name not in self._params:
             raise KeyError(f"For 'insert_param_to_cell', the {param_name} parameter already exists in the network."
                            f"Cannot insert another parameter with the same name.")
@@ -1922,7 +1974,7 @@ class Cell(Cell_):
             raise TypeError(f"For 'insert_child_to_cell', the type of parameter 'child_name' must be str, "
                             f"but got {type(child_name)}.")
         if not child_name or '.' in child_name:
-            raise KeyError(f"For 'insert_child_to_cell', the parameter 'child_name' can not be None and "
+            raise KeyError("For 'insert_child_to_cell', the parameter 'child_name' can not be None and "
                            "can not contain '.' ")
         if hasattr(self, child_name) and child_name not in self._cells:
             raise KeyError(f"For 'insert_child_to_cell', the {child_name} child cell already exists in the network."
@@ -1955,7 +2007,7 @@ class Cell(Cell_):
         .. warning::
             This interface will be deprecated in future versions.
         """
-        logger.warning(f"'remove_redundant_parameters' will be deprecated in future versions.")
+        logger.warning("'remove_redundant_parameters' will be deprecated in future versions.")
 
     def _get_cell_parallel_mode(self):
         """Determine whether the current cell is in parallel mode."""
@@ -1999,7 +2051,7 @@ class Cell(Cell_):
              Parameter (name=dense.bias, shape=(2,), dtype=Float32, requires_grad=True):
              Parameter (name=dense.bias, shape=(2,), dtype=Float32, requires_grad=True)}
         """
-        replace = dict()
+        replace = {}
 
         def _updata(param):
             if param in replace:
@@ -2317,7 +2369,7 @@ class Cell(Cell_):
                 cells_name_prefix = name
                 if name_prefix:
                     cells_name_prefix = name_prefix + '.' + cells_name_prefix
-                for ele in cell.cells_and_names(t_cells, cells_name_prefix):
+                for ele in cell.cells_and_names(t_cells, cells_name_prefix): # pylint: disable=R1737
                     yield ele
 
     def cells(self):
@@ -3707,7 +3759,7 @@ class Cell(Cell_):
         """
         self._recompute_cell = recompute_registry.get()(self.construct)
         self._recompute()
-        if 'mp_comm_recompute' in kwargs.keys():
+        if 'mp_comm_recompute' in kwargs:
             self._mp_comm_recompute(kwargs.get('mp_comm_recompute', False))
         if 'parallel_optimizer_comm_recompute' in kwargs:
             if kwargs.get('parallel_optimizer_comm_recompute', False):
@@ -3840,7 +3892,7 @@ class GraphCell(Cell):
     """
 
     def __init__(self, graph, params_init=None, obf_random_seed=None):
-        super(GraphCell, self).__init__(auto_prefix=True)
+        super().__init__(auto_prefix=True)
         if obf_random_seed is not None:
             raise NotImplementedError("Dynamic structure obfuscation is not supported now.")
         if not isinstance(graph, FuncGraph):

@@ -16,7 +16,7 @@
 Distributed implementation for MatMul operator.
 """
 
-import mindspore.nn as nn
+from mindspore import nn
 from mindspore import Tensor
 from mindspore.ops import flash_attention_score
 from mindspore.parallel import Layout, custom_shard
@@ -127,11 +127,11 @@ class ParallelFlashAttention(nn.Cell):
                  input_layout='BSH',
                  sparse_mode=0
                  ):
-        super(ParallelFlashAttention, self).__init__()
+        super().__init__()
         self._in_layouts = None
         self._out_layouts = None
         if input_layout.find('T') != -1:
-            raise ValueError(f"Do not support FlashAttentionVarLen currently.")
+            raise ValueError("Do not support FlashAttentionVarLen currently.")
 
         self._batch_dim, self._seq_dim, self._head_num_dim = self._infer_dim_by_layout(input_layout)
 
@@ -156,13 +156,13 @@ class ParallelFlashAttention(nn.Cell):
     def construct(self, query, key, value, attn_mask):
         # TODO: actual_seq_qlen/kv_len is tuple type, cannot be described by dtensor
         if self._in_layouts is None or self._out_layouts is None:
-            raise ValueError(f"Please call the shard function first.")
+            raise ValueError("Please call the shard function first.")
         _, head_num_split_num, _ = self._infer_split_dim_by_in_strategy()
         input_args = (query, key, value, self._head_num // head_num_split_num, self._real_shift, self._drop_mask,
                       self._padding_mask, attn_mask, self._prefix, self._actual_seq_qlen, self._actual_seq_kvlen,
                       self._keep_prob, self._scalar_value, self._pre_tokens, self._next_tokens, self._inner_precise,
                       self._input_layout, self._sparse_mode)
-        in_layout_with_non_tensor = self._insert_none_for_non_tensor_arg(self._input_layout, input_args)
+        in_layout_with_non_tensor = self._insert_none_for_non_tensor_arg(self._in_layouts, input_args)
         self._wrap_func = custom_shard(flash_attention_score, self._out_layouts, in_layout_with_non_tensor)
         return self._wrap_func(*input_args)
 
@@ -172,15 +172,18 @@ class ParallelFlashAttention(nn.Cell):
                              f"sharding strategy.")
 
         if not isinstance(in_strategy, tuple) or any(not isinstance(ele, Layout) for ele in in_strategy):
-            raise ValueError(f"The type of in_startegy must be Tuple[Layout].")
+            raise ValueError("The type of in_startegy must be Tuple[Layout].")
         if not isinstance(out_strategy, tuple) or any(not isinstance(ele, Layout) for ele in out_strategy):
-            raise ValueError(f"The type of out_strategy must be Tuple[Layout].")
+            raise ValueError("The type of out_strategy must be Tuple[Layout].")
         self._in_layouts = in_strategy
         self._out_layouts = out_strategy
-        super(ParallelFlashAttention, self).shard(in_strategy, out_strategy)
+        super().shard(in_strategy, out_strategy)
 
     @staticmethod
     def _insert_none_for_non_tensor_arg(layouts, args):
+        """_insert_none_for_non_tensor_arg"""
+        if not layouts:
+            raise ValueError("Flash attention need config in_layouts.")
         ret_layouts = [None] * len(args)
         tensor_indexes = [i for i in range(len(args)) if isinstance(args[i], Tensor)]
         if len(tensor_indexes) != len(layouts):
@@ -208,7 +211,7 @@ class ParallelFlashAttention(nn.Cell):
         batch_split_num = self._get_split_num(query_layout, self._batch_dim)
         head_num_split_num = self._get_split_num(query_layout, self._head_num_dim)
         seq_split_num = self._get_split_num(query_layout, self._seq_dim)
-        assert seq_split_num == 1, f"The sharding along sequence dimension is not support currently."
+        assert seq_split_num == 1, "The sharding along sequence dimension is not support currently."
         return batch_split_num, head_num_split_num, seq_split_num
 
     @staticmethod

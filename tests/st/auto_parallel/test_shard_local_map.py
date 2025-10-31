@@ -12,11 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+"""test shard local map"""
 
 import numpy as np
 import mindspore as ms
 import mindspore.communication.management as D
-from mindspore.parallel import Layout, custom_shard
+from mindspore.parallel import Layout, custom_shard, DTensor
 
 
 
@@ -32,8 +33,8 @@ layout_dp_mp = Layout(device_matrix=(2, 2), alias_name=("dp", "mp"))("dp", "mp")
 def create_dist_tensor(layout):
     """create_dist_tensor"""
     tensor = ms.Tensor(np.array([1.0, 2.0]), dtype=ms.float32)
-    tensor = tensor.local_to_global(layout)
-    return tensor
+    dtensor = DTensor.from_local(tensor, layout)
+    return dtensor
 
 D.init()
 

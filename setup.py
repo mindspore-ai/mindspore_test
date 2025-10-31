@@ -60,35 +60,35 @@ def _write_package_name(file):
 def build_dependencies():
     """generate python file"""
     version_file = os.path.join(pkg_dir, 'mindspore', 'version.py')
-    with open(version_file, 'w') as f:
+    with open(version_file, 'w') as f: # pylint: disable=W1514
         _write_version(f)
 
     version_file = os.path.join(pwd, 'mindspore/python/mindspore', 'version.py')
-    with open(version_file, 'w') as f:
+    with open(version_file, 'w') as f: # pylint: disable=W1514
         _write_version(f)
 
     config_file = os.path.join(pkg_dir, 'mindspore', 'default_config.py')
-    with open(config_file, 'w') as f:
+    with open(config_file, 'w') as f: # pylint: disable=W1514
         _write_config(f)
 
     config_file = os.path.join(pwd, 'mindspore/python/mindspore', 'default_config.py')
-    with open(config_file, 'w') as f:
+    with open(config_file, 'w') as f: # pylint: disable=W1514
         _write_config(f)
 
     package_info = os.path.join(pkg_dir, 'mindspore', 'default_config.py')
-    with open(package_info, 'a') as f:
+    with open(package_info, 'a') as f: # pylint: disable=W1514
         _write_package_name(f)
 
     package_info = os.path.join(pwd, 'mindspore/python/mindspore', 'default_config.py')
-    with open(package_info, 'a') as f:
+    with open(package_info, 'a') as f: # pylint: disable=W1514
         _write_package_name(f)
 
     commit_file = os.path.join(pkg_dir, 'mindspore', '.commit_id')
-    with open(commit_file, 'w') as f:
+    with open(commit_file, 'w') as f: # pylint: disable=W1514
         _write_commit_file(f)
 
     commit_file = os.path.join(pwd, 'mindspore/python/mindspore', '.commit_id')
-    with open(commit_file, 'w') as f:
+    with open(commit_file, 'w') as f: # pylint: disable=W1514
         _write_commit_file(f)
 
 
@@ -150,7 +150,8 @@ package_data = {
         'include/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*',
         'include/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*',
         'Third_Party_Open_Source_Software_Notice'
-    ]
+    ],
+    'mindspore.parallel.spmd.ops': ['yaml/*.yaml']
 }
 
 

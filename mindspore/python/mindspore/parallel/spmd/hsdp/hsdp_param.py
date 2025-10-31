@@ -23,6 +23,7 @@ from mindspore.common.initializer import initializer
 from mindspore.common.dtype import type_size_in_bytes
 from mindspore.parallel.spmd.hsdp.hsdp_utils import OptimizerLevel
 import mindspore.parallel.spmd.hsdp.hsdp_comm as comm
+from mindspore.parallel import DTensor
 
 
 class HSDPParam:
@@ -64,16 +65,16 @@ class HSDPParam:
             self.shard_size = self.param.hsdp_shard_size
         else:
             self.shard_size = self.config.shard_size
-
-        if len(self.param.local_shape) < 1:
+        local_shape = self.param.local_shape if isinstance(self.param, DTensor) else self.param.shape
+        if len(local_shape) < 1:
             self.shard_size = 1
             return
-        param_size = functools.reduce(lambda x, y: x * y, self.param.local_shape, type_size_in_bytes(self.param.dtype))
+        param_size = functools.reduce(lambda x, y: x * y, local_shape, type_size_in_bytes(self.param.dtype))
         if param_size < self.config.threshold:
             self.shard_size = 1
             return
-        if self.shard_size == -1 or self.param.local_shape[0] < self.shard_size:
-            self.shard_size = self.param.local_shape[0]
+        if self.shard_size == -1 or local_shape[0] < self.shard_size:
+            self.shard_size = local_shape[0]
 
         def _gcd(m, n):
             if m < n:
@@ -85,7 +86,7 @@ class HSDPParam:
                 return n
             return _gcd(n, r)
 
-        rank_gcd = _gcd(self.param.local_shape[0], self.rank_size)
+        rank_gcd = _gcd(local_shape[0], self.rank_size)
         self.shard_size = min(self.shard_size, rank_gcd)
         if rank_gcd % self.shard_size != 0:
             self.shard_size = 1
@@ -97,7 +98,7 @@ class HSDPParam:
         self.hsdp_rank = self.rank_id
         self.local_rank = self.rank_id
         self.tp_rank = 0
-        if self.param.layout is None:
+        if not isinstance(self.param, DTensor) or self.param.layout is None:
             self.rank_size = get_group_size()
             return
 
@@ -188,7 +189,7 @@ class HSDPParam:
 
     def _get_op_rank_list(self):
         """get data parallel rank list"""
-        if self.param.layout is None:
+        if not isinstance(self.param, DTensor):
             rank_base = self.local_rank // self.shard_size * self.shard_size
             rank_list = [i + rank_base for i in range(self.shard_size)]
             return rank_list
@@ -199,7 +200,7 @@ class HSDPParam:
 
     def _get_dp_rank_list(self):
         """get optimizer parallel rank list"""
-        if self.param.layout is None:
+        if not isinstance(self.param, DTensor):
             rank_stride = self.shard_size
             rank_base = self.local_rank % rank_stride
             rank_list = [i * rank_stride + rank_base for i in range(self.dp_size)]
@@ -236,36 +237,35 @@ class HSDPParam:
         """add and init sharded param"""
         if not self.param.has_init:
             slice_index = self.hsdp_rank % self.shard_size
-            if self.param.layout is None:
-                param_slice = ops.split(self.param, self.param.local_shape[0] // self.shard_size)[slice_index]
-            else:
-                layout = self.param.layout
-                self.param.to_local()
-                param_slice = ops.split(self.param, self.param.local_shape[0] // self.shard_size)[slice_index]
-                self.param.local_to_global(layout)
+            local_param = self.param.to_local() if isinstance(self.param, DTensor) else self.param
+            param_slice = ops.split(local_param, local_param.shape[0] // self.shard_size)[slice_index]
             self.sharded_param = Parameter(param_slice,
                                            name="sharded_"+self.param.name,
-                                           requires_grad=False)
+                                           requires_grad=self.param.requires_grad)
         else:
             dp_slice_index = self.hsdp_rank % self.shard_size
             data_slice_index = self.tp_rank * self.shard_size + dp_slice_index
-            init_shape = list(self.param.init_mode.local_shape)
+            init_mode_local_shape = self.param.init_mode.local_shape if isinstance(self.param.init_mode, DTensor) \
+                else self.param.init_mode.shape
+            init_shape = list(init_mode_local_shape)
             init_shape[0] = init_shape[0] // self.shard_size
-            self.param.init_mode.shape = init_shape
-            self.param.shape = init_shape
+            if isinstance(self.param.init_mode, DTensor):
+                self.param.init_mode.to_local().shape = init_shape
+            else:
+                self.param.init_mode.shape = init_shape
             self.param.hsdp_init_index = data_slice_index
             self.sharded_param = Parameter(initializer("zeros", init_shape, self.param.dtype),
                                            name="sharded_"+self.param.name,
-                                           requires_grad=False)
+                                           requires_grad=self.param.requires_grad)
 
     def _init_unsharded_param(self):
         """add and init unshared param when using graph hook"""
         if self.config.use_pynative_hook:
             return
-
-        self.unsharded_param = Parameter(initializer("zeros", self.param.local_shape, self.param.dtype),
+        local_shape = self.param.local_shape if isinstance(self.param, DTensor) else self.param.shape
+        self.unsharded_param = Parameter(initializer("zeros", local_shape, self.param.dtype),
                                          name="unsharded_"+self.param.name,
-                                         requires_grad=False)
+                                         requires_grad=self.param.requires_grad)
         self.unsharded_param_available = Parameter(Tensor(False),
                                                    name="available_unsharded_"+self.param.name,
                                                    requires_grad=False)
@@ -273,7 +273,8 @@ class HSDPParam:
     def _init_param(self):
         """init hsdp parameter"""
         self.param.acc_grad = None
-        param_size = functools.reduce(lambda x, y: x * y, self.param.local_shape, type_size_in_bytes(self.param.dtype))
+        local_shape = self.param.local_shape if isinstance(self.param, DTensor) else self.param.shape
+        param_size = functools.reduce(lambda x, y: x * y, local_shape, type_size_in_bytes(self.param.dtype))
         if self.shard_size == 1 or param_size < self.config.threshold:
             self.sharded = False
             self.fully_sharded = False
@@ -281,13 +282,13 @@ class HSDPParam:
                 acc_grad_type = self.param.dtype
                 if self.config.reduce_dtype is not None:
                     acc_grad_type = self.config.reduce_dtype
-                self.acc_grad = Parameter(initializer("zeros", self.param.local_shape, acc_grad_type),
+                self.acc_grad = Parameter(initializer("zeros", local_shape, acc_grad_type),
                                           name="acc_grad_"+self.param.name,
                                           requires_grad=False)
             self.param.acc_grad = self.acc_grad
             return
 
-        origin_param_shape = list(self.param.local_shape)
+        origin_param_shape = list(local_shape)
         self._init_unsharded_param()
         self._init_sharded_param()
         if self.config.requires_acc_grad and self.param.requires_grad:
@@ -311,16 +312,18 @@ class HSDPParam:
     @_no_grad()
     def to_sharded(self):
         """change parameter to sharded state"""
-        self.param.assign_value(self.sharded_param)
+        self.param.set_data(self.sharded_param)
 
     @_no_grad()
     def prefetch_unsharded(self):
         """prefetch unsharded param with async all gather"""
         if self.prefetch_handle is not None:
             return
-        unsharded_param_data, handle = comm.all_gather_into_tensor(self.param, group=self.sharded_group_name,
-                                                                   async_op=True)
-        self.prefetch_data = unsharded_param_data
+        unshared_param_data, handle = comm.all_gather_into_tensor(self.param.to_local()
+                                                                  if isinstance(self.param, DTensor)
+                                                                  else self.param, group=self.sharded_group_name,
+                                                                  async_op=True)
+        self.prefetch_data = unshared_param_data
         self.prefetch_handle = handle
 
     @_no_grad()
@@ -328,16 +331,17 @@ class HSDPParam:
         """change parameter to unsharded state"""
         if self.prefetch_handle is not None:
             self.prefetch_handle.wait()
-            self.sharded_param.assign_value(self.param)
-            self.param.assign_value(self.prefetch_data)
+            self.sharded_param.set_data(self.param)
+            self.param.set_data(self.prefetch_data)
             self.prefetch_handle = None
             self.prefetch_data = None
             return
 
-        unsharded_param_data, _ = comm.all_gather_into_tensor(self.param, group=self.sharded_group_name,
-                                                              async_op=False)
-        self.sharded_param.assign_value(self.param)
-        self.param.assign_value(unsharded_param_data)
+        unshared_param_data, _ = comm.all_gather_into_tensor(self.param.to_local()
+                                                             if isinstance(self.param, DTensor) else self.param,
+                                                             group=self.sharded_group_name, async_op=False)
+        self.sharded_param.set_data(self.param.to_local() if isinstance(self.param, DTensor) else self.param)
+        self.param.set_data(unshared_param_data)
 
     @_no_grad()
     def zero_acc_grad(self):

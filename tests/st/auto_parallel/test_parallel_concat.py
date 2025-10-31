@@ -12,12 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+"""test parallel concat"""
 
 import numpy as np
 import mindspore as ms
 import mindspore.communication.management as D
 from mindspore import nn, Tensor, mint
 from mindspore.parallel import Layout
+from tests.st.auto_parallel.utils import create_dtensor
 
 D.init()
 ms.set_context(pynative_synchronize=True)
@@ -57,12 +59,14 @@ def run_scenario(scenario_name, tensor_1_layout, tensor_2_layout,
     print("=" * 80)
 
     # Create Dtensor
-    tensor_1 = Tensor(
+    tensor_1 = create_dtensor(Tensor(
         np.random.randn(*tensor_1_shape).astype(np.float32), dtype=ms.float32
-    ).local_to_global(tensor_1_layout)
-    tensor_2 = Tensor(
+    ), tensor_1_layout)
+
+    tensor_2 = create_dtensor(Tensor(
         np.random.randn(*tensor_2_shape).astype(np.float32), dtype=ms.float32
-    ).local_to_global(tensor_2_layout)
+    ), tensor_2_layout)
+
     print_layout_info(tensor_1, "Input tensor_1")
     print_layout_info(tensor_2, "Input tensor_2")
 

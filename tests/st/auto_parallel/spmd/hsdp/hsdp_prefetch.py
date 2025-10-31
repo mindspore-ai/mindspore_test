@@ -20,6 +20,7 @@ from mindspore.parallel import hsdp
 from tests.st.auto_parallel.spmd.common_net import DenseMutiLayerNet
 from tests.st.auto_parallel.spmd.hsdp.hsdp_test_common import train_with_data_label
 
+init()
 
 def construct_net_and_data():
     hidden_size = 16384

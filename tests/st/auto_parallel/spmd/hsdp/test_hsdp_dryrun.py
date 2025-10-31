@@ -18,7 +18,7 @@ import os
 import numpy as np
 import mindspore as ms
 from mindspore import nn, Tensor
-from mindspore.parallel import Layout
+from mindspore.parallel import Layout, DTensor
 from mindspore.communication.management import init
 from mindspore.parallel import hsdp
 from tests.mark_utils import arg_mark
@@ -29,7 +29,7 @@ os.environ["RANK_SIZE"] = "32"
 os.environ["RANK_ID"] = "32"
 init()
 
-loss_fn = nn.MSELoss()
+loss_fn = nn.MSELoss(reduction='none')
 
 def get_forward_fn(net):
     def forward_fn(data, label):
@@ -131,10 +131,10 @@ def run_hsdp_with_layout(w1_layout, w2_layout, data_layout, label_layout):
     """
     net, data, label = construct_net_and_data()
 
-    global_data = data.local_to_global(data_layout)
-    global_label = label.local_to_global(label_layout)
-    net.dense1.weight = net.dense1.weight.local_to_global(w1_layout)
-    net.dense2.weight = net.dense2.weight.local_to_global(w2_layout)
+    global_data = DTensor.from_local(data, data_layout)
+    global_label = DTensor.from_local(label, label_layout)
+    net.dense1.weight = ms.Parameter(ms.parallel.DTensor.from_local(Tensor(net.dense1.weight.asnumpy()), w1_layout))
+    net.dense2.weight = ms.Parameter(ms.parallel.DTensor.from_local(Tensor(net.dense2.weight.asnumpy()), w2_layout))
 
     run_hsdp(net, global_data, global_label)
 

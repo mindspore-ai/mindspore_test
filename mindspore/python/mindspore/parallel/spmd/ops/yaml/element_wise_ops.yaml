@@ -97,3 +97,25 @@ Cast:
   dist_op_name: _cast_dist_op
   distributed_op_class: ElementWiseDistributedOp
   distributed_op_file: parallel_elementwise
+
+Contiguous:
+  dist_op_name: _contiguous_dist_op
+  distributed_op_class: ElementWiseDistributedOp
+  distributed_op_file: parallel_elementwise
+
+Square:
+  dist_op_name: _square_dist_op
+  distributed_op_class: ElementWiseDistributedOp
+  distributed_op_file: parallel_elementwise
+
+ToDtype:
+  dist_op_name: _to_dtype_dist_op
+  distributed_op_class: ElementWiseDistributedOp
+  distributed_op_file: parallel_elementwise
+
+CellBackwardHook:
+  dist_op_name: _cell_backward_hook_dist_op
+  distributed_op_class: TupleElementWiseDistributedOp
+  distributed_op_file: parallel_tuple_elementwise
+  infer_layout_suffix: WithTupleExpand
+

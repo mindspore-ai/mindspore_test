@@ -17,11 +17,13 @@
 import time
 import numpy as np
 import mindspore as ms
+from mindspore._c_expression import NoFallbackGuard
 import mindspore.communication.management as D
 from mindspore import nn, Tensor
 from mindspore.parallel import Layout, hsdp, init_parameters
 from mindspore.nn.utils import no_init_parameters
 from mindspore.common.initializer import initializer
+from tests.st.auto_parallel.utils import create_dtensor
 
 learning_rate = 0.01
 epochs = 2
@@ -42,12 +44,6 @@ class SimpleModel(nn.Cell):
         return x
 
 
-def create_dtensor(data, layout):
-    """create_dtensor"""
-    tensor = Tensor(data, dtype=ms.float32)
-    return tensor.local_to_global(layout)
-
-
 def run_model(x, model, parallel=False):
     """run model"""
     def forward_fn(data):
@@ -65,7 +61,8 @@ def run_model(x, model, parallel=False):
     for epoch in range(epochs):
         start = time.time()
         (loss_value, grads) = grad_fn(x)
-        optimizer(grads)
+        with NoFallbackGuard():
+            optimizer(grads)
         end = time.time()
         ret_loss = loss_value
         ret_grads = grads

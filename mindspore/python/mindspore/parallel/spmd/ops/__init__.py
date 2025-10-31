@@ -13,6 +13,3 @@
 # limitations under the License.
 # ============================================================================
 """Interfaces for parallel-related functionality"""
-from __future__ import absolute_import
-
-from .distributed_op_init import *
