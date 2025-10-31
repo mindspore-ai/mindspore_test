@@ -1,5 +1,5 @@
 /**
- * Copyright 2020-2024 Huawei Technologies Co., Ltd
+ * Copyright 2020-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+#include "include/utils/ir_dump/onnx/onnx_exporter.h"
 
 #include <algorithm>
 #include <functional>
@@ -6507,11 +6509,11 @@ void OnnxExporter::SetTensorData(const ValuePtr &value, onnx::TensorProto *tenso
   }
 }
 
-std::string GetOnnxProtoString(const FuncGraphPtr &func_graph, const std::vector<std::string> &input_names = {},
-                               const std::vector<std::string> &outputs_names = {}, const int &opset_version = 11,
-                               const bool &export_params = true, const bool &keep_initializers_as_inputs = false,
-                               const std::map<std::string, std::map<int, std::string>> &dynamic_axes = {},
-                               const bool &extra_save_params = false, const std::string &save_file_dir = "") {
+std::string GetOnnxProtoString(const FuncGraphPtr &func_graph, const std::vector<std::string> &input_names,
+                               const std::vector<std::string> &outputs_names, int opset_version, bool export_params,
+                               bool keep_initializers_as_inputs,
+                               const std::map<std::string, std::map<int, std::string>> &dynamic_axes,
+                               bool extra_save_params, const std::string &save_file_dir) {
   OnnxExporter exporter;
   exporter.SetRenameInputNames(input_names);
   exporter.SetRenameOutputNames(outputs_names);

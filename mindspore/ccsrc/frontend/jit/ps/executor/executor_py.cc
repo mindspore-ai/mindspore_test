@@ -39,6 +39,7 @@
 #include "include/utils/config_manager.h"
 #include "include/utils/python_utils.h"
 #include "include/utils/tensor_py_wrapper.h"
+#include "include/utils/ir_dump/onnx/onnx_exporter.h"
 
 #include "frontend/jit/ps/compile_cache_manager.h"
 #include "frontend/jit/ps/debug/trace.h"
