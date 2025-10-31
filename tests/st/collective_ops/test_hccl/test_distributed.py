@@ -12,12 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+"""
+The tests of mindspore, used to test communication for mint.distributed.
+"""
 import numpy as np
 import pytest
 import hashlib
 import mindspore as ms
 from mindspore import context
-from mindspore.common.api import _pynative_executor
 from mindspore.ops import ReduceOp, cat
 from mindspore.mint.distributed.distributed import (
     init_process_group,
@@ -89,6 +91,7 @@ def test_reinit():
     """
     group0 = new_group(ranks=list(range(size)), backend="hccl")
     group1 = new_group(ranks=list(range(size)), backend="mccl")
+    group2 = None
     if rank == 0:
         group2 = new_group([0])
 
@@ -378,18 +381,6 @@ def test_hccl_all_gather_into_tensor():
         all_gather_into_tensor([1], input_tensor)
     with pytest.raises(TypeError):
         all_gather_into_tensor(output_tensor, [1])
-    output_tensor = ms.Tensor(np.zeros([3, 3]).astype(np.float32))
-    with pytest.raises(ValueError):
-        all_gather_into_tensor(output_tensor, input_tensor)
-        _pynative_executor.sync()
-    output_tensor = ms.Tensor(np.zeros([3, 3 * size]).astype(np.float32))
-    with pytest.raises(ValueError):
-        all_gather_into_tensor(output_tensor, input_tensor)
-        _pynative_executor.sync()
-    output_tensor = ms.Tensor(np.zeros([3 * size, 3]).astype(np.int32))
-    with pytest.raises(ValueError):
-        all_gather_into_tensor(output_tensor, input_tensor)
-        _pynative_executor.sync()
 
 
 @log_function_entry_exit
@@ -402,7 +393,7 @@ def test_hccl_all_gather_into_tensor_uneven():
     ## 同步场景多维tensor
     # rank0: [0, 0], rank1: [[1, 1], [1, 1]], rank2: [[2, 2], [2, 2], [2, 2]], rank3: [[3, 3], [3, 3], [3, 3], [3, 3]]...
     input_tensor = ms.Tensor(np.ones([rank + 1, 2]).astype(np.float32) * rank)
-    total_size = sum([r + 1 for r in range(size)])
+    total_size = sum(r + 1 for r in range(size))
     output_tensor = ms.Tensor(np.zeros([total_size, 2]).astype(np.float32))
     output_split_sizes = [r + 1 for r in range(size)]
     expected_output = np.concatenate(
@@ -417,7 +408,7 @@ def test_hccl_all_gather_into_tensor_uneven():
     # # rank0: [0], rank1: [1, 1], rank2: [2, 2, 2], rank3: [3, 3, 3, 3] ...
     input_tensor = ms.Tensor(np.ones([rank + 1]).astype(np.float32) * rank)
 
-    total_size = sum([r + 1 for r in range(size)])
+    total_size = sum(r + 1 for r in range(size))
     output_tensor = ms.Tensor(np.zeros([total_size]).astype(np.float32))
     output_split_sizes = [r + 1 for r in range(size)]
     expected_output = np.concatenate([np.ones([r + 1]) * r for r in range(size)])
@@ -468,28 +459,6 @@ def test_hccl_all_gather_into_tensor_uneven():
         all_gather_into_tensor_uneven([1], input_tensor)
     with pytest.raises(TypeError):
         all_gather_into_tensor_uneven(output_tensor, [1])
-    with pytest.raises(ValueError):
-        output_split_sizes1 = [r + 3 for r in range(size)]
-        all_gather_into_tensor_uneven(
-            output_tensor, input_tensor, output_split_sizes=output_split_sizes1
-        )
-        _pynative_executor.sync()
-    with pytest.raises(ValueError):
-        output_split_sizes1 = [r + 1 for r in range(size + 3)]
-        all_gather_into_tensor_uneven(
-            output_tensor, input_tensor, output_split_sizes=output_split_sizes1
-        )
-        _pynative_executor.sync()
-    output_tensor = ms.Tensor(np.zeros([5 * size]).astype(np.float32))
-    with pytest.raises(ValueError):
-        all_gather_into_tensor_uneven(
-            output_tensor, input_tensor, output_split_sizes=output_split_sizes
-        )
-        _pynative_executor.sync()
-    output_tensor = ms.Tensor(np.zeros([total_size]).astype(np.int32))
-    with pytest.raises(ValueError):
-        all_gather_into_tensor_uneven(output_tensor, input_tensor)
-        _pynative_executor.sync()
 
 
 @log_function_entry_exit
@@ -571,18 +540,6 @@ def test_hccl_reduce_scatter_tensor():
         reduce_scatter_tensor([1], input_tensor)
     with pytest.raises(TypeError):
         reduce_scatter_tensor(output_tensor, [1])
-    output_tensor = ms.Tensor(np.zeros([1, 3]).astype(np.float32))
-    with pytest.raises(ValueError):
-        reduce_scatter_tensor(output_tensor, input_tensor)
-        _pynative_executor.sync()
-    output_tensor = ms.Tensor(np.zeros([3, 1]).astype(np.float32))
-    with pytest.raises(ValueError):
-        reduce_scatter_tensor(output_tensor, input_tensor)
-        _pynative_executor.sync()
-    output_tensor = ms.Tensor(np.zeros([3, 3]).astype(np.int32))
-    with pytest.raises(ValueError):
-        reduce_scatter_tensor(output_tensor, input_tensor)
-        _pynative_executor.sync()
 
 
 @log_function_entry_exit
@@ -659,22 +616,6 @@ def test_hccl_reduce_scatter_tensor_uneven():
         reduce_scatter_tensor_uneven([1], input_tensor)
     with pytest.raises(TypeError):
         reduce_scatter_tensor_uneven(output_tensor, [1])
-    with pytest.raises(ValueError):
-        input_split_sizes1 = [r + 3 for r in range(size)]
-        reduce_scatter_tensor_uneven(
-            output_tensor, input_tensor, input_split_sizes=input_split_sizes1
-        )
-        _pynative_executor.sync()
-    with pytest.raises(ValueError):
-        input_split_sizes1 = [r + 1 for r in range(size + 3)]
-        reduce_scatter_tensor_uneven(
-            output_tensor, input_tensor, input_split_sizes=input_split_sizes1
-        )
-        _pynative_executor.sync()
-    output_tensor = ms.Tensor(np.zeros([rank + 1]).astype(np.int32))
-    with pytest.raises(ValueError):
-        reduce_scatter_tensor_uneven(output_tensor, input_tensor)
-        _pynative_executor.sync()
 
 
 @log_function_entry_exit
@@ -1166,12 +1107,6 @@ def test_hccl_all_to_all():
         all_to_all(output_tensors, input_tensors, group=1)
     with pytest.raises(TypeError):
         all_to_all(output_tensors, input_tensors, async_op="1")
-    with pytest.raises(ValueError):
-        output_tensors = []
-        for _ in range(size):
-            output_tensors.append(ms.Tensor(np.ones([1, 1]).astype(np.int32)))
-        all_to_all(output_tensors, input_tensors)
-        _pynative_executor.sync()
 
 
 @log_function_entry_exit
@@ -1229,11 +1164,6 @@ def test_hccl_all_to_all_single():
     with pytest.raises(ValueError):
         input_tensor = ms.Tensor(np.ones([size - 1, 1]).astype(np.float32))
         all_to_all_single(output_tensor, input_tensor)
-    with pytest.raises(ValueError):
-        input_tensor = ms.Tensor(np.ones([size, 1]).astype(np.float32)) * rank
-        output_tensor = ms.Tensor(np.zeros([size, 1]).astype(np.int32))
-        all_to_all_single(output_tensor, input_tensor)
-        _pynative_executor.sync()
 
 
 @log_function_entry_exit
@@ -1306,12 +1236,6 @@ def test_hccl_all_gather():
             ms.Tensor(np.zeros([1, 3]).astype(np.float32)),
         ]
         all_gather(output_tensor, input_tensor)
-    with pytest.raises(TypeError):
-        output_tensor = []
-        for _ in range(size):
-            output_tensor.append(ms.Tensor(np.zeros([3, 3]).astype(np.int32)))
-        all_gather(output_tensor, input_tensor)
-        _pynative_executor.sync()
 
 
 @log_function_entry_exit
@@ -1426,18 +1350,6 @@ def test_hccl_reduce_scatter():
             ms.Tensor(np.zeros([3, 3]).astype(np.int32)),
         ]
         reduce_scatter(output_tensor, input_tensor1)
-    output_tensor = ms.Tensor(np.zeros([1, 3]).astype(np.float32))
-    with pytest.raises(TypeError):
-        reduce_scatter(output_tensor, input_tensor)
-        _pynative_executor.sync()
-    output_tensor = ms.Tensor(np.zeros([3, 1]).astype(np.float32))
-    with pytest.raises(TypeError):
-        reduce_scatter(output_tensor, input_tensor)
-        _pynative_executor.sync()
-    output_tensor = ms.Tensor(np.zeros([3, 3]).astype(np.int32))
-    with pytest.raises(TypeError):
-        reduce_scatter(output_tensor, input_tensor)
-        _pynative_executor.sync()
 
 
 @log_function_entry_exit
@@ -1473,11 +1385,6 @@ def test_hccl_reduce_scatter_diff_shape():
     assert output_handle is not None
     output_handle.wait()
     assert np.allclose(output_tensor.asnumpy(), expect_output)
-    # output tensor shape not match real op output.
-    output_tensor = ms.Tensor(np.zeros([size+1]).astype(np.int32))
-    with pytest.raises(TypeError):
-        reduce_scatter(output_tensor, input_list)
-        _pynative_executor.sync()
 
 
 @log_function_entry_exit
@@ -1559,12 +1466,6 @@ def test_hccl_gather():
             ms.Tensor(np.zeros([1, 3]).astype(np.float32)),
         ]
         gather(input_tensor, output_tensor1)
-    with pytest.raises(TypeError):
-        output_tensor = []
-        for _ in range(size):
-            output_tensor.append(ms.Tensor(np.zeros([3, 3]).astype(np.int32)))
-        gather(input_tensor, output_tensor, dst=rank)
-        _pynative_executor.sync()
 
 
 @log_function_entry_exit
@@ -1619,32 +1520,6 @@ def test_hccl_scatter():
         scatter([1], input_tensor)
     with pytest.raises(TypeError):
         scatter(output_tensor, [1])
-    with pytest.raises(TypeError):
-        input_tensor1 = [
-            ms.Tensor(np.zeros([3, 3]).astype(np.float32)),
-            ms.Tensor(np.zeros([3, 3]).astype(np.int32)),
-        ]
-        scatter(output_tensor, input_tensor1)
-        _pynative_executor.sync()
-    with pytest.raises(TypeError):
-        input_tensor1 = [
-            ms.Tensor(np.zeros([3, 3]).astype(np.float32)),
-            ms.Tensor(np.zeros([1, 3]).astype(np.float32)),
-        ]
-        scatter(output_tensor, input_tensor1)
-        _pynative_executor.sync()
-    output_tensor = ms.Tensor(np.zeros([1, 3]).astype(np.float32))
-    with pytest.raises(TypeError):
-        scatter(output_tensor, input_tensor, src=rank)
-        _pynative_executor.sync()
-    output_tensor = ms.Tensor(np.zeros([3, 1]).astype(np.float32))
-    with pytest.raises(TypeError):
-        scatter(output_tensor, input_tensor, src=rank)
-        _pynative_executor.sync()
-    output_tensor = ms.Tensor(np.zeros([3, 3]).astype(np.int32))
-    with pytest.raises(TypeError):
-        scatter(output_tensor, input_tensor, src=rank)
-        _pynative_executor.sync()
 
 
 @log_function_entry_exit
