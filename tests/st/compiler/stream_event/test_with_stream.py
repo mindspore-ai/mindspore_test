@@ -12,14 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+"""Test with StreamCtx."""
+# pylint: disable=W1514
 import os
 import re
 import shutil
 import pytest
 import numpy as np
 import mindspore as ms
-import mindspore.nn as nn
-from mindspore import Tensor, ops, Parameter
+from mindspore import Tensor, ops, Parameter, nn
 from mindspore.runtime import Stream
 from mindspore.runtime import StreamCtx as MsJitStreamCtx
 from mindspore.ops.functional import grad
@@ -433,11 +434,13 @@ def test_multiple_independent_streams():
     assert np.allclose(result, Tensor(np.ones([2, 2], dtype=np.float32)) * 6)
     content = read_file(save_path)
     stream_id_num = re.findall('stream_id', content)
+    no_inline_num = re.findall('no_inline', content)
     try:
         shutil.rmtree(save_path)
     except FileNotFoundError:
         pass
     assert len(stream_id_num) == 4
+    assert len(no_inline_num) == 0
     ms.set_context(save_graphs=False)
     ms.set_context(mode=ms.context.PYNATIVE_MODE)
     pynative_grad_out = grad(net)(x, y)
@@ -692,7 +695,7 @@ def test_with_stream_with_morph():
 
     class MorphNet(nn.Cell):
         def __init__(self):
-            super(MorphNet, self).__init__()
+            super().__init__()
             np_weight0 = np.array([1.0, 2.0, 3.0])
             np_weight1 = np.array([4.0, 5.0, 6.0])
             self.weight0 = Parameter(Tensor(np_weight0, ms.float32), name="weight0")

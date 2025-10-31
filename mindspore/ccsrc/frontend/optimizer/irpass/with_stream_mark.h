@@ -154,7 +154,8 @@ bool WithStreamMark(const FuncGraphPtr &root, const opt::OptimizerPtr &opt) {
   for (auto &fg : all_func_graphs) {
     MS_EXCEPTION_IF_NULL(fg);
     bool is_with_stream_func = (GetStreamIdFuncGraphWithStreamCtx(fg) != -1);
-    if (is_with_stream_func) {
+    bool is_with_stream_after_func = fg->has_flag(kFuncGraphFlagStreamCtxAfter);
+    if (is_with_stream_func || is_with_stream_after_func) {
       fg->erase_flag(FUNC_GRAPH_FLAG_NO_INLINE);
       fg->erase_flag(kFuncGraphFlagStreamId);
       fg->erase_flag(kFuncGraphFlagStreamLimitId);
