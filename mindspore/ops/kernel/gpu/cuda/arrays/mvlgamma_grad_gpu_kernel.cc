@@ -49,7 +49,8 @@ int MvlgammaGradGpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs,
   ResetResource();
   std::vector<int64_t> input_shape = std::vector<int64_t>(inputs.at(kIndex1)->GetDeviceShapeVector().begin(),
                                                           inputs.at(kIndex1)->GetDeviceShapeVector().end());
-  input_elements_ = std::accumulate(input_shape.begin(), input_shape.end(), 1, std::multiplies<int64_t>());
+  input_elements_ =
+    std::accumulate(input_shape.begin(), input_shape.end(), static_cast<int64_t>(1), std::multiplies<int64_t>());
   if (input_elements_ == 0) {
     is_null_input_ = true;
   }

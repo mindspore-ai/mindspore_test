@@ -357,7 +357,8 @@ Status StridedSliceInfo::CheckStrategy(const StrategyPtr &strategy) {
   }
 
   if (dynamic_shape_flag_) {
-    auto shard_num = std::accumulate(strategy_value.begin(), strategy_value.end(), 1, std::multiplies<int64_t>());
+    auto shard_num = std::accumulate(strategy_value.begin(), strategy_value.end(), static_cast<int64_t>(1),
+                                     std::multiplies<int64_t>());
     if (shard_num == 1) {
       return SUCCESS;
     }

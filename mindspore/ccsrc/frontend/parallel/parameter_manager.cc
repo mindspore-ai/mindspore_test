@@ -1648,8 +1648,8 @@ static std::shared_ptr<TensorLayout> GenerateTensorLayoutForParamReshapeWithStra
   for (size_t i = param_dev_matrix_shape.size() - 1; i > 0; i--) {
     param_dev_matrix_shape[i] = input_stra[i - 1];
   }
-  param_dev_matrix_shape[0] =
-    dev_num / std::accumulate(input_stra.begin(), input_stra.end(), 1, std::multiplies<int64_t>());
+  param_dev_matrix_shape[0] = dev_num / std::accumulate(input_stra.begin(), input_stra.end(), static_cast<int64_t>(1),
+                                                        std::multiplies<int64_t>());
 
   TensorMap param_tensor_map;
   for (size_t i = 0; i < param_shape.size(); ++i) {

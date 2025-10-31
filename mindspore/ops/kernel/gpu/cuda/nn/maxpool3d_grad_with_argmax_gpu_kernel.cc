@@ -90,9 +90,11 @@ int MaxPool3DGradWithArgmaxGpuKernelMod::Resize(const std::vector<KernelTensor *
   }
 
   const size_t nc_offset = 2;
-  x_dhw_ = std::accumulate(x_shape.begin() + nc_offset, x_shape.end(), 1, std::multiplies<int64_t>());
-  dy_dhw_ = std::accumulate(dy_shape.begin() + nc_offset, dy_shape.end(), 1, std::multiplies<int64_t>());
-  dy_ncdhw_ = std::accumulate(dy_shape.begin(), dy_shape.end(), 1, std::multiplies<int64_t>());
+  x_dhw_ =
+    std::accumulate(x_shape.begin() + nc_offset, x_shape.end(), static_cast<int64_t>(1), std::multiplies<int64_t>());
+  dy_dhw_ =
+    std::accumulate(dy_shape.begin() + nc_offset, dy_shape.end(), static_cast<int64_t>(1), std::multiplies<int64_t>());
+  dy_ncdhw_ = std::accumulate(dy_shape.begin(), dy_shape.end(), static_cast<int64_t>(1), std::multiplies<int64_t>());
   return KRET_OK;
 }
 

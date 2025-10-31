@@ -54,9 +54,10 @@ int GroupNormGradGpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs,
 
   batch_ = LongToSize(x_shape[kIndex0]);
   num_channel_ = LongToSize(x_shape[kIndex1]);
-  HxW_ = LongToSize((x_shape.size() == kNumberTwo)
-                      ? 1
-                      : std::accumulate(x_shape.begin() + kIndex2, x_shape.end(), 1, std::multiplies<int64_t>()));
+  HxW_ =
+    LongToSize((x_shape.size() == kNumberTwo) ? 1
+                                              : std::accumulate(x_shape.begin() + kIndex2, x_shape.end(),
+                                                                static_cast<int64_t>(1), std::multiplies<int64_t>()));
   num_groups_ = LongToSize(inputs[kIndex5]->GetValueWithCheck<int64_t>());
 
   const size_t dscale_shape_size = LongToSize(batch_ * num_channel_) * sizeof(float);

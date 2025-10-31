@@ -1138,21 +1138,23 @@ ShapeArray MatMulExtBPropShapeCalcFunc(const ShapeArray &inputs) {
   // perform transpose to w
   std::swap(w_optim_shape[w_rank - 2], w_optim_shape[w_rank - 1]);
   if (x_rank == 2 && w_rank > 2) {
-    auto w_outer_dim = std::accumulate(w_optim_shape.begin(), w_optim_shape.end() - 1, 1, std::multiplies<int64_t>());
+    auto w_outer_dim = std::accumulate(w_optim_shape.begin(), w_optim_shape.end() - 1, static_cast<int64_t>(1),
+                                       std::multiplies<int64_t>());
     w_optim_shape = {w_outer_dim, w_optim_shape[w_rank - 1]};
     auto dout_outer_dim =
-      expanded_dout_shape[dout_rank - 1] *
-      std::accumulate(expanded_dout_shape.begin(), expanded_dout_shape.end() - 2, 1, std::multiplies<int64_t>());
+      expanded_dout_shape[dout_rank - 1] * std::accumulate(expanded_dout_shape.begin(), expanded_dout_shape.end() - 2,
+                                                           static_cast<int64_t>(1), std::multiplies<int64_t>());
     dout_optim_shape_for_dx = {expanded_dout_shape[dout_rank - 2], dout_outer_dim};
     auto key_dim = dout_perm[dout_shape.size() - 2];
     dout_perm.erase(dout_perm.end() - 2);
     dout_perm.insert(dout_perm.begin(), key_dim);
   }
   if (w_rank == 2 && x_rank > 2) {
-    auto x_outer_dim = std::accumulate(x_optim_shape.begin(), x_optim_shape.end() - 1, 1, std::multiplies<int64_t>());
+    auto x_outer_dim = std::accumulate(x_optim_shape.begin(), x_optim_shape.end() - 1, static_cast<int64_t>(1),
+                                       std::multiplies<int64_t>());
     x_optim_shape = {x_outer_dim, x_optim_shape[x_rank - 1]};
-    auto dout_outer_dim =
-      std::accumulate(expanded_dout_shape.begin(), expanded_dout_shape.end() - 1, 1, std::multiplies<int64_t>());
+    auto dout_outer_dim = std::accumulate(expanded_dout_shape.begin(), expanded_dout_shape.end() - 1,
+                                          static_cast<int64_t>(1), std::multiplies<int64_t>());
     dout_optim_shape_for_dw = {dout_outer_dim, expanded_dout_shape[dout_rank - 1]};
   }
   return {expanded_weight_shape,   x_optim_shape,           w_optim_shape,

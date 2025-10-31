@@ -112,8 +112,8 @@ Status TensorLayout::CheckDeviceNum(const Shape &device_arrangement, bool check_
   }
   CheckGlobalDeviceManager();
   auto device_num = g_device_manager->stage_device_num();
-  int64_t device_total =
-    std::accumulate(device_arrangement.begin(), device_arrangement.end(), 1, std::multiplies<int64_t>());
+  int64_t device_total = std::accumulate(device_arrangement.begin(), device_arrangement.end(), static_cast<int64_t>(1),
+                                         std::multiplies<int64_t>());
   if (device_num != device_total && check_device_num) {
     MS_LOG(ERROR) << "The configured device_matrix " << device_arrangement << " accumulate value " << device_total
                   << " dose not equal to the device number in one stage " << device_num;

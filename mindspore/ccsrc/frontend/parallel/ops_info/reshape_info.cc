@@ -126,7 +126,7 @@ bool OnlyOneDimDynamicShape(const Shape &shape) {
 }
 
 int64_t AccumulateShape(const Shape &shape) {
-  return std::accumulate(shape.cbegin(), shape.cend(), 1, std::multiplies<int64_t>());
+  return std::accumulate(shape.cbegin(), shape.cend(), static_cast<int64_t>(1), std::multiplies<int64_t>());
 }
 
 size_t DynamicShapeIndex(const Shape &shape) {

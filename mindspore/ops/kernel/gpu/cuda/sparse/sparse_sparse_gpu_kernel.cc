@@ -66,11 +66,16 @@ int SparseSparseGpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs,
   auto b_indices_shape = inputs.at(kSparseSparseIndex3)->GetShapeVector();
   auto b_values_shape = inputs.at(kSparseSparseIndex4)->GetShapeVector();
   rank_ = a_indices_shape.at(1);
-  auto a_indices_size = std::accumulate(a_indices_shape.begin(), a_indices_shape.end(), 1, std::multiplies<int64_t>());
-  auto a_values_size = std::accumulate(a_values_shape.begin(), a_values_shape.end(), 1, std::multiplies<int64_t>());
-  auto dense_shape_size = std::accumulate(dense_shape.begin(), dense_shape.end(), 1, std::multiplies<int64_t>());
-  auto b_indices_size = std::accumulate(b_indices_shape.begin(), b_indices_shape.end(), 1, std::multiplies<int64_t>());
-  auto b_values_size = std::accumulate(b_values_shape.begin(), b_values_shape.end(), 1, std::multiplies<int64_t>());
+  auto a_indices_size = std::accumulate(a_indices_shape.begin(), a_indices_shape.end(), static_cast<int64_t>(1),
+                                        std::multiplies<int64_t>());
+  auto a_values_size =
+    std::accumulate(a_values_shape.begin(), a_values_shape.end(), static_cast<int64_t>(1), std::multiplies<int64_t>());
+  auto dense_shape_size =
+    std::accumulate(dense_shape.begin(), dense_shape.end(), static_cast<int64_t>(1), std::multiplies<int64_t>());
+  auto b_indices_size = std::accumulate(b_indices_shape.begin(), b_indices_shape.end(), static_cast<int64_t>(1),
+                                        std::multiplies<int64_t>());
+  auto b_values_size =
+    std::accumulate(b_values_shape.begin(), b_values_shape.end(), static_cast<int64_t>(1), std::multiplies<int64_t>());
   if (a_indices_size == 0 || a_values_size == 0 || dense_shape_size == 0 || b_indices_size == 0 || b_values_size == 0) {
     is_null_input_ = true;
   }

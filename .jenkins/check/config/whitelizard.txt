@@ -202,6 +202,7 @@ mindspore/mindspore/python/mindspore/ops/function/nn_func.py:conv3d
 mindspore/mindspore/python/mindspore/common/api.py:_convert_python_data
 mindspore/mindspore/ops/kernel/cpu/native/crop_and_resize_cpu_kernel.cc:mindspore::kernel::CropAndResizeCpuKernelMod::LaunchKernel
 mindspore/mindspore/ops/kernel/cpu/native/cast_cpu_kernel.cc:mindspore::kernel::Cast
+mindspore/mindspore/ops/kernel/cpu/native/sparse_add_cpu_kernel.cc:mindspore::kernel::sparse_add_cpu::SparseAddCpuKernelMod::LaunchKernel
 mindspore/mindspore/ccsrc/utils/tensor_py.cc:mindspore::tensor::GetPyTypeFormat
 mindspore/mindspore/ccsrc/utils/tensor_py.cc:mindspore::tensor::GetBaseDataType
 mindspore/mindspore/core/ir/dtype/type.cc:mindspore::NormalizeTypeId

@@ -52,7 +52,7 @@ uint32_t RandomChoiceWithMaskCpuKernel::RandomChoiceWithMaskCompute(CpuKernelCon
   auto output_coordinate = reinterpret_cast<int32_t *>(ctx.Output(0)->GetData());
   auto mask = reinterpret_cast<bool *>(ctx.Output(1)->GetData());
 
-  int64_t input_size = std::accumulate(dims_.begin(), dims_.end(), 1, std::multiplies<int64_t>());
+  int64_t input_size = std::accumulate(dims_.begin(), dims_.end(), static_cast<int64_t>(1), std::multiplies<int64_t>());
   std::vector<int64_t> sample_ids = GetAllSamples(input, input_size);
 
   uint64_t seed = std::random_device()();
