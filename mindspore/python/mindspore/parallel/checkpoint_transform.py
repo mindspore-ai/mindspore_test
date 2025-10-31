@@ -31,7 +31,7 @@ from mindspore.communication.management import get_rank, get_group_size
 from mindspore.parallel._tensor import _load_tensor, _reshape_param_data, _reshape_param_data_with_weight, \
     _get_tensor_slice_index, _get_tensor_strategy
 from mindspore.parallel._utils import _is_in_auto_parallel_mode, _get_pipeline_stages, _infer_rank_list, \
-    _remove_repeated_slices, _get_auto_parallel_net, _check_path_safe, _check_path_writable
+    _remove_repeated_slices, _get_auto_parallel_net, _check_path_safe, _check_path_writable, _mstx_range_decorator
 from mindspore.parallel._parallel_serialization import _rank_list_for_transform_parallel_checkpoint, \
     _transform_parallel_checkpoint, _get_device_num_from_strategy, _make_dir, _build_searched_strategy, \
     _extract_layout_map, _extract_src_dst_layout_map, _parameter_not_in_local_stage, _extract_pipeline_stage_num, \
@@ -966,6 +966,7 @@ def build_searched_strategy(strategy_filename):
 
 # disable pylint too broad Exception
 # pylint: disable=W0212
+@_mstx_range_decorator("load_distributed_checkpoint", domain="model_preparation")
 def load_distributed_checkpoint(network, checkpoint_filenames=None, predict_strategy=None,
                                 train_strategy_filename=None, strict_load=False, dec_key=None, dec_mode='AES-GCM',
                                 format='ckpt', unified_safetensors_dir=None, dst_safetensors_dir=None, rank_id=None,

@@ -18,6 +18,7 @@ from __future__ import absolute_import
 import os
 import sys
 import json
+import functools
 from collections.abc import Iterable
 
 import time
@@ -583,3 +584,23 @@ def _load_and_transform(path, name_map, load_func):
         new_name = name_map.get(k, k) if name_map is not None else k
         transform_dict[new_name] = v
     return transform_dict
+
+
+def _mstx_range_decorator(message, stream=None, domain="default"):
+    """
+    Return a decorator that wraps the function execution inside an MSTX range.
+    """
+
+    def decorator(func):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            from mindspore.profiler import mstx as _mstx_module
+            rid = _mstx_module.range_start(message, stream, domain)
+            try:
+                return func(*args, **kwargs)
+            finally:
+                _mstx_module.range_end(rid, domain)
+
+        return wrapper
+
+    return decorator

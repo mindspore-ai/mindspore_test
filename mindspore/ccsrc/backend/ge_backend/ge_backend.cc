@@ -35,6 +35,7 @@
 #include "device_address/device_address.h"
 #include "tools/profiler/profiling.h"
 #include "tools/profiler/profiler.h"
+#include "tools/profiler/mstx/mstx_guard.h"
 #include "utils/log_adapter.h"
 #include "utils/file_utils.h"
 #include "utils/info.h"
@@ -1013,6 +1014,7 @@ void GEBackend::WaitMultiStream() {
 }
 
 RunningStatus GEBackend::Run(BackendGraphId graph_id, const VectorRef &inputs, VectorRef *outputs) {
+  profiler::MstxRangeGuard guard("GEBackendRun", profiler::MSTX_DOMAIN_MODEL_PREPARATION);
   runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kRuntime, runtime::ProfilerEvent::kBackendGraphRunInner,
                                      "graph_" + std::to_string(graph_id), true);
 

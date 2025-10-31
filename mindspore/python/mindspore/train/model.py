@@ -51,6 +51,7 @@ from mindspore.common.api import _pynative_executor, ARG_SPECIFIED, TOTAL_ARG_LE
 from mindspore.dataset.core.config import get_debug_mode
 from mindspore.dataset.engine.datasets import _set_training_dataset, _reset_training_dataset
 from mindspore.train import amp
+from mindspore.train._utils import _mstx_range_decorator
 from mindspore._c_expression import _framework_profiler_step_start, _framework_profiler_step_end
 from mindspore._c_expression import _get_optimzer_timestamps
 from mindspore._c_expression import clean_tdt_channel, set_is_arf, _reset_error_state
@@ -761,6 +762,7 @@ class Model:
             scaling_sens /= self._device_number
         return scaling_sens
 
+    @_mstx_range_decorator("initialize_dataset", domain="model_preparation")
     def _exec_preprocess(self, is_train, dataset, dataset_sink_mode, sink_size=-1, epoch_num=1, dataset_helper=None):
         """Initializes dataset."""
         if is_train:
@@ -827,7 +829,7 @@ class Model:
         """
         if TrainFaultTolerance._enable_snapshot() and context.get_context("device_target") == "Ascend":
             cb_params.need_ckpt, cb_params.save_checkpoint_steps, \
-            cb_params.last_triggered_step = self._check_need_ckpt(cb_params.list_callback)
+                cb_params.last_triggered_step = self._check_need_ckpt(cb_params.list_callback)
             logger.info(f"need_ckpt:{cb_params.need_ckpt},"
                         f"save_checkpoint_steps:{cb_params.save_checkpoint_steps},"
                         f"cur_step_num:{cb_params.cur_step_num},"
@@ -862,6 +864,7 @@ class Model:
         train_dataset._dataset_helper = dataset_helper
         train_dataset._warmup_epoch = epoch
 
+    @_mstx_range_decorator("dataset_warmup", domain="model_preparation")
     def _waiting_for_dataset_warmup_ready(self, train_dataset):
         """
         Wait for the dataset to warmup until there is a batch of data available for training on the device side.
@@ -1501,6 +1504,7 @@ class Model:
                     valid_dataset_sink_mode=valid_dataset_sink_mode)
         _clear_auto_parallel_context(self._network)
 
+    @_mstx_range_decorator("build", domain="model_preparation")
     def build(self, train_dataset=None, valid_dataset=None, sink_size=-1, epoch=1, sink_mode=True):
         """
         Build computational graphs and data graphs with the sink mode.

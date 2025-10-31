@@ -15,6 +15,7 @@
 """Utils of auto parallel"""
 import os
 import re
+import functools
 from time import perf_counter
 from importlib import import_module
 import numpy as np
@@ -821,3 +822,23 @@ def _check_path_writable(path):
         raise RuntimeError(f"{path} Path does not exist.")
     if not os.access(path, os.W_OK):
         raise PermissionError(f"Don't have the write permission on the directory {path}.")
+
+
+def _mstx_range_decorator(message, stream=None, domain="default"):
+    """
+    Return a decorator that wraps the function execution inside an MSTX range.
+    """
+
+    def decorator(func):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            from mindspore.profiler import mstx as _mstx_module
+            rid = _mstx_module.range_start(message, stream, domain)
+            try:
+                return func(*args, **kwargs)
+            finally:
+                _mstx_module.range_end(rid, domain)
+
+        return wrapper
+
+    return decorator

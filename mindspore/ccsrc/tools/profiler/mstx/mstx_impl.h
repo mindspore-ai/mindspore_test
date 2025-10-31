@@ -34,6 +34,7 @@ const char MSTX_STAGE_MARK[] = "Mark";
 const char MSTX_STAGE_RANGE[] = "Range";
 
 const char MSTX_DOMAIN_COMMUNICATION[] = "communication";
+const char MSTX_DOMAIN_MODEL_PREPARATION[] = "model_preparation";
 const char MSTX_DOMAIN_DEFAULT[] = "default";
 const char MSTX_DOMAIN_MSLEAKS[] = "mindsporeMemPool";
 const char MSTX_GETNEXT[] = "GetNext";
