@@ -21,9 +21,58 @@ from tests.mark_utils import arg_mark
 from tests.st.pi_jit.share.utils import get_code_extra, has_graph
 
 import mindspore as ms
-import mindspore.nn as nn
+from mindspore import nn
 from mindspore import Tensor, ops, context
 from mindspore.common import mutable
+import torch
+import torch.nn as nn_pt
+
+
+class Net(nn.Cell):
+    def __init__(self, index):
+        super().__init__()
+        self.index = index
+        self.relu = nn.ReLU()
+
+    def construct(self, x):
+        x = x[self.index]
+        x = self.relu(x)
+        return x
+
+class TorchNet(nn_pt.Module):
+    def __init__(self, index):
+        super().__init__()
+        self.index = index
+        self.relu = nn_pt.ReLU()
+
+    def forward(self, x):
+        x = x[self.index]
+        x = self.relu(x)
+        return x
+
+@arg_mark(plat_marks=['platform_ascend910b'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
+@pytest.mark.parametrize('mode', [ms.PYNATIVE_MODE, ms.GRAPH_MODE])
+def test_parser_tensor_fancy_index_tuple_list_mix(mode):
+    """
+    Feature: tensor getitem
+    Description: Verify the result of tensor getitem with fancy index tuple list
+    Expectation: success
+    """
+    ms.set_context(mode=mode, jit_config={"jit_level": "O0"})
+    index = ((-2, 0, -1), [1, 2, 1], [True, True, False, True], [2, 2, 2])
+    net_ms = Net(index)
+    net_pt = TorchNet(index)
+
+    input_np = np.random.randn(2, 3, 4, 5).astype(np.float32)
+    input_ms = Tensor(input_np)
+    input_pt = torch.from_numpy(input_np)
+
+    output_ms = net_ms(input_ms)
+    output_pt = net_pt(input_pt)
+    assert np.allclose(output_pt.numpy(), output_ms.asnumpy(), 0.0001, 0.0001)
 
 
 def assert_executed_by_graph_mode(func, x, index):
