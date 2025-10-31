@@ -75,6 +75,8 @@ class EXPORT_WRAPPER AscendCollectiveCommLib : public CollectiveCommunicationLib
 
   std::string CommName(const std::string &group_name) override;
 
+  void UpdateToDefaultInfo() override;
+
   HcclComm GetHcomByGroup(const std::string &group_name);
 
   bool DestroyHcclComm();
@@ -105,6 +107,9 @@ class EXPORT_WRAPPER AscendCollectiveCommLib : public CollectiveCommunicationLib
   AscendCollectiveCommLib();
   ~AscendCollectiveCommLib() override = default;
   mindspore::HashMap<std::string, HcclComm> group_hccl_comm_map_;
+  uint32_t default_global_rank_;
+  uint32_t default_global_rank_size_;
+  uint32_t default_local_rank_id_;
 };
 }  // namespace ascend
 }  // namespace device

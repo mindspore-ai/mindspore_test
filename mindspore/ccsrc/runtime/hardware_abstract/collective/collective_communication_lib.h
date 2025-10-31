@@ -164,9 +164,12 @@ class RUNTIME_HARDWARE_EXPORT CollectiveCommunicationLib {
     return true;
   }
 
+  // Customize and set the global group name of this collective communication library.
+  void set_global_group_name(std::string group_name) { global_group_name_ = group_name; }
+
   // Returns the global group name of this collective communication library. For NCCL, it's 'nccl_world_group'. For
-  // HCCL, it's 'hccl_world_group'.
-  const std::string &global_group_name() const;
+  // HCCL, it's 'hccl_world_group' by default.
+  const std::string &global_group_name() const { return global_group_name_; }
 
   // Returns global rank id of this process.
   uint32_t global_rank_id() const;
@@ -185,6 +188,8 @@ class RUNTIME_HARDWARE_EXPORT CollectiveCommunicationLib {
   virtual void SetHelperCommLib(CollectiveCommunicationLib *comm_lib);
 
   virtual bool ResumeHcclComm() { return false; }
+
+  virtual void UpdateToDefaultInfo();
 
  protected:
   // Whether this collective communication library is initialized.

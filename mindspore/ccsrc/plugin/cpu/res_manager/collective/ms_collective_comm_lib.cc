@@ -51,7 +51,6 @@ MsCollectiveCommLib::MsCollectiveCommLib() {
 bool MsCollectiveCommLib::Initialize(uint32_t global_rank, uint32_t global_rank_size, uint32_t local_rank_id) {
   if (initialized_) {
     MS_LOG(WARNING) << "MsCollectiveCommLib has already been initialized.";
-    return true;
   }
 
   // Only use AllReduceLauncher when this is CPU backend.
@@ -97,7 +96,26 @@ bool MsCollectiveCommLib::Initialize(uint32_t global_rank, uint32_t global_rank_
   local_rank_id_ = local_rank_id;
   initialized_ = true;
   finalized_ = false;
+
+  if (global_group_name_ == kMCCLGlobalGroupName) {
+    default_tcp_client_node_ = client_node_;
+    default_global_rank_ = global_rank_id_;
+    default_global_rank_size_ = global_rank_size_;
+    default_local_rank_id_ = local_rank_id_;
+  }
+
   return true;
+}
+
+void MsCollectiveCommLib::UpdateToDefaultInfo() {
+  if (default_tcp_client_node_ == nullptr) {
+    MS_LOG(WARNING) << "The default store is not set. Please initialize global communication group first.";
+    return;
+  }
+  client_node_ = default_tcp_client_node_;
+  global_rank_id_ = default_global_rank_;
+  global_rank_size_ = default_global_rank_size_;
+  local_rank_id_ = default_local_rank_id_;
 }
 
 bool MsCollectiveCommLib::Finalize() {
@@ -119,6 +137,7 @@ bool MsCollectiveCommLib::CreateCommunicationGroup(const std::string &group_name
                                                                          local_group_rank, local_group_size);
   CHECK_IF_NULL(group);
   groups_[group_name] = group;
+
   return true;
 }
 
@@ -234,8 +253,8 @@ bool MsCollectiveCommLib::QueryUniqueID(const std::string &group_name, size_t ro
 
   std::string node_role_prefix = client_node_->role() + "_";
   std::string group_info_key = node_role_prefix + kGroupInfoPrefix + group_name;
-  bool success = false;
 
+  bool success = false;
   // Retry every random time interval.
   std::random_device rd;
   std::mt19937 gen(rd());

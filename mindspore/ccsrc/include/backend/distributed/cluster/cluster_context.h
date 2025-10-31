@@ -53,8 +53,7 @@ class BACKEND_COMMON_EXPORT ClusterContext {
 
   // Initialize the cluster configuration and build network.
   bool Initialize();
-  bool Initialize(std::optional<std::string> url, int64_t timeout, uint32_t world_size, uint32_t node_id,
-                  TCPStoreClientPtr store);
+  bool Initialize(int64_t timeout, uint32_t world_size, uint32_t node_id, TCPStoreClientPtr store);
 
   // Finalize the cluster and process exits. If timeout is set to UINT32_MAX, this method will block without timeout.
   bool Finalize(uint32_t timeout = kDefaultFinishTimeout);

@@ -59,7 +59,7 @@ using InitCommTaskQueue = std::queue<std::pair<std::string, int32_t>>;
 // Group list to be initialized in order. The element will not be deleted.
 using InitCommTaskList = std::vector<std::string>;
 // Initialization task results for each group.
-// Key is group name. Value is a pair of result(true/flase) and error info(if false).
+// Key is group name. Value is a pair of result(true/false) and error info(if false).
 using GroupToResultMap = std::unordered_map<std::string, std::pair<bool, std::string>>;
 
 // Interval of initializing each communicator in queue is 300 milliseconds.
@@ -75,7 +75,7 @@ class RUNTIME_HARDWARE_EXPORT CollectiveManager {
   static std::shared_ptr<CollectiveManager> instance();
 
   // Initialize the collective communication for distributed training. The backend type is read from MindSpore context.
-  bool Initialize();
+  bool Initialize(std::string group_name);
 
   // Finalize the collective communication.
   bool Finalize();
@@ -180,7 +180,7 @@ class RUNTIME_HARDWARE_EXPORT CollectiveManager {
   CollectiveManager();
 
   // Initialize communication library on host side.
-  bool InitHostCommlib();
+  bool InitHostCommlib(std::string group_name);
 
   // Initialize communication library on device side.
   bool InitDeviceCommLib();
@@ -250,10 +250,6 @@ class RUNTIME_HARDWARE_EXPORT CollectiveManager {
 
   // Global group ranks.
   std::vector<uint32_t> global_group_ranks_;
-
-  // The global group name on the host side. This is used for Creating global group on host side for AllGather
-  // operation of host name while assigning local rank.
-  std::string host_global_group_name_;
 
   // This member represents whether the collective communication library is supported on the device side. If not, the
   // device side library will be replace by library on the host side.
