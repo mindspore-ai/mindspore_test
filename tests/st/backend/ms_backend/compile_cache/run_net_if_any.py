@@ -12,32 +12,32 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-import numpy as np
-import mindspore as ms
-import mindspore.context as context
-from mindspore import ops, nn, Tensor
+"""
+test compile cache with control flow.
+"""
+from mindspore import context, Tensor, nn
 
 
-class RangeNet(nn.Cell):
-    def __init__(self):
-        super(RangeNet, self).__init__()
-        self.shape = ops.Shape()
+class Net(nn.Cell):
+    def __init__(self, input1, input2):
+        super().__init__()
+        self.input1 = input1
+        self.input2 = input2
 
-    def construct(self, x):
-        shape = self.shape(x)
-        return ops.range(0, shape[0], shape[1], 1000000)
-
-
-def run_simple_reshape_net():
-    net = RangeNet()
-    net.set_inputs(Tensor(shape=[None, None], dtype=ms.float32))
-    x = Tensor(np.ones([10, 2]).astype(np.float32))
-    output = net(x)
-    print("AAA", output, "BBB")
-    print("AAA", output.asnumpy().shape, "BBB")
+    def construct(self):
+        if self.input1.all() == self.input2:
+            return self.input1.any()
+        return self.input2
 
 
 if __name__ == "__main__":
+    # graph mode
     context.set_context(mode=context.GRAPH_MODE)
-    context.set_context(jit_config={"jit_level": "O0"})
-    run_simple_reshape_net()
+    context.set_context(jit_config={"jit_level": "O1"})
+    x = Tensor([True, True, False])
+    y = Tensor([False])
+    net = Net(x, y)
+    output = net()
+    assert output
+    print("RUNTIME_COMPILE", output, "RUNTIME_CACHE")
+    print("RUNTIME_COMPILE", output.asnumpy().shape, "RUNTIME_CACHE")
