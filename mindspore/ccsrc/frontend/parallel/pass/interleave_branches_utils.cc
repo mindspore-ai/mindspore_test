@@ -305,7 +305,7 @@ float GetNodeCost(const CNodePtr &node) {
   if (iter != kBaseCostMap.end()) {
     if (iter->second > kFilterCost) {
       auto shape = common::AnfAlgo::GetOutputInferShape(node, 0);
-      auto data_size = std::accumulate(shape.begin(), shape.end(), 1, std::multiplies<int64_t>());
+      auto data_size = std::accumulate(shape.begin(), shape.end(), static_cast<int64_t>(1), std::multiplies<int64_t>());
       if (data_size > 0) {
         return iter->second + 1.0f * data_size / kDataCostTreshold;
       }

@@ -70,8 +70,8 @@ int GatherDGradGpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs,
     dim += rank_;
   }
   dim_ = static_cast<size_t>(dim);
-  index_num_ =
-    static_cast<size_t>(std::accumulate(index_shapes.begin(), index_shapes.end(), 1, std::multiplies<int64_t>()));
+  index_num_ = static_cast<size_t>(
+    std::accumulate(index_shapes.begin(), index_shapes.end(), static_cast<int64_t>(1), std::multiplies<int64_t>()));
 
   for (size_t i = 0; i < output_shapes.size(); i++) {
     output_shape_helper_.shape[i] = static_cast<size_t>(output_shapes[i]);
@@ -80,16 +80,14 @@ int GatherDGradGpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs,
   return static_cast<int>(ret);
 }
 
-#define REG_INDEX(INPUT_DT, INDEX_DT, INPUT_T, INDEX_T)        \
-  {                                                            \
-    KernelAttr()                                               \
-      .AddInputAttr(INPUT_DT)                                  \
-      .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)       \
-      .AddInputAttr(INDEX_DT)                                  \
-      .AddInputAttr(INPUT_DT)                                  \
-      .AddOutputAttr(INPUT_DT),                                \
-      &GatherDGradGpuKernelMod::LaunchKernel<INDEX_T, INPUT_T> \
-  }
+#define REG_INDEX(INPUT_DT, INDEX_DT, INPUT_T, INDEX_T) \
+  {KernelAttr()                                         \
+     .AddInputAttr(INPUT_DT)                            \
+     .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64) \
+     .AddInputAttr(INDEX_DT)                            \
+     .AddInputAttr(INPUT_DT)                            \
+     .AddOutputAttr(INPUT_DT),                          \
+   &GatherDGradGpuKernelMod::LaunchKernel<INDEX_T, INPUT_T>}
 
 #define GATHER_D_GRAD_V2_GPU_REGISTER(DT, T) \
   REG_INDEX(DT, kNumberTypeInt64, T, int64_t), REG_INDEX(DT, kNumberTypeInt32, T, int32_t)

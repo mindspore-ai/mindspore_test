@@ -221,7 +221,8 @@ void MatMul::CheckPCLMatMul(const Shape &mat_a_strategy, const Shape &mat_b_stra
   candidate_flag_ = false;
   size_t mat_a_size = mat_a_strategy.size();
   size_t mat_b_size = mat_b_strategy.size();
-  int64_t mat_a_device = std::accumulate(mat_a_strategy.begin(), mat_a_strategy.end(), 1, std::multiplies<int64_t>());
+  int64_t mat_a_device =
+    std::accumulate(mat_a_strategy.begin(), mat_a_strategy.end(), static_cast<int64_t>(1), std::multiplies<int64_t>());
   if (mat_a_size == mat_b_size && !transpose_b_ && mat_a_size == MATMUL_DIM && mat_a_strategy == mat_b_strategy &&
       mat_a_device == stage_device_size_ && !transpose_a_) {
     candidate_flag_ = True;

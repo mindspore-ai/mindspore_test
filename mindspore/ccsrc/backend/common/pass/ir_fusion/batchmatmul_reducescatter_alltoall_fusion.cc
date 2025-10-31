@@ -172,8 +172,8 @@ CNodePtr CreateReshapeCNode(const FuncGraphPtr &func_graph, const AnfNodePtr &in
   MS_EXCEPTION_IF_NULL(func_graph);
   MS_EXCEPTION_IF_NULL(input_node);
   auto from_shape = common::AnfAlgo::GetOutputInferShape(input_node, kIndex0);
-  if (std::accumulate(from_shape.begin(), from_shape.end(), 1, std::multiplies<int64_t>()) !=
-      std::accumulate(to_shape.begin(), to_shape.end(), 1, std::multiplies<int64_t>())) {
+  if (std::accumulate(from_shape.begin(), from_shape.end(), static_cast<int64_t>(1), std::multiplies<int64_t>()) !=
+      std::accumulate(to_shape.begin(), to_shape.end(), static_cast<int64_t>(1), std::multiplies<int64_t>())) {
     MS_LOG(EXCEPTION) << "Failed to insert reshape behind " << input_node->fullname_with_scope() << ". From shape is "
                       << from_shape << " and to_shape is " << to_shape;
   }

@@ -133,7 +133,8 @@ int RollGpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs, const st
     attr_ptr_->axis = axis_tmp.value();
   } else {
     // when dims=None, flatten the shape
-    auto none_shape = std::accumulate(inp_shape.cbegin(), inp_shape.cend(), 1, std::multiplies<int64_t>());
+    auto none_shape =
+      std::accumulate(inp_shape.cbegin(), inp_shape.cend(), static_cast<int64_t>(1), std::multiplies<int64_t>());
     inp_shape = {none_shape};
     attr_ptr_->axis = {0};
   }

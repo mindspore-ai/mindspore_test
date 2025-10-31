@@ -70,7 +70,8 @@ int SparseSoftmaxGpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs,
                   << "-D.";
     return KRET_RESIZE_FAILED;
   }
-  indices_elements_ = std::accumulate(indices_shape.begin(), indices_shape.end(), 1, std::multiplies<int64_t>());
+  indices_elements_ =
+    std::accumulate(indices_shape.begin(), indices_shape.end(), static_cast<int64_t>(1), std::multiplies<int64_t>());
   indice_number_ = indices_shape[0];
   indice_dims_ = indices_shape[1];
   values_elements_ = values_shape[0];

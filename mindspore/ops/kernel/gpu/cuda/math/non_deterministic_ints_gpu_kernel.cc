@@ -78,8 +78,10 @@ int NonDeterministicIntsGpuKernelMod::Resize(const std::vector<KernelTensor *> &
   std::vector<int64_t> input_shape_ = inputs[0]->GetShapeVector();
   std::vector<int64_t> output_shape_ = outputs[0]->GetShapeVector();
 
-  input_num_ = std::accumulate(input_shape_.begin(), input_shape_.end(), 1, std::multiplies<int64_t>());
-  output_num_ = std::accumulate(output_shape_.begin(), output_shape_.end(), 1, std::multiplies<int64_t>());
+  input_num_ =
+    std::accumulate(input_shape_.begin(), input_shape_.end(), static_cast<int64_t>(1), std::multiplies<int64_t>());
+  output_num_ =
+    std::accumulate(output_shape_.begin(), output_shape_.end(), static_cast<int64_t>(1), std::multiplies<int64_t>());
   output_size_list_.emplace_back(output_num_ * unit_output_size_);
   if (unit_output_size_ == kSizeint32) {
     // int32 or uint32.

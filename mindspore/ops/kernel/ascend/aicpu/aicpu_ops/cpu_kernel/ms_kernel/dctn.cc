@@ -122,7 +122,7 @@ void DCTNCpuKernel::DCTNGetInputs(CpuKernelContext &ctx) {
     calculate_shape_[dim_[i]] = s_[i];
   }
 
-  fft_nums_ = std::accumulate(s_.begin(), s_.end(), 1, std::multiplies<int64_t>());
+  fft_nums_ = std::accumulate(s_.begin(), s_.end(), static_cast<int64_t>(1), std::multiplies<int64_t>());
   auto cmpt_nums = fft_nums_ * pow(kNormFactor, static_cast<int64_t>(s_.size()));
   norm_weight_ = GetNormalized(cmpt_nums, norm_, forward_);
 }

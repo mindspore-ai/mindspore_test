@@ -44,7 +44,8 @@ template <typename T, typename S>
 static uint32_t GatherGrad(const T *index, const S *grad, S *output, int64_t dim,
                            const std::vector<int64_t> &index_shape, const std::vector<int64_t> &output_shape,
                            CpuKernelContext &ctx) {
-  int64_t number = std::accumulate(index_shape.begin(), index_shape.end(), 1, std::multiplies<int64_t>());
+  int64_t number =
+    std::accumulate(index_shape.begin(), index_shape.end(), static_cast<int64_t>(1), std::multiplies<int64_t>());
   bool status = false;
   auto rank = index_shape.size();
   auto dim_size = static_cast<size_t>(dim);
@@ -108,9 +109,9 @@ uint32_t GatherDGradV2Kernel::GatherDGradV2Task(CpuKernelContext &ctx) {
     return KERNEL_STATUS_INNER_ERROR;
   }
 
-  auto output_size =
-    static_cast<size_t>(std::accumulate(output_shape_.begin(), output_shape_.end(), 1, std::multiplies<int64_t>())) *
-    sizeof(S);
+  auto output_size = static_cast<size_t>(std::accumulate(output_shape_.begin(), output_shape_.end(),
+                                                         static_cast<int64_t>(1), std::multiplies<int64_t>())) *
+                     sizeof(S);
   uint8_t *data = reinterpret_cast<uint8_t *>(output);
   if (data == nullptr) {
     CUST_AICPU_LOGE(ctx, "For '%s', the output is nullptr.");

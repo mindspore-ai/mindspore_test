@@ -81,8 +81,8 @@ bool ContiguousCpuKernel::LaunchContiguousImpl(device::DeviceAddress *input,
   MS_EXCEPTION_IF_NULL(input_addr);
   MS_EXCEPTION_IF_NULL(output_addr);
   const auto &output_shape = input_storage_info->shape;
-  auto output_size =
-    LongToSize(std::accumulate(output_shape.begin(), output_shape.end(), 1, std::multiplies<int64_t>()));
+  auto output_size = LongToSize(
+    std::accumulate(output_shape.begin(), output_shape.end(), static_cast<int64_t>(1), std::multiplies<int64_t>()));
   if (output_size == 0) {
     // CPU unsupported zero copy
     return true;
