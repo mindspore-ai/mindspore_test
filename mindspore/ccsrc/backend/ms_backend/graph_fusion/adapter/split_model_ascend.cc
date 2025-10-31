@@ -209,7 +209,8 @@ class FuseMatMul : public FusePattern {
 
   bool IsSameShapeSize(int64_t size, const NodePtrList &output_nodes) {
     for (auto &node : output_nodes) {
-      if (std::accumulate(node->shape.begin(), node->shape.end(), 1, std::multiplies<int64_t>()) != size) {
+      if (std::accumulate(node->shape.begin(), node->shape.end(), static_cast<int64_t>(1),
+                          std::multiplies<int64_t>()) != size) {
         return false;
       }
     }
@@ -221,7 +222,7 @@ class FuseMatMul : public FusePattern {
     size_t current_size = 0;
     auto output_shape = dom->ops().back()->shape;
     int64_t matmul_output_size =
-      std::accumulate(output_shape.begin(), output_shape.end(), 1, std::multiplies<int64_t>());
+      std::accumulate(output_shape.begin(), output_shape.end(), static_cast<int64_t>(1), std::multiplies<int64_t>());
     if (output_shape.back() == 1) {
       return false;
     }

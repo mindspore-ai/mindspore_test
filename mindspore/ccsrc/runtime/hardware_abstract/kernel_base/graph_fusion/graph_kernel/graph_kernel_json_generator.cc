@@ -643,7 +643,8 @@ bool GraphKernelJsonGenerator::CreateAttrDescJson(const AnfNodePtr &anf_node, co
               << dyn_input_sizes.size() - 1 << ") in node [" << anf_node->fullname_with_scope() << "]";
             return false;
           }
-          size_t tensor_idx = LongToSize(std::accumulate(&dyn_input_sizes[0], &dyn_input_sizes[find_item->second], 0));
+          size_t tensor_idx = LongToSize(
+            std::accumulate(&dyn_input_sizes[0], &dyn_input_sizes[find_item->second], static_cast<size_t>(0)));
           for (int64_t input_i = 0; input_i < dyn_input_sizes[find_item->second]; input_i++) {
             attr_json[kJsonKeyValue] = this->cb_->GetInputInferShape(anf_node, tensor_idx);
             attr_json[kJsonKeyName] = op_attr->name();
