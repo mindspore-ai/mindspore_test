@@ -29,7 +29,6 @@ from tests.st.tools.profiler.fake_dataset import FakeDataset
 def collect_profiler_data(tmpdir, pretty_on=False):
     """Collect profiler data."""
     context.set_context(mode=context.GRAPH_MODE, device_target="Ascend")
-    context.set_context(jit_config={"jit_level": "O2"})
     profiler = Profiler(output_path=tmpdir)
     net = TinyTransformer(d_model=2, nhead=1, num_encoder_layers=1, num_decoder_layers=1, dim_feedforward=4)
     nlp_dataset = FakeDataset.create_fake_nlp_dataset(seq_len=1, batch_size=1, d_model=2, tgt_len=1, num_samples=1)

@@ -33,13 +33,13 @@ from mindspore.profiler import ProfilerLevel, ProfilerActivity, AicoreMetrics, E
 from mindspore.profiler import Profiler
 from mindspore.train.callback import Callback
 
-
 de = MSContext.get_instance().get_ascend_soc_version()
 JIT_LEVEL = "O0"
 
 
 class StopAtEpochNew(Callback):
     """for onconditions_ascend StopAtEpoch"""
+
     def __init__(self, start_epoch, stop_epoch, **kwargs):
         """init"""
         self.start_profile = kwargs.get('start_profile', False)
@@ -70,11 +70,16 @@ class StopAtEpochNew(Callback):
         self.stop_epoch = stop_epoch
         self.profiler = mindspore.profiler.profile(start_profile=self.start_profile,
                                                    activities=self.activities, with_stack=self.with_stack,
-        profile_memory=self.profile_memory, data_process=self.data_process, parallel_strategy=self.parallel_strategy,
-        hbm_ddr=self.hbm_ddr, pcie=self.pcie, on_trace_ready=mindspore.profiler.tensorboard_trace_handler(
-                dir_name=self.dir_name, worker_name=self.worker_name, analyse_flag=self.analyse_flag,
-                async_mode=self.async_mode), schedule=mindspore.profiler.schedule(
-                wait=self.wait, warmup=self.warmup, active=self.active, repeat=self.repeat, skip_first=self.skip_first),
+                                                   profile_memory=self.profile_memory, data_process=self.data_process,
+                                                   parallel_strategy=self.parallel_strategy,
+                                                   hbm_ddr=self.hbm_ddr, pcie=self.pcie,
+                                                   on_trace_ready=mindspore.profiler.tensorboard_trace_handler(
+                                                       dir_name=self.dir_name, worker_name=self.worker_name,
+                                                       analyse_flag=self.analyse_flag,
+                                                       async_mode=self.async_mode),
+                                                   schedule=mindspore.profiler.schedule(
+                                                       wait=self.wait, warmup=self.warmup, active=self.active,
+                                                       repeat=self.repeat, skip_first=self.skip_first),
                                                    experimental_config=mindspore.profiler._ExperimentalConfig(
                                                        profiler_level=self.profiler_level, mstx=True,
                                                        data_simplification=self.data_simplification,
@@ -241,6 +246,7 @@ class StopAtStep(Callback):
 
 class DynProfileCtrler(threading.Thread):
     """DynProfileCtrler"""
+
     def __init__(self, cfg_path, delay_list, cfg_list):
         super().__init__()
         self.cfg_path = cfg_path
@@ -420,7 +426,7 @@ def analyse_time(file_path):
     except FileNotFoundError:
         logger.warning(f"文件 {file_path} 未找到")
         return None
-    except Exception as e: # pylint: disable=W0718
+    except Exception as e:  # pylint: disable=W0718
         logger.warning(f"处理文件时发生错误：{e}")
         return None
 
@@ -523,6 +529,7 @@ def check_files_permission_and_size(file_list, expect_mode="640", is_removed=Fal
 
 class MSProfilerChecker:
     """profile check base function"""
+
     def __init__(self, profile_config, worker_num, **kwargs):
         self.profile_config = profile_config
         self.rank_list = list(range(worker_num))
@@ -636,7 +643,7 @@ class MSProfilerChecker:
                           "Allocation Total Reserved(MB)", "Allocation Total Active(MB)", "Release Total Allocated(MB)",
                           "Release Total Reserved(MB)",
                           "Release Total Active(MB)", "Stream Ptr", "Device Type"]
-            operator_memory_path = check_profiler_path("operator_memory.csv",  self.profile_config.get("output_path"))
+            operator_memory_path = check_profiler_path("operator_memory.csv", self.profile_config.get("output_path"))
             logger.warning(f"operator_memory_path is {operator_memory_path}")
             operator_list = []
             with open(operator_memory_path, 'r', encoding='utf-8') as f:
@@ -884,10 +891,11 @@ class MSProfilerChecker:
                               'cpu_analysis_details', 'queue_analysis_details', 'bottleneck_warning',
                               'bottleneck_suggestion']
             with open(check_minddata_pipeline_summary_json_path[0], 'r', encoding='utf-8') as files:
-                data = files.read()
+                data = json.load(files)
                 logger.warning(data)
-                for chars in specified_list:
-                    if chars not in data:
+                for key in data.keys():
+                    if key not in specified_list:
+                        logger.warning("Unexpected key found in minddata_pipeline_summary_json: %s", key)
                         return False
         return True
 
@@ -1037,7 +1045,7 @@ class MSProfilerChecker:
         if (self.profile_config.get("add_metadata") and
                 self.profile_config.get("export_type", "text") in ["text", "dbtext"]):
             add_metadata_jsons_path = check_profiler_path_out("profiler_metadata.json",
-                                                          self.profile_config.get("output_path"))
+                                                              self.profile_config.get("output_path"))
             logger.warning(f"add_metadata_jsons_path：{add_metadata_jsons_path}")
             file_list.extend([add_metadata_jsons_path])
             check_files_permission_and_size(file_list)
@@ -1064,13 +1072,13 @@ class MSProfilerChecker:
         if ms.get_context("device_target") == "CPU":
             cpu_framework = check_profiler_path_out("cpu_framework_0.txt", self.profile_config.get("output_path"))
             cpu_ms_memory_record = check_profiler_path_out("cpu_ms_memory_record_0.txt",
-                                                       self.profile_config.get("output_path"))
-            cpu_op_detail_info = check_profiler_path_out("cpu_op_detail_info_0.csv",
-                                                     self.profile_config.get("output_path"))
-            cpu_op_execute_timestamp = check_profiler_path_out("cpu_op_execute_timestamp_0.txt",
                                                            self.profile_config.get("output_path"))
+            cpu_op_detail_info = check_profiler_path_out("cpu_op_detail_info_0.csv",
+                                                         self.profile_config.get("output_path"))
+            cpu_op_execute_timestamp = check_profiler_path_out("cpu_op_execute_timestamp_0.txt",
+                                                               self.profile_config.get("output_path"))
             cpu_op_type_info = check_profiler_path_out("cpu_op_type_info_0.csv",
-                                                   self.profile_config.get("output_path"))
+                                                       self.profile_config.get("output_path"))
             file_list.extend([cpu_framework, cpu_ms_memory_record, cpu_op_detail_info,
                               cpu_op_execute_timestamp, cpu_op_type_info])
             check_files_permission_and_size(file_list)
@@ -1159,6 +1167,7 @@ class MSProfilerChecker:
 
 class TimeLineChecker:
     """check time."""
+
     def __init__(self, timeline_file):
         with open(timeline_file, 'r', encoding='utf-8') as f:
             data = json.load(f)
