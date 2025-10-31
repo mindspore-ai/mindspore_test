@@ -81,7 +81,8 @@ ShapeVector CalReshapeRealDstShape(const ShapeVector &x_shape, const ShapeVector
     MS_LOG(EXCEPTION) << "The target shape can only have one -1 for Reshape, bug got " << dst_shape;
   }
 
-  auto total_size = std::accumulate(x_shape.cbegin(), x_shape.cend(), 1, std::multiplies<int64_t>());
+  auto total_size =
+    std::accumulate(x_shape.cbegin(), x_shape.cend(), static_cast<int64_t>(1), std::multiplies<int64_t>());
   size_t target_idx = 0;
   int64_t dst_size = 1;
   for (size_t i = 0; i < dst_shape.size(); ++i) {
@@ -323,13 +324,15 @@ NodePtr Emitter::ZerosLike(const NodePtr &node) {
 }
 
 NodePtr Emitter::Fill(double value, const ShapeVector &shape, TypeId data_type) {
-  size_t data_num = LongToSize(std::accumulate(shape.begin(), shape.end(), 1, std::multiplies<int64_t>()));
+  size_t data_num =
+    LongToSize(std::accumulate(shape.begin(), shape.end(), static_cast<int64_t>(1), std::multiplies<int64_t>()));
   std::vector<double> data(data_num, value);
   return Tensor(data_type, shape, &data[0], TypeId::kNumberTypeFloat64);
 }
 
 NodePtr Emitter::Fill(int64_t value, const ShapeVector &shape, TypeId data_type) {
-  size_t data_num = LongToSize(std::accumulate(shape.begin(), shape.end(), 1, std::multiplies<int64_t>()));
+  size_t data_num =
+    LongToSize(std::accumulate(shape.begin(), shape.end(), static_cast<int64_t>(1), std::multiplies<int64_t>()));
   std::vector<int64_t> data(data_num, value);
   return Tensor(data_type, shape, &data[0], TypeId::kNumberTypeInt64);
 }

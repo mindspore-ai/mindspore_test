@@ -50,8 +50,8 @@ class ClipByNorm : public OpDesc {
       reduce_sum = gb.Cast(reduce_sum, kNumberTypeFloat32);
     }
 
-    size_t data_len =
-      LongToSize(std::accumulate(reduce_sum->shape.begin(), reduce_sum->shape.end(), 1, std::multiplies<int64_t>()));
+    size_t data_len = LongToSize(std::accumulate(reduce_sum->shape.begin(), reduce_sum->shape.end(),
+                                                 static_cast<int64_t>(1), std::multiplies<int64_t>()));
 
     std::vector<float> tensor_data0(data_len, 0.0);
     std::vector<float> tensor_data1(data_len, 1.0);

@@ -303,7 +303,7 @@ class OpBuilder {
     int scalar_index = -1;
     for (int i = 0; i < 2; i++) {
       auto shape = CheckAndConvertUtils::ConvertShapePtrToShapeMap(inputs[i]->Shape())[kShape];
-      auto size = std::accumulate(shape.begin(), shape.end(), 1, std::multiplies{});
+      auto size = std::accumulate(shape.begin(), shape.end(), static_cast<int64_t>(1), std::multiplies{});
       if (inputs[i]->isa<ValueNode>()) {
         scalar_index = i;
         if (size != 1) {

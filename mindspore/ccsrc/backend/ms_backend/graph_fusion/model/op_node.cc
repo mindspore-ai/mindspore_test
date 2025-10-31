@@ -519,7 +519,8 @@ NodePtr ConstantOfShapeOp::InferValue(const NodePtrList &inputs, const DAttrs &a
   }
   const auto &value = GetValue<std::vector<float>>(attrs.find("value")->second);
   std::vector<float> res;
-  size_t elem_num = LongToSize(std::accumulate(this->shape.begin(), this->shape.end(), 1, std::multiplies<int64_t>()));
+  size_t elem_num = LongToSize(
+    std::accumulate(this->shape.begin(), this->shape.end(), static_cast<int64_t>(1), std::multiplies<int64_t>()));
   if (value.size() == 1) {
     res = std::vector<float>(elem_num, value[0]);
   } else if (value.size() == elem_num) {

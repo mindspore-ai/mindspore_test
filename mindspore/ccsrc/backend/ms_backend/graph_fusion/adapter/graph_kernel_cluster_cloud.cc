@@ -126,8 +126,8 @@ class DvmSupportChecker {
         return false;
       }
       const auto &node_input_shape = cb->GetInputShape(node, 0);
-      auto input_size =
-        std::accumulate(node_input_shape.begin(), node_input_shape.end(), 1, std::multiplies<int64_t>());
+      auto input_size = std::accumulate(node_input_shape.begin(), node_input_shape.end(), static_cast<int64_t>(1),
+                                        std::multiplies<int64_t>());
       if (input_size == 1) {
         return false;
       }

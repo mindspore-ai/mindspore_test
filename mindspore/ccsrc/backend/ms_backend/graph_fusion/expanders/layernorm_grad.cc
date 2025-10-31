@@ -95,7 +95,7 @@ class LayerNormGrad : public OpDesc {
       param_axis.push_back(i);
     }
 
-    auto reduce_size = std::accumulate(norm_axis.begin(), norm_axis.end(), 1.0,
+    auto reduce_size = std::accumulate(norm_axis.begin(), norm_axis.end(), 1.0f,
                                        [&ori_shape_x](auto a, auto i) { return a * ori_shape_x[i]; });
 
     // Set some constant value
