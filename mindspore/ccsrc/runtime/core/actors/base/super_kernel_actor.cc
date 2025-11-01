@@ -27,7 +27,7 @@
 #include "runtime/pipeline/task/batch_launch_kernel_task.h"
 #include "include/runtime/core/graph_executor/pipeline/runtime_pipeline.h"
 #include "include/runtime/utils/runtime_conf/runtime_conf.h"
-#include "runtime/core/graph_scheduler/base/parameter_store.h"
+#include "include/runtime/core/graph_scheduler/base/parameter_store.h"
 #include "runtime/core/graph_executor/kernel_capture/graph_capture_manager.h"
 #include "async/async.h"
 #include "utils/llm_manager.h"

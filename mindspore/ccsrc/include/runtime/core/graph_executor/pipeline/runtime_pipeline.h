@@ -18,7 +18,7 @@
 
 #include <set>
 #include "include/backend/visible.h"
-#include "runtime/hardware_abstract/device_context/device_context.h"
+#include "include/runtime/hardware_abstract/device_context/device_context.h"
 #include "runtime/core/graph_executor/pipeline/async_lf_queue.h"
 
 namespace mindspore {

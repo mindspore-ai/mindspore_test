@@ -20,7 +20,7 @@
 #include "common/common_test.h"
 #include "common/py_func_graph_fetcher.h"
 #include "include/utils/utils.h"
-#include "runtime/core/graph_scheduler/base/move_to.h"
+#include "include/runtime/core/graph_scheduler/base/move_to.h"
 #include "ir/device_type.h"
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "include/securec.h"

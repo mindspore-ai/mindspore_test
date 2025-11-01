@@ -20,7 +20,7 @@
 #include <memory>
 #include <utility>
 #include "include/utils/visible.h"
-#include "runtime/hardware_abstract/device_context/device_context.h"
+#include "include/runtime/hardware_abstract/device_context/device_context.h"
 #include "runtime/hardware_abstract/event/device_event.h"
 
 namespace mindspore {

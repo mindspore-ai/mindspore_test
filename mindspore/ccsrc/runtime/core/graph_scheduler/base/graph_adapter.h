@@ -21,7 +21,7 @@
 #include <set>
 #include <unordered_map>
 #include "include/backend/kernel_graph.h"
-#include "runtime/hardware_abstract/device_context/device_context.h"
+#include "include/runtime/hardware_abstract/device_context/device_context.h"
 #include "runtime/core/actors/base/actor_set.h"
 #include "runtime/core/graph_scheduler/base/graph_compiler.h"
 

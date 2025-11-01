@@ -27,7 +27,7 @@
 #include "include/backend/kernel_graph.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/utils/anfalgo.h"
-#include "runtime/hardware_abstract/device_context/device_context.h"
+#include "include/runtime/hardware_abstract/device_context/device_context.h"
 #include "include/utils/visible.h"
 #include "pynative/utils/runtime/task/device_task.h"
 #include "include/runtime/pipeline/async_rqueue.h"

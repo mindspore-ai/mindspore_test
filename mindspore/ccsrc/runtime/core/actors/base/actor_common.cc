@@ -34,7 +34,7 @@
 #include "include/cluster/topology/ps_context.h"
 #include "include/runtime/memory/mem_pool/mem_tracker.h"
 #include "include/runtime/utils/runtime_conf/runtime_conf.h"
-#include "runtime/core/graph_scheduler/base/parameter_store.h"
+#include "include/runtime/core/graph_scheduler/base/parameter_store.h"
 #include "include/runtime/core/actors/base/kernel_async_launch_actor.h"
 #include "include/runtime/core/actors/dynamic_shape/kernel_async_infer_actor.h"
 #include "include/runtime/core/actors/dynamic_shape/kernel_async_resize_actor.h"

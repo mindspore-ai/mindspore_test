@@ -26,7 +26,7 @@
 #include "include/backend/debug/data_dump/dump_json_parser.h"
 #include "include/utils/common.h"
 #include "include/runtime/hardware_abstract/kernel_base/device_tensor_store.h"
-#include "runtime/hardware_abstract/device_context/device_context.h"
+#include "include/runtime/hardware_abstract/device_context/device_context.h"
 #include "utils/log_adapter.h"
 
 namespace mindspore {

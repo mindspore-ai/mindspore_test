@@ -23,7 +23,7 @@
 #include <string>
 #include <vector>
 #include "runtime/core/actors/base/actor_common.h"
-#include "runtime/hardware_abstract/device_context/device_context.h"
+#include "include/runtime/hardware_abstract/device_context/device_context.h"
 
 namespace mindspore {
 namespace runtime {

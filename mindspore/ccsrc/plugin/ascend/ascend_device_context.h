@@ -19,7 +19,7 @@
 #include <memory>
 #include <string>
 #include <map>
-#include "runtime/hardware_abstract/device_context/device_context.h"
+#include "include/runtime/hardware_abstract/device_context/device_context.h"
 #include "include/runtime/hardware_abstract/memory_manager/memory_manager.h"
 #include "utils/ms_context.h"
 #include "plugin/ascend/res_manager/collective/ascend_collective_comm_lib.h"

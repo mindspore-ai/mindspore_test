@@ -21,7 +21,7 @@
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "utils/profile.h"
 #include "utils/ms_context.h"
-#include "runtime/hardware_abstract/device_context/device_context.h"
+#include "include/runtime/hardware_abstract/device_context/device_context.h"
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "utils/ms_exception.h"
 

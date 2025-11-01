@@ -52,7 +52,7 @@
 #include "runtime/hardware_abstract/utils.h"
 #include "runtime/core/graph_scheduler/base/graph_compiler.h"
 #include "include/runtime/core/graph_scheduler/base/graph_scheduler.h"
-#include "runtime/core/graph_scheduler/base/parameter_store.h"
+#include "include/runtime/core/graph_scheduler/base/parameter_store.h"
 #include "runtime/core/graph_scheduler/base/graph_adapter.h"
 #include "include/runtime/pipeline/pipeline.h"
 #include "pybind_api/gil_scoped_long_running.h"

@@ -23,7 +23,7 @@
 #include "tools/data_dump/device_statistic/mem_manager.h"
 #include "include/utils/common.h"
 #include "include/runtime/memory/mem_pool/mem_tracker.h"
-#include "runtime/hardware_abstract/device_context/device_context.h"
+#include "include/runtime/hardware_abstract/device_context/device_context.h"
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "ir/tensor_new.h"
 

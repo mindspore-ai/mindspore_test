@@ -30,7 +30,7 @@
 #include "include/runtime/core/actors/base/kernel_async_launch_actor.h"
 #include "include/runtime/core/actors/dynamic_shape/kernel_async_infer_actor.h"
 #include "include/runtime/core/actors/dynamic_shape/kernel_async_resize_actor.h"
-#include "runtime/hardware_abstract/device_context/device_context.h"
+#include "include/runtime/hardware_abstract/device_context/device_context.h"
 #include "include/runtime/pipeline/async_rqueue.h"
 #include "tools/profiler/profiling.h"
 #include "ir/anf.h"

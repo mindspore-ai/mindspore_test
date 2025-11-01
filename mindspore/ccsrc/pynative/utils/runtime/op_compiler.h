@@ -26,7 +26,7 @@
 #include "utils/ms_utils.h"
 #include "include/backend/kernel_graph.h"
 #include "backend/common/kernel_graph/session_basic.h"
-#include "runtime/hardware_abstract/device_context/device_context.h"
+#include "include/runtime/hardware_abstract/device_context/device_context.h"
 #include "pynative/utils/runtime/ir_converter.h"
 
 namespace mindspore {

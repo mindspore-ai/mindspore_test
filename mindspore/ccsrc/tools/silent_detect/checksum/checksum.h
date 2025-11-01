@@ -17,7 +17,7 @@
 #define MINDSPORE_CCSRC_TOOLS_SILENT_DETECT_CHECKSUM_CHECKSUM_H_
 
 #include <vector>
-#include "runtime/hardware_abstract/device_context/device_context.h"
+#include "include/runtime/hardware_abstract/device_context/device_context.h"
 
 namespace mindspore {
 namespace checksum {

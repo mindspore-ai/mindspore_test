@@ -25,7 +25,7 @@
 #include "mindspore/ops/op_def/structure_ops.h"
 #include "utils/ms_context.h"
 #include "utils/trace_base.h"
-#include "runtime/hardware_abstract/device_context/device_context.h"
+#include "include/runtime/hardware_abstract/device_context/device_context.h"
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_h.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_i.h"

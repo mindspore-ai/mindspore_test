@@ -18,7 +18,7 @@
 #include <utility>
 #include <vector>
 #include <unordered_map>
-#include "runtime/hardware_abstract/device_context/device_context.h"
+#include "include/runtime/hardware_abstract/device_context/device_context.h"
 #include "tools/data_dump/tensor_info_collect.h"
 
 #ifndef MINDSPORE_CCSRC_TOOLS_DATA_DUMP_DEVICE_STATISTIC_MEM_MANAGER_H_

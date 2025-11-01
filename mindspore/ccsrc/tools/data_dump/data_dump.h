@@ -19,7 +19,7 @@
 #include "utils/ms_context.h"
 #include "include/backend/visible.h"
 #include "ir/anf.h"
-#include "runtime/hardware_abstract/device_context/device_context.h"
+#include "include/runtime/hardware_abstract/device_context/device_context.h"
 
 #ifndef MINDSPORE_CCSRC_TOOLS_DATA_DUMP_DATA_DUMP_H_
 #define MINDSPORE_CCSRC_TOOLS_DATA_DUMP_DATA_DUMP_H_

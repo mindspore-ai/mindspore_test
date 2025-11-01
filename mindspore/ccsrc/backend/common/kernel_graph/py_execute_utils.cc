@@ -19,7 +19,7 @@
 #include "include/utils/anfalgo.h"
 #include "include/utils/fallback.h"
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
-#include "runtime/hardware_abstract/device_context/device_context.h"
+#include "include/runtime/hardware_abstract/device_context/device_context.h"
 #include "runtime/hardware_abstract/utils.h"
 #include "include/utils/convert_utils.h"
 #include "include/utils/convert_utils_py.h"

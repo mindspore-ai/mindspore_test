@@ -36,7 +36,7 @@
 #include "utils/ms_context.h"
 #include "pynative/utils/base.h"
 
-#include "runtime/hardware_abstract/device_context/device_context.h"
+#include "include/runtime/hardware_abstract/device_context/device_context.h"
 #include "include/backend/visible.h"
 
 namespace mindspore {

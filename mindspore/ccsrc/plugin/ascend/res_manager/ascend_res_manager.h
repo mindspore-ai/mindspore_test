@@ -27,7 +27,7 @@
 #include "ir/tensor.h"
 #include "runtime/hardware_abstract/event/device_event.h"
 #include "utils/ms_context.h"
-#include "runtime/hardware_abstract/device_context/device_context.h"
+#include "include/runtime/hardware_abstract/device_context/device_context.h"
 #include "plugin/ascend/res_manager/allocator/shared_memory_allocator.h"
 
 namespace mindspore {
