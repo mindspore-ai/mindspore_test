@@ -26,7 +26,7 @@ import numpy as np
 import mindspore as ms
 from mindspore.common.api import _pynative_executor
 from tests.st.ops.share._internal.meta import OpsFactory, OpCommonGradNetAllInput
-from tests.st.ops.share._internal.utils import OpSampleInput, OpDynamicInput, make_tensor, make_tensor_with_np_array
+from tests.st.ops.share._internal.utils import OpSampleInput, make_tensor, make_tensor_with_np_array
 from tests.st.ops.share._op_info.op_info import OpInfo
 from tests.st.ops.share._op_info.op_common import dtypes_as_torch, SMALL_DIM_SIZE
 from tqdm import tqdm
@@ -71,7 +71,7 @@ class BinaryOpsFactory(OpsFactory):
         for idx, sample_input in enumerate(self._sample_inputs):
             if self._inplace_op:
                 sample_input = sample_input.copy()
-            sample_input = sample_input.astorch()
+            sample_input = sample_input.astorch(convert_half_to_float=self._convert_half_to_float)
             op_input, op_args, op_kwargs = sample_input.op_input, sample_input.op_args, sample_input.op_kwargs
 
             if isinstance(op_input, torch.Tensor):
@@ -93,14 +93,11 @@ class BinaryOpsFactory(OpsFactory):
                                  f"but got {type(op_input)} and {type(sample_input.op_args[0])}")
         return grads
 
-    def grad_pytorch_dynamic_shape_impl(
-        self,
-        op_dynamic_inputs: OpDynamicInput,
-    ):
+    def grad_pytorch_dynamic_shape_impl(self):
         """Compute gradients with PyTorch for dynamic-shape cases.
 
         Args:
-            op_dynamic_inputs: OpDynamicInput object.
+            None.
 
         Returns:
             list: One or two gradients for the input tensors.
@@ -111,30 +108,30 @@ class BinaryOpsFactory(OpsFactory):
         torch_fn = self.ref
         grads = []
 
-        for sample_input in op_dynamic_inputs.op_running_inputs:
+        for running_input in self._dynamic_inputs.op_running_inputs:
             if self._inplace_op:
-                sample_input = sample_input.copy()
-            sample_input = sample_input.astorch()
-            op_input, op_args, op_kwargs = sample_input.op_input, sample_input.op_args, sample_input.op_kwargs
+                running_input = running_input.copy()
+            running_input = running_input.astorch(convert_half_to_float=self._convert_half_to_float)
+            op_input, op_args, op_kwargs = running_input.op_input, running_input.op_args, running_input.op_kwargs
 
             if isinstance(op_input, torch.Tensor):
                 op_input.requires_grad = True # input
-            if isinstance(sample_input.op_args[0], torch.Tensor):
-                sample_input.op_args[0].requires_grad = True # other
+            if isinstance(running_input.op_args[0], torch.Tensor):
+                running_input.op_args[0].requires_grad = True # other
 
             outi = torch_fn(op_input, *op_args, **op_kwargs)
             outi_grad = torch.ones_like(outi)
             outi.backward(gradient=outi_grad)
 
-            if isinstance(op_input, torch.Tensor) and isinstance(sample_input.op_args[0], torch.Tensor):
-                grads.append((op_input.grad.detach(), sample_input.op_args[0].grad.detach()))
+            if isinstance(op_input, torch.Tensor) and isinstance(running_input.op_args[0], torch.Tensor):
+                grads.append((op_input.grad.detach(), running_input.op_args[0].grad.detach()))
             elif isinstance(op_input, torch.Tensor):
                 grads.append((op_input.grad.detach(),))
-            elif isinstance(sample_input.op_args[0], torch.Tensor):
-                grads.append((sample_input.op_args[0].grad.detach(),))
+            elif isinstance(running_input.op_args[0], torch.Tensor):
+                grads.append((running_input.op_args[0].grad.detach(),))
             else:
                 raise ValueError(f"BinaryOpsFactory.grad_pytorch_dynamic_shape_impl suppose one or two input tensors, "
-                                 f"but got {type(op_input)} and {type(sample_input.op_args[0])}")
+                                 f"but got {type(op_input)} and {type(running_input.op_args[0])}")
         return grads
 
     def test_binary_op_reference(
