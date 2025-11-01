@@ -534,8 +534,8 @@ def error_inputs_binary_op_common_func(op_error_inputs_func = None):
         if not op_info.supports_left_python_scalar:
             yield OpErrorInput(
                 op_sample_input=OpSampleInput(
-                    op_input=make_tensor(shape=(S,), dtype=ms.int64, device=device),
-                    op_args=(2,),
+                    op_input=2,
+                    op_args=(make_tensor(shape=(S,), dtype=ms.int64, device=device),),
                     op_kwargs={},
                     op_name=op_info.name,
                 ),
@@ -545,8 +545,8 @@ def error_inputs_binary_op_common_func(op_error_inputs_func = None):
         if not op_info.supports_right_python_scalar:
             yield OpErrorInput(
                 op_sample_input=OpSampleInput(
-                    op_input=2,
-                    op_args=(make_tensor(shape=(S,), dtype=ms.int64, device=device),),
+                    op_input=make_tensor(shape=(S,), dtype=ms.int64, device=device),
+                    op_args=(2,),
                     op_kwargs={},
                     op_name=op_info.name,
                 ),
@@ -569,7 +569,19 @@ def error_inputs_binary_op_common_func(op_error_inputs_func = None):
 
 
 class BinaryOpInfo(OpInfo):
-
+    """Operator meta information for binary operations.
+    These operations have two tensors as input and one tensor as output usually.
+    And they may have the following characteristics:
+      - they are elementwise operations
+      - the output shape is determined by the broadcasted input shapes usually.
+      - they may have keyword arguments.
+    
+    Extra attributes:
+      - support_tensor_type_promotion: Whether to support tensors' type promotion.
+      - supports_left_python_scalar: Whether to support left python scalar.
+      - supports_right_python_scalar: Whether to support right python scalar.
+      - supports_both_python_scalar: Whether to support both python scalar.
+    """
     def __init__(
             self,
             name: str,

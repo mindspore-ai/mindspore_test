@@ -400,20 +400,19 @@ def make_tensor(
             ms.uint16: (np.uint16, 'randint', 0, 10),
             ms.uint32: (np.uint32, 'randint', 0, 10),
             ms.uint64: (np.uint64, 'randint', 0, 10),
-            ms.float16: (np.float16, 'randn', None, None),
-            ms.float32: (np.float32, 'randn', None, None),
-            ms.float64: (np.float64, 'randn', None, None),
-            ms.complex64: (np.complex64, 'randn', None, None),
-            ms.complex128: (np.complex128, 'randn', None, None),
-            ms.bfloat16: (np.float32, 'randn', None, None),
+            ms.float16: (np.float16, 'uniform', -9, 9),
+            ms.float32: (np.float32, 'uniform', -9, 9),
+            ms.float64: (np.float64, 'uniform', -9, 9),
+            ms.complex64: (np.complex64, 'uniform', -9, 9),
+            ms.complex128: (np.complex128, 'uniform', -9, 9),
+            ms.bfloat16: (np.float32, 'uniform', -9, 9),
         }
+
         np_dtype, default_random_method, default_low, default_high = dtype_to_np_dtype_dict[dtype]
-        if random_method is None:
-            return _generate_ndarray_by_random_method(default_random_method, shape, np_dtype, default_low, default_high)
-        else:
-            if random_method != 'randn':
-                assert low is not None and high is not None, "low and high must be specified for non-randn method."
-            return _generate_ndarray_by_random_method(random_method, shape, np_dtype, low, high)
+        random_method = default_random_method if random_method is None else random_method
+        low = default_low if low is None else low
+        high = default_high if high is None else high
+        return _generate_ndarray_by_random_method(random_method, shape, np_dtype, low, high)
 
     if random_seed is not None:
         np.random.seed(random_seed)
@@ -429,7 +428,7 @@ def make_tensor(
         result = result.to('Ascend' if device.lower() == 'ascend' else device)
 
     if discontiguous:
-        if device is not None and device.lower() == 'ascend':
+        if device is not None and device.lower() != 'gpu':
             result = _tensor_to_discontiguous(result)
 
     return result
@@ -448,7 +447,7 @@ def make_tensor_with_np_array(
     if device is not None and device.lower() in ['ascend', 'cpu']:
         result = result.to('Ascend' if device.lower() == 'ascend' else device)
     if discontiguous:
-        if device is not None and device.lower() == 'ascend':
+        if device is not None and device.lower() != 'gpu':
             result = _tensor_to_discontiguous(result)
 
     return result

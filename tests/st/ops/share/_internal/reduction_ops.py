@@ -62,7 +62,7 @@ class ReductionOpsFactory(OpsFactory):
         for idx, sample_input in enumerate(self._sample_inputs):
             if self._inplace_op:
                 sample_input = sample_input.copy()
-            sample_input = sample_input.astorch()
+            sample_input = sample_input.astorch(self._convert_half_to_float)
 
             op_input, op_args, op_kwargs = sample_input.op_input, sample_input.op_args, sample_input.op_kwargs
 
@@ -101,11 +101,11 @@ class ReductionOpsFactory(OpsFactory):
         torch_fn = self.ref
         grads = []
 
-        for sample_input in self._sample_inputs[1:]:
+        for running_input in self._dynamic_inputs.op_running_inputs:
             if self._inplace_op:
-                sample_input = sample_input.copy()
-            sample_input = sample_input.astorch()
-            op_input, op_args, op_kwargs = sample_input.op_input, sample_input.op_args, sample_input.op_kwargs
+                running_input = running_input.copy()
+            running_input = running_input.astorch(self._convert_half_to_float)
+            op_input, op_args, op_kwargs = running_input.op_input, running_input.op_args, running_input.op_kwargs
 
             original_dtype = None
             if not op_input.dtype.is_floating_point and not op_input.dtype.is_complex:
