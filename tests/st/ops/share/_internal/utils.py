@@ -26,7 +26,7 @@ import numpy as np
 import mindspore as ms
 from mindspore.common.api import _pynative_executor
 from mindspore.common.dtype import _dtype_to_nptype
-from typing import Optional
+from typing import Optional, Tuple
 
 class OpSampleInput:
     """Container of a single operation invocation sample.
@@ -257,6 +257,52 @@ class OpSampleInput:
                f"op_name={print_func(self.op_name)})"
 
 
+class OpErrorInput:
+    '''
+    Container of a single error input sample.
+    Attributes:
+        op_sample_input: The sample input that caused the error.
+        op_error_type: The type of error.
+        op_error_info: The info of error.
+    '''
+    __slots__ = [
+        "op_sample_input",
+        "op_error_type",
+        "op_error_info",
+    ]
+
+    def __init__(
+        self,
+        op_sample_input: OpSampleInput,
+        op_error_type,
+        op_error_info,
+    ):
+        self.op_sample_input = op_sample_input
+        self.op_error_type = op_error_type
+        self.op_error_info = op_error_info
+
+
+class OpDynamicInput:
+    '''
+    Container of a couple of input sample.
+    Attributes:
+        op_compile_input: The sample input for compiling.
+        op_running_inputs: The sample input for running.
+    '''
+    __slots__ = [
+        "op_compile_input",
+        "op_running_inputs",
+    ]
+
+    def __init__(
+        self,
+        op_compile_input: OpSampleInput,
+        op_running_inputs: Tuple[OpSampleInput],
+    ):
+        self.op_compile_input = op_compile_input
+        self.op_running_inputs = op_running_inputs
+
+
 def _tensor_to_discontiguous(x):
     """Return a view that is not contiguous in memory when feasible.
 
@@ -383,7 +429,8 @@ def make_tensor(
         result = result.to('Ascend' if device.lower() == 'ascend' else device)
 
     if discontiguous:
-        result = _tensor_to_discontiguous(result)
+        if device is not None and device.lower() == 'ascend':
+            result = _tensor_to_discontiguous(result)
 
     return result
 
@@ -401,6 +448,7 @@ def make_tensor_with_np_array(
     if device is not None and device.lower() in ['ascend', 'cpu']:
         result = result.to('Ascend' if device.lower() == 'ascend' else device)
     if discontiguous:
-        result = _tensor_to_discontiguous(result)
+        if device is not None and device.lower() == 'ascend':
+            result = _tensor_to_discontiguous(result)
 
     return result

@@ -28,12 +28,26 @@ from tests.st.ops.share._op_info.op_info import OpInfo, BinaryOpInfo
 from tests.st.ops.share._op_info.op_info import sample_inputs_binary_op_func
 from tests.st.ops.share._op_info.op_common import dtypes_as_torch, dtypes_extra_uint
 from tests.st.ops.share._op_info.op_common import SMALL_DIM_SIZE
-from tests.st.ops.share._internal.utils import make_tensor, OpSampleInput
+from tests.st.ops.share._internal.utils import OpSampleInput, OpDynamicInput, OpErrorInput, make_tensor
 from typing import Dict, Optional
 
 # op_sample_inputs_func for ops
-def sample_inputs_add_sub_ext_func(op_info: OpInfo, dtype, device=None, **kwargs):
-    """Yield sample inputs for add/sub ops including extra alpha cases."""
+def sample_inputs_add_sub_ext_func(
+    op_info: OpInfo,
+    dtype,
+    device=None,
+    **kwargs
+):
+    '''
+    Generate sample inputs for add/sub ops including extra alpha cases.
+    Args:
+        op_info: OpInfo object.
+        dtype: Data type of the tensors.
+        device: Device of the tensors.
+        kwargs: Additional keyword arguments.
+    Returns:
+        Generator of OpSampleInput objects.
+    '''
     yield from sample_inputs_binary_op_func(op_info, dtype, device, **kwargs)
 
     S = SMALL_DIM_SIZE
@@ -78,48 +92,99 @@ def sample_inputs_add_sub_ext_func(op_info: OpInfo, dtype, device=None, **kwargs
         )
 
 # op_dynamic_inputs_func for ops
-def dynamic_inputs_add_sub_ext_func(op_info: OpInfo, dtype=None, device=None, **kwargs):
-    """Build dynamic-shape sample inputs (rank or shape) for add/sub ops."""
-    sample_inputs = []
-    if 'dynamic_mode' in kwargs and kwargs['dynamic_mode'] == 'dynamic_rank':
-        compile_input = OpSampleInput(
-            op_input=ms.Tensor(shape=None, dtype=ms.float32),
-            op_args=(ms.Tensor(shape=None, dtype=ms.float32),),
-            op_kwargs={"alpha": mutable(input_data=2.33, dynamic_len=False)},
-            op_name='add_compile_input'
+def dynamic_inputs_add_sub_ext_func(
+    op_info: OpInfo,
+    dtype=None,
+    device=None,
+    **kwargs
+):
+    '''
+    Generate dynamic inputs for add/sub_ext ops.
+    Args:
+        op_info: OpInfo object.
+        dtype: Data type of the tensors.
+        device: Device of the tensors.
+        kwargs: Additional keyword arguments.
+    Returns:
+        Generator of OpDynamicInput objects.
+    '''
+    make_func = functools.partial(make_tensor, dtype=dtype, device=device)
+    if not kwargs.get("only_dynamic_rank", False):
+        # add/sub_ext dynamic shape
+        yield OpDynamicInput(
+            op_compile_input=OpSampleInput(
+                op_input=ms.Tensor(shape=(None, None, None, None, None), dtype=dtype),
+                op_args=(ms.Tensor(shape=(None, None, None, 1, None), dtype=dtype),),
+                op_kwargs={"alpha": mutable(input_data=3.3, dynamic_len=False)},
+                op_name=f'{op_info.name}_dynamic_shape_compile_input'
+            ),
+            op_running_inputs=(
+                OpSampleInput(
+                    op_input=make_func(shape=(5, 5, 8, 5, 4)),
+                    op_args=(make_func(shape=(5, 5, 8, 1, 4)),),
+                    op_kwargs={"alpha": mutable(input_data=4.3, dynamic_len=False)},
+                    op_name=f'{op_info.name}_dynamic_shape_running_input'
+                ),
+                OpSampleInput(
+                    op_input=make_func(shape=(9, 9, 8, 8, 4)),
+                    op_args=(make_func(shape=(9, 9, 8, 1, 4)),),
+                    op_kwargs={"alpha": mutable(input_data=-2.1, dynamic_len=False)},
+                    op_name=f'{op_info.name}_dynamic_shape_running_input'
+                ),
+            )
         )
-        sample_inputs.append(compile_input)
-        op_params = [
-            ((5, 5), (5, 1), mutable(input_data=9.6, dynamic_len=False)),
-            ((9, 9, 7), (9, 9, 7), mutable(input_data=10.10, dynamic_len=False)),
-        ]
-        for input_shape, other_shape, alpha in op_params:
-            sample_inputs.append(OpSampleInput(
-                op_input=make_tensor(input_shape, ms.float32),
-                op_args=(make_tensor(other_shape, ms.float32),),
-                op_kwargs={"alpha": alpha},
-                op_name='add_running_input'
-            ))
-    else:
-        compile_input = OpSampleInput(
-            op_input=ms.Tensor(shape=(None, None, None, None, None), dtype=ms.float32),
-            op_args=(ms.Tensor(shape=(None, None, None, 1, None), dtype=ms.float32),),
-            op_kwargs={"alpha": mutable(input_data=3.3, dynamic_len=False)},
-            op_name=f'{op_info.name}_compile_input'
+    if not kwargs.get("only_dynamic_shape", False):
+        # add/sub_ext dynamic rank
+        yield OpDynamicInput(
+            op_compile_input=OpSampleInput(
+                op_input=ms.Tensor(shape=None, dtype=dtype),
+                op_args=(ms.Tensor(shape=None, dtype=dtype),),
+                op_kwargs={"alpha": mutable(input_data=2.33, dynamic_len=False)},
+                op_name=f'{op_info.name}_dynamic_rank_compile_input'
+            ),
+            op_running_inputs=(
+                OpSampleInput(
+                    op_input=make_func(shape=(5, 5)),
+                    op_args=(make_func(shape=(5, 5)),),
+                    op_kwargs={"alpha": mutable(input_data=9.6, dynamic_len=False)},
+                    op_name=f'{op_info.name}_dynamic_rank_running_input'
+                ),
+                OpSampleInput(
+                    op_input=make_func(shape=(9, 9, 7)),
+                    op_args=(make_func(shape=(9, 9, 7)),),
+                    op_kwargs={"alpha": mutable(input_data=10.10, dynamic_len=False)},
+                    op_name=f'{op_info.name}_dynamic_rank_running_input'
+                ),
+            )
         )
-        sample_inputs.append(compile_input)
-        op_params = [
-            ((5, 5, 8, 5, 4), (5, 5, 8, 1, 4), mutable(input_data=4.3, dynamic_len=False)),
-            ((9, 9, 8, 8, 4), (9, 9, 8, 1, 4), mutable(input_data=-2.1, dynamic_len=False)),
-        ]
-        for input_shape, other_shape, alpha in op_params:
-            sample_inputs.append(OpSampleInput(
-                op_input=make_tensor(input_shape, ms.float32),
-                op_args=(make_tensor(other_shape, ms.float32),),
-                op_kwargs={"alpha": alpha},
-                op_name=f'{op_info.name}_running_input'
-            ))
-    return sample_inputs
+
+# op_error_inputs_func for ops
+def error_inputs_add_sub_ext_func(op_info: OpInfo, dtype=None, device=None, **kwargs):
+    '''
+    Generate error inputs for add/sub_ext ops.
+    '''
+    # other shape does not match input
+    yield OpErrorInput(
+        op_sample_input=OpSampleInput(
+            op_input=make_tensor(shape=(2,), dtype=ms.float32),
+            op_args=(make_tensor(shape=(3,), dtype=ms.float32),),
+            op_kwargs={},
+            op_name=op_info.name,
+        ),
+        op_error_type=ValueError,
+        op_error_info='other shape does not match input',
+    )
+    # other is not tensor or number
+    yield OpErrorInput(
+        op_sample_input=OpSampleInput(
+            op_input=make_tensor(shape=(2,), dtype=ms.float32),
+            op_args=((1, 2),),
+            op_kwargs={},
+            op_name=op_info.name,
+        ),
+        op_error_type=TypeError,
+        op_error_info='other is not tensor or number',
+    )
 
 # op_func_grad, used by gradient comparison if there are kwargs in op
 def add_ext_func_grad(x, y, alpha=1):
@@ -142,6 +207,7 @@ op_db: Dict[str, OpInfo] = {
         dtypes_gpu=tuple([d for d in dtypes_as_torch if d != ms.bfloat16 and d != ms.bool_] + list(dtypes_extra_uint)),
         op_sample_inputs_func=sample_inputs_add_sub_ext_func,
         op_dynamic_inputs_func=dynamic_inputs_add_sub_ext_func,
+        op_error_inputs_func=error_inputs_add_sub_ext_func,
     ),
     'sub_ext': BinaryOpInfo(
         name='sub_ext',
@@ -155,6 +221,7 @@ op_db: Dict[str, OpInfo] = {
         dtypes_gpu=tuple([d for d in dtypes_as_torch if d != ms.bfloat16 and d != ms.bool_] + list(dtypes_extra_uint)),
         op_sample_inputs_func=sample_inputs_add_sub_ext_func,
         op_dynamic_inputs_func=dynamic_inputs_add_sub_ext_func,
+        op_error_inputs_func=error_inputs_add_sub_ext_func,
     ),
 }
 
