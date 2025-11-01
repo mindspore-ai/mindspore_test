@@ -13,8 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/symbol_engine/multi_symbol_engine.h"
+#include "backend/ms_backend/graph_fusion/multi_symbol_engine.h"
 #include <utility>
+#include <vector>
+#include <memory>
+#include <map>
 #include "abstract/symbolic_shape/utils.h"
 #include "abstract/symbolic_shape/int_symbol.h"
 

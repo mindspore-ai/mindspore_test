@@ -14,15 +14,14 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CCSRC_BACKEND_OPTIMIZER_GRAPH_KERNEL_ADAPTER_FAKE_ABSTRACT_SHAPE_H_
-#define MINDSPORE_CCSRC_BACKEND_OPTIMIZER_GRAPH_KERNEL_ADAPTER_FAKE_ABSTRACT_SHAPE_H_
+#ifndef MINDSPORE_CCSRC_BACKEND_MS_BACKEND_GRAPH_FUSION_FAKE_ABSTRACT_SHAPE_H_
+#define MINDSPORE_CCSRC_BACKEND_MS_BACKEND_GRAPH_FUSION_FAKE_ABSTRACT_SHAPE_H_
 #include <string>
 #include <map>
 #include "utils/shape_utils.h"
-#include "runtime/hardware_abstract/visible.h"
 
 namespace mindspore::graphkernel {
 // infer abstract shape by device_shape and data_format
-RUNTIME_HARDWARE_EXPORT ShapeVector GetFakeAbstractShape(const ShapeVector &device_shape, const std::string &format);
+ShapeVector GetFakeAbstractShape(const ShapeVector &device_shape, const std::string &format);
 }  // namespace mindspore::graphkernel
-#endif  // MINDSPORE_CCSRC_BACKEND_OPTIMIZER_GRAPH_KERNEL_ADAPTER_FAKE_ABSTRACT_SHAPE_H_
+#endif  // MINDSPORE_CCSRC_BACKEND_MS_BACKEND_GRAPH_FUSION_FAKE_ABSTRACT_SHAPE_H_
