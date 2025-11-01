@@ -12,18 +12,34 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+"""
+test compile cache with simple net
+"""
 import numpy as np
-
-import mindspore.context as context
-import mindspore.nn as nn
-from mindspore import Tensor, Parameter
+from mindspore import context, nn, Tensor, Parameter
 from mindspore import dtype as mstype
 from mindspore.ops import operations as P
 
 
 class NetWithWeights(nn.Cell):
+    """
+    NetWithWeights
+    Args:
+        None
+    Inputs:
+        x (Tensor): Input tensor of integer type.
+
+    Returns:
+        Tensor, output tensor
+
+    Examples:
+        >>> net = NetWithWeights()
+        >>> x = Tensor(np.array(1), mstype.int32)
+        >>> y = Tensor(np.array(1), mstype.int32)
+        >>> output = net(x, y)
+    """
     def __init__(self):
-        super(NetWithWeights, self).__init__()
+        super().__init__()
         self.matmul = P.MatMul()
         self.a = Parameter(Tensor(np.array([2.0], np.float32)), name='a')
         self.z = Parameter(Tensor(np.array([1.0], np.float32)), name='z')
@@ -35,16 +51,12 @@ class NetWithWeights(nn.Cell):
         return out
 
 
-def run_simple_net():
-    x = Tensor([[0.8, 0.6, 0.2], [1.8, 1.3, 1.1]], dtype=mstype.float32)
-    y = Tensor([[0.11, 3.3, 1.1], [1.1, 0.2, 1.4], [1.1, 2.2, 0.3]], dtype=mstype.float32)
-    net = NetWithWeights()
-    output = net(x, y)
-    print("AAA", output, "BBB")
-    print("AAA", output.asnumpy().shape, "BBB")
-
-
 if __name__ == "__main__":
     context.set_context(mode=context.GRAPH_MODE)
     context.set_context(jit_config={"jit_level": "O0"})
-    run_simple_net()
+    input_x = Tensor([[0.8, 0.6, 0.2], [1.8, 1.3, 1.1]], dtype=mstype.float32)
+    input_y = Tensor([[0.11, 3.3, 1.1], [1.1, 0.2, 1.4], [1.1, 2.2, 0.3]], dtype=mstype.float32)
+    net = NetWithWeights()
+    output = net(input_x, input_y)
+    print("RUNTIME_COMPILE", output, "RUNTIME_CACHE")
+    print("RUNTIME_COMPILE", output.asnumpy().shape, "RUNTIME_CACHE")
