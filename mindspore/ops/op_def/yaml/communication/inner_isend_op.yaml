@@ -12,6 +12,8 @@ inner_comm_isend:
     returns:
         output:
             dtype: tensor
+    labels:
+        side_effect_mem: True
     function:
         disable: True
     dispatch:

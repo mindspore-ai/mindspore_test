@@ -1691,6 +1691,20 @@ bool AnfRuntimeAlgorithm::IsNeedContinuesMemoryOp(const AnfNodePtr &kernel) {
     kAllGatherVOpName,
     kReduceScatterVOpName,
     kAlltoAllVCOpName,
+    kInnerCommAllGatherOpName,
+    kDistCommAllGatherIntoTensorOpName,
+    kDistCommAllGatherOpName,
+    kInnerCommReduceScatterOpName,
+    kDistCommReduceScatterTensorOpName,
+    kDistCommReduceScatterOpName,
+    kInnerCommAllToAllVOpName,
+    kDistCommAllToAllVSingleOpName,
+    kInnerCommAllReduceOpName,
+    kDistCommAllReduceOpName,
+    kInnerCommIRecvOpName,
+    kDistCommIRecvOpName,
+    kInnerCommISendOpName,
+    kDistCommISendOpName,
   };
   bool flag =
     (common::AnfAlgo::IsNaiveCommunicationOp(kernel)) && (names.count(common::AnfAlgo::GetCNodeName(kernel)) == 0);

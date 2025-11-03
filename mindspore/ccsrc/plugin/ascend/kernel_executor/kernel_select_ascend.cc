@@ -820,7 +820,10 @@ std::tuple<bool, std::string, ExceptionType, bool> SelectKernelInfoWithMsg(const
 bool IsEnableAclnn(const KernelGraphPtr &kernel_graph, const CNodePtr &node) {
   MS_EXCEPTION_IF_NULL(kernel_graph);
   MS_EXCEPTION_IF_NULL(node);
-
+  if (common::AnfAlgo::IsNaiveCommunicationOp(node)) {
+    MS_LOG(DEBUG) << "Kernel " << node->fullname_with_scope() << " is comm op.";
+    return false;
+  }
   auto primitive = GetCNodePrimitive(node);
   MS_EXCEPTION_IF_NULL(primitive);
   if (IsPrimitiveCNode(node, prim::kPrimCustom)) {
@@ -860,7 +863,6 @@ bool IsEnableAclnn(const KernelGraphPtr &kernel_graph, const CNodePtr &node) {
   if (IsSupportLcoc(group, op_name)) {
     return false;
   }
-
   if (kernel::IsEnabledAclnnDispatch(op_name)) {
     if (!kernel::IsRegisteredAclnnOp(op_name)) {
       if (kernel::IsViewOp(op_name)) {

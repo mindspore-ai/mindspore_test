@@ -12,9 +12,13 @@ dist_comm_reduce_scatter:
             dtype: str
         group:
             dtype: str
+    args_signature:
+        rw_write: other
     returns:
         output:
             dtype: tensor
+    labels:
+        side_effect_mem: True
     function:
         disable: True
     dispatch:

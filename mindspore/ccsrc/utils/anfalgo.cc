@@ -1412,11 +1412,39 @@ bool AnfAlgo::IsCommunicationFusionOp(const AnfNodePtr &node) {
 }
 
 bool AnfAlgo::IsNaiveCommunicationOp(const std::string &kernel_name) {
-  static const std::set<std::string> kCommunicationOpNames = {
-    kAllReduceOpName,         kAllGatherOpName,        kBroadcastOpName,       kReduceScatterOpName, kSendOpName,
-    kReceiveOpName,           kAlltoAllOpName,         kAllToAllOpName,        kAllToAllvOpName,     kBarrierOpName,
-    kCollectiveScatterOpName, kCollectiveGatherOpName, kBatchISendIRecvOpName, kAlltoAllVOpName,     kAlltoAllVGEOpName,
-    kAllGatherVOpName,        kReduceScatterVOpName,   kReduceOpName,          kAlltoAllVCOpName};
+  static const std::set<std::string> kCommunicationOpNames = {kAllReduceOpName,
+                                                              kAllGatherOpName,
+                                                              kBroadcastOpName,
+                                                              kReduceScatterOpName,
+                                                              kSendOpName,
+                                                              kReceiveOpName,
+                                                              kAlltoAllOpName,
+                                                              kAllToAllOpName,
+                                                              kAllToAllvOpName,
+                                                              kBarrierOpName,
+                                                              kCollectiveScatterOpName,
+                                                              kCollectiveGatherOpName,
+                                                              kBatchISendIRecvOpName,
+                                                              kAlltoAllVOpName,
+                                                              kAlltoAllVGEOpName,
+                                                              kAllGatherVOpName,
+                                                              kReduceScatterVOpName,
+                                                              kReduceOpName,
+                                                              kAlltoAllVCOpName,
+                                                              kInnerCommAllGatherOpName,
+                                                              kDistCommAllGatherIntoTensorOpName,
+                                                              kDistCommAllGatherOpName,
+                                                              kInnerCommReduceScatterOpName,
+                                                              kDistCommReduceScatterTensorOpName,
+                                                              kDistCommReduceScatterOpName,
+                                                              kInnerCommAllToAllVOpName,
+                                                              kDistCommAllToAllVSingleOpName,
+                                                              kInnerCommAllReduceOpName,
+                                                              kDistCommAllReduceOpName,
+                                                              kInnerCommIRecvOpName,
+                                                              kDistCommIRecvOpName,
+                                                              kDistCommISendOpName,
+                                                              kInnerCommISendOpName};
   return kCommunicationOpNames.find(kernel_name) != kCommunicationOpNames.end();
 }
 

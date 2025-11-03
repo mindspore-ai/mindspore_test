@@ -28,8 +28,9 @@ namespace ops {
 ShapeArray DistCommReduceScatterFuncImpl::InferShape(const PrimitivePtr &primitive,
                                                      const InferInfoPtrList &input_infos) const {
   auto &value = input_infos[kIndex2];
-  (void)CheckRankSize(primitive->name(), value);
-  const auto &output_shape = input_infos[kIndex0]->GetShape();
+  auto rank_size = GetRankValue(primitive->name(), value);
+  auto output_shape = input_infos[kIndex0]->GetShape();
+  output_shape[kIndex0] = output_shape[kIndex0] * rank_size;
   return {output_shape};
 }
 
