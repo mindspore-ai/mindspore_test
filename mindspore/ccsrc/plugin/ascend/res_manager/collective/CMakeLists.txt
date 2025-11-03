@@ -25,7 +25,7 @@ if(DEFINED ENV{MS_INTERNAL_KERNEL_HOME})
     set_property(SOURCE ${LOWLATENCY_COLLECTIVE_SRCS} PROPERTY COMPILE_DEFINITIONS
             SUBMODULE_ID=mindspore::SubModuleId::SM_DEVICE)
     add_library(lowlatency_collective SHARED ${LOWLATENCY_COLLECTIVE_SRCS})
-    target_link_libraries(lowlatency_collective PRIVATE lcal mindspore_core)
+    target_link_libraries(lowlatency_collective PRIVATE lcal_ms mindspore_core)
     set_target_properties(lowlatency_collective PROPERTIES INSTALL_RPATH
                     ${ORIGIN_PATH}/ms_kernels_internal/asdops/lib)
     add_compile_definitions(ENABLE_INTERNAL_KERNELS)
