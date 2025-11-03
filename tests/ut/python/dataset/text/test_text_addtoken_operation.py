@@ -76,6 +76,48 @@ def test_addtoken_operation_01():
     assert np.array_equal(result, np.array(expected))
 
 
+def test_add_token_at_begin():
+    """
+    Feature: AddToken op
+    Description: Test AddToken with begin = True
+    Expectation: Output is equal to the expected output
+    """
+    input_one_dimension = ['a', 'b', 'c', 'd', 'e']
+    expected = ['TOKEN', 'a', 'b', 'c', 'd', 'e']
+    out = text.AddToken(token='TOKEN', begin=True)
+    result = out(input_one_dimension)
+    assert np.array_equal(result, np.array(expected))
+
+
+def test_add_token_at_end():
+    """
+    Feature: AddToken op
+    Description: Test AddToken with begin = False
+    Expectation: Output is equal to the expected output
+    """
+    input_one_dimension = ['a', 'b', 'c', 'd', 'e']
+    expected = ['a', 'b', 'c', 'd', 'e', 'TOKEN']
+    out = text.AddToken(token='TOKEN', begin=False)
+    result = out(input_one_dimension)
+    assert np.array_equal(result, np.array(expected))
+
+
+def test_add_token_fail():
+    """
+    Feature: AddToken op
+    Description: fail to test AddToken
+    Expectation: TypeError is raised as expected
+    """
+    try:
+        _ = text.AddToken(token=1.0, begin=True)
+    except TypeError as error:
+        assert "Argument token with value 1.0 is not of type [<class 'str'>], but got <class 'float'>." in str(error)
+    try:
+        _ = text.AddToken(token='TOKEN', begin=12.3)
+    except TypeError as error:
+        assert "Argument begin with value 12.3 is not of type [<class 'bool'>], but got <class 'float'>." in str(error)
+
+
 def test_addtoken_exception_01():
     """
     Feature: AddToken op

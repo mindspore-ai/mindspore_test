@@ -96,7 +96,7 @@ def get_dataset_shapes_and_types(dataset):
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
-def test_func_static_shape_memory():
+def test_generatordataset_static_shape_memory():
     """
     Feature: Test memory leak with getnext when static shape
     Description: Testing static shape
@@ -125,7 +125,7 @@ def test_func_static_shape_memory():
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
-def test_func_dynamic_shape_memory():
+def test_generatordataset_dynamic_shape_memory():
     """
     Feature: Test memory leak with getnext when dynamic shape
     Description: Testing dynamic shape
@@ -155,5 +155,5 @@ def test_func_dynamic_shape_memory():
 
 
 if __name__ == '__main__':
-    test_func_static_shape_memory()
-    test_func_dynamic_shape_memory()
+    test_generatordataset_static_shape_memory()
+    test_generatordataset_dynamic_shape_memory()

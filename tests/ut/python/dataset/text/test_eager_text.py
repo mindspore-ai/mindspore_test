@@ -12,13 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
+"""test text eager"""
+
 import numpy as np
 import pytest
 
 import mindspore
 from mindspore import log as logger
 import mindspore.common.dtype as mstype
-import mindspore.dataset.text as text
+from mindspore.dataset import text
 
 
 def test_sliding_window():
