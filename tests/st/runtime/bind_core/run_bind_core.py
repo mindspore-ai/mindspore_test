@@ -25,7 +25,7 @@ from mindspore import Tensor, jit
 from mindspore import dtype as mstype
 from mindspore.common import Parameter
 
-steps = 30
+steps = 10
 
 ms.set_context(mode=ms.PYNATIVE_MODE)
 
@@ -38,16 +38,19 @@ def _get_env_with_json(env_name, default):
             return value
     return default
 
+
+#  Env 'DISTRIBUTED' is set to 1 while launching with msrun.
+if os.getenv("DISTRIBUTED") == "1":
+    ms.communication.init()
+
 if os.getenv("RANK_ID") == "0" or os.getenv("RANK_ID") is None:
     affinity_cpu_list = _get_env_with_json('AFFINITY_CPU_LIST', None)
 else:
     affinity_cpu_list = _get_env_with_json('AFFINITY_CPU_LIST_2', None)
 module_to_cpu_dict = _get_env_with_json('MODULE_TO_CPU_DICT', None)
-
-if os.getenv("DISTRIBUTED") == "1":
-    ms.communication.init()
-
-ms.runtime.set_cpu_affinity(True, affinity_cpu_list, module_to_cpu_dict)
+#  Env 'THREAD_BIND' is set to 1 while enabling 'mindspore.runtime.set_cpu_affinity'.
+if os.getenv("THREAD_BIND") == "1":
+    ms.runtime.set_cpu_affinity(True, affinity_cpu_list, module_to_cpu_dict)
 
 class Net(nn.Cell):
     """Network with jit and dynamic shape."""
