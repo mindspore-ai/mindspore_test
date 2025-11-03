@@ -92,7 +92,7 @@ AnfNodePtrList MatmulAddExtSplitFusion::GetMatmulSplitInputs(const AnfNodePtr &i
   auto type_value_f32 = std::make_shared<Int64Imm>(static_cast<int64_t>(TypeId::kNumberTypeFloat32));
   auto type_node_f32 = kernel_graph->NewValueNode(type_value_f32);
   std::vector<AnfNodePtr> casted_bias_inputs = {NewValueNode(prim::kPrimCast), input_bias, type_node_f32};
-  auto bias_cast_cnode = graph->NewCNode(casted_bias_inputs);
+  auto bias_cast_cnode = NewCNode(casted_bias_inputs, graph);
   MS_EXCEPTION_IF_NULL(bias_cast_cnode);
   auto type_fp32 = TypeIdToType(TypeId::kNumberTypeFloat32);
   auto cast_abs = std::make_shared<abstract::AbstractTensor>(type_fp32, input_bias->Shape());

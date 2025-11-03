@@ -684,7 +684,7 @@ AnfNodePtrList InsertTypeTransformOp::ProcessTupleUnfoldToTensor(const FuncGraph
   auto prim = NewValueNode(std::make_shared<Primitive>(prim::kPrimTupleToTensor->name()));
   MS_EXCEPTION_IF_NULL(prim);
   AnfNodePtrList inputs = {prim, input, type_id_value_node};
-  CNodePtr tuple_to_tensor = func_graph->NewCNode(inputs);
+  CNodePtr tuple_to_tensor = NewCNode(inputs, func_graph);
   MS_EXCEPTION_IF_NULL(tuple_to_tensor);
   tuple_to_tensor->set_scope(input->scope());
   // Set abstract for TupleToTensor op according to user node's input shape and type.
@@ -877,7 +877,7 @@ AnfNodePtrList InsertTypeTransformOp::ProcessTupleToTensor(const FuncGraphPtr &f
   auto prim = NewValueNode(std::make_shared<Primitive>(prim::kPrimTupleToTensor->name()));
   MS_EXCEPTION_IF_NULL(prim);
   AnfNodePtrList inputs = {prim, input, type_id_value_node};
-  CNodePtr tuple_to_tensor = func_graph->NewCNode(inputs);
+  CNodePtr tuple_to_tensor = NewCNode(inputs, func_graph);
   MS_EXCEPTION_IF_NULL(tuple_to_tensor);
 
   // Set abstract for TupleToTensor op according to user node's input shape and type.
@@ -920,7 +920,7 @@ AnfNodePtrList InsertTypeTransformOp::ProcessScalarToTensor(const FuncGraphPtr &
   auto prim = NewValueNode(std::make_shared<Primitive>(prim::kPrimScalarToTensor->name()));
   MS_EXCEPTION_IF_NULL(prim);
   AnfNodePtrList inputs = {prim, input, type_id_value_node};
-  CNodePtr scalar_to_tensor = func_graph->NewCNode(inputs);
+  CNodePtr scalar_to_tensor = NewCNode(inputs, func_graph);
   MS_EXCEPTION_IF_NULL(scalar_to_tensor);
   scalar_to_tensor->set_scope(input->scope());
   auto abs = GenerateAbsByOpInfer(GetCNodePrimitive(scalar_to_tensor), {input, type_id_value_node});
@@ -949,7 +949,7 @@ AnfNodePtrList InsertTypeTransformOp::ProcessTensorToTuple(const FuncGraphPtr &f
   auto prim = NewValueNode(std::make_shared<Primitive>(prim::kPrimTensorToTuple->name()));
   MS_EXCEPTION_IF_NULL(prim);
   AnfNodePtrList inputs = {prim, input};
-  CNodePtr tensor_to_tuple = func_graph->NewCNode(inputs);
+  CNodePtr tensor_to_tuple = NewCNode(inputs, func_graph);
   MS_EXCEPTION_IF_NULL(tensor_to_tuple);
   tensor_to_tuple->set_scope(input->scope());
   auto abs = GenerateAbsByOpInfer(GetCNodePrimitive(tensor_to_tuple), {input});
@@ -975,7 +975,7 @@ AnfNodePtrList InsertTypeTransformOp::ProcessTensorToScalar(const FuncGraphPtr &
   auto prim = NewValueNode(std::make_shared<Primitive>(prim::kPrimTensorToScalar->name()));
   MS_EXCEPTION_IF_NULL(prim);
   AnfNodePtrList inputs = {prim, input};
-  CNodePtr tensor_to_scalar = func_graph->NewCNode(inputs);
+  CNodePtr tensor_to_scalar = NewCNode(inputs, func_graph);
   MS_EXCEPTION_IF_NULL(tensor_to_scalar);
   tensor_to_scalar->set_scope(input->scope());
   auto abs = GenerateAbsByOpInfer(GetCNodePrimitive(tensor_to_scalar), {input});

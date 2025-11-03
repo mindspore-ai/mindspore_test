@@ -84,8 +84,8 @@ CNodePtr SwiGLUDynamicQuantFusion::CreateSwiGLUDynamicQuantNode(const FuncGraphP
   auto attr_value = swiglu_prim->GetAttr("FusionType");
   quant_prim->AddAttr("FusionType", attr_value);
 
-  std::vector<AnfNodePtr> quant_inputs = {input_node, smooth_scale_node};
-  auto swiglu_dynamic_quant = func_graph->NewCNode(quant_prim, quant_inputs);
+  std::vector<AnfNodePtr> quant_inputs = {std::make_shared<ValueNode>(quant_prim), input_node, smooth_scale_node};
+  auto swiglu_dynamic_quant = NewCNode(quant_inputs, func_graph);
   MS_EXCEPTION_IF_NULL(swiglu_dynamic_quant);
 
   std::vector<TypeId> swiglu_dymaimc_quant_out_types;

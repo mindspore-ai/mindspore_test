@@ -63,8 +63,8 @@ CNodePtr InferenceSwiGLUFusionV2::CreateSwiGLUNodeV2(const FuncGraphPtr &func_gr
   if (!CheckSupportDataType(input_node, support_dtype)) {
     return nullptr;
   }
-  std::vector<AnfNodePtr> glu_inputs = {input_node, axis_node};
-  auto glu_cnode = func_graph->NewCNode(glu_prim, glu_inputs);
+  std::vector<AnfNodePtr> glu_inputs = {std::make_shared<ValueNode>(glu_prim), input_node, axis_node};
+  auto glu_cnode = NewCNode(glu_inputs, func_graph);
   MS_CHECK_TRUE_RET(glu_cnode != nullptr, nullptr);
   glu_cnode->set_scope(node->scope());
   if (node->abstract() != nullptr) {

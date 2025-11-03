@@ -92,7 +92,7 @@ const AnfNodePtr SplitConcatFusion::Process(const FuncGraphPtr &graph, const Anf
 
   auto reshape1_prim = std::make_shared<Primitive>("Reshape");
   std::vector<AnfNodePtr> inputs = {NewValueNode(reshape1_prim), x1, CreateShapeValueNode(graph, target_shape1, false)};
-  auto first_reshape = graph->NewCNode(inputs);
+  auto first_reshape = NewCNode(inputs, graph);
   MS_EXCEPTION_IF_NULL(first_reshape);
   std::vector<TypeId> first_reshape_types;
   std::vector<BaseShapePtr> first_reshape_shapes;
@@ -106,7 +106,7 @@ const AnfNodePtr SplitConcatFusion::Process(const FuncGraphPtr &graph, const Anf
   ShapeVector target_axis = {1, 0, 2};
   auto transpose_prim = std::make_shared<Primitive>(prim::kPrimTranspose->name());
   inputs = {NewValueNode(transpose_prim), first_reshape, CreateShapeValueNode(graph, target_axis, false)};
-  auto tranpose_node = graph->NewCNode(inputs);
+  auto tranpose_node = NewCNode(inputs, graph);
   MS_EXCEPTION_IF_NULL(tranpose_node);
   std::vector<TypeId> tranpose_types;
   std::vector<BaseShapePtr> tranpose_shapes;
@@ -119,7 +119,7 @@ const AnfNodePtr SplitConcatFusion::Process(const FuncGraphPtr &graph, const Anf
 
   auto reshape2_prim = std::make_shared<Primitive>("Reshape");
   inputs = {NewValueNode(reshape2_prim), tranpose_node, CreateShapeValueNode(graph, target_shape2, false)};
-  auto second_reshape = graph->NewCNode(inputs);
+  auto second_reshape = NewCNode(inputs, graph);
   MS_EXCEPTION_IF_NULL(second_reshape);
   std::vector<TypeId> second_reshape_types;
   std::vector<BaseShapePtr> second_reshape_shapes;

@@ -91,7 +91,7 @@ void CreateViewNode(const std::string &name, const AnfNodePtr &origin_node,
   auto cnode = origin_node->cast<CNodePtr>();
   auto inputs = cnode->inputs();
   inputs[0] = NewValueNode(std::make_shared<Primitive>(ops));
-  auto view_node = func_graph->NewCNode(inputs);
+  auto view_node = NewCNode(inputs, func_graph, std::vector<AnfNodePtr>{origin_node});
   // Copy attributes
   common::AnfAlgo::CopyNodeAttrs(origin_node, view_node);
   // Set node abstract

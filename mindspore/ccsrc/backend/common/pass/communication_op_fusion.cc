@@ -543,7 +543,7 @@ bool CommunicationOpFusion::DoFusion(const FuncGraphPtr &func_graph, const Commu
       MS_EXCEPTION_IF_NULL(abstract_scalar);
       index->set_abstract(abstract_scalar);
       tuple_getitem_input.push_back(index);
-      AnfNodePtr tuple_getitem = func_graph->NewCNode(tuple_getitem_input);
+      AnfNodePtr tuple_getitem = NewCNode(tuple_getitem_input, func_graph);
       MS_EXCEPTION_IF_NULL(tuple_getitem);
       auto communication_op_node_item = communication_op_info.communication_op_nodes.at(idx);
       MS_EXCEPTION_IF_NULL(communication_op_node_item);

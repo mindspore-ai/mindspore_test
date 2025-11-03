@@ -145,9 +145,11 @@ CNodePtr FlashAttentionFusionBase::CreatePromptFlashAttentionCnodeForBNSD(
 
   CNodePtr prompt_flash_attention_cnode = nullptr;
   if (atten_mask != nullptr) {
-    prompt_flash_attention_cnode = func_graph->NewCNode(fa_prim_c, {q, k, v, atten_mask});
+    prompt_flash_attention_cnode =
+      NewCNode(std::vector<AnfNodePtr>{std::make_shared<ValueNode>(fa_prim_c), q, k, v, atten_mask}, func_graph);
   } else {
-    prompt_flash_attention_cnode = func_graph->NewCNode(fa_prim_c, {q, k, v});
+    prompt_flash_attention_cnode =
+      NewCNode(std::vector<AnfNodePtr>{std::make_shared<ValueNode>(fa_prim_c), q, k, v}, func_graph);
   }
   if (prompt_flash_attention_cnode == nullptr) {
     MS_LOG(ERROR) << "New prompt_flash_attention_cnode should not be null, but it is null.";

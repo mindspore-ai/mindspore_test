@@ -159,7 +159,8 @@ CNodePtr MoeInitRoutingDynQuantV2Fusion::CreateMoeInitRoutingDynQuantV2Node(cons
   kernel_graph->AddValueNodeToGraph(offset_none);
 
   auto moe_init_routing_dyn_quantv2_prim = std::make_shared<Primitive>("MoeInitRoutingQuantV2");
-  std::vector<AnfNodePtr> quant_inputs = {x,
+  std::vector<AnfNodePtr> quant_inputs = {std::make_shared<ValueNode>(moe_init_routing_dyn_quantv2_prim),
+                                          x,
                                           expert_idx,
                                           active_num,
                                           expert_capacity,
@@ -170,7 +171,7 @@ CNodePtr MoeInitRoutingDynQuantV2Fusion::CreateMoeInitRoutingDynQuantV2Node(cons
                                           quant_mode,
                                           scale,
                                           offset_none};
-  auto moe_init_routing_dyn_quantv2_node = func_graph->NewCNode(moe_init_routing_dyn_quantv2_prim, quant_inputs);
+  auto moe_init_routing_dyn_quantv2_node = NewCNode(quant_inputs, func_graph);
   MS_EXCEPTION_IF_NULL(moe_init_routing_dyn_quantv2_node);
 
   std::vector<TypeId> moe_init_routing_dyn_quantv2_types;

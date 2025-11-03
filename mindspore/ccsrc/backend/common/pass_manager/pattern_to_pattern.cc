@@ -468,7 +468,11 @@ AnfNodePtr PatternToPatternPass::Run(const FuncGraphPtr &func_graph, const AnfNo
       if (!src_pattern_.build_pattern_map(node, equiv)) {
         return nullptr;
       }
+      GetOrigNodes();
       if (!CheckMatchedDAG(*m_, func_graph, node)) {
+        return nullptr;
+      }
+      if (!CheckNodeStreamAndCoreAttrs(func_graph)) {
         return nullptr;
       }
       dst_pattern_.clear();

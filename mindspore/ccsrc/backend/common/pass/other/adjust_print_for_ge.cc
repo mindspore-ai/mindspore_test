@@ -131,7 +131,7 @@ const AnfNodePtr AdjustPrintForGe::Process(const FuncGraphPtr &func_graph, const
     UnfoldMakeTuple(input, &num_inputs, &new_inputs);
   }
   new_inputs.push_back(node_inputs.back());
-  auto new_print_node = func_graph->NewCNode(new_inputs);
+  auto new_print_node = NewCNode(new_inputs, func_graph);
   MS_EXCEPTION_IF_NULL(new_print_node);
   new_print_node->set_abstract(node->abstract());
   new_print_node->set_scope(node->scope());
@@ -150,7 +150,7 @@ const AnfNodePtr AdjustPrintForGe::Process(const FuncGraphPtr &func_graph, const
   kernel_graph->AddValueNodeToGraph(value_node);
   std::vector<AnfNodePtr> depend_input = {NewValueNode(std::make_shared<Primitive>(kDependOpName)), value_node,
                                           new_print_node};
-  auto new_depend_node = func_graph->NewCNode(depend_input);
+  auto new_depend_node = NewCNode(depend_input, func_graph);
   MS_EXCEPTION_IF_NULL(new_depend_node);
   new_depend_node->set_abstract(value_node->abstract());
   new_depend_node->set_scope(node->scope());

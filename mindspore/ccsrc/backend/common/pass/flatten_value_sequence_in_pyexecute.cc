@@ -149,7 +149,7 @@ const AnfNodePtr FlattenValueSequenceInPyExecute::Process(const FuncGraphPtr &fu
     FlattenSequence(value->cast<ValueSequencePtr>(), func_graph, &new_inputs, &input_build_info);
   }
   if (is_update) {
-    const auto &new_cnode = func_graph->NewCNode(new_inputs);
+    const auto &new_cnode = NewCNode(new_inputs, func_graph);
     MS_EXCEPTION_IF_NULL(new_cnode);
     MS_LOG(DEBUG) << "Update pyexecute node from:" << node->DebugString() << " to:" << new_cnode->DebugString()
                   << " input format size from:" << input_formats.size() << " to:" << input_build_info.formats.size();

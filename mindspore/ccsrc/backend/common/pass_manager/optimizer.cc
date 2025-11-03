@@ -18,14 +18,15 @@
 #include <string>
 #include <vector>
 #include <utility>
+#include "utils/anf_utils.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/backend/optimizer/helper.h"
 
 namespace mindspore {
 namespace opt {
-std::vector<AnfNodePtr> PatternPass::GetOrigNodes() const {
-  std::vector<AnfNodePtr> orig_nodes;
+void PatternPass::GetOrigNodes() {
   MS_EXCEPTION_IF_NULL(equiv_);
+  orig_nodes_.clear();
   for (auto &prim_var : *primitive_vars_) {
     auto equiv_iter = equiv_->find(prim_var.second);
     if (equiv_iter == equiv_->end()) {
@@ -36,21 +37,24 @@ std::vector<AnfNodePtr> PatternPass::GetOrigNodes() const {
       continue;
     }
     auto node = utils::cast<AnfNodePtr>(baseref);
-    orig_nodes.push_back(node);
+    if (AnfUtils::IsRealCNodeKernel(node)) {
+      orig_nodes_.push_back(node);
+    }
   }
-  return orig_nodes;
+}
+
+bool PatternPass::CheckNodeStreamAndCoreAttrs(const FuncGraphPtr &func_graph) const {
+  return CheckStreamAndCoreAttrWithOrigNodes(func_graph, orig_nodes_);
 }
 
 CNodePtr PatternPass::NewCNode(const std::vector<AnfNodePtr> &inputs, const FuncGraphPtr &fg) const {
   MS_EXCEPTION_IF_NULL(fg);
-  auto orig_nodes = GetOrigNodes();
-  return opt::NewCNode(inputs, fg, orig_nodes);
+  return opt::NewCNode(inputs, fg, orig_nodes_);
 }
 
 CNodePtr PatternPass::NewCNode(const CNodePtr &cnode, const KernelGraphPtr &fg) const {
   MS_EXCEPTION_IF_NULL(fg);
-  auto orig_nodes = GetOrigNodes();
-  return opt::NewCNode(cnode, fg, orig_nodes);
+  return opt::NewCNode(cnode, fg, orig_nodes_);
 }
 
 const BaseRef PatternProcessPass::DefinePattern() const {
@@ -75,7 +79,10 @@ AnfNodePtr PatternProcessPass::Run(const FuncGraphPtr &func_graph, const AnfNode
     equiv_->clear();
     EquivPtr equiv = pattern_engine_.Match(pattern_, node, *primitive_vars_, equiv_);
     if (equiv != nullptr && !equiv->empty()) {
-      return Process(func_graph, node, equiv);
+      GetOrigNodes();
+      if (CheckNodeStreamAndCoreAttrs(func_graph)) {
+        return Process(func_graph, node, equiv);
+      }
     }
   }
   return nullptr;

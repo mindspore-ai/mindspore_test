@@ -108,7 +108,7 @@ const AnfNodePtr RenormSplit::Process(const FuncGraphPtr &func_graph, const AnfN
 
   std::vector<AnfNodePtr> mul_inputs = {NewValueNode(std::make_shared<Primitive>(prim::kPrimMul->name())),
                                         broadcast_node, renorm_input};
-  auto mul_node = func_graph->NewCNode(mul_inputs);
+  auto mul_node = NewCNode(mul_inputs, func_graph);
   MS_EXCEPTION_IF_NULL(mul_node);
   common::AnfAlgo::SetOutputInferTypeAndShape({type}, {in_shape}, mul_node.get());
   mul_node->set_scope(node->scope());

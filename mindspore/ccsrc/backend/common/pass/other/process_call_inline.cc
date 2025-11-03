@@ -62,7 +62,7 @@ const AnfNodePtr ProcessCallInline::Process(const FuncGraphPtr &graph, const Anf
     for (size_t i = kIndex1; i < common::AnfAlgo::GetInputNum(cnode); i++) {
       (void)call_inputs.emplace_back(common::AnfAlgo::GetInputNode(cnode, i));
     }
-    auto new_call_node = graph->NewCNode(call_inputs);
+    auto new_call_node = NewCNode(call_inputs, graph);
     MS_EXCEPTION_IF_NULL(new_call_node);
     new_call_node->set_scope(node->scope());
     new_call_node->set_abstract(cnode->abstract());

@@ -130,7 +130,7 @@ const AnfNodePtr AddLayernormFusionBase::Process(const FuncGraphPtr &graph, cons
     inputs = {NewValueNode(prim), x1, x2, gamma, beta, eps};
   }
 
-  auto add_layernorm = graph->NewCNode(inputs);
+  auto add_layernorm = NewCNode(inputs, graph);
   MS_EXCEPTION_IF_NULL(add_layernorm);
 
   std::vector<TypeId> types;
@@ -159,7 +159,7 @@ const AnfNodePtr AddLayernormFusionBase::Process(const FuncGraphPtr &graph, cons
   auto prim_getitem = std::make_shared<Primitive>("TupleGetItem");
   std::vector<AnfNodePtr> add_result_inputs = {NewValueNode(prim_getitem), add_layernorm,
                                                NewValueNode(static_cast<int64_t>(3))};
-  auto add_result = graph->NewCNode(add_result_inputs);
+  auto add_result = NewCNode(add_result_inputs, graph);
 
   common::AnfAlgo::SetOutputTypeAndDetailShape(add_result_types, add_result_shapes, add_result.get());
   add_result->set_scope(tensor_add->scope());

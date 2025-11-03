@@ -137,7 +137,7 @@ const AnfNodePtr MatMulSigmoidAddFusion::Process(const FuncGraphPtr &func_graph,
 
   CNodePtr matmul_elemwise_cnode = nullptr;
   auto input_e = add_node->input(kIndex2);
-  matmul_elemwise_cnode = func_graph->NewCNode({NewValueNode(matmul_elemwise_prim), input_x, input_w, input_e});
+  matmul_elemwise_cnode = NewCNode({NewValueNode(matmul_elemwise_prim), input_x, input_w, input_e}, func_graph);
   MS_EXCEPTION_IF_NULL(matmul_elemwise_cnode);
 
   matmul_elemwise_cnode->set_scope(add_node->scope());

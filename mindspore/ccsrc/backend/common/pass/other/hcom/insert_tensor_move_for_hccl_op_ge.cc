@@ -215,7 +215,7 @@ void InsertTensorMoveForHcclOpGe::InsertTensorMove(const FuncGraphPtr &graph, co
         MS_EXCEPTION_IF_NULL(depend_rely_node);
         if (IsPrimitiveCNode(depend_rely_node)) {
           std::vector<AnfNodePtr> depend_inputs1{NewValueNode(prim::kPrimDepend), depend_rely_node, tensor_move_cnode};
-          auto depend_node1 = graph->NewCNode(depend_inputs1);
+          auto depend_node1 = NewCNode(depend_inputs1, graph);
           auto depend_rely_cnode = depend_rely_node->cast<CNodePtr>();
           MS_EXCEPTION_IF_NULL(depend_rely_cnode);
           depend_node1->set_abstract(depend_rely_cnode->abstract()->Clone());

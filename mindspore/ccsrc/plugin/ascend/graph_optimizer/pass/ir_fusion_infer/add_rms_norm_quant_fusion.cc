@@ -133,7 +133,7 @@ const AnfNodePtr AddRmsNormQuantFusion::Process(const FuncGraphPtr &graph, const
     inputs = {NewValueNode(prim), x1, x2, gamma, scale_fp32, offset, eps};
   }
 
-  auto add_rms_norm_quant = graph->NewCNode(inputs);
+  auto add_rms_norm_quant = NewCNode(inputs, graph);
   MS_EXCEPTION_IF_NULL(add_rms_norm_quant);
 
   std::vector<TypeId> types;
@@ -172,7 +172,7 @@ const AnfNodePtr AddRmsNormQuantFusion::Process(const FuncGraphPtr &graph, const
   auto prim_getitem_2 = std::make_shared<Primitive>("TupleGetItem");
   std::vector<AnfNodePtr> add_result_inputs = {NewValueNode(prim_getitem_2), add_rms_norm_quant,
                                                NewValueNode(static_cast<int64_t>(2))};
-  auto add_result = graph->NewCNode(add_result_inputs);
+  auto add_result = NewCNode(add_result_inputs, graph);
   common::AnfAlgo::SetOutputTypeAndDetailShape(add_result_types, add_result_shapes, add_result.get());
   add_result->set_scope(tensor_add->scope());
   build_info = GenerateKernelBuildInfo(add_result);
@@ -182,7 +182,7 @@ const AnfNodePtr AddRmsNormQuantFusion::Process(const FuncGraphPtr &graph, const
   auto prim_getitem_0 = std::make_shared<Primitive>("TupleGetItem");
   std::vector<AnfNodePtr> quant_result_inputs = {NewValueNode(prim_getitem_0), add_rms_norm_quant,
                                                  NewValueNode(static_cast<int64_t>(0))};
-  auto quant_result = graph->NewCNode(quant_result_inputs);
+  auto quant_result = NewCNode(quant_result_inputs, graph);
   common::AnfAlgo::SetOutputTypeAndDetailShape(quant_result_types, quant_result_shapes, quant_result.get());
   quant_result->set_scope(node->scope());
   build_info = GenerateKernelBuildInfo(quant_result);
@@ -191,8 +191,8 @@ const AnfNodePtr AddRmsNormQuantFusion::Process(const FuncGraphPtr &graph, const
   if (need_rms_norm_out) {
     prim->set_attr("need_rms_norm_out", std::make_shared<BoolImm>(true));
     auto prim_getitem_rms_norm_out = std::make_shared<Primitive>("TupleGetItem");
-    auto rms_norm_out = graph->NewCNode(
-      {NewValueNode(prim_getitem_rms_norm_out), add_rms_norm_quant, NewValueNode(static_cast<int64_t>(1))});
+    auto rms_norm_out = NewCNode(
+      {NewValueNode(prim_getitem_rms_norm_out), add_rms_norm_quant, NewValueNode(static_cast<int64_t>(1))}, graph);
     common::AnfAlgo::SetOutputTypeAndDetailShape(add_result_types, quant_result_shapes, rms_norm_out.get());
     rms_norm_out->set_scope(node->scope());
     (void)mng->Replace(tuple_get_item_node, rms_norm_out);
@@ -443,7 +443,7 @@ const AnfNodePtr AddRmsNormDynamicQuantFusion::Process(const FuncGraphPtr &graph
   kernel_graph->AddValueNodeToGraph(smooth_scale2);
 
   std::vector<AnfNodePtr> inputs = {NewValueNode(prim), x1, x2, gamma, smooth_scale1, smooth_scale2, eps};
-  auto add_rms_norm_dynamic_quant = graph->NewCNode(inputs);
+  auto add_rms_norm_dynamic_quant = NewCNode(inputs, graph);
   MS_EXCEPTION_IF_NULL(add_rms_norm_dynamic_quant);
   std::vector<TypeId> add_rms_norm_dymaimc_quant_out_types;
   std::vector<BaseShapePtr> add_rms_norm_dymaimc_quant_out_shapes;
