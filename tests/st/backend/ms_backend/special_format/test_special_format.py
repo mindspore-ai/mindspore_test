@@ -12,10 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+"""test special format"""
 import mindspore.common.dtype as mstype
-import mindspore.nn as nn
 import mindspore as ms
-from mindspore import Tensor
+from mindspore import nn
 from mindspore import context
 from mindspore import ops, jit
 from tests.mark_utils import arg_mark
@@ -34,10 +34,32 @@ def test_special_format_for_input_parameter():
     """
     context.set_context(jit_config={"jit_level": "O0", "infer_boost": "on"})
     net = Net()
-    t0 = Tensor(dtype=ms.float32, shape=[None, None])
-    t1 = Tensor(dtype=ms.float32, shape=[None, None])
-    net.set_inputs(t0, t1)
+    # FRACTAL_NZ
     x = [ms.ops.auto_generate.format_cast(ms.mint.zeros([2, 2], dtype=mstype.float32), 29),
          ms.ops.auto_generate.format_cast(ms.mint.zeros([2, 2], dtype=mstype.float32), 29)]
+    output = net(x[0], x[1])
+    print(output)
+
+    # NC1HWC0
+    x = [ms.ops.auto_generate.format_cast(ms.mint.zeros([2, 2, 2, 2], dtype=mstype.float32), 3),
+         ms.ops.auto_generate.format_cast(ms.mint.zeros([2, 2, 2, 2], dtype=mstype.float32), 3)]
+    output = net(x[0], x[1])
+    print(output)
+
+    # FRACTAL_Z
+    x = [ms.ops.auto_generate.format_cast(ms.mint.zeros([2, 2, 2, 2], dtype=mstype.float32), 4),
+         ms.ops.auto_generate.format_cast(ms.mint.zeros([2, 2, 2, 2], dtype=mstype.float32), 4)]
+    output = net(x[0], x[1])
+    print(output)
+
+    # NDC1HWC0
+    x = [ms.ops.auto_generate.format_cast(ms.mint.zeros([2, 2, 2, 2], dtype=mstype.float32), 32),
+         ms.ops.auto_generate.format_cast(ms.mint.zeros([2, 2, 2, 2], dtype=mstype.float32), 32)]
+    output = net(x[0], x[1])
+    print(output)
+
+    # FRACTAL_Z_3D
+    x = [ms.ops.auto_generate.format_cast(ms.mint.zeros([2, 2, 2, 2], dtype=mstype.float32), 33),
+         ms.ops.auto_generate.format_cast(ms.mint.zeros([2, 2, 2, 2], dtype=mstype.float32), 33)]
     output = net(x[0], x[1])
     print(output)

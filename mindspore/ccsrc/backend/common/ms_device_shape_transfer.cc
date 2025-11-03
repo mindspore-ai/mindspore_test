@@ -465,9 +465,10 @@ ShapeVector DeviceShapeTransfer::TransCore(const ShapeVector &shape, const std::
                                            int64_t groups, const ShapeVector &input_hidden_size) const {
   using DeviceShapeTransferFunc = std::function<ShapeVector(const ShapeVector &, const TypeId &)>;
   static const mindspore::HashMap<std::string, DeviceShapeTransferFunc> device_shape_map = {
-    {kOpFormat_NCHW, NCHWDeviceShape},       {kOpFormat_NHWC, NHWCDeviceShape},
-    {kOpFormat_HWCN, HWCNDeviceShape},       {kOpFormat_FRAC_Z, FRAC_ZDeviceShape},
-    {kOpFormat_FRAC_NZ, FRAC_NZDeviceShape}, {kOpFormat_NC1HWC0, NC1HWC0DeviceShape}};
+    {kOpFormat_NCHW, NCHWDeviceShape},         {kOpFormat_NHWC, NHWCDeviceShape},
+    {kOpFormat_HWCN, HWCNDeviceShape},         {kOpFormat_FRAC_Z, FRAC_ZDeviceShape},
+    {kOpFormat_NDC1HWC0, NDC1HWC0DeviceShape}, {kOpFormat_FRACTAL_Z_3D, FRAC_Z3DDeviceShape},
+    {kOpFormat_FRAC_NZ, FRAC_NZDeviceShape},   {kOpFormat_NC1HWC0, NC1HWC0DeviceShape}};
   if (format == kOpFormat_ND || format == kOpFormat_DEFAULT || format == kOpFormat_NCHW) {
     return shape;
   }
@@ -561,6 +562,45 @@ ShapeVector DeviceShapeTransfer::NC1HWC0DeviceShape(const ShapeVector &shape, co
   device_shape.push_back(c1);
   device_shape.push_back(shape[kH]);
   device_shape.push_back(shape[kW]);
+  device_shape.push_back(c0);
+  return device_shape;
+}
+
+ShapeVector DeviceShapeTransfer::NDC1HWC0DeviceShape(const ShapeVector &shape, const TypeId &type) {
+  if (shape.size() == kDim6) {
+    return shape;
+  }
+  if (shape.size() != kDim5) {
+    MS_LOG(INTERNAL_EXCEPTION) << "Check dims failed, expect shape dim 5, but got shape dim : " << shape.size();
+  }
+  ShapeVector device_shape;
+  auto c0 = GetCubeSizeByType(type);
+  auto c1 = (shape[1] == abstract::Shape::kShapeDimAny) ? abstract::Shape::kShapeDimAny : (shape[1] + c0 - 1) / c0;
+  device_shape.push_back(shape[N_ncdhw]);
+  device_shape.push_back(shape[D_ncdhw]);
+  device_shape.push_back(c1);
+  device_shape.push_back(shape[H_ncdhw]);
+  device_shape.push_back(shape[W_ncdhw]);
+  device_shape.push_back(c0);
+  return device_shape;
+}
+
+ShapeVector DeviceShapeTransfer::FRAC_Z3DDeviceShape(const ShapeVector &shape, const TypeId &type) {
+  if (shape.size() != kDim5) {
+    MS_LOG(INTERNAL_EXCEPTION) << "Check dims failed, expect shape dim 5, but got shape dim : " << shape.size();
+  }
+  ShapeVector device_shape;
+  auto c0 = GetCubeSizeByType(type);
+  if (HasShapeDynamic({shape[C_ncdhw], shape[D_ncdhw], shape[H_ncdhw], shape[W_ncdhw]})) {
+    device_shape.push_back(abstract::Shape::kShapeDimAny);
+  } else {
+    auto c1 = (shape[1] + c0 - 1) / c0;
+    device_shape.push_back(shape[D_ncdhw] * c1 * shape[H_ncdhw] * shape[W_ncdhw]);
+  }
+  auto no =
+    (shape[0] == abstract::Shape::kShapeDimAny) ? abstract::Shape::kShapeDimAny : (shape[0] + kNiSize - 1) / kNiSize;
+  device_shape.push_back(no);
+  device_shape.push_back(kNiSize);
   device_shape.push_back(c0);
   return device_shape;
 }
@@ -996,6 +1036,277 @@ bool FormatTransfer::NCHW_TO_FRAC_NZ(const FormatArgs &args, void *result) {
         int64_t dst_idx = h1h0_head + num_w1 * h1h0w0 + w0_idx;
         int64_t src_idx = src_h_head + src_w_idx;
         SetData(size, false, src_idx, dst_idx, args, result);
+      }
+    }
+  }
+  return true;
+}
+
+bool FormatTransfer::NCDHW_TO_NDC1HWC0(const FormatArgs &args, void *result) {
+  MS_LOG(DEBUG) << "Trans from ncdhw to ndc1hwc0";
+  MS_EXCEPTION_IF_NULL(result);
+
+  if (args.host_shape.size() != kDim5) {
+    MS_LOG(ERROR) << "Illegal host shape dim, expect dim: 5, but got " << args.host_shape.size();
+    return false;
+  }
+  auto size = SizeToLong(abstract::TypeIdSize(args.src_data_type));
+  if (size < 1) {
+    MS_LOG(ERROR) << "Illegal dtype: " << args.src_data_type;
+    return false;
+  }
+  auto total_size = abstract::ShapeSize(args.device_shape) * size;
+  if (total_size != SizeToLong(args.device_size)) {
+    MS_LOG(ERROR) << "Illegal total data size, total_size:" << total_size << ", device_size:" << args.device_size;
+    return false;
+  }
+
+  auto n = args.host_shape[N_ncdhw];
+  auto c = args.host_shape[C_ncdhw];
+  auto d = args.host_shape[D_ncdhw];
+  auto h = args.host_shape[H_ncdhw];
+  auto w = args.host_shape[W_ncdhw];
+  auto c0 = GetCubeSizeByType(args.src_data_type);
+  auto c1 = DivCeil(c, c0);
+  const int64_t cdhw = c * d * h * w;
+  const int64_t dhw = d * h * w;
+  const int64_t hw = h * w;
+  const int64_t dc1hwc0 = d * c1 * h * w * c0;
+  const int64_t c1hwc0 = c1 * h * w * c0;
+  const int64_t hwc0 = h * w * c0;
+  const int64_t wc0 = w * c0;
+
+  for (int64_t n_i = 0; n_i < n; n_i++) {
+    int64_t n_head = n_i * dc1hwc0;
+    for (int64_t d_i = 0; d_i < d; d_i++) {
+      int64_t d_head = n_head + d_i * c1hwc0;
+      for (int64_t c1_i = 0; c1_i < c1; c1_i++) {
+        int64_t c1_head = d_head + c1_i * hwc0;
+        for (int64_t h_i = 0; h_i < h; h_i++) {
+          int64_t h_head = c1_head + h_i * wc0;
+          for (int64_t w_i = 0; w_i < w; w_i++) {
+            int64_t w_head = h_head + w_i * c0;
+            for (int64_t c0_i = 0; c0_i < c0; c0_i++) {
+              int64_t dst_i = c0_i + w_head;
+              int64_t c_i = c0_i + c1_i * c0;
+              int64_t src_i = n_i * cdhw + c_i * dhw + d_i * hw + h_i * w + w_i;
+              auto pad_zero = c_i >= c;
+              SetData(size, pad_zero, src_i, dst_i, args, result);
+            }
+          }
+        }
+      }
+    }
+  }
+  return true;
+}
+
+bool FormatTransfer::NCDHW_TO_FRAC_Z3D(const FormatArgs &args, void *result) {
+  MS_LOG(DEBUG) << "Trans from ncdhw to frac_z_3d";
+  MS_EXCEPTION_IF_NULL(result);
+
+  if (args.host_shape.size() != kDim5) {
+    MS_LOG(ERROR) << "Illegal host shape dim, expect dim: 5, but got " << args.host_shape.size();
+    return false;
+  }
+  auto size = SizeToLong(abstract::TypeIdSize(args.src_data_type));
+  if (size < 1) {
+    MS_LOG(ERROR) << "Illegal dtype: " << args.src_data_type;
+    return false;
+  }
+  auto total_size = abstract::ShapeSize(args.device_shape) * size;
+  if (total_size != SizeToLong(args.device_size)) {
+    MS_LOG(ERROR) << "Illegal total data size, total_size:" << total_size << ", device_size:" << args.device_size;
+    return false;
+  }
+
+  auto n = args.host_shape[N_ncdhw];
+  auto c = args.host_shape[C_ncdhw];
+  auto d = args.host_shape[D_ncdhw];
+  auto h = args.host_shape[H_ncdhw];
+  auto w = args.host_shape[W_ncdhw];
+
+  auto n1n0 = DivCeil(n, kNiSize) * kNiSize;
+  auto c0 = GetCubeSizeByType(args.src_data_type);
+  auto c1 = DivCeil(c, c0);
+  auto hw = h * w;
+  auto dhw = d * hw;
+  auto cdhw = c * dhw;
+  auto n1n0c0 = n1n0 * c0;
+  auto wn1n0c0 = w * n1n0c0;
+  auto hwn1n0c0 = h * wn1n0c0;
+  auto c1hwn1n0c0 = c1 * hwn1n0c0;
+
+  for (int64_t d_i = 0; d_i < d; d_i++) {
+    for (int64_t c1_i = 0; c1_i < c1; c1_i++) {
+      for (int64_t h_i = 0; h_i < h; h_i++) {
+        for (int64_t w_i = 0; w_i < w; w_i++) {
+          for (int64_t n1n0_i = 0; n1n0_i < n1n0; n1n0_i++) {
+            for (int64_t c0_i = 0; c0_i < c0; c0_i++) {
+              auto dst_i = d_i * c1hwn1n0c0 + c1_i * hwn1n0c0 + h_i * wn1n0c0 + w_i * n1n0c0 + n1n0_i * c0 + c0_i;
+              // ncdhw
+              int64_t src_i = n1n0_i * cdhw + (c1_i * c0 + c0_i) * dhw + d_i * hw + h_i * w + w_i;
+              auto pad_zero = ((c1_i * c0 + c0_i) >= c) || (n1n0_i >= n);
+              SetData(size, pad_zero, src_i, dst_i, args, result);
+            }
+          }
+        }
+      }
+    }
+  }
+  return true;
+}
+
+bool FormatTransfer::NC1HWC0_TO_NCHW(const FormatArgs &args, void *result) {
+  MS_LOG(DEBUG) << "Trans format from nc1h1wc0 to nchw";
+  MS_EXCEPTION_IF_NULL(result);
+  auto size = Common4DCheck(args);
+  auto total_size = abstract::ShapeSize(args.device_shape) * size;
+  if (total_size != SizeToLong(args.device_size)) {
+    MS_LOG(ERROR) << "Illegal total data size, total_size:" << total_size << ", device_size:" << args.device_size;
+    return false;
+  }
+
+  auto n = args.host_shape[kN];
+  auto c = args.host_shape[kC];
+  auto h = args.host_shape[kH];
+  auto w = args.host_shape[kW];
+  auto c1 = args.device_shape[kDim1];
+  auto c0 = args.device_shape[kDim4];
+
+  auto hw = h * w;
+  auto chw = c * hw;
+  auto wc0 = w * c0;
+  auto hwc0 = h * wc0;
+  auto c1hwc0 = c1 * hwc0;
+
+  for (int64_t n_idx = 0; n_idx < n; n_idx++) {
+    int64_t n_head_addr = n_idx * chw;
+    for (int64_t c_idx = 0; c_idx < c; c_idx++) {
+      int64_t c_head_addr = n_head_addr + c_idx * hw;
+      for (int64_t h_idx = 0; h_idx < h; h_idx++) {
+        int64_t h_head_addr = c_head_addr + h_idx * w;
+        for (int64_t w_idx = 0; w_idx < w; w_idx++) {
+          int64_t dst_idx = h_head_addr + w_idx;
+          int64_t c1_idx = c_idx / c0;
+          int64_t c0_idx = c_idx % c0;
+          int64_t src_idx = n_idx * c1hwc0 + c1_idx * hwc0 + h_idx * wc0 + w_idx * c0 + c0_idx;
+          SetData(size, false, src_idx, dst_idx, args, result);
+        }
+      }
+    }
+  }
+  return true;
+}
+
+bool FormatTransfer::NDC1HWC0_TO_NCDHW(const FormatArgs &args, void *result) {
+  MS_LOG(DEBUG) << "Trans from ndc1hwc0 to ncdhw";
+  MS_EXCEPTION_IF_NULL(result);
+
+  if (args.host_shape.size() != kDim5) {
+    MS_LOG(ERROR) << "Illegal host shape dim, expect dim: 5, but got " << args.host_shape.size();
+    return false;
+  }
+  auto size = SizeToLong(abstract::TypeIdSize(args.src_data_type));
+  if (size < 1) {
+    MS_LOG(ERROR) << "Illegal dtype: " << args.src_data_type;
+    return false;
+  }
+  auto total_size = abstract::ShapeSize(args.device_shape) * size;
+  if (total_size != SizeToLong(args.device_size)) {
+    MS_LOG(ERROR) << "Illegal total data size, total_size:" << total_size << ", device_size:" << args.device_size;
+    return false;
+  }
+  auto n = args.host_shape[N_ncdhw];
+  auto c = args.host_shape[C_ncdhw];
+  auto d = args.host_shape[D_ncdhw];
+  auto h = args.host_shape[H_ncdhw];
+  auto w = args.host_shape[W_ncdhw];
+  auto c1 = args.device_shape[C1_ndc1hwc0];
+  auto c0 = args.device_shape[C0_ndc1hwc0];
+  const int64_t cdhw = c * d * h * w;
+  const int64_t dhw = d * h * w;
+  const int64_t hw = h * w;
+  const int64_t dc1hwc0 = d * c1 * h * w * c0;
+  const int64_t c1hwc0 = c1 * h * w * c0;
+  const int64_t hwc0 = h * w * c0;
+  const int64_t wc0 = w * c0;
+
+  for (int64_t n_i = 0; n_i < n; n_i++) {
+    int64_t n_head = n_i * cdhw;
+    for (int64_t c_i = 0; c_i < c; c_i++) {
+      int64_t c_head = n_head + c_i * dhw;
+      for (int64_t d_i = 0; d_i < d; d_i++) {
+        int64_t d_head = c_head + d_i * hw;
+        for (int64_t h_i = 0; h_i < h; h_i++) {
+          int64_t h_head = d_head + h_i * w;
+          for (int64_t w_i = 0; w_i < w; w_i++) {
+            int64_t dst_i = h_head + w_i;
+            int64_t c1_i = c_i / c0;
+            int64_t c0_i = c_i % c0;
+            auto src_idx = n_i * dc1hwc0 + d_i * c1hwc0 + c1_i * hwc0 + h_i * wc0 + w_i * c0 + c0_i;
+            SetData(size, false, src_idx, dst_i, args, result);
+          }
+        }
+      }
+    }
+  }
+  return true;
+}
+
+bool FormatTransfer::FRAC_Z3D_TO_NCDHW(const FormatArgs &args, void *result) {
+  MS_LOG(DEBUG) << "Trans from frac_z_3d to ncdhw";
+  MS_EXCEPTION_IF_NULL(result);
+
+  if (args.host_shape.size() != kDim5) {
+    MS_LOG(ERROR) << "Illegal host shape dim, expect dim: 5, but got " << args.host_shape.size();
+    return false;
+  }
+  auto size = SizeToLong(abstract::TypeIdSize(args.src_data_type));
+  if (size < 1) {
+    MS_LOG(ERROR) << "Illegal dtype: " << args.src_data_type;
+    return false;
+  }
+  auto total_size = abstract::ShapeSize(args.device_shape) * size;
+  if (total_size != SizeToLong(args.device_size)) {
+    MS_LOG(ERROR) << "Illegal total data size, total_size:" << total_size << ", device_size:" << args.device_size;
+    return false;
+  }
+  auto n = args.host_shape[N_ncdhw];
+  auto c = args.host_shape[C_ncdhw];
+  auto d = args.host_shape[D_ncdhw];
+  auto h = args.host_shape[H_ncdhw];
+  auto w = args.host_shape[W_ncdhw];
+  const int kFZ3D_C0 = 3;
+  auto c0 = args.device_shape[kFZ3D_C0];
+  auto cube_k = GetCubeSizeByType(args.src_data_type);
+  auto c1 = DivCeil(c, cube_k);
+  auto n1n0 = DivCeil(n, kNiSize) * kNiSize;
+  auto n1n0c0 = n1n0 * c0;
+  auto wn1n0c0 = w * n1n0c0;
+  auto hwn1n0c0 = h * wn1n0c0;
+  auto c1hwn1n0c0 = c1 * hwn1n0c0;
+  auto hw = h * w;
+  auto dhw = d * hw;
+  auto cdhw = c * dhw;
+
+  for (int64_t n_i = 0; n_i < n; n_i++) {
+    int64_t n_head = n_i * cdhw;
+    for (int64_t c_i = 0; c_i < c; c_i++) {
+      int64_t c_head = n_head + c_i * dhw;
+      for (int64_t d_i = 0; d_i < d; d_i++) {
+        int64_t d_head = c_head + d_i * hw;
+        for (int64_t h_i = 0; h_i < h; h_i++) {
+          int64_t h_head = d_head + h_i * w;
+          for (int64_t w_i = 0; w_i < w; w_i++) {
+            int64_t dst_i = h_head + w_i;
+            int64_t c1_i = c_i / c0;
+            int64_t c0_i = c_i % c0;
+            int64_t nc_i = n_i;
+            int64_t src_i = d_i * c1hwn1n0c0 + c1_i * hwn1n0c0 + h_i * wn1n0c0 + w_i * n1n0c0 + nc_i * c0 + c0_i;
+            SetData(size, false, src_i, dst_i, args, result);
+          }
+        }
       }
     }
   }
