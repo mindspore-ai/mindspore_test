@@ -66,14 +66,13 @@ mindspore.dataset.EMnistDataset
 
     .. code-block::
 
-        @article{cohen_afshar_tapson_schaik_2017,
+        @inproceedings{cohen2017emnist,
         title        = {EMNIST: Extending MNIST to handwritten letters},
-        DOI          = {10.1109/ijcnn.2017.7966217},
-        journal      = {2017 International Joint Conference on Neural Networks (IJCNN)},
-        author       = {Cohen, Gregory and Afshar, Saeed and Tapson, Jonathan and Schaik, Andre Van},
+        author       = {Cohen, Gregory and Afshar, Saeed and Tapson, Jonathan and Van Schaik, Andre},
+        booktitle    = {2017 international joint conference on neural networks (IJCNN)},
+        pages        = {2921--2926},
         year         = {2017},
-        howpublished = {https://www.westernsydney.edu.au/icns/reproducible_research/
-                        publication_support_materials/emnist}
+        organization = {IEEE}
         }
 
 
