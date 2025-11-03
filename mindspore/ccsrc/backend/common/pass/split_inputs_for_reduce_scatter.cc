@@ -55,7 +55,7 @@ std::vector<AnfNodePtr> SplitInputsForReduceScatter::InsertSplitForInput(const F
     split_inputs.push_back(output_num_node);
 
     // Create Split node.
-    auto split = func_graph->NewCNode(split_inputs);
+    auto split = NewCNode(split_inputs, func_graph);
     MS_EXCEPTION_IF_NULL(split);
     std::vector<TypeId> dtypes(rank_size, common::AnfAlgo::GetPrevNodeOutputInferDataType(node, i));
 

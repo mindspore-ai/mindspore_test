@@ -92,6 +92,28 @@ void UpdateDumpFlagAndDebugInfo(const CNodePtr &node, const std::vector<AnfNodeP
 
   node->AddFusedDebugInfoList(orig_real_cnodes);
 }
+
+int64_t GetCNodeIntAttr(const CNodePtr &node, const std::string &attr_name) {
+  MS_EXCEPTION_IF_NULL(node);
+  if (node->HasAttr(attr_name)) {
+    return GetValue<int64_t>(node->GetAttr(attr_name));
+  }
+  return 0;
+}
+
+bool CheckNodeAttrWithOrigNodes(const std::string &attr_name, const std::vector<AnfNodePtr> &orig_nodes) {
+  int64_t attr_value = GetCNodeIntAttr(orig_nodes.at(0)->cast<CNodePtr>(), attr_name);
+  for (const auto &node : orig_nodes) {
+    auto cur_attr_value = GetCNodeIntAttr(node->cast<CNodePtr>(), attr_name);
+    if (cur_attr_value != attr_value) {
+      MS_LOG(INFO) << "Attr " << attr_name << " not same with node[" << orig_nodes.at(0)->fullname_with_scope() << "], "
+                   << attr_name << "[" << attr_value << "] and node[" << node->fullname_with_scope() << "], "
+                   << attr_name << "[" << cur_attr_value << "], skip pass.";
+      return false;
+    }
+  }
+  return true;
+}
 }  // namespace
 
 bool UnVisited(const BaseRef &n) {
@@ -122,6 +144,7 @@ CNodePtr NewCNode(const std::vector<AnfNodePtr> &inputs, const FuncGraphPtr &fg,
   auto node = fg->NewCNode(inputs);
   MS_EXCEPTION_IF_NULL(node);
   UpdateDumpFlagAndDebugInfo(node, orig_nodes);
+  UpdateStreamAndCoreAttrs(node, orig_nodes);
   return node;
 }
 
@@ -130,6 +153,7 @@ CNodePtr NewCNode(const CNodePtr &cnode, const KernelGraphPtr &fg, const std::ve
   auto node = fg->NewCNode(cnode);
   MS_EXCEPTION_IF_NULL(node);
   UpdateDumpFlagAndDebugInfo(node, orig_nodes);
+  UpdateStreamAndCoreAttrs(node, orig_nodes);
   return node;
 }
 
@@ -1450,6 +1474,42 @@ AnfNodePtr CreateValueNodeWithKernelInfo(const FuncGraphPtr &graph, const ValueP
   }
 
   return value_node;
+}
+
+bool CheckStreamAndCoreAttrWithOrigNodes(const FuncGraphPtr &func_graph, const std::vector<AnfNodePtr> &orig_nodes) {
+  // not need to check in GE
+  if (AnfAlgo::GetBackend(func_graph) == kBackendGE) {
+    return true;
+  }
+  // check if all orig real cnodes have same attr value or all not have attr.
+  if (orig_nodes.empty()) {
+    return true;
+  }
+  return CheckNodeAttrWithOrigNodes("stream_id", orig_nodes) && CheckNodeAttrWithOrigNodes("cube_num", orig_nodes) &&
+         CheckNodeAttrWithOrigNodes("vector_num", orig_nodes);
+}
+
+void UpdateStreamAndCoreAttrs(const CNodePtr &node, const std::vector<AnfNodePtr> &orig_nodes) {
+  MS_EXCEPTION_IF_NULL(node);
+  if (orig_nodes.empty()) {
+    return;
+  }
+  if (!AnfUtils::IsRealCNodeKernel(node)) {
+    return;
+  }
+
+  MS_EXCEPTION_IF_NULL(orig_nodes[0]);
+  auto orig_node = orig_nodes[0]->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(orig_node);
+  if (orig_node->HasAttr("stream_id")) {
+    node->AddAttr("stream_id", orig_node->GetAttr("stream_id"));
+  }
+  if (orig_node->HasAttr("cube_num")) {
+    node->AddAttr("cube_num", orig_node->GetAttr("cube_num"));
+  }
+  if (orig_node->HasAttr("vector_num")) {
+    node->AddAttr("vector_num", orig_node->GetAttr("vector_num"));
+  }
 }
 }  // namespace opt
 }  // namespace mindspore

@@ -150,10 +150,10 @@ const AnfNodePtr MatmulElemFusion::Process(const FuncGraphPtr &func_graph, const
 
   CNodePtr matmul_elemwise_cnode = nullptr;
   if (elewise_input_num == kUnaryInputNum) {
-    matmul_elemwise_cnode = func_graph->NewCNode({NewValueNode(matmul_elemwise_prim), input_x, input_w});
+    matmul_elemwise_cnode = NewCNode({NewValueNode(matmul_elemwise_prim), input_x, input_w}, func_graph);
   } else if (elewise_input_num == kBinaryInputNum) {
     auto input_e = elemwise_node->input(kIndex2);
-    matmul_elemwise_cnode = func_graph->NewCNode({NewValueNode(matmul_elemwise_prim), input_x, input_w, input_e});
+    matmul_elemwise_cnode = NewCNode({NewValueNode(matmul_elemwise_prim), input_x, input_w, input_e}, func_graph);
   }
   MS_EXCEPTION_IF_NULL(matmul_elemwise_cnode);
 

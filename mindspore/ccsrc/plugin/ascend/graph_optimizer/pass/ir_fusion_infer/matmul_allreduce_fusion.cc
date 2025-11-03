@@ -196,9 +196,10 @@ AnfNodePtr MatMulAllReduceFusion::CreateMatMulAllReduceNode(const FuncGraphPtr &
   }
 
   auto matmul_allreduce_prim_c = CreateMatMulAllReducePrim(allreduce_prim, matmul_cnode);
-  std::vector<AnfNodePtr> matmul_allreduce_inputs = {input_x_node, input_y_node};
+  std::vector<AnfNodePtr> matmul_allreduce_inputs = {std::make_shared<ValueNode>(matmul_allreduce_prim_c), input_x_node,
+                                                     input_y_node};
 
-  auto matmul_allreduce_cnode = func_graph->NewCNode(matmul_allreduce_prim_c, matmul_allreduce_inputs);
+  auto matmul_allreduce_cnode = NewCNode(matmul_allreduce_inputs, func_graph);
   matmul_allreduce_cnode->set_abstract(allreduce_cnode->abstract()->Clone());
   MS_LOG(DEBUG) << "create MatMulAllReduce success.";
   return matmul_allreduce_cnode;

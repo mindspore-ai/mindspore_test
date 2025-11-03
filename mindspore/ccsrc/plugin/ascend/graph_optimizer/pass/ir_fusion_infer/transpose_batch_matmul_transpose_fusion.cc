@@ -134,15 +134,17 @@ const AnfNodePtr TransposeBatchMatmulTranspose::Process(const FuncGraphPtr &func
     std::make_shared<Primitive>(kTransposeBatchMatmulTransposeOpName);
   MS_CHECK_TRUE_RET(transpose_batch_matmul_transpose_prim, {});
 
-  CNodePtr fusion_cnode = func_graph->NewCNode({
-    NewValueNode(transpose_batch_matmul_transpose_prim),
-    transpose_in->input(kIndex1),
-    bmm_cnode->input(kIndex2),
-    transpose_in->input(kIndex2),
-    transpose_out->input(kIndex2),
-    transpose_a,
-    bmm_cnode->input(kIndex4),
-  });
+  CNodePtr fusion_cnode = NewCNode(
+    {
+      NewValueNode(transpose_batch_matmul_transpose_prim),
+      transpose_in->input(kIndex1),
+      bmm_cnode->input(kIndex2),
+      transpose_in->input(kIndex2),
+      transpose_out->input(kIndex2),
+      transpose_a,
+      bmm_cnode->input(kIndex4),
+    },
+    func_graph);
 
   fusion_cnode->set_scope(transpose_out->scope());
   if (node->abstract() != nullptr) {

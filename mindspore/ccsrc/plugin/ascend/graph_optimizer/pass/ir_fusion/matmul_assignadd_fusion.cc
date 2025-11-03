@@ -148,6 +148,10 @@ const AnfNodePtr MatmulAssignaddFusion::Process(const FuncGraphPtr &graph, const
   if (matmul == nullptr) {
     return nullptr;
   }
+  std::vector<AnfNodePtr> orig_nodes{matmul, assign_add};
+  if (!CheckStreamAndCoreAttrWithOrigNodes(graph, orig_nodes)) {
+    return nullptr;
+  }
   if (!CheckFusion(matmul)) {
     return nullptr;
   }
@@ -166,7 +170,6 @@ const AnfNodePtr MatmulAssignaddFusion::Process(const FuncGraphPtr &graph, const
     // add monad input
     (void)inputs.emplace_back(assign_add->input(assign_add_monad_idx));
   }
-  std::vector<AnfNodePtr> orig_nodes{matmul, assign_add};
   auto matmul_add = opt::NewCNode(inputs, graph, orig_nodes);
   matmul_add->set_scope(matmul->scope());
   matmul_add->set_abstract(assign_add->abstract());

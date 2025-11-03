@@ -139,7 +139,7 @@ std::pair<AnfNodePtr, bool> BuildWeightInputAndTransB(const FuncGraphPtr &func_g
   auto orig_w = w_trans->input(kIndex1);
   if (IsPrimitiveCNode(weight_node, prim::kPrimLoad)) {
     auto w_load = weight_node->cast<CNodePtr>();
-    auto new_load = func_graph->NewCNode({NewValueNode(prim::kPrimLoad), orig_w, w_load->input(kIndex2)});
+    auto new_load = NewCNode({NewValueNode(prim::kPrimLoad), orig_w, w_load->input(kIndex2)}, func_graph);
     new_load->set_scope(w_load->scope());
     if (weight_node->abstract() != nullptr) {
       new_load->set_abstract(weight_node->abstract()->Clone());
@@ -272,7 +272,7 @@ const AnfNodePtr TransposeExtMatmulExtTranspose::Process(const FuncGraphPtr &fun
                                               perm_out_node,
                                               trans_a_node,
                                               trans_b_node};
-  CNodePtr fusion_cnode = func_graph->NewCNode(fused_inputs);
+  CNodePtr fusion_cnode = NewCNode(fused_inputs, func_graph);
 
   fusion_cnode->set_scope(transpose_out->scope());
   // Ensure kernel_info object exists

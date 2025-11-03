@@ -146,7 +146,7 @@ AnfNodePtr ConcatOutputsForAllGather::InsertConcatForOutput(const FuncGraphPtr &
     make_tuple_inputs.push_back(concat);
   }
 
-  auto make_tuple = func_graph->NewCNode(make_tuple_inputs);
+  auto make_tuple = NewCNode(make_tuple_inputs, func_graph);
   return make_tuple;
 }
 

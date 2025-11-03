@@ -149,7 +149,7 @@ const AnfNodePtr MatMulSigmoidCastAddFusion::Process(const FuncGraphPtr &func_gr
 
   CNodePtr matmul_elemwise_cnode = nullptr;
   auto input_bias = add_node->input(kIndex2);
-  matmul_elemwise_cnode = func_graph->NewCNode({NewValueNode(matmul_elem_prim), input_x, input_weight, input_bias});
+  matmul_elemwise_cnode = NewCNode({NewValueNode(matmul_elem_prim), input_x, input_weight, input_bias}, func_graph);
   MS_EXCEPTION_IF_NULL(matmul_elemwise_cnode);
 
   matmul_elemwise_cnode->set_scope(cast_add_node->scope());

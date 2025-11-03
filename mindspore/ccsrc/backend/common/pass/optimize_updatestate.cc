@@ -65,7 +65,7 @@ const AnfNodePtr OptimizeUpdateState::Process(const FuncGraphPtr &func_graph, co
     return nullptr;
   }
   // Attaches changed, make a new UpdateState.
-  auto new_update_state = func_graph->NewCNode(new_inputs);
+  auto new_update_state = NewCNode(new_inputs, func_graph);
   new_update_state->set_abstract(update_state->abstract());
   new_update_state->set_scope(update_state->scope());
   return new_update_state;

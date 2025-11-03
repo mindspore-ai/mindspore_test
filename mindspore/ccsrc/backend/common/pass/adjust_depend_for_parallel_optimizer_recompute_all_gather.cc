@@ -136,7 +136,7 @@ bool AdjustDependForParallelOptimizerRecomputeAllGather::AdjustAllgatherDepend(
         }
         std::vector<AnfNodePtr> inputs = {NewValueNode(std::make_shared<Primitive>(prim::kPrimDepend->name())),
                                           allgather_next_node, common::AnfAlgo::GetInputNode(depend_cnode, 1)};
-        auto new_depend = graph->NewCNode(inputs);
+        auto new_depend = NewCNode(inputs, graph);
         new_depend->set_abstract(depend_node->abstract());
         manager->SetEdge(set_edge_node, 1, common::AnfAlgo::GetInputNode(depend_cnode, 0));
         (void)manager->Replace(allgather_next_node, new_depend);
@@ -159,7 +159,7 @@ bool AdjustDependForParallelOptimizerRecomputeAllGather::AdjustAllgatherDepend(
         }
         std::vector<AnfNodePtr> inputs = {NewValueNode(std::make_shared<Primitive>(prim::kPrimDepend->name())),
                                           allgather_next_node, common::AnfAlgo::GetInputNode(cast_depend_cnode, 1)};
-        auto new_depend = graph->NewCNode(inputs);
+        auto new_depend = NewCNode(inputs, graph);
         new_depend->set_abstract(cast_depend_node->abstract());
         manager->SetEdge(depend_node, 1, common::AnfAlgo::GetInputNode(cast_depend_cnode, 0));
         (void)manager->Replace(allgather_next_node, new_depend);

@@ -57,7 +57,7 @@ const AnfNodePtr ProcessPartialInline::Process(const FuncGraphPtr &graph, const 
   for (size_t i = kIndex1; i < common::AnfAlgo::GetInputNum(cnode); i++) {
     partial_inline_inputs.emplace_back(common::AnfAlgo::GetInputNode(cnode, i));
   }
-  auto partial_inline = graph->NewCNode(partial_inline_inputs);
+  auto partial_inline = NewCNode(partial_inline_inputs, graph);
   MS_EXCEPTION_IF_NULL(partial_inline);
   partial_inline->set_abstract(cnode->abstract());
   common::AnfAlgo::SetNodeAttr(kAttrKernelGraph, MakeValue(sub_kernel_graph), partial_inline);
