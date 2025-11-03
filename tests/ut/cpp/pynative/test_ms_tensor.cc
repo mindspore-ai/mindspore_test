@@ -24,6 +24,7 @@
 #include "mindspore/ccsrc/pynative/utils/pynative_utils.h"
 #include "mindspore/ccsrc/frontend/jit/ps/parse/data_converter.h"
 #include "mindspore/ccsrc/frontend/ir/tensor_py.h"
+#include "pynative/common.h"
 
 using namespace std;
 using namespace mindspore;
@@ -32,6 +33,11 @@ using namespace ms;
 class TensorTest : public testing::Test {
  protected:
   void SetUp() override {
+    UT::InitPythonPath();
+    auto context = MsContext::GetInstance();
+    MS_EXCEPTION_IF_NULL(context);
+    context->set_param<std::string>(MS_CTX_DEVICE_TARGET, kCPUDevice);
+
     vector<float> vec = {1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f};
     std::vector<ShapeValueDType> shape = {2, 3};
     mindspore::ValuePtr value =
