@@ -1423,14 +1423,13 @@ class EMnistDataset(MappableDataset, VisionBaseDataset):
 
     .. code-block::
 
-        @article{cohen_afshar_tapson_schaik_2017,
+        @inproceedings{cohen2017emnist,
         title        = {EMNIST: Extending MNIST to handwritten letters},
-        DOI          = {10.1109/ijcnn.2017.7966217},
-        journal      = {2017 International Joint Conference on Neural Networks (IJCNN)},
-        author       = {Cohen, Gregory and Afshar, Saeed and Tapson, Jonathan and Schaik, Andre Van},
+        author       = {Cohen, Gregory and Afshar, Saeed and Tapson, Jonathan and Van Schaik, Andre},
+        booktitle    = {2017 international joint conference on neural networks (IJCNN)},
+        pages        = {2921--2926},
         year         = {2017},
-        howpublished = {https://www.westernsydney.edu.au/icns/reproducible_research/
-                        publication_support_materials/emnist}
+        organization = {IEEE}
         }
     """
 
@@ -2842,8 +2841,8 @@ class ManifestDataset(MappableDataset, VisionBaseDataset):
 
     Manifest file contains a list of files included in a dataset, including basic file info such as File name and File
     ID, along with extended file metadata. Manifest is a data format file supported by Huawei Modelarts. For details,
-    see `Specifications for Importing the Manifest File <https://support.huaweicloud.com/intl/en-us/dataprepare-modelarts/
-    dataprepare-modelarts-0015.html>`_ .
+    see `Specifications for Importing the Manifest File
+    <https://support.huaweicloud.com/intl/en-us/sdkreference-modelarts/modelarts_04_0349.html>`_ .
 
     .. code-block::
 
@@ -3723,13 +3722,13 @@ class _SBDataset:
                 usage_path = os.path.join(dataset_dir, item + '.txt')
                 if not os.path.exists(usage_path):
                     raise FileNotFoundError("SBDataset: {0} not found".format(usage_path))
-                with open(usage_path, 'r') as f:
+                with open(usage_path, 'r', encoding='utf-8') as f:
                     image_names += [x.strip() for x in f.readlines()]
         else:
             usage_path = os.path.join(dataset_dir, usage + '.txt')
             if not os.path.exists(usage_path):
                 raise FileNotFoundError("SBDataset: {0} not found".format(usage_path))
-            with open(usage_path, 'r') as f:
+            with open(usage_path, 'r', encoding='utf-8') as f:
                 image_names = [x.strip() for x in f.readlines()]
 
         self.images = [os.path.join(self.images_path, i + ".jpg") for i in image_names]
