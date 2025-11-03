@@ -309,6 +309,8 @@
 "mindspore/tests/st/ops/test_ops_lin_space_ext.py"                                                      "not-callable"
 "mindspore/tests/st/ops/test_ops_cosh.py"                                                               "not-callable"
 "mindspore/tests/st/mint/test_unsqueeze.py"                                                             "missing-module-docstring"
+"mindspore/tests/st/amp/test_amp.py"                                                                    "missing-module-docstring"
+"mindspore/tests/st/common/test_dtype.py"                                                         "missing-module-docstring"
 
 #MindSpore Lite
 "mindspore/mindspore/ops/kernel/cpu/nnacl/experimental/HPC-generator/generator.py"                                         "redefined-builtin"
