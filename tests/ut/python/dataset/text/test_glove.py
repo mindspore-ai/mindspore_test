@@ -12,13 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
+"""test text Glove"""
 
 import numpy as np
 import pytest
 
 from mindspore import log
 import mindspore.dataset as ds
-import mindspore.dataset.text as text
+from mindspore.dataset import text
 import mindspore.dataset.text.transforms as T
 
 DATASET_ROOT_PATH = "../data/dataset/testGloVe/"

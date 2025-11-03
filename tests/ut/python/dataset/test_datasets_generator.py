@@ -254,7 +254,6 @@ def dataset_call_c_transforms_func(sampler, shard_id=0):
     """
     All of c_transforms and sampler
     Returns:
-
     """
 
     def filter_func_ge(_, label):
@@ -293,6 +292,10 @@ def dataset_call_c_transforms_func(sampler, shard_id=0):
         beforesize += 1
     l1.clear()
 
+    # Reduce use case execution time
+    if isinstance(sampler, (ds.Sampler, ds.SequentialSampler, ds.WeightedRandomSampler)):
+        return
+
     dataset = dataset.skip(count=skipcount)
     aftersize = 0
     for data in dataset.create_dict_iterator(output_numpy=True):
@@ -312,9 +315,6 @@ def dataset_call_c_transforms_func(sampler, shard_id=0):
     aftersize = 0
     for data in dataset.create_dict_iterator(output_numpy=True):
         aftersize += 1
-
-    if isinstance(sampler, (ds.Sampler, ds.SequentialSampler, ds.WeightedRandomSampler)):
-        return
 
     padded_samples = [{'image': np.zeros((2, 3, 3), np.uint8), 'label': np.zeros((1), global_type)}]
     padded_ds = ds.PaddedDataset(padded_samples)
@@ -508,15 +508,11 @@ def dataset_call_c_transforms_func(sampler, shard_id=0):
 
     dataset.reset()
 
-    # release operation is not support
-    # dataset.release()
-
 
 def dataset_call_py_transforms_func(sampler, sampler_num):
     """
     All of py_transforms and sampler
     Returns:
-
     """
     crop_height = 100
     crop_width = 50
@@ -542,6 +538,10 @@ def dataset_call_py_transforms_func(sampler, sampler_num):
     for _ in dataset.create_dict_iterator(output_numpy=True):
         dataset_num += 1
     assert dataset_num == sampler_num
+
+    # Reduce use case execution time
+    if isinstance(sampler, (ds.Sampler, ds.SequentialSampler, ds.WeightedRandomSampler)):
+        return
 
     op_list = [vision.RandomCrop(size=(crop_height, crop_width), padding=(1, 1), pad_if_needed=True,
                                   fill_value=(1, 1, 0), padding_mode=Border.CONSTANT),
@@ -584,9 +584,6 @@ def dataset_call_py_transforms_func(sampler, sampler_num):
     for data in dataset.create_dict_iterator(output_numpy=True):
         l1.append(data['image'])
     l1.clear()
-
-    if isinstance(sampler, (ds.Sampler, ds.SequentialSampler, ds.WeightedRandomSampler)):
-        return
 
     dataset_1 = ds.GeneratorDataset(custom_dataset, column_names=["image", "label"], sampler=sampler,
                                     num_parallel_workers=num_parallel_workers)
@@ -680,19 +677,19 @@ def dataset_create_dict_iterator(data, num_epochs, init_mem=0):
     data = Iterable(input_x, input_y)
     data_memory = psutil.Process(os.getpid()).memory_info().rss / 1024 / 1024
 
-    data_init_memory_difference = data_memory - init_mem  # 大于1000M
+    data_init_memory_difference = data_memory - init_mem  # >1000M
 
     orginal_prefetch_size = ds.config.get_prefetch_size()
     ds.config.set_prefetch_size(1)
     dataset = ds.GeneratorDataset(source=data, column_names=["data", "label"], shuffle=False)
     dataset_memory = psutil.Process(os.getpid()).memory_info().rss / 1024 / 1024
 
-    dataset_data_memory_difference = dataset_memory - data_memory  # 小于2M
+    dataset_data_memory_difference = dataset_memory - data_memory  # <2M
 
     ds_iter = dataset.create_dict_iterator(output_numpy=True, num_epochs=num_epochs)
 
     iter_memory = psutil.Process(os.getpid()).memory_info().rss / 1024 / 1024
-    iter_dataset_memory_difference = iter_memory - dataset_memory  # 小于2M
+    iter_dataset_memory_difference = iter_memory - dataset_memory  # <2M
 
     epochs = 1
     for _ in range(epochs):

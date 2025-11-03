@@ -17,7 +17,7 @@ Testing from_dataset in mindspore.dataset
 """
 import numpy as np
 import mindspore.dataset as ds
-import mindspore.dataset.text as text
+from mindspore.dataset import text
 
 
 def test_demo_basic_from_dataset():
@@ -147,7 +147,7 @@ def test_from_dataset_exceptions():
         try:
             data = ds.TextFileDataset("../data/dataset/testVocab/words.txt", shuffle=False)
             vocab = text.Vocab.from_dataset(data, columns, freq_range, top_k)
-            assert isinstance(vocab.text.Vocab)
+            assert isinstance(vocab, text.Vocab)
         except (TypeError, ValueError) as e:
             assert s in str(e), str(e)
 
