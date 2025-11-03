@@ -26,7 +26,7 @@ constexpr uint32_t ACL_EVENT_DEFAULT = 0x0000000Eu;
 
 class ASCEND_RES_MANAGER_EXPORT AscendEvent : public DeviceEvent {
  public:
-  AscendEvent();
+  AscendEvent() = delete;
   explicit AscendEvent(uint32_t flag, bool use_extensional_api = true);
   ~AscendEvent() override;
 

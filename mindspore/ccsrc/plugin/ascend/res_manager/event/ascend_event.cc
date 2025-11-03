@@ -31,13 +31,6 @@ std::string voidPtrToString(void *ptr) {
   return std::to_string(address);
 }
 }  // namespace
-AscendEvent::AscendEvent() {
-  auto ret = CALL_ASCEND_API(aclrtCreateEvent, &event_);
-  if (ret != ACL_SUCCESS) {
-    MS_LOG(ERROR) << "aclrtCreateEvent failed, ret:" << ret;
-    event_ = nullptr;
-  }
-}
 
 AscendEvent::AscendEvent(uint32_t flag, bool use_extensional_api) {
   aclError ret;
@@ -54,13 +47,7 @@ AscendEvent::AscendEvent(uint32_t flag, bool use_extensional_api) {
   MS_LOG(DEBUG) << "Create ascend event success, flag : " << flag << ".";
 }
 
-AscendTimeEvent::AscendTimeEvent() {
-  auto ret = CALL_ASCEND_API(aclrtCreateEventWithFlag, &event_, ACL_EVENT_TIME_LINE);
-  if (ret != ACL_SUCCESS) {
-    MS_LOG(ERROR) << "aclrtCreateEvent failed, ret:" << ret;
-    event_ = nullptr;
-  }
-}
+AscendTimeEvent::AscendTimeEvent() : AscendEvent(ACL_EVENT_TIME_LINE, false) {}
 
 AscendEvent::~AscendEvent() {
   if (!event_destroyed_) {

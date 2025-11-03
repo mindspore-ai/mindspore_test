@@ -19,7 +19,6 @@
 
 namespace mindspore::device::ascend {
 aclrtCreateContextFunObj aclrtCreateContext_ = nullptr;
-aclrtCreateEventFunObj aclrtCreateEvent_ = nullptr;
 aclrtCreateEventWithFlagFunObj aclrtCreateEventWithFlag_ = nullptr;
 aclrtCreateEventExWithFlagFunObj aclrtCreateEventExWithFlag_ = nullptr;
 aclrtCreateStreamFunObj aclrtCreateStream_ = nullptr;
@@ -95,7 +94,6 @@ void LoadAclRtApiSymbol(const std::string &ascend_path) {
     return;
   }
   aclrtCreateContext_ = DlsymAscendFuncObj(aclrtCreateContext, handler);
-  aclrtCreateEvent_ = DlsymAscendFuncObj(aclrtCreateEvent, handler);
   aclrtCreateEventWithFlag_ = DlsymAscendFuncObj(aclrtCreateEventWithFlag, handler);
   aclrtCreateEventExWithFlag_ = DlsymAscendFuncObj(aclrtCreateEventExWithFlag, handler);
   aclrtCreateStream_ = DlsymAscendFuncObj(aclrtCreateStream, handler);
@@ -167,7 +165,6 @@ void LoadAclRtApiSymbol(const std::string &ascend_path) {
 
 void LoadSimulationRtApi() {
   ASSIGN_SIMU(aclrtCreateContext);
-  ASSIGN_SIMU(aclrtCreateEvent);
   ASSIGN_SIMU(aclrtCreateEventWithFlag);
   ASSIGN_SIMU(aclrtCreateEventExWithFlag);
   ASSIGN_SIMU(aclrtCreateStream);

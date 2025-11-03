@@ -41,7 +41,6 @@ class ASCEND_RES_MANAGER_EXPORT AscendSnapshotMgr : public SnapshotMgr {
   void Clear();
 
   void RecordEvent(aclrtStream stream);
-  void ResetEvent(aclrtStream stream);
   void StreamWaitEvent(aclrtStream stream);
 
   void SaveParameters(const std::vector<AnfNodePtr> &weights, aclrtStream stream);
