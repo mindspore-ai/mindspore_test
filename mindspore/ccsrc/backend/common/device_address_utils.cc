@@ -182,7 +182,7 @@ void DeviceAddressUtils::CopyNoneTensorDataToDevice(const device::DeviceContext 
                   << " device address:" << host_device_address->ToString()
                   << " dst device address:" << device_address->ToString();
     if (!device_context->device_res_manager_->SyncAllStreams() ||
-        !SyncCopy(device_address, string_tensor->device_address(), kDefaultStreamIndex)) {
+        !SyncCopy(kernel_tensor.get(), string_tensor.get(), kDefaultStreamIndex)) {
       MS_LOG(ERROR) << "Failed sync string to device size:" << tensor_size
                     << " device address:" << host_device_address->ToString()
                     << " dst device address:" << device_address->ToString();
@@ -885,13 +885,17 @@ void DeviceAddressUtils::LazyCopy(const tensor::TensorPtr &tensor, size_t stream
   }
   MS_EXCEPTION_IF_NULL(dst);
   MS_LOG(DEBUG) << "Lazy copy for dst " << dst->ToString() << " src " << src->ToString() << " on stream " << stream_id;
+  DeviceAddressInfo src_info = {true, kernel::GetFormatFromStrToEnum(src->format()), src->type_id(),
+                                src->GetShapeVector()};
+  DeviceAddressInfo dst_info = {true, kernel::GetFormatFromStrToEnum(tensor->format()), tensor->data_type(),
+                                tensor->shape()};
   if (src->GetDeviceType() != device::DeviceType::kCPU && dst->GetDeviceType() == device::DeviceType::kCPU) {
-    if (!SyncCopy(dst, src, stream_id)) {
+    if (!SyncCopy(dst, src, stream_id, src_info, dst_info)) {
       MS_LOG(EXCEPTION) << "Lazy Sync copy failed. dst " << dst->ToString() << " src " << src->ToString()
                         << " on stream " << stream_id;
     }
   } else {
-    if (!AsyncCopy(dst, src, stream_id)) {
+    if (!AsyncCopy(dst, src, stream_id, true, src_info, dst_info)) {
       MS_LOG(EXCEPTION) << "Lazy Async copy failed. dst " << dst->ToString() << " src " << src->ToString()
                         << " on stream " << stream_id;
     }
@@ -1027,7 +1031,7 @@ KernelTensorPtr DeviceAddressUtils::CreateInputKernelTensor(const DeviceContext 
     static std::string name = "Alloc memory";
     kernel_tensor->IncreaseNewRefCount(name);
   }
-  if (!AsyncCopy(device_address, addr, device_address->stream_id())) {
+  if (!AsyncCopy(kernel_tensor.get(), tensor.get(), device_address->stream_id())) {
     MS_LOG(EXCEPTION) << "Copy host data to device failed";
   }
   MS_LOG(DEBUG) << "Create input tensor device address " << device_address << " for " << index

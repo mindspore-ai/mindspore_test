@@ -263,7 +263,11 @@ TypeId Tensor::set_data_type(TypeId data_type) {
     }
     auto new_dtype_address = MakeDeviceAddress(data_type, shape_, true);
     MS_EXCEPTION_IF_NULL(new_dtype_address);
-    if (!SyncCopy(new_dtype_address, device_sync_, device_sync_->stream_id())) {
+    DeviceAddressInfo src_info = {true, kernel::GetFormatFromStrToEnum(device_sync_->format()), device_sync_->type_id(),
+                                  device_sync_->GetShapeVector()};
+    DeviceAddressInfo dst_info = {true, kernel::GetFormatFromStrToEnum(new_dtype_address->format()),
+                                  new_dtype_address->type_id(), new_dtype_address->GetShapeVector()};
+    if (!SyncCopy(new_dtype_address, device_sync_, device_sync_->stream_id(), src_info, dst_info)) {
       MS_LOG(EXCEPTION) << "Sync copy failed";
     }
     device_sync_ = new_dtype_address;
@@ -452,7 +456,11 @@ TensorPtr Tensor::cpu() const {
   }
   auto dst = MakeDeviceAddress(data_type_, shape_, true);
   MS_EXCEPTION_IF_NULL(dst);
-  if (!SyncCopy(dst, device_address, CurrentStream::id())) {
+  DeviceAddressInfo src_info = {true, kernel::GetFormatFromStrToEnum(device_address->format()),
+                                device_address->type_id(), device_address->GetShapeVector()};
+  DeviceAddressInfo dst_info = {true, kernel::GetFormatFromStrToEnum(dst->format()), dst->type_id(),
+                                dst->GetShapeVector()};
+  if (!SyncCopy(dst, device_address, CurrentStream::id(), src_info, dst_info)) {
     MS_LOG(EXCEPTION) << "SyncCopy failed for " << ToString();
   }
   auto ret = std::make_shared<Tensor>(data_type_, shape_, dst);
@@ -806,21 +814,21 @@ std::string ShapeToString(const ShapeVector &shape) {
 }
 }  // namespace tensor
 namespace {
-DeviceAddressMetaData MakeDeviceAddressMetaData(const tensor::TensorPtr &tensor) {
-  DeviceAddressMetaData meta_data = {true, kernel::GetFormatFromStrToEnum(tensor->format()), tensor->data_type(),
-                                     tensor->shape()};
+DeviceAddressInfo MakeDeviceAddressInfo(const tensor::TensorPtr &tensor) {
+  DeviceAddressInfo meta_data = {true, kernel::GetFormatFromStrToEnum(tensor->format()), tensor->data_type(),
+                                 tensor->shape()};
   return meta_data;
 }
 }  // namespace
 bool SyncCopy(const tensor::TensorPtr &dst, const tensor::TensorPtr &src, size_t stream_id) {
-  auto dst_meta_data = MakeDeviceAddressMetaData(dst);
-  auto src_meta_data = MakeDeviceAddressMetaData(src);
+  auto dst_meta_data = MakeDeviceAddressInfo(dst);
+  auto src_meta_data = MakeDeviceAddressInfo(src);
   return SyncCopy(dst->device_address(), src->device_address(), stream_id, src_meta_data, dst_meta_data);
 }
 
 bool AsyncCopy(const tensor::TensorPtr &dst, const tensor::TensorPtr &src, size_t stream_id, bool keep_src) {
-  auto dst_meta_data = MakeDeviceAddressMetaData(dst);
-  auto src_meta_data = MakeDeviceAddressMetaData(src);
+  auto dst_meta_data = MakeDeviceAddressInfo(dst);
+  auto src_meta_data = MakeDeviceAddressInfo(src);
   return AsyncCopy(dst->device_address(), src->device_address(), stream_id, keep_src, src_meta_data, dst_meta_data);
 }
 }  // namespace mindspore

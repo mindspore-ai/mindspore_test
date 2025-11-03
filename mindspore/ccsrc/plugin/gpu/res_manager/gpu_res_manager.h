@@ -59,11 +59,10 @@ class GPUResManager : public DeviceResManager {
                                        uint32_t stream_id) const override;
 
   bool SyncCopy(const DeviceAddressPtr &dst_device_sync, const DeviceAddressPtr &src_device_sync, size_t stream_id,
-                const DeviceAddressMetaData &src_metadata = {},
-                const DeviceAddressMetaData &dst_metadata = {}) const override;
+                const DeviceAddressInfo &src_info = {}, const DeviceAddressInfo &dst_info = {}) const override;
   bool AsyncCopy(const DeviceAddressPtr &dst_device_sync, const DeviceAddressPtr &src_device_sync, size_t stream_id,
-                 bool keep_src, const DeviceAddressMetaData &src_metadata = {},
-                 const DeviceAddressMetaData &dst_metadata = {}) const override;
+                 bool keep_src, const DeviceAddressInfo &src_info = {},
+                 const DeviceAddressInfo &dst_info = {}) const override;
   bool Copy(void *dst, const void *src, uint64_t size, CopyType kind, size_t stream_id) const override;
   bool CopyDirectly(void *dst, size_t dst_size, const void *src, size_t src_size, CopyType kind) const override;
 

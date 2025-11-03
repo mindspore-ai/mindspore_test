@@ -484,8 +484,6 @@ void Debugger::LoadSingleAnfnode(const AnfNodePtr &anf_node, const size_t output
   if (!AnfAlgo::OutputAddrExist(anf_node, output_index)) {
     return;
   }
-  auto addr = AnfAlgo::GetOutputAddr(anf_node, output_index);
-  MS_EXCEPTION_IF_NULL(addr);
   auto type = common::AnfAlgo::GetOutputInferDataType(anf_node, output_index);
   if (!IsTypeDebuggerSupported(type)) {
     return;
@@ -493,7 +491,8 @@ void Debugger::LoadSingleAnfnode(const AnfNodePtr &anf_node, const size_t output
   auto format = kOpFormat_DEFAULT;
   string tensor_name = node_name + ':' + "0";
   ShapeVector int_shapes = AnfAlgo::GetRuntimePaddingShape(anf_node, output_index);
-  bool ret = LoadMemToHost(*addr, tensor_name, format, int_shapes, type, 0, false, root_graph_id, false, true);
+  bool ret = LoadMemToHost(AnfAlgo::GetOutputKernelTensor(anf_node, output_index).get(), tensor_name, format,
+                           int_shapes, type, 0, false, root_graph_id, false, true);
   if (!ret) {
     MS_LOG(ERROR) << "LoadMemToHost:"
                   << ", tensor_name:" << tensor_name << ", host_format:" << format << ".!";
@@ -509,8 +508,9 @@ void Debugger::LoadSingleParameterMindRT(const AnfNodePtr &node) {
   TypeId type;
   TypeId device_type;
   ShapeVector int_shapes;
-  auto device_addr = GetParameterInfo(node, NOT_NULL(&int_shapes), NOT_NULL(&type), NOT_NULL(&device_type));
-  if (device_addr == nullptr || device_addr->GetPtr() == nullptr) {
+  auto kernel_tensor = GetParameterInfo(node, NOT_NULL(&int_shapes), NOT_NULL(&type), NOT_NULL(&device_type));
+  if (kernel_tensor == nullptr || kernel_tensor->device_address() == nullptr ||
+      kernel_tensor->device_address()->GetPtr() == nullptr) {
     MS_LOG(DEBUG) << "Skip node: " << node_name << ". Parameter data is not available for mindRT.";
     return;
   }
@@ -519,7 +519,8 @@ void Debugger::LoadSingleParameterMindRT(const AnfNodePtr &node) {
   }
   auto format = kOpFormat_DEFAULT;
   string tensor_name = node_name + ':' + "0";
-  bool ret = LoadMemToHost(*device_addr, tensor_name, format, int_shapes, type, 0, false, root_graph_id, true, true);
+  bool ret =
+    LoadMemToHost(kernel_tensor.get(), tensor_name, format, int_shapes, type, 0, false, root_graph_id, true, true);
   if (!ret) {
     MS_LOG(ERROR) << "LoadMemToHost:"
                   << ", tensor_name:" << tensor_name << ", host_format:" << format << ".!";

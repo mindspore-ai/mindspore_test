@@ -24,11 +24,7 @@
 
 #include "include/backend/kernel_graph.h"
 #include "include/utils/contract.h"
-#include "ir/device_address.h"
-
-using DeviceTensor = mindspore::device::DeviceAddress;
-using DeviceTensorPtr = std::shared_ptr<DeviceTensor>;
-
+#include "include/runtime/hardware_abstract/kernel_base/kernel_tensor.h"
 namespace mindspore {
 constexpr size_t kParameterOutputIndex = 0;
 constexpr size_t kValueNodeOutputIndex = 0;
@@ -64,8 +60,8 @@ void GetFileKernelName(NotNull<std::string *> kernel_name);
 void GetDumpIntShape(const AnfNodePtr &node, size_t index, NotNull<ShapeVector *> const int_shapes,
                      bool trans_flag = false);
 
-const DeviceTensorPtr GetParameterInfo(const AnfNodePtr &node, NotNull<ShapeVector *> const int_shapes,
-                                       NotNull<TypeId *> const host_type, NotNull<TypeId *> const device_type);
+const kernel::KernelTensorPtr GetParameterInfo(const AnfNodePtr &node, NotNull<ShapeVector *> const int_shapes,
+                                               NotNull<TypeId *> const host_type, NotNull<TypeId *> const device_type);
 
 /*
  * Feature group: Dump.
@@ -82,9 +78,9 @@ void DumpMemToFile(const std::string &file_path, const device::DeviceAddress &ad
  * Runtime category: MSBackend
  * Description: Load the device data into host mem.
  */
-bool LoadMemToHost(const device::DeviceAddress &addr, const std::string &tensor_name, const std::string &host_fmt,
-                   const ShapeVector &host_shape, TypeId host_type, size_t slot, bool keep_prev, uint32_t root_graph_id,
-                   bool force_update, bool trans_flag, bool async_copy = True);
+bool LoadMemToHost(kernel::KernelTensor *const kernel_tensor, const std::string &tensor_name,
+                   const std::string &host_fmt, const ShapeVector &host_shape, TypeId host_type, size_t slot,
+                   bool keep_prev, uint32_t root_graph_id, bool force_update, bool trans_flag, bool async_copy = True);
 
 /*
  * Feature group: Dump.

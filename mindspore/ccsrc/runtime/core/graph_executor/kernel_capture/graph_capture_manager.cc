@@ -384,7 +384,7 @@ void GraphCaptureManager::FetchAllInputsBeforeCaptureGraph(
                                                         kernel_actor->GetAID().Name(), fix_device_tensor->GetSize());
           }
         }
-        if (!AsyncCopy(fix_device_tensor, device_tensor, 0)) {
+        if (!AsyncCopy(fix_kernel_tensor.get(), kernel_tensor.get(), 0)) {
           MS_LOG(EXCEPTION) << "Async copy failed, src kernel tensor: " << kernel_tensor->ToString()
                             << ", dst kernel tensor: " << fix_kernel_tensor->ToString();
         }
@@ -549,7 +549,7 @@ void GraphCaptureManager::UpdateFixAddressBeforeReplayGraph(
         device_tensor->type_id() != real_input_info->type_id_) {
       MS_EXCEPTION(RuntimeError) << "Does not support heterogeneous scenarios";
     }
-    if (!AsyncCopy(fix_kernel_tensor->device_address(), device_tensor, 0)) {
+    if (!AsyncCopy(fix_kernel_tensor.get(), kernel_tensor.get(), 0)) {
       MS_LOG(EXCEPTION) << "Async copy failed, src kernel tensor: " << kernel_tensor->ToString()
                         << ", dst kernel tensor: " << fix_kernel_tensor->ToString();
     }

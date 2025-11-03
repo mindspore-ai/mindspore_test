@@ -407,7 +407,7 @@ void ExitActor::CopyDeviceAddress(OpContext<KernelTensor> *const context) {
       new_kernel_tensor->IncreaseNewRefCount(name);
       MS_LOG(DEBUG) << "Sync device address from:" << input_kernel_tensors_[i]->ToString()
                     << " to:" << new_kernel_tensor->ToString() << " in actor:" << GetAID();
-      if (!SyncCopy(new_device_tensor, input_device_tensor, kDefaultStreamIndex)) {
+      if (!SyncCopy(new_kernel_tensor.get(), input_kernel_tensors_[i].get(), kDefaultStreamIndex)) {
         SET_OPCONTEXT_FAIL_RET_WITH_ERROR(*context, "Sync device to device failed.");
       }
     } else {

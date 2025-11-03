@@ -102,15 +102,19 @@ device::DeviceAddressPtr MakeTensorContiguousCallback(const DeviceAddressPtr &ad
   return DeviceAddressUtils::ConvertContiguousDeviceAddress(nullptr, dev_address);
 }
 
-void SyncOutputFromTensor(const DeviceTensorPtr &tensor_device_address, const DeviceTensorPtr &device_tensor,
+void SyncOutputFromTensor(const TensorPtr &dst_tensor, const KernelTensorPtr &src_kernel_tensor,
                           const AnfNodePtr &output_node) {
+  MS_EXCEPTION_IF_NULL(dst_tensor);
+  MS_EXCEPTION_IF_NULL(src_kernel_tensor);
+  const auto &tensor_device_address = dst_tensor->device_address();
+  const auto &device_tensor = src_kernel_tensor->device_address();
   MS_EXCEPTION_IF_NULL(tensor_device_address);
   MS_EXCEPTION_IF_NULL(device_tensor);
   if (runtime::IsDisableRuntimeConfig(runtime::kRuntimeCopyAsync)) {
     MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
       << "Sync device data from device tensor: " << device_tensor << ", to device tensor: " << tensor_device_address
       << ", size: " << device_tensor->GetSize();
-    if (!SyncCopy(tensor_device_address, device_tensor, kDefaultStreamIndex) ||
+    if (!SyncCopy(dst_tensor, src_kernel_tensor.get(), kDefaultStreamIndex) ||
         !SyncAllStreamForDeviceAddress(tensor_device_address, device_tensor)) {
       MS_LOG_WITH_NODE(EXCEPTION, output_node)
         << "Sync device to device failed, device type: " << tensor_device_address->GetDeviceType()
@@ -120,7 +124,7 @@ void SyncOutputFromTensor(const DeviceTensorPtr &tensor_device_address, const De
     MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
       << "Async device data from device tensor: " << device_tensor << ", to device tensor: " << tensor_device_address
       << ", size: " << device_tensor->GetSize();
-    if (!AsyncCopy(tensor_device_address, device_tensor, kDefaultStreamIndex)) {
+    if (!AsyncCopy(dst_tensor, src_kernel_tensor.get(), kDefaultStreamIndex)) {
       MS_LOG_WITH_NODE(EXCEPTION, output_node)
         << "Async device to device failed, device type: " << tensor_device_address->GetDeviceType()
         << ", output node: " << output_node->fullname_with_scope();
@@ -654,7 +658,7 @@ void OutputActor::HandleOutput() {
       HandleEmptySequenceOutput(kernel_tensor.get(), tensor, i, GetAID().Name());
       continue;
     }
-    auto tensor_device_address = std::dynamic_pointer_cast<DeviceTensor>(tensor->device_address());
+    auto tensor_device_address = tensor->device_address();
     MS_EXCEPTION_IF_NULL(tensor_device_address);
     // Update tensor device address by device tensor of output node.
     auto node_with_index = device_tensor->GetNodeIndex();
@@ -693,7 +697,7 @@ void OutputActor::HandleOutput() {
           << ") memory isn't enough and alloc failed in output actor, kernel name: "
           << output_node->fullname_with_scope() << ", alloc size: " << tensor_device_address->GetSize() << "B.";
       }
-      SyncOutputFromTensor(tensor_device_address, device_tensor, output_node);
+      SyncOutputFromTensor(tensor, kernel_tensor, output_node);
       MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
         << "Copy graph output from device address:" << device_tensor->ToString()
         << " to:" << tensor_device_address->ToString();

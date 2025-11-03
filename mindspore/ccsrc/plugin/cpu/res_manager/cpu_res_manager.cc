@@ -105,7 +105,10 @@ std::pair<std::vector<size_t>, std::vector<size_t>> CPUResManager::AllocDeviceMe
     MS_EXCEPTION_IF_NULL(host_context);
     MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
     host_context->device_res_manager_->SyncAllStreams();
-    SyncCopy(device_address, tensor->device_address(), device_address->stream_id());
+    DeviceAddressInfo src_info = {true, kernel::GetFormatFromStrToEnum(tensor->format()), tensor->data_type(),
+                                  tensor->shape()};
+    DeviceAddressInfo dst_info = {true, Format::DEFAULT_FORMAT, tensor->data_type(), tensor->shape()};
+    SyncCopy(device_address, tensor->device_address(), device_address->stream_id(), src_info, dst_info);
     tensor->set_device_address(device_address);
   }
   return std::make_pair(before_padding_sizes, after_padding_sizes);
@@ -179,14 +182,14 @@ DeviceAddressPtr CPUResManager::CreateDeviceAddress(void *ptr, size_t size, cons
 }
 
 bool CPUResManager::SyncCopy(const DeviceAddressPtr &dst_device_sync, const DeviceAddressPtr &src_device_sync,
-                             size_t stream_id, const DeviceAddressMetaData &src_metadata,
-                             const DeviceAddressMetaData &dst_metadata) const {
-  return HostCopy(dst_device_sync, src_device_sync);
+                             size_t stream_id, const DeviceAddressInfo &src_info,
+                             const DeviceAddressInfo &dst_info) const {
+  return HostCopy(dst_device_sync, src_device_sync, src_info, dst_info);
 }
 bool CPUResManager::AsyncCopy(const DeviceAddressPtr &dst_device_sync, const DeviceAddressPtr &src_device_sync,
-                              size_t stream_id, bool keep_src, const DeviceAddressMetaData &src_metadata,
-                              const DeviceAddressMetaData &dst_metadata) const {
-  return HostCopy(dst_device_sync, src_device_sync);
+                              size_t stream_id, bool keep_src, const DeviceAddressInfo &src_info,
+                              const DeviceAddressInfo &dst_info) const {
+  return HostCopy(dst_device_sync, src_device_sync, src_info, dst_info);
 }
 
 bool CPUResManager::Copy(void *dst, const void *src, uint64_t size, CopyType kind, size_t stream_id) const {
@@ -235,7 +238,7 @@ CollectiveCommunicationLib *CPUResManager::collective_comm_lib() const { return 
 MS_REGISTER_HAL_COPY_FUNC(
   DeviceType::kCPU,
   ([](const DeviceAddressPtr &dst_device_sync, const DeviceAddressPtr &src_device_sync, size_t stream_id,
-      const DeviceAddressMetaData &src_metadata, const DeviceAddressMetaData &dst_metadata) {
+      const DeviceAddressInfo &src_info, const DeviceAddressInfo &dst_info) {
     auto context = MsContext::GetInstance();
     MS_EXCEPTION_IF_NULL(context);
     auto device_id = context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
@@ -244,11 +247,10 @@ MS_REGISTER_HAL_COPY_FUNC(
       device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
     MS_EXCEPTION_IF_NULL(host_context);
     MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
-    return host_context->device_res_manager_->SyncCopy(dst_device_sync, src_device_sync, stream_id, src_metadata,
-                                                       dst_metadata);
+    return host_context->device_res_manager_->SyncCopy(dst_device_sync, src_device_sync, stream_id, src_info, dst_info);
   }),
   ([](const DeviceAddressPtr &dst_device_sync, const DeviceAddressPtr &src_device_sync, size_t stream_id, bool keep_src,
-      const DeviceAddressMetaData &src_metadata, const DeviceAddressMetaData &dst_metadata) {
+      const DeviceAddressInfo &src_info, const DeviceAddressInfo &dst_info) {
     auto context = MsContext::GetInstance();
     MS_EXCEPTION_IF_NULL(context);
     auto device_id = context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
@@ -257,8 +259,8 @@ MS_REGISTER_HAL_COPY_FUNC(
       device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
     MS_EXCEPTION_IF_NULL(host_context);
     MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
-    return host_context->device_res_manager_->AsyncCopy(dst_device_sync, src_device_sync, stream_id, keep_src,
-                                                        src_metadata, dst_metadata);
+    return host_context->device_res_manager_->AsyncCopy(dst_device_sync, src_device_sync, stream_id, keep_src, src_info,
+                                                        dst_info);
   }),
   ([](void *dst, const void *src, uint64_t size, size_t stream_id) {
     auto context = MsContext::GetInstance();

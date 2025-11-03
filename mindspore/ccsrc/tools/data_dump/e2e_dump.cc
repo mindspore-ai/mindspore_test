@@ -384,7 +384,8 @@ void E2eDump::DumpSingleAnfNode(const AnfNodePtr &anf_node, const size_t output_
       auto format = kOpFormat_DEFAULT;
       std::string tensor_name = node_name + ":0";
       uint32_t root_graph_id = debugger->GetCurrentRootGraphId();
-      bool ret = LoadMemToHost(*addr, tensor_name, format, int_shapes, type, 0, true, root_graph_id, false, true);
+      bool ret = LoadMemToHost(AnfAlgo::GetOutputKernelTensor(anf_node, output_index).get(), tensor_name, format,
+                               int_shapes, type, 0, true, root_graph_id, false, true);
       if (!ret) {
         MS_LOG(ERROR) << "LoadMemToHost failed, tensor_name: " << tensor_name;
       } else {
@@ -418,11 +419,12 @@ void E2eDump::DumpSingleParameterNode(const AnfNodePtr &anf_node, const std::str
   ShapeVector int_shapes;
   TypeId type;
   TypeId device_type;
-  auto addr = GetParameterInfo(anf_node, NOT_NULL(&int_shapes), NOT_NULL(&type), NOT_NULL(&device_type));
-  if (addr == nullptr || addr->GetPtr() == nullptr) {
+  auto kt = GetParameterInfo(anf_node, NOT_NULL(&int_shapes), NOT_NULL(&type), NOT_NULL(&device_type));
+  if (kt == nullptr || kt->device_address() == nullptr || kt->device_address()->GetPtr() == nullptr) {
     MS_LOG(DEBUG) << "Skip node: " << node_name << ". Parameter data is not available for mindRT.";
     return;
   }
+  auto addr = kt->device_address();
   uint64_t timestamp = Common::GetTimeStamp();
   uint32_t task_id = 0;
   uint32_t stream_id = 0;
@@ -443,7 +445,7 @@ void E2eDump::DumpSingleParameterNode(const AnfNodePtr &anf_node, const std::str
       auto format = kOpFormat_DEFAULT;
       std::string tensor_name = node_name + ":0";
       uint32_t root_graph_id = debugger->GetCurrentRootGraphId();
-      bool ret = LoadMemToHost(*addr, tensor_name, format, int_shapes, type, 0, true, root_graph_id, false, true);
+      bool ret = LoadMemToHost(kt.get(), tensor_name, format, int_shapes, type, 0, true, root_graph_id, false, true);
       if (!ret) {
         MS_LOG(ERROR) << "LoadMemToHost failed, tensor_name: " << tensor_name;
       }

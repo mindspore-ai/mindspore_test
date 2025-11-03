@@ -585,10 +585,27 @@ class RUNTIME_HARDWARE_EXPORT KernelTensor : public AbstractBase {
   bool managed_by_somas_{false};
   RefCountPtr ref_cnt_;
 };
+
 using KernelTensorPtr = std::shared_ptr<KernelTensor>;
 using ContinuousKernelTensorsPtr = std::shared_ptr<std::vector<std::weak_ptr<KernelTensor>>>;
 
 }  // namespace kernel
+
+RUNTIME_HARDWARE_EXPORT bool SyncCopy(kernel::KernelTensor *const dst_kernel_tensor,
+                                      kernel::KernelTensor *const src_kernel_tensor, size_t stream_id);
+RUNTIME_HARDWARE_EXPORT bool SyncCopy(const tensor::TensorPtr &dst_tensor,
+                                      kernel::KernelTensor *const src_kernel_tensor, size_t stream_id);
+RUNTIME_HARDWARE_EXPORT bool SyncCopy(kernel::KernelTensor *const dst_kernel_tensor, tensor::Tensor *const src_tensor,
+                                      size_t stream_id);
+
+RUNTIME_HARDWARE_EXPORT bool AsyncCopy(kernel::KernelTensor *const dst_kernel_tensor,
+                                       kernel::KernelTensor *const src_kernel_tensor, size_t stream_id,
+                                       bool keep_src = true);
+RUNTIME_HARDWARE_EXPORT bool AsyncCopy(kernel::KernelTensor *const dst_kernel_tensor, tensor::Tensor *const src_tensor,
+                                       size_t stream_id, bool keep_src = true);
+RUNTIME_HARDWARE_EXPORT bool AsyncCopy(const tensor::TensorPtr &dst_tensor,
+                                       kernel::KernelTensor *const src_kernel_tensor, size_t stream_id,
+                                       bool keep_src = true);
 }  // namespace mindspore
 
 #endif  // MINDSPORE_OPS_KERNEL_KERNEL_TENSOR_H_

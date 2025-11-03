@@ -476,7 +476,7 @@ void ControlActor::CreateHeterDeviceTensor(KernelTensor *const node_kernel_tenso
     SET_OPCONTEXT_MEMORY_ALLOC_FAIL_BY_STRATEGY(GraphExecutionStrategy::kPipeline, *context, node->DebugString(),
                                                 new_device_tensor->GetSize());
   }
-  if (!SyncCopy(new_device_tensor, input_device_tensor, kDefaultStreamIndex)) {
+  if (!SyncCopy(new_kernel_tensor.get(), input_kernel_tensor, kDefaultStreamIndex)) {
     std::string error_info =
       "The formal parameter: " + node->DebugString() + " position:" + std::to_string(index) + " copy failed.";
     SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), error_info);
@@ -760,11 +760,11 @@ void ControlActor::MergeDeviceAddress(OpContext<KernelTensor> *const context,
     }
     bool ret = false;
     if (addr_list[i]->device_address()->GetDeviceType() == addr_list[0]->device_address()->GetDeviceType()) {
-      ret = SyncCopy(tmp_device_tensor, addr_list[i]->device_address(), kDefaultStreamIndex);
+      ret = SyncCopy(tmp_kernel_tensor.get(), addr_list[i], kDefaultStreamIndex);
     } else if (addr_list[0]->device_address()->GetDeviceType() == device::DeviceType::kCPU) {
-      ret = SyncCopy(tmp_device_tensor, addr_list[i]->device_address(), kDefaultStreamIndex);
+      ret = SyncCopy(tmp_kernel_tensor.get(), addr_list[i], kDefaultStreamIndex);
     } else if (addr_list[i]->device_address()->GetDeviceType() == device::DeviceType::kCPU) {
-      ret = SyncCopy(tmp_device_tensor, addr_list[i]->device_address(), kDefaultStreamIndex);
+      ret = SyncCopy(tmp_kernel_tensor.get(), addr_list[i], kDefaultStreamIndex);
     } else {
       MS_LOG(ERROR) << "Invalid device name for addr1:" << addr_list[0]->device_address()
                     << " name:" << addr_list[0]->device_address()->GetDeviceType()

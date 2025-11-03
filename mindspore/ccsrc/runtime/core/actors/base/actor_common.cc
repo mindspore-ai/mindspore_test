@@ -500,8 +500,14 @@ bool SyncStreamOnDemandForDeviceAddress(const DeviceTensorPtr &dst_device_tensor
   return true;
 }
 
-bool CopyDataForParameter(const DeviceTensorPtr &dst_device_tensor, const DeviceAddressPtr &src_device_tensor,
-                          size_t stream_id, bool *has_h2d_copy) {
+bool CopyDataForParameter(const KernelTensorPtr &dst_kernel_tensor, Tensor *const src_tensor, size_t stream_id,
+                          bool *has_h2d_copy) {
+  MS_EXCEPTION_IF_NULL(dst_kernel_tensor);
+  MS_EXCEPTION_IF_NULL(src_tensor);
+  const auto &dst_device_tensor = dst_kernel_tensor->device_address();
+  const auto &src_device_tensor = src_tensor->device_address();
+  MS_EXCEPTION_IF_NULL(dst_device_tensor);
+  MS_EXCEPTION_IF_NULL(src_device_tensor);
   // judge copy operation only for capture graph.
   if (has_h2d_copy != nullptr) {
     *has_h2d_copy = true;
@@ -517,7 +523,7 @@ bool CopyDataForParameter(const DeviceTensorPtr &dst_device_tensor, const Device
       MS_LOG(ERROR) << "Failed to sync all stream.";
       return false;
     }
-    return SyncCopy(dst_device_tensor, src_device_tensor, stream_id);
+    return SyncCopy(dst_kernel_tensor.get(), src_tensor, stream_id);
   }
   // H2D use async copy.
   if (stream_id == SIZE_MAX) {
@@ -525,7 +531,7 @@ bool CopyDataForParameter(const DeviceTensorPtr &dst_device_tensor, const Device
   }
   MS_LOG(DEBUG) << "Async copy from device tensor:" << src_device_tensor << " to:" << dst_device_tensor
                 << " by stream id:" << stream_id;
-  auto ret = AsyncCopy(dst_device_tensor, src_device_tensor, stream_id, false);
+  auto ret = AsyncCopy(dst_kernel_tensor.get(), src_tensor, stream_id, false);
   static bool sync_copy_input = runtime::IsEnableRuntimeConfig(runtime::kRuntimeSyncCopyInput);
   if (sync_copy_input) {
     if (!SyncAllStreamForDeviceAddress(dst_device_tensor, src_device_tensor, static_cast<uint32_t>(stream_id), false)) {
@@ -1080,14 +1086,13 @@ void AllocMemAndCopyForParameter(size_t outer_index, size_t inner_index, tensor:
 
   auto tensor_size = tensor->DataNBytes();
   if (is_first_user) {
-    if (tensor_size > 0 && !CopyDataForParameter(device_tensor, tensor->device_address(), stream_id, has_h2d_copy)) {
+    if (tensor_size > 0 && !CopyDataForParameter(kernel_tensor, tensor, stream_id, has_h2d_copy)) {
       MS_LOG(EXCEPTION) << "Fetch parameter async host to device failed.";
     }
   } else if (graph_parameter_store->GetAsyncMemcpyFun(outer_index, inner_index) == nullptr) {
     graph_parameter_store->SetAsyncMemcpyFun(
-      outer_index, inner_index, [tensor_size, device_tensor, tensor, has_h2d_copy](size_t stream_id) {
-        if (tensor_size > 0 &&
-            !CopyDataForParameter(device_tensor, tensor->device_address(), stream_id, has_h2d_copy)) {
+      outer_index, inner_index, [tensor_size, kernel_tensor, tensor, has_h2d_copy](size_t stream_id) {
+        if (tensor_size > 0 && !CopyDataForParameter(kernel_tensor, tensor, stream_id, has_h2d_copy)) {
           MS_LOG(EXCEPTION) << "Fetch parameter async host to device failed.";
         }
       });

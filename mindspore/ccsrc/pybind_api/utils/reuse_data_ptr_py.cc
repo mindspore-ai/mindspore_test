@@ -68,7 +68,9 @@ void ReuseDataPtr(const py::object &dst_, const py::object &src_, size_t offset)
     if (!host_context->device_res_manager_->SyncAllStreams()) {
       MS_LOG(ERROR) << "Sync stream failed.";
     }
-    SyncCopy(src_device_address, src->device_address(), src_device_address->stream_id());
+    DeviceAddressInfo src_info = {true, kernel::GetFormatFromStrToEnum(src->format()), src->data_type(), src->shape()};
+    DeviceAddressInfo dst_info = {true, Format::DEFAULT_FORMAT, src->data_type(), src->shape()};
+    SyncCopy(src_device_address, src->device_address(), src_device_address->stream_id(), src_info, dst_info);
     src->set_device_address(src_device_address);
   }
 

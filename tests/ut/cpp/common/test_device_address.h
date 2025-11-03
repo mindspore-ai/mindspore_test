@@ -115,12 +115,10 @@ class TestResManager : public device::DeviceResManager {
                        const std::vector<size_t> &keep_addr_sizes) const {}
 
   bool SyncCopy(const DeviceAddressPtr &dst_device_sync, const DeviceAddressPtr &src_device_sync, size_t stream_id,
-                const DeviceAddressMetaData &src_metadata = {},
-                const DeviceAddressMetaData &dst_metadata = {}) const override;
+                const DeviceAddressInfo &src_info = {}, const DeviceAddressInfo &dst_info = {}) const override;
 
   bool AsyncCopy(const DeviceAddressPtr &dst_device_sync, const DeviceAddressPtr &src_device_sync, size_t stream_id,
-                 bool, const DeviceAddressMetaData &src_metadata = {},
-                 const DeviceAddressMetaData &dst_metadata = {}) const override;
+                 bool, const DeviceAddressInfo &src_info = {}, const DeviceAddressInfo &dst_info = {}) const override;
 
   DeviceAddressPtr CreateDeviceAddress(void *const device_ptr, size_t device_size, const string &format, TypeId type_id,
                                        const ShapeVector &shape) const {

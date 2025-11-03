@@ -120,8 +120,7 @@ void CopyActor::OnMemoryAllocFinish(OpContext<KernelTensor> *const context) {
     output_kernel_tensors_[0]->set_need_sync_user_data(input_kernel_tensors_[0]->need_sync_user_data());
     if (!SyncAllStreamForDeviceAddress(output_kernel_tensors_[0]->device_address(),
                                        input_kernel_tensors_[0]->device_address()) ||
-        !SyncCopy(output_kernel_tensors_[0]->device_address(), input_kernel_tensors_[0]->device_address(),
-                  kDefaultStreamIndex)) {
+        !SyncCopy(output_kernel_tensors_[0].get(), input_kernel_tensors_[0].get(), kDefaultStreamIndex)) {
       std::string error_info = "Copy device tensor failed: " + GetAID().Name();
       SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), error_info);
     }

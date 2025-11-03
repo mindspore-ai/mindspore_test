@@ -57,7 +57,7 @@ TensorPtr MakeCpuTensor(const TensorPtr &tensor) {
     MS_LOG(EXCEPTION) << "SyncStream failed in Offload.";
   }
   auto cpu_tensor = tensor::from_spec_fast(tensor->data_type(), tensor->shape_c(), device::DeviceType::kCPU);
-  if (!SyncCopy(cpu_tensor->device_address(), device_address, CurrentStream::id())) {
+  if (!SyncCopy(cpu_tensor, tensor, CurrentStream::id())) {
     MS_LOG(EXCEPTION) << "Offload failed. Copy data from device to host failed. Src:" << device_address->ToString()
                       << " Dst:" << cpu_tensor->device_address()->ToString();
   }
@@ -836,12 +836,7 @@ void TensorPybind::Offload(const TensorPtr &tensor, bool release) {
 
 void TensorPybind::Load(const Tensor &tensor) {
   py::gil_scoped_release gil_release;
-  const auto &device_sync = tensor.device_address();
-  if (device_sync == nullptr) {
-    MS_LOG(WARNING) << "Tensor has no DeviceAddress, can not be loaded.";
-    return;
-  }
-  const auto &device_address = std::dynamic_pointer_cast<device::DeviceAddress>(device_sync);
+  const auto &device_address = tensor.device_address();
   if (device_address == nullptr) {
     MS_LOG(WARNING) << "Tensor without DeviceAddress can not be loaded.";
     return;
@@ -859,15 +854,17 @@ void TensorPybind::Load(const Tensor &tensor) {
     {device_target, ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID)});
   // make sure op execute end before data copy
   runtime::Pipeline::Get().WaitForward();
-  auto new_device_address = std::static_pointer_cast<device::DeviceAddress>(
-    MakeDeviceAddress(tensor.data_type(), tensor.shape(), false, device_target));
+  auto new_device_address = MakeDeviceAddress(tensor.data_type(), tensor.shape(), false, device_target);
 
   device_ctx->Initialize();
   device_ctx->device_res_manager_->AllocateMemory(new_device_address.get());
   MS_LOG(INFO) << "Tensor Load start, the tensor's device_address is : " << new_device_address.get()
                << ", the tensor's size is : " << new_device_address->GetSize();
-  device_ctx->device_res_manager_->SyncAllStreams();
-  SyncCopy(new_device_address, device_address, new_device_address->stream_id());
+  // Same device address do not need to set metadata.
+  if (!device_ctx->device_res_manager_->SyncAllStreams() ||
+      !SyncCopy(new_device_address, device_address, new_device_address->stream_id())) {
+    MS_LOG(EXCEPTION) << "Failed to sync copy for tensor pybind load:" << tensor.ToString();
+  }
   const_cast<tensor::Tensor &>(tensor).set_device_address(new_device_address);
 }
 

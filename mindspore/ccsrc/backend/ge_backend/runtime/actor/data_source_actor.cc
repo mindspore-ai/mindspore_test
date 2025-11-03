@@ -177,14 +177,14 @@ void CopyHostTensorToKernelTensor(const tensor::TensorPtr &host_tensor, const ke
     MS_LOG(DEBUG) << "Data source actor input kernel tensor is not used:" << kernel_tensor->ToString();
     return;
   }
-  auto tensor_device_address = std::dynamic_pointer_cast<DeviceTensor>(host_tensor->device_address());
+  auto tensor_device_address = host_tensor->device_address();
   // Sync data from host_tensor_device_address to device_tensor.
   if (tensor_device_address != nullptr) {
     if (tensor_device_address == device_tensor) {
       return;
     }
     if (!host_context->device_res_manager_->SyncAllStreams() ||
-        !SyncCopy(device_tensor, tensor_device_address, kDefaultStreamIndex)) {
+        !SyncCopy(kernel_tensor.get(), host_tensor.get(), kDefaultStreamIndex)) {
       SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), "Copy data failed.");
     }
     return;
@@ -197,12 +197,12 @@ void CopyHostTensorToKernelTensor(const tensor::TensorPtr &host_tensor, const ke
   MS_EXCEPTION_IF_NULL(node_index.first);
   if (enable_async_copy) {
     MS_LOG(INFO) << "Node : " << node_index.first->DebugString();
-    if (!AsyncCopy(device_tensor, host_tensor->device_address(), kDefaultStreamIndex)) {
+    if (!AsyncCopy(kernel_tensor.get(), host_tensor.get(), kDefaultStreamIndex)) {
       SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), "SyncHostToDevice failed.");
     }
   } else {
     if (!host_context->device_res_manager_->SyncAllStreams() ||
-        !SyncCopy(device_tensor, host_tensor->device_address(), kDefaultStreamIndex)) {
+        !SyncCopy(kernel_tensor.get(), host_tensor.get(), kDefaultStreamIndex)) {
       SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), "SyncHostToDevice failed.");
     }
   }

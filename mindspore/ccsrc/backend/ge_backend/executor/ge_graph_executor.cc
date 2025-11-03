@@ -279,7 +279,7 @@ void SetOutput(GeDeviceResManagerPtr res_manager, GeTensor *ge_output, const Anf
     if (!device::ascend::AscendStreamMng::GetInstance().SyncAllStreams()) {
       MS_LOG(ERROR) << "Failed to sync all stream.";
     }
-    SyncCopy(output_addr, tensor->device_address(), ascend_addr->stream_id());
+    SyncCopy(output_kernel_tensor.get(), tensor.get(), ascend_addr->stream_id());
     tmp_device_address->set_ptr(tmp_ptr);
   }
   // Update shape in kernel tensor.

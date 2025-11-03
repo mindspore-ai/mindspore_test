@@ -48,11 +48,12 @@ bool MoveToD2H(const tensor::TensorPtr &src_tensor, const DeviceAddressPtr &src_
     MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
     (void)host_context->device_res_manager_->SyncAllStreams();
     MS_EXCEPTION_IF_NULL(dst_tensor->device_address());
-    ret = SyncCopy(dst_tensor->device_address(), src_device_ptr, CurrentStream::id());
+    MS_EXCEPTION_IF_NULL(src_tensor->device_address());
+    ret = SyncCopy(dst_tensor, src_tensor, CurrentStream::id());
   } else {
     status = "AsyncDeviceToHost";
     MS_EXCEPTION_IF_NULL(dst_tensor->device_address());
-    ret = AsyncCopy(dst_tensor->device_address(), src_device_ptr, CurrentStream::id());
+    ret = AsyncCopy(dst_tensor, src_tensor, CurrentStream::id());
   }
   if (!ret) {
     MS_LOG(EXCEPTION) << status << " failed.";
@@ -61,10 +62,9 @@ bool MoveToD2H(const tensor::TensorPtr &src_tensor, const DeviceAddressPtr &src_
 }
 
 void MoveToH2D(const tensor::TensorPtr &src_tensor, const DeviceAddressPtr &src_device_ptr,
-               const DeviceAddressPtr &dst_device_ptr, bool blocking) {
+               const tensor::TensorPtr &dst_tensor, const DeviceAddressPtr &dst_device_ptr, bool blocking) {
   MS_EXCEPTION_IF_NULL(src_tensor);
   MS_EXCEPTION_IF_NULL(dst_device_ptr);
-  DeviceAddressPtr src_data = src_device_ptr == nullptr ? src_tensor->device_address() : src_device_ptr;
   auto ret = true;
   std::string status;
   if (blocking) {
@@ -73,10 +73,10 @@ void MoveToH2D(const tensor::TensorPtr &src_tensor, const DeviceAddressPtr &src_
     MS_EXCEPTION_IF_NULL(host_context);
     MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
     (void)host_context->device_res_manager_->SyncAllStreams();
-    ret = AsyncCopy(dst_device_ptr, src_data, CurrentStream::id());
+    ret = AsyncCopy(dst_tensor, src_tensor, CurrentStream::id());
     status = "SyncHostToDevice";
   } else {
-    ret = AsyncCopy(dst_device_ptr, src_data, CurrentStream::id());
+    ret = AsyncCopy(dst_tensor, src_tensor, CurrentStream::id());
     status = "AsyncHostToDevice";
   }
   if (!ret) {
@@ -106,7 +106,7 @@ void MoveTo(const tensor::TensorPtr &src_tensor, const tensor::TensorPtr &dst_te
 
   // Need to create cpu device address even if the tensor is on CPU.
   // H2D src_device_ptr: CPU; dst_device_ptr: GPU/ASCEND.
-  auto dst_addr = std::dynamic_pointer_cast<device::DeviceAddress>(dst_tensor->device_address());
+  auto dst_addr = dst_tensor->device_address();
   auto device_id = MsContext::GetInstance()->get_param<uint32_t>(MS_CTX_DEVICE_ID);
   auto target_context =
     device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext({GetDeviceTypeByName(to), device_id});
@@ -162,7 +162,7 @@ void MoveTo(const tensor::TensorPtr &src_tensor, const tensor::TensorPtr &dst_te
     return;
   }
 
-  MoveToH2D(src_tensor, src_device_ptr, dst_addr, blocking);
+  MoveToH2D(src_tensor, src_device_ptr, dst_tensor, dst_addr, blocking);
   dst_tensor->set_sync_status(kNeedSyncDeviceToHost);
 }
 }  // namespace device

@@ -127,8 +127,7 @@ void Summary::SummaryTensor(KernelGraph *graph) {
     MS_EXCEPTION_IF_NULL(host_context);
     MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
     MS_EXCEPTION_IF_NULL(tensor->device_address());
-    if (!host_context->device_res_manager_->SyncAllStreams() ||
-        !SyncCopy(tensor->device_address(), address, address->stream_id())) {
+    if (!host_context->device_res_manager_->SyncAllStreams() || !SyncCopy(tensor, kt.get(), address->stream_id())) {
       MS_LOG(ERROR) << "Failed to sync output from device to host.";
     }
     tensor->set_sync_status(kNoNeedSync);
