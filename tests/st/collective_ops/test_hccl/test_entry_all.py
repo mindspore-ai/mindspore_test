@@ -381,6 +381,19 @@ def test_ops_all_gather_into_tensor_net():
     assert return_code == 0
 
 
+@arg_mark(plat_marks=["platform_ascend910b"], level_mark="level0", card_mark="allcards", essential_mark="essential")
+@test_utils.run_test_with_On
+def test_ops_all_gather_net():
+    """
+    Feature: mpi run 2P case of 'all_gather' dynamic and static unified ops.
+    Description: mpi run 2P case of 'all_gather' dynamic and static unified ops.
+    Expectation: success
+    """
+    return_code = os.system("msrun --worker_num=2 --local_worker_num=2 --join=True "
+                            "pytest -s test_ops_all_gather.py")
+    assert return_code == 0
+
+
 @arg_mark(plat_marks=["platform_ascend910b"], level_mark="level1", card_mark="allcards", essential_mark="essential")
 @test_utils.run_test_with_On
 def test_ops_all_reduce_net():
