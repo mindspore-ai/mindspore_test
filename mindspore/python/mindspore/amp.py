@@ -23,7 +23,7 @@ from mindspore.ops.operations.math_ops import NPUGetFloatStatusV2, NPUClearFloat
 from mindspore.ops.operations.nn_ops import AllFinite
 from mindspore.run_check._check_version import AscendEnvChecker
 from mindspore import _checkparam as validator
-from mindspore._c_expression import MSContext
+from mindspore._c_expression import MSContext, JitExecutor_
 from mindspore import log as logger
 from .common import dtype as mstype
 from . import context
@@ -83,6 +83,11 @@ def _enable_all_finite():
 
     if runtime_conf is not None and ("all_finite:False" in runtime_conf or "all_finite:false" in runtime_conf):
         logger.debug("Disable AllFinite through the environment variable MS_DEV_RUNTIME_CONF.")
+        return False
+
+    jit_config = JitExecutor_.get_instance().get_jit_config()
+    backend = jit_config.get('backend', '')
+    if backend == "GE":
         return False
 
     if global_jit_config:

@@ -476,6 +476,8 @@ void ExecutorPy::SetJitConfig(const py::dict &config) {
   PhaseManager::GetInstance().set_jit_config(jit_config);
 }
 
+std::map<std::string, std::string> ExecutorPy::GetJitConfig() { return PhaseManager::GetInstance().jit_config(); }
+
 namespace {
 void ClearArgCache(const py::object &obj) {
   if (py::isinstance<py::none>(obj)) {
