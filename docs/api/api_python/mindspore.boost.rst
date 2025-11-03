@@ -11,13 +11,13 @@ Boost能够自动优化网络性能，例如通过减少BN、梯度冻结、累�
     MindSpore自动优化算法库。
 
     参数：
-        - **level** (str) - Boost的配置级别，默认值： ``"O0"`` 。
+        - **level** (str, 可选) - Boost的配置级别。默认值： ``"O0"`` 。
 
           - "O0"：不变化。
           - "O1"：启用boost模式，性能将提升约20%，准确率保持不变。
           - "O2"：启用boost模式，性能将提升约30%，准确率下降小于3%。
 
-        - **boost_config_dict** (dict) - 用户可配置的超参字典，建议的格式如下：
+        - **boost_config_dict** (dict, 可选) - 用户可配置的超参字典，建议的格式如下：
 
           .. code-block::
 
@@ -83,8 +83,8 @@ Boost能够自动优化网络性能，例如通过减少BN、梯度冻结、累�
 
           - less_bn：
 
-            - fn_flag (bool)：是否采用fn替换fc，默认值： ``True`` ，采用fn替换fc。
-            - gc_flag (bool)：是否启用gc，默认值： ``True`` ，启用gc。
+            - fn_flag (bool)：是否采用fn替换fc。默认值： ``True`` 。
+            - gc_flag (bool)：是否启用gc。默认值： ``True`` 。
 
           - grad_freeze：
 
@@ -139,7 +139,7 @@ Boost能够自动优化网络性能，例如通过减少BN、梯度冻结、累�
           未配置的参数会使用默认值。
 
     异常：
-        - **ValueError** - Boost的模式不在["auto", "manual", "enable_all", "disable_all"]这个列表中。
+        - **ValueError** - Boost的模式不在["auto", "manual", "enable_all", "disable_all"]列表中。
 
     .. py:method:: network_auto_process_eval(network)
 
@@ -201,7 +201,7 @@ Boost能够自动优化网络性能，例如通过减少BN、梯度冻结、累�
 
         参数：
             - **parameters** (list) - 训练网络的权重。
-            - **split_point** (list) - 网络梯度切分点。默认为None。
+            - **split_point** (list, 可选) - 网络梯度切分点。默认值： ``None`` 。
 
     .. py:method:: generate_group_params(parameters, origin_params)
         :staticmethod:
@@ -221,7 +221,7 @@ Boost能够自动优化网络性能，例如通过减少BN、梯度冻结、累�
     参数：
         - **network** (Cell) - 训练网络，当前网络只支持单个输出。
         - **optimizer** (Union[Cell]) - 用于更新网络参数的优化器。
-        - **sens** (numbers.Number) - 作为反向传播输入要填充的缩放数，默认值： ``None`` ，取 ``1.0`` 。
+        - **sens** (numbers.Number, 可选) - 作为反向传播输入要填充的缩放数。默认值： ``None`` ，取 ``1.0`` 。
 
     输入：
         - **\*inputs** (Tuple(Tensor)) - 网络的所有输入组成的元组，其shape为 :math:`(N, \ldots)`。
@@ -229,47 +229,47 @@ Boost能够自动优化网络性能，例如通过减少BN、梯度冻结、累�
     输出：
         Tuple，包含三个Tensor，分别为损失函数值、溢出状态和当前损失缩放系数。shape为 :math:`()`。
 
-        - loss(Tensor)，标量Tensor。
-        - overflow(Tensor)，标量Tensor，类型为bool。
-        - loss scaling value(Tensor)，标量Tensor。
+        - **loss** (Tensor) - 标量Tensor。
+        - **overflow** (Tensor) - 标量Tensor，类型为bool。
+        - **loss scaling value** (Tensor) - 标量Tensor。
 
     异常：
-        - **TypeError** - 如果 `sens` 不是一个数字。
+        - **TypeError** - `sens` 不是数字。
 
     .. py:method:: adasum_process(loss, grads)
 
         使用Adasum算法训练。
 
         参数：
-            - **loss** (Tensor) - 网络训练的loss值。shape为 :math:`()`。
+            - **loss** (Tensor) - 网络训练的loss值，shape为 :math:`()`。
             - **grads** (tuple(Tensor)) - 网络训练过程中的梯度。
 
         返回：
-            Tensor，网络训练过程中得到的loss值。shape为 :math:`()`。
+            Tensor，网络训练过程中得到的loss值，shape为 :math:`()`。
 
     .. py:method:: check_adasum_enable()
 
-        Adasum算法仅在多卡或者多机场景生效，并且要求卡数符合2的n次方，该函数用来判断adasum算法能否生效。
+        Adasum算法仅在多卡或者多机场景生效，并且要求卡数符合2的n次方。该函数用来判断adasum算法能否生效。
 
         返回：
-            enable_adasum (bool)，Adasum算法是否生效。
+            bool，Adasum算法是否生效。
 
     .. py:method:: check_dim_reduce_enable()
 
-        获取当前是否使用降维二阶训练算法训练。
+        获取当前是否使用降维二阶训练算法。
 
         返回：
-            enable_dim_reduce (bool)，降维二阶训练算法是否生效。
+            bool，降维二阶训练算法是否生效。
 
     .. py:method:: gradient_accumulation_process(loss, grads, sens, *inputs)
 
         使用梯度累加算法训练。
 
         参数：
-            - **loss** (Tensor) - 网络训练的loss值。shape为 :math:`()`。
+            - **loss** (Tensor) - 网络训练的loss值，shape为 :math:`()`。
             - **grads** (tuple(Tensor)) - 网络训练过程中的梯度。
-            - **sens** (Tensor) - 作为反向传播输入要填充的缩放数。shape为 :math:`()`。
-            - **inputs** (tuple(Tensor)) - 网络训练的输入。shape为 :math:`(N, \ldots)`。
+            - **sens** (Tensor) - 作为反向传播输入要填充的缩放数，shape为 :math:`()`。
+            - **\*inputs** (tuple(Tensor)) - 网络训练的输入，shape为 :math:`(N, \ldots)`。
 
         返回：
             Tensor，网络训练过程中得到的loss值，其shape为 :math:`()`。
@@ -279,7 +279,7 @@ Boost能够自动优化网络性能，例如通过减少BN、梯度冻结、累�
         使用梯度冻结算法训练。
 
         参数：
-            - **inputs** (tuple(Tensor)) - 网络训练的输入，其shape为 :math:`(N, \ldots)`。
+            - **\*inputs** (tuple(Tensor)) - 网络训练的输入，shape为 :math:`(N, \ldots)`。
 
         返回：
             Tensor，网络训练过程中得到的loss值，其shape为 :math:`()`。
@@ -288,7 +288,7 @@ Boost能够自动优化网络性能，例如通过减少BN、梯度冻结、累�
 
     使用混合精度功能的Boost训练网络。
 
-    实现了包含损失缩放（loss scale）的单次训练。它使用网络、优化器和用于更新损失缩放系数（loss scale）的Cell(或一个Tensor)作为参数。可在host侧或device侧更新损失缩放系数。BoostTrainOneStepWithLossScaleCell会被编译成图，其中inputs作为输入数据。张量类型参数 `scale_sense` 作为损失缩放时使用的值。
+    实现了包含损失缩放（loss scale）的单次训练。它使用网络、优化器和用于更新损失缩放系数（loss scale）的Cell（或一个Tensor）作为参数。可在host侧或device侧更新损失缩放系数。BoostTrainOneStepWithLossScaleCell会被编译成图，其中\*inputs作为输入数据。张量类型参数 `scale_sense` 作为损失缩放时使用的值。
     如果需要在host侧更新，使用Tensor作为 `scale_sense` 。如果需要在device侧更新，使用可更新损失缩放系数的Cell实例作为 `scale_sense` 。
 
     参数：
@@ -316,7 +316,7 @@ Boost能够自动优化网络性能，例如通过减少BN、梯度冻结、累�
 
     参数：
         - **network** (Cell) - 待训练的网络模型。
-        - **fn_flag** (bool) - 是否将网络中最后一个全连接层替换为全归一化层。默认值： ``False`` 。
+        - **fn_flag** (bool, 可选) - 是否将网络中最后一个全连接层替换为全归一化层。默认值： ``False`` 。
 
 .. py:class:: mindspore.boost.GradientFreeze(param_groups, freeze_type, freeze_p, total_steps)
 
@@ -360,9 +360,9 @@ Boost能够自动优化网络性能，例如通过减少BN、梯度冻结、累�
     支持梯度冻结训练的优化器。
 
     参数：
-        - **opt** (Cell) - 非冻结优化器实例，如 *Momentum*，*SGD*。
-        - **train_parameter_groups** (Union[tuple, list]) - 梯度冻结训练的权重。默认值： ``None`` 。
-        - **train_strategy** (Union[tuple(int), list(int), Tensor]) - 梯度冻结训练的策略。默认值： ``None`` 。
+        - **opt** (Cell) - 非冻结优化器实例，如 *Momentum*、*SGD*。
+        - **train_parameter_groups** (Union[tuple, list], 可选) - 梯度冻结训练的权重。默认值： ``None`` 。
+        - **train_strategy** (Union[tuple(int), list(int), Tensor], 可选) - 梯度冻结训练的策略。默认值： ``None`` 。
 
 .. py:function:: mindspore.boost.freeze_cell(reducer_flag, network, optimizer, sens, grad, use_grad_accumulation, mean=None, degree=None, max_accumulation_step=1)
 
@@ -375,9 +375,9 @@ Boost能够自动优化网络性能，例如通过减少BN、梯度冻结、累�
         - **sens** (numbers.Number) - 损失缩放系数。
         - **grad** (tuple(Tensor)) - 网络梯度。
         - **use_grad_accumulation** (bool) - 是否使用梯度累加。
-        - **mean** (bool) - 可选参数，梯度是否求平均，仅分布式训练时生效。默认值： ``None`` 。
-        - **degree** (int) - 可选参数，device卡数，仅分布式训练时生效。默认值： ``None`` 。
-        - **max_accumulation_step** (int) - 可选参数，梯度累加步数。默认值： ``1`` 。
+        - **mean** (bool, 可选) - 梯度是否求平均，仅分布式训练时生效。默认值： ``None`` 。
+        - **degree** (int, 可选) - device卡数，仅分布式训练时生效。默认值： ``None`` 。
+        - **max_accumulation_step** (int, 可选) - 梯度累加步数。默认值： ``1`` 。
 
 .. py:class:: mindspore.boost.GradientAccumulation(max_accumulation_step, optimizer)
 
@@ -389,10 +389,10 @@ Boost能够自动优化网络性能，例如通过减少BN、梯度冻结、累�
 
 .. py:class:: mindspore.boost.AdaSum(rank, device_number, group_number, parameter_tuple)
 
-    Adaptive Summation(AdaSum)是一种优化深度学习模型并行训练的算法，它可以提升不同规模集群训练的精度，减小不同规模集群调参难度。
+    Adaptive Summation（AdaSum）是一种优化深度学习模型并行训练的算法，它可以提升不同规模集群训练的精度、减小不同规模集群调参难度。
 
     参数：
-        - **rank** (int) - 总的训练的卡数。
+        - **rank** (int) - 总的训练卡数。
         - **device_number** (int) - 单机的卡数。
         - **group_number** (int) - 分组的数量。
         - **parameter_tuple** (Tuple(Parameter)) - 网络训练权重组成的元组。
@@ -407,7 +407,7 @@ Boost能够自动优化网络性能，例如通过减少BN、梯度冻结、累�
 
 .. py:class:: mindspore.boost.DimReduce(network, optimizer, weight, pca_mat_local, n_components, rho, gamma, alpha, sigma, rank, rank_size)
 
-    降维训练(dimension reduce training)是一种优化深度学习模型训练的算法，它可以加速模型的收敛。
+    降维训练（dimension reduce training）是一种优化深度学习模型训练的算法，用于加速模型的收敛。
 
     算法主要原理：
 
@@ -484,7 +484,7 @@ Boost能够自动优化网络性能，例如通过减少BN、梯度冻结、累�
         获取loss scale的值。
 
         返回：
-            bool，`loss_scale` 的值。
+            Number，`loss_scale` 的值。
 
     .. py:method:: get_update_cell()
 
@@ -509,7 +509,7 @@ Boost能够自动优化网络性能，例如通过减少BN、梯度冻结、累�
             - **layer** (int) - 当前层。
             - **update_ratio** (float) - 更新loss scale的当前比例。
 
-        输出：
+        返回：
             float，新loss scale的值。
 
 .. automodule:: mindspore.boost
