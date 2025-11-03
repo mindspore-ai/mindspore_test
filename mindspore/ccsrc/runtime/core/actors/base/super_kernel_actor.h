@@ -25,7 +25,7 @@
 #include <queue>
 #include <set>
 #include "runtime/core/actors/base/debug_aware_actor.h"
-#include "include/runtime/core/actors/base/actor_common.h"
+#include "runtime/core/actors/base/actor_common.h"
 #include "runtime/core/actors/base/kernel_runner.h"
 #include "include/runtime/core/actors/base/kernel_async_launch_actor.h"
 #include "include/runtime/core/actors/dynamic_shape/kernel_async_infer_actor.h"

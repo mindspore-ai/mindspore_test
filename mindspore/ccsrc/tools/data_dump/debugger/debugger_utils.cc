@@ -29,7 +29,7 @@
 #include "tools/data_dump/utils.h"
 #include "include/backend/debug/data_dump/dump_utils.h"
 #include "include/backend/anf_runtime_algorithm.h"
-#include "include/backend/debug/common/csv_writer.h"
+#include "tools/data_dump/common/csv_writer.h"
 #include "include/backend/debug/data_dump/dump_json_parser.h"
 #include "include/backend/debug/data_dump/e2e_dump.h"
 #include "include/backend/debug/data_dump/tensor_stat_dump.h"
@@ -52,7 +52,6 @@ constexpr auto kInput = "input";
 constexpr auto kOutput = "output";
 
 using mindspore::kernel::AddressPtr;
-using mindspore::kernel::KernelLaunchAddr;
 using AddressPtrList = std::vector<mindspore::kernel::AddressPtr>;
 using KernelGraph = mindspore::session::KernelGraph;
 using AnfAlgo = mindspore::session::AnfRuntimeAlgorithm;

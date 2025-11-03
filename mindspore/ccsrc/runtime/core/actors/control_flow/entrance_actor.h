@@ -26,7 +26,7 @@
 #include <algorithm>
 
 #include "utils/hash_map.h"
-#include "include/runtime/core/actors/base/actor_common.h"
+#include "runtime/core/actors/base/actor_common.h"
 #include "runtime/core/actors/control_flow/control_actor.h"
 
 namespace mindspore {

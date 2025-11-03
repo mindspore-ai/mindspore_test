@@ -277,7 +277,7 @@ class MemoryTraceManager {
 };
 
 // Encapsulate the actor APIs associated with execution.
-class BACKEND_EXPORT ActorDispatcher {
+class ActorDispatcher {
  public:
   template <typename T, typename Arg0, typename Arg1>
   static void Send(const AID &aid, void (T::*method)(Arg0), Arg1 &&arg) {
@@ -581,6 +581,29 @@ inline bool NeedCheckInputContiguous(const CNodePtr &cnode) {
   }
   return false;
 }
+
+struct KernelLaunchInfoWithStream {
+  KernelLaunchInfoWithStream(std::vector<KernelTensor *> input_kernel_tensors,
+                             std::vector<KernelTensor *> output_kernel_tensors,
+                             std::vector<KernelTensor *> workspace_kernel_tensors, void *stream)
+      : input_kernel_tensors_(input_kernel_tensors),
+        output_kernel_tensors_(output_kernel_tensors),
+        workspace_kernel_tensors_(workspace_kernel_tensors),
+        stream_(stream) {}
+  std::vector<KernelTensor *> input_kernel_tensors_;
+  std::vector<KernelTensor *> output_kernel_tensors_;
+  std::vector<KernelTensor *> workspace_kernel_tensors_;
+  void *stream_;
+};
+
+struct InputDataInfo {
+  InputDataInfo(const Format &format, const ShapeVector &shape, size_t size, TypeId type_id)
+      : format_(format), shape_(shape), size_(size), type_id_(type_id) {}
+  Format format_;
+  ShapeVector shape_;
+  size_t size_;
+  TypeId type_id_;
+};
 }  // namespace runtime
 }  // namespace mindspore
 

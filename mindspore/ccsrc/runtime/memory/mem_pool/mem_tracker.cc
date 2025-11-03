@@ -23,8 +23,10 @@
 #include <numeric>
 #include <string>
 #include <unordered_map>
+#include <map>
+#include <vector>
 
-#include "include/runtime/memory/mem_pool/tracker_graph.h"
+#include "runtime/memory/mem_pool/tracker_graph.h"
 #include "include/runtime/memory/mem_pool/dynamic_mem_pool.h"
 #include "ir/dtype.h"
 #include "utils/log_adapter.h"

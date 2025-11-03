@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "include/backend/optimizer/visitor.h"
+#include "backend/common/pass_manager/visitor.h"
 
 #include <vector>
 #include <memory>

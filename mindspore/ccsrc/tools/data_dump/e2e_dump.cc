@@ -24,6 +24,7 @@
 #include <set>
 #include <utility>
 #include <vector>
+#include <string>
 #include "ir/tensor_new.h"
 #include "include/backend/debug/data_dump/dump_json_parser.h"
 #include "mindspore/ccsrc/utils/ir_dump/anf_dump_utils.h"
@@ -35,7 +36,7 @@
 #include "include/utils/config_manager.h"
 #include "utils/file_utils.h"
 #include "include/backend/debug/data_dump/tensor_stat_dump.h"
-#include "include/backend/debug/common/csv_writer.h"
+#include "tools/data_dump/common/csv_writer.h"
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "tools/data_dump/debugger/debugger_utils.h"
 #ifdef ENABLE_DEBUGGER

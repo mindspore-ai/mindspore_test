@@ -248,14 +248,6 @@ class BACKEND_COMMON_EXPORT ShapeRangeTransfer {
 };
 
 /**
- * If you want extend format, make sure it has a data trans function at host in class
- * 'FormatTransfer.format_trans_fp_map'
- * */
-static const std::set<std::string> kFormatWithTransFunc = {
-  kOpFormat_HWCN,     kOpFormat_NHWC,      kOpFormat_FRAC_Z,      kOpFormat_FRAC_NZ,      kOpFormat_NC1HWC0,
-  kOpFormat_NDC1HWC0, kOpFormat_C1HWNCoC0, kOpFormat_NC1HWC0_C04, kOpFormat_FRACTAL_Z_3D, kOpFormat_FRACTAL_Z_C04};
-
-/**
  * Interface of datatype trans
  * */
 BACKEND_COMMON_EXPORT bool TransDataType(const TypeIdArgs &args, void *result);

@@ -51,8 +51,7 @@ enum SortedFunc {
   SORTED_BY_SEND_REVERSE,
   SORTED_BY_RECV_REVERSE
 };
-using LaunchCommNode =
-  std::tuple<runtime::KernelRunnerPtr, CNodePtr, CommKernelInfo, kernel::KernelLaunchInfoWithStream>;
+using LaunchCommNode = std::tuple<runtime::KernelRunnerPtr, CNodePtr, CommKernelInfo, KernelLaunchInfoWithStream>;
 
 // PreLaunchComm is used to launch communication kernel before launch all kernels.
 class BACKEND_EXPORT PreLaunchComm {

@@ -18,7 +18,7 @@
 #include <algorithm>
 #include <string>
 #include "runtime/core/graph_scheduler/heterogeneous/device_tensor_copy_store.h"
-#include "include/runtime/core/actors/base/actor_common.h"
+#include "runtime/core/actors/base/actor_common.h"
 #include "runtime/core/graph_executor/kernel_capture/graph_capture_manager.h"
 #include "backend/common/device_address_utils.h"
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"

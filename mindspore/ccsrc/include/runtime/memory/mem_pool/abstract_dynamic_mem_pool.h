@@ -39,6 +39,114 @@ constexpr size_t kDecimalPrecision = 3;
 // largest allocation size for small pool is 1 MB
 constexpr size_t kSmallSize = 1048576;
 
+/// @brief Check if small pool environment variable is enabled.
+///
+/// @return True if small pool is enabled, false otherwise.
+inline bool IsEnableSmallPool() {
+  static const bool is_enable_small_pool = [] {
+    return memory::mem_pool::IsEnableAllocConfig(memory::mem_pool::kAllocEnableSmallPool);
+  }();
+  return is_enable_small_pool;
+}
+
+constexpr size_t kPoolGrowSize = 1 << 20;
+
+template <class T>
+class ObjectPool {
+  struct Buf {
+    Buf *next_;
+  };
+
+  class Buffer {
+    static const std::size_t bucket_size = sizeof(T) > sizeof(Buf) ? sizeof(T) : sizeof(Buf);
+    static const std::size_t kDataBucketSize = bucket_size * kPoolGrowSize;
+
+   public:
+    explicit Buffer(Buffer *next) : next_(next) {}
+
+    T *GetBlock(std::size_t index) {
+      if (index >= kPoolGrowSize) {
+        throw std::bad_alloc();
+      }
+      return reinterpret_cast<T *>(&data_[bucket_size * index]);
+    }
+
+    Buffer *const next_;
+
+   private:
+    uint8_t data_[kDataBucketSize];
+  };
+
+  Buf *free_list_ = nullptr;
+  Buffer *buffer_head_ = nullptr;
+  std::size_t buffer_index_ = kPoolGrowSize;
+
+ public:
+  ObjectPool() = default;
+  ObjectPool(ObjectPool &&object_pool) = delete;
+  ObjectPool(const ObjectPool &object_pool) = delete;
+  ObjectPool operator=(const ObjectPool &object_pool) = delete;
+  ObjectPool operator=(ObjectPool &&object_pool) = delete;
+
+  ~ObjectPool() {
+    while (buffer_head_ != nullptr) {
+      Buffer *buffer = buffer_head_;
+      buffer_head_ = buffer->next_;
+      delete buffer;
+    }
+  }
+
+  T *Borrow() {
+    if (free_list_ != nullptr) {
+      Buf *buf = free_list_;
+      free_list_ = buf->next_;
+      return reinterpret_cast<T *>(buf);
+    }
+
+    if (buffer_index_ >= kPoolGrowSize) {
+      buffer_head_ = new Buffer(buffer_head_);
+      buffer_index_ = 0;
+    }
+
+    return buffer_head_->GetBlock(buffer_index_++);
+  }
+
+  void Return(T *obj) {
+    Buf *buf = reinterpret_cast<Buf *>(obj);
+    buf->next_ = free_list_;
+    free_list_ = buf;
+  }
+};
+
+// Not support older windows version.
+template <class T>
+class PooledAllocator : private ObjectPool<T> {
+ public:
+  typedef std::size_t size_type;
+  typedef std::ptrdiff_t difference_type;
+  typedef T *pointer;
+  typedef const T *const_pointer;
+  typedef T &reference;
+  typedef const T &const_reference;
+  typedef T value_type;
+
+  template <class U>
+  struct rebind {
+    typedef PooledAllocator<U> other;
+  };
+
+  pointer allocate(size_type n, const void *hint = 0) {
+    if (n != 1 || hint) throw std::bad_alloc();
+    return ObjectPool<T>::Borrow();
+  }
+
+  void deallocate(pointer p, size_type n) { ObjectPool<T>::Return(p); }
+
+  void construct(pointer p, const_reference val) { new (p) T(val); }
+
+  void destroy(pointer p) { p->~T(); }
+};
+
 struct BACKEND_EXPORT MemBlock;
 
 using MemBufStatus = DynamicMemBufStatus;
@@ -329,7 +437,7 @@ class BACKEND_EXPORT MemBufAllocator {
   std::function<size_t(void *addr, size_t size)> mem_eager_freer_;
 
   std::list<MemBlock *> mem_blocks_;
-  using MemAllocator = memory::mem_pool::PooledAllocator<MemBuf *>;
+  using MemAllocator = PooledAllocator<MemBuf *>;
   std::set<MemBuf *, MemBufComparator, MemAllocator> free_mem_bufs_;
   std::set<MemBuf *, MemBufComparator, MemAllocator> eager_free_mem_bufs_;
 
@@ -476,7 +584,7 @@ class BACKEND_EXPORT AbstractDynamicMemPool : virtual public DynamicMemPool {
   /// @param is_persistent True if the memory is persistent, false otherwise.
   /// @return True if the size is small enough to use small pool, false otherwise.
   bool UseSmallPool(size_t size, bool is_persistent) {
-    if (!memory::mem_pool::IsEnableSmallPool()) {
+    if (!IsEnableSmallPool()) {
       return false;
     }
     return is_persistent ? false : size <= kSmallSize;

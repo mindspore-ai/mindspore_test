@@ -18,6 +18,11 @@
 #include <algorithm>
 #include <queue>
 #include <vector>
+#include <set>
+#include <map>
+#include <utility>
+#include <memory>
+#include <string>
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "mindspore/ops/op_def/math_op_name.h"

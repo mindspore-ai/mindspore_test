@@ -21,7 +21,7 @@
 #include <vector>
 #include <string>
 #include <memory>
-#include "include/runtime/core/actors/base/actor_common.h"
+#include "runtime/core/actors/base/actor_common.h"
 #include "runtime/core/actors/base/kernel_runner.h"
 
 namespace mindspore {

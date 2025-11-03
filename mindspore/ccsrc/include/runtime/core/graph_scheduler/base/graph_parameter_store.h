@@ -27,7 +27,7 @@
 #include "utils/ms_utils.h"
 #include "include/backend/visible.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel.h"
-#include "include/runtime/core/graph_scheduler/base/graph_compiler.h"
+#include "runtime/core/graph_scheduler/base/graph_compiler.h"
 namespace mindspore {
 namespace runtime {
 using mindspore::tensor::Tensor;

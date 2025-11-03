@@ -99,6 +99,13 @@ std::string GeneratePath(size_t rank_id, const std::string &file_name, const std
   ChangeFileMode(path, S_IWUSR | S_IRUSR);
   return path;
 }
+
+LockGuard::LockGuard(const Lock &lock) {
+  lock_ = const_cast<Lock *>(&lock);
+  lock_->lock();
+}
+
+LockGuard::~LockGuard() { lock_->unlock(); }
 }  // namespace mem_pool
 }  // namespace memory
 }  // namespace mindspore

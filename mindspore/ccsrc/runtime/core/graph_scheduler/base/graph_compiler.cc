@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "include/runtime/core/graph_scheduler/base/graph_compiler.h"
+#include "runtime/core/graph_scheduler/base/graph_compiler.h"
 #include <algorithm>
 #include <cctype>
 #include <functional>

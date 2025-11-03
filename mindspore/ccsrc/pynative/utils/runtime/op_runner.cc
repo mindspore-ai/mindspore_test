@@ -36,7 +36,7 @@
 #include "pynative/utils/runtime/op_runtime_info.h"
 #include "pynative/utils/runtime/op_executor.h"
 #include "pynative/utils/runtime/op_compiler.h"
-#include "include/runtime/core/actors/base/actor_common.h"
+#include "runtime/core/actors/base/actor_common.h"
 #include "include/backend/debug/execute_order_tracker/kernel_cache.h"
 #include "include/runtime/memory/mem_pool/mem_tracker.h"
 #include "runtime/hardware_abstract/kernel_base/graph_fusion/framework_utils.h"

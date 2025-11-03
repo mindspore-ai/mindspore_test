@@ -25,7 +25,6 @@
 #include "include/backend/visible.h"
 
 using mindspore::device::DeviceContext;
-using mindspore::kernel::KernelLaunchAddr;
 using mindspore::kernel::KernelTensor;
 
 namespace mindspore {

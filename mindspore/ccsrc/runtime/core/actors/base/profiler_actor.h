@@ -21,14 +21,13 @@
 #include <set>
 #include <mutex>
 #include <string>
-#include "include/runtime/core/actors/base/actor_common.h"
+#include "runtime/core/actors/base/actor_common.h"
 #include "include/runtime/hardware_abstract/kernel_base/device_tensor_store.h"
 #include "runtime/hardware_abstract/device_context/device_context.h"
 
 namespace mindspore {
 namespace runtime {
 using mindspore::device::DeviceContext;
-using mindspore::kernel::KernelLaunchAddr;
 
 // The debug actor is used to debug and dump kernel info, it gets the kernel real time execution info in the device, so
 // it is synchronous and blocked.

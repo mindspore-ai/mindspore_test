@@ -25,11 +25,12 @@
 #include <utility>
 
 #include "utils/hash_map.h"
-#include "include/runtime/core/actors/base/actor_common.h"
+#include "runtime/core/actors/base/actor_common.h"
 #include "runtime/core/actors/base/debug_aware_actor.h"
 #include "include/runtime/core/actors/base/kernel_async_launch_actor.h"
 #include "include/runtime/core/actors/dynamic_shape/kernel_async_infer_actor.h"
 #include "include/runtime/core/actors/dynamic_shape/kernel_async_resize_actor.h"
+#include "runtime/core/graph_scheduler/base/parameter_store.h"
 #include "runtime/hardware_abstract/device_context/device_context.h"
 #include "include/runtime/hardware_abstract/kernel_base/device_tensor_store.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel.h"
@@ -41,12 +42,12 @@ namespace runtime {
 using mindspore::device::DeviceContext;
 using mindspore::device::KernelInfo;
 using mindspore::kernel::Address;
-using mindspore::kernel::InputDataInfo;
 using mindspore::kernel::KernelLaunchAddr;
-using mindspore::kernel::KernelLaunchInfoWithStream;
 using mindspore::kernel::KernelMod;
 using mindspore::kernel::KernelTensor;
 using mindspore::kernel::KernelTensorPtr;
+using mindspore::runtime::InputDataInfo;
+using mindspore::runtime::KernelLaunchInfoWithStream;
 using mindspore::session::SomasInfo;
 using mindspore::tensor::TensorPtr;
 
