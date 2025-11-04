@@ -26,7 +26,7 @@ from mindspore.ops import functional as F
 from mindspore.ops import operations as P
 from mindspore.common.api import jit_class
 from mindspore._c_expression import _tft_start_record_threads, _tft_finish_record_threads
-from mindspore._c_expression import set_is_reboot_node, tft_register_config
+from mindspore._c_expression import set_is_reboot_node, tft_register_config, set_reboot_type
 
 
 @jit_class
@@ -36,7 +36,7 @@ class ExitByRequest:
     """
 
     def __init__(self):
-        super(ExitByRequest, self).__init__()
+        super().__init__()
         from mindspore.communication.management import get_group_size
         self.all_reduce = P.AllReduce()
         self.equal = P.Equal()
@@ -108,7 +108,7 @@ def _parser_tft_and_thm_env():
             continue
         all_config[key_v[0].strip()] = key_v[1].strip()
     if all_config.get("ARF") == "1":
-        logger.warning(f"Disable hccl_watchdog and turn on TTP when using ARF.")
+        logger.warning("Disable hccl_watchdog and turn on TTP when using ARF.")
         all_config["HCCL_WATCHDOG"] = "0"
         all_config["TTP"] = "1"
     if all_config.get("HCCL_STATUS_SAVE") == "1":
@@ -150,9 +150,9 @@ class RSCPluginHandle:
             logger.warning(f"Import task agent: {str(e)}, try to using mindx plugin.")
             return False
         try:
-            logger.warning(f"register callbacks to taskd agent")
+            logger.warning("register callbacks to taskd agent")
             if not self.init_taskd_agent({"Framework": "MindSpore"}):
-                logger.warning(f"Init taskd agent failed, try to using mindx plugin.")
+                logger.warning("Init taskd agent failed, try to using mindx plugin.")
                 return False
             for name, func in func_map.items():
                 self.register_func(name, func)
@@ -193,12 +193,12 @@ class RSCPluginHandle:
     def start(self):
         """Start execute taskd agent"""
         if self.using_agent:
-            logger.warning(f"start by taskd agent")
+            logger.warning("start by taskd agent")
             self.start_taskd_agent()
         else:
-            logger.warning(f"start by mindx")
+            logger.warning("start by mindx")
             if self.msmgr is None:
-                raise RuntimeError(f"Mindx unavailable, can not start training.")
+                raise RuntimeError("Mindx unavailable, can not start training.")
             self.msmgr.start()
 
 
@@ -206,13 +206,14 @@ class TftHandle:
     """TftHandle class"""
 
     def __init__(self):
-        super(TftHandle, self).__init__()
         _parser_tft_and_thm_env()
         self._controller_ip = None
         self._controller_rank_id = None
         self._controller_port = None
         self.tft = None
         self.enable_mindx = False
+        self.tft_notify_controller_prepare_action = None
+        self.tft_notify_controller_change_strategy = None
 
     def get_tft(self):
         """return tft handle"""
@@ -229,8 +230,12 @@ class TftHandle:
         """stub func for mindx"""
         from mindio_ttp.controller_ttp import (tft_register_mindx_callback,
                                                tft_notify_controller_stop_train,
+                                               tft_notify_controller_prepare_action,
                                                tft_notify_controller_on_global_rank,
                                                tft_notify_controller_change_strategy)
+
+        self.tft_notify_controller_prepare_action = tft_notify_controller_prepare_action
+        self.tft_notify_controller_change_strategy = tft_notify_controller_change_strategy
 
         def report_fault_ranks_func(error_rank_dict):
             tft_notify_controller_stop_train(error_rank_dict)
@@ -264,12 +269,12 @@ class TftHandle:
             **kwargs: Reserved parameters.
         """
         tft_env, _ = _getenv()
-        tft_enabled = any([opt in tft_env for opt in TFTCommValue.NEED_MINDIO])
+        tft_enabled = any([opt in tft_env for opt in TFTCommValue.NEED_MINDIO])  # pylint: disable=R1729
         if not tft_enabled:
             raise ValueError(F"MindIO TFT register need custom switch on one of:{TFTCommValue.NEED_MINDIO}")
         if "ARF:1" in tft_env:
             if "TTP:1" not in tft_env:
-                logger.warning(f"Turn on TTP config when using ARF.")
+                logger.warning("Turn on TTP config when using ARF.")
                 tft_env = tft_env.replace("{", "").replace("}", "")
                 all_opts = [part.strip() for part in tft_env.split(",")] + ["TTP:1"]
                 os.environ["MS_ENABLE_TFT"] = "{" + ",".join(all_opts) + "}"
@@ -290,7 +295,7 @@ class TftHandle:
             from mindio_ttp import framework_ttp as tft
             self.tft = tft
         except BaseException as e:
-            raise ModuleNotFoundError(f"Module not found. Detail info {str(e)}")
+            raise ModuleNotFoundError(f"Module not found. Detail info {str(e)}")  # pylint: disable=W0707
         world_size = int(os.getenv("MS_WORKER_NUM"))  # from msrun
         cur_rank = int(os.getenv("MS_NODE_ID"))  # from msrun
         enable_local_copy = False
@@ -318,9 +323,15 @@ class TftHandle:
             logger.warning("tft report reboot init finish ")
             tft.tft_report_error(tft.ReportState.RS_INIT_FINISH.value)
             set_is_reboot_node(True)
-            ret = tft.tft_wait_next_action()
-            if ret != tft.Action.RETRY.value:
-                raise RuntimeError(f"ARF init failed!")
+            reboot_type = self.tft.tft_get_reboot_type()
+            logger.warning(f"get reboot type:{reboot_type}")
+            if reboot_type == "arf":
+                set_reboot_type("arf")
+                ret = tft.tft_wait_next_action()
+                if ret != tft.Action.RETRY.value:
+                    raise RuntimeError("ARF init failed!")
+            else:
+                set_reboot_type("hot_switch")
             logger.warning("tft reboot success.")
 
 

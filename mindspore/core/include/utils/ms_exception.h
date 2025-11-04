@@ -162,15 +162,13 @@ class MS_CORE_API UCEException {
 
   void set_reboot_node(bool flag) { is_reboot_node_ = flag; }
   bool is_reboot_node() const { return is_reboot_node_; }
+  void set_reboot_type(const std::string &type) { reboot_type_ = type; }
+  std::string get_reboot_type() const { return reboot_type_; }
   void set_is_arf(bool flag) { is_arf_ = flag; }
   bool is_arf() const { return is_arf_; }
   bool enable_arf();
   void set_rebuild_group_flag(bool flag) { rebuild_group_ = flag; }
   bool rebuild_group_flag() const { return rebuild_group_; }
-  bool check_rootinfo_clean_flag() const { return had_clean_; }
-  bool need_clean_rootinfo() const { return clean_rootinfo_; }
-  void set_rootinfo_clean_flag(bool flag) { had_clean_ = flag; }
-
   void CheckUceARFEnv() {
     if (init_) {
       return;
@@ -184,11 +182,9 @@ class MS_CORE_API UCEException {
     const std::string optRSC = "RSC:1";
     if (tftEnv.find(optARF) != std::string::npos) {
       arf_env_ = true;
-      clean_rootinfo_ = true;
       MS_LOG(WARNING) << "ARF enabled.";
     }
     if (tftEnv.find(optRSC) != std::string::npos) {
-      clean_rootinfo_ = true;
       MS_LOG(WARNING) << "RSC enabled.";
     }
     init_ = true;
@@ -229,9 +225,8 @@ class MS_CORE_API UCEException {
   bool is_reboot_node_{false};
   bool is_arf_{false};
   bool rebuild_group_{false};
-  bool had_clean_{false};
-  bool clean_rootinfo_{false};
   bool init_{false};
+  std::string reboot_type_{""};
   uint64_t uce_occur_time_{0};
   UCEError uce_error_type_{UCEError::kNoneError};
   bool is_graph_pipeline_compiled_{false};

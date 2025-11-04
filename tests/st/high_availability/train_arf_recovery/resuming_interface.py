@@ -12,16 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+"""
+Test case for arf recovery
+"""
+
 import mindspore as ms
 from mindspore import ops, nn, context, Tensor
 from mindspore.communication.management import init
 from mindspore.communication._comm_helper import _get_group_map
-from mindspore._c_expression import _rebuild_world_group, _rebuild_sub_group, _finalize_comm, _clean_rootinfo
+from mindspore._c_expression import _rebuild_group, _finalize_comm
 
 
 class AllReduceNet(nn.Cell):
     def __init__(self):
-        super(AllReduceNet, self).__init__()
+        super(AllReduceNet, self).__init__()  # pylint: disable=R1725
         self.allreduce = ops.AllReduce()
 
     def construct(self, x):
@@ -50,11 +54,9 @@ def rebuild_hccl_interface():
     assert output1.asnumpy() == base_value.asnumpy()
 
     # destroy hcom
-    _clean_rootinfo()
     _finalize_comm()
     # rebuild group
-    _rebuild_world_group()
-    _rebuild_sub_group()
+    _rebuild_group()
     output2 = net(t1)
     assert output2.asnumpy() == base_value.asnumpy()
 
