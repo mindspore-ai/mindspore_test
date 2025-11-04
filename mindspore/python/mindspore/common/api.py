@@ -410,7 +410,8 @@ def _get_args_for_run(obj, args, kwargs, has_mutable_args_list, sequence_modifie
         if new_arg is not None:
             new_args.append(new_arg)
         elif isinstance(arg, (list, tuple)):
-            if sequence_modified and sequence_modified[sequence_index] is True:
+            if sequence_modified and sequence_index < len(sequence_modified) and sequence_modified[
+                sequence_index] is True:
                 logger.debug(f'The list or tuple need append: `{arg}')
                 new_args.append(arg)
             sequence_index = sequence_index + 1
@@ -622,6 +623,7 @@ class _JitExecutor:
             self._graph_executor = GraphExecutor_.get_instance()
         self._create_time = ms_create_time
         self._mutable_flags = None
+        self.sequence_modified = None
         self._enable_auto_dynamic = dynamic == 1
         self.jit_config_dict = jit_config.jit_config_dict if jit_config else None
         self._cell_cache_key_extend = cell_cache_key_extend
@@ -647,11 +649,7 @@ class _JitExecutor:
                 _pynative_executor.clear_res()
                 raise err
 
-        # If a sequence is modified in-place, it must be included as an input to the top-level graph.
-        sequence_modified = self._graph_executor.check_func_graph_sequence_parameter(predict_phase)
-        logger.debug(f'The sequence_modified: `{sequence_modified}')
-
-        new_inputs = self._generate_run_args(args_list, kwargs, sequence_modified, is_predict=True)
+        new_inputs = self._generate_run_args(args_list, kwargs, self.sequence_modified, is_predict=True)
         if self.jit_config_dict:
             jit_config_dict = self.jit_config_dict
         else:
@@ -700,11 +698,7 @@ class _JitExecutor:
         if context.get_context("precompile_only") or os.getenv('MS_DEV_PRECOMPILE_ONLY') == '1':
             return None
 
-        # If a sequence is modified in-place, it must be included as an input to the top-level graph.
-        sequence_modified = self._graph_executor.check_func_graph_sequence_parameter(phase)
-        logger.debug(f'The sequence_modified: `{sequence_modified}')
-
-        new_inputs = self._generate_run_args(args_list, kwargs, sequence_modified)
+        new_inputs = self._generate_run_args(args_list, kwargs, self.sequence_modified)
         if self.jit_config_dict:
             jit_config_dict = self.jit_config_dict
         else:
@@ -818,6 +812,9 @@ class _JitExecutor:
         if hasattr(self.obj, "phase"):
             self.obj.phase_cache[self.obj.phase] = phase
 
+        # If a sequence is modified in-place, it must be included as an input to the top-level graph.
+        self.sequence_modified = self._graph_executor.check_func_graph_sequence_parameter(phase)
+        logger.debug(f'The sequence_modified: `{self.sequence_modified}')
         return phase
 
     @staticmethod
