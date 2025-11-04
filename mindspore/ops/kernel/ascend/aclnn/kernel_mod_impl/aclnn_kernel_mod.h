@@ -140,7 +140,7 @@ using CacheTuple = std::tuple<uint64_t, aclOpExecutor *, ProcessCache, size_t>;
         } else {                                                                                                     \
           const auto &iter = ops_workspace_size_map_.find(#FUNC_NAME);                                               \
           if (iter == ops_workspace_size_map_.end()) {                                                               \
-            MS_LOG(EXCEPTION) << "Fialed to get workspace size for " << #FUNC_NAME;                                  \
+            MS_LOG(EXCEPTION) << "Failed to get workspace size for " << #FUNC_NAME;                                  \
           }                                                                                                          \
           auto workspace_size_idx = iter->second.first;                                                              \
           auto workspace_size = iter->second.second;                                                                 \
@@ -278,7 +278,7 @@ using CacheTuple = std::tuple<uint64_t, aclOpExecutor *, ProcessCache, size_t>;
   template <typename... Args>                                                                                   \
   std::tuple<aclOpExecutor *, ProcessCache, std::function<void()>> GetSyncExecutor(const Args &...args) {       \
     auto iter = hash_map_.find(hash_id_);                                                                       \
-    if (capacity_ == 0 || hash_id_ == 0 || iter == hash_map_.end()) {                                           \
+    if (hash_id_ == 0 || iter == hash_map_.end()) {                                                             \
       aclOpExecutor *executor;                                                                                  \
       ProcessCache cache_func_ptr;                                                                              \
       std::function<void()> release_func;                                                                       \
@@ -296,19 +296,39 @@ using CacheTuple = std::tuple<uint64_t, aclOpExecutor *, ProcessCache, size_t>;
   std::vector<ShapeVector> RunOpSync(void *stream_ptr, const std::vector<KernelTensor *> &workspace,            \
                                      const Args &...args) {                                                     \
     REGISTER_SYNC_OP(op_type_);                                                                                 \
-    auto [executor, cache_func_ptr, release_func] = GetSyncExecutor(args...);                                   \
-    if (workspace_size_list_.empty()) {                                                                         \
-      RUN_OP_API_SYNC(op_type_, nullptr, 0, executor, stream_ptr);                                              \
+    ProcessCache cache_func_ptr;                                                                                \
+    std::function<void()> release_func;                                                                         \
+    if (capacity_ == 0) {                                                                                       \
+      size_t ws_size = 0;                                                                                       \
+      std::tie(ws_size, executor_, cache_func_ptr, release_func) = GEN_EXECUTOR(op_type_, args...);             \
+      if (ws_size == 0) {                                                                                       \
+        RUN_OP_API_SYNC(op_type_, nullptr, 0, executor_, stream_ptr);                                           \
+      } else {                                                                                                  \
+        if (is_dynamic_) {                                                                                      \
+          static device::DeviceContext *device_context =                                                        \
+            device::DeviceContextManager::GetInstance().GetDeviceContext("Ascend").get();                       \
+          auto ws_ptr = std::make_shared<kernel::MemBlock>(device_context, ws_size, stream_ptr);                \
+          RUN_OP_API_SYNC(op_type_, ws_ptr->ptr_, ws_size, executor_, stream_ptr);                              \
+        } else {                                                                                                \
+          auto ws_tensor = workspace[0];                                                                        \
+          RUN_OP_API_SYNC(op_type_, ws_tensor->device_ptr(), ws_size, executor_, stream_ptr);                   \
+        }                                                                                                       \
+      }                                                                                                         \
     } else {                                                                                                    \
-      if (workspace.empty()) {                                                                                  \
-        MS_LOG(EXCEPTION) << "Failed to allocate workspace tensor!";                                            \
+      std::tie(executor_, cache_func_ptr, release_func) = GetSyncExecutor(args...);                             \
+      if (workspace_size_list_.empty()) {                                                                       \
+        RUN_OP_API_SYNC(op_type_, nullptr, 0, executor_, stream_ptr);                                           \
+      } else {                                                                                                  \
+        if (workspace.empty()) {                                                                                \
+          MS_LOG(EXCEPTION) << "Failed to allocate workspace tensor!";                                          \
+        }                                                                                                       \
+        auto ws_tensor = workspace[0];                                                                          \
+        if (ws_tensor->size() != workspace_size_list_[0]) {                                                     \
+          MS_LOG(EXCEPTION) << "Please check 'GetWorkSpaceInfo' and 'Launch' func. Expected workspace size is"  \
+                            << workspace_size_list_[0] << ", but get " << ws_tensor->size();                    \
+        }                                                                                                       \
+        RUN_OP_API_SYNC(op_type_, ws_tensor->device_ptr(), workspace_size_list_[0], executor_, stream_ptr);     \
       }                                                                                                         \
-      auto workspace_tensor = workspace[0];                                                                     \
-      if (workspace_tensor->size() != workspace_size_list_[0]) {                                                \
-        MS_LOG(EXCEPTION) << "Please check 'GetWorkSpaceInfo' and 'Launch' func. Expected workspace size is"    \
-                          << workspace_size_list_[0] << ", but get " << workspace_tensor->size();               \
-      }                                                                                                         \
-      RUN_OP_API_SYNC(op_type_, workspace_tensor->device_ptr(), workspace_size_list_[0], executor, stream_ptr); \
     }                                                                                                           \
     auto ret = CALL_ASCEND_API(aclrtSynchronizeStream, stream_ptr);                                             \
     if (ret != 0) {                                                                                             \
