@@ -1,4 +1,4 @@
-# Copyright 2020-2022 Huawei Technologies Co., Ltd
+# Copyright 2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,8 +16,12 @@
 Testing RandomPosterize op in DE
 """
 import numpy as np
+import os
+import pytest
+from PIL import Image
+
 import mindspore.dataset as ds
-import mindspore.dataset.vision as vision
+import mindspore.dataset.vision.transforms as vision
 from mindspore import log as logger
 from util import visualize_list, save_and_check_md5, \
     config_get_set_seed, config_get_set_num_parallel_workers, diff_mse
@@ -26,6 +30,7 @@ GENERATE_GOLDEN = False
 
 DATA_DIR = ["../data/dataset/test_tf_file_3_images/train-0000-of-0001.data"]
 SCHEMA_DIR = "../data/dataset/test_tf_file_3_images/datasetSchema.json"
+TEST_DATA_DATASET_FUNC ="../data/dataset/"
 
 
 def test_random_posterize_op_c(plot=False, run_golden=False):
@@ -233,9 +238,194 @@ def test_rescale_with_random_posterize():
         assert "data type of input image should be int" in str(e)
 
 
+def test_random_posterize_operation_01():
+    """
+    Feature: RandomPosterize operation
+    Description: Testing the normal functionality of the RandomPosterize operator
+    Expectation: The Output is equal to the expected output
+    """
+    # Test RandomPosterize function bits is (1, 8)
+    data_dir = os.path.join(TEST_DATA_DATASET_FUNC, "test_data", "testImageNetData", "train")
+    dataset2 = ds.ImageFolderDataset(data_dir, shuffle=False, decode=True)
+    bits = (1, 8)
+    random_posterize_op = vision.RandomPosterize(bits=bits)
+    dataset2 = dataset2.map(input_columns=["image"], operations=random_posterize_op)
+    for _ in dataset2.create_dict_iterator(output_numpy=True):
+        pass
+
+    # Test RandomPosterize function bits is 8
+    data_dir = os.path.join(TEST_DATA_DATASET_FUNC, "test_data", "testImageNetData", "train")
+    dataset2 = ds.ImageFolderDataset(data_dir, shuffle=False, decode=True)
+    bits = 8
+    random_posterize_op = vision.RandomPosterize(bits=bits)
+    dataset2 = dataset2.map(input_columns=["image"], operations=random_posterize_op)
+    for _ in dataset2.create_dict_iterator(output_numpy=True):
+        pass
+
+    # Test RandomPosterize function no para
+    data_dir = os.path.join(TEST_DATA_DATASET_FUNC, "test_data", "testImageNetData", "train")
+    dataset2 = ds.ImageFolderDataset(data_dir, shuffle=False, decode=True)
+    random_posterize_op = vision.RandomPosterize()
+    dataset2 = dataset2.map(input_columns=["image"], operations=random_posterize_op)
+    for _ in dataset2.create_dict_iterator(output_numpy=True):
+        pass
+
+    # Test RandomPosterize function no bits
+    image_jpg = os.path.join(TEST_DATA_DATASET_FUNC, "test_data", "test_cv_image", "jpg.jpg")
+    with Image.open(image_jpg) as image:
+        random_posterize_op = vision.RandomPosterize()
+        image = vision.ToNumpy()(image)
+        _ = random_posterize_op(image)
+
+    # Test RandomPosterize function bits is 1
+    image_bmp = os.path.join(TEST_DATA_DATASET_FUNC, "test_data", "test_cv_image", "bmp.bmp")
+    bits = 1
+    with Image.open(image_bmp) as image:
+        random_posterize_op = vision.RandomPosterize(bits)
+        _ = random_posterize_op(image)
+
+    # Test RandomPosterize function bits is 8
+    image_png = os.path.join(TEST_DATA_DATASET_FUNC, "test_data", "test_cv_image", "png.PNG")
+    bits = 8
+    with Image.open(image_png) as image:
+        random_posterize_op = vision.RandomPosterize(bits)
+        _ = random_posterize_op(image)
+
+    # Test RandomPosterize function bits is [2, 3]
+    image_gif = os.path.join(TEST_DATA_DATASET_FUNC, "test_data", "test_cv_image", "gif.gif")
+    bits = [2, 3]
+    with Image.open(image_gif) as image:
+        random_posterize_op = vision.RandomPosterize(bits)
+        _ = random_posterize_op(image)
+
+    # Test RandomPosterize function bits is (4, 4)
+    image_jpg = os.path.join(TEST_DATA_DATASET_FUNC, "test_data", "test_cv_image", "jpg.jpg")
+    bits = (4, 4)
+    with Image.open(image_jpg) as image:
+        random_posterize_op = vision.RandomPosterize(bits)
+        _ = random_posterize_op(image)
+
+    # Test RandomPosterize function input.shape is (256, 256, 3)
+    bits = [1, 8]
+    image = np.random.randn(256, 256, 3).astype(np.uint8)
+    random_posterize_op = vision.RandomPosterize(bits)
+    _ = random_posterize_op(image)
+
+    # Test RandomPosterize function input.shape is (128, 128, 1)
+    bits = (2, 8)
+    image = np.random.randint(0, 255, (128, 128, 1)).astype(np.uint8)
+    random_posterize_op = vision.RandomPosterize(bits)
+    random_posterize_op(image)
+
+    # Test RandomPosterize function input is <H, W>
+    image = np.random.randint(-255, 255, (128, 128)).astype(np.int8)
+    random_posterize_op = vision.RandomPosterize()
+    _ = random_posterize_op(image)
+
+
+def test_random_posterize_exception_01():
+    """
+    Feature: RandomPosterize operation
+    Description: Testing the RandomPosterize Operator in Exceptional Scenarios
+    Expectation: Throw an exception
+    """
+    # Test RandomPosterize function bits is (0, 8)
+    bits = (0, 8)
+    with pytest.raises(ValueError, match="Input is not within the required interval"):
+        vision.RandomPosterize(bits=bits)
+
+    # Test RandomPosterize function bits is (1, 9)
+    bits = (1, 9)
+    with pytest.raises(ValueError, match="Input is not within the required interval"):
+        vision.RandomPosterize(bits=bits)
+
+    # Test RandomPosterize function bits is (8, 1)
+    bits = (8, 1)
+    with pytest.raises(ValueError, match="Input is not within the required interval"):
+        vision.RandomPosterize(bits=bits)
+
+    # Test RandomPosterize function bits is (1, 7.5)
+    bits = (1, 7.5)
+    with pytest.raises(TypeError, match="Argument bits"):
+        vision.RandomPosterize(bits=bits)
+
+    # Test RandomPosterize function bits is []
+    bits = []
+    with pytest.raises(TypeError, match="Size of bits should be a single integer or a list/tuple"):
+        vision.RandomPosterize(bits=bits)
+
+    # Test RandomPosterize function bits is [1]
+    bits = [1]
+    with pytest.raises(TypeError, match="Size of bits should be a single integer or a list/tuple"):
+        vision.RandomPosterize(bits=bits)
+
+    # Test RandomPosterize function bits is ""
+    bits = ""
+    with pytest.raises(TypeError, match="Argument bits"):
+        vision.RandomPosterize(bits=bits)
+
+    # Test RandomPosterize function input is 4d
+    image = np.random.randint(-255, 255, (128, 128, 3, 3)).astype(np.int8)
+    random_posterize_op = vision.RandomPosterize()
+    with pytest.raises(RuntimeError, match="Posterize: input image is not in shape of <H,W,C> or <H,W>"):
+        random_posterize_op(image)
+
+    # Test RandomPosterize function input is 1d
+    image = np.random.randint(-255, 255, (128,)).astype(np.int8)
+    random_posterize_op = vision.RandomPosterize()
+    with pytest.raises(RuntimeError, match="Posterize: input image is not in shape of <H,W,C> or <H,W>"):
+        random_posterize_op(image)
+
+    # Test RandomPosterize function input is list
+    image = list(np.random.randint(-255, 255, (128, 128)).astype(np.uint8))
+    random_posterize_op = vision.RandomPosterize()
+    with pytest.raises(TypeError, match="Input should be NumPy or PIL image, got <class 'list'>."):
+        random_posterize_op(image)
+
+    # Test RandomPosterize function input is list,tolist
+    image = np.random.randint(-255, 255, (128, 128)).astype(np.uint8).tolist()
+    random_posterize_op = vision.RandomPosterize()
+    with pytest.raises(TypeError, match="Input should be NumPy or PIL image, got <class 'list'>."):
+        random_posterize_op(image)
+
+    # Test RandomPosterize function bits is {4}
+    bits = {4}
+    with pytest.raises(TypeError, match="Argument bits with value \\{4\\} is not of type"):
+        vision.RandomPosterize(bits)
+
+    # Test RandomPosterize function bits is np.array([2, 5])
+    bits = np.array([2, 5])
+    with pytest.raises(TypeError, match="Argument bits with value \\[2 5\\] is not of type"):
+        vision.RandomPosterize(bits)
+
+    # Test RandomPosterize function bits is [2, 5, 6]
+    bits = [2, 5, 6]
+    with pytest.raises(TypeError,
+                       match="Size of bits should be a single integer or a list/tuple \\(min, max\\) of length 2."):
+        vision.RandomPosterize(bits)
+
+    # Test RandomPosterize function bits is 2.5
+    bits = 2.5
+    with pytest.raises(TypeError, match=("Argument bits with value 2.5 is not of type \\[<class "
+                                         "'list'>, <class 'tuple'>, <class 'int'>\\].")):
+        vision.RandomPosterize(bits)
+
+    # Test RandomPosterize function bits is True
+    bits = True
+    with pytest.raises(TypeError, match=("Argument bits with value True is not of type \\(<class 'list'>, "
+                                         "<class 'tuple'>, <class 'int'>\\)")):
+        vision.RandomPosterize(bits)
+
+    # Test RandomPosterize function two Parameter
+    with pytest.raises(TypeError, match="too many positional arguments"):
+        vision.RandomPosterize(3, 6)
+
+
 if __name__ == "__main__":
     test_random_posterize_op_c(plot=False, run_golden=False)
     test_random_posterize_op_fixed_point_c(plot=False)
     test_random_posterize_default_c_md5(plot=False)
     test_random_posterize_exception_bit()
     test_rescale_with_random_posterize()
+    test_random_posterize_operation_01()
+    test_random_posterize_exception_01()

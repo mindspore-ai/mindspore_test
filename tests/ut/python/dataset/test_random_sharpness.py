@@ -1,4 +1,4 @@
-# Copyright 2020-2022 Huawei Technologies Co., Ltd
+# Copyright 2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,15 +16,25 @@
 Testing RandomSharpness op in DE
 """
 import numpy as np
+import os
+import pytest
+from PIL import Image
+
+import mindspore as ms
 import mindspore.dataset as ds
 import mindspore.dataset.transforms
-import mindspore.dataset.vision as vision
+import mindspore.dataset.vision.transforms as vision
 from mindspore import log as logger
 from util import visualize_list, visualize_one_channel_dataset, diff_mse, save_and_check_md5, save_and_check_md5_pil, \
     config_get_set_seed, config_get_set_num_parallel_workers
 
 DATA_DIR = "../data/dataset/testImageNetData/train/"
 MNIST_DATA_DIR = "../data/dataset/testMnistData"
+TEST_DATA_DATASET_FUNC ="../data/dataset/"
+image_jpg = os.path.join(TEST_DATA_DATASET_FUNC, "test_data", "test_cv_image", "jpg.jpg")
+image_bmp = os.path.join(TEST_DATA_DATASET_FUNC, "test_data", "test_cv_image", "bmp.bmp")
+image_png = os.path.join(TEST_DATA_DATASET_FUNC, "test_data", "test_cv_image", "png.PNG")
+image_gif = os.path.join(TEST_DATA_DATASET_FUNC, "test_data", "test_cv_image", "gif.gif")
 
 GENERATE_GOLDEN = False
 
@@ -335,6 +345,233 @@ def test_random_sharpness_invalid_params():
         assert "(min,max)" in str(error)
 
 
+def test_random_sharpness_operation_01():
+    """
+    Feature: RandomSharpness operation
+    Description: Testing the normal functionality of the RandomSharpness operator
+    Expectation: The Output is equal to the expected output
+    """
+    # Test randomsharpness degrees=(0.1, 1)
+    degrees = (0.1, 1)
+    dataset = ds.ImageFolderDataset(DATA_DIR, shuffle=False, decode=True)
+    random_sharpness_op = vision.RandomSharpness(degrees=degrees)
+    dataset = dataset.map(input_columns=["image"], operations=random_sharpness_op)
+    for _ in dataset.create_dict_iterator(output_numpy=True):
+        pass
+
+    # Test randomsharpness degrees=(0, 1.5)
+    degrees = (0, 1.5)
+    dataset = ds.ImageFolderDataset(DATA_DIR, shuffle=False, decode=True)
+    random_sharpness_op = vision.RandomSharpness(degrees=degrees)
+    dataset = dataset.map(input_columns=["image"], operations=random_sharpness_op)
+
+    for _ in dataset.create_dict_iterator(output_numpy=True):
+        pass
+
+    # Test randomsharpness degrees=[0.5, 1.5]
+    degrees = [0.5, 1.5]
+    dataset = ds.ImageFolderDataset(DATA_DIR, shuffle=False, decode=True)
+    random_sharpness_op = vision.RandomSharpness(degrees=degrees)
+    dataset = dataset.map(input_columns=["image"], operations=random_sharpness_op)
+
+    for _ in dataset.create_dict_iterator(output_numpy=True):
+        pass
+
+    # Test randomsharpness degrees=[1, 1]
+    degrees = [1, 1]
+    dataset = ds.ImageFolderDataset(DATA_DIR, shuffle=False, decode=True)
+    random_sharpness_op = vision.RandomSharpness(degrees=degrees)
+    dataset = dataset.map(input_columns=["image"], operations=random_sharpness_op)
+
+    for _ in dataset.create_dict_iterator(output_numpy=True):
+        pass
+
+    # Test randomsharpness degrees = (0, 0.6)
+    degrees = (0, 0.6)
+    image = Image.open(image_jpg)
+    random_sharpness_op = vision.RandomSharpness(degrees=degrees)
+    out = random_sharpness_op(image)
+    assert (np.array(image) != out).any()
+
+    pil_op = vision.ToPIL()(image)
+    out = random_sharpness_op(pil_op)
+    assert (np.array(pil_op) != out).any()
+
+    # Test randomsharpness degrees = (1.0, 1.0)
+    degrees = (1.0, 1.0)
+    image = Image.open(image_png)
+    random_sharpness_op = vision.RandomSharpness(degrees=degrees)
+    out = random_sharpness_op(image)
+    assert (np.array(image) == out).all()
+
+    pil_op = vision.ToPIL()(image)
+    out = random_sharpness_op(pil_op)
+    assert (np.array(pil_op) == out).all()
+
+    # Test randomsharpness degrees = [0, 2.0]
+    degrees = [0, 2.0]
+    image = Image.open(image_bmp)
+    random_sharpness_op = vision.RandomSharpness(degrees=degrees)
+    _ = random_sharpness_op(image)
+
+
+def test_random_sharpness_operation_02():
+    """
+    Feature: RandomSharpness operation
+    Description: Testing the normal functionality of the RandomSharpness operator
+    Expectation: The Output is equal to the expected output
+    """
+    # Test randomsharpness degrees=(0.6, 0.6)
+    degrees = (0.6, 0.6)
+    image = np.random.randn(256, 382, 1).astype(np.uint8)
+    random_sharpness_op = vision.RandomSharpness(degrees=degrees)
+    out = random_sharpness_op(image)
+    assert (np.array(image) != out).any()
+
+    # Test randomsharpness degrees = (0, 16777216)
+    degrees = (0, 16777216)
+    image = np.random.randn(256, 382, 1)
+    random_sharpness_op = vision.RandomSharpness(degrees=degrees)
+    out = random_sharpness_op(image)
+    assert (np.array(image) != out).any()
+
+    # Test randomsharpness image.shape = (500, 500)
+    degrees = [3, 4]
+    image = np.random.randint(0, 255, (500, 500)).astype(np.uint8)
+    random_sharpness_op = vision.RandomSharpness(degrees=degrees)
+    out = random_sharpness_op(image)
+    assert (np.array(image) != out).any()
+
+    pil_op = vision.ToPIL()(image)
+    out = random_sharpness_op(pil_op)
+    assert (np.array(pil_op) != out).any()
+
+    # Test randomsharpness image.shape = (500, 500, 4)
+    degrees = [0.01, 0.02]
+    image = np.random.randint(0, 255, (500, 500, 4)).astype(np.uint8)
+    random_sharpness_op = vision.RandomSharpness(degrees=degrees)
+    out = random_sharpness_op(image)
+    assert (np.array(image) != out).any()
+
+    pil_op = vision.ToPIL()(image)
+    out = random_sharpness_op(pil_op)
+    assert (np.array(pil_op) != out).any()
+
+
+def test_random_sharpness_exception_01():
+    """
+    Feature: RandomSharpness operation
+    Description: Testing the RandomSharpness Operator in Exceptional Scenarios
+    Expectation: Throw an exception
+    """
+    # Test randomsharpness image = gif
+    image = Image.open(image_gif)
+    random_sharpness_op = vision.RandomSharpness()
+    with pytest.raises(ValueError, match="cannot filter palette images"):
+        _ = random_sharpness_op(image)
+
+    # Test randomsharpness degrees=[-1, 2]
+    degrees = [-1, 2]
+    with pytest.raises(ValueError, match="Input is not within the required interval of \\[0, 16777216\\]."):
+        vision.RandomSharpness(degrees=degrees)
+
+    # Test randomsharpness degrees=[1.5]
+    degrees = [1.5]
+    with pytest.raises(ValueError, match="degrees must be a sequence with length 2"):
+        vision.RandomSharpness(degrees=degrees)
+
+    # Test randomsharpness degrees=(0.1, 0.5, 1.9)
+    degrees = (0.1, 0.5, 1.9)
+    with pytest.raises(ValueError, match="degrees must be a sequence with length 2"):
+        vision.RandomSharpness(degrees=degrees)
+
+    # Test randomsharpness degrees=("0.1", "1.9")
+    degrees = ("0.1", "1.9")
+    with pytest.raises(TypeError, match=("Argument degrees\\[0\\] with value 0.1 is not of "
+                                         "type \\[<class 'int'>, <class 'float'>\\]")):
+        vision.RandomSharpness(degrees=degrees)
+
+    # Test randomsharpness degrees=(1.5, 0.5)
+    degrees = (1.5, 0.5)
+    with pytest.raises(ValueError, match="degrees should be in \\(min,max\\) format. Got \\(max,min\\)"):
+        vision.RandomSharpness(degrees=degrees)
+
+    # Test randomsharpness image = 1d
+    degrees = (0.01, 0.02)
+    image = np.fromfile(image_jpg, dtype=np.uint8)
+    random_sharpness_op = vision.RandomSharpness(degrees=degrees)
+    with pytest.raises(RuntimeError, match="Sharpness: shape of input is not <H,W,C> or <H,W>, but got rank: 1"):
+        random_sharpness_op(image)
+
+    # Test randomsharpness image.shape = (500, 500, 3, 3)
+    degrees = (0.01, 0.02)
+    image = np.random.randint(0, 255, (500, 500, 3, 3)).astype(np.uint8)
+    random_sharpness_op = vision.RandomSharpness(degrees=degrees)
+    with pytest.raises(RuntimeError, match="Sharpness: shape of input is not <H,W,C> or <H,W>, but got rank: 4"):
+        random_sharpness_op(image)
+
+    # Test randomsharpness image = np
+    degrees = (0.01, 0.02)
+    image = np.random.randn(300, 300, 3).tolist()
+    random_sharpness_op = vision.RandomSharpness(degrees=degrees)
+    with pytest.raises(TypeError, match="Input should be NumPy or PIL image, got <class 'list'>."):
+        random_sharpness_op(image)
+
+    # Test randomsharpness image = tuple
+    degrees = (0.01, 0.02)
+    image = tuple(np.random.randn(300, 300, 3).tolist())
+    random_sharpness_op = vision.RandomSharpness(degrees=degrees)
+    with pytest.raises(TypeError, match="Input should be NumPy or PIL image, got <class 'tuple'>."):
+        random_sharpness_op(image)
+
+    # Test randomsharpness image = Tensor
+    degrees = (0.01, 0.02)
+    image = ms.Tensor(np.random.randn(300, 300, 3))
+    random_sharpness_op = vision.RandomSharpness(degrees=degrees)
+    with pytest.raises(TypeError,
+                       match="Input should be NumPy or PIL image, got <class 'mindspore.common.tensor.Tensor'>."):
+        random_sharpness_op(image)
+
+    # Test randomsharpness degrees={0.01, 0.02}
+    degrees = {0.01, 0.02}
+    with pytest.raises(TypeError, match="degrees must be either a tuple or a list."):
+        vision.RandomSharpness(degrees=degrees)
+
+    # Test randomsharpness degrees=np
+    degrees = np.array([0.5, 0.6])
+    with pytest.raises(TypeError, match="degrees must be either a tuple or a list."):
+        vision.RandomSharpness(degrees=degrees)
+
+    # Test randomsharpness degrees = 0.5
+    degrees = 0.5
+    with pytest.raises(TypeError, match="degrees must be either a tuple or a list."):
+        vision.RandomSharpness(degrees=degrees)
+
+    # Test randomsharpness degrees = None
+    image = np.random.randn(300, 300, 3).astype(np.uint8)
+    degrees = None
+    with pytest.raises(TypeError, match="incompatible constructor arguments."):
+        random_sharpness_op = vision.RandomSharpness(degrees=degrees)
+        random_sharpness_op(image)
+
+    with pytest.raises(TypeError, match="\'NoneType\' object is not subscriptable"):
+        random_sharpness_op = vision.RandomSharpness(degrees=degrees)
+        op_pil = vision.ToPIL()(image)
+        random_sharpness_op(op_pil)
+
+    # Test randomsharpness degrees = (10, 16777216.1)
+    image = np.random.randn(300, 300, 3)
+    degrees = (10, 16777216.1)
+    with pytest.raises(ValueError, match="Input is not within the required interval of \\[0, 16777216\\]."):
+        random_sharpness_op = vision.RandomSharpness(degrees=degrees)
+        random_sharpness_op(image)
+
+    with pytest.raises(ValueError, match="Input is not within the required interval of \\[0, 16777216\\]."):
+        random_sharpness_op = vision.RandomSharpness(degrees=degrees)
+        op_pil = vision.ToPIL()(image)
+        random_sharpness_op(op_pil)
+
+
 if __name__ == "__main__":
     test_random_sharpness_py(plot=True)
     test_random_sharpness_py(None, plot=True)  # Test with default values
@@ -352,3 +589,6 @@ if __name__ == "__main__":
     test_random_sharpness_one_channel_c(degrees=[1.7, 1.7], plot=True)
     test_random_sharpness_one_channel_c(degrees=None, plot=True)  # Test with default values
     test_random_sharpness_invalid_params()
+    test_random_sharpness_operation_01()
+    test_random_sharpness_operation_02()
+    test_random_sharpness_exception_01()

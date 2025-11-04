@@ -1,0 +1,14 @@
+{
+  "datasetType": "IMAGENET",
+  "numRows": 1,
+  "columns": {
+    "image": {
+      "type": "AIS_BINARY",
+      "rank": 1
+    },
+    "label" : {
+      "type": "AIS_SINT64",
+      "rank": 1
+    }
+  }
+}

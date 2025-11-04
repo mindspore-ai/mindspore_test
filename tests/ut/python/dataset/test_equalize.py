@@ -1,4 +1,4 @@
-# Copyright 2020-2022 Huawei Technologies Co., Ltd
+# Copyright 2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,16 +15,22 @@
 """
 Testing Equalize op in DE
 """
+import cv2
 import numpy as np
+import os
+import pytest
+from PIL import Image
 
 import mindspore.dataset as ds
 import mindspore.dataset.transforms
-import mindspore.dataset.vision as vision
+import mindspore.dataset.transforms.transforms as t_trans
+import mindspore.dataset.vision.transforms as vision
 from mindspore import log as logger
 from util import visualize_list, visualize_one_channel_dataset, diff_mse, save_and_check_md5, save_and_check_md5_pil
 
 DATA_DIR = "../data/dataset/testImageNetData/train/"
 MNIST_DATA_DIR = "../data/dataset/testMnistData"
+TEST_DATA_DATASET_FUNC ="../data/dataset/"
 
 GENERATE_GOLDEN = False
 
@@ -303,6 +309,146 @@ def test_equalize_md5_c():
     save_and_check_md5(data, filename, generate_golden=GENERATE_GOLDEN)
 
 
+def test_equalize_operation_01():
+    """
+    Feature: Equalize operation
+    Description: Testing the normal functionality of the Equalize operator
+    Expectation: The Output is equal to the expected output
+    """
+    # Equalize operator: Test normal
+    data_dir = os.path.join(TEST_DATA_DATASET_FUNC, "test_data", "testImageNetData", "train")
+    dataset2 = ds.ImageFolderDataset(data_dir, shuffle=False, decode=True)
+    equalize_op = vision.Equalize()
+    dataset2 = dataset2.map(input_columns=["image"], operations=equalize_op)
+    for _ in dataset2.create_dict_iterator(output_numpy=True):
+        pass
+
+    # Equalize operator: Test PIL data
+    data_dir = os.path.join(TEST_DATA_DATASET_FUNC, "test_data", "testImageNetData", "train")
+    ds2 = ds.ImageFolderDataset(data_dir)
+    transforms1 = [
+        vision.Decode(to_pil=True),
+        vision.Equalize(),
+        vision.ToTensor()
+    ]
+    transform1 = t_trans.Compose(transforms1)
+    ds2 = ds2.map(input_columns=["image"], operations=transform1)
+
+    for _ in ds2.create_dict_iterator(output_numpy=True):
+        pass
+
+    # Equalize operator: Test image is jpg
+    image_jpg = os.path.join(TEST_DATA_DATASET_FUNC, "test_data", "test_cv_image", "jpg.jpg")
+    with Image.open(image_jpg) as image:
+        equalize_op = vision.Equalize()
+        _ = equalize_op(image)
+
+    # Equalize operator: Test image is gif
+    image_gif = os.path.join(TEST_DATA_DATASET_FUNC, "test_data", "test_cv_image", "gif.gif")
+    with Image.open(image_gif) as image:
+        equalize_op = vision.Equalize()
+        _ = equalize_op(image)
+
+    # Equalize operator: Test image is bmp
+    image_bmp = os.path.join(TEST_DATA_DATASET_FUNC, "test_data", "test_cv_image", "bmp.bmp")
+    with Image.open(image_bmp) as image:
+        equalize_op = vision.Equalize()
+        _ = equalize_op(image)
+
+    # Equalize operator: Test input is image opened using the cv2 method
+    image_file = os.path.join(TEST_DATA_DATASET_FUNC, "test_data", "testImageNetData", "train", "class1", "1_1.jpg")
+    image = cv2.imread(image_file)
+    equalize_op = vision.Equalize()
+    _ = equalize_op(image)
+
+    # Equalize operator: Test input is 3-d image 01
+    image = np.random.randn(468, 368, 3).astype(np.uint8)
+    equalize_op = vision.Equalize()
+    _ = equalize_op(image)
+
+    # Equalize operator: Test input is 3-d image 02
+    image = np.random.randint(0, 255, (128, 128, 1)).astype(np.uint8)
+    equalize_op = vision.Equalize()
+    _ = equalize_op(image)
+
+    # Equalize operator: Test input is 2-d image
+    image = np.random.randint(-255, 255, (256, 128)).astype(np.uint8)
+    equalize_op = vision.Equalize()
+    _ = equalize_op(image)
+
+
+def test_equalize_exception_01():
+    """
+    Feature: Equalize operation
+    Description: Testing the Equalize Operator in Exceptional Scenarios
+    Expectation: Throw an exception
+    """
+    # Equalize operator: Test input is 3d list
+    image = list(np.random.randn(128, 128, 3).astype(np.uint8))
+    with pytest.raises(TypeError, match="Input should be NumPy or PIL image, got <class 'list'>"):
+        equalize_op = vision.Equalize()
+        _ = equalize_op(image)
+
+    # Equalize operator: Test input is 2d tuple
+    image = tuple(np.random.randint(0, 255, (20, 10)).astype(np.uint8))
+    with pytest.raises(TypeError, match="Input should be NumPy or PIL image, got <class 'tuple'>"):
+        equalize_op = vision.Equalize()
+        _ = equalize_op(image)
+
+    # Equalize operator: Test input is 4-d image
+    image = np.random.randn(10, 468, 368, 3).astype(np.uint8)
+    equalize_op = vision.Equalize()
+    with pytest.raises(RuntimeError, match="Equalize: image rank should be 2 or 3,  but got: 4"):
+        equalize_op(image)
+
+    # Equalize operator: Test image is png
+    image_png = os.path.join(TEST_DATA_DATASET_FUNC, "test_data", "test_cv_image", "png.PNG")
+    with Image.open(image_png) as image:
+        equalize_op = vision.Equalize()
+        with pytest.raises(OSError, match="not supported for .*"):
+            equalize_op(image)
+
+    # Equalize operator: Test input is 1-d numpy data
+    image = np.random.randn(200,).astype(np.uint8)
+    equalize_op = vision.Equalize()
+    with pytest.raises(RuntimeError, match="Equalize: image rank should be 2 or 3,  but got: 1"):
+        equalize_op(image)
+
+    # Equalize operator: Test input is 4 channel numpy array
+    image = np.random.randn(128, 128, 4).astype(np.uint8)
+    equalize_op = vision.Equalize()
+    with pytest.raises(RuntimeError,
+                       match="Equalize: channel of input image should be 1 or 3, but got: 4"):
+        equalize_op(image)
+
+    # Equalize operator: Test input is 3d numpy list
+    image = np.random.randn(128, 128, 3).astype(np.uint8).tolist()
+    equalize_op = vision.Equalize()
+    with pytest.raises(TypeError, match="Input should be NumPy or PIL image, got <class 'list'>"):
+        equalize_op(image)
+
+    # Equalize operator: Test input is int
+    image = 10
+    equalize_op = vision.Equalize()
+    with pytest.raises(TypeError, match="Input should be NumPy or PIL image, got <class 'int'>"):
+        equalize_op(image)
+
+    # Equalize operator: Test input is tuple
+    image = (10,)
+    equalize_op = vision.Equalize()
+    with pytest.raises(TypeError, match="Input should be NumPy or PIL image, got <class 'tuple'>"):
+        equalize_op(image)
+
+    # Equalize operator: Test no image is transferred
+    equalize_op = vision.Equalize()
+    with pytest.raises(RuntimeError, match="Input Tensor is not valid."):
+        equalize_op()
+
+    # Equalize operator: Test one more parameter
+    with pytest.raises(TypeError, match="takes 1 positional argument but 2 were given"):
+        vision.Equalize(1)
+
+
 if __name__ == "__main__":
     test_equalize_callable()
     test_equalize_py(plot=False)
@@ -312,3 +458,5 @@ if __name__ == "__main__":
     test_equalize_one_channel()
     test_equalize_md5_py()
     test_equalize_md5_c()
+    test_equalize_operation_01()
+    test_equalize_exception_01()

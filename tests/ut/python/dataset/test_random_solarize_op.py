@@ -1,4 +1,4 @@
-# Copyright 2019-2022 Huawei Technologies Co., Ltd
+# Copyright 2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,9 +15,13 @@
 """
 Testing RandomSolarizeOp op in DE
 """
+import numpy as np
+import os
 import pytest
+from PIL import Image
+
 import mindspore.dataset as ds
-import mindspore.dataset.vision as vision
+import mindspore.dataset.vision.transforms as vision
 from mindspore import log as logger
 from util import visualize_list, save_and_check_md5, config_get_set_seed, config_get_set_num_parallel_workers, \
     visualize_one_channel_dataset
@@ -27,6 +31,12 @@ GENERATE_GOLDEN = False
 MNIST_DATA_DIR = "../data/dataset/testMnistData"
 DATA_DIR = ["../data/dataset/test_tf_file_3_images/train-0000-of-0001.data"]
 SCHEMA_DIR = "../data/dataset/test_tf_file_3_images/datasetSchema.json"
+TEST_DATA_DATASET_FUNC ="../data/dataset/"
+DATA_DIR_1 = os.path.join(TEST_DATA_DATASET_FUNC, "testImageNetData", "train")
+image_jpg = os.path.join(TEST_DATA_DATASET_FUNC, "test_data", "test_cv_image", "jpg.jpg")
+image_bmp = os.path.join(TEST_DATA_DATASET_FUNC, "test_data", "test_cv_image", "bmp.bmp")
+image_png = os.path.join(TEST_DATA_DATASET_FUNC, "test_data", "test_cv_image", "png.PNG")
+image_gif = os.path.join(TEST_DATA_DATASET_FUNC, "test_data", "test_cv_image", "gif.gif")
 
 
 def test_random_solarize_op(threshold=(10, 150), plot=False, run_golden=True):
@@ -136,9 +146,191 @@ def test_random_solarize_errors():
     assert "threshold must be a sequence of two numbers" in str(error_info.value)
 
 
+def test_random_solarize_operation_01():
+    """
+    Feature: RandomSolarize operation
+    Description: Testing the normal functionality of the RandomSolarize operator
+    Expectation: The Output is equal to the expected output
+    """
+    # Test randomsolarize no para
+    dataset2 = ds.ImageFolderDataset(DATA_DIR_1, shuffle=False, decode=True)
+    random_solarize_op = vision.RandomSolarize()
+    dataset2 = dataset2.map(input_columns=["image"], operations=random_solarize_op)
+    for _ in dataset2.create_dict_iterator(output_numpy=True):
+        pass
+
+    # Test randomsolarize threshold = (0, 150)
+    threshold = (0, 150)
+    image = Image.open(image_jpg)
+    random_solarize_op = vision.RandomSolarize(threshold=threshold)
+    _ = random_solarize_op(image)
+
+    # Test randomsolarize threshold = (0, 255)
+    threshold = (0, 255)
+    image = Image.open(image_bmp)
+    random_solarize_op = vision.RandomSolarize(threshold=threshold)
+    _ = random_solarize_op(image)
+
+    # Test randomsolarize image = gif
+    image = Image.open(image_gif)
+    random_solarize_op = vision.RandomSolarize()
+    _ = random_solarize_op(image)
+
+    # Test randomsolarize threshold = (200, 201)
+    threshold = (200, 201)
+    image = np.random.randint(0, 199, (256, 382, 3)).astype(np.uint8)
+    random_solarize_op = vision.RandomSolarize(threshold=threshold)
+    out = random_solarize_op(image)
+    assert (np.array(image) == out).all()
+
+    # Test randomsolarize threshold = (10, 82)
+    threshold = (10, 82)
+    image = np.random.randint(0, 255, (253, 300, 1)).astype(np.uint8)
+    random_solarize_op = vision.RandomSolarize(threshold=threshold)
+    random_solarize_op(image)
+
+    # Test randomsolarize threshold = (0, 0)
+    threshold = (0, 0)
+    image = np.random.randint(0, 255, (500, 500)).astype(np.uint8)
+    random_solarize_op = vision.RandomSolarize(threshold=threshold)
+    _ = random_solarize_op(image)
+
+    # Test randomsolarize threshold = (0, 0) and (0, 255)
+    threshold = (0, 0)
+    threshold2 = (0, 255)
+    image = np.random.randint(0, 255, (256, 256)).astype(np.uint8)
+    random_solarize_op = vision.RandomSolarize(threshold=threshold)
+    random_solarize_op2 = vision.RandomSolarize(threshold=threshold2)
+    out = random_solarize_op(image)
+    out2 = random_solarize_op2(image)
+    assert (out != out2).any()
+
+
+def test_random_solarize_exception_01():
+    """
+    Feature: RandomSolarize operation
+    Description: Testing the RandomSolarize Operator in Exceptional Scenarios
+    Expectation: Throw an exception
+    """
+    # Test randomsolarize threshold = [0, 255]
+    threshold = [0, 255]
+    with pytest.raises(TypeError,
+                       match="Argument threshold with value \\[0, 255\\] is not of type \\[<class 'tuple'>\\]."):
+        vision.RandomSolarize(threshold=threshold)
+
+    # Test randomsolarize threshold = (-1, 255)
+    threshold = (-1, 255)
+    with pytest.raises(ValueError, match="Input is not within the required interval"):
+        vision.RandomSolarize(threshold=threshold)
+
+    # Test randomsolarize threshold = (0, 256)
+    threshold = (0, 256)
+    with pytest.raises(ValueError, match="Input is not within the required interval of \\[0, 255\\]."):
+        vision.RandomSolarize(threshold=threshold)
+
+    # Test randomsolarize threshold = (128, 1)
+    threshold = (128, 1)
+    with pytest.raises(ValueError, match="threshold must be in min max format numbers"):
+        vision.RandomSolarize(threshold=threshold)
+
+    # Test randomsolarize threshold = (0, 128.5)
+    threshold = (0, 128.5)
+    with pytest.raises(TypeError,
+                       match="Argument threshold\\[1\\] with value 128.5 is not of type \\[<class 'int'>\\]."):
+        vision.RandomSolarize(threshold=threshold)
+
+    # Test randomsolarize threshold = ()
+    threshold = ()
+    with pytest.raises(ValueError, match="threshold must be a sequence of two numbers"):
+        vision.RandomSolarize(threshold=threshold)
+
+    # Test randomsolarize threshold = (0,1,128)
+    threshold = (0, 1, 128)
+    with pytest.raises(ValueError, match="threshold must be a sequence of two numbers"):
+        vision.RandomSolarize(threshold=threshold)
+
+    # Test randomsolarize threshold = 0
+    threshold = 0
+    with pytest.raises(TypeError, match="Argument threshold with value 0 is not of type \\[<class 'tuple'>\\]."):
+        vision.RandomSolarize(threshold=threshold)
+
+    # Test randomsolarize threshold =
+    threshold = ""
+    with pytest.raises(TypeError, match="Argument threshold"):
+        vision.RandomSolarize(threshold=threshold)
+
+    # Test randomsolarize image.shape = (500, 500, 4)
+    threshold = (125, 255)
+    image = np.random.randint(0, 255, (500, 500, 4)).astype(np.uint8)
+    random_solarize_op = vision.RandomSolarize(threshold=threshold)
+    with pytest.raises(RuntimeError, match=r"Solarize: the channel of image tensor does not "
+                                           r"match the requirement of operator. Expecting tensor in channel of "
+                                           r"\(1, 3\). But got channel 4."):
+        random_solarize_op(image)
+
+    # Test randomsolarize image = 1d
+    threshold = (0, 125)
+    image = np.fromfile(image_jpg, dtype=np.uint8)
+    random_solarize_op = vision.RandomSolarize(threshold=threshold)
+    with pytest.raises(RuntimeError, match=r"Solarize: the dimension of image tensor does "
+                                           r"not match the requirement of operator. Expecting tensor in "
+                                           r"dimension of \(2, 3\), in shape of <H, W> or <H, W, C>. But got "
+                                           r"dimension 1. You may need to perform Decode first."):
+        random_solarize_op(image)
+
+    # Test randomsolarize image = list
+    threshold = (0, 125)
+    image = np.random.randint(0, 255, (500, 500, 3)).astype(np.uint8).tolist()
+    random_solarize_op = vision.RandomSolarize(threshold=threshold)
+    with pytest.raises(TypeError, match="Input should be NumPy or PIL image, got <class 'list'>."):
+        random_solarize_op(image)
+
+    # Test randomsolarize image = tuple
+    threshold = (0, 125)
+    image = tuple(np.random.randint(0, 255, (500, 500, 3)).astype(np.uint8).tolist())
+    random_solarize_op = vision.RandomSolarize(threshold=threshold)
+    with pytest.raises(TypeError, match="Input should be NumPy or PIL image, got <class 'tuple'>."):
+        random_solarize_op(image)
+
+    # Test randomsolarize image.shape = (500, 500, 3, 3)
+    threshold = (0, 125)
+    image = np.random.randint(0, 255, (500, 500, 3, 3)).astype(np.uint8)
+    random_solarize_op = vision.RandomSolarize(threshold=threshold)
+    with pytest.raises(RuntimeError, match=r"Solarize: the dimension of image tensor does "
+                                           r"not match the requirement of operator. Expecting tensor in "
+                                           r"dimension of \(2, 3\), in shape of <H, W> or <H, W, C>. "
+                                           r"But got dimension 4."):
+        random_solarize_op(image)
+
+    # Test randomsolarize threshold = (10,)
+    threshold = (10,)
+    with pytest.raises(ValueError, match="threshold must be a sequence of two numbers."):
+        vision.RandomSolarize(threshold=threshold)
+
+    # Test randomsolarize threshold = {10, 50}
+    threshold = {10, 50}
+    with pytest.raises(TypeError,
+                       match="Argument threshold with value {10, 50} is not of type \\[<class 'tuple'>\\]."):
+        vision.RandomSolarize(threshold=threshold)
+
+    # Test randomsolarize threshold = np.array([10, 50])
+    threshold = np.array([10, 50])
+    with pytest.raises(TypeError,
+                       match="Argument threshold with value \\[10 50\\] is not of type \\[<class 'tuple'>\\]."):
+        vision.RandomSolarize(threshold=threshold)
+
+    # Test randomsolarize threshold = (True, 20)
+    threshold = (True, 20)
+    with pytest.raises(TypeError,
+                       match="Argument threshold\\[0\\] with value True is not of type \\(<class 'int'>,\\)."):
+        vision.RandomSolarize(threshold=threshold)
+
+
 if __name__ == "__main__":
     test_random_solarize_op((10, 150), plot=True, run_golden=True)
     test_random_solarize_op((12, 120), plot=True, run_golden=False)
     test_random_solarize_op(plot=True, run_golden=False)
     test_random_solarize_mnist(plot=True, run_golden=True)
     test_random_solarize_errors()
+    test_random_solarize_operation_01()
+    test_random_solarize_exception_01()

@@ -1,4 +1,4 @@
-# Copyright 2020-2022 Huawei Technologies Co., Ltd
+# Copyright 2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,8 +16,11 @@
 Testing RandomCropWithBBox op in DE
 """
 import numpy as np
+import os
+import pytest
+
 import mindspore.dataset as ds
-import mindspore.dataset.vision as vision
+import mindspore.dataset.vision.transforms as vision
 import mindspore.dataset.vision.utils as mode
 
 from mindspore import log as logger
@@ -31,6 +34,8 @@ DATA_DIR_VOC = "../data/dataset/testVOC2012_2"
 # COCO dataset - DATA_DIR, ANNOTATION_DIR
 DATA_DIR_COCO = ["../data/dataset/testCOCO/train/",
                  "../data/dataset/testCOCO/annotations/train.json"]
+TEST_DATA_DATASET_FUNC ="../data/dataset/"
+DATA_DIR_IMAGE = os.path.join(TEST_DATA_DATASET_FUNC, "testImageNetData", "train")
 
 
 def test_random_crop_with_bbox_op_c(plot_vis=False):
@@ -272,6 +277,476 @@ def test_random_crop_with_bbox_padded_dataset():
     ds.config.set_seed(original_seed)
 
 
+def test_random_crop_with_bbox_operation_01():
+    """
+    Feature: RandomCropWithBBox operation
+    Description: Testing the normal functionality of the RandomCropWithBBox operator
+    Expectation: The Output is equal to the expected output
+    """
+    # When parameter size is 1, RandomCropWithBBox interface is successfully called
+    dataset2 = ds.VOCDataset(DATA_DIR_VOC, task="Detection", usage="train", decode=True, shuffle=False)
+    size = 1
+    test_op = vision.RandomCropWithBBox(size=size)
+    dataset2 = dataset2.map(input_columns=["image", "bbox"],
+                            output_columns=["image", "bbox"],
+                            operations=[test_op])
+    dataset2 = dataset2.project(columns=["image", "bbox"])
+    for data2 in dataset2.create_dict_iterator(output_numpy=True):
+        image_aug = data2["image"]
+        assert image_aug.shape == (1, 1, 3)
+
+    # When parameter size is 500, RandomCropWithBBox interface is successfully called
+    dataset2 = ds.VOCDataset(DATA_DIR_VOC, task="Detection", usage="train", decode=True, shuffle=False)
+    size = 500
+    test_op = vision.RandomCropWithBBox(size=size)
+    dataset2 = dataset2.map(input_columns=["image", "bbox"],
+                            output_columns=["image", "bbox"],
+                            operations=[test_op])
+    dataset2 = dataset2.project(columns=["image", "bbox"])
+    for data2 in dataset2.create_dict_iterator(output_numpy=True):
+        image_aug = data2["image"]
+        assert image_aug.shape == (500, 500, 3)
+
+    # When parameter size is a list, RandomCropWithBBox interface is successfully called
+    dataset2 = ds.VOCDataset(DATA_DIR_VOC, task="Detection", usage="train", decode=True, shuffle=False)
+    size = [500, 520]
+    test_op = vision.RandomCropWithBBox(size=size)
+    dataset2 = dataset2.map(input_columns=["image", "bbox"],
+                            output_columns=["image", "bbox"],
+                            operations=[test_op])
+    dataset2 = dataset2.project(columns=["image", "bbox"])
+    for _ in dataset2.create_dict_iterator(output_numpy=True):
+        pass
+
+    # When parameter padding is [1, 1, 1, 1], RandomCropWithBBox interface is successfully called
+    dataset2 = ds.VOCDataset(DATA_DIR_VOC, task="Detection", usage="train", decode=True, shuffle=False)
+    size = 512
+    padding = [1, 1, 1, 1]
+    test_op = vision.RandomCropWithBBox(size=size, padding=padding)
+    dataset2 = dataset2.map(input_columns=["image", "bbox"],
+                            output_columns=["image", "bbox"],
+                            operations=[test_op])
+    dataset2 = dataset2.project(columns=["image", "bbox"])
+    for _ in dataset2.create_dict_iterator(output_numpy=True):
+        pass
+
+    # When parameter fill_value is 0, RandomCropWithBBox interface is successfully called
+    dataset2 = ds.VOCDataset(DATA_DIR_VOC, task="Detection", usage="train", decode=True, shuffle=False)
+    size = 3000
+    padding = (100, 100, 100, 100)
+    pad_if_needed = True
+    fill_value = 0
+    test_op = vision.RandomCropWithBBox(size=size, padding=padding, pad_if_needed=pad_if_needed,
+                                        fill_value=fill_value)
+    dataset2 = dataset2.map(input_columns=["image", "bbox"],
+                            output_columns=["image", "bbox"],
+                            operations=[test_op])
+    dataset2 = dataset2.project(columns=["image", "bbox"])
+    for _ in dataset2.create_dict_iterator(output_numpy=True):
+        pass
+
+
+def test_random_crop_with_bbox_operation_02():
+    """
+    Feature: RandomCropWithBBox operation
+    Description: Testing the normal functionality of the RandomCropWithBBox operator
+    Expectation: The Output is equal to the expected output
+    """
+    # When all parameters are set, RandomCropWithBBox interface is successfully called
+    dataset2 = ds.VOCDataset(DATA_DIR_VOC, task="Detection", usage="train", decode=True, shuffle=False)
+    size = 3000
+    padding = (100, 100, 100, 100)
+    pad_if_needed = True
+    fill_value = (255, 255, 255)
+    padding_mode = mode.Border.SYMMETRIC
+    test_op = vision.RandomCropWithBBox(size=size, padding=padding, pad_if_needed=pad_if_needed,
+                                        fill_value=fill_value, padding_mode=padding_mode)
+    dataset2 = dataset2.map(input_columns=["image", "bbox"],
+                            output_columns=["image", "bbox"],
+                            operations=[test_op])
+    dataset2 = dataset2.project(columns=["image", "bbox"])
+    for _ in dataset2.create_dict_iterator(output_numpy=True):
+        pass
+
+    # When parameter padding_mode is Border.EDGE, RandomCropWithBBox interface is successfully called
+    dataset2 = ds.VOCDataset(DATA_DIR_VOC, task="Detection", usage="train", decode=True, shuffle=False)
+    size = 3000
+    pad_if_needed = True
+    fill_value = (255, 255, 255)
+    padding_mode = mode.Border.EDGE
+    test_op = vision.RandomCropWithBBox(size=size, pad_if_needed=pad_if_needed,
+                                        fill_value=fill_value, padding_mode=padding_mode)
+    dataset2 = dataset2.map(input_columns=["image", "bbox"],
+                            output_columns=["image", "bbox"],
+                            operations=[test_op])
+    dataset2 = dataset2.project(columns=["image", "bbox"])
+    for _ in dataset2.create_dict_iterator(output_numpy=True):
+        pass
+
+    # When parameter padding_mode is Border.REFLECT, RandomCropWithBBox interface is successfully called
+    dataset2 = ds.VOCDataset(DATA_DIR_VOC, task="Detection", usage="train", decode=True, shuffle=False)
+    size = 300
+    padding = (100, 100, 100, 100)
+    fill_value = (255, 255, 255)
+    padding_mode = mode.Border.REFLECT
+    test_op = vision.RandomCropWithBBox(size=size, padding=padding, fill_value=fill_value, padding_mode=padding_mode)
+    dataset2 = dataset2.map(input_columns=["image", "bbox"],
+                            output_columns=["image", "bbox"],
+                            operations=[test_op])
+    dataset2 = dataset2.project(columns=["image", "bbox"])
+    for _ in dataset2.create_dict_iterator(output_numpy=True):
+        pass
+
+    # When parameter padding_mode is Border.SYMMETRIC, RandomCropWithBBox interface is successfully called
+    dataset2 = ds.VOCDataset(DATA_DIR_VOC, task="Detection", usage="train", decode=True, shuffle=False)
+    size = 180
+    padding = (100, 100, 100, 100)
+    pad_if_needed = False
+    padding_mode = mode.Border.SYMMETRIC
+    test_op = vision.RandomCropWithBBox(size=size, padding=padding, pad_if_needed=pad_if_needed,
+                                        padding_mode=padding_mode)
+    dataset2 = dataset2.map(input_columns=["image", "bbox"],
+                            output_columns=["image", "bbox"],
+                            operations=[test_op])
+    dataset2 = dataset2.project(columns=["image", "bbox"])
+    for _ in dataset2.create_dict_iterator(output_numpy=True):
+        pass
+
+    # When parameters use default values, RandomCropWithBBox interface is successfully called
+    dataset2 = ds.VOCDataset(DATA_DIR_VOC, task="Detection", usage="train", decode=True, shuffle=False)
+    size = 300
+    test_op = vision.RandomCropWithBBox(size=size)
+    dataset2 = dataset2.map(input_columns=["image", "bbox"],
+                            output_columns=["image", "bbox"],
+                            operations=[test_op])
+    dataset2 = dataset2.project(columns=["image", "bbox"])
+    for _ in dataset2.create_dict_iterator(output_numpy=True):
+        pass
+
+
+def test_random_crop_with_bbox_exception_01():
+    """
+    Feature: RandomCropWithBBox operation
+    Description: Testing the RandomCropWithBBox Operator in Exceptional Scenarios
+    Expectation: Throw an exception
+    """
+    # Using ImageFolderDataset to get the dataset, RandomCropWithBBox interface call fails
+    dataset = ds.ImageFolderDataset(DATA_DIR_IMAGE, decode=True, shuffle=False)
+    test_op = vision.RandomCropWithBBox(512)
+    dataset = dataset.map(input_columns=["image", "label"],
+                          output_columns=["image", "label"],
+                          operations=[test_op])
+    dataset = dataset.project(columns=["image", "label"])
+    with pytest.raises(RuntimeError,
+                       match="BoundingBox: bounding boxes should have to be two-dimensional matrix at least."):
+        for _ in dataset.create_dict_iterator(output_numpy=True):
+            pass
+
+    # When parameter size is 0, RandomCropWithBBox interface call fails
+    dataset2 = ds.VOCDataset(DATA_DIR_VOC, task="Detection", usage="train", decode=True, shuffle=False)
+    size = 0
+    with pytest.raises(ValueError, match="Input is not within the required interval"):
+        test_op = vision.RandomCropWithBBox(size=size)
+        dataset2 = dataset2.map(input_columns=["image", "bbox"],
+                                output_columns=["image", "bbox"],
+                                operations=[test_op])
+        dataset2 = dataset2.project(columns=["image", "bbox"])
+        for _ in dataset2.create_dict_iterator(output_numpy=True):
+            pass
+
+    # When parameter size is 1000, RandomCropWithBBox interface call fails
+    dataset2 = ds.VOCDataset(DATA_DIR_VOC, task="Detection", usage="train", decode=True, shuffle=False)
+    size = 1000
+    with pytest.raises(RuntimeError,
+                       match=" RandomCrop: invalid crop size, crop size is bigger than the image dimensions."):
+        test_op = vision.RandomCropWithBBox(size=size)
+        dataset2 = dataset2.map(input_columns=["image", "bbox"],
+                                output_columns=["image", "bbox"],
+                                operations=[test_op])
+        dataset2 = dataset2.project(columns=["image", "bbox"])
+        for _ in dataset2.create_dict_iterator(output_numpy=True):
+            pass
+
+    # When parameter size is float, RandomCropWithBBox interface call fails
+    dataset2 = ds.VOCDataset(DATA_DIR_VOC, task="Detection", usage="train", decode=True, shuffle=False)
+    size = 500.5
+    with pytest.raises(TypeError, match="Argument size with value 500.5 is not of type \\[<class 'int'>,"
+                                        " <class 'list'>, <class 'tuple'>\\], but got <class 'float'>."):
+        test_op = vision.RandomCropWithBBox(size=size)
+        dataset2 = dataset2.map(input_columns=["image", "bbox"],
+                                output_columns=["image", "bbox"],
+                                operations=[test_op])
+        dataset2 = dataset2.project(columns=["image", "bbox"])
+        for _ in dataset2.create_dict_iterator(output_numpy=True):
+            pass
+
+    # When parameter size is a 3-tuple, RandomCropWithBBox interface call fails
+    dataset2 = ds.VOCDataset(DATA_DIR_VOC, task="Detection", usage="train", decode=True, shuffle=False)
+    size = (500, 500, 520)
+    with pytest.raises(TypeError, match="Size should be a single integer or a list/tuple"):
+        test_op = vision.RandomCropWithBBox(size=size)
+        dataset2 = dataset2.map(input_columns=["image", "bbox"],
+                                output_columns=["image", "bbox"],
+                                operations=[test_op])
+        dataset2 = dataset2.project(columns=["image", "bbox"])
+        for _ in dataset2.create_dict_iterator(output_numpy=True):
+            pass
+
+    # When parameter size is string, RandomCropWithBBox interface call fails
+    dataset2 = ds.VOCDataset(DATA_DIR_VOC, task="Detection", usage="train", decode=True, shuffle=False)
+    size = ""
+    with pytest.raises(TypeError, match="Argument size with value .*, but got <class 'str'>."):
+        test_op = vision.RandomCropWithBBox(size=size)
+        dataset2 = dataset2.map(input_columns=["image", "bbox"],
+                                output_columns=["image", "bbox"],
+                                operations=[test_op])
+        dataset2 = dataset2.project(columns=["image", "bbox"])
+        for _ in dataset2.create_dict_iterator(output_numpy=True):
+            pass
+
+
+def test_random_crop_with_bbox_exception_02():
+    """
+    Feature: RandomCropWithBBox operation
+    Description: Testing the RandomCropWithBBox Operator in Exceptional Scenarios
+    Expectation: Throw an exception
+    """
+    # When parameter padding is negative, RandomCropWithBBox interface call fails
+    dataset2 = ds.VOCDataset(DATA_DIR_VOC, task="Detection", usage="train", decode=True, shuffle=False)
+    size = 512
+    padding = -1
+    with pytest.raises(ValueError, match="Input padding is not within the required interval"):
+        test_op = vision.RandomCropWithBBox(size=size, padding=padding)
+        dataset2 = dataset2.map(input_columns=["image", "bbox"],
+                                output_columns=["image", "bbox"],
+                                operations=[test_op])
+        dataset2 = dataset2.project(columns=["image", "bbox"])
+        for _ in dataset2.create_dict_iterator(output_numpy=True):
+            pass
+
+    # When parameter padding is 16777216, RandomCropWithBBox interface call fails
+    dataset2 = ds.VOCDataset(DATA_DIR_VOC, task="Detection", usage="train", decode=True, shuffle=False)
+    size = 512
+    padding = 16777216
+    with pytest.raises(RuntimeError, match="RandomCrop: padding size is three times bigger than the image size, "
+                                           "padding top: 16777216, padding bottom: 16777216, padding pad_left_: "
+                                           "16777216, padding padding right:16777216"):
+        test_op = vision.RandomCropWithBBox(size=size, padding=padding)
+        dataset2 = dataset2.map(input_columns=["image", "bbox"],
+                                output_columns=["image", "bbox"],
+                                operations=[test_op])
+        dataset2 = dataset2.project(columns=["image", "bbox"])
+        for _ in dataset2.create_dict_iterator(output_numpy=True):
+            pass
+
+    # When parameter padding length is 3, RandomCropWithBBox interface call fails
+    dataset2 = ds.VOCDataset(DATA_DIR_VOC, task="Detection", usage="train", decode=True, shuffle=False)
+    size = 512
+    padding = (1, 1, 1)
+    with pytest.raises(ValueError, match="The size of the padding list or tuple should be 2 or 4."):
+        test_op = vision.RandomCropWithBBox(size=size, padding=padding)
+        dataset2 = dataset2.map(input_columns=["image", "bbox"],
+                                output_columns=["image", "bbox"],
+                                operations=[test_op])
+        dataset2 = dataset2.project(columns=["image", "bbox"])
+        for _ in dataset2.create_dict_iterator(output_numpy=True):
+            pass
+
+    # When parameter padding is float, RandomCropWithBBox interface call fails
+    dataset2 = ds.VOCDataset(DATA_DIR_VOC, task="Detection", usage="train", decode=True, shuffle=False)
+    size = 512
+    padding = 1.5
+    with pytest.raises(TypeError, match="Argument padding with value 1.5 is not of type "
+                                        "\\[<class 'int'>\\], but got <class 'float'>."):
+        test_op = vision.RandomCropWithBBox(size=size, padding=padding)
+        dataset2 = dataset2.map(input_columns=["image", "bbox"],
+                                output_columns=["image", "bbox"],
+                                operations=[test_op])
+        dataset2 = dataset2.project(columns=["image", "bbox"])
+        for _ in dataset2.create_dict_iterator(output_numpy=True):
+            pass
+
+    # When parameter padding is string, RandomCropWithBBox interface call fails
+    dataset2 = ds.VOCDataset(DATA_DIR_VOC, task="Detection", usage="train", decode=True, shuffle=False)
+    size = 512
+    padding = ""
+    with pytest.raises(TypeError, match="Argument padding with value .*, but got <class 'str'>."):
+        test_op = vision.RandomCropWithBBox(size=size, padding=padding)
+        dataset2 = dataset2.map(input_columns=["image", "bbox"],
+                                output_columns=["image", "bbox"],
+                                operations=[test_op])
+        dataset2 = dataset2.project(columns=["image", "bbox"])
+        for _ in dataset2.create_dict_iterator(output_numpy=True):
+            pass
+
+
+def test_random_crop_with_bbox_exception_03():
+    """
+    Feature: RandomCropWithBBox operation
+    Description: Testing the RandomCropWithBBox Operator in Exceptional Scenarios
+    Expectation: Throw an exception
+    """
+    # When parameter size is larger than image dimensions, RandomCropWithBBox interface call fails
+    dataset2 = ds.VOCDataset(DATA_DIR_VOC, task="Detection", usage="train", decode=True, shuffle=False)
+    size = 3000
+    padding = 100
+    pad_if_needed = False
+    with pytest.raises(RuntimeError,
+                       match="RandomCrop: invalid crop size, crop size is bigger than the image dimensions."):
+        test_op = vision.RandomCropWithBBox(size=size, padding=padding, pad_if_needed=pad_if_needed)
+        dataset2 = dataset2.map(input_columns=["image", "bbox"],
+                                output_columns=["image", "bbox"],
+                                operations=[test_op])
+        dataset2 = dataset2.project(columns=["image", "bbox"])
+        for _ in dataset2.create_dict_iterator(output_numpy=True):
+            pass
+
+    # When parameter pad_if_needed is string, RandomCropWithBBox interface call fails
+    dataset2 = ds.VOCDataset(DATA_DIR_VOC, task="Detection", usage="train", decode=True, shuffle=False)
+    size = 3000
+    padding = 100
+    pad_if_needed = ""
+    with pytest.raises(TypeError, match="Argument pad_if_needed with value .*, but got <class 'str'>."):
+        test_op = vision.RandomCropWithBBox(size=size, padding=padding, pad_if_needed=pad_if_needed)
+        dataset2 = dataset2.map(input_columns=["image", "bbox"],
+                                output_columns=["image", "bbox"],
+                                operations=[test_op])
+        dataset2 = dataset2.project(columns=["image", "bbox"])
+        for _ in dataset2.create_dict_iterator(output_numpy=True):
+            pass
+
+    # When parameter fill_value is 256, RandomCropWithBBox interface call fails
+    dataset2 = ds.VOCDataset(DATA_DIR_VOC, task="Detection", usage="train", decode=True, shuffle=False)
+    size = 3000
+    padding = (100, 100, 100, 100)
+    pad_if_needed = True
+    fill_value = 256
+    with pytest.raises(ValueError, match=r"Input fill_value is not within the required interval of \[0, 255\]."):
+        test_op = vision.RandomCropWithBBox(size=size, padding=padding, pad_if_needed=pad_if_needed,
+                                            fill_value=fill_value)
+        dataset2 = dataset2.map(input_columns=["image", "bbox"],
+                                output_columns=["image", "bbox"],
+                                operations=[test_op])
+        dataset2 = dataset2.project(columns=["image", "bbox"])
+        for _ in dataset2.create_dict_iterator(output_numpy=True):
+            pass
+
+    # When parameter fill_value is a 3-tuple, RandomCropWithBBox interface call fails
+    dataset2 = ds.VOCDataset(DATA_DIR_VOC, task="Detection", usage="train", decode=True, shuffle=False)
+    size = 3000
+    padding = (100, 100, 100, 100)
+    pad_if_needed = True
+    fill_value = [255, 255, 255]
+    with pytest.raises(TypeError, match="fill_value should be a single integer or a 3-tuple."):
+        test_op = vision.RandomCropWithBBox(size=size, padding=padding, pad_if_needed=pad_if_needed,
+                                            fill_value=fill_value)
+        dataset2 = dataset2.map(input_columns=["image", "bbox"],
+                                output_columns=["image", "bbox"],
+                                operations=[test_op])
+        dataset2 = dataset2.project(columns=["image", "bbox"])
+        for _ in dataset2.create_dict_iterator(output_numpy=True):
+            pass
+
+    # When parameter fill_value is float, RandomCropWithBBox interface call fails
+    dataset2 = ds.VOCDataset(DATA_DIR_VOC, task="Detection", usage="train", decode=True, shuffle=False)
+    size = 3000
+    padding = (100, 100, 100, 100)
+    pad_if_needed = True
+    fill_value = 1.5
+    with pytest.raises(TypeError, match="fill_value should be a single integer or a 3-tuple."):
+        test_op = vision.RandomCropWithBBox(size=size, padding=padding, pad_if_needed=pad_if_needed,
+                                            fill_value=fill_value)
+        dataset2 = dataset2.map(input_columns=["image", "bbox"],
+                                output_columns=["image", "bbox"],
+                                operations=[test_op])
+        dataset2 = dataset2.project(columns=["image", "bbox"])
+        for _ in dataset2.create_dict_iterator(output_numpy=True):
+            pass
+
+
+def test_random_crop_with_bbox_exception_04():
+    """
+    Feature: RandomCropWithBBox operation
+    Description: Testing the RandomCropWithBBox Operator in Exceptional Scenarios
+    Expectation: Throw an exception
+    """
+    # When parameter padding_mode is string, RandomCropWithBBox interface call fails
+    dataset2 = ds.VOCDataset(DATA_DIR_VOC, task="Detection", usage="train", decode=True, shuffle=False)
+    size = 3000
+    padding = (100, 100, 100, 100)
+    pad_if_needed = True
+    fill_value = (255, 255, 255)
+    padding_mode = ""
+    with pytest.raises(TypeError, match="Argument padding_mode with value .*, but got <class 'str'>."):
+        test_op = vision.RandomCropWithBBox(size=size, padding=padding, pad_if_needed=pad_if_needed,
+                                            fill_value=fill_value, padding_mode=padding_mode)
+        dataset2 = dataset2.map(input_columns=["image", "bbox"],
+                                output_columns=["image", "bbox"],
+                                operations=[test_op])
+        dataset2 = dataset2.project(columns=["image", "bbox"])
+        for _ in dataset2.create_dict_iterator(output_numpy=True):
+            pass
+
+    # When no parameters are set, RandomCropWithBBox interface call fails
+    dataset2 = ds.VOCDataset(DATA_DIR_VOC, task="Detection", usage="train", decode=True, shuffle=False)
+    with pytest.raises(TypeError, match="missing a required argument"):
+        test_op = vision.RandomCropWithBBox()
+        dataset2 = dataset2.map(input_columns=["image", "bbox"],
+                                output_columns=["image", "bbox"],
+                                operations=[test_op])
+        dataset2 = dataset2.project(columns=["image", "bbox"])
+        for _ in dataset2.create_dict_iterator(output_numpy=True):
+            pass
+
+    # When no size parameter is provided, RandomCropWithBBox interface call fails
+    dataset2 = ds.VOCDataset(DATA_DIR_VOC, task="Detection", usage="train", decode=True, shuffle=False)
+    padding = (100, 100, 100, 100)
+    pad_if_needed = True
+    fill_value = (255, 255, 255)
+    padding_mode = mode.Border.CONSTANT
+    with pytest.raises(TypeError, match="missing a required argument"):
+        test_op = vision.RandomCropWithBBox(padding=padding, pad_if_needed=pad_if_needed,
+                                            fill_value=fill_value, padding_mode=padding_mode)
+        dataset2 = dataset2.map(input_columns=["image", "bbox"],
+                                output_columns=["image", "bbox"],
+                                operations=[test_op])
+        dataset2 = dataset2.project(columns=["image", "bbox"])
+        for _ in dataset2.create_dict_iterator(output_numpy=True):
+            pass
+
+    # When setting extra parameters, RandomCropWithBBox interface call fails
+    dataset2 = ds.VOCDataset(DATA_DIR_VOC, task="Detection", usage="train", decode=True, shuffle=False)
+    more_para = None
+    size = 3000
+    padding = (100, 100, 100, 100)
+    pad_if_needed = True
+    fill_value = (255, 255, 255)
+    padding_mode = mode.Border.CONSTANT
+    with pytest.raises(TypeError, match="too many positional arguments"):
+        test_op = vision.RandomCropWithBBox(size, padding, pad_if_needed, fill_value, padding_mode, more_para)
+        dataset2 = dataset2.map(input_columns=["image", "bbox"],
+                                output_columns=["image", "bbox"],
+                                operations=[test_op])
+        dataset2 = dataset2.project(columns=["image", "bbox"])
+        for _ in dataset2.create_dict_iterator(output_numpy=True):
+            pass
+
+    # When parameter pad_if_needed is 1, RandomCropWithBBox interface call fails
+    dataset2 = ds.VOCDataset(DATA_DIR_VOC, task="Detection", usage="train", decode=True, shuffle=False)
+    size = 3000
+    padding = 100
+    pad_if_needed = 1
+    with pytest.raises(TypeError, match="Argument pad_if_needed with value 1 is not of type \\[<class 'bool'>\\],"
+                                        " but got <class 'int'>."):
+        test_op = vision.RandomCropWithBBox(size=size, padding=padding, pad_if_needed=pad_if_needed)
+        dataset2 = dataset2.map(input_columns=["image", "bbox"],
+                                output_columns=["image", "bbox"],
+                                operations=[test_op])
+        dataset2 = dataset2.project(columns=["image", "bbox"])
+        for _ in dataset2.create_dict_iterator(output_numpy=True):
+            pass
+
+
 if __name__ == "__main__":
     test_random_crop_with_bbox_op_c(plot_vis=True)
     test_random_crop_with_bbox_op_coco_c(plot_vis=True)
@@ -282,3 +757,9 @@ if __name__ == "__main__":
     test_random_crop_with_bbox_op_bad_c()
     test_random_crop_with_bbox_op_bad_padding()
     test_random_crop_with_bbox_padded_dataset()
+    test_random_crop_with_bbox_operation_01()
+    test_random_crop_with_bbox_operation_02()
+    test_random_crop_with_bbox_exception_01()
+    test_random_crop_with_bbox_exception_02()
+    test_random_crop_with_bbox_exception_03()
+    test_random_crop_with_bbox_exception_04()

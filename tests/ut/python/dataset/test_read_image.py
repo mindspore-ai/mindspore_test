@@ -1,4 +1,4 @@
-# Copyright 2022 Huawei Technologies Co., Ltd
+# Copyright 2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,10 +16,31 @@
 Testing read_image
 """
 import numpy
+import os
 import pytest
 
 from mindspore.dataset import vision
 from mindspore.dataset.vision import ImageReadMode
+
+TEST_DATA_DATASET_FUNC ="../data/dataset/"
+
+
+def dir_data():
+    """Obtain the dataset"""
+    data_list = []
+    data_dir1 = os.path.join(TEST_DATA_DATASET_FUNC, "testImageNetData", "train")
+    data_dir3 = os.path.join(TEST_DATA_DATASET_FUNC, "test_data", "test_cv_image", "jpg.jpg")
+    data_dir4 = os.path.join(TEST_DATA_DATASET_FUNC, "test_data", "test_cv_image", "bmp.bmp")
+    data_dir5 = os.path.join(TEST_DATA_DATASET_FUNC, "test_data", "test_cv_image", "png.PNG")
+    data_dir6 = os.path.join(TEST_DATA_DATASET_FUNC, "test_data", "test_cv_image", "gif.gif")
+    data_dir7 = os.path.join(TEST_DATA_DATASET_FUNC, "testFormats", "apple.tiff")
+    data_list.append(data_dir1)
+    data_list.append(data_dir3)
+    data_list.append(data_dir4)
+    data_list.append(data_dir5)
+    data_list.append(data_dir6)
+    data_list.append(data_dir7)
+    return data_list
 
 
 def test_read_image_jpeg():
@@ -160,9 +181,119 @@ def test_read_image_exception():
     test_invalid_param(filename, "0", TypeError, error_message)
 
 
+def test_read_image_operation_01():
+    """
+    Feature: read_image operation
+    Description: Testing the normal functionality of the read_image operator
+    Expectation: The Output is equal to the expected output
+    """
+    # use tiff file, set mode default
+    read_image_file = vision.read_image(dir_data()[5])
+    assert isinstance(read_image_file, numpy.ndarray)
+    assert read_image_file.dtype == 'uint8'
+    assert read_image_file.ndim == 3
+    assert read_image_file.shape == (226, 403, 3)
+
+    # use png file, set mode default
+    read_image_file = vision.read_image(dir_data()[3])
+    assert isinstance(read_image_file, numpy.ndarray)
+    assert read_image_file.dtype == 'uint8'
+    assert read_image_file.ndim == 3
+    assert read_image_file.shape == (484, 508, 3)
+
+    # use jpg file, set mode default
+    read_image_file = vision.read_image(dir_data()[1])
+    assert isinstance(read_image_file, numpy.ndarray)
+    assert read_image_file.dtype == 'uint8'
+    assert read_image_file.ndim == 3
+    assert read_image_file.shape == (432, 576, 3)
+
+    # use bmp file, set mode default
+    read_image_file = vision.read_image(dir_data()[2])
+    assert isinstance(read_image_file, numpy.ndarray)
+    assert read_image_file.dtype == 'uint8'
+    assert read_image_file.ndim == 3
+    assert read_image_file.shape == (96, 120, 3)
+
+    # use png file, set mode=ImageReadMode.GRAYSCALE
+    read_image_file = vision.read_image(dir_data()[3], ImageReadMode.GRAYSCALE)
+    assert isinstance(read_image_file, numpy.ndarray)
+    assert read_image_file.dtype == 'uint8'
+    assert read_image_file.ndim == 3
+    assert read_image_file.shape == (484, 508, 1)
+
+    # use jpg file, set mode=ImageReadMode.GRAYSCALE
+    read_image_file = vision.read_image(dir_data()[1], ImageReadMode.GRAYSCALE)
+    assert isinstance(read_image_file, numpy.ndarray)
+    assert read_image_file.dtype == 'uint8'
+    assert read_image_file.ndim == 3
+    assert read_image_file.shape == (432, 576, 1)
+
+    # use bmp file, set mode=ImageReadMode.GRAYSCALE
+    read_image_file = vision.read_image(dir_data()[2], ImageReadMode.GRAYSCALE)
+    assert isinstance(read_image_file, numpy.ndarray)
+    assert read_image_file.dtype == 'uint8'
+    assert read_image_file.ndim == 3
+    assert read_image_file.shape == (96, 120, 1)
+
+    # use png file, set mode=ImageReadMode.COLOR
+    read_image_file = vision.read_image(dir_data()[3], ImageReadMode.COLOR)
+    assert isinstance(read_image_file, numpy.ndarray)
+    assert read_image_file.dtype == 'uint8'
+    assert read_image_file.ndim == 3
+    assert read_image_file.shape == (484, 508, 3)
+
+    # use jpg file, set mode=ImageReadMode.COLOR
+    read_image_file = vision.read_image(dir_data()[1], ImageReadMode.COLOR)
+    assert isinstance(read_image_file, numpy.ndarray)
+    assert read_image_file.dtype == 'uint8'
+    assert read_image_file.ndim == 3
+    assert read_image_file.shape == (432, 576, 3)
+
+    # use bmp file, set mode=ImageReadMode.COLOR
+    read_image_file = vision.read_image(dir_data()[2], ImageReadMode.COLOR)
+    assert isinstance(read_image_file, numpy.ndarray)
+    assert read_image_file.dtype == 'uint8'
+    assert read_image_file.ndim == 3
+    assert read_image_file.shape == (96, 120, 3)
+
+
+def test_read_image_exception_01():
+    """
+    Feature: read_image operation
+    Description: Testing the read_image Operator in Exceptional Scenarios
+    Expectation: Throw an exception
+    """
+    # use gif file, set mode=ImageReadMode.COLOR
+    gif_file = dir_data()[4]
+    with pytest.raises(RuntimeError):
+        vision.read_image(gif_file, ImageReadMode.COLOR)
+
+    # set mode type error
+    with pytest.raises(TypeError, match="Input mode is not of type <enum 'ImageReadMode'>, but got: <class 'str'>."):
+        vision.read_image(dir_data()[1], '0')
+
+    # use not exit file
+    image = 12
+    with pytest.raises(TypeError, match="Input filename is not of type <class 'str'>, but got: <class 'int'>."):
+        vision.read_image(image, ImageReadMode.COLOR)
+
+    # Incorrect path
+    with pytest.raises(RuntimeError):
+        vision.read_image(dir_data()[0], ImageReadMode.COLOR)
+
+    # Missing parameters
+    try:
+        vision.read_image()
+    except TypeError as e:
+        assert "read_image() missing 1 required positional argument: 'filename'" in str(e)
+
+
 if __name__ == "__main__":
     test_read_image_jpeg()
     test_read_image_png()
     test_read_image_bmp()
     test_read_image_tiff()
     test_read_image_exception()
+    test_read_image_operation_01()
+    test_read_image_exception_01()

@@ -1,4 +1,4 @@
-# Copyright 2021-2022 Huawei Technologies Co., Ltd
+# Copyright 2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -19,18 +19,37 @@ import cv2
 import numpy as np
 from numpy.testing import assert_allclose
 from PIL import Image
+import os
 import pytest
 
 import mindspore.dataset as ds
 import mindspore.dataset.transforms
-import mindspore.dataset.vision as vision
+import mindspore.dataset.transforms.transforms as t_trans
+import mindspore.dataset.vision.transforms as vision
 from mindspore import log as logger
 
 DATA_DIR = "../data/dataset/testImageNetData/train/"
-MNIST_DATA_DIR = "../data/dataset/testMnistData"
 
 DATA_DIR_2 = ["../data/dataset/test_tf_file_3_images/train-0000-of-0001.data"]
 SCHEMA_DIR = "../data/dataset/test_tf_file_3_images/datasetSchema.json"
+
+TEST_DATA_DATASET_FUNC = "../data/dataset/"
+
+
+def dir_data():
+    """Obtain the dataset"""
+    data_list = []
+    data_dir1 = os.path.join(TEST_DATA_DATASET_FUNC, "test_data", "testImageNetData", "train")
+    data_dir2 = os.path.join(TEST_DATA_DATASET_FUNC, "test_data", "test_cv_image", "jpg.jpg")
+    data_dir3 = os.path.join(TEST_DATA_DATASET_FUNC, "test_data", "test_cv_image", "gif.gif")
+    data_dir4 = os.path.join(TEST_DATA_DATASET_FUNC, "test_data", "test_cv_image", "bmp.bmp")
+    data_dir5 = os.path.join(TEST_DATA_DATASET_FUNC, "test_data", "test_cv_image", "png.PNG")
+    data_list.append(data_dir1)
+    data_list.append(data_dir2)
+    data_list.append(data_dir3)
+    data_list.append(data_dir4)
+    data_list.append(data_dir5)
+    return data_list
 
 
 def generate_numpy_random_rgb(shape):
@@ -424,6 +443,184 @@ def test_adjust_gamma_eager_invalid_image_types2():
     test_config((1.0, 2.0), "Input should be NumPy or PIL image, got <class 'tuple'>")
 
 
+def test_adjust_gamma_operation_01():
+    """
+    Feature: AdjustGamma operation
+    Description: Testing the normal functionality of the AdjustGamma operator
+    Expectation: The Output is equal to the expected output
+    """
+    # AdjustGamma Operator: Test Pipeline Mode
+    dataset1 = ds.ImageFolderDataset(dir_data()[0], shuffle=False, decode=True)
+    dataset2 = ds.ImageFolderDataset(dir_data()[0], shuffle=False)
+    adjust_gamma_op = [vision.Decode(to_pil=False), vision.AdjustGamma(gamma=1)]
+    dataset2 = dataset2.map(input_columns=["image"], operations=adjust_gamma_op)
+    for _ in zip(dataset1.create_dict_iterator(output_numpy=True), dataset2.create_dict_iterator(output_numpy=True)):
+        pass
+
+    # AdjustGamma Operator: Input data is in JPG format
+    with Image.open(dir_data()[1]) as image:
+        adjust_gamma_op = vision.AdjustGamma(gamma=0, gain=0)
+        _ = adjust_gamma_op(image)
+
+    # AdjustGamma Operator: Input data is in GIF format
+    with Image.open(dir_data()[2]) as image:
+        adjust_gamma_op = vision.AdjustGamma(gamma=30, gain=-125)
+        _ = adjust_gamma_op(image)
+
+    # AdjustGamma Operator: Input data is 2D numpy-type data.
+    image = np.random.randint(0, 255, (30, 30)).astype(np.uint8)
+    adjust_gamma_op = vision.AdjustGamma(gamma=16777216, gain=16777216)
+    _ = adjust_gamma_op(image)
+
+    # AdjustGamma Operator: Input data is 3D numpy-type data.
+    image = np.random.randn(30, 30, 3)
+    adjust_gamma_op = vision.AdjustGamma(gamma=20.0, gain=-16777216)
+    _ = adjust_gamma_op(image)
+
+    # AdjustGamma Operator: Input data is 4D numpy-type data.
+    image = np.random.randn(20, 10, 15, 1)
+    adjust_gamma_op = vision.AdjustGamma(gamma=2.68, gain=0.25)
+    _ = adjust_gamma_op(image)
+
+    # AdjustGamma Operator: Input data is 5D numpy-type data.
+    image = np.random.randn(8, 12, 10, 5, 3)
+    adjust_gamma_op = vision.AdjustGamma(gamma=0.5, gain=-3.6)
+    _ = adjust_gamma_op(image)
+
+    # AdjustGamma Operator: gamma parameter set to 1
+    ds1 = ds.ImageFolderDataset(dir_data()[0], 1)
+    transforms = [vision.Decode(to_pil=True), vision.ToTensor()]
+    transform = t_trans.Compose(transforms)
+    ds1 = ds1.map(input_columns=["image"], operations=transform)
+    ds2 = ds.ImageFolderDataset(dir_data()[0], 1)
+    transforms1 = [vision.Decode(to_pil=True), vision.AdjustGamma(gamma=1), vision.ToTensor()]
+    transform1 = t_trans.Compose(transforms1)
+    ds2 = ds2.map(input_columns=["image"], operations=transform1)
+    for _ in zip(ds1.create_dict_iterator(output_numpy=True), ds2.create_dict_iterator(output_numpy=True)):
+        pass
+
+    # The AdjustGamma operator: gamma parameter set to 1, gain parameter set to 1677.
+    image = np.random.randint(0, 255, (30, 30, 3)).astype(np.uint8)
+    to_pil_op = vision.ToPIL()
+    image = to_pil_op(image)
+    adjust_gamma_op = vision.AdjustGamma(gamma=1677, gain=1677)
+    _ = adjust_gamma_op(image)
+
+    # The AdjustGamma operator: gamma parameter set to 20, gain parameter set to 16777216.
+    with Image.open(dir_data()[4]) as image:
+        adjust_gamma_op = vision.AdjustGamma(gamma=20.0, gain=-16777216)
+        _ = adjust_gamma_op(image)
+
+    # The AdjustGamma operator: gamma parameter set to 2.68, gain parameter set to 0.25.
+    image = np.random.randint(0, 255, (30, 30, 3)).astype(np.uint8)
+    to_pil_op = vision.ToPIL()
+    image = to_pil_op(image)
+    adjust_gamma_op = vision.AdjustGamma(gamma=2.68, gain=0.25)
+    _ = adjust_gamma_op(image)
+
+    # AdjustGamma Operator: Input data is in BMP format
+    with   Image.open(dir_data()[3]) as image:
+        adjust_gamma_op = vision.AdjustGamma(gamma=0.5, gain=-3.6)
+        _ = adjust_gamma_op(image)
+
+
+def test_adjust_gamma_exception_01():
+    """
+    Feature: AdjustGamma operation
+    Description: Testing the AdjustGamma Operator in Exceptional Scenarios
+    Expectation: Throw an exception
+    """
+    # AdjustGamma Operator: Test input data is 1D numpy data
+    image = np.random.randint(0, 255, (30,)).astype(np.uint8)
+    adjust_gamma_op = vision.AdjustGamma(gamma=1.2, gain=1.0)
+    with pytest.raises(RuntimeError, match="AdjustGamma: input tensor is not in shape of <...,H,W,C> or <H,W>."):
+        adjust_gamma_op(image)
+
+    # AdjustGamma Operator: Test input data is a 4-channel numpy array.
+    image = np.random.randint(0, 255, (10, 10, 4)).astype(np.uint8)
+    adjust_gamma_op = vision.AdjustGamma(gamma=1.2, gain=1.0)
+    with pytest.raises(RuntimeError, match="AdjustGamma: channel of input image should be 1 or 3."):
+        adjust_gamma_op(image)
+
+    # AdjustGamma Operator: Test input data is a 5-channel numpy array.
+    image = np.random.randint(0, 255, (10, 3, 30, 5)).astype(np.uint8)
+    adjust_gamma_op = vision.AdjustGamma(gamma=1.2, gain=1.0)
+    with pytest.raises(RuntimeError, match="AdjustGamma: channel of input image should be 1 or 3."):
+        adjust_gamma_op(image)
+
+    # AdjustGamma Operator: Test input data is of type list
+    image = list(np.random.randint(0, 255, (30, 30, 3)).astype(np.uint8))
+    adjust_gamma_op = vision.AdjustGamma(gamma=1.2, gain=1.0)
+    with pytest.raises(TypeError, match=r"Input should be NumPy or PIL image, got <class 'list'>."):
+        adjust_gamma_op(image)
+
+    # AdjustGamma Operator: Test input data is of type float
+    image = 1.0
+    adjust_gamma_op = vision.AdjustGamma(gamma=1.2, gain=1.0)
+    with pytest.raises(TypeError, match=r"Input should be NumPy or PIL image, got <class 'float'>."):
+        adjust_gamma_op(image)
+
+    # AdjustGamma Operator: Test input data is 1D numpy data
+    image = np.array(2.0)
+    adjust_gamma_op = vision.AdjustGamma(gamma=1.2, gain=1.0)
+    with pytest.raises(RuntimeError, match="AdjustGamma: input tensor is not in shape of <...,H,W,C> or <H,W>."):
+        adjust_gamma_op(image)
+
+    # AdjustGamma operator: No parameters passed
+    with pytest.raises(TypeError, match="missing a required argument: 'gamma'"):
+        vision.AdjustGamma()
+
+    # AdjustGamma Operator: Passing Multiple Parameters
+    with pytest.raises(TypeError, match="too many positional arguments"):
+        vision.AdjustGamma(1.0, 1.0, 1.0)
+
+    # # AdjustGamma operator: gamma parameter set to -0.05
+    with pytest.raises(ValueError, match="Input is not within the required interval of \\[0, 16777216\\]."):
+        vision.AdjustGamma(gamma=-0.05)
+
+    # AdjustGamma operator: gamma parameter set to 16777216.1
+    with pytest.raises(ValueError, match="Input is not within the required interval of \\[0, 16777216\\]."):
+        vision.AdjustGamma(gamma=16777216.1)
+
+    # AdjustGamma operator: gamma parameter set to True
+    with pytest.raises(TypeError, match="Argument gamma with value True is not of type \\(<class"
+                                        " 'float'>, <class 'int'>\\), but got <class 'bool'>."):
+        vision.AdjustGamma(gamma=True)
+
+    # AdjustGamma operator: gamma parameter set to [1]
+    with pytest.raises(TypeError, match="Argument gamma with value \\[1\\] is not of type \\[<class "
+                                        "'float'>, <class 'int'>\\], but got <class 'list'>."):
+        vision.AdjustGamma(gamma=[1])
+
+    # AdjustGamma operator: gamma parameter set to "1.0"
+    with pytest.raises(TypeError, match="Argument gamma with value 1.0 is not of type \\[<class "
+                                        "'float'>, <class 'int'>\\], but got <class 'str'>."):
+        vision.AdjustGamma(gamma="1.0")
+
+    # AdjustGamma operator: gain parameter set to 16777216.1
+    with pytest.raises(ValueError, match="Input is not within the required interval of \\[-16777216, 16777216\\]."):
+        vision.AdjustGamma(gamma=1.2, gain=16777216.1)
+
+    # AdjustGamma operator: gain parameter set to -16777216.1
+    with pytest.raises(ValueError, match="Input is not within the required interval of \\[-16777216, 16777216\\]."):
+        vision.AdjustGamma(gamma=1.2, gain=-16777216.1)
+
+    # AdjustGamma operator: gain parameter set to str
+    with pytest.raises(TypeError, match="Argument gain with value 0.2 is not of type \\[<class"
+                                        " 'float'>, <class 'int'>\\], but got <class 'str'>."):
+        vision.AdjustGamma(gamma=1.2, gain="0.2")
+
+    # AdjustGamma operator: gain parameter set to True
+    with pytest.raises(TypeError, match="Argument gain with value True is not of type \\(<class"
+                                        " 'float'>, <class 'int'>\\), but got <class 'bool'>."):
+        vision.AdjustGamma(gamma=1.2, gain=True)
+
+    # AdjustGamma operator: gain parameter set to tuple
+    with pytest.raises(TypeError, match="Argument gain with value \\(0.5,\\) is not of type \\[<class"
+                                        " 'float'>, <class 'int'>\\], but got <class 'tuple'>."):
+        vision.AdjustGamma(gamma=1.2, gain=(0.5,))
+
+
 if __name__ == "__main__":
     test_adjust_gamma_c_eager()
     test_adjust_gamma_py_eager()
@@ -439,3 +636,5 @@ if __name__ == "__main__":
     test_adjust_gamma_eager_image_type()
     test_adjust_gamma_eager_invalid_image_types1()
     test_adjust_gamma_eager_invalid_image_types2()
+    test_adjust_gamma_operation_01()
+    test_adjust_gamma_exception_01()

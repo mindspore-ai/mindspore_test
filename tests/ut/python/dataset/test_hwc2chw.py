@@ -1,4 +1,4 @@
-# Copyright 2020-2022 Huawei Technologies Co., Ltd
+# Copyright 2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,18 +16,22 @@
 Testing HWC2CHW op in DE
 """
 import numpy as np
+import os
 import pytest
+from PIL import Image
 
 import mindspore.dataset as ds
-import mindspore.dataset.transforms as data_trans
-import mindspore.dataset.vision as vision
+import mindspore.dataset.transforms.transforms as data_trans
+import mindspore.dataset.vision.transforms as vision
 from mindspore import log as logger
+from mindspore.common.tensor import Tensor
 from util import diff_mse, visualize_list, save_and_check_md5
 
 GENERATE_GOLDEN = False
 
 DATA_DIR = ["../data/dataset/test_tf_file_3_images/train-0000-of-0001.data"]
 SCHEMA_DIR = "../data/dataset/test_tf_file_3_images/datasetSchema.json"
+TEST_DATA_DATASET_FUNC ="../data/dataset/"
 
 
 def test_hwc2chw_callable():
@@ -297,6 +301,130 @@ def test_hwc2chw_mix_compose(plot=False):
         visualize_list(image, image_transposed)
 
 
+def test_hwc2chw_operation_01():
+    """
+    Feature: HWC2CHW operation
+    Description: Testing the normal functionality of the HWC2CHW operator
+    Expectation: The Output is equal to the expected output
+    """
+    # HWC2CHW operator: Normal testing, HWC2CHW算子异构与非异构结果一致
+    data_dir = os.path.join(TEST_DATA_DATASET_FUNC, "test_data", "testImageNetData", "train")
+    dataset1 = ds.ImageFolderDataset(data_dir, 1, shuffle=False, decode=True)
+    dataset2 = ds.ImageFolderDataset(data_dir, 1, shuffle=False, decode=True)
+    hwc2chw_op = vision.HWC2CHW()
+    dataset1 = dataset1.map(input_columns=["image"], operations=hwc2chw_op, offload=True)
+    dataset2 = dataset2.map(input_columns=["image"], operations=hwc2chw_op, offload=False)
+    dataset1 = dataset1.batch(1)
+    dataset2 = dataset2.batch(1)
+    for data1, data2 in zip(dataset1.create_dict_iterator(output_numpy=True),
+                            dataset2.create_dict_iterator(output_numpy=True)):
+        image = data1["image"]
+        image_shape = np.array(image).shape
+        image_aug = data2["image"]
+        aug_shape = np.array(image_aug).shape
+        assert aug_shape == image_shape
+        assert (image == image_aug).all()
+
+    # HWC2CHW operator: Normal testing, eager mode, input of numpy float32 type
+    image = np.random.randn(1024, 128, 3).astype(np.float32)
+    hwc2chw_op = vision.HWC2CHW()
+    out = hwc2chw_op(image)
+    out2 = np.transpose(image, (2, 0, 1))
+    assert (out == out2).all()
+
+    # HWC2CHW operator: Normal testing, eager mode, input of numpy int32 type
+    image = np.random.randn(64, 256, 1).astype(np.int32)
+    hwc2chw_op = vision.HWC2CHW()
+    out = hwc2chw_op(image)
+    out2 = np.transpose(image, (2, 0, 1))
+    assert (out == out2).all()
+
+    # HWC2CHW operator: Normal testing, eager mode, PIL input
+    image_file = os.path.join(TEST_DATA_DATASET_FUNC, "test_data", "testImageNetData", "train", "class1", "1_2.jpg")
+    with Image.open(image_file) as image:
+        hwc2chw_op = vision.HWC2CHW()
+        out = hwc2chw_op(image)
+        out1 = np.array(out)
+        out2 = np.transpose(np.array(image), (2, 0, 1))
+        assert (out1 == out2).all()
+
+    # HWC2CHW operator: Normal testing, eager模式，input data is <H,W> numpy data
+    image = np.random.randn(64, 64)
+    hwc2chw_op = vision.HWC2CHW()
+    out = hwc2chw_op(image)
+    assert (out == image).all()
+
+    # HWC2CHW operator: Normal testing, pipeline mode
+    data_dir2 = os.path.join(TEST_DATA_DATASET_FUNC, "testImageNetData2", "train")
+    dataset1 = ds.ImageFolderDataset(data_dir2, 1, shuffle=False, decode=True)
+    dataset2 = ds.ImageFolderDataset(data_dir2, 1, shuffle=False, decode=False)
+    hwc2chw_op = [vision.Decode(to_pil=True), vision.HWC2CHW()]
+    dataset2 = dataset2.map(input_columns=["image"], operations=hwc2chw_op)
+    for data1, data2 in zip(dataset1.create_dict_iterator(output_numpy=True),
+                            dataset2.create_dict_iterator(output_numpy=True)):
+        image = data1["image"]
+        image_shape = np.array(image).shape
+        image_aug = data2["image"]
+        aug_shape = np.array(image_aug).shape
+        assert aug_shape[0] == image_shape[2]
+        assert aug_shape[1] == image_shape[0]
+        assert aug_shape[2] == image_shape[1]
+
+    # HWC2CHW operator: Normal testing, compared with np.transpose
+    image = np.random.randn(3, 3, 3).astype(np.int32)
+    hwc2chw_op = vision.HWC2CHW()
+    out1 = hwc2chw_op(image)
+    out2 = np.transpose(image, (2, 0, 1))
+    assert (out1 == out2).all()
+    out3 = hwc2chw_op(out1)
+    assert (out3 == np.transpose(out1, (2, 0, 1))).all()
+
+
+def test_hwc2chw_exception_01():
+    """
+    Feature: HWC2CHW operation
+    Description: Testing the HWC2CHW Operator in Exceptional Scenarios
+    Expectation: Throw an exception
+    """
+    # HWC2CHW Operator: Exception Testing, eager Mode, One-Dimensional Data
+    image = np.random.randn(3)
+    hwc2chw_op = vision.HWC2CHW()
+    with pytest.raises(RuntimeError, match="HWC2CHW: image shape should be <H,W> "
+                                           "or <H,W,C>, but got rank: 1"):
+        hwc2chw_op(image)
+
+    # HWC2CHW Operator: Exception Testing, eager Mode, Four-Dimensional Data
+    image = np.random.randn(32, 32, 3, 3)
+    hwc2chw_op = vision.HWC2CHW()
+    with pytest.raises(RuntimeError, match="HWC2CHW: image shape should be <H,W> "
+                                           "or <H,W,C>, but got rank: 4"):
+        hwc2chw_op(image)
+
+    # HWC2CHW Operator: Exception Testing, eager Mode, input data is list
+    image = np.random.randn(64, 64, 3).astype(np.int32).tolist()
+    hwc2chw_op = vision.HWC2CHW()
+    with pytest.raises(TypeError, match="Input should be NumPy or PIL image, got <class 'list'>."):
+        hwc2chw_op(image)
+
+    # HWC2CHW Operator: Exception Testing, eager Mode, input data is int
+    image = 10
+    hwc2chw_op = vision.HWC2CHW()
+    with pytest.raises(TypeError, match="Input should be NumPy or PIL image, got <class 'int'>."):
+        hwc2chw_op(image)
+
+    # HWC2CHW Operator: Exception Testing, eager Mode, input data is ms.Tensor
+    image = Tensor(np.random.randn(10, 10, 3))
+    hwc2chw_op = vision.HWC2CHW()
+    with pytest.raises(TypeError, match="Input should be NumPy or PIL image, got "
+                                        "<class 'mindspore.common.tensor.Tensor'>."):
+        hwc2chw_op(image)
+
+    # HWC2CHW Operator: Exception Testing, eager Mode, No Input Data Passed
+    hwc2chw_op = vision.HWC2CHW()
+    with pytest.raises(RuntimeError, match="Input Tensor is not valid."):
+        hwc2chw_op()
+
+
 if __name__ == '__main__':
     test_hwc2chw_callable()
     test_hwc2chw_multi_channels()
@@ -306,3 +434,5 @@ if __name__ == '__main__':
     test_hwc2chw_comparison2(True)
     test_hwc2chw_mix(True)
     test_hwc2chw_mix_compose(True)
+    test_hwc2chw_operation_01()
+    test_hwc2chw_exception_01()

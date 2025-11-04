@@ -1,4 +1,4 @@
-# Copyright 2021-2022 Huawei Technologies Co., Ltd
+# Copyright 2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,17 +17,20 @@
 Testing RandomLighting op in DE
 """
 import numpy as np
+import os
 import pytest
+from PIL import Image
 
 import mindspore.dataset as ds
 import mindspore.dataset.transforms
-import mindspore.dataset.vision as vision
+import mindspore.dataset.vision.transforms as vision
 from mindspore import log as logger
 from util import visualize_list, diff_mse, save_and_check_md5_pil, \
     config_get_set_seed, config_get_set_num_parallel_workers
 
 DATA_DIR = "../data/dataset/testImageNetData/train/"
 MNIST_DATA_DIR = "../data/dataset/testMnistData"
+TEST_DATA_DATASET_FUNC ="../data/dataset/"
 
 GENERATE_GOLDEN = False
 
@@ -261,9 +264,144 @@ def test_random_lighting_invalid_params():
     assert err_msg in str(error_info.value)
 
 
+def test_random_lighting_operation_01():
+    """
+    Feature: RandomLighting operation
+    Description: Testing the normal functionality of the RandomLighting operator
+    Expectation: The Output is equal to the expected output
+    """
+    # Test RandomLighting pipeline func,input Numpy data
+    data_dir = os.path.join(TEST_DATA_DATASET_FUNC, "testImageNetData", "train")
+    dataset2 = ds.ImageFolderDataset(data_dir, shuffle=False, decode=True)
+    random_lighting_op = vision.RandomLighting(10)
+    dataset2 = dataset2.map(input_columns=["image"], operations=random_lighting_op)
+    for _ in dataset2.create_dict_iterator(output_numpy=False):
+        pass
+
+    # Test RandomLighting pipeline func,input PIL data
+    data_dir = os.path.join(TEST_DATA_DATASET_FUNC, "testImageNetData", "train")
+    dataset2 = ds.ImageFolderDataset(data_dir, shuffle=False, decode=False)
+    op = [
+        vision.Decode(to_pil=True),
+        vision.RandomLighting(10)
+    ]
+    dataset2 = dataset2.map(input_columns=["image"], operations=op)
+
+    for _ in dataset2.create_dict_iterator(output_numpy=False):
+        pass
+
+    # Test RandomLighting eager func,input Numpy data
+    image_jpg = os.path.join(TEST_DATA_DATASET_FUNC, "test_data", "test_cv_image", "jpg.jpg")
+    image = np.fromfile(image_jpg, dtype=np.float32)
+    random_lighting_op = vision.RandomLighting(1)
+    image = vision.Decode()(image)
+    out = random_lighting_op(image)
+    assert (out == 255 - image).all
+
+    # Test RandomLighting func,input PIL data
+    image_jpg = os.path.join(TEST_DATA_DATASET_FUNC, "test_data", "test_cv_image", "jpg.jpg")
+    with Image.open(image_jpg) as image:
+        random_lighting_op = vision.RandomLighting(0.01)
+        _ = random_lighting_op(image)
+
+    # Test RandomLighting func, input .bmp img data
+    image_bmp = os.path.join(TEST_DATA_DATASET_FUNC, "test_data", "test_cv_image", "bmp.bmp")
+    with Image.open(image_bmp) as image:
+        random_lighting_op = vision.RandomLighting(0.68)
+        _ = random_lighting_op(image)
+
+    # Test RandomLighting func, input three channel img
+    image = np.random.randint(0, 255, (20, 48, 3)).astype(np.uint8)
+    random_lighting_op = vision.RandomLighting()
+    _ = random_lighting_op(image)
+
+
+def test_random_lighting_exception_01():
+    """
+    Feature: RandomLighting operation
+    Description: Testing the RandomLighting Operator in Exceptional Scenarios
+    Expectation: Throw an exception
+    """
+    # Test RandomLighting func input list data（tolist）
+    image = np.random.randint(0, 255, (10, 10, 3)).astype(np.uint8).tolist()
+    random_lighting_op = vision.RandomLighting(1)
+    with pytest.raises(TypeError, match="Input should be NumPy or PIL image, got <class 'list'>."):
+        random_lighting_op(image)
+
+    # Test RandomLighting func input shape 0 data
+    image = np.array(0).astype(np.uint8)
+    random_lighting_op = vision.RandomLighting(1)
+    with pytest.raises(RuntimeError, match="the shape of input tensor does not match the requirement of operator. "
+                                           "Expecting tensor in shape of <height, width, ...>. "
+                                           "But got tensor with dimension 0."):
+        random_lighting_op(image)
+
+    # Test RandomLighting func,input four channel img
+    image = np.random.randint(0, 255, (10, 10, 4)).astype(np.uint8)
+    random_lighting_op = vision.RandomLighting(1)
+    with pytest.raises(RuntimeError, match="RandomLighting: input tensor is not in shape of "
+                                           "\\<H,W,C\\> or channel is not 3, got rank: 3, and shape: <10,10,4>"):
+        random_lighting_op(image)
+
+    # Test RandomLighting func input 2-D data
+    image = np.random.randint(0, 255, (20, 48)).astype(np.uint8)
+    random_lighting_op = vision.RandomLighting(1)
+    with pytest.raises(RuntimeError, match="RandomLighting: input tensor is not in shape of <H,W,C> "
+                                           "or channel is not 3, got rank: 2"):
+        random_lighting_op(image)
+
+    # Test RandomLighting func input 4-D data
+    image = np.random.randint(0, 255, (10, 10, 3, 3)).astype(np.uint8)
+    random_lighting_op = vision.RandomLighting(1)
+    with pytest.raises(RuntimeError, match="RandomLighting: input tensor is not in shape of "
+                                           "<H,W,C> or channel is not 3, got rank: 4, and shape: <10,10,3,3>"):
+        random_lighting_op(image)
+
+    # Test RandomLighting array type is str
+    image = np.array([[["a", "b", "c"], ["a", "b", "c"]]])
+    random_lighting_op = vision.RandomLighting(1)
+    with pytest.raises(RuntimeError, match="RandomLighting: the data type of input tensor does not match "
+                                           "the requirement of operator. Expecting tensor in type of "
+                                           "\\[int, float, double\\]. But got type string."):
+        random_lighting_op(image)
+
+    # Test RandomLighting array type is int64
+    image = np.random.randint(0, 255, (10, 10, 3)).astype(np.int64)
+    random_lighting_op = vision.RandomLighting(1)
+    with pytest.raises(RuntimeError, match="RandomLighting: Cannot convert from OpenCV type, unknown "
+                                           "CV type. Currently supported data type: \\[int8, uint8, int16, uint16, "
+                                           "int32, float16, float32, float64\\]."):
+        random_lighting_op(image)
+
+    # Test RandomLighting func alpha is list
+    with pytest.raises(TypeError, match="Argument alpha with value \\[1\\] is not of type \\[<class 'float'>, "
+                                        "<class 'int'>\\], but got <class 'list'>."):
+        vision.RandomLighting([1])
+
+    # Test RandomLighting func alpha is -0.5
+    with pytest.raises(ValueError, match="Input alpha is not within the required interval of \\[0, 16777216\\]"):
+        vision.RandomLighting(-0.5)
+
+    # Test RandomLighting func alpha is bool
+    with pytest.raises(TypeError, match="Argument alpha with value True is not of type \\(<class 'float'>, "
+                                        "<class 'int'>\\), but got <class 'bool'>."):
+        vision.RandomLighting(True)
+
+    # Test RandomLighting func alpha is str
+    with pytest.raises(TypeError, match="Argument alpha with value 1 is not of type \\[<class 'float'>, "
+                                        "<class 'int'>\\], but got <class 'str'>."):
+        vision.RandomLighting("1")
+
+    # Test RandomLighting func input two arguments
+    with pytest.raises(TypeError, match="too many positional arguments"):
+        vision.RandomLighting(1, 2)
+
+
 if __name__ == "__main__":
     test_random_lighting_py()
     test_random_lighting_py_md5()
     test_random_lighting_c()
     test_random_lighting_c_py()
     test_random_lighting_invalid_params()
+    test_random_lighting_operation_01()
+    test_random_lighting_exception_01()

@@ -1,4 +1,4 @@
-# Copyright 2020-2022 Huawei Technologies Co., Ltd
+# Copyright 2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,19 +15,22 @@
 """
 Testing Resize op in DE
 """
-import time
 import cv2
 import numpy as np
-from PIL import Image
+import os
+import time
 import pytest
+from PIL import Image
 
 import mindspore.dataset as ds
-import mindspore.dataset.vision as vision
+import mindspore.dataset.vision.transforms as vision
+from mindspore.common.tensor import Tensor
 from mindspore.dataset.vision.utils import Inter
 from mindspore import log as logger
 from util import visualize_list, save_and_check_md5, save_and_check_md5_pil, \
     config_get_set_seed, config_get_set_num_parallel_workers, diff_mse
 
+TEST_DATA_DATASET_FUNC ="../data/dataset/"
 DATA_DIR = ["../data/dataset/test_tf_file_3_images/train-0000-of-0001.data"]
 SCHEMA_DIR = "../data/dataset/test_tf_file_3_images/datasetSchema.json"
 DATA_HIGH = [[[[[1, 2, 3], [4, 5, 6]], [[7, 8, 9], [10, 11, 12]]]]]
@@ -311,6 +314,589 @@ def test_resize_performance():
     assert (time.time() - s) < 2.5  # Probably around 1.9 seconds
 
 
+def test_resize_operation_01():
+    """
+    Feature: Resize operation
+    Description: Testing the normal functionality of the Resize operator
+    Expectation: The Output is equal to the expected output
+    """
+    # Resize operator:Test size is 1
+    data_dir = os.path.join(TEST_DATA_DATASET_FUNC, "testImageNetData", "train")
+    dataset = ds.ImageFolderDataset(data_dir, shuffle=False, decode=True)
+    size = 1
+    resize_op = vision.Resize(size=size)
+    dataset = dataset.map(input_columns=["image"], operations=resize_op)
+    for _ in dataset.create_dict_iterator(output_numpy=True):
+        pass
+
+    # Resize operator:Test size is a list sequence of length 2
+    data_dir = os.path.join(TEST_DATA_DATASET_FUNC, "testImageNetData", "train")
+    dataset = ds.ImageFolderDataset(data_dir, shuffle=False, decode=True)
+    size = [500, 520]
+    resize_op = vision.Resize(size=size)
+    dataset = dataset.map(input_columns=["image"], operations=resize_op)
+    for _ in dataset.create_dict_iterator(output_numpy=True):
+        pass
+
+    # Resize operator:Test size is a tuple sequence of length 2
+    data_dir = os.path.join(TEST_DATA_DATASET_FUNC, "testImageNetData", "train")
+    dataset = ds.ImageFolderDataset(data_dir, shuffle=False, decode=True)
+    size = (500, 520)
+    resize_op = vision.Resize(size=size)
+    dataset = dataset.map(input_columns=["image"], operations=resize_op)
+    for _ in dataset.create_dict_iterator(output_numpy=True):
+        pass
+
+    # Resize operator:Test interpolation is Inter.LINEAR and input is numpy data
+    data_dir = os.path.join(TEST_DATA_DATASET_FUNC, "testImageNetData", "train")
+    dataset = ds.ImageFolderDataset(data_dir, shuffle=False, decode=False)
+    size = (500, 520)
+    interpolation = Inter.LINEAR
+    decode = vision.Decode()
+    resize_op = vision.Resize(size=size, interpolation=interpolation)
+    dataset = dataset.map(input_columns=["image"], operations=[decode, resize_op])
+    for _ in dataset.create_dict_iterator(output_numpy=True):
+        pass
+
+    # Resize operator:Test interpolation is Inter.LINEAR and input is PIL data
+    data_dir = os.path.join(TEST_DATA_DATASET_FUNC, "testImageNetData", "train")
+    dataset = ds.ImageFolderDataset(data_dir, shuffle=False, decode=False)
+    size = (500, 520)
+    interpolation = Inter.LINEAR
+    decode = vision.Decode(to_pil=True)
+    resize_op = vision.Resize(size=size, interpolation=interpolation)
+    dataset = dataset.map(input_columns=["image"], operations=[decode, resize_op])
+    for _ in dataset.create_dict_iterator(output_numpy=True):
+        pass
+
+    # Resize operator:Test interpolation is Inter.NEAREST and input is numpy data
+    data_dir = os.path.join(TEST_DATA_DATASET_FUNC, "testImageNetData", "train")
+    dataset = ds.ImageFolderDataset(data_dir, shuffle=False, decode=False)
+    size = (500, 520)
+    interpolation = Inter.NEAREST
+    decode = vision.Decode()
+    resize_op = vision.Resize(size=size, interpolation=interpolation)
+    dataset = dataset.map(input_columns=["image"], operations=[decode, resize_op])
+    for _ in dataset.create_dict_iterator(output_numpy=True):
+        pass
+
+    # Resize operator:Test interpolation is Inter.NEAREST and input is PIL data
+    data_dir = os.path.join(TEST_DATA_DATASET_FUNC, "testImageNetData", "train")
+    dataset = ds.ImageFolderDataset(data_dir, shuffle=False, decode=False)
+    size = (500, 520)
+    interpolation = Inter.NEAREST
+    decode = vision.Decode(to_pil=True)
+    resize_op = vision.Resize(size=size, interpolation=interpolation)
+    dataset = dataset.map(input_columns=["image"], operations=[decode, resize_op])
+    for _ in dataset.create_dict_iterator(output_numpy=True):
+        pass
+
+    # Resize operator:Test interpolation is Inter.BICUBIC and input is numpy data
+    data_dir = os.path.join(TEST_DATA_DATASET_FUNC, "testImageNetData", "train")
+    dataset = ds.ImageFolderDataset(data_dir, shuffle=False, decode=False)
+    size = (500, 520)
+    interpolation = Inter.BICUBIC
+    decode = vision.Decode()
+    resize_op = vision.Resize(size=size, interpolation=interpolation)
+    dataset = dataset.map(input_columns=["image"], operations=[decode, resize_op])
+    for _ in dataset.create_dict_iterator(output_numpy=True):
+        pass
+
+
+def test_resize_operation_02():
+    """
+    Feature: Resize operation
+    Description: Testing the normal functionality of the Resize operator
+    Expectation: The Output is equal to the expected output
+    """
+    # Resize operator:Test interpolation is Inter.BICUBIC and input is PIL data
+    data_dir = os.path.join(TEST_DATA_DATASET_FUNC, "testImageNetData", "train")
+    dataset = ds.ImageFolderDataset(data_dir, shuffle=False, decode=False)
+    size = (500, 520)
+    interpolation = Inter.BICUBIC
+    decode = vision.Decode(to_pil=True)
+    resize_op = vision.Resize(size=size, interpolation=interpolation)
+    dataset = dataset.map(input_columns=["image"], operations=[decode, resize_op])
+    for _ in dataset.create_dict_iterator(output_numpy=True):
+        pass
+
+    # Resize operator:Test interpolation is Inter.PILCUBIC and input is numpy data
+    data_dir = os.path.join(TEST_DATA_DATASET_FUNC, "testImageNetData", "train")
+    dataset = ds.ImageFolderDataset(data_dir, shuffle=False, decode=False)
+    size = (500, 520)
+    interpolation = Inter.PILCUBIC
+    decode = vision.Decode()
+    resize_op = vision.Resize(size=size, interpolation=interpolation)
+    dataset = dataset.map(input_columns=["image"], operations=[decode, resize_op])
+    for _ in dataset.create_dict_iterator(output_numpy=True):
+        pass
+
+    # Resize operator:Test interpolation is Inter.CUBIC and input is numpy data
+    data_dir = os.path.join(TEST_DATA_DATASET_FUNC, "testImageNetData", "train")
+    dataset = ds.ImageFolderDataset(data_dir, shuffle=False, decode=False)
+    size = (500, 520)
+    interpolation = Inter.CUBIC
+    decode = vision.Decode()
+    resize_op = vision.Resize(size=size, interpolation=interpolation)
+    dataset = dataset.map(input_columns=["image"], operations=[decode, resize_op])
+    for _ in dataset.create_dict_iterator(output_numpy=True):
+        pass
+
+    # Resize operator:Test interpolation is Inter.CUBIC and input is PIL data
+    data_dir = os.path.join(TEST_DATA_DATASET_FUNC, "testImageNetData", "train")
+    dataset = ds.ImageFolderDataset(data_dir, shuffle=False, decode=False)
+    size = (500, 520)
+    interpolation = Inter.CUBIC
+    decode = vision.Decode(to_pil=True)
+    resize_op = vision.Resize(size=size, interpolation=interpolation)
+    dataset = dataset.map(input_columns=["image"], operations=[decode, resize_op])
+    for _ in dataset.create_dict_iterator(output_numpy=True):
+        pass
+
+    # Resize operator:Test interpolation is Inter.AREA and input is numpy data
+    data_dir = os.path.join(TEST_DATA_DATASET_FUNC, "testImageNetData", "train")
+    dataset = ds.ImageFolderDataset(data_dir, shuffle=False, decode=False)
+    size = (500, 520)
+    interpolation = Inter.AREA
+    decode = vision.Decode()
+    resize_op = vision.Resize(size=size, interpolation=interpolation)
+    dataset = dataset.map(input_columns=["image"], operations=[decode, resize_op])
+    for _ in dataset.create_dict_iterator(output_numpy=True):
+        pass
+
+    # Resize operator:Test interpolation is Inter.ANTIALIAS and input is PIL data
+    data_dir = os.path.join(TEST_DATA_DATASET_FUNC, "testImageNetData", "train")
+    dataset = ds.ImageFolderDataset(data_dir, shuffle=False, decode=False)
+    size = (500, 520)
+    decode_op = vision.Decode(to_pil=True)
+    resize_op = vision.Resize(size, interpolation=Inter.ANTIALIAS)
+    transforms_list = [decode_op, resize_op]
+    dataset = dataset.map(input_columns=["image"], operations=transforms_list)
+    for _ in dataset.create_dict_iterator(output_numpy=True):
+        pass
+
+    # Resize operator:Test interpolation is Inter.BILINEAR and input is numpy data
+    data_dir = os.path.join(TEST_DATA_DATASET_FUNC, "testImageNetData", "train")
+    dataset = ds.ImageFolderDataset(data_dir, shuffle=False, decode=False)
+    size = (500, 520)
+    decode_op = vision.Decode()
+    resize_op = vision.Resize(size, interpolation=Inter.BILINEAR)
+    transforms_list = [decode_op, resize_op]
+    dataset = dataset.map(input_columns=["image"], operations=transforms_list)
+    for _ in dataset.create_dict_iterator(output_numpy=True):
+        pass
+
+    # Resize operator:Test interpolation is Inter.BILINEAR and input is PIL data
+    data_dir = os.path.join(TEST_DATA_DATASET_FUNC, "testImageNetData", "train")
+    dataset = ds.ImageFolderDataset(data_dir, shuffle=False, decode=False)
+    size = (500, 520)
+    decode_op = vision.Decode(to_pil=True)
+    resize_op = vision.Resize(size, interpolation=Inter.BILINEAR)
+    transforms_list = [decode_op, resize_op]
+    dataset = dataset.map(input_columns=["image"], operations=transforms_list)
+    for _ in dataset.create_dict_iterator(output_numpy=True):
+        pass
+
+
+def test_resize_operation_03():
+    """
+    Feature: Resize operation
+    Description: Testing the normal functionality of the Resize operator
+    Expectation: The Output is equal to the expected output
+    """
+    # Resize operator:Test PIL data
+    data_dir = os.path.join(TEST_DATA_DATASET_FUNC, "testImageNetData", "train")
+    dataset = ds.ImageFolderDataset(data_dir, shuffle=False, decode=False)
+    size = (500, 520)
+    decode_op = vision.Decode(to_pil=True)
+    resize_op = vision.Resize(size)
+    transforms_list = [decode_op, resize_op]
+    dataset = dataset.map(input_columns=["image"], operations=transforms_list)
+    for _ in dataset.create_dict_iterator(output_numpy=True):
+        pass
+
+    # Resize operator:Test input is 3d numpy array
+    image = np.random.randn(1024, 1024, 3)
+    size = (500, 520)
+    resize_op = vision.Resize(size, Inter.LINEAR)
+    out = resize_op(image)
+    assert out.shape == (500, 520, 3)
+
+    # Resize operator:Test input is 2d numpy array
+    image = np.random.randn(1024, 1024)
+    size = (500, 520)
+    resize_op = vision.Resize(size, Inter.LINEAR)
+    out = resize_op(image)
+    assert out.shape == (500, 520)
+
+    # Resize operator:Test input is jpg image
+    image_file = os.path.join(TEST_DATA_DATASET_FUNC, "test_data", "test_cv_image", "jpg.jpg")
+    with Image.open(image_file) as image:
+        size = (50, 60)
+        interpolation = Inter.BILINEAR
+        resize_op = vision.Resize(size, interpolation)
+        out = resize_op(image)
+        assert np.array(out).shape == (50, 60, 3)
+
+    # Resize operator:Test input is bmp image
+    image_file3 = os.path.join(TEST_DATA_DATASET_FUNC, "test_data", "test_cv_image", "bmp.bmp")
+    with Image.open(image_file3) as image:
+        size = (50, 60)
+        interpolation = Inter.BILINEAR
+        resize_op = vision.Resize(size, interpolation)
+        out = resize_op(image)
+        assert np.array(out).shape == (50, 60, 3)
+
+    # Resize operator:Test input is png image
+    image_file2 = os.path.join(TEST_DATA_DATASET_FUNC, "test_data", "test_cv_image", "png.PNG")
+    with Image.open(image_file2) as image:
+        size = (50, 60)
+        interpolation = Inter.BILINEAR
+        resize_op = vision.Resize(size, interpolation)
+        out = resize_op(image)
+        assert np.array(out).shape == (50, 60, 4)
+
+    # Resize operator:Test input is gif image
+    image_file1 = os.path.join(TEST_DATA_DATASET_FUNC, "test_data", "test_cv_image", "gif.gif")
+    with Image.open(image_file1) as image:
+        size = (1000, 1000)
+        interpolation = Inter.ANTIALIAS
+        resize_op = vision.Resize(size, interpolation)
+        out = resize_op(image)
+        assert np.array(out).shape == (1000, 1000)
+
+    # Resize operator:Test input is image opened using the cv2 method
+    image_file = os.path.join(TEST_DATA_DATASET_FUNC, "testImageNetData", "train", "class1",
+                              "1_2.jpg")
+    image = cv2.imread(image_file)
+    size = 128
+    resize_op = vision.Resize(size, Inter.BICUBIC)
+    out = resize_op(image)
+    if np.array(image).shape[0] < np.array(image).shape[1]:
+        assert out.shape[0] == 128
+        assert out.shape[1] == (out.shape[1] / out.shape[0] * 128)
+    else:
+        assert out.shape[0] == (out.shape[0] / out.shape[1] * 128)
+        assert out.shape[1] == 128
+
+    # Resize operator:Test input is numpy list
+    image = np.random.randn(256, 188, 1).tolist()
+    size = (100, 100)
+    resize_op = vision.Resize(size, Inter.BICUBIC)
+    with pytest.raises(TypeError, match="Input should be NumPy or PIL image, got <class 'list'>"):
+        out = resize_op(image)
+        assert np.array(out).shape == (100, 100, 1)
+
+    # Resize operator:输入 4d numpy array，维度已扩展
+    image = np.random.randn(56, 88, 3, 3)
+    size = (100, 100)
+    resize_op = vision.Resize(size, Inter.BICUBIC)
+    output = resize_op(image)
+    assert output.shape == (56, 100, 100, 3)
+
+
+def test_resize_operation_04():
+    """
+    Feature: Resize operation
+    Description: Testing the normal functionality of the Resize operator
+    Expectation: The Output is equal to the expected output
+    """
+    # Resize operator:Test eager interpolation_c is Inter.PILCUBIC
+    image_file = os.path.join(TEST_DATA_DATASET_FUNC, "testImageNetData", "train", "class1",
+                              "1_2.jpg")
+    with Image.open(image_file) as image:
+        size = (250, 300)
+        interpolation_c = Inter.PILCUBIC
+        interpolation_py = Inter.BICUBIC
+        resize_c_op = vision.Resize(size, interpolation=interpolation_c)
+        resize_py_op = vision.Resize(size, interpolation=interpolation_py)
+        with pytest.raises(TypeError, match="Current Interpolation is not supported with PIL input"):
+            out_c = resize_c_op(image)
+            out_py = resize_py_op(image)
+            assert (out_c == out_py).all()
+
+    # Resize operator:Test eager interpolation_c is Inter.PILCUBIC
+    image_file = os.path.join(TEST_DATA_DATASET_FUNC, "testImageNetData", "train", "class1",
+                              "1_2.jpg")
+    with Image.open(image_file) as image:
+        size = (np.array(image).shape[0], np.array(image).shape[1])
+        interpolation_c = Inter.PILCUBIC
+        interpolation_py = Inter.BICUBIC
+        resize_c_op = vision.Resize(size, interpolation=interpolation_c)
+        resize_py_op = vision.Resize(size, interpolation=interpolation_py)
+        with pytest.raises(TypeError, match="Current Interpolation is not supported with PIL input"):
+            out_c = resize_c_op(image)
+            out_py = resize_py_op(image)
+            assert (out_c == np.array(out_py)).all()
+            assert (np.array(image) == np.array(out_c)).all()
+
+    # Resize operator:Test eager interpolation_c is Inter.PILCUBIC
+    image_file = os.path.join(TEST_DATA_DATASET_FUNC, "testImageNetData", "train", "class1",
+                              "1_2.jpg")
+    with Image.open(image_file) as image:
+        size = [2500, 3000]
+        interpolation_c = Inter.PILCUBIC
+        interpolation_py = Inter.BICUBIC
+        resize_c_op = vision.Resize(size, interpolation=interpolation_c)
+        resize_py_op = vision.Resize(size, interpolation=interpolation_py)
+        with pytest.raises(TypeError, match="Current Interpolation is not supported with PIL input"):
+            out_c = resize_c_op(image)
+            out_py = resize_py_op(image)
+            assert (out_c == out_py).all()
+            assert np.array(out_c).shape == (2500, 3000, 3)
+
+
+def test_resize_exception_01():
+    """
+    Feature: Resize operation
+    Description: Testing the Resize Operator in Exceptional Scenarios
+    Expectation: Throw an exception
+    """
+    # Resize operator:Test size is 0
+    data_dir = os.path.join(TEST_DATA_DATASET_FUNC, "testImageNetData", "train")
+    dataset = ds.ImageFolderDataset(data_dir, shuffle=False, decode=True)
+    size = 0
+    with pytest.raises(ValueError, match="Input is not within the required interval"):
+        resize_op = vision.Resize(size=size)
+        dataset = dataset.map(input_columns=["image"], operations=resize_op)
+        for _ in dataset.create_dict_iterator(output_numpy=True):
+            pass
+
+    # Resize operator:Test size is 16777216
+    data_dir = os.path.join(TEST_DATA_DATASET_FUNC, "testImageNetData", "train")
+    dataset = ds.ImageFolderDataset(data_dir, shuffle=False, decode=True)
+    size = 16777216
+    with pytest.raises(RuntimeError,
+                       match="Resize: the resizing width or height is too big, it's 1000 times bigger than"):
+        resize_op = vision.Resize(size=size)
+        dataset = dataset.map(input_columns=["image"], operations=resize_op)
+        for _ in dataset.create_dict_iterator(output_numpy=True):
+            pass
+
+    # Resize operator:Test size is 16777217
+    data_dir = os.path.join(TEST_DATA_DATASET_FUNC, "testImageNetData", "train")
+    dataset = ds.ImageFolderDataset(data_dir, shuffle=False, decode=True)
+    size = 16777217
+    with pytest.raises(ValueError, match="Input is not within the required interval"):
+        resize_op = vision.Resize(size=size)
+        dataset = dataset.map(input_columns=["image"], operations=resize_op)
+        for _ in dataset.create_dict_iterator(output_numpy=True):
+            pass
+
+    # Resize operator:Test size is float
+    data_dir = os.path.join(TEST_DATA_DATASET_FUNC, "testImageNetData", "train")
+    dataset = ds.ImageFolderDataset(data_dir, shuffle=False, decode=True)
+    size = 500.5
+    with pytest.raises(TypeError, match="Size should be a single integer or a list/tuple"):
+        resize_op = vision.Resize(size=size)
+        dataset = dataset.map(input_columns=["image"], operations=resize_op)
+        for _ in dataset.create_dict_iterator(output_numpy=True):
+            pass
+
+    # Resize operator:Test size is None
+    data_dir = os.path.join(TEST_DATA_DATASET_FUNC, "testImageNetData", "train")
+    dataset = ds.ImageFolderDataset(data_dir, shuffle=False, decode=True)
+    size = None
+    with pytest.raises(TypeError, match="Size should be a single integer or a list/tuple"):
+        resize_op = vision.Resize(size=size)
+        dataset = dataset.map(input_columns=["image"], operations=resize_op)
+        for _ in dataset.create_dict_iterator(output_numpy=True):
+            pass
+
+    # Resize operator:Test size is str
+    data_dir = os.path.join(TEST_DATA_DATASET_FUNC, "testImageNetData", "train")
+    dataset = ds.ImageFolderDataset(data_dir, shuffle=False, decode=True)
+    size = 'test'
+    with pytest.raises(TypeError, match="Size should be a single integer or a list/tuple"):
+        resize_op = vision.Resize(size=size)
+        dataset = dataset.map(input_columns=["image"], operations=resize_op)
+        for _ in dataset.create_dict_iterator(output_numpy=True):
+            pass
+
+    # Resize operator:Test size is ""
+    data_dir = os.path.join(TEST_DATA_DATASET_FUNC, "testImageNetData", "train")
+    dataset = ds.ImageFolderDataset(data_dir, shuffle=False, decode=True)
+    size = ""
+    with pytest.raises(TypeError, match="Size should be a single integer or a list/tuple"):
+        resize_op = vision.Resize(size=size)
+        dataset = dataset.map(input_columns=["image"], operations=resize_op)
+        for _ in dataset.create_dict_iterator(output_numpy=True):
+            pass
+
+
+def test_resize_exception_02():
+    """
+    Feature: Resize operation
+    Description: Testing the Resize Operator in Exceptional Scenarios
+    Expectation: Throw an exception
+    """
+    # Resize operator:Test size is a sequence of length 1
+    data_dir = os.path.join(TEST_DATA_DATASET_FUNC, "testImageNetData", "train")
+    dataset = ds.ImageFolderDataset(data_dir, shuffle=False, decode=True)
+    size = [500]
+    with pytest.raises(TypeError, match="Size should be a single integer or a list/tuple"):
+        resize_op = vision.Resize(size=size)
+        dataset = dataset.map(input_columns=["image"], operations=resize_op)
+        for _ in dataset.create_dict_iterator(output_numpy=True):
+            pass
+
+    # Resize operator:Test size is a sequence of length 3
+    data_dir = os.path.join(TEST_DATA_DATASET_FUNC, "testImageNetData", "train")
+    dataset = ds.ImageFolderDataset(data_dir, shuffle=False, decode=True)
+    size = [500, 500, 520]
+    with pytest.raises(TypeError, match="Size should be a single integer or a list/tuple"):
+        resize_op = vision.Resize(size=size)
+        dataset = dataset.map(input_columns=["image"], operations=resize_op)
+        for _ in dataset.create_dict_iterator(output_numpy=True):
+            pass
+
+    # Resize operator:Test size is a sequence containing a float of 2 lengths
+    data_dir = os.path.join(TEST_DATA_DATASET_FUNC, "testImageNetData", "train")
+    dataset = ds.ImageFolderDataset(data_dir, shuffle=False, decode=True)
+    size = [500.5, 500]
+    with pytest.raises(TypeError, match="Argument size at dim 0 with value 500.5 is not of type " + \
+                                        "\\[<class 'int'>\\], but got <class 'float'>"):
+        resize_op = vision.Resize(size=size)
+        dataset = dataset.map(input_columns=["image"], operations=resize_op)
+        for _ in dataset.create_dict_iterator(output_numpy=True):
+            pass
+
+    # Resize operator:Test size is a sequence containing a str of 2 lengths
+    data_dir = os.path.join(TEST_DATA_DATASET_FUNC, "testImageNetData", "train")
+    dataset = ds.ImageFolderDataset(data_dir, shuffle=False, decode=True)
+    size = [500, 'test']
+    with pytest.raises(TypeError, match="Argument size at dim 1 with value test is not of type " + \
+                                        "\\[<class 'int'>\\], but got <class 'str'>."):
+        resize_op = vision.Resize(size=size)
+        dataset = dataset.map(input_columns=["image"], operations=resize_op)
+        for _ in dataset.create_dict_iterator(output_numpy=True):
+            pass
+
+    # Resize operator:Test size is a sequence containing bool of 2 lengths
+    data_dir = os.path.join(TEST_DATA_DATASET_FUNC, "testImageNetData", "train")
+    dataset = ds.ImageFolderDataset(data_dir, shuffle=False, decode=True)
+    size = [500, True]
+    with pytest.raises(TypeError, match="Argument size at dim 1 with value True is not of type " + \
+                                        "\\(<class 'int'>,\\), but got <class 'bool'>"):
+        resize_op = vision.Resize(size=size)
+        dataset = dataset.map(input_columns=["image"], operations=resize_op)
+        for _ in dataset.create_dict_iterator(output_numpy=True):
+            pass
+
+    # Resize operator:Test interpolation is ""
+    data_dir = os.path.join(TEST_DATA_DATASET_FUNC, "testImageNetData", "train")
+    dataset = ds.ImageFolderDataset(data_dir, shuffle=False, decode=True)
+    size = (500, 520)
+    interpolation = ""
+    with pytest.raises(TypeError, match="Argument interpolation with value \"\" is not of type " + \
+                                        "\\[<enum 'Inter'>\\], but got <class 'str'>"):
+        resize_op = vision.Resize(size=size, interpolation=interpolation)
+        dataset = dataset.map(input_columns=["image"], operations=resize_op)
+        for _ in dataset.create_dict_iterator(output_numpy=True):
+            pass
+
+
+def test_resize_exception_03():
+    """
+    Feature: Resize operation
+    Description: Testing the Resize Operator in Exceptional Scenarios
+    Expectation: Throw an exception
+    """
+    # Resize operator:Test interpolation is str
+    data_dir = os.path.join(TEST_DATA_DATASET_FUNC, "testImageNetData", "train")
+    dataset = ds.ImageFolderDataset(data_dir, shuffle=False, decode=True)
+    size = (500, 520)
+    interpolation = "test"
+    with pytest.raises(TypeError, match="Argument interpolation with value test is not of type " + \
+                                        "\\[<enum 'Inter'>\\], but got <class 'str'>"):
+        resize_op = vision.Resize(size=size, interpolation=interpolation)
+        dataset = dataset.map(input_columns=["image"], operations=resize_op)
+        for _ in dataset.create_dict_iterator(output_numpy=True):
+            pass
+
+    # Resize operator:Test interpolation is None
+    data_dir = os.path.join(TEST_DATA_DATASET_FUNC, "testImageNetData", "train")
+    dataset = ds.ImageFolderDataset(data_dir, shuffle=False, decode=True)
+    size = (500, 520)
+    interpolation = None
+    with pytest.raises(KeyError, match="Interpolation should not be None"):
+        resize_op = vision.Resize(size=size, interpolation=interpolation)
+        dataset = dataset.map(input_columns=["image"], operations=resize_op)
+        for _ in dataset.create_dict_iterator(output_numpy=True):
+            pass
+
+    # Resize operator:Test interpolation is bool
+    data_dir = os.path.join(TEST_DATA_DATASET_FUNC, "testImageNetData", "train")
+    dataset = ds.ImageFolderDataset(data_dir, shuffle=False, decode=True)
+    size = (500, 520)
+    interpolation = True
+    with pytest.raises(TypeError, match="Argument interpolation with value True is not of type " + \
+                                        "\\[<enum 'Inter'>\\], but got <class 'bool'>"):
+        resize_op = vision.Resize(size=size, interpolation=interpolation)
+        dataset = dataset.map(input_columns=["image"], operations=resize_op)
+        for _ in dataset.create_dict_iterator(output_numpy=True):
+            pass
+
+    # Resize operator:Test no para
+    data_dir = os.path.join(TEST_DATA_DATASET_FUNC, "testImageNetData", "train")
+    dataset = ds.ImageFolderDataset(data_dir, shuffle=False, decode=True)
+    with pytest.raises(TypeError, match="missing a required argument: 'size'"):
+        resize_op = vision.Resize()
+        dataset = dataset.map(input_columns=["image"], operations=resize_op)
+        for _ in dataset.create_dict_iterator(output_numpy=True):
+            pass
+
+    # Resize operator:Test more para
+    data_dir = os.path.join(TEST_DATA_DATASET_FUNC, "testImageNetData", "train")
+    dataset = ds.ImageFolderDataset(data_dir, shuffle=False, decode=True)
+    size = (500, 520)
+    interpolation = Inter.LINEAR
+    more_para = None
+    with pytest.raises(TypeError, match="too many positional arguments"):
+        resize_op = vision.Resize(size, interpolation, more_para)
+        dataset = dataset.map(input_columns=["image"], operations=resize_op)
+        for _ in dataset.create_dict_iterator(output_numpy=True):
+            pass
+
+    # Resize operator:Test input is a tensor
+    image = Tensor(np.random.randn(10, 10, 3))
+    size = (100, 100)
+    resize_op = vision.Resize(size, Inter.BICUBIC)
+    with pytest.raises(TypeError,
+                       match="Input should be NumPy or PIL image, got <class 'mindspore.common.tensor.Tensor'>"):
+        resize_op(image)
+
+    # Resize operator:Test size is tensor
+    image = np.random.randn(256, 188, 1)
+    size = Tensor([128, 128])
+    with pytest.raises(TypeError, match="Size should be a single integer or a list/tuple"):
+        resize_op = vision.Resize(size, Inter.BICUBIC)
+        resize_op(image)
+
+    # Resize operator:Test no image is transferred
+    size = [128, 128]
+    with pytest.raises(RuntimeError, match="Input Tensor is not valid"):
+        resize_op = vision.Resize(size, Inter.BICUBIC)
+        resize_op()
+
+    # Resize operator:Test Interpolation mode PILCUBIC and 1 channel numpy data
+    image = np.random.randn(1024, 1024, 1)
+    size = (100, 100)
+    resize_c_op = vision.Resize(size, interpolation=Inter.PILCUBIC)
+    with pytest.raises(RuntimeError, match="Resize: Interpolation mode PILCUBIC " + \
+                                           "only supports image with 3 channels, but got: <1024,1024,1>"):
+        resize_c_op(image)
+
+    # Resize operator:Test eager image is gif
+    image_gif = os.path.join(TEST_DATA_DATASET_FUNC, "test_data", "test_cv_image", "gif.gif")
+    with Image.open(image_gif) as image:
+        size = [50, 100]
+        interpolation_c = Inter.PILCUBIC
+        resize_c_op = vision.Resize(size, interpolation=interpolation_c)
+        with pytest.raises(TypeError, match="Current Interpolation is not supported with PIL input"):
+            resize_c_op(image)
+
+
 if __name__ == "__main__":
     test_resize_op(plot=True)
     test_resize_4d_input_1_size()
@@ -324,3 +910,10 @@ if __name__ == "__main__":
     test_resize_op_exception_c_interpolation()
     test_resize_op_exception_py_interpolation()
     test_resize_performance()
+    test_resize_operation_01()
+    test_resize_operation_02()
+    test_resize_operation_03()
+    test_resize_operation_04()
+    test_resize_exception_01()
+    test_resize_exception_02()
+    test_resize_exception_03()
