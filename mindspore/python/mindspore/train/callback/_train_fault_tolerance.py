@@ -25,7 +25,7 @@ from mindspore.communication import get_rank, get_group_size
 from mindspore import log as logger
 from mindspore.train.serialization import _get_cur_rank_dp
 from mindspore._c_expression import _repair_device, _stop_device, _tft_sem_post, _tft_sem_enable
-from mindspore._c_expression import _rebuild_world_group, _rebuild_sub_group, _finalize_comm, _clean_rootinfo
+from mindspore._c_expression import _rebuild_group, _finalize_comm
 from mindspore._c_expression import clean_tdt_channel
 from mindspore._c_expression import _pre_launch_send_recv
 from mindspore._c_expression import send_recv, reset_params, direct_copy_to_host
@@ -36,7 +36,7 @@ from mindspore.ops.operations.manually_defined._inner import TensorReport
 import mindspore
 import mindspore.common.dtype as mstype
 from mindspore import runtime
-from mindspore._c_expression import set_is_arf
+from mindspore._c_expression import set_is_arf, check_is_arf
 
 
 def _get_ckpt_dir(step, ckpt_save_path, is_tmp_file):
@@ -158,9 +158,6 @@ def _tft_clean_callback(is_uce_error, args, ctx):
     logger.warning("Finish _tft_clean_callback, ret: {}".format(ret))
     if ctx.tft.tft_get_repair_type() == "recover":
         _reset_snapshot_state()
-        logger.warning(f"Destroy hcom")
-        _finalize_comm()
-        logger.warning(f"Destroy hcom end")
     return ret
 
 
@@ -172,21 +169,21 @@ def _tft_stop_callback(args, cb_ctx):
     cb_ctx.is_uce_rank = False
     _stop_device(cb_ctx.device_id)
     if cb_ctx.tft.tft_get_repair_type() == "recover":
-        logger.warning(f"Reset limit step")
+        logger.warning("Reset limit step")
         cb_ctx.tft.tft_reset_limit_step()
     logger.warning("Finish _tft_stop_callback")
 
 
-def _tft_rebuild_sub_groups(fault_ranks, args, ctx):
+def _tft_rebuild_groups(fault_ranks, args, ctx):
     """Callback used for TFT Rebuild Group function."""
-    logger.warning(f"Enter _tft_rebuild_sub_groups, device id: {ctx.device_id}")
-    _rebuild_world_group()
-    _rebuild_sub_group()
+    logger.warning(f"Enter _tft_rebuild_groups, device id: {ctx.device_id}")
+    _finalize_comm()
+    _rebuild_group()
     set_is_arf(True)
-    logger.warning(f"try to pre launch send recv before real launch")
+    logger.warning("try to pre launch send recv before real launch")
     _pre_launch_send_recv(context.get_context('device_id'))
-    logger.warning(f"Pre launch send recv before real launch end")
-    logger.warning("Enter _tft_rebuild_sub_groups ok ")
+    logger.warning("Pre launch send recv before real launch end")
+    logger.warning("Enter _tft_rebuild_groups ok ")
 
 
 class TrainFaultTolerance(Callback):
@@ -310,7 +307,7 @@ class TrainFaultTolerance(Callback):
     """
 
     def __init__(self, ckpt_save_path=None, **kwargs):
-        super(TrainFaultTolerance, self).__init__()
+        super().__init__()
         logger.info(f"MS_ENABLE_TFT: {os.getenv('MS_ENABLE_TFT', '')}")
         if self._only_enable_tsp():
             self.tft = _tft_handler.get_tft()
@@ -326,7 +323,6 @@ class TrainFaultTolerance(Callback):
         self.device_id = context.get_context("device_id")
         self.cur_step_num = 0
         self.cur_epoch_num = 0
-        self.clean_unique_id = False
         # For TREError(Training Result Error) scene, parameter `ckpt_load_fn` must be provided to load checkpoint
         # from file for resuming training, the `ckpt_load_fn` is a function, prototype of which is:
         # `def load_checkpoint() -> tuple(dict, bool)`, the return value is a tuple containing 2 values,
@@ -393,10 +389,10 @@ class TrainFaultTolerance(Callback):
             tft_env = os.getenv("MS_ENABLE_TFT", "")
             if "ARF:1" in tft_env:
                 raise ValueError("Must init by _tft_handler.init(config=params) if use ARF.")
-            logger.warning(f"TFT handle not init, try to init")
+            logger.warning("TFT handle not init, try to init")
             _tft_handler.init(config=None)
             self.tft = _tft_handler.get_tft()
-            logger.warning(f"TFT handle init ok.")
+            logger.warning("TFT handle init ok.")
         device_target = context.get_context("device_target")
         if device_target != "Ascend":
             raise ValueError(f"MindIO adataper only support on Ascend device but got device {device_target}!")
@@ -446,7 +442,7 @@ class TrainFaultTolerance(Callback):
             """
 
             def __init__(self, *args, **kwargs):
-                super(TFTOptSubCls, self).__init__(*args, **kwargs)
+                super().__init__(*args, **kwargs)
                 self.report = TensorReport()
                 self.report_end = TensorReport()
                 self.report_end.add_prim_attr("optimizer_end", True)
@@ -459,7 +455,7 @@ class TrainFaultTolerance(Callback):
                 tft_g_one_flag = self.depend(self.tft_g_one_flag, gradients)
                 self.tft_g_one_flag = self.allreduce_sum(tft_g_one_flag)
                 grads = self.depend(gradients, self.report("tft_report", self.tft_g_one_flag))
-                opt_ret = super(TFTOptSubCls, self).construct(grads, **kwargs)
+                opt_ret = super().construct(grads, **kwargs)
                 self.report_end("tft_report", self.tft_g_one_flag)
                 return opt_ret
 
@@ -469,7 +465,7 @@ class TrainFaultTolerance(Callback):
             """
 
             def __init__(self, *args, **kwargs):
-                super(TFTOptSnapShotCls, self).__init__(*args, **kwargs)
+                super().__init__(*args, **kwargs)
                 self.report = TensorReport()
                 self.report.add_prim_attr("side_effect_mem", True).add_prim_attr("snapshot", True)
                 self.dummy_input = Tensor([1], dtype=mstype.int32)
@@ -477,12 +473,12 @@ class TrainFaultTolerance(Callback):
             def construct(self, gradients, **kwargs):
                 """Add fake op TensorReport to insert wait event for copying parameters"""
                 self.report("tft_report", self.dummy_input)
-                opt_ret = super(TFTOptSnapShotCls, self).construct(gradients, **kwargs)
+                opt_ret = super().construct(gradients, **kwargs)
                 return opt_ret
 
         env_tft = os.getenv('MS_ENABLE_TFT', '')
         features = ['TTP:1', 'UCE:1', 'ARF:1']
-        need_redundancy = any([env_tft.find(feat) >= 0 for feat in features])
+        need_redundancy = any([env_tft.find(feat) >= 0 for feat in features])  # pylint: disable=R1729
         return TFTOptSubCls if need_redundancy else TFTOptSnapShotCls
 
     def _tft_register(self):
@@ -493,7 +489,7 @@ class TrainFaultTolerance(Callback):
         self.tft.tft_register_stop_handler(_tft_stop_callback, self)
         self.tft.tft_register_clean_handler(_tft_clean_callback, self)
         self.tft.tft_register_repair_handler(_tft_repair_callback, self)
-        self.tft.tft_register_rebuild_group_handler(_tft_rebuild_sub_groups, self)
+        self.tft.tft_register_rebuild_group_handler(_tft_rebuild_groups, self)
         if "TSP:1" in os.getenv("MS_ENABLE_TFT", ""):
             self.tft.tft_register_stream_sync_handler(runtime.synchronize, self)
 
@@ -504,12 +500,6 @@ class TrainFaultTolerance(Callback):
         accu_grad_list = list(accu_grad_params)
         if reset_params(accu_grad_list) != 0:
             raise ValueError("Call reset_params failed.")
-
-    def _clear_unique_id(self):
-        """Clean unique id on first train step end"""
-        if not self.clean_unique_id and ("ARF:1" in os.getenv("MS_ENABLE_TFT", "")):
-            _clean_rootinfo()
-            self.clean_unique_id = True
 
     def on_train_step_begin(self, run_context):
         """
@@ -554,13 +544,21 @@ class TrainFaultTolerance(Callback):
         else:
             raise ValueError("TFT feature need optimizer or network's optimizer!")
         self.tft.tft_end_updating_os(cb_params.cur_step_num + self.initial_step)
-        if cb_params.is_arf:
-            self.clean_unique_id = False
-        self._clear_unique_id()
         logger.info("END Set optimizer finish step status to TFT.")
-        if "TSP:1" in os.getenv("MS_ENABLE_TFT", ""):
+        # pause train
+        envs = os.getenv("MS_ENABLE_TFT", "")
+        if any([opt in envs for opt in ["TSP:1", "ARF:1"]]):  # pylint: disable=R1729
             logger.info("Go into tft_pause_train.")
             self.tft.tft_pause_train(self.cur_step_num)
+
+        self._reset_arf_on_step_end(run_context)
+
+    def _reset_arf_on_step_end(self, run_context):
+        """reset arf flag on train step end"""
+        cb_params = run_context.original_args()
+        if cb_params.is_arf:
+            cb_params.is_arf = False
+            set_is_arf(False)
 
     def on_train_begin(self, run_context):
         """
@@ -587,6 +585,7 @@ class TrainFaultTolerance(Callback):
         logger.info("Set set args to TFT.")
         self.tft.tft_set_step_args(cb_params)
         self.cb_params = cb_params
+        cb_params.is_arf = check_is_arf()
 
     def end(self, run_context):
         """

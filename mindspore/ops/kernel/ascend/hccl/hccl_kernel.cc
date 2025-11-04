@@ -288,10 +288,6 @@ int HcclKernel::Resize(const std::vector<KernelTensor *> &inputs, const std::vec
 
 void HcclKernel::LoadHcclLibrary() {
   comm_ = AscendCollectiveCommLib::GetInstance().HcclCommunicator(group_);
-  if (common::UseHostCollective() && !hccl::HcclAdapter::GetInstance().UseHcclCM()) {
-    MS_EXCEPTION_IF_NULL(comm_);
-    primitive_->set_attr(kAttrComm, MakeValue<int64_t>(reinterpret_cast<int64_t>(comm_)));
-  }
   hccl_inner_comm_name_ = AscendCollectiveCommLib::GetInstance().CommName(group_);
   primitive_->set_attr(kAttrCollectiveCommLib, MakeValue<std::string>("HCCL"));
 }

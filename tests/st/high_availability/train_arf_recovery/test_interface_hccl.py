@@ -12,6 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+"""
+Test case for arf recovery and hccl status record
+"""
+
 import os
 import json
 import shutil

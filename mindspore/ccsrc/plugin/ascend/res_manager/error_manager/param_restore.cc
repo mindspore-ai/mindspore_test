@@ -100,7 +100,7 @@ void ParamReplication::Init() {
   stream_ = AscendStreamMng::GetInstance().GetStream(stream_id_);
   MS_EXCEPTION_IF_NULL(stream_);
   MS_LOG(INFO) << "Use stream " << stream_id_ << " for parameter replication.";
-  comm_ = AscendCollectiveCommLib::GetInstance().HcclCommunicator(kHcclWorldGroup);
+  comm_ = AscendCollectiveCommLib::GetInstance().GetHcomByGroup(kHcclWorldGroup);
   MS_EXCEPTION_IF_NULL(comm_);
   rank_id_ = static_cast<int>(distributed::collective::CollectiveManager::instance()->GetRankId(kHcclWorldGroup));
 }
