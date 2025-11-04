@@ -298,29 +298,6 @@ bool ExitActor::IsNeedCopyDeviceAddress(const KernelTensorPtr &input_kernel_tens
   if ((input_device_tensor == nullptr) || (is_need_copy_device_tensors_[index] == CopyStat::COPY_DISABLE)) {
     return false;
   }
-
-  if (is_need_dynamic_checks_[index]) {
-    if (input_kernel_tensor->new_ref_count() != INT32_MAX) {
-      return false;
-    }
-    const auto &node = input_device_tensor->GetNodeIndex().first;
-    if (node != nullptr) {
-      if (!node->isa<CNode>()) {
-        MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
-          << "Input device address:" << input_device_tensor << " ptr:" << input_device_tensor->GetPtr()
-          << " for node:" << node->DebugString() << " is not need replace ptr for actor:" << GetAID();
-        return false;
-      }
-      const auto &iter = ref_out_in_map_.find(input_device_tensor->GetNodeIndex());
-      if (iter != ref_out_in_map_.end() && iter->second.first != nullptr && (!iter->second.first->isa<CNode>())) {
-        MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
-          << "Input device address:" << input_device_tensor << " ptr:" << input_device_tensor->GetPtr()
-          << " for node:" << node->DebugString() << " is a ref node of:" << iter->second.first->DebugString()
-          << " not need replace ptr for actor:" << GetAID();
-        return false;
-      }
-    }
-  }
   return true;
 }
 
