@@ -15,6 +15,8 @@
 """build net"""
 
 import os
+import sys
+import contextlib
 import json
 import argparse
 import numpy as np
@@ -27,6 +29,7 @@ from mindspore.profiler.dynamic_profiler import DynamicProfilerMonitor
 
 class Net(nn.Cell):
     """net"""
+
     def __init__(self):
         super().__init__()
         self.fc = nn.Dense(2, 2)
@@ -51,16 +54,60 @@ def train(net):
     model.train(1, data)
 
 
+def _cleanup_dynamic_profiler(dp):
+    """Force cleanup to avoid stale shared memory without modifying framework code."""
+    # Best-effort framework cleanup with specific exceptions
+    with contextlib.suppress(RuntimeError, OSError, ValueError):
+        dp.on_train_end()
+
+    # Stop background worker loop and join process
+    loop_flag = getattr(dp, "_shared_loop_flag", None)
+    if loop_flag is not None:
+        loop_flag.value = False
+
+    proc = getattr(dp, "_process", None)
+    if proc is not None:
+        with contextlib.suppress(RuntimeError, AssertionError):
+            proc.join(timeout=2.0)
+
+    # Unconditionally close and unlink shared memory / mmap with specific exceptions
+    shm = getattr(dp, "_shm", None)
+    if shm is not None:
+        if sys.version_info >= (3, 8):
+            with contextlib.suppress(OSError, BufferError):
+                shm.close()
+            with contextlib.suppress(OSError, FileNotFoundError, PermissionError):
+                shm.unlink()
+        else:
+            with contextlib.suppress(OSError, ValueError):
+                shm.close()
+            mmf = getattr(dp, "_memory_mapped_file", None)
+            if mmf is not None:
+                with contextlib.suppress(OSError, ValueError):
+                    mmf.close()
+            fd = getattr(dp, "fd", None)
+            if fd is not None:
+                with contextlib.suppress(OSError):
+                    os.close(fd)
+            shm_path = getattr(dp, "_shm_path", None)
+            if shm_path and os.path.exists(shm_path):
+                with contextlib.suppress(OSError):
+                    os.remove(shm_path)
+
+
 def train_net_with_dynamic_profiler(output_path, cfg_path, start, stop):
     """train net"""
     net = Net()
     step_num = 15
     dp = DynamicProfilerMonitor(cfg_path=cfg_path, output_path=output_path)
-    for i in range(step_num):
-        train(net)
-        if i == 5:
-            change_cfg_json(os.path.join(cfg_path, "profiler_config.json"), start, stop)
-        dp.step()
+    try:
+        for i in range(step_num):
+            train(net)
+            if i == 5:
+                change_cfg_json(os.path.join(cfg_path, "profiler_config.json"), start, stop)
+            dp.step()
+    finally:
+        _cleanup_dynamic_profiler(dp)
 
 
 def change_cfg_json(json_path, start, stop):
@@ -82,5 +129,6 @@ if __name__ == '__main__':
     parser.add_argument('--start', type=int)
     parser.add_argument('--stop', type=int)
     args = parser.parse_args()
+    ms.context.set_context(mode=ms.context.PYNATIVE_MODE, device_target="Ascend")
     train_net_with_dynamic_profiler(output_path=args.output_path, cfg_path=args.cfg_path,
                                     start=args.start, stop=args.stop)
