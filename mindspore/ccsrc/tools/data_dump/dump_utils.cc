@@ -267,6 +267,7 @@ mindspore::tensor::TensorPtr ExtractContiguousTensor(const tensor::TensorPtr &or
     MS_LOG(ERROR) << "host_shape is empty (dimension 0)";
     return nullptr;
   }
+  int64_t dimension = static_cast<int64_t>(host_shape.size());
   mindspore::tensor::TensorPtr out_tensor = tensor::from_spec(host_type, host_shape, device::DeviceType::kCPU);
   MS_EXCEPTION_IF_NULL(out_tensor->device_address());
   MS_EXCEPTION_IF_NULL(ori_tensor->device_address());
@@ -274,21 +275,21 @@ mindspore::tensor::TensorPtr ExtractContiguousTensor(const tensor::TensorPtr &or
   char *dst_data_ptr = static_cast<char *>(out_tensor->data_c());
   auto element_size = ori_tensor->DataItemSize();
   size_t element_nums = SizeOf(host_shape);
-  size_t max_element_offset = SizeOf(ori_tensor->shape());
+  int64_t max_element_offset = static_cast<int64_t>(SizeOf(ori_tensor->shape()));
   std::vector<int64_t> indices(host_shape.size(), 0);
   for (size_t idx = 0; idx < element_nums; ++idx) {
-    size_t currentOffset = storage_offset;
+    int64_t current_offset = static_cast<int64_t>(storage_offset);
     for (size_t dim = 0; dim < host_shape.size(); ++dim) {
-      currentOffset += indices[dim] * host_strides[dim];
+      current_offset += indices[dim] * host_strides[dim];
     }
-    if (currentOffset >= max_element_offset) {
-      MS_LOG(ERROR) << "Offset out of bounds: currentOffset(" << currentOffset << ") >= max_element_offset("
+    if (current_offset >= max_element_offset) {
+      MS_LOG(ERROR) << "Offset out of bounds: current_offset(" << current_offset << ") >= max_element_offset("
                     << max_element_offset << ")";
       return nullptr;
     }
-    memcpy_s(dst_data_ptr + idx * element_size, element_size, src_data_ptr + currentOffset * element_size,
+    memcpy_s(dst_data_ptr + idx * element_size, element_size, src_data_ptr + current_offset * element_size,
              element_size);
-    for (int dim = host_shape.size() - 1; dim >= 0; --dim) {
+    for (int dim = dimension - 1; dim >= 0; --dim) {
       indices[dim]++;
       if (indices[dim] < host_shape[dim]) {
         break;
