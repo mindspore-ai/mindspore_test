@@ -23,6 +23,10 @@ endif()
 target_link_libraries(mindspore_common PRIVATE mindspore_core mindspore_ops proto_input
                       mindspore::securec mindspore_profiler)
 
+if(Python3_NumPy_FOUND)
+    target_include_directories(mindspore_common PRIVATE ${Python3_NumPy_INCLUDE_DIRS})
+endif()
+
 set_target_properties(mindspore_common PROPERTIES INSTALL_RPATH $ORIGIN)
 if(CMAKE_SYSTEM_NAME MATCHES "Windows" OR CMAKE_SYSTEM_NAME MATCHES "Darwin")
     target_link_libraries(mindspore_common PRIVATE mindspore::pybind11_module)
