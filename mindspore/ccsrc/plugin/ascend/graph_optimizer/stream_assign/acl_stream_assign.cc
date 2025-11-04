@@ -657,20 +657,12 @@ void AclStreamAssign::ProcessSideEffect(const NotNull<KernelGraphPtr> &kernel_gr
   }
 }
 
-void AclStreamAssign::UpdateEventsToExecutionOrder(
-  const NotNull<KernelGraphPtr> &kernel_graph,
-  const mindspore::HashMap<AnfNodePtr, std::vector<CNodePtr>> &send_after_node,
-  const mindspore::HashMap<AnfNodePtr, std::vector<CNodePtr>> &recv_before_node,
-  const mindspore::HashMap<AnfNodePtr, std::set<size_t>> &producer_streams) {
-  MS_LOG(DEBUG) << "Start UpdateEventsToExecutionOrder...";
-  std::map<AnfNodePtr, std::set<size_t>> side_effect_map;
-  std::map<size_t, std::set<size_t>> no_event_streams;  // wait_stream -> record_stream
-  auto exec_kernels = kernel_graph->execution_order();
-  mindspore::HashMap<size_t, std::vector<CNodePtr>> delayed_recv_nodes;
-  std::vector<CNodePtr> new_exec_orders;
-
+StreamInfo AclStreamAssign::AddInitialBoundarySync(const NotNull<KernelGraphPtr> &kernel_graph,
+                                                   std::vector<CNodePtr> *new_exec_orders) {
   std::set<size_t> streams_set;
   std::set<size_t> streams_usr_set;
+  std::map<size_t, std::set<size_t>> no_event_streams;
+  auto exec_kernels = kernel_graph->execution_order();
   for (auto &kernel : exec_kernels) {
     auto process_stream_id = AnfAlgo::GetStreamId(kernel);
     if (process_stream_id != kDefaultStreamIndex) {
@@ -686,8 +678,34 @@ void AclStreamAssign::UpdateEventsToExecutionOrder(
     if (it != streams_usr_set.end()) {
       continue;
     }
-    AddBoundarySendRecvKernel(kernel_graph, kDefaultStreamIndex, stream, &new_exec_orders, &no_event_streams);
+    AddBoundarySendRecvKernel(kernel_graph, kDefaultStreamIndex, stream, new_exec_orders, &no_event_streams);
   }
+  return {streams_set, streams_usr_set, no_event_streams};
+}
+
+void AclStreamAssign::AddFinalBoundarySync(const NotNull<KernelGraphPtr> &kernel_graph,
+                                           const std::set<size_t> &streams_set, const std::set<size_t> &streams_usr_set,
+                                           std::vector<CNodePtr> *new_exec_orders,
+                                           std::map<size_t, std::set<size_t>> *no_event_streams) {
+  for (const auto &stream : streams_set) {
+    if (streams_usr_set.find(stream) != streams_usr_set.end()) {
+      continue;
+    }
+    AddBoundarySendRecvKernel(kernel_graph, stream, kDefaultStreamIndex, new_exec_orders, no_event_streams);
+  }
+}
+
+void AclStreamAssign::UpdateEventsToExecutionOrder(
+  const NotNull<KernelGraphPtr> &kernel_graph,
+  const mindspore::HashMap<AnfNodePtr, std::vector<CNodePtr>> &send_after_node,
+  const mindspore::HashMap<AnfNodePtr, std::vector<CNodePtr>> &recv_before_node,
+  const mindspore::HashMap<AnfNodePtr, std::set<size_t>> &producer_streams) {
+  MS_LOG(DEBUG) << "Start UpdateEventsToExecutionOrder...";
+  std::map<AnfNodePtr, std::set<size_t>> side_effect_map;
+  auto exec_kernels = kernel_graph->execution_order();
+  mindspore::HashMap<size_t, std::vector<CNodePtr>> delayed_recv_nodes;
+  std::vector<CNodePtr> new_exec_orders;
+  auto [streams_set, streams_usr_set, no_event_streams] = AddInitialBoundarySync(kernel_graph, &new_exec_orders);
   CNodePtr last_kernel = nullptr;
   size_t cur_idx = 0;
   for (auto &kernel : exec_kernels) {
@@ -742,13 +760,7 @@ void AclStreamAssign::UpdateEventsToExecutionOrder(
     (void)std::copy(graph_output_iter->second.begin(), graph_output_iter->second.end(),
                     std::back_inserter(new_exec_orders));
   }
-  for (const auto &stream : streams_set) {
-    auto it = streams_usr_set.find(stream);
-    if (it != streams_usr_set.end()) {
-      continue;
-    }
-    AddBoundarySendRecvKernel(kernel_graph, stream, kDefaultStreamIndex, &new_exec_orders, &no_event_streams);
-  }
+  AddFinalBoundarySync(kernel_graph, streams_set, streams_usr_set, &new_exec_orders, &no_event_streams);
   kernel_graph->set_execution_order(new_exec_orders);
   MS_LOG(DEBUG) << "Finish UpdateEventsToExecutionOrder.";
 }

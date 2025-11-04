@@ -42,6 +42,12 @@ struct NodeExecInfo {
 };
 using NodeExecInfoPtr = std::shared_ptr<NodeExecInfo>;
 
+struct StreamInfo {
+  std::set<size_t> streams_set;
+  std::set<size_t> streams_usr_set;
+  std::map<size_t, std::set<size_t>> no_event_streams;
+};
+
 struct NodeIoExecInfo {
   NodeExecInfoPtr node_exec_info;
   std::vector<NodeExecInfoPtr> inputs;
@@ -112,7 +118,11 @@ class AclStreamAssign {
                     mindspore::HashMap<AnfNodePtr, std::vector<CNodePtr>> *kernel_send,
                     mindspore::HashMap<AnfNodePtr, std::vector<CNodePtr>> *kernel_recv,
                     const AnfNodePtr &node_after_recv);
-
+  StreamInfo AddInitialBoundarySync(const NotNull<KernelGraphPtr> &kernel_graph,
+                                    std::vector<CNodePtr> *new_exec_orders);
+  void AddFinalBoundarySync(const NotNull<KernelGraphPtr> &kernel_graph, const std::set<size_t> &streams_set,
+                            const std::set<size_t> &streams_usr_set, std::vector<CNodePtr> *new_exec_orders,
+                            std::map<size_t, std::set<size_t>> *no_event_streams);
   CNodePtr CreateLimitApplyKernel(const NotNull<KernelGraphPtr> &graph_ptr,
                                   const mindspore::HashMap<std::string, uint32_t> &res_limit_map);
   void InsertResLimitForNonTaskSink(const NotNull<KernelGraphPtr> &kernel_graph, DeviceResManager *device_res_manager);
