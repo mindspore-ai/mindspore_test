@@ -103,6 +103,7 @@ mindspore/mindspore/python/mindspore/ops/function/math_func.py:diag_embed
 mindspore/mindspore/python/mindspore/ops/function/random_func.py:multinomial
 mindspore/mindspore/python/mindspore/ops/function/random_func.py:multinomial_ext
 mindspore/mindspore/python/mindspore/ops_generate/arg_dtype_cast.py:type_it
+mindspore/mindspore/python/mindspore/rewrite/parsers/assign_parser.py:process_function
 mindspore/mindspore/python/mindspore/context.py:set_auto_parallel_context
 mindspore/mindspore/python/mindspore/context.py:set_context
 mindspore/mindspore/python/mindspore/common/tensor.py:__init__
