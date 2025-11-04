@@ -5,7 +5,6 @@ file(GLOB_RECURSE _PIPELINE_SRC_FILES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
     "pass_config.cc"
     "pass.cc"
     "action.cc"
-    "silent_check.cc"
     "validator.cc"
     "remove_value_node_dup.cc"
     "pipeline_split.cc"

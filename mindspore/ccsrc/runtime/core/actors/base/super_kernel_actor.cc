@@ -2134,9 +2134,6 @@ bool SuperKernelActor::IsHighPerfModeAtComp() {
     mindspore::runtime::RuntimeConf::GetInstance()->launch_blocking(),
     common::GetEnv("MS_ENABLE_CKPT_D2H_ASYNC") == "1",
     memory::mem_pool::IsNeedProfilieMemoryLog(),
-    common::GetEnv("NPU_ASD_ENABLE") == std::to_string(kIndex1),
-    common::GetEnv("NPU_ASD_ENABLE") == std::to_string(kIndex2),
-    common::GetEnv("NPU_ASD_ENABLE") == std::to_string(kIndex3),
     tools::TftConfig::IsEnableStepTRE(),
     tools::TftConfig::GetInstance() != nullptr && tools::TftConfig::GetInstance()->IsEnableSaveHcclOpStatus(),
   };

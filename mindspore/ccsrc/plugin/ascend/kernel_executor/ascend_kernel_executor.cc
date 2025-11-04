@@ -91,7 +91,6 @@
 #include "tools/profiler/profiling.h"
 #include "include/runtime/utils/runtime_conf/runtime_conf.h"
 #include "include/runtime/utils/runtime_conf/runtime_env.h"
-#include "kernel/ascend/silent_detect/ascend_silent_check.h"
 #include "plugin/ascend/res_manager/ascend_res_manager.h"
 #include "kernel/ascend/aclop/kernel_mod_impl/acl_kernel_mod.h"
 #include "plugin/ascend/ascend_device_context.h"
@@ -135,42 +134,6 @@ std::string GetKernelTypeStr(const KernelType &kernel_type) {
 
 kernel::KernelModPtr GenerateAkgKernelMod(const CNodePtr &kernel);
 
-void RegisterSilentCheckForNode(const CNodePtr &kernel, const kernel::KernelModPtr &kernel_mod_ptr,
-                                const std::string &op_name, KernelType kernel_type) {
-  if (silentcheck::ascend::SilentChecker::GetInstance().IsCommOpInputNotSupport()) {
-    return;
-  }
-  if (!kernel->HasPrimalAttr(silentcheck::kAttrSilentCheckOpType)) {
-    return;
-  }
-  std::vector<KernelTensor *> input_kernel_tensors = AnfAlgo::GetOrCreateAllInputKernelTensors(kernel);
-  if (input_kernel_tensors.empty() || input_kernel_tensors[0]->IsDynamicShape()) {
-    return;
-  }
-  auto check_op_type = GetValue<int>(kernel->GetPrimalAttr(silentcheck::kAttrSilentCheckOpType));
-  auto tensor_type = input_kernel_tensors[0]->dtype_id();
-  MS_VLOG(VL_ASCEND_SILENT_CHECK) << "Type of input0 of " << kernel->fullname_with_scope() << " is "
-                                  << input_kernel_tensors[0]->GetType()->ToString();
-  if (tensor_type != kNumberTypeFloat32 && tensor_type != kNumberTypeBFloat16) {
-    if (check_op_type == silentcheck::kSilentCheckGradCommOp) {
-      MS_LOG(WARNING)
-        << "Input 0 of node " << kernel->fullname_with_scope() << " is " << input_kernel_tensors[0]->ToString()
-        << ", silent check only support bfloat16 and float32 type, silent check function will be disabled.";
-      silentcheck::ascend::SilentChecker::GetInstance().SetCommOpInputNotSupport(true);
-      silentcheck::ascend::SilentChecker::GetInstance().ClearCheckHooks();
-    } else {
-      MS_LOG(WARNING) << "Input 0 of node " << kernel->fullname_with_scope() << " is "
-                      << input_kernel_tensors[0]->ToString()
-                      << ", silent check only support bfloat16 and float32 type, skip silent check for this node";
-    }
-    return;
-  }
-  MS_VLOG(VL_ASCEND_SILENT_CHECK) << "Register silent check for kernel opname:" << op_name
-                                  << ", kernel type:" << GetKernelTypeStr(kernel_type) << " "
-                                  << kernel->fullname_with_scope();
-  silentcheck::ascend::SilentChecker::GetInstance().RegisterCheck(kernel_mod_ptr, input_kernel_tensors[0]);
-}
-
 bool GenerateKernelMod(const std::vector<CNodePtr> &kernels) {
   for (const auto &kernel : kernels) {
     MS_EXCEPTION_IF_NULL(kernel);
@@ -212,7 +175,6 @@ bool GenerateKernelMod(const std::vector<CNodePtr> &kernels) {
     }
     MS_LOG(INFO) << "kernel opname:" << opname << ", kernel type:" << GetKernelTypeStr(kernel_type);
     MS_EXCEPTION_IF_NULL(kernel_mod_ptr);
-    RegisterSilentCheckForNode(kernel, kernel_mod_ptr, opname, kernel_type);
     AnfAlgo::SetKernelMod(kernel_mod_ptr, kernel.get());
   }
   return true;
@@ -1348,16 +1310,9 @@ void AscendKernelExecutor::DoAsyncCkpt(const CNodePtr &kernel) const {
   }
 }
 
-bool AscendKernelExecutor::SilentCheckAndPreSaveWeight(const CNodePtr &kernel, KernelMod *kernel_mod,
-                                                       const std::vector<KernelTensor *> &inputs, void *stream) const {
-  // 1. SilentCheck
-  if (silentcheck::ascend::SilentChecker::IsNpuAsdEnable() &&
-      !silentcheck::ascend::SilentChecker::GetInstance().IsCommOpInputNotSupport() &&
-      kernel->HasPrimalAttr(silentcheck::kAttrSilentCheckOpType)) {
-    MS_VLOG(VL_ASCEND_SILENT_CHECK) << "Launch silent check for " << kernel->fullname_with_scope();
-    silentcheck::ascend::SilentChecker::GetInstance().ExecuteCheck(kernel_mod, inputs[0], stream);
-  }
-  // 2. async ckpt and snap short
+bool AscendKernelExecutor::PreSaveWeight(const CNodePtr &kernel, KernelMod *kernel_mod,
+                                         const std::vector<KernelTensor *> &inputs, void *stream) const {
+  // async ckpt and weight snapshot
   auto opt_start_type = OptimizerEventInfo::GetInstance().GetOptimizerStartType(kernel_mod, kernel);
   bool is_opt_start_kernel = (opt_start_type != OptStartType::OPT_START_TYPE_NONE);
   if (MS_UNLIKELY(is_opt_start_kernel && tools::ascend::AscendSnapshotMgr::GetInstance()->IsSavingSnapshot())) {
@@ -1398,7 +1353,7 @@ bool AscendKernelExecutor::LaunchKernel(const CNodePtr &kernel, const std::vecto
   } else {
     MS_EXCEPTION_IF_NULL(kernel_mod);
     MS_EXCEPTION_IF_NULL(stream);
-    if (!SilentCheckAndPreSaveWeight(kernel, kernel_mod, inputs, stream)) {
+    if (!PreSaveWeight(kernel, kernel_mod, inputs, stream)) {
       // skip execute TensorReport op with attribute "snapshot", it is just used as a tag
       // skip execute TensorReport op at the end of optimizer, it is just used as a tag
       return true;
@@ -1442,13 +1397,6 @@ bool AscendKernelExecutor::LaunchKernelHP(const CNodePtr &kernel, const std::vec
       return false;
     }
   } else {
-    if (silentcheck::ascend::SilentChecker::IsNpuAsdEnable() &&
-        !silentcheck::ascend::SilentChecker::GetInstance().IsCommOpInputNotSupport() &&
-        kernel->HasPrimalAttr(silentcheck::kAttrSilentCheckOpType)) {
-      MS_VLOG(VL_ASCEND_SILENT_CHECK) << "Launch silent check for " << kernel->fullname_with_scope();
-      silentcheck::ascend::SilentChecker::GetInstance().ExecuteCheck(kernel_mod, inputs[0], stream);
-    }
-
     bool ret = kernel_mod->Launch(inputs, workspace, outputs, stream);
     if (!ret) {
       MS_LOG(ERROR) << "Launch kernel failed, kernel full name: " << kernel->fullname_with_scope();

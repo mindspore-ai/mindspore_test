@@ -15,7 +15,6 @@
  */
 
 #include "pynative/utils/pynative_execute.h"
-#include "tools/silent_detect/silent_check/silent_check.h"
 #include "pynative/utils/pynative_utils.h"
 #include "pynative/backward/hook/function_py.h"
 #include "pynative/utils/predict_out_type_map.h"
@@ -174,7 +173,6 @@ void PyNativeExecutor::set_kernel_build_server_dir(const py::object &kernel_buil
 
 void PyNativeExecutor::ClearRes() const {
   runtime::Pipeline::Get().WaitAll();
-  silentcheck::SilentCheckerBase::ClearAll();
   // Clear forward tasks before clear op graphs cache.
   pynative::OpCompiler::GetInstance().ClearAllCache();
   kernel::KernelModCache::GetInstance().ClearAllCache();

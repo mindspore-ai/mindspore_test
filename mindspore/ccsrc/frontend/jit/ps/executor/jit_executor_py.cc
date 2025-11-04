@@ -22,7 +22,6 @@
 #include "frontend/jit/ps/executor/graph_executor_py.h"
 #include "frontend/jit/ps/pass.h"
 #include "frontend/jit/ps/pipeline.h"
-#include "frontend/jit/ps/silent_check.h"
 #include "frontend/jit/ps/event_message_print.h"
 #include "frontend/jit/ps/validator.h"
 #include "frontend/optimizer/ad/dfunctor.h"

@@ -19,7 +19,6 @@
 #include <algorithm>
 #include <unordered_set>
 
-#include "tools/silent_detect/silent_check/silent_check.h"
 #include "ir/cell.h"
 #include "ir/func_graph_cloner.h"
 #include "ir/value.h"
@@ -297,55 +296,6 @@ FrontendOpRunInfoPtr CustomContext2OpRunInfo(const autograd::CustomContext &cont
   return op_run_info;
 }
 
-ValuePtr GetLastGradTensor(ValuePtr grad) {
-  if (grad == nullptr) {
-    return nullptr;
-  }
-  if (grad->isa<tensor::Tensor>()) {
-    return grad;
-  }
-  ValueTuplePtr grads_tuple = grad->cast<ValueTuplePtr>();
-  if (grads_tuple == nullptr || grads_tuple->size() == 0) {
-    return nullptr;
-  }
-  return GetLastGradTensor((*grads_tuple)[0]);
-}
-
-void InsertCheckForLastGrad(ValuePtr grads) {
-  auto checker = silentcheck::SilentCheckerBase::GetInstance();
-  if (checker == nullptr || !checker->NeedInsertCheckForLastGrad()) {
-    return;
-  }
-  auto last_grad = GetLastGradTensor(grads);
-  if (last_grad != nullptr) {
-    MS_VLOG(VL_ASCEND_SILENT_CHECK) << "Register silent check for last gradient";
-    kernel::pyboost::PyBoostUtils::DispatchRun(std::make_shared<runtime::PyBoostDeviceTask>([checker, last_grad]() {
-      auto dout = mindspore::runtime::ValueConverter::ToTensor(last_grad);
-      const char kNameLastGradOp[] = "last_gradient";
-      checker->DoSilentCheck(kNameLastGradOp, "", dout);
-    }));
-  }
-}
-
-void RegBackpropStageHook(bool is_in_bprop) {
-  auto checker = silentcheck::SilentCheckerBase::GetInstance();
-  if (checker == nullptr || !checker->IsNpuAsdEnable()) {
-    return;
-  }
-  MS_VLOG(VL_ASCEND_SILENT_CHECK) << "Register gradient execution hook " << (is_in_bprop ? "begin" : "end");
-  if (is_in_bprop) {
-    checker->ClearCheckObjects();
-  }
-  auto task = std::make_shared<runtime::PyBoostDeviceTask>([checker, is_in_bprop]() {
-    auto launch_task = std::make_shared<runtime::DeviceLaunchTask>([checker, is_in_bprop]() {
-      MS_VLOG(VL_ASCEND_SILENT_CHECK) << "Execute backprop calculation " << (is_in_bprop ? "start" : "finish");
-      checker->SetBackProp(is_in_bprop);
-    });
-    runtime::Pipeline::Get().launch_stage()->Push(launch_task);
-  });
-  runtime::OpExecutor::GetInstance().PushOpRunTask(task);
-}
-
 void AsyncClearEngine(const std::shared_ptr<autograd::AutoDiff> &engine) {
   const auto &pynative_executor = PyNativeAlgo::Common::GetPyNativeExecutor();
   const auto &forward_executor = pynative_executor->forward_executor();
@@ -611,7 +561,6 @@ py::object GradExecutor::RunGrad(const prim::GradOperationPtr &grad, const py::o
   // Wait forward task finish.
   runtime::Pipeline::Get().WaitAll();
 
-  RegBackpropStageHook(true);
   GetTopCellWithInputArgsRespectTo(grad, obj, args);
   MS_EXCEPTION_IF_NULL(top_cell_);
   MS_LOG(DEBUG) << "Run top cell " << top_cell_;
@@ -634,7 +583,6 @@ py::object GradExecutor::RunGrad(const prim::GradOperationPtr &grad, const py::o
                                weight_param_is_tuple);
   bool has_aux_val = py::cast<bool>(has_aux);
   auto ret = RunGradFunc(grad_attr, w_args, p_args, has_aux_val, collect_default_param);
-  RegBackpropStageHook(false);
   return ret;
 }
 
@@ -820,7 +768,6 @@ py::object GradExecutor::RunGradFunc(const autograd::GradAttr &grad_attr, const 
   engine->RunFinalCallback();
   top_cell_ = cur_top_cell;
   MS_EXCEPTION_IF_NULL(grads);
-  InsertCheckForLastGrad(grads);
   MS_EXCEPTION_IF_NULL(cur_top_cell);
   cur_top_cell->set_grad_is_running(false);
   MS_LOG(DEBUG) << "Eval run end";

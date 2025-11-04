@@ -351,18 +351,6 @@ bool CollectiveManager::CreateCommunicationGroup(const std::string &group_name,
                            "Failed to create device communication group" + group_name);
   PROF_END(CreateCommunicationGroupOnDeviceSide);
 
-  // save pipeline parallel local rank for silent check
-  if (group_name.find(kPipelineGroupNamePrefix) == 0) {
-    constexpr char kSilentCheckSetPipelineStage[] = "SilentCheckSetPipelineStage";
-    static const auto silent_check_set_pipeline_stage =
-      callback::CommonCallback::GetInstance()
-        .GetCallback<void, uint32_t, const string &, const std::vector<uint32_t> &, uint32_t>(
-          kSilentCheckSetPipelineStage);
-    if (silent_check_set_pipeline_stage) {
-      silent_check_set_pipeline_stage(local_group_rank, group_name, group_ranks, local_group_size);
-    }
-  }
-
   if (config.async) {
     // If this is in async manner, it's user's duty to call SubmitCreateDeviceCommTask and join the result.
     MS_LOG(WARNING) << "This group's communicator is async created " << group_name;

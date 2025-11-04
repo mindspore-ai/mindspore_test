@@ -43,7 +43,6 @@ FRONTEND_EXPORT bool TaskEmitAction(const ResourcePtr &resource);
 FRONTEND_EXPORT bool ExecuteAction(const ResourcePtr &resource);
 bool OptimizeAction(const ResourcePtr &resource, const std::vector<PassItem> &passes);
 bool RewriterAfterOptAPassAfterJitBprop(const ResourcePtr &resource);
-bool SilentCheckAction(const ResourcePtr &resource);
 
 std::vector<ActionItem> VmPipeline(const ResourcePtr &resource, bool trace_flag = false, bool erase_parse = false);
 std::vector<ActionItem> MindIRPipeline();
