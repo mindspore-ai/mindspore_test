@@ -668,6 +668,18 @@ void AnyTypeKernelActor::UpdateOutputData(OpData<KernelTensor> *const output_dat
                << " index:" << node_with_index.second << " for actor:" << GetAID();
     SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), error_info.str());
   }
+  if (node_with_index.first->isa<Parameter>()) {
+    auto iter = std::find(graph_->input_nodes().begin(), graph_->input_nodes().end(), node_with_index.first);
+    if (iter != graph_->input_nodes().end()) {
+      output_data->data_ = input_kernel_tensors_[iter - graph_->input_nodes().begin()];
+      output_data->data_->IncreaseNewRefCount();
+      MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
+        << "Set output address:" << output_data->data_ << " to output data, output node:" << output_node->DebugString()
+        << " output index:" << data_arrow->from_output_index_ << " real node:" << node_with_index.first->DebugString()
+        << " index:" << node_with_index.second << " in actor:" << GetAID();
+      return;
+    }
+  }
   output_data->data_ = AnfAlgo::GetOutputKernelTensor(node_with_index.first, node_with_index.second, false);
   MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
     << "Set output address:" << output_data->data_ << " to output data, output node:" << output_node->DebugString()

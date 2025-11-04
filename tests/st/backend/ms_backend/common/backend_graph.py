@@ -12,6 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
+"""
+Backend graph mock for backend test.
+"""
 from mindspore._c_expression import BackendGraphMock_
 from mindspore import Parameter
 class BackendGraph(BackendGraphMock_):
@@ -47,6 +50,9 @@ class BackendGraph(BackendGraphMock_):
 
     def set_abstract(self, src, dst):
         return self.set_abstract_(src, dst)
+
+    def set_target(self, node, target):
+        return self.set_target_(node, target)
 
     def set_cell_reuse(self):
         return self.set_cell_reuse_()
