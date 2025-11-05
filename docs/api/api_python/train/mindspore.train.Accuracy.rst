@@ -23,7 +23,7 @@ mindspore.train.Accuracy
         计算正确率。
 
         返回：
-            np.float64，计算的正确率结果。
+            numpy.float64，计算的正确率结果。
 
         异常：
             - **RuntimeError** - 样本量为0。
