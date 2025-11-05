@@ -19,6 +19,7 @@
 #include <memory>
 #include <string>
 #include "include/runtime/hardware_abstract/kernel_base/oplib/oplib.h"
+#include "include/frontend/jit/ps/pipeline_interface.h"
 #include "frontend/jit/ps/pipeline.h"
 #include "frontend/jit/ps/executor/graph_executor_py.h"
 #include "frontend/jit/ps/executor/jit_executor_py.h"
@@ -54,6 +55,7 @@
 #include "include/utils/amp.h"
 #include "frontend/jit/trace/trace_recorder.h"
 #include "include/runtime/core/graph_executor/pre_launch/comm_execution_order_check.h"
+#include "pybind_api/graph/pipeline_py.h"
 #include "pybind_api/graph/custom_pass_py.h"
 #ifdef _WIN32
 #include "kernel/cpu/utils/cpu_utils.h"
