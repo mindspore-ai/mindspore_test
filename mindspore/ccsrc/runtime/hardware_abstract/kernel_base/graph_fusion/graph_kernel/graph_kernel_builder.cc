@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/graph_kernel_builder.h"
+#include "include/runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/graph_kernel_builder.h"
 
 #include <fcntl.h>
 #include <sys/shm.h>
@@ -27,10 +27,10 @@
 #include <unordered_set>
 #include <utility>
 #include <vector>
-#include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel_flags.h"
+#include "include/runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel_flags.h"
 #include "ir/func_graph.h"
-#include "runtime/hardware_abstract/kernel_base/graph_fusion/framework_utils.h"
-#include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/graph_kernel_json_generator.h"
+#include "include/runtime/hardware_abstract/kernel_base/graph_fusion/framework_utils.h"
+#include "include/runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/graph_kernel_json_generator.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "utils/file_utils.h"
 
@@ -42,6 +42,52 @@ constexpr int32_t TIME_OUT = 300;
 constexpr auto kLogLevel = "log_level";
 
 #define ACQUIRE_LOCK LockMng lock(fd_, __func__, __LINE__)
+
+namespace{
+KernelPackPtr SearchCache(const std::string &kernel_name, const std::string &processor) {
+  // search cache.
+  KernelMeta *bin_map = KernelMeta::GetInstance();
+  if (bin_map == nullptr) {
+    MS_LOG(DEBUG) << "kernel cache is invalid, kernel_name: " << kernel_name;
+    return nullptr;
+  }
+
+  std::string kernel_json = bin_map->Search(kernel_name);
+  if (!kernel_json.empty()) {
+    KernelPackPtr kernel_pack = std::make_shared<KernelPack>();
+    // just a tmp solution.
+    if (!kernel_pack->ReadFromJsonFile(kernel_json, processor)) {
+      MS_LOG(ERROR) << "Read cache json and bin file failed[" << kernel_json << "].";
+      return nullptr;
+    } else {
+      return kernel_pack;
+    }
+  } else {
+    MS_LOG(INFO) << "The cache kernel not found[" << kernel_name << "].";
+    return nullptr;
+  }
+}
+
+KernelPackPtr InsertCache(const std::string &kernel_name, const std::string &processor) {
+  MS_LOG(INFO) << "Insert cache for kernel:" << kernel_name << ", processr:" << processor;
+  KernelMeta *bin_map = KernelMeta::GetInstance();
+  if (bin_map == nullptr) {
+    MS_LOG(DEBUG) << "Kernel cache is invalid, kernel name :" << kernel_name;
+    return nullptr;
+  }
+  std::string kernel_json = bin_map->kernel_meta_path();
+  (void)kernel_json.append(kernel_name).append(kJsonSuffix);
+  KernelPackPtr kernel_pack = std::make_shared<KernelPack>();
+  if (!kernel_pack->ReadFromJsonFile(kernel_json, processor)) {
+    MS_LOG(ERROR) << "Read json and bin file failed[" << kernel_json << "].";
+    return nullptr;
+  }
+  if (bin_map->Insert(kernel_name, kernel_json)) {
+    MS_LOG(INFO) << "Kernel insert cache success[" << kernel_json << "], kernel name[" << kernel_name << "].";
+  }
+  return kernel_pack;
+}
+} //  namespace
 
 inline std::string GetErrorInfo() {
   char buf[MAX_ERROR_LEN + 1] = {0};

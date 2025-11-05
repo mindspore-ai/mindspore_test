@@ -24,7 +24,7 @@
 #include <map>
 #include "nlohmann/json.hpp"
 #include "utils/ms_utils.h"
-#include "runtime/hardware_abstract/kernel_base/graph_fusion/framework_utils.h"
+#include "include/runtime/hardware_abstract/kernel_base/graph_fusion/framework_utils.h"
 #include "include/utils/common.h"
 #include "kernel/gpu/gpu_common.h"
 

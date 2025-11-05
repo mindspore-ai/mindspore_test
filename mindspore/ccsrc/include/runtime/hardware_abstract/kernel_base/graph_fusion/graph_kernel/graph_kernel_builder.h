@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_GRAPH_KERNEL_BUILD_H_
-#define MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_GRAPH_KERNEL_BUILD_H_
+#ifndef MINDSPORE_CCSRC_INCLUDE_RUNTIMR_HARDWARE_ABSTRACT_KERNEL_BASE_GRAPH_FUSION_GRAPH_KERNEL_GRAPH_KERNEL_BUILD_H_
+#define MINDSPORE_CCSRC_INCLUDE_RUNTIMR_HARDWARE_ABSTRACT_KERNEL_BASE_GRAPH_FUSION_GRAPH_KERNEL_GRAPH_KERNEL_BUILD_H_
 
 #include <string>
 #include <utility>
@@ -24,9 +24,9 @@
 #include <map>
 #include <set>
 #include "nlohmann/json.hpp"
-#include "runtime/hardware_abstract/kernel_base/graph_fusion/kash/kernel_pack.h"
+#include "include/runtime/hardware_abstract/kernel_base/graph_fusion/kash/kernel_pack.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_build_client.h"
-#include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/graph_kernel_json_generator.h"
+#include "include/runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/graph_kernel_json_generator.h"
 
 namespace mindspore {
 namespace kernel {
@@ -153,4 +153,4 @@ class KernelPool {
 }  // namespace kernel
 }  // namespace mindspore
 
-#endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_GRAPH_KERNEL_BUILD_H_
+#endif  // MINDSPORE_CCSRC_INCLUDE_RUNTIMR_HARDWARE_ABSTRACT_KERNEL_BASE_GRAPH_FUSION_GRAPH_KERNEL_GRAPH_KERNEL_BUILD_H_

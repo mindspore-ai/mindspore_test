@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_GRAPH_KERNEL_BUILDER_MANAGER_H_
-#define MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_GRAPH_KERNEL_BUILDER_MANAGER_H_
-#include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/graph_kernel_builder.h"
+#ifndef CCSRC_INCLUDE_RUNTIMR_HARDWARE_ABSTRACT_KERNEL_BASE_GRAPH_FUSION_GRAPH_KERNEL_GRAPH_KERNEL_BUILDER_MANAGER_H_
+#define CCSRC_INCLUDE_RUNTIMR_HARDWARE_ABSTRACT_KERNEL_BASE_GRAPH_FUSION_GRAPH_KERNEL_GRAPH_KERNEL_BUILDER_MANAGER_H_
+#include "include/runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/graph_kernel_builder.h"
 #include <map>
 #include <utility>
 #include <memory>
@@ -52,4 +52,4 @@ class GraphKernelBuildRegister {
 }  // namespace kernel
 }  // namespace mindspore
 
-#endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_AKG_AKG_KERNEL_BUILD_MANAGER_H_
+#endif  // CCSRC_INCLUDE_RUNTIMR_HARDWARE_ABSTRACT_KERNEL_BASE_GRAPH_FUSION_GRAPH_KERNEL_AKG_AKG_KERNEL_BUILD_MANAGER_H_

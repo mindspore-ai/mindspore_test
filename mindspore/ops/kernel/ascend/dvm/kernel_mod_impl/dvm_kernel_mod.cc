@@ -18,7 +18,7 @@
 #include <algorithm>
 #include <vector>
 #include <string>
-#include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel_flags.h"
+#include "include/runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel_flags.h"
 #include "tools/profiler/profiling.h"
 #include "utils/file_utils.h"
 #include "utils/ms_context.h"

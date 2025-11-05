@@ -28,7 +28,7 @@
 #include "utils/anf_utils.h"
 #include "utils/hash_map.h"
 #include "utils/trace_info.h"
-#include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/graph_kernel_callback.h"
+#include "include/runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/graph_kernel_callback.h"
 #include "backend/ms_backend/graph_fusion/core/graph_kernel_utils.h"
 #include "backend/ms_backend/graph_fusion/core/graph_builder.h"
 #include "backend/ms_backend/graph_fusion/split_model/split_model_factory.h"

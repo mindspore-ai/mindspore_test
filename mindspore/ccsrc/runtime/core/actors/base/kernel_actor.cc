@@ -37,7 +37,7 @@
 #include "include/backend/debug/execute_order_tracker/execute_order_tracker.h"
 #include "include/cluster/topology/collective_manager.h"
 #include "backend/common/pass_manager/dynamic_shape_helper.h"
-#include "runtime/hardware_abstract/kernel_base/graph_fusion/framework_utils.h"
+#include "include/runtime/hardware_abstract/kernel_base/graph_fusion/framework_utils.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "utils/compile_config.h"
 #include "mindspore/ops/op_def/structure_op_name.h"

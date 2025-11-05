@@ -17,7 +17,7 @@
 #include <set>
 #include "backend/ms_backend/graph_fusion/expander/base/ir_builder.h"
 #include "backend/ms_backend/graph_fusion/expander/base/utils.h"
-#include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel_flags.h"
+#include "include/runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel_flags.h"
 #include "mindspore/ops/op_def/op_enum.h"
 #include "utils/value_utils.h"
 

@@ -26,7 +26,7 @@
 #include "include/utils/convert_utils.h"
 #include "include/utils/utils.h"
 #include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
-#include "runtime/hardware_abstract/kernel_base/graph_fusion/framework_utils.h"
+#include "include/runtime/hardware_abstract/kernel_base/graph_fusion/framework_utils.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_build_info.h"
 #include "mindspore/ops/op_def/array_ops.h"
 #include "ops/op_def.h"

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/graph_kernel_comm_info_manager.h"
+#include "include/runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/graph_kernel_comm_info_manager.h"
 #include "utils/log_adapter.h"
 
 namespace mindspore {

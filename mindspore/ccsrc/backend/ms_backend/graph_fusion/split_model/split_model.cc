@@ -18,7 +18,7 @@
 #include <unordered_set>
 #include <algorithm>
 #include <string>
-#include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel_flags.h"
+#include "include/runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel_flags.h"
 #include "abstract/symbolic_shape/int_symbol.h"
 
 namespace mindspore::graphkernel::inner {

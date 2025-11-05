@@ -22,9 +22,9 @@
 #include <sstream>
 #include <unordered_map>
 #include <map>
-#include "runtime/hardware_abstract/kernel_base/graph_fusion/framework_utils.h"
-#include "runtime/hardware_abstract/kernel_base/graph_fusion/kash/kernel_pack.h"
-#include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/graph_kernel_builder.h"
+#include "include/runtime/hardware_abstract/kernel_base/graph_fusion/framework_utils.h"
+#include "include/runtime/hardware_abstract/kernel_base/graph_fusion/kash/kernel_pack.h"
+#include "include/runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/graph_kernel_builder.h"
 #include "backend/ms_backend/graph_fusion/core/graph_kernel_splitter.h"
 #include "backend/ms_backend/graph_fusion/adapter/graph_kernel_splitter_with_py.h"
 

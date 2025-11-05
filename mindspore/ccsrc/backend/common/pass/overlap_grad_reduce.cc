@@ -27,7 +27,7 @@
 #include "include/utils/utils.h"
 #include "include/utils/parallel_context.h"
 #include "backend/ms_backend/graph_fusion/core/graph_kernel_utils.h"
-#include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel_flags.h"
+#include "include/runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel_flags.h"
 #include "mindspore/core/include/utils/ms_context.h"
 #include "include/utils/anfalgo.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"

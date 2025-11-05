@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef MINDSPORE_CCSRC_KERNEL_FRAMEWORK_UTILS_H_
-#define MINDSPORE_CCSRC_KERNEL_FRAMEWORK_UTILS_H_
+#ifndef MINDSPORE_CCSRC_INCLUDE_RUNTIMR_HARDWARE_ABSTRACT_KERNEL_BASE_GRAPH_FUSION_FRAMEWORK_UTILS_H_
+#define MINDSPORE_CCSRC_INCLUDE_RUNTIMR_HARDWARE_ABSTRACT_KERNEL_BASE_GRAPH_FUSION_FRAMEWORK_UTILS_H_
 
 #include <set>
 #include <map>
@@ -27,7 +27,7 @@
 #include "include/utils/utils.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel.h"
 #include "include/runtime/hardware_abstract/kernel_base/oplib/opinfo.h"
-#include "runtime/hardware_abstract/kernel_base/graph_fusion/kash/kernel_pack.h"
+#include "include/runtime/hardware_abstract/kernel_base/graph_fusion/kash/kernel_pack.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_build_info.h"
 #include "ir/device_address.h"
 #include "ops/base_operator.h"
@@ -62,8 +62,6 @@ class RUNTIME_HARDWARE_EXPORT KernelMeta {
 };
 
 RUNTIME_HARDWARE_EXPORT std::string GetCompilerCachePath();
-KernelPackPtr SearchCache(const std::string &kernel_name, const std::string &processor);
-KernelPackPtr InsertCache(const std::string &kernel_name, const std::string &processor);
 
 RUNTIME_HARDWARE_EXPORT void SaveJsonInfo(const std::string &json_name, const std::string &info,
                                           const std::string &base_path);
@@ -92,4 +90,4 @@ RUNTIME_HARDWARE_EXPORT std::pair<std::vector<DataType>, std::vector<DataType>> 
 }  // namespace kernel
 }  // namespace mindspore
 
-#endif  // MINDSPORE_CCSRC_KERNEL_FRAMEWORK_UTILS_H_
+#endif  // MINDSPORE_CCSRC_INCLUDE_RUNTIMR_HARDWARE_ABSTRACT_KERNEL_BASE_GRAPH_FUSION_FRAMEWORK_UTILS_H_

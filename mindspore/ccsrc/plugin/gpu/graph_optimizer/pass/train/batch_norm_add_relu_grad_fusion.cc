@@ -29,7 +29,7 @@
 #include "include/utils/utils.h"
 #include "include/backend/optimizer/helper.h"
 #include "plugin/gpu/graph_optimizer/pass/base/kernel_info_setter.h"
-#include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel_info.h"
+#include "include/runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel_info.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"

@@ -27,9 +27,9 @@
 #include <iostream>
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "ir/func_graph.h"
-#include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel_flags.h"
-#include "runtime/hardware_abstract/kernel_base/graph_fusion/framework_utils.h"
-#include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/graph_kernel_json_generator.h"
+#include "include/runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel_flags.h"
+#include "include/runtime/hardware_abstract/kernel_base/graph_fusion/framework_utils.h"
+#include "include/runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/graph_kernel_json_generator.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_info.h"
 #include "include/utils/anfalgo.h"
 #include "tools/profiler/profiling.h"

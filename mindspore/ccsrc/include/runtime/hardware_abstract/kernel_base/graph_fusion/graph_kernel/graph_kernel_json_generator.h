@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CCSRC_BACKEND_KERNEL_GRAPH_KERNEL_GRAPH_KERNEL_JSON_GENERATOR_H_
-#define MINDSPORE_CCSRC_BACKEND_KERNEL_GRAPH_KERNEL_GRAPH_KERNEL_JSON_GENERATOR_H_
+#ifndef CCSRC_INCLUDE_RUNTIMR_HARDWARE_ABSTRACT_KERNEL_BASE_GRAPH_FUSION_GRAPH_KERNEL_GRAPH_KERNEL_JSON_GENERATOR_H_
+#define CCSRC_INCLUDE_RUNTIMR_HARDWARE_ABSTRACT_KERNEL_BASE_GRAPH_FUSION_GRAPH_KERNEL_GRAPH_KERNEL_JSON_GENERATOR_H_
 #include <map>
 #include <memory>
 #include <tuple>
@@ -25,7 +25,7 @@
 #include <vector>
 #include "nlohmann/json.hpp"
 #include "include/runtime/hardware_abstract/kernel_base/oplib/opinfo.h"
-#include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/graph_kernel_callback.h"
+#include "include/runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/graph_kernel_callback.h"
 #include "include/utils/convert_utils.h"
 #include "runtime/hardware_abstract/visible.h"
 
@@ -42,24 +42,6 @@ struct DumpOption {
   bool extract_opinfo_from_anfnode = false;
   bool get_target_info = false;
   bool gen_kernel_name_only = false;
-};
-
-class TargetInfoSetter {
- public:
-  static void Set(nlohmann::json *kernel_info) {
-    static std::unique_ptr<TargetInfoSetter> instance = nullptr;
-    if (instance == nullptr) {
-      instance = std::make_unique<TargetInfoSetter>();
-      instance->GetTargetInfo();
-    }
-    instance->SetTargetInfo(kernel_info);
-  }
-
- private:
-  void GetTargetInfo();
-  void SetTargetInfo(nlohmann::json *kernel_info) const;
-  nlohmann::json target_info_;
-  bool has_info_{true};
 };
 
 class RUNTIME_HARDWARE_EXPORT GraphKernelJsonGenerator {
@@ -145,4 +127,4 @@ class RUNTIME_HARDWARE_EXPORT GraphKernelJsonGenerator {
   CallbackPtr cb_;
 };
 }  // namespace mindspore::graphkernel
-#endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_GRAPH_KERNEL_GRAPH_KERNEL_JSON_GENERATOR_H_
+#endif  // CCSRC_INCLUDE_RUNTIMR_HARDWARE_ABSTRACT_KERNEL_BASE_GRAPH_FUSION_GRAPH_KERNEL_GRAPH_KERNEL_JSON_GENERATOR_H_

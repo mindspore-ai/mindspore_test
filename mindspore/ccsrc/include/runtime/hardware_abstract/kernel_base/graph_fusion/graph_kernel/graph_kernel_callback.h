@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef MINDSPORE_CCSRC_BACKEND_OPTIMIZER_GRAPH_KERNEL_CORE_GRAPH_KERNEL_CALLBACK_H_
-#define MINDSPORE_CCSRC_BACKEND_OPTIMIZER_GRAPH_KERNEL_CORE_GRAPH_KERNEL_CALLBACK_H_
+#ifndef MINDSPORE_CCSRC_INCLUDE_RUNTIMR_HARDWARE_ABSTRACT_KERNEL_BASE_GRAPH_FUSION_GRAPH_KERNEL_GRAPH_KERNEL_CALLBACK_H_
+#define MINDSPORE_CCSRC_INCLUDE_RUNTIMR_HARDWARE_ABSTRACT_KERNEL_BASE_GRAPH_FUSION_GRAPH_KERNEL_GRAPH_KERNEL_CALLBACK_H_
 #include <string>
 #include <memory>
 #include <vector>
@@ -209,4 +209,4 @@ class CallbackImplRegister {
   const CallbackImplRegister callback(      \
     []() noexcept { return std::static_pointer_cast<Callback>(std::make_shared<cls>()); })
 }  // namespace mindspore::graphkernel
-#endif  // MINDSPORE_CCSRC_BACKEND_OPTIMIZER_GRAPH_KERNEL_CORE_GRAPH_KERNEL_CALLBACK_H_
+#endif

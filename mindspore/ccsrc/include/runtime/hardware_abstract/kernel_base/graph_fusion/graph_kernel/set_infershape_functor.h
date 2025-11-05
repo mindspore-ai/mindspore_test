@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef MINDSPORE_CCSRC_RUNTIME_HRADWARE_ABSTRACT_KERNEL_BASE_GRAPH_FUSION_GRAPH_KERNEL_SET_INFERSHAPE_FUNCTOR_H_
-#define MINDSPORE_CCSRC_RUNTIME_HRADWARE_ABSTRACT_KERNEL_BASE_GRAPH_FUSION_GRAPH_KERNEL_SET_INFERSHAPE_FUNCTOR_H_
+#ifndef MINDSPORE_CCSRC_INCLUDE_RUNTIMR_HARDWARE_ABSTRACT_KERNEL_BASE_GRAPH_FUSION_GRAPH_KERNEL_SET_INFER_FUNCTOR_H_
+#define MINDSPORE_CCSRC_INCLUDE_RUNTIMR_HARDWARE_ABSTRACT_KERNEL_BASE_GRAPH_FUSION_GRAPH_KERNEL_SET_INFER_FUNCTOR_H_
 #include <string>
 #include <vector>
 
@@ -22,7 +22,7 @@
 #include "runtime/hardware_abstract/visible.h"
 #include "include/backend/optimizer/pass.h"
 #include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/symbol_engine/jit/cpp_visitor.h"
-#include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/infershape_functor.h"
+#include "include/runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/infershape_functor.h"
 
 namespace mindspore::graphkernel {
 using opt::dynamic_shape::InferShapeFunctor;
@@ -70,4 +70,4 @@ class RUNTIME_HARDWARE_EXPORT SetInferShapeFunctor : public opt::Pass {
   bool Run(const FuncGraphPtr &func_graph) override;
 };
 }  // namespace mindspore::graphkernel
-#endif  // MINDSPORE_CCSRC_RUNTIME_HRADWARE_ABSTRACT_KERNEL_BASE_GRAPH_FUSION_GRAPH_KERNEL_SET_INFERSHAPE_FUNCTOR_H_
+#endif  // MINDSPORE_CCSRC_INCLUDE_RUNTIMR_HARDWARE_ABSTRACT_KERNEL_BASE_GRAPH_FUSION_GRAPH_KERNEL_SET_INFER_FUNCTOR_H_
