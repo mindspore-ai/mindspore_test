@@ -62,7 +62,6 @@
 #include "frontend/jit/ps/resource.h"
 #include "frontend/jit/ps/remove_value_node_dup.h"
 #include "frontend/jit/ps/event_message_print.h"
-#include "frontend/jit/ps/silent_check.h"
 #include "frontend/optimizer/optimizer.h"
 #include "frontend/optimizer/ad/grad.h"
 #include "utils/log_adapter.h"
@@ -85,7 +84,6 @@
 #endif
 #include "tools/profiler/profiling_framework_data.h"
 #include "tools/profiler/profiler.h"
-#include "tools/silent_detect/silent_check/silent_check.h"
 #include "backend/backend_manager/backend_manager.h"
 #include "include/utils/pynative/adapter.h"
 #include "backend/backend_manager/backend_jit_config.h"
@@ -1991,8 +1989,6 @@ bool PipelineSchedulerAction(const ResourcePtr &resource) { return PipelineParal
 
 bool AutoParallelAction(const ResourcePtr &resource) { return AutoParallelPass(resource); }
 
-bool SilentCheckAction(const ResourcePtr &resource) { return SilentCheckPass(resource); }
-
 bool ValidateAction(const ResourcePtr &resource) {
   auto res = ValidatePass(resource);
 #ifdef DEBUG
@@ -2170,13 +2166,6 @@ std::vector<ActionItem> VmPipeline(const ResourcePtr &resource, bool trace_flag,
     // Eliminate the virtual mirror node
     (void)actions.emplace_back(std::make_pair(kOptAfterJitGrad, OptAfterJitGrad));
 
-#if defined(__linux__) && defined(WITH_BACKEND)
-    if (IsEnableSilentCheck()) {
-      // silent check pass, mark nodes which are need for silent check
-      (void)actions.emplace_back(std::make_pair(kSilentCheck, SilentCheckAction));
-    }
-#endif
-
     // Mind Compiler finish.
     (void)actions.emplace_back(std::make_pair(kValidate, ValidateAction));
   }
@@ -2263,9 +2252,6 @@ std::vector<PassItem> JitPipeline(const ResourcePtr &resource, bool build_top_gr
     (void)jit_passes.emplace_back(kGetJitBpropGraph, GetJitBpropGraph);
     (void)jit_passes.emplace_back(kRewriterAfterJitBprop, RewriterAfterOptAPassAfterJitBprop);
     (void)jit_passes.emplace_back(kOptAfterJitGrad, OptAfterJitGrad);
-    if (IsEnableSilentCheck()) {
-      (void)jit_passes.emplace_back(kSilentCheck, SilentCheckPass);
-    }
     (void)jit_passes.emplace_back(kSymbolEngineOpt, SymbolEngineOptGroup);
     (void)jit_passes.emplace_back(kValidate, ValidatePass);
   }

@@ -9,7 +9,6 @@ if(DEFINED ENV{MS_INTERNAL_KERNEL_HOME})
 endif()
 
 set(ASCEND_KERNEL_COMP
-        silent_detect
         aclop
         acl_ir
         aclnn
