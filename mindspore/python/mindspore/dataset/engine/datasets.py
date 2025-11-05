@@ -3618,7 +3618,7 @@ class _PythonMultiprocessing(cde.PythonMultiprocessingRuntime):
         """Deregister workers monitored by the watch dog and join clean process."""
         if get_enable_watchdog():
             cde.deregister_worker_pids(id(self))
-        if hasattr(self, 'eof') and self.eof_clean_process is not None:
+        if hasattr(self, 'eof_clean_process') and self.eof_clean_process is not None:
             logger.info("Set eof flag for cleaning_process.")
             self.eof_clean_process.set()
         if hasattr(self, 'cleaning_process') and self.cleaning_process is not None:
