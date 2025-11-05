@@ -631,9 +631,9 @@ def basic_reference_inputs_unary_op_common_func(
     Returns:
         Generator of OpSampleInput objects.
     """
-    S = EXTRA_SMALL_DIM_SIZE if kwargs.get("only_small_tensor_size", False) else SMALL_DIM_SIZE
-    M = MEDIUM_DIM_SIZE if kwargs.get("only_small_tensor_size", False) else SMALL_DIM_SIZE
-    L = LARGE_DIM_SIZE if kwargs.get("only_small_tensor_size", False) else SMALL_DIM_SIZE
+    S = SMALL_DIM_SIZE if kwargs.get("only_small_tensor_size", False) else EXTRA_SMALL_DIM_SIZE
+    M = SMALL_DIM_SIZE if kwargs.get("only_small_tensor_size", False) else MEDIUM_DIM_SIZE
+    L = SMALL_DIM_SIZE if kwargs.get("only_small_tensor_size", False) else LARGE_DIM_SIZE
 
     make_func = functools.partial(
         make_tensor,
