@@ -2,8 +2,7 @@
 dist_comm_all_gather:
     args:
         tensor_list:
-            dtype: tuple[tensor]
-            type_cast: list[tensor]
+            dtype: list[tensor]
         input:
             dtype: tensor
         rank_size:

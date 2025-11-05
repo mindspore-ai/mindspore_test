@@ -153,6 +153,7 @@ def _get_group_size(group=GlobalComm.WORLD_COMM_GROUP):
     size = CollectiveManager.get_instance().get_group_size(group)
     return size
 
+
 @constexpr
 def _get_rank_helper(group=GlobalComm.WORLD_COMM_GROUP):
     if not GlobalComm.INITED:
