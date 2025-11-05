@@ -102,6 +102,7 @@
 "mindspore/mindspore/ops/view/split_tensor_strides_calc.cc"                                  "zerodivcond"
 "mindspore/mindspore/ops/view/chunk_strides_calc.cc"                                  "zerodivcond"
 "mindspore/mindspore/ccsrc/pynative/utils/pyboost/pyboost_utils.cc"                                  "useStlAlgorithm"
+"mindspore/mindspore/ops/kernel/ascend/aclnn/pyboost_impl/customize/concat.cc"                       "containerOutOfBounds"
 
 # MindData
 "mindspore/mindspore/ccsrc/minddata/dataset/engine/dataset_iterator.cc"                               "useStlAlgorithm"
