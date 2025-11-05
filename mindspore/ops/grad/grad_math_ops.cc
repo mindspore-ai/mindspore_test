@@ -3452,7 +3452,7 @@ REG_BPROP_BUILDER("Ceil").SetUnusedInputs({i0, i1, i2}).SetBody(ReturnZeros);
 REG_BPROP_BUILDER("Square").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(i0);
   auto dout = ib->GetInput(i2);
-  auto dx = dout * x * ib->Tensor(2.0, ib->GetDtype(x));
+  auto dx = dout * ib->Emit("Muls", {x, ib->Value<float>(2.0)});
   return {dx};
 });
 
