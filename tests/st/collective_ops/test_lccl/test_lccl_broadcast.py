@@ -12,14 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+"""
+test lccl broadcast with 8p
+"""
+
 import numpy as np
 
-import mindspore.nn as nn
-from mindspore import Tensor
+import mindspore as ms
+from mindspore import Tensor, nn
 from mindspore.common.initializer import initializer
 from mindspore.common.parameter import Parameter
 from mindspore.communication.management import init, get_rank, get_group_size
 from mindspore.ops import operations as P
+
+ms.set_context(mode=ms.GRAPH_MODE, device_target="Ascend", jit_config={"jit_level": "O0", "infer_boost": "on"})
 
 init()
 rank = get_rank()
@@ -29,7 +35,7 @@ x = np.ones([3, 1, 3, 3]).astype(np.float32) * 0.01 * (rank + 1)
 
 class Net(nn.Cell):
     def __init__(self):
-        super(Net, self).__init__()
+        super().__init__()
         self.x1 = Parameter(initializer(Tensor(x), x.shape), name='x1')
         self.x2 = Parameter(initializer(Tensor(x), x.shape), name='x2')
         self.x3 = Parameter(initializer(Tensor(x), x.shape), name='x3')

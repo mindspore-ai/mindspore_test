@@ -12,13 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-
-"""test lccl allreduce with 8p"""
+"""
+test lccl barrier with 8p
+"""
 
 import time
+
+import mindspore as ms
 from mindspore import runtime, nn
 from mindspore.communication.management import init, get_rank, get_group_size
 from mindspore.ops import operations as P
+
+ms.set_context(mode=ms.GRAPH_MODE, device_target="Ascend", jit_config={"jit_level": "O0", "infer_boost": "on"})
 
 init()
 rank = get_rank()

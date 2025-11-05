@@ -12,20 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-
-"""test lccl allreduce with 8p"""
+"""
+test lccl matmul_allreduce with 8p
+"""
 
 import os
 import numpy as np
 
-from mindspore import Tensor, context, nn
+import mindspore as ms
+from mindspore import Tensor, nn
 from mindspore.common.initializer import initializer
 from mindspore.common.parameter import Parameter
 from mindspore.communication.management import init, HCCL_WORLD_COMM_GROUP, get_rank, get_group_size
 from mindspore.ops import operations as P
 
-context.set_context(mode=context.GRAPH_MODE, device_target="Ascend",
-                    jit_config={"jit_level": "O0", "infer_boost": "on"})
+ms.set_context(mode=ms.GRAPH_MODE, device_target="Ascend", jit_config={"jit_level": "O0", "infer_boost": "on"})
+
 init()
 rank = get_rank()
 size = get_group_size()
