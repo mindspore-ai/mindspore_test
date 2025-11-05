@@ -24,6 +24,7 @@
 #include "kernel/cpu/utils/visible.h"
 
 namespace mindspore::kernel {
+namespace op_plugin {
 struct OpPluginKernelParam {
   std::vector<void *> params;
   std::vector<int> ndims;
@@ -43,6 +44,7 @@ int LaunchOpPluginKernel(const std::string &op_name, OpPluginKernelParam *param)
 OpPluginKernelParam CreateOpPluginParam(const std::vector<KernelTensor *> &inputs,
                                         const std::vector<KernelTensor *> &outputs,
                                         const std::vector<KernelTensor *> &workspace);
+}  // namespace op_plugin
 }  // namespace mindspore::kernel
 
 #endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_CPU_KERNEL_CUSTOM_OP_PLUGIN_UTILS_H_

@@ -33,6 +33,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace op_plugin {
 void CustomOpPluginCpuKernelMod::SetKernelPath() {
   const char *op_plugin_path = common::EnvHelper::GetInstance()->GetEnv("MS_OP_PLUGIN_PATH");
 
@@ -152,5 +153,6 @@ int CustomOpPluginCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs
   return static_cast<int>(KRET_OK);
 }
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, CustomOpPlugin, CustomOpPluginCpuKernelMod);
+}  // namespace op_plugin
 }  // namespace kernel
 }  // namespace mindspore

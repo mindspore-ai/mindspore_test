@@ -357,7 +357,9 @@ tensor::TensorPtr Common::ConvertStubNodeToTensor(const ValuePtr &v, bool need_c
   auto device_address = tensor->device_address();
   MS_EXCEPTION_IF_NULL(device_address);
   const auto &device_target = device_address->GetDeviceType();
-  if (device_target == device::DeviceType::kAscend) {
+  static const auto ms_op_plugin_path = common::EnvHelper::GetInstance()->GetEnv("MS_OP_PLUGIN_PATH");
+  if (device_target == device::DeviceType::kAscend ||
+      (ms_op_plugin_path != nullptr && device_target == device::DeviceType::kCPU)) {
     return tensor;
   }
 

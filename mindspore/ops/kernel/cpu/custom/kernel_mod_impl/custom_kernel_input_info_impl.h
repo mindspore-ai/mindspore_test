@@ -19,10 +19,12 @@
 
 #include <string>
 #include <vector>
+#include <optional>
 #include "include/runtime/hardware_abstract/kernel_base/kernel_tensor.h"
 #include "kernel/cpu/custom/kernel_mod_impl/custom_kernel_input_info.h"
 
-namespace mindspore {
+namespace mindspore::kernel {
+namespace op_plugin {
 class KernelInputInfoImpl : public KernelInputInfo {
  public:
   KernelInputInfoImpl() = default;
@@ -53,8 +55,22 @@ class KernelInputInfoImpl : public KernelInputInfo {
 
   int GetInputTypeId(size_t idx) { return static_cast<int>(inputs_[idx]->dtype_id()); }
 
+  std::optional<OpPluginTensorStorageInfo> GetInputTensorLayout(size_t idx) {
+    if (inputs_[idx]->type_id() != TypeId::kObjectTypeTensorType) {
+      return std::nullopt;
+    }
+    const auto &input = inputs_[idx];
+    if (input->tensor_storage_info() == nullptr) {
+      return std::nullopt;
+    }
+    const auto &strides = input->tensor_storage_info()->strides;
+    const auto &storage_offset = input->tensor_storage_info()->storage_offset;
+    return std::make_optional<OpPluginTensorStorageInfo>(OpPluginTensorStorageInfo{strides, storage_offset});
+  }
+
  private:
   std::vector<kernel::KernelTensor *> inputs_;
 };
-}  // namespace mindspore
+}  // namespace op_plugin
+}  // namespace mindspore::kernel
 #endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_CPU_KERNEL_CUSTOM_CUSTOM_KERNEL_INPUT_INFO_IMPL_H_

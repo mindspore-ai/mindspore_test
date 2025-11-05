@@ -19,12 +19,13 @@
 
 #include <string>
 #include <vector>
+#include <optional>
 
-namespace mindspore {
-class CustomKernelData {
- public:
-  CustomKernelData() = default;
-  virtual ~CustomKernelData() = default;
+namespace mindspore::kernel {
+namespace op_plugin {
+struct OpPluginTensorStorageInfo {
+  std::vector<int64_t> strides;
+  size_t storage_offset;
 };
 
 // KernelInputInfo is an interface class.
@@ -44,13 +45,6 @@ class KernelInputInfo {
   void SetWorkSpace(const std::vector<size_t> &workspace) { workspace_ = workspace; }
   const std::vector<size_t> &WorkSpace() const { return workspace_; }
 
-  void SetKernelData(CustomKernelData *kernel_data) { kernel_data_ = kernel_data; }
-  const CustomKernelData *KernelData() const { return kernel_data_; }
-
-  void DestructKernelData() {
-    delete kernel_data_;
-    kernel_data_ = nullptr;
-  }
   virtual size_t GetInputSize() = 0;
 
   virtual bool GetBoolInput(size_t idx) = 0;
@@ -63,10 +57,9 @@ class KernelInputInfo {
   virtual std::vector<std::vector<int64_t>> GetInt2DVecInput(size_t idx) = 0;
   virtual std::vector<std::vector<float>> GetFloat2DVecInput(size_t idx) = 0;
   virtual int GetInputTypeId(size_t idx) = 0;
+  virtual std::optional<OpPluginTensorStorageInfo> GetInputTensorLayout(size_t idx) = 0;
   std::vector<size_t> workspace_;
-
- private:
-  CustomKernelData *kernel_data_{nullptr};
 };
-}  // namespace mindspore
+}  // namespace op_plugin
+}  // namespace mindspore::kernel
 #endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_CPU_KERNEL_CUSTOM_CUSTOM_KERNEL_INPUT_INFO_H_
