@@ -24,14 +24,14 @@ import functools
 import torch
 import mindspore as ms
 from mindspore import mint, mutable
-from tests.st.ops.share._op_info.op_info import OpInfo, BinaryOpInfo
-from tests.st.ops.share._op_info.op_info import sample_inputs_binary_op_func
+from tests.st.ops.share._op_info.op_info import OpInfo, BinaryOpInfo, UnaryOpInfo
+from tests.st.ops.share._op_info.op_info import basic_reference_inputs_binary_op_common_func
 from tests.st.ops.share._op_info.op_common import dtypes_as_torch, dtypes_extra_uint
 from tests.st.ops.share._op_info.op_common import SMALL_DIM_SIZE
 from tests.st.ops.share._internal.utils import OpSampleInput, OpDynamicInput, OpErrorInput, make_tensor
 from typing import Dict, Optional
 
-# op_sample_inputs_func for ops
+# op_basic_reference_inputs_func for ops
 def sample_inputs_add_sub_ext_func(
     op_info: OpInfo,
     dtype,
@@ -48,7 +48,7 @@ def sample_inputs_add_sub_ext_func(
     Returns:
         Generator of OpSampleInput objects.
     '''
-    yield from sample_inputs_binary_op_func(op_info, dtype, device, **kwargs)
+    yield from basic_reference_inputs_binary_op_common_func(op_info, dtype, device, **kwargs)
 
     S = SMALL_DIM_SIZE
     # Adds alpha kwarg cases
@@ -205,7 +205,7 @@ op_db: Dict[str, OpInfo] = {
         dtypes_ascend910b=dtypes_as_torch,
         dtypes_cpu=tuple([d for d in dtypes_as_torch if d != ms.bfloat16 and d != ms.bool_] + list(dtypes_extra_uint)),
         dtypes_gpu=tuple([d for d in dtypes_as_torch if d != ms.bfloat16 and d != ms.bool_] + list(dtypes_extra_uint)),
-        op_sample_inputs_func=sample_inputs_add_sub_ext_func,
+        op_basic_reference_inputs_func=sample_inputs_add_sub_ext_func,
         op_dynamic_inputs_func=dynamic_inputs_add_sub_ext_func,
         op_error_inputs_func=error_inputs_add_sub_ext_func,
     ),
@@ -219,9 +219,21 @@ op_db: Dict[str, OpInfo] = {
         dtypes_ascend910b=tuple(d for d in dtypes_as_torch if d != ms.bool_),
         dtypes_cpu=tuple([d for d in dtypes_as_torch if d != ms.bfloat16 and d != ms.bool_] + list(dtypes_extra_uint)),
         dtypes_gpu=tuple([d for d in dtypes_as_torch if d != ms.bfloat16 and d != ms.bool_] + list(dtypes_extra_uint)),
-        op_sample_inputs_func=sample_inputs_add_sub_ext_func,
+        op_basic_reference_inputs_func=sample_inputs_add_sub_ext_func,
         op_dynamic_inputs_func=dynamic_inputs_add_sub_ext_func,
         op_error_inputs_func=error_inputs_add_sub_ext_func,
+    ),
+    'tanh': UnaryOpInfo(
+        name='tanh',
+        op=mint.tanh,
+        ref=torch.tanh,
+        tensor_variant=lambda op_input, *op_args, **op_kwargs: op_input.tanh(),
+        dtypes_ascend=tuple(d for d in dtypes_as_torch if (not d.is_complex and d != ms.bfloat16 and d != ms.float64)),
+        dtypes_ascend910b=tuple(d for d in dtypes_as_torch if (not d.is_complex and d != ms.float64)),
+        #dtypes_cpu=tuple(d for d in dtypes_as_torch if (d.is_floating_point or d.is_complex) and d != ms.bfloat16),
+        #dtypes_gpu=tuple(d for d in dtypes_as_torch if (d.is_floating_point or d.is_complex) and d != ms.bfloat16),
+        dtypes_cpu=(),
+        dtypes_gpu=(),
     ),
 }
 
@@ -230,6 +242,10 @@ all_op_db = list(op_db.keys())
 binary_op_db = [
     'add_ext',
     'sub_ext',
+]
+
+unary_op_db = [
+    'tanh',
 ]
 
 def get_op_info(op_name: str, *, op_database: Optional[Dict[str, OpInfo]] = None) -> OpInfo:
