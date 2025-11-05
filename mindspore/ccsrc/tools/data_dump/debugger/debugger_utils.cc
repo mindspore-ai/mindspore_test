@@ -505,7 +505,8 @@ ShapeVector GetOriOutputTensorShape(const TensorInfoForDump &tensor_info, TypeId
   auto tensor_storage_info = tensor_info.kernel_tensor->device_address()->GetTensorStorageInfo();
   auto host_shape = tensor_storage_info == nullptr ? tensor_info.host_shape : tensor_storage_info->ori_shape;
   if (host_type == kNumberTypeInt4 && !GetSampleNum()) {
-    host_shape.back() *= 2;
+    constexpr int64_t kNumber2 = 2;
+    host_shape.back() *= kNumber2;
   }
   return host_shape;
 }
