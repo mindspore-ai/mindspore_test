@@ -54,6 +54,7 @@
 #include "utils/log_adapter.h"
 
 namespace mindspore::kernel {
+namespace op_plugin {
 void *GetOpPluginHandle() {
   static bool is_initialized = false;
   static void *handle = nullptr;
@@ -195,4 +196,5 @@ int LaunchOpPluginKernel(const std::string &op_name, OpPluginKernelParam *param)
                               param->shapes.data(), param->dtypes.data(), reinterpret_cast<void *>(&param->kernel_info),
                               param->stream);
 }
+}  // namespace op_plugin
 }  // namespace mindspore::kernel

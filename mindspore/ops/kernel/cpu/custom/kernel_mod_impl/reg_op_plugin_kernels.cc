@@ -20,6 +20,7 @@
 #include "include/utils/callback.h"
 
 namespace mindspore::kernel {
+namespace op_plugin {
 void RegisterOpPluginKernels() {
   const auto &op_names = GetAllOpPluginKernelNames();
   for (const auto &op_name : op_names) {
@@ -29,4 +30,5 @@ void RegisterOpPluginKernels() {
   }
 }
 REGISTER_COMMON_CALLBACK(RegisterOpPluginKernels);
+}  // namespace op_plugin
 }  // namespace mindspore::kernel

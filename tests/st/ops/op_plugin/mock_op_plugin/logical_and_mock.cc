@@ -18,6 +18,11 @@
 #include <fstream>
 #include <iostream>
 
+#include "custom_kernel_input_info.h"
+#include "bool_tensor_iterator.h"
+
+using mindspore::kernel::op_plugin::KernelInputInfo;
+
 extern "C" {
 // Mock implementation of the logical_and operator.
 // Not fully implemented, only for certain test cases.
@@ -60,8 +65,51 @@ int LogicalAnd(int nparam, void **params, int *ndims, int64_t **shapes, const ch
     numel *= static_cast<size_t>(d0);
   }
 
+  // Extract tensor layout (strides, storage_offset) from extra if available.
+  auto kernel_input_info = static_cast<KernelInputInfo *>(extra);
+  std::vector<int64_t> shape_vec;
+  shape_vec.reserve(static_cast<size_t>(dims));
+  for (int i = 0; i < dims; ++i) {
+    shape_vec.push_back(shapes[0][i]);
+  }
+
+  auto make_elem_strides = [&](size_t input_index) -> std::pair<std::vector<int64_t>, int64_t> {
+    std::vector<int64_t> strides_elems(shape_vec.size(), 0);
+    int64_t offset_elems = 0;
+    if (kernel_input_info != nullptr) {
+      auto layout_opt = kernel_input_info->GetInputTensorLayout(input_index);
+      if (layout_opt.has_value()) {
+        const auto &layout = layout_opt.value();
+        if (layout.strides.size() == shape_vec.size()) {
+          for (size_t i = 0; i < layout.strides.size(); ++i) {
+            strides_elems[i] = layout.strides[i];
+          }
+          offset_elems = static_cast<int64_t>(layout.storage_offset);
+          return {strides_elems, offset_elems};
+        }
+      }
+    }
+    // Fallback to contiguous layout in elements (row-major).
+    if (!shape_vec.empty()) {
+      strides_elems.back() = 1;
+      for (int64_t d = static_cast<int64_t>(shape_vec.size()) - 2; d >= 0; --d) {
+        strides_elems[static_cast<size_t>(d)] =
+          strides_elems[static_cast<size_t>(d + 1)] * shape_vec[static_cast<size_t>(d + 1)];
+      }
+    }
+    return {strides_elems, 0};
+  };
+
+  auto [x_strides_elems, x_offset_elems] = make_elem_strides(0);
+  auto [y_strides_elems, y_offset_elems] = make_elem_strides(1);
+
+  BoolTensorIterator it_x(x, shape_vec, x_strides_elems, x_offset_elems);
+  BoolTensorIterator it_y(y, shape_vec, y_strides_elems, y_offset_elems);
+
   for (size_t i = 0; i < numel; ++i) {
-    out[i] = (x[i] || y[i]);  // wrong implementation by purpose to ensure op plugin is used
+    const bool vx = it_x.next();
+    const bool vy = it_y.next();
+    out[i] = (vx || vy);  // keep mocked behavior (intentional OR)
   }
   return 0;
 }

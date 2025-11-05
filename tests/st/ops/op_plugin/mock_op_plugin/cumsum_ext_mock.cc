@@ -20,6 +20,8 @@
 
 #include "custom_kernel_input_info.h"
 
+using mindspore::kernel::op_plugin::KernelInputInfo;
+
 extern "C" {
 
 // Mock implementation of the cumsum_ext operator.
@@ -35,7 +37,7 @@ int CumsumExt(int nparam, void **params, int *ndims, int64_t **shapes, const cha
   const int64_t *x = static_cast<const int64_t *>(params[0]);
   int64_t *out = static_cast<int64_t *>(params[nparam - 1]);
 
-  auto kernel_input_info = static_cast<mindspore::KernelInputInfo *>(extra);
+  auto kernel_input_info = static_cast<KernelInputInfo *>(extra);
   if (kernel_input_info == nullptr) {
     std::cout << "Invalid kernel input info for cumsum_ext operator" << std::endl;
     return -1;
@@ -62,5 +64,4 @@ int CumsumExt(int nparam, void **params, int *ndims, int64_t **shapes, const cha
 
   return 0;
 }
-
 }  // extern "C"
