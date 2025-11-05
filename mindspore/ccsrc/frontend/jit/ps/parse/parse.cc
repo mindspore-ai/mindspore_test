@@ -1194,6 +1194,18 @@ FunctionBlockPtr Parser::ParseExpr(const FunctionBlockPtr &block, const py::obje
           return block;
         }
       }
+      // Process event.record() or event.wait()
+      auto event_target_node = ast_->CallParseModFunction(PYTHON_PARSE_CHECK_EVENT_RECORD_WAIT, node);
+      MS_LOG(DEBUG) << "event_target_node: " << py::str(event_target_node);
+      if (!py::isinstance<py::none>(event_target_node)) {
+        MS_LOG(DEBUG) << "call_node: " << call_node->DebugString();
+        call_node->set_user_data<bool>("fake_return", std::make_shared<bool>(true));
+        WriteAssignVars(block, event_target_node, call_node);
+        // If the target is not event, after replace node, the call_node maybe no user
+        block->AddIsolatedNode(call_node);
+        return block;
+      }
+
       // Expression that not assigned to any variable.
       // This is usually a call with side effects.
       // e.g.: print(x)

@@ -124,6 +124,7 @@ const char PYTHON_PARSE_GET_NAMESPACE_SYMBOL[] = "get_namespace_symbol";
 const char PYTHON_PARSE_IS_BUILTIN_FUNCTION_NAME[] = "is_builtin_function_name";
 const char PYTHON_PARSE_GET_LOCATION[] = "get_location";
 const char PYTHON_PARSE_EXPAND_EXPR_STATEMENT[] = "expand_expr_statement";
+const char PYTHON_PARSE_CHECK_EVENT_RECORD_WAIT[] = "check_event_record_wait";
 const char PYTHON_PARSE_GENERATE_SCOPE[] = "generate_scope";
 const char PYTHON_PARSE_GET_SCOPE_NAME[] = "get_scope_name";
 const char PYTHON_PARSE_GET_TYPE[] = "get_type";

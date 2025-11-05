@@ -26,7 +26,7 @@
 #include <memory>
 #include <vector>
 #include <string>
-
+#include <mutex>
 #include "include/utils/tensor_py.h"
 #include "frontend/jit/ps/parse/resolve.h"
 #include "frontend/jit/ps/pipeline.h"
@@ -662,11 +662,18 @@ ValuePtr ConvertEvent(const py::object &obj) {
   py::object event_obj_id = python_adapter::CallPyFn(parse::PYTHON_MOD_PARSE_MODULE, parse::PYTHON_MOD_GET_OBJ_ID, obj);
   auto id = event_obj_id.cast<std::string>();
   MS_LOG(DEBUG) << "The id of event obj is: " << id;
+  static std::mutex event_mutex;
   static std::map<std::string, uint32_t> event_map;
   static uint32_t event_id = 0;
-  if (event_map.find(id) == event_map.end()) {
-    event_map[id] = event_id++;
+  std::lock_guard<std::mutex> lock(event_mutex);
+  auto it = event_map.find(id);
+  if (it != event_map.end()) {
+    return std::make_shared<Event>(static_cast<int32_t>(it->second));
   }
+  if (event_id == UINT32_MAX) {
+    MS_LOG(EXCEPTION) << "Event ID overflow!";
+  }
+  event_map[id] = event_id++;
   return std::make_shared<Event>(static_cast<int32_t>(event_map[id]));
 }
 

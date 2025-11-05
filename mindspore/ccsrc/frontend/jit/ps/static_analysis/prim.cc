@@ -3455,6 +3455,48 @@ class GetAttrEvaluator final : public TransitionPrimEvaluator {
   GetAttrEvaluator() : TransitionPrimEvaluator("GetAttrEvaluator") {}
   ~GetAttrEvaluator() override = default;
   MS_DECLARE_PARENT(GetAttrEvaluator, TransitionPrimEvaluator);
+  EvalResultPtr ProcessRecordWaitMothed(const AnalysisEnginePtr &engine, const AbstractBasePtrList &args_abs_list,
+                                        const AnfNodeConfigPtr &out_conf) {
+    constexpr auto attr_index = 1;
+    auto attr_abs = args_abs_list[attr_index];
+    MS_EXCEPTION_IF_NULL(attr_abs);
+    // value.attr
+    // GetAttr(value, attr)
+    auto attr_value = attr_abs->BuildValue();
+    MS_EXCEPTION_IF_NULL(attr_value);
+    auto attr_str = GetValue<std::string>(attr_value);
+    // Check if the value is Event, only support event.record() and event.wait()
+    if (attr_str != "record" && attr_str != "wait") {
+      return nullptr;
+    }
+    constexpr auto kValueIndex = 0;
+    auto value_abs = args_abs_list[kValueIndex];
+    MS_EXCEPTION_IF_NULL(value_abs);
+    if (value_abs->isa<abstract::AbstractEvent>()) {
+      return nullptr;
+    }
+    auto getattr_node = out_conf->node();
+    getattr_node->set_user_data<bool>("fake_return", std::make_shared<bool>(true));
+    MS_LOG(DEBUG) << "mark fake_return for getattr_node:" << getattr_node->DebugString();
+    auto original_var = getattr_node->user_data<AnfNode>("original_var");
+    if (original_var == nullptr) {
+      return nullptr;
+    }
+    MS_LOG(DEBUG) << "original_var:" << original_var->DebugString();
+    auto get_attr_inputs = getattr_node->cast<CNodePtr>()->inputs();
+    auto func_graph = getattr_node->func_graph();
+    MS_EXCEPTION_IF_NULL(func_graph);
+    constexpr auto kReplaceIndex = 1;
+    if (get_attr_inputs[kReplaceIndex] != original_var) {
+      CNodePtr new_cnode = func_graph->NewCNode(get_attr_inputs);
+      new_cnode->set_input(kReplaceIndex, original_var);
+      new_cnode->set_debug_info(getattr_node->debug_info());
+      AnfNodeConfigPtr fn_conf = engine->MakeConfig(new_cnode, out_conf->context(), out_conf->func_graph());
+      return engine->ForwardConfig(out_conf, fn_conf);
+    }
+    return nullptr;
+  }
+
   EvalResultPtr EvalPrim(const AnalysisEnginePtr &engine, const AbstractBasePtrList &args_abs_list,
                          const ConfigPtr &in_conf0, const AnfNodeConfigPtr &out_conf) override {
     constexpr auto args_min_size = 2;
@@ -3472,6 +3514,7 @@ class GetAttrEvaluator final : public TransitionPrimEvaluator {
     constexpr auto attr_index = 1;
     auto attr_abs = args_abs_list[attr_index];
     MS_EXCEPTION_IF_NULL(attr_abs);
+
     auto attr_abs_type = attr_abs->BuildType();
     MS_EXCEPTION_IF_NULL(attr_abs_type);
     auto type_id = attr_abs_type->type_id();
@@ -3479,6 +3522,11 @@ class GetAttrEvaluator final : public TransitionPrimEvaluator {
       MS_EXCEPTION(TypeError) << "getattr(): attribute name must be string but got: " << TypeIdToString(type_id);
     }
     EvalResultPtr res = nullptr;
+    res = ProcessRecordWaitMothed(engine, args_abs_list, out_conf);
+    if (res != nullptr) {
+      return res;
+    }
+
     if (bound_node() != nullptr) {
       TraceGuard trace_guard(MakeTraceInfo<TraceResolve>(bound_node()->debug_info()));
       res = StaticGetter(engine, args_abs_list, in_conf0, out_conf);
@@ -3497,7 +3545,7 @@ class SetAttrEvaluator final : public TransitionPrimEvaluator {
   SetAttrEvaluator() : TransitionPrimEvaluator("SetAttrEvaluator") {}
   ~SetAttrEvaluator() override = default;
   MS_DECLARE_PARENT(SetAttrEvaluator, TransitionPrimEvaluator);
-  EvalResultPtr EvalPrim(const AnalysisEnginePtr &, const AbstractBasePtrList &args_abs_list, const ConfigPtr &,
+  EvalResultPtr EvalPrim(const AnalysisEnginePtr &engine, const AbstractBasePtrList &args_abs_list, const ConfigPtr &,
                          const AnfNodeConfigPtr &out_conf) override {
     constexpr size_t min_args_size = 3;
     constexpr size_t max_args_size = 4;
@@ -3506,6 +3554,29 @@ class SetAttrEvaluator final : public TransitionPrimEvaluator {
       MS_LOG(EXCEPTION) << "For Primitive SetAttr, the input size should be " << min_args_size << " or "
                         << max_args_size << ", but got size: " << args_size;
     }
+    // target.attr = assigned
+    // SetAttr(target, attr, assigned)
+    // self.cls.record()  self.cls = self.cls.record()
+    // SetAttr(self.cls, attr, assigned)
+    auto set_attr_node = out_conf->node();
+    MS_EXCEPTION_IF_NULL(set_attr_node);
+    auto set_attr_cnode = set_attr_node->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(set_attr_cnode);
+    constexpr size_t kAssignedIndex = 3;
+    auto assigned = set_attr_cnode->input(kAssignedIndex);
+    if (assigned->isa<CNode>()) {
+      auto assigned_cnode = assigned->cast<CNodePtr>();
+      MS_EXCEPTION_IF_NULL(assigned_cnode);
+      auto assigned_input = assigned_cnode->input(0);
+      auto fake_return = assigned_input->user_data<bool>("fake_return");
+      if (fake_return != nullptr && *fake_return) {
+        MS_LOG(DEBUG) << "assigned_input has fake_return: " << assigned_input->DebugString();
+        auto new_node = NewValueNode(std::make_shared<None>());
+        AnfNodeConfigPtr fn_conf = engine->MakeConfig(new_node, out_conf->context(), out_conf->func_graph());
+        return engine->ForwardConfig(out_conf, fn_conf);
+      }
+    }
+
     auto res_abstract = EvalUndeterminedArgs(args_abs_list);
     if (res_abstract != nullptr) {
       return res_abstract;

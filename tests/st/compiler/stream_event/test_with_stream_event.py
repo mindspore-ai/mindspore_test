@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+"""Test with StreamCtx"""
 # pylint: disable=C0114
 # pylint: disable=C0115
 # pylint: disable=C0116
@@ -287,3 +288,131 @@ def test_with_stream_event_with_morph():
     except FileNotFoundError:
         pass
     assert len(event_id_num) == 3
+
+
+class WithEventNet2(nn.Cell):
+    def __init__(self):
+        super().__init__()
+        self.depend = ops.Depend()
+
+    def construct(self, x, rank_num):
+        y = x * 2
+        event_list = []
+        z = x + 1
+        for _ in range(rank_num):
+            event = ms.runtime.Event()
+            with MyMsJitStreamCtx(s1):
+                z = a + b + x
+                event = self.depend(event, z)
+                event.record()
+                event_list.append(event)
+                event.wait()
+        for event_index in event_list:
+            event_end_recv = event_index.wait()
+            y = self.depend(y, event_end_recv)
+        return y + z
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_with_stream_event_list():
+    """
+    Feature: Support event and with stream in graph mode.
+    Description: Support event and with stream in graph mode.
+    Expectation: Run success.
+    """
+
+    save_path = "./test_with_stream_event_list"
+    os.environ['MS_DEV_DUMP_IR_PASSES'] = 'validate'
+    ms.set_context(jit_config={"jit_level": "O0"}, save_graphs=True, save_graphs_path=save_path)
+    x = Tensor(np.ones([3, 3]), ms.float32)
+    net = WithEventNet2()
+    out = net(x, 2)
+    print("out:", out)
+    assert (out.asnumpy() == (5 * x).asnumpy()).all()
+    os.unsetenv('MS_DEV_DUMP_IR_PASSES')
+    ms.set_context(save_graphs=False)
+    content = read_file(save_path)
+    stream_id_num = re.findall('stream_id', content)
+    event_id_num = re.findall('event_id', content)
+    try:
+        shutil.rmtree(save_path)
+    except FileNotFoundError:
+        pass
+    assert (out.asnumpy() == (x * 5).asnumpy()).all()
+    assert len(stream_id_num) == 9
+    assert len(event_id_num) == 6
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_cust_class_record_wait():
+    """
+    Feature: getattr for custom class.
+    Description: Support getattr for custom class.
+    Expectation: No exception.
+    """
+
+    class GetattrClass():
+        def __init__(self):
+            self.attr1 = 99
+            self.attr2 = 1
+
+        def record(self):
+            return self.attr1
+
+        def wait(self):
+            self.attr1 = 10
+            return self.attr2
+
+    class GetattrClassNet(ms.nn.Cell):
+        def __init__(self):
+            super(GetattrClassNet, self).__init__()
+            self.cls = GetattrClass()
+
+        def construct(self):
+            self.cls.record()
+            self.cls.wait()
+            return self.cls.attr1
+
+    ms.set_context(mode=ms.GRAPH_MODE)
+    net = GetattrClassNet()
+    out = net()
+    assert out == 10
+    print("out:", out)
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_cust_class_record_wait_2():
+    """
+    Feature: getattr for custom class.
+    Description: Support getattr for custom class.
+    Expectation: No exception.
+    """
+
+    class GetattrClass():
+        def __init__(self):
+            self.attr1 = 99
+            self.attr2 = 1
+
+        def method1(self, x):
+            return x + self.attr2 * 2
+
+        def record(self):
+            return self.attr1
+
+        def wait(self):
+            return self.attr2
+
+    class GetattrClassNet(ms.nn.Cell):
+        def __init__(self):
+            super(GetattrClassNet, self).__init__()
+            self.cls = GetattrClass()
+
+        def construct(self):
+            obj = self.cls
+            obj.record()
+            obj.wait()
+            return self.cls.method1(self.cls.attr1)
+
+    ms.set_context(mode=ms.GRAPH_MODE)
+    net = GetattrClassNet()
+    out = net()
+    assert out == 101

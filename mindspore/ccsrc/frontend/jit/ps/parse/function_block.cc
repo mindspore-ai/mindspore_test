@@ -134,6 +134,26 @@ void FunctionBlock::WriteVariable(const std::string &var_name, const AnfNodePtr 
     AddIsolatedNode(node);
     return;
   }
+  auto fake_return = node->user_data<bool>("fake_return");
+  if (fake_return != nullptr && *fake_return) {
+    // Need mark original node
+    auto found = original_vars_.find(var_name);
+    if (found != original_vars_.end()) {
+      // %1 = getattr()
+      // %2 = %1()
+      auto &original_node = found->second;
+      MS_EXCEPTION_IF_NULL(original_node);
+      auto cnode = node->cast<CNodePtr>();
+      MS_EXCEPTION_IF_NULL(cnode);
+      auto get_attr = cnode->input(0);
+      MS_LOG(DEBUG) << "mark original_var: " << original_node->DebugString()
+                    << " for get_attr node:" << get_attr->DebugString();
+      get_attr->set_user_data<AnfNode>("original_var", original_node);
+    }
+  } else {
+    MS_LOG(DEBUG) << "var_name: " << var_name << " original_vars_:" << node->DebugString();
+    original_vars_.emplace(var_name, node);
+  }
   auto [iter, is_new_name] = assigned_vars_.emplace(var_name, std::make_pair(node, false));
   if (!is_new_name) {
     // If a cnode variable with same name already existed but not used,

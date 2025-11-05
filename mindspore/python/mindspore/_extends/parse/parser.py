@@ -651,6 +651,28 @@ def expand_expr_statement(node):
     return (False,)
 
 
+def check_event_record_wait(node):
+    """
+    Check is record or wait.
+
+    Returns:
+        record or wait target or None.
+    """
+    if isinstance(node, ast.Expr):
+        expr_value = node.value
+        if isinstance(expr_value, ast.Call):
+            func = expr_value.func
+            if isinstance(func, ast.Attribute) and \
+                    hasattr(func, "attr") and \
+                    hasattr(func, "value"):
+                method = func.attr
+                target = func.value
+                logger.debug("Expand expr, target:%s, method:%s", target, method)
+                if method == "record" or method == "wait":
+                    return target
+    return None
+
+
 def get_ast_namespace_symbol(obj):
     """Get obj type and namespace and symbol."""
     # Get symbol from object map.
@@ -1023,6 +1045,7 @@ class Parser:
 
     def save_source_code(self, attr_name, source_lines):
         """Save cell and func source code to support run graph mode with pyc or so."""
+        # pylint: disable=W1514
         if '/mindspore/' in self.filename or '\\mindspore\\' in self.filename:
             return
         if getattr(self.fn, attr_name, None) == source_lines:
@@ -1038,6 +1061,9 @@ class Parser:
 
     def parse(self):
         """Parse the function or method."""
+        # pylint: disable=W0707
+        # pylint: disable=W1309
+        # pylint: disable=C0207
         logger.debug("fn: %r", self.fn)
         if isinstance(self.fn, (types.FunctionType, types.MethodType)) or \
            type(self.fn).__name__ == 'cython_function_or_method':
