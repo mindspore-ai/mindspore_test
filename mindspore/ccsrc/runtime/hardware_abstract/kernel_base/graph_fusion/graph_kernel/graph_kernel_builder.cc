@@ -33,6 +33,7 @@
 #include "include/runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/graph_kernel_json_generator.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "utils/file_utils.h"
+#include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/kernel_pool.h"
 
 namespace mindspore {
 namespace kernel {
@@ -43,7 +44,7 @@ constexpr auto kLogLevel = "log_level";
 
 #define ACQUIRE_LOCK LockMng lock(fd_, __func__, __LINE__)
 
-namespace{
+namespace {
 KernelPackPtr SearchCache(const std::string &kernel_name, const std::string &processor) {
   // search cache.
   KernelMeta *bin_map = KernelMeta::GetInstance();
@@ -87,7 +88,7 @@ KernelPackPtr InsertCache(const std::string &kernel_name, const std::string &pro
   }
   return kernel_pack;
 }
-} //  namespace
+}  //  namespace
 
 inline std::string GetErrorInfo() {
   char buf[MAX_ERROR_LEN + 1] = {0};
