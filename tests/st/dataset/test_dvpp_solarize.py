@@ -38,7 +38,7 @@ def test_dvpp_solarize_operation_01():
     Expectation: The Output is equal to the expected output
     """
     # Solarize operator, normal testing, pipeline mode, threshold=200, input image is numpy
-    dataset_dir = os.path.join(TEST_DATA_DATASET_FUNC, 'imagenet_file_10_jpgs')
+    dataset_dir = os.path.join(TEST_DATA_DATASET_FUNC, "testImageNetData", "train")
     ds1 = ds.ImageFolderDataset(dataset_dir=dataset_dir, shuffle=False, decode=True)
     ds2 = ds.ImageFolderDataset(dataset_dir=dataset_dir, shuffle=False, decode=True)
     ds2 = ds2.map(operations=vision.Solarize(200).device(device_target="Ascend"), input_columns=["image"])
@@ -48,7 +48,7 @@ def test_dvpp_solarize_operation_01():
         assert (out_exp == data2["image"]).all()
 
     # Solarize operator, normal testing, pipeline mode, threshold=120.0, input image is numpy
-    dataset_dir = os.path.join(TEST_DATA_DATASET_FUNC, 'imagenet_file_10_jpgs')
+    dataset_dir = os.path.join(TEST_DATA_DATASET_FUNC, "testImageNetData", "train")
     ds1 = ds.ImageFolderDataset(dataset_dir=dataset_dir, shuffle=False, decode=False)
     op_list = [vision.Decode(to_pil=False)]
     ds1 = ds1.map(operations=op_list, input_columns=["image"])
@@ -63,7 +63,7 @@ def test_dvpp_solarize_operation_01():
         assert (out_exp == data2["image"]).all()
 
     # Solarize operator, normal testing, pipeline mode, threshold=(100, 200), input image is PIL
-    dataset_dir = os.path.join(TEST_DATA_DATASET_FUNC, 'imagenet_file_10_jpgs')
+    dataset_dir = os.path.join(TEST_DATA_DATASET_FUNC, "testImageNetData", "train")
     ds1 = ds.ImageFolderDataset(dataset_dir=dataset_dir, shuffle=False, decode=False)
     ds1 = ds1.map(operations=vision.Decode(to_pil=True), input_columns=["image"])
 
@@ -108,7 +108,7 @@ def test_dvpp_solarize_operation_01():
         assert np.allclose(data1["image"], data2["image"])
 
     # Solarize operator, normal testing, pipeline mode, threshold=(0, 255)
-    dataset_dir = os.path.join(TEST_DATA_DATASET_FUNC, 'imagenet_file_10_jpgs')
+    dataset_dir = os.path.join(TEST_DATA_DATASET_FUNC, "testImageNetData", "train")
     ds1 = ds.ImageFolderDataset(dataset_dir=dataset_dir, shuffle=False, decode=False)
     ds1 = ds1.map(operations=vision.Decode(to_pil=True), input_columns=["image"])
 

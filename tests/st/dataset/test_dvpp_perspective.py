@@ -76,7 +76,7 @@ def test_dvpp_perspective_operation_01():
     # pipeline mode, no interpolation parameter, Perspective interface call successful
     start_points = [[0, 63], [63, 63], [63, 0], [0, 0]]
     end_points = [[0, 32], [32, 32], [32, 0], [0, 0]]
-    data_dir = os.path.join(TEST_DATA_DATASET_FUNC, "imagenet_file_1jpg_noshape")
+    data_dir = os.path.join(TEST_DATA_DATASET_FUNC, "testImageNetData", "train")
     ds2 = ds.ImageFolderDataset(data_dir, 1)
     transforms1 = [
         v_trans.Decode(to_pil=False),
@@ -147,7 +147,7 @@ def test_dvpp_perspective_operation_02():
     image.close()
 
     # pipeline mode, when input is numpy data, Perspective interface call successful
-    data_dir = os.path.join(TEST_DATA_DATASET_FUNC, "imagenet_file_1jpg_noshape")
+    data_dir = os.path.join(TEST_DATA_DATASET_FUNC, "testImageNetData", "train")
     ds1 = ds.ImageFolderDataset(data_dir, 1)
     start_points = [[-28, -2474], [-214, -2144], [2147, 21448], [28, 2144]]
     end_points = [[-21, -24], [-217, -214], [218, 213], [21, 24]]

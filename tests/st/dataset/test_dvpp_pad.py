@@ -47,7 +47,7 @@ def test_dvpp_pad_operation_01():
     Expectation: The Output is equal to the expected output
     """
     # Pad operator, normal test, padding=100, Border.CONSTANT, numpy image
-    data_dir = os.path.join(TEST_DATA_DATASET_FUNC, "imagenet", "imagenet_file_jpg1")
+    data_dir = os.path.join(TEST_DATA_DATASET_FUNC, "testImageNetData", "train")
     padding = 100
     fill_value = 2
     padding_mode = v_Border.CONSTANT
@@ -110,7 +110,7 @@ def test_dvpp_pad_operation_01():
         assert np.allclose(data1["image"], data2["image"])
 
     # Pad operator, normal test, padding=1000, Border.SYMMETRIC, numpy image
-    data_dir = os.path.join(TEST_DATA_DATASET_FUNC, "imagenet", "imagenet_file_jpg1")
+    data_dir = os.path.join(TEST_DATA_DATASET_FUNC, "testImageNetData", "train")
     padding = 1000
     fill_value = 2
     padding_mode = v_Border.SYMMETRIC
@@ -149,7 +149,7 @@ def test_dvpp_pad_operation_02():
     Expectation: The Output is equal to the expected output
     """
     # Pad operator, normal test, padding=0, Border.REFLECT
-    data_dir = os.path.join(TEST_DATA_DATASET_FUNC, "imagenet", "imagenet_file_jpg1")
+    data_dir = os.path.join(TEST_DATA_DATASET_FUNC, "testImageNetData", "train")
     padding = 0
     fill_value = 2
     padding_mode = v_Border.REFLECT
@@ -180,7 +180,7 @@ def test_dvpp_pad_operation_02():
         break
 
     # Pad operator, normal test, padding=(50, 0), Border.REFLECT
-    data_dir = os.path.join(TEST_DATA_DATASET_FUNC, "imagenet", "imagenet_file_jpg1")
+    data_dir = os.path.join(TEST_DATA_DATASET_FUNC, "testImageNetData", "train")
     padding = (50, 0)
     fill_value = 2
     padding_mode = v_Border.REFLECT
@@ -211,7 +211,7 @@ def test_dvpp_pad_operation_02():
         break
 
     # Pad operator, normal test, padding=(0, 10), Border.CONSTANT
-    data_dir = os.path.join(TEST_DATA_DATASET_FUNC, "imagenet", "imagenet_file_jpg1")
+    data_dir = os.path.join(TEST_DATA_DATASET_FUNC, "testImageNetData", "train")
     padding = (0, 10)
     fill_value = 2
     padding_mode = v_Border.CONSTANT
@@ -250,7 +250,7 @@ def test_dvpp_pad_operation_03():
     Expectation: The Output is equal to the expected output
     """
     # Pad operator, normal test, padding=[0,10], Border.EDGE
-    data_dir = os.path.join(TEST_DATA_DATASET_FUNC, "imagenet", "imagenet_file_jpg1")
+    data_dir = os.path.join(TEST_DATA_DATASET_FUNC, "testImageNetData", "train")
     padding = [0, 10]
     fill_value = 2
     padding_mode = v_Border.EDGE
@@ -281,7 +281,7 @@ def test_dvpp_pad_operation_03():
         break
 
     # Pad operator, normal test, padding=(0,10,20,30), Border.CONSTANT
-    data_dir = os.path.join(TEST_DATA_DATASET_FUNC, "imagenet", "imagenet_file_jpg1")
+    data_dir = os.path.join(TEST_DATA_DATASET_FUNC, "testImageNetData", "train")
     padding = (0, 10, 20, 30)
     fill_value = 2
     padding_mode = v_Border.CONSTANT
@@ -312,7 +312,7 @@ def test_dvpp_pad_operation_03():
         break
 
     # Pad operator, normal test, padding=[50,10,20,30], Border.EDGE
-    data_dir = os.path.join(TEST_DATA_DATASET_FUNC, "imagenet", "imagenet_file_jpg1")
+    data_dir = os.path.join(TEST_DATA_DATASET_FUNC, "testImageNetData", "train")
     padding = [50, 10, 20, 30]
     fill_value = 2
     padding_mode = v_Border.EDGE
@@ -351,7 +351,7 @@ def test_dvpp_pad_operation_04():
     Expectation: The Output is equal to the expected output
     """
     # Pad operator, normal test, fill_value=100
-    data_dir = os.path.join(TEST_DATA_DATASET_FUNC, "imagenet", "imagenet_file_jpg1")
+    data_dir = os.path.join(TEST_DATA_DATASET_FUNC, "testImageNetData", "train")
     padding = 10
     fill_value = 100
     padding_mode = v_Border.CONSTANT
@@ -383,7 +383,7 @@ def test_dvpp_pad_operation_04():
         break
 
     # Pad operator, normal test, fill_value=0
-    data_dir = os.path.join(TEST_DATA_DATASET_FUNC, "imagenet", "imagenet_file_jpg1")
+    data_dir = os.path.join(TEST_DATA_DATASET_FUNC, "testImageNetData", "train")
     padding = 10
     fill_value = 0
     padding_mode = v_Border.CONSTANT
@@ -415,7 +415,7 @@ def test_dvpp_pad_operation_04():
         break
 
     # Pad operator, normal test, fill_value=(5,10,20)
-    data_dir = os.path.join(TEST_DATA_DATASET_FUNC, "imagenet", "imagenet_file_jpg1")
+    data_dir = os.path.join(TEST_DATA_DATASET_FUNC, "testImageNetData", "train")
     padding = 10
     fill_value = (5, 10, 20)
     padding_mode = v_Border.CONSTANT
@@ -455,7 +455,7 @@ def test_dvpp_pad_operation_05():
     Expectation: The Output is equal to the expected output
     """
     # Pad operator, normal test, fill_value=(0,100,0)
-    data_dir = os.path.join(TEST_DATA_DATASET_FUNC, "imagenet", "imagenet_file_jpg1")
+    data_dir = os.path.join(TEST_DATA_DATASET_FUNC, "testImageNetData", "train")
     padding = 10
     fill_value = (0, 100, 0)
     padding_mode = v_Border.CONSTANT
@@ -487,7 +487,7 @@ def test_dvpp_pad_operation_05():
         break
 
     # Pad operator, normal test, fill_value=(0,0,200)
-    data_dir = os.path.join(TEST_DATA_DATASET_FUNC, "imagenet", "imagenet_file_jpg1")
+    data_dir = os.path.join(TEST_DATA_DATASET_FUNC, "testImageNetData", "train")
     padding = 10
     fill_value = (0, 0, 200)
     padding_mode = v_Border.CONSTANT
