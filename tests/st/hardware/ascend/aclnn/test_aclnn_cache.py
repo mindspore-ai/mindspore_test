@@ -12,18 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+"""test aclnn cache"""
 import os
 from tests.mark_utils import arg_mark
 
 import numpy as np
 import mindspore
-from mindspore import mint, context
+from mindspore import mint, context, jit
 from mindspore.nn import Cell
 
 
 class Net(Cell):
     def __init__(self):
-        super(Net, self).__init__()
+        super().__init__()
         self.op1 = mint.sin
         self.op2 = mint.cos
 
@@ -171,3 +172,58 @@ def test_aclnn_cache_with_multi_input():
                          log_cache_multi_input_2.txt | wc -l").read()
     assert int(ret_miss.strip()) == 5
     os.system("rm -rf log_cache_multi_input_2.txt")
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_sync_aclnn_op_kbyk():
+    """
+    Feature: sync aclnn op
+    Description: test sync aclnn op
+    Expectation: run successfully
+    """
+    os.environ["MS_DEV_RUNTIME_CONF"] = "aclnn_cache_queue_length:0"
+    class NonZeroNet(Cell):
+        @jit
+        def construct(self, x):
+            return mint.nonzero(x)
+    net = NonZeroNet()
+
+    # test static shape
+    x = mindspore.Tensor(shape=[100, 1000], dtype=mindspore.float32)
+    out = net(x)
+    print(out)
+
+    # test dynamic shape
+    t = mindspore.Tensor(shape=[None, None], dtype=mindspore.float32)
+    net.set_inputs(t)
+    x = mindspore.Tensor(shape=[100, 1000], dtype=mindspore.float32)
+    out = net(x)
+    print(out)
+
+    del os.environ["MS_DEV_RUNTIME_CONF"]
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_sync_aclnn_op_pyboost():
+    """
+    Feature: sync aclnn op
+    Description: test sync aclnn op
+    Expectation: run successfully
+    """
+    os.environ["MS_DEV_RUNTIME_CONF"] = "aclnn_cache_queue_length:0"
+    class NonZeroNet(Cell):
+        def construct(self, x):
+            return mint.nonzero(x)
+    net = NonZeroNet()
+
+    # test static shape
+    x = mindspore.Tensor(shape=[100, 1000], dtype=mindspore.float32)
+    out = net(x)
+    print(out)
+
+    # test dynamic shape
+    t = mindspore.Tensor(shape=[None, None], dtype=mindspore.float32)
+    net.set_inputs(t)
+    x = mindspore.Tensor(shape=[100, 1000], dtype=mindspore.float32)
+    out = net(x)
+    print(out)
+
+    del os.environ["MS_DEV_RUNTIME_CONF"]
