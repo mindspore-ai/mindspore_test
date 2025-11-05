@@ -31,8 +31,6 @@
 #include "include/common/pynative/hook.h"
 
 namespace mindspore::pynative::autograd {
-constexpr char kCallBackwradTwiceErr[] =
-  "Try to backward the graph twice,  Specify retain_graph=True, if you want call again";
 class FuncBuilder;
 struct GradAttr {
   GradAttr(bool get_all, bool get_by_list, bool sens_param, bool get_by_position, bool weight_param_is_tuple)
@@ -306,13 +304,6 @@ class COMMON_EXPORT BackwardNode : public std::enable_shared_from_this<BackwardN
   /// \return unique id
   std::string UniqueId() const { return name_ + "-" + std::to_string(seq_id_); }
 
-  /// \brief Check func to check whether the version of input is changed.
-  /// \return check_func
-  const std::function<void(const std::string &op_name)> &check_func() const { return check_func_; }
-
-  /// \brief Set check func.
-  void set_check_func(const std::function<void(const std::string &op_name)> &check_func) { check_func_ = check_func; }
-
   /// \brief Cpp tensor pre hook for backward node.
   /// \return hook list
   const std::unique_ptr<CppTensorHookList> &cpp_tensor_pre_hooks() const { return cpp_tensor_pre_hooks_; }
@@ -351,17 +342,21 @@ class COMMON_EXPORT BackwardNode : public std::enable_shared_from_this<BackwardN
   /// \brief Create derived backward node with custom deleter.
   /// \return backward node
   template <typename Derived, typename... Args>
-  static std::shared_ptr<Derived> Create(Args &&... args) {
+  static std::shared_ptr<Derived> Create(Args &&...args) {
     return std::shared_ptr<Derived>(new Derived(std::forward<Args>(args)...), CustomDeleter);
   }
+
+  bool IsReleased() const { return is_released_; }
+
+  void SetReleased(bool released) { is_released_ = released; }
 
  protected:
   static void CustomDeleter(BackwardNode *grad_node);
   std::vector<Edge> next_edges_;
   std::string name_;
-  std::function<void(const std::string &op_name)> check_func_{nullptr};
   size_t seq_id_;
   size_t output_size_;
+  bool is_released_{false};
 
   // Tensor Hook -> RetainGrad Hook -> Capture Grad -> BackwardNode Pre Hook -> CallBackward -> BackwardNode Post Hook
   std::unique_ptr<PyTensorHookMap> py_tensor_pre_hooks_{nullptr};

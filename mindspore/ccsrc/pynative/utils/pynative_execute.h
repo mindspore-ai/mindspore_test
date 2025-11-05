@@ -95,6 +95,12 @@ class PYNATIVE_EXPORT PyNativeExecutor : public std::enable_shared_from_this<PyN
                             const std::vector<SliceOpInfoPtr> &slice_op_infos) const;
   void SetCreationType(const py::object &obj, autograd::CreationType creation_type);
   void QueueBackwardFinalCallback(const py::object &callback) const;
+  void PushSavedTensorHook(const py::function &pack_hook, const py::function &unpack_hook);
+  void PopSavedTensorHook();
+  std::optional<std::string> DisableSavedTensorHook(const string &error_msg, bool is_error_on_outer_hook);
+  void SetSavedTensorHookDisableErrorMessage(std::optional<std::string> error_msg);
+  bool DisableFrontendAndBpropPipeline();
+  void EnableFrontendAndBpropPipeline();
 
  private:
   PyNativeExecutor() = default;

@@ -44,6 +44,7 @@ inline bool ensure_obj_tuple(py::object *obj) {
 }
 
 using TensorPtrSet = std::unordered_set<tensor::TensorPtr>;
+using TensorPtrList = std::vector<tensor::TensorPtr>;
 
 struct FunctionContext {
   // The input of apply function
@@ -61,8 +62,8 @@ struct FunctionContext {
   TensorPtrSet dirty_tensors;
   // Set of non_diff tensors
   TensorPtrSet non_diff_tensors;
-  // Set of to_save tensors
-  TensorPtrSet to_save_tensors;
+  // to_save tensors
+  TensorPtrList to_save_tensors;
   PyBackwardNodePtr grad_node;
 };
 
@@ -77,7 +78,9 @@ class PYNATIVE_EXPORT FunctionBase {
 
   py::object saved_tensors() const;
 
-  void set_saved_tensors(const py::object &saved_tensors) { saved_tensors_ = py::cast<py::list>(saved_tensors); }
+  py::object raw_saved_tensors() const { return saved_tensors_; }
+
+  void set_saved_tensors(const py::object &saved_tensors) { saved_tensors_ = saved_tensors; }
 
   py::object non_differentiable() { return non_differentiable_; }
 
@@ -98,10 +101,9 @@ class PYNATIVE_EXPORT FunctionBase {
 
   std::vector<bool> is_tensor_input() { return is_tensor_input_; }
 
-  void set_weak_grad_node(const BackwardNodePtr &grad_node) { weak_grad_node_ = grad_node; }
+  void set_weak_grad_node(const PyBackwardNodePtr &grad_node) { weak_grad_node_ = grad_node; }
 
   void set_is_tensor_input(const std::vector<bool> &is_tensor_input) { is_tensor_input_ = is_tensor_input; }
-  void GenerateSavedNodes(const std::shared_ptr<FunctionContext> &ctx);
 
  private:
   // A python tuple return to use to indicate whether inputs need grad.
@@ -123,11 +125,8 @@ class PYNATIVE_EXPORT FunctionBase {
   // True is the input is tensor
   std::vector<bool> is_tensor_input_;
 
-  // This is used for avoid cycle reference.
-  std::unordered_map<size_t, SavedNodePtr> saved_nodes_;
-
   // This is used for unpack saved tensors.
-  std::weak_ptr<BackwardNode> weak_grad_node_;
+  std::weak_ptr<PyBackwardNode> weak_grad_node_;
 };
 
 using FunctionPtr = std::shared_ptr<FunctionBase>;

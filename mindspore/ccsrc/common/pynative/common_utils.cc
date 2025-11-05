@@ -345,13 +345,17 @@ void CommonUtils::FlattenValueSeqArg(const ValuePtr &v, bool is_only_flatten_ten
   }
 }
 
+tensor::TensorPtr CommonUtils::ShallowCopyAndDetachForTensor(const tensor::TensorPtr &tensor) {
+  auto copy_tensor = std::make_shared<tensor::Tensor>(*tensor);
+  copy_tensor->set_storage_info(tensor->storage_info());
+  copy_tensor->set_auto_grad_meta_data(nullptr);
+  return copy_tensor;
+}
+
 ValuePtr CommonUtils::ShallowCopyAndDetach(const ValuePtr &value) {
   if (value->isa<tensor::Tensor>()) {
     auto tensor = value->cast<tensor::TensorPtr>();
-    auto copy_tensor = std::make_shared<tensor::Tensor>(*tensor);
-    copy_tensor->set_storage_info(tensor->storage_info());
-    copy_tensor->set_auto_grad_meta_data(nullptr);
-    return copy_tensor;
+    return ShallowCopyAndDetachForTensor(tensor);
   } else if (value->isa<ValueSequence>()) {
     auto val_seq = value->cast<ValueSequencePtr>();
     std::vector<ValuePtr> res;
