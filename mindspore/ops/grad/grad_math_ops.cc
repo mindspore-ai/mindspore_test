@@ -1901,10 +1901,9 @@ REG_BPROP_BUILDER("FmodTensor").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
 });
 
 REG_BPROP_BUILDER("FmodScalar").SetUnusedInputs({i0, i2}).SetBody(BODYFUNC(ib) {
-  auto input = ib->GetInput(i0);
   auto other = ib->GetInput(i1);
   auto dout = ib->GetInput(i3);
-  return {ib->Cast(dout, ib->GetDtype(input)), ib->OutZeros(other)};
+  return {dout, ib->OutZeros(other)};
 });
 
 REG_BPROP_BUILDER("InplaceDiv")
@@ -5689,7 +5688,9 @@ DEF_PURE_SHAPE_CALC(g_correlate)
     }
     return {size_arr, begin_arr, end_arr};
   })
-  .SetInfer([](const ShapeArray &inputs, const HashSet<size_t> &) -> std::vector<int64_t> { return {1, 1, 1}; });
+  .SetInfer([](const ShapeArray &inputs, const HashSet<size_t> &) -> std::vector<int64_t> {
+    return {1, 1, 1};
+  });
 
 REG_BPROP_BUILDER("Correlate").SetUnusedInputs({i3}).SetBody(BODYFUNC(ib) {
   auto a = ib->GetInput(i0);
