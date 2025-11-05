@@ -244,8 +244,8 @@
 /tests/ut/cpp/ops/ @liangchenghui
 
 # The maintainers of tests/ut/python.
-/tests/ut/data/dataset @jonyguo
-/tests/ut/data/mindrecord @jonyguo
+/tests/ut/data/dataset/ @jonyguo
+/tests/ut/data/mindrecord/ @jonyguo
 /tests/ut/python/mindjit/ @ginfung
 /tests/ut/python/_extends/ @ginfung
 /tests/ut/python/_extends/graph_kernel/ @gaoxiong1

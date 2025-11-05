@@ -51,7 +51,7 @@ class Dataset(Generic[_T_co]):
         pass
 
     def __getitem__(self, index: int) -> _T_co:
-        raise NotImplementedError(f"{self.__class__.__name__} should implement `__getitem__` method.")
+        raise NotImplementedError(f"{self.__class__.__name__} must implement __getitem__ method.")
 
 
 class IterableDataset(Dataset[_T_co], Iterable[_T_co]):
@@ -83,7 +83,7 @@ class IterableDataset(Dataset[_T_co], Iterable[_T_co]):
     """
 
     def __iter__(self) -> Iterator[_T_co]:
-        raise NotImplementedError(f"{self.__class__.__name__} should implement `__iter__` method.")
+        raise NotImplementedError(f"{self.__class__.__name__} must implement __iter__ method.")
 
 
 class TensorDataset(Dataset[tuple[Tensor, ...]]):

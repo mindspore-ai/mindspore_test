@@ -12,9 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
-"""
-Dataloader module.
-"""
+"""Dataloader module."""
 
 from enum import Enum
 import multiprocessing
@@ -22,7 +20,7 @@ import numbers
 import os
 import queue
 import threading
-from typing import Any, AnyStr, Callable, Generic, Iterable, List, Mapping, overload, Protocol, Sequence, TypeVar, Union
+from typing import Any, AnyStr, Callable, Generic, Iterable, Mapping, overload, Protocol, Sequence, TypeVar, Union
 
 import numpy as np
 import numpy.typing as npt
@@ -33,7 +31,7 @@ from mindspore import log as logger
 from mindspore.common import Tensor
 from .dataset import Dataset, IterableDataset
 from .sampler import BatchSampler, RandomSampler, Sampler, SequentialSampler, InfiniteSampler
-from ._utils import WORKER_TIME_OUT
+from ._utils import check_args, check_exclusive_args, check_non_negative, check_positive, check_type, WORKER_TIME_OUT
 from ._utils.fetch import MapDatasetFetcher, IterableDatasetFetcher
 from ._utils.pin_memory import pin_memory_fn, pin_worker_fn
 from ._utils.signal_handling import set_sigchld_handler
@@ -41,8 +39,8 @@ from ._utils.worker import data_worker_fn, WorkerException, ResumeIterationFlag
 
 _T = TypeVar("_T")
 _T_co = TypeVar("_T_co", covariant=True)
-_K = TypeVar('_K')
-_V = TypeVar('_V')
+_K = TypeVar("_K")
+_V = TypeVar("_V")
 
 
 class _CollateFnType(Protocol):
@@ -87,6 +85,20 @@ class FetcherFactory:
 
     @staticmethod
     def create_fetcher(dataset_type, dataset, auto_collation, collate_fn, drop_last=False):
+        """
+        Create a fetcher for the dataset.
+
+        Args:
+            dataset_type (DatasetType): The type of the dataset.
+            dataset (Dataset): The dataset to create a fetcher for.
+            auto_collation (bool): Whether to auto collation the dataset.
+            collate_fn (Callable): The collate function to use.
+            drop_last (bool): Whether to drop the last incomplete batch.
+
+        Returns:
+            Fetcher, the fetcher for the dataset.
+        """
+
         if dataset_type == DatasetType.MapDataset:
             return MapDatasetFetcher(dataset, auto_collation, collate_fn)
         if dataset_type == DatasetType.IterableDataset:
@@ -165,147 +177,145 @@ class DataLoader(Generic[_T_co]):
         [Tensor(shape=[1], dtype=Int64, value= [0]), Tensor(shape=[1], dtype=Int64, value= [1])]
     """
 
+    @check_args
     def __init__(
-            self,
-            dataset: Dataset[_T_co],
-            batch_size: Union[int, None] = 1,
-            shuffle: Union[bool, None] = None,
-            sampler: Union[Sampler, Iterable, None] = None,
-            batch_sampler: Union[Sampler[List], Iterable[List], None] = None,
-            num_workers: int = 0,
-            collate_fn: Union[_CollateFnType, None] = None,
-            pin_memory: bool = False,
-            drop_last: bool = False,
-            timeout: float = 0.,
-            worker_init_fn: Union[Callable[[int], None], None] = None,
-            multiprocessing_context: Union[multiprocessing.context.BaseContext, str, None] = None,
-            generator: Union[np.random.Generator, None] = None,
-            *,
-            prefetch_factor: Union[int, None] = None,
-            persistent_workers: bool = False,
-            in_order: bool = True,
+        self,
+        dataset: Dataset[_T_co],
+        batch_size: Union[int, None] = 1,
+        shuffle: Union[bool, None] = None,
+        sampler: Union[Sampler, Iterable, None] = None,
+        batch_sampler: Union[Sampler[list], Iterable[list], None] = None,
+        num_workers: int = 0,
+        collate_fn: Union[_CollateFnType, None] = None,
+        pin_memory: bool = False,
+        drop_last: bool = False,
+        timeout: float = 0.0,
+        worker_init_fn: Union[Callable[[int], None], None] = None,
+        multiprocessing_context: Union[multiprocessing.context.BaseContext, str, None] = None,
+        generator: Union[np.random.Generator, None] = None,
+        *,
+        prefetch_factor: Union[int, None] = None,
+        persistent_workers: bool = False,
+        in_order: bool = True,
     ) -> None:
-
-        if isinstance(dataset, IterableDataset):
-            self.dataset_type = DatasetType.IterableDataset
-        elif isinstance(dataset, Dataset):
-            self.dataset_type = DatasetType.MapDataset
-        else:
-            if not hasattr(dataset, "__getitem__"):
-                raise NotImplementedError(f"{dataset.__class__.__name__} should implement `__getitem__` method "
-                                          f"if it is map style.")
-            self.dataset_type = DatasetType.MapDataset
-
-        if shuffle is not None and not isinstance(shuffle, bool):
-            raise TypeError(f"shuffle must be bool, but got: {type(shuffle).__name__}")
-
-        if not isinstance(pin_memory, bool):
-            raise TypeError(f"pin_memory must be bool, but got: {type(pin_memory).__name__}")
-
-        if not isinstance(num_workers, int) or isinstance(num_workers, bool):
-            raise TypeError(f"num_workers must be int, but got: {type(num_workers).__name__}")
-        if num_workers < 0:
-            raise ValueError(f"num_workers must be non-negative, but got: {num_workers}")
-
-        if not isinstance(timeout, int) and not isinstance(timeout, float) or isinstance(timeout, bool):
-            raise TypeError(f"timeout must be int or float, but got: {type(timeout).__name__}")
-
-        if timeout < 0:
-            raise ValueError(f"timeout must be non-negative, but got: {timeout}")
-
-        if num_workers == 0 and prefetch_factor is not None:
-            raise ValueError("prefetch_factor must only be set when num_workers is greater than 0.")
-        if num_workers > 0 and prefetch_factor is None:
-            prefetch_factor = 2
-        elif prefetch_factor is not None and prefetch_factor < 0:
-            raise ValueError("prefetch_factor must be non-negative.")
-
-        if multiprocessing_context is not None:
-            if num_workers <= 0:
-                raise ValueError(f"multiprocessing_context can only be specified when num_workers is greater than 0, "
-                                 f"but got: {num_workers}.")
-            if isinstance(multiprocessing_context, str):
-                self.multiprocessing_context = ms.multiprocessing.get_context(multiprocessing_context)
-            elif isinstance(multiprocessing_context, multiprocessing.context.BaseContext):
-                self.multiprocessing_context = multiprocessing_context
-            else:
-                raise TypeError(f"multiprocessing_context must be a valid start method or "
-                                f"multiprocessing.context.BaseContext, but got: {multiprocessing_context}.")
-        else:
-            self.multiprocessing_context = ms.multiprocessing
-
-        if generator is not None and not isinstance(generator, np.random.Generator):
-            raise TypeError(f"generator must be numpy.random.Generator, but got: {type(generator).__name__}")
-
-        if prefetch_factor is not None:
-            if not isinstance(prefetch_factor, int) or isinstance(prefetch_factor, bool):
-                raise TypeError(f"prefetch_factor must be int, but got: {type(prefetch_factor).__name__}")
-            if prefetch_factor <= 0:
-                raise ValueError(f"prefetch_factor must be positive, but got: {prefetch_factor}")
-
-        if not isinstance(persistent_workers, bool):
-            raise TypeError(f"persistent_workers must be bool, but got: {type(persistent_workers).__name__}")
-        if persistent_workers and num_workers <= 0:
-            raise ValueError(f"persistent_workers can only be specified when num_workers is greater than 0, "
-                             f"but got: {num_workers}")
-
-        if not isinstance(in_order, bool):
-            raise TypeError(f"in_order must be bool, but got: {type(in_order).__name__}")
-
         self.dataset = dataset
-        self.batch_size = batch_size
-        self.drop_last = drop_last
         self.num_workers = num_workers
-        self.persistent_workers = persistent_workers
-        self.generator = generator if generator is not None else np.random.default_rng()
         self.collate_fn = collate_fn
-        self.worker_init_fn = worker_init_fn
         self.pin_memory = pin_memory
-        self.prefetch_factor = prefetch_factor
         self.timeout = timeout
+        self.worker_init_fn = worker_init_fn
+        self.generator = generator if generator is not None else np.random.default_rng()
+        self.persistent_workers = persistent_workers
         self.in_order = in_order
 
-        if self.dataset_type == DatasetType.IterableDataset:
-            if sampler is not None:
-                raise ValueError(f"DataLoader with IterableDataset: expected unspecified sampler option, "
-                                 f"but got sampler={sampler}")
-            if batch_sampler is not None:
-                raise ValueError(f"DataLoader with IterableDataset: expected unspecified batch_sampler option, "
-                                 f"but got batch_sampler={batch_sampler}")
-            if shuffle not in {False, None}:
-                raise ValueError(f"DataLoader with IterableDataset: expected unspecified shuffle option, "
-                                 f"but got shuffle={shuffle}")
-
-        if shuffle and sampler is not None:
-            raise ValueError("`shuffle` and `sampler` can not specify at the same time.")
-
-        if batch_sampler is not None and (batch_size != 1 or drop_last or sampler is not None or shuffle):
-            raise ValueError("`batch_sampler` can not specify with `batch_size`, `drop_last`, `shuffle` or `sampler`.")
+        if isinstance(self.dataset, IterableDataset):
+            self.dataset_type = DatasetType.IterableDataset
+        else:
+            self.dataset_type = DatasetType.MapDataset
 
         if sampler is None:
             if self.dataset_type == DatasetType.IterableDataset:
                 sampler = InfiniteSampler()
             else:
-                if not shuffle:
-                    sampler = SequentialSampler(self.dataset)
-                else:
+                if shuffle:
                     sampler = RandomSampler(self.dataset, generator=self.generator)
-
+                else:
+                    sampler = SequentialSampler(self.dataset)
         self.sampler = sampler
 
         if batch_sampler is not None:
-            self.batch_sampler = batch_sampler
-            self.auto_collation = True
+            batch_size = None
+            drop_last = False
         elif batch_size is not None:
-            self.batch_sampler = BatchSampler(self.sampler, batch_size, self.drop_last)
-            self.auto_collation = True
-        else:
-            self.auto_collation = False
+            batch_sampler = BatchSampler(self.sampler, batch_size, drop_last)
+        self.batch_size = batch_size
+        self.drop_last = drop_last
+        self.batch_sampler = batch_sampler
 
-        if self.auto_collation:
+        if self.batch_sampler is not None:
+            self.auto_collation = True
             self.index_sampler = self.batch_sampler
         else:
+            self.auto_collation = False
             self.index_sampler = self.sampler
+
+        if multiprocessing_context is not None:
+            if isinstance(multiprocessing_context, str):
+                multiprocessing_context = ms.multiprocessing.get_context(multiprocessing_context)
+        else:
+            multiprocessing_context = ms.multiprocessing
+        self.multiprocessing_context = multiprocessing_context
+
+        if prefetch_factor is None and self.num_workers > 0:
+            prefetch_factor = 2
+        self.prefetch_factor = prefetch_factor
+
+    def _check_args(self, params):
+        """Validate the arguments of the DataLoader."""
+        if isinstance(params["dataset"], IterableDataset):
+            description = "when dataset is iterable style"
+            check_exclusive_args(condition=params["shuffle"], arg_name="shuffle", description=description)
+            check_exclusive_args(condition=params["sampler"] is not None, arg_name="sampler", description=description)
+            check_exclusive_args(
+                condition=params["batch_sampler"] is not None, arg_name="batch_sampler", description=description
+            )
+        elif not hasattr(params["dataset"], "__getitem__"):
+            raise NotImplementedError(
+                f"{params['dataset'].__class__.__name__} should implement __getitem__ method if it is map style."
+            )
+
+        check_type(params["batch_size"], "batch_size", valid_type=int, invalid_type=bool, allow_none=True)
+        check_positive(params["batch_size"], "batch_size", allow_none=True)
+        check_type(params["shuffle"], "shuffle", valid_type=bool, allow_none=True)
+
+        if params["sampler"] is not None and params["shuffle"]:
+            raise ValueError("sampler cannot be specified with shuffle.")
+
+        if params["batch_sampler"] is not None:
+            description = "with batch_sampler"
+            check_exclusive_args(condition=params["batch_size"] != 1, arg_name="batch_size", description=description)
+            check_exclusive_args(condition=params["shuffle"], arg_name="shuffle", description=description)
+            check_exclusive_args(condition=params["sampler"] is not None, arg_name="sampler", description=description)
+            check_exclusive_args(condition=params["drop_last"], arg_name="drop_last", description=description)
+
+        check_type(params["num_workers"], "num_workers", valid_type=int, invalid_type=bool)
+        check_non_negative(params["num_workers"], "num_workers")
+        check_type(params["pin_memory"], "pin_memory", valid_type=bool)
+        check_type(params["drop_last"], "drop_last", valid_type=bool)
+        check_type(params["timeout"], "timeout", valid_type=(int, float), invalid_type=bool)
+        check_non_negative(params["timeout"], "timeout")
+
+        if params["multiprocessing_context"] is not None:
+            if params["num_workers"] <= 0:
+                raise ValueError(
+                    f"multiprocessing_context must only be specified when num_workers is greater than 0, "
+                    f"but got: {params['num_workers']}."
+                )
+            if not isinstance(params["multiprocessing_context"], (str, multiprocessing.context.BaseContext)):
+                raise TypeError(
+                    f"multiprocessing_context must be {multiprocessing.get_all_start_methods()} or "
+                    f"multiprocessing.context.BaseContext, but got: {params['multiprocessing_context']}."
+                )
+
+        check_type(params["generator"], "generator", valid_type=np.random.Generator, allow_none=True)
+
+        if params["prefetch_factor"] is not None:
+            if params["num_workers"] <= 0:
+                raise ValueError(
+                    f"prefetch_factor must only be specified when num_workers is greater than 0, "
+                    f"but got: {params['num_workers']}."
+                )
+            check_type(params["prefetch_factor"], "prefetch_factor", valid_type=int, invalid_type=bool)
+            check_positive(params["prefetch_factor"], "prefetch_factor")
+
+        check_type(params["persistent_workers"], "persistent_workers", valid_type=bool)
+        if params["persistent_workers"] and params["num_workers"] <= 0:
+            raise ValueError(
+                f"persistent_workers must only be specified when num_workers is greater than 0, "
+                f"but got: {params['num_workers']}."
+            )
+
+        check_type(params["in_order"], "in_order", valid_type=bool)
 
     def __iter__(self):
         if self.num_workers > 0:
@@ -347,8 +357,9 @@ class _Iterator(Generic[_T_co]):
         else:
             self.pin_memory = dataloader.pin_memory
         self._data_count = 0
-        self.dataset_fetcher = FetcherFactory.create_fetcher(self.dataset_type, self.dataset, self.auto_collation,
-                                                             self.collate_fn, self.drop_last)
+        self.dataset_fetcher = FetcherFactory.create_fetcher(
+            self.dataset_type, self.dataset, self.auto_collation, self.collate_fn, self.drop_last
+        )
 
     def __iter__(self):
         return self
@@ -361,7 +372,7 @@ class _Iterator(Generic[_T_co]):
 
     def _get_next_data(self):
         """Get the next data."""
-        raise NotImplementedError(f"{self.__class__.__name__} should implement `_get_next_data` method.")
+        raise NotImplementedError(f"{self.__class__.__name__} should implement _get_next_data method.")
 
     def _get_next_index(self):
         """Get the next index."""
@@ -421,9 +432,10 @@ class _MultiProcessIterator(_Iterator):
             else:
                 cpu_info = f"logical CPUs {max_num_workers} in the system"
             logger.warning(
-                f"DataLoader's `num_workers` with value {self.num_workers} is set too high, exceeding the number of "
+                f"DataLoader's num_workers with value {self.num_workers} is set too high, exceeding the number of "
                 f"{cpu_info}, which may lead to competition for resources and slow down performance of DataLoader. "
-                f"It is recommended to reduce the value of `num_workers`.")
+                f"It is recommended to reduce the value of num_workers."
+            )
 
     def _setup_multiprocessing(self):
         """Setup the multiprocessing."""
@@ -432,10 +444,14 @@ class _MultiProcessIterator(_Iterator):
         self.data_queue = self.multiprocessing_context.Queue()
         self.worker_done = self.multiprocessing_context.Event()
         self.is_terminated = False
-        if (self.multiprocessing_context != ms.multiprocessing
-                and self.multiprocessing_context.get_start_method() == "fork"):
-            logger.warning("multiprocessing_context does not currently support Python native and custom ForkContext, "
-                           "switch to mindspore.multiprocessing instead.")
+        if (
+            self.multiprocessing_context != ms.multiprocessing
+            and self.multiprocessing_context.get_start_method() == "fork"
+        ):
+            logger.warning(
+                "multiprocessing_context does not currently support Python native and custom ForkContext, "
+                "switch to mindspore.multiprocessing instead."
+            )
             self.multiprocessing_context = ms.multiprocessing
             self.multiprocessing_context.set_start_method("fork", force=True)
         for worker_id in range(self.num_workers):
@@ -519,8 +535,11 @@ class _MultiProcessIterator(_Iterator):
         for i in range(self.num_workers):
             worker_to_assigned = (self.last_worker_assigned + i + 1) % self.num_workers
             if self.worker_status[worker_to_assigned]:
-                if (self.in_order or self.task_to_be_done[worker_to_assigned]
-                        < sum(self.task_to_be_done) // sum(self.worker_status) + 1):
+                if (
+                    self.in_order
+                    or self.task_to_be_done[worker_to_assigned]
+                    < sum(self.task_to_be_done) // sum(self.worker_status) + 1
+                ):
                     self.index_queues[worker_to_assigned].put((self.order_index, data_index))
                     self.task_info[self.order_index] = (worker_to_assigned,)
                     self.order_index += 1
@@ -537,53 +556,52 @@ class _MultiProcessIterator(_Iterator):
             if self.next_data_index not in self.task_info:
                 self.next_data_index += 1
                 continue
-            else:
-                task = self.task_info.get(self.next_data_index)
-                if len(task) == 2:  # task finished
-                    worker_id, data = task
-                    self.task_info.pop(self.next_data_index)
+            task = self.task_info.get(self.next_data_index)
+            if len(task) == 2:  # task finished
+                worker_id, data = task
+                self.task_info.pop(self.next_data_index)
+                self.next_data_index += 1
+                self.task_to_be_done[worker_id] -= 1
+                self._try_assign_one_task()
+                if isinstance(data, WorkerException):
+                    data.reraise()
+                return data
+
+            worker_id = task[0]
+            if not self.worker_status[worker_id]:  # invalid index
+                self.task_info.pop(self.next_data_index)
+                self.next_data_index += 1
+                continue
+            # worker not finished
+            while True:
+                order_index, data = self._get_data_from_queue()
+                if self.dataset_type == DatasetType.IterableDataset and data is None:
+                    worker_id = self.task_info.pop(order_index)[0]
+                    if not self.persistent_workers:
+                        self.index_queues[worker_id].put(None)
+                    self.worker_status[worker_id] = False
+                    self._try_assign_one_task()
+                    break
+                if order_index != self.next_data_index:  # not we want
+                    if not self.in_order:
+                        worker_id = self.task_info.pop(order_index)[0]
+                        self.task_to_be_done[worker_id] -= 1
+                        self._try_assign_one_task()
+                        if isinstance(data, WorkerException):
+                            data.reraise()
+                        return data
+
+                    if isinstance(data, WorkerException):
+                        data.reraise()
+                    self.task_info[order_index] += (data,)
+                else:
+                    worker_id = self.task_info.pop(self.next_data_index)[0]
                     self.next_data_index += 1
                     self.task_to_be_done[worker_id] -= 1
                     self._try_assign_one_task()
                     if isinstance(data, WorkerException):
                         data.reraise()
                     return data
-
-                worker_id = task[0]
-                if not self.worker_status[worker_id]:  # invalid index
-                    self.task_info.pop(self.next_data_index)
-                    self.next_data_index += 1
-                    continue
-                else:  # worker not finished
-                    while True:
-                        order_index, data = self._get_data_from_queue()
-                        if self.dataset_type == DatasetType.IterableDataset and data is None:
-                            worker_id = self.task_info.pop(order_index)[0]
-                            if not self.persistent_workers:
-                                self.index_queues[worker_id].put(None)
-                            self.worker_status[worker_id] = False
-                            self._try_assign_one_task()
-                            break
-                        if order_index != self.next_data_index:  # not we want
-                            if not self.in_order:
-                                worker_id = self.task_info.pop(order_index)[0]
-                                self.task_to_be_done[worker_id] -= 1
-                                self._try_assign_one_task()
-                                if isinstance(data, WorkerException):
-                                    data.reraise()
-                                return data
-
-                            if isinstance(data, WorkerException):
-                                data.reraise()
-                            self.task_info[order_index] += (data,)
-                        else:
-                            worker_id = self.task_info.pop(self.next_data_index)[0]
-                            self.next_data_index += 1
-                            self.task_to_be_done[worker_id] -= 1
-                            self._try_assign_one_task()
-                            if isinstance(data, WorkerException):
-                                data.reraise()
-                            return data
         if not self.persistent_workers:
             self.terminate()
         raise StopIteration
@@ -624,6 +642,7 @@ class _MultiProcessIterator(_Iterator):
                 raise RuntimeError(f"DataLoader worker (pid(s) {pids_str}) exited unexpectedly") from exc
             if isinstance(exc, queue.Empty):
                 return False, None
+            raise
 
     def terminate(self):
         """

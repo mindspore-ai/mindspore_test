@@ -12,9 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
-"""
-Fetch module.
-"""
+"""Fetcher module."""
 
 from .collate import default_collate, default_convert
 
@@ -39,7 +37,7 @@ class Fetcher:
         Fetch data from dataset.
         """
 
-        raise NotImplementedError(f"{self.__class__.__name__} should implement `fetch` method.")
+        raise NotImplementedError(f"{self.__class__.__name__} should implement fetch method.")
 
     def reset(self):
         """

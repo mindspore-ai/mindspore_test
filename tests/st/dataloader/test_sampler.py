@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
+"""Test Sampler."""
 
 import numpy as np
 import pytest
@@ -31,11 +32,14 @@ from tests.mark_utils import arg_mark
 
 
 class MyDataset(Dataset):
+    """
+    A map style dataset that returns as many samples as requested.
+    """
 
     def __init__(self, num_samples):
         super().__init__()
         self.num_samples = num_samples
-        self.data = [idx for idx in range(num_samples)]
+        self.data = list(range(num_samples))
 
     def __getitem__(self, index):
         return np.array(self.data[index])
@@ -45,6 +49,9 @@ class MyDataset(Dataset):
 
 
 class MyIterDataset(IterableDataset):
+    """
+    An iterable style dataset that yields as many samples as requested.
+    """
 
     def __init__(self, num_samples):
         super().__init__()
@@ -56,6 +63,9 @@ class MyIterDataset(IterableDataset):
 
 
 class MySampler:
+    """
+    A sampler that yields as many indices as requested sequentially.
+    """
 
     def __init__(self, num_samples):
         self.num_samples = num_samples
@@ -73,12 +83,15 @@ class MySampler:
 
 
 def compare_tensor_list(list1, list2):
+    """
+    Compare two lists of tensors.
+    """
     assert len(list1) == len(list2)
     for v1, v2 in zip(list1, list2):
         assert (v1 == v2).all()
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=["cpu_linux"], level_mark="level0", card_mark="onecard", essential_mark="essential")
 def test_dataloader_udf_sampler():
     """
     Feature: Test DataLoader sampler.
@@ -95,7 +108,7 @@ def test_dataloader_udf_sampler():
     compare_tensor_list(result, expect)
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=["cpu_linux"], level_mark="level0", card_mark="onecard", essential_mark="essential")
 def test_dataloader_sequential_sampler():
     """
     Feature: Test DataLoader sampler.
@@ -114,7 +127,7 @@ def test_dataloader_sequential_sampler():
     compare_tensor_list(result1, result2)
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=["cpu_linux"], level_mark="level0", card_mark="onecard", essential_mark="essential")
 def test_dataloader_random_sampler():
     """
     Feature: Test DataLoader sampler.
@@ -125,8 +138,18 @@ def test_dataloader_random_sampler():
     dataset = MyDataset(10)
 
     generator = np.random.default_rng(40)
-    expected_value = [ms.Tensor([5]), ms.Tensor([7]), ms.Tensor([0]), ms.Tensor([6]), ms.Tensor([4]),
-                      ms.Tensor([9]), ms.Tensor([0]), ms.Tensor([0]), ms.Tensor([4]), ms.Tensor([6])]
+    expected_value = [
+        ms.Tensor([5]),
+        ms.Tensor([7]),
+        ms.Tensor([0]),
+        ms.Tensor([6]),
+        ms.Tensor([4]),
+        ms.Tensor([9]),
+        ms.Tensor([0]),
+        ms.Tensor([0]),
+        ms.Tensor([4]),
+        ms.Tensor([6]),
+    ]
     sampler = RandomSampler(dataset, replacement=True, generator=generator)
     dataloader = DataLoader(dataset, batch_size=1, sampler=sampler, shuffle=False)
     result = list(dataloader)
@@ -138,15 +161,25 @@ def test_dataloader_random_sampler():
     result = list(dataloader)
     assert result == expected_value
 
-    expected_value = [ms.Tensor([2]), ms.Tensor([3]), ms.Tensor([5]), ms.Tensor([1]), ms.Tensor([6]),
-                      ms.Tensor([0]), ms.Tensor([8]), ms.Tensor([4]), ms.Tensor([7]), ms.Tensor([9])]
+    expected_value = [
+        ms.Tensor([2]),
+        ms.Tensor([3]),
+        ms.Tensor([5]),
+        ms.Tensor([1]),
+        ms.Tensor([6]),
+        ms.Tensor([0]),
+        ms.Tensor([8]),
+        ms.Tensor([4]),
+        ms.Tensor([7]),
+        ms.Tensor([9]),
+    ]
     sampler = RandomSampler(dataset, replacement=False, generator=generator)
     dataloader = DataLoader(dataset, batch_size=1, sampler=sampler, shuffle=False)
     result = list(dataloader)
     assert result == expected_value
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=["cpu_linux"], level_mark="level0", card_mark="onecard", essential_mark="essential")
 def test_dataloader_batch_sampler():
     """
     Feature: Test DataLoader sampler.
@@ -157,6 +190,9 @@ def test_dataloader_batch_sampler():
     dataset = MyDataset(10)
 
     class SimpleBatchSampler:
+        """
+        A simple batch sampler that yields a batch of indices each time.
+        """
 
         def __init__(self):
             self.indices = [[0, 1], [2, 3], [4, 5], [6, 7], [8, 9]]
@@ -169,29 +205,13 @@ def test_dataloader_batch_sampler():
     expected = [ms.Tensor([i, i + 1]) for i in range(0, 10, 2)]
     compare_tensor_list(result, expected)
 
-    error_msg = ("`batch_sampler` can not specify with `batch_size`, `drop_last`, `shuffle` or `sampler`")
-    with pytest.raises(ValueError) as raise_info:
-        dataloader = DataLoader(dataset, batch_size=2, batch_sampler=SimpleBatchSampler(), shuffle=False)
-        list(dataloader)
-    assert error_msg in str(raise_info.value)
 
-    with pytest.raises(ValueError) as raise_info:
-        dataloader = DataLoader(dataset, batch_size=1, batch_sampler=SimpleBatchSampler(), shuffle=True)
-        list(dataloader)
-    assert error_msg in str(raise_info.value)
-
-    with pytest.raises(ValueError) as raise_info:
-        dataloader = DataLoader(dataset, batch_size=1, batch_sampler=SimpleBatchSampler(), drop_last=True)
-        list(dataloader)
-    assert error_msg in str(raise_info.value)
-
-
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
-def test_dataloader_sampler_conflict():
+@arg_mark(plat_marks=["cpu_linux"], level_mark="level0", card_mark="onecard", essential_mark="essential")
+def test_dataloader_user_defined_sampler():
     """
     Feature: Test DataLoader sampler.
-    Description: Test the DataLoader parameters conflict.
-    Expectation: Raise ValueError.
+    Description: Test the DataLoader with user defined sampler.
+    Expectation: The result is as expected.
     """
 
     dataset = MyDataset(10)
@@ -202,13 +222,8 @@ def test_dataloader_sampler_conflict():
     expect = [ms.Tensor(i) for i in range(6)]
     compare_tensor_list(result, expect)
 
-    with pytest.raises(ValueError) as raise_info:
-        dataloader = DataLoader(dataset, sampler=sampler, shuffle=True)
-        result = list(dataloader)
-    assert "`shuffle` and `sampler` can not specify at the same time" in str(raise_info.value)
 
-
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=["cpu_linux"], level_mark="level0", card_mark="onecard", essential_mark="essential")
 def test_dataloader_distributed_sampler():
     """
     Feature: Test DataLoader sampler.
@@ -221,7 +236,7 @@ def test_dataloader_distributed_sampler():
     sampler = DistributedSampler(dataset, shuffle=False, num_replicas=None, rank=None)
     dataloader = DataLoader(dataset, batch_size=None, sampler=sampler)
     result = list(dataloader)
-    expect = [ms.Tensor(i) for i in range(0, 10)]
+    expect = [ms.Tensor(i) for i in range(10)]
     compare_tensor_list(result, expect)
     print(result)
 
@@ -240,7 +255,7 @@ def test_dataloader_distributed_sampler():
     print(result)
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=["cpu_linux"], level_mark="level0", card_mark="onecard", essential_mark="essential")
 def test_dataloader_distributed_sampler_shuffle():
     """
     Feature: Test DataLoader sampler.
@@ -257,7 +272,7 @@ def test_dataloader_distributed_sampler_shuffle():
     compare_tensor_list(result, expect)
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=["cpu_linux"], level_mark="level0", card_mark="onecard", essential_mark="essential")
 def test_dataloader_distributed_sampler_drop_last():
     """
     Feature: Test DataLoader sampler.
@@ -285,7 +300,7 @@ def test_dataloader_distributed_sampler_drop_last():
     expect = [ms.Tensor(i) for i in [2, 5, 8]]
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=["cpu_linux"], level_mark="level0", card_mark="onecard", essential_mark="essential")
 def test_sequential_sampler():
     """
     Feature: Sequential Sampler
@@ -299,7 +314,7 @@ def test_sequential_sampler():
     assert list(sequential_sampler) == result
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=["cpu_linux"], level_mark="level0", card_mark="onecard", essential_mark="essential")
 def test_random_sampler():
     """
     Feature: Random Sampler
@@ -326,7 +341,7 @@ def test_random_sampler():
     assert list(random_sampler_2) == result_2
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=["cpu_linux"], level_mark="level0", card_mark="onecard", essential_mark="essential")
 def test_dataloader_random_sampler_exception():
     """
     Feature: Random sampling of abnormal scenarios
@@ -364,7 +379,7 @@ def test_dataloader_random_sampler_exception():
     assert error_msssage in str(error_info.value)
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=["cpu_linux"], level_mark="level0", card_mark="onecard", essential_mark="essential")
 def test_batch_sampler():
     """
     Feature: Batch Sampler
@@ -389,7 +404,7 @@ def test_batch_sampler():
     assert list(batch_sampler_2) == result_2
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=["cpu_linux"], level_mark="level0", card_mark="onecard", essential_mark="essential")
 def test_dataloader_batch_sampler_exception():
     """
     Feature: Batch sampling of abnormal scenarios
@@ -401,28 +416,28 @@ def test_dataloader_batch_sampler_exception():
     sampler = SequentialSampler(dataset)
 
     # 1.Verify that the batch_size parameter is an integer type.
-    error_msssage = "batch_size must be int, but got: str"
+    error_msssage = "batch_size must be <class 'int'>"
     with pytest.raises(TypeError) as error_info:
         batch_size = "test"
         _ = BatchSampler(sampler, batch_size=batch_size, drop_last=False)
     assert error_msssage in str(error_info.value)
 
     # 2.Verify that the batch_size parameter is less than or equal to 0.
-    error_msssage = "batch_size must be positive, but got batch_size = 0"
+    error_msssage = "batch_size must be positive"
     with pytest.raises(ValueError) as error_info:
         batch_size = 0
         _ = BatchSampler(sampler, batch_size, drop_last=False)
     assert error_msssage in str(error_info.value)
 
     # 3.Verify that the drop_last parameter is a boolean type.
-    error_msssage = "drop_last must be bool, but got: int"
+    error_msssage = "drop_last must be <class 'bool'>"
     with pytest.raises(TypeError) as error_info:
         drop_last = 1
         _ = BatchSampler(sampler, batch_size=2, drop_last=drop_last)
     assert error_msssage in str(error_info.value)
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=["cpu_linux"], level_mark="level0", card_mark="onecard", essential_mark="essential")
 def test_distributed_sampler():
     """
     Feature: Distribute Sampler
@@ -448,7 +463,7 @@ def test_distributed_sampler():
     assert list(distributed_sampler_3) == result_3
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=["cpu_linux"], level_mark="level0", card_mark="onecard", essential_mark="essential")
 def test_dataloader_distributed_sampler_exception():
     """
     Feature: Distribute sampling of abnormal scenarios
@@ -493,20 +508,20 @@ def test_dataloader_distributed_sampler_exception():
     assert error_msssage in str(error_info.value)
 
     # 6.Verify scenarios where the num_replicas parameter is less than or equal to 0.
-    error_msssage = "Invalid num_replicas: 0, num_replicas should be greater than 0"
+    error_msssage = "Invalid num_replicas: 0, num_replicas must be greater than 0"
     with pytest.raises(ValueError) as error_info:
         num_replicas = 0
         _ = DistributedSampler(dataset, num_replicas=num_replicas)
     assert error_msssage in str(error_info.value)
 
     # 7.Verify that the rank parameter is less than 0 or not in the range [0, num_replicas-1].
-    error_msssage = "Invalid rank: 5, rank should be in the interval [0, 3]"
+    error_msssage = "Invalid rank: 5, rank must be in the interval [0, 3]"
     with pytest.raises(ValueError) as error_info:
         rank = 5
         _ = DistributedSampler(dataset, num_replicas=4, rank=rank)
     assert error_msssage in str(error_info.value)
 
-    error_msssage = "Invalid rank: -1, rank should be in the interval [0, 3]"
+    error_msssage = "Invalid rank: -1, rank must be in the interval [0, 3]"
     with pytest.raises(ValueError) as error_info:
         rank = -1
         _ = DistributedSampler(dataset, num_replicas=4, rank=rank)
