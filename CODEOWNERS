@@ -89,6 +89,7 @@
 /mindspore/ops/kernel/cpu/akg/ @gaoxiong1
 /mindspore/ops/kernel/cpu/custom/ @limingqi107
 /mindspore/ops/kernel/cpu/dynamic_akg/ @gaoxiong1
+/mindspore/ops/kernel/cpu/native/environ/ @limingqi107
 /mindspore/ops/kernel/cpu/nnacl/ @YeFeng_24
 /mindspore/ops/kernel/cpu/silent_detect/ @fary86
 /mindspore/ops/kernel/gpu/akg/ @gaoxiong1
@@ -128,6 +129,8 @@
 /mindspore/python/mindspore/nn/ @changzherui
 /mindspore/python/mindspore/nn/grad/ @ginfung
 /mindspore/python/mindspore/nn/layer/ @liangchenghui
+/mindspore/python/mindspore/nn/layer/container.py @chujinjin
+/mindspore/python/mindspore/nn/layer/transformer.py @tanghuikang
 /mindspore/python/mindspore/nn/loss/ @zwiori
 /mindspore/python/mindspore/nn/optim/ @zwiori
 /mindspore/python/mindspore/nn/optim/tft_wrapper.py @fary86
