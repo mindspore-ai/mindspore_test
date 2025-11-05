@@ -126,8 +126,8 @@ class OpsFactory():
         self.op_func_grad = op_info.op_func_grad
         self.ref = op_info.ref
         self.op_name = op_info.name
-        self.op_sample_inputs_func = op_info.op_sample_inputs_func
-        self.op_reference_inputs_func = op_info.op_reference_inputs_func
+        self.op_basic_reference_inputs_func = op_info.op_basic_reference_inputs_func
+        self.op_extra_reference_inputs_func = op_info.op_extra_reference_inputs_func
         self.op_dynamic_inputs_func = op_info.op_dynamic_inputs_func
         self.op_error_inputs_func = op_info.op_error_inputs_func
         self._sample_inputs = None

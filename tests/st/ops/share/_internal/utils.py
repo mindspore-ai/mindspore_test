@@ -236,7 +236,10 @@ class OpSampleInput:
             if isinstance(x, (ms.Tensor, torch.Tensor, np.ndarray)):
                 sum_info = f"{type(x).__name__}(shape={x.shape}, dtype={x.dtype}"
                 if values:
-                    sum_info += f", mean={x.mean()}, max={x.max()}, min={x.min()}"
+                    x_mean = tensor_to_numpy(x).mean()
+                    x_max = tensor_to_numpy(x).max()
+                    x_min = tensor_to_numpy(x).min()
+                    sum_info += f", mean={x_mean}, max={x_max}, min={x_min}"
                 return sum_info + ")"
             elif isinstance(x, list):
                 return "list[" + ", ".join(map(_tensor_summary, x)) + "]"
@@ -328,6 +331,43 @@ def _tensor_to_discontiguous(x):
 
     assert not result.is_contiguous()
     return result
+
+
+def tensor_to_numpy(tensor):
+    """
+    Convert a tensor to numpy array.
+    Args:
+        tensor: Tensor to convert.
+    Returns:
+        Numpy ndarray on host.
+    """
+    if isinstance(tensor, torch.Tensor):
+        return torch_asnumpy(tensor)
+    elif isinstance(tensor, ms.Tensor):
+        return ms_asnumpy(tensor)
+    elif isinstance(tensor, np.ndarray):
+        return tensor
+    else:
+        raise ValueError(f"Unsupported tensor type: {type(tensor)}")
+
+
+def torch_asnumpy(tensor, convert_half_to_float=False, convert_extra_uint=False):
+    """
+    Convert a PyTorch tensor to numpy array with optional casts.
+    Args:
+        tensor: PyTorch tensor to convert.
+        convert_half_to_float: If True, cast float16 to float32 before copying.
+        convert_extra_uint: If True, cast uint16/32/64 to int64 for compatibility.
+    Returns:
+        Numpy ndarray on host.
+    """
+    if tensor.dtype == torch.bfloat16:
+        tensor = tensor.float()
+    if convert_half_to_float and tensor.dtype == torch.float16:
+        tensor = tensor.float()
+    if convert_extra_uint and tensor.dtype in (torch.uint16, torch.uint32, torch.uint64):
+        tensor = tensor.int()
+    return tensor.cpu().detach().numpy()
 
 
 def ms_asnumpy(tensor, convert_half_to_float=False, convert_extra_uint=False):

@@ -151,13 +151,17 @@ class BinaryOpsFactory(OpsFactory):
                 self.supported_dtypes = tuple(d for d in self.supported_dtypes if d.is_floating_point)
             for dtype in tqdm(self.supported_dtypes):
                 if grad_cmp:
-                    for sample_input in self.op_sample_inputs_func(self.op_info, dtype, device=self._device):
+                    for sample_input in self.op_basic_reference_inputs_func(self.op_info, dtype, device=self._device):
                         self.compare_with_torch(sample_inputs=sample_input, grad_cmp=True)
                 else:
-                    for sample_input in self.op_sample_inputs_func(self.op_info, dtype, device=self._device):
+                    for sample_input in self.op_basic_reference_inputs_func(self.op_info, dtype, device=self._device):
                         self.compare_with_torch(sample_inputs=sample_input)
-                    if self.op_reference_inputs_func is not None:
-                        for sample_input in self.op_reference_inputs_func(self.op_info, dtype, device=self._device):
+                    if self.op_extra_reference_inputs_func is not None:
+                        for sample_input in self.op_extra_reference_inputs_func(
+                                self.op_info,
+                                dtype,
+                                device=self._device,
+                        ):
                             self.compare_with_torch(sample_inputs=sample_input)
         except Exception as e:
             print(f"\ntest_binary_op_reference failed:"
@@ -194,8 +198,12 @@ class BinaryOpsFactory(OpsFactory):
 
             print(f"\nop_name: {self.op_name}, mode:{self._context_mode}, test_binary_op_tensor_type_promotion...")
             self.supported_dtypes = tuple(set(self.supported_dtypes) & set(dtypes_as_torch))
-            self.op_sample_inputs_func = sample_inputs_binary_tensor_type_promotion_func
-            for sample_input in self.op_sample_inputs_func(self.op_info, self.supported_dtypes, device=self._device):
+            self.op_basic_reference_inputs_func = sample_inputs_binary_tensor_type_promotion_func
+            for sample_input in self.op_basic_reference_inputs_func(
+                    self.op_info,
+                    self.supported_dtypes,
+                    device=self._device,
+            ):
                 self.compare_with_torch(sample_inputs=sample_input)
         except Exception as e:
             print(f"\ntest_binary_op_tensor_type_promotion failed:"

@@ -17,17 +17,19 @@
 This module provides:
 - OpInfo dataclass describing operator metadata for tests.
 - BinaryOpInfo convenience subclass with defaults for binary ops.
-- sample_inputs_binary_op_func: canonical sample input generator for binary ops.
+- basic_reference_inputs_binary_op_common_func: canonical sample input generator for binary ops.
 """
 import functools
 import itertools
+import warnings
 import math
 import numpy as np
 import mindspore as ms
 from typing import Callable, Optional
 from dataclasses import dataclass, field
+from mindspore._c_expression import MSContext
 from tests.st.ops.share._op_info.op_common import (
-    MEDIUM_DIM_SIZE, SMALL_DIM_SIZE, EXTRA_SMALL_DIM_SIZE,
+    MEDIUM_DIM_SIZE, SMALL_DIM_SIZE, EXTRA_SMALL_DIM_SIZE, LARGE_DIM_SIZE,
     dtypes_integral, dtypes_extra_uint,
     get_default_loss,
 )
@@ -55,8 +57,8 @@ class OpInfo:
         dtypes_intersection: Intersection of supported dtypes across all listed
             backends. Auto-populated in ``__post_init__`` if left empty.
 
-        op_sample_inputs_func: Function that generates sample inputs for tests.
-        op_reference_inputs_func: Function that generates comprehensive sample inputs for tests.
+        op_basic_reference_inputs_func: Function that generates basic reference inputs for tests.
+        op_extra_reference_inputs_func: Function that generates comprehensive sample inputs for tests.
         op_dynamic_inputs_func: Function that generates dynamic-shape samples.
         op_error_inputs_func: Function that generates error/negative samples.
 
@@ -86,10 +88,10 @@ class OpInfo:
     dtypes_gpu: tuple = field(default_factory=tuple)
     dtypes_intersection: tuple = field(default_factory=tuple)
 
-    # function to generate sample inputs (basic shape/broadcasting cases) for the op.
-    op_sample_inputs_func: Optional[Callable] = None
-    # function to generate reference inputs (discontinuous/special values/large or small values cases) for the op.
-    op_reference_inputs_func: Optional[Callable] = None
+    # function to generate basic reference inputs (basic shape/broadcasting cases) for the op.
+    op_basic_reference_inputs_func: Optional[Callable] = None
+    # function to generate extra reference inputs (discontinuous/special values/large or small values cases) for the op.
+    op_extra_reference_inputs_func: Optional[Callable] = None
     # function to generate dynamic inputs for the op.
     op_dynamic_inputs_func: Optional[Callable] = None
     # function to generate error inputs for the op.
@@ -113,8 +115,8 @@ class OpInfo:
         if self.op_func_grad is None:
             self.op_func_grad = self.op
 
-# op_sample_inputs_func for ops
-def sample_inputs_binary_op_func(
+# basic op_basic_reference_inputs_func for ops
+def basic_reference_inputs_binary_op_common_func(
     op_info: OpInfo,
     dtype,
     device=None,
@@ -164,7 +166,7 @@ def sample_inputs_binary_op_func(
             op_name=op_info.name,
         )
 
-# op_reference_inputs_func for ops
+# op_extra_reference_inputs_func for ops
 def _generate_binary_op_tensors_sample_inputs_func(
     op_info: OpInfo,
     dtype,
@@ -412,7 +414,7 @@ def _generate_binary_op_scalar_inputs_func(
         )
 
 
-def reference_inputs_binary_op_common_func(
+def extra_reference_inputs_binary_op_common_func(
     op_info: OpInfo,
     dtype,
     device=None,
@@ -586,8 +588,8 @@ class BinaryOpInfo(OpInfo):
             self,
             name: str,
             *,
-            op_sample_inputs_func: Optional[Callable] = sample_inputs_binary_op_func,
-            op_reference_inputs_func: Optional[Callable] = reference_inputs_binary_op_common_func,
+            op_basic_reference_inputs_func: Optional[Callable] = basic_reference_inputs_binary_op_common_func,
+            op_extra_reference_inputs_func: Optional[Callable] = extra_reference_inputs_binary_op_common_func,
             op_dynamic_inputs_func: Optional[Callable] = dynamic_inputs_binary_op_common_func,
             op_error_inputs_func: Optional[Callable] = None,
             support_tensor_type_promotion: Optional[bool] = True,
@@ -598,8 +600,8 @@ class BinaryOpInfo(OpInfo):
     ):
         super().__init__(
             name,
-            op_sample_inputs_func=op_sample_inputs_func,
-            op_reference_inputs_func=op_reference_inputs_func,
+            op_basic_reference_inputs_func=op_basic_reference_inputs_func,
+            op_extra_reference_inputs_func=op_extra_reference_inputs_func,
             op_dynamic_inputs_func=op_dynamic_inputs_func,
             **kwargs,
         )
@@ -608,3 +610,388 @@ class BinaryOpInfo(OpInfo):
         self.supports_right_python_scalar = supports_right_python_scalar
         self.supports_both_python_scalar = supports_both_python_scalar
         self.op_error_inputs_func = error_inputs_binary_op_common_func(op_error_inputs_func)
+
+
+# basic op_basic_reference_inputs_func for unary ops
+def basic_reference_inputs_unary_op_common_func(
+    op_info: OpInfo,
+    dtype,
+    device=None,
+    **kwargs
+):
+    """Yield typical shape cases for unary ops.
+
+    Covers scalars, vectors, singleton dims, medium 2D/3D, and empty-dimension cases.
+
+    Args:
+        op_info: OpInfo object.
+        dtype: Data type of the tensors.
+        device: Device of the tensors.
+        kwargs: Additional keyword arguments.
+    Returns:
+        Generator of OpSampleInput objects.
+    """
+    S = EXTRA_SMALL_DIM_SIZE if kwargs.get("only_small_tensor_size", False) else SMALL_DIM_SIZE
+    M = MEDIUM_DIM_SIZE if kwargs.get("only_small_tensor_size", False) else SMALL_DIM_SIZE
+    L = LARGE_DIM_SIZE if kwargs.get("only_small_tensor_size", False) else SMALL_DIM_SIZE
+
+    make_func = functools.partial(
+        make_tensor,
+        device=device,
+        dtype=dtype,
+    )
+
+    shapes = (
+        (),
+        (S,),
+        (M, S),
+        (S, S, L),
+        (3, 0, 1),
+        (2, 1, 3, 2),
+        (2, 3, 4, 1, 2),
+        (2, 1, 2, 2, 1, 2),
+        (2, 1, 2, 2, 1, 2, 1),
+        (2, 1, 2, 2, 1, 2, 1, 2),
+    )
+
+    for input_shape in shapes:
+        _input = make_func(input_shape)
+
+        yield OpSampleInput(
+            _input,
+            op_args=(),
+            op_name=op_info.name,
+        )
+
+
+# op_extra_reference_inputs_func for unary ops
+def _generate_unary_op_tensors_sample_inputs_func(
+    op_info: OpInfo,
+    dtype,
+    device=None,
+    **kwargs
+):
+    """Generate single-tensor sample inputs for a unary op.
+
+    Args:
+        op_info: Operator metadata.
+        dtype: Data type of tensors to generate.
+        device: Target device.
+        kwargs: Additional options (unused).
+
+    Returns:
+        Generator[OpSampleInput]: Inputs covering empty/scalar/various shapes.
+    """
+    shapes = (
+        (0,),        # empty tensors
+        (1, 0, 3),   # empty tensors
+        (),          # scalar tensors
+        (20,),       # 1D tensors with small size
+        (812,),      # 1D tensors with medium size
+        (1029, 917), # 2D tensors with large size
+    )
+
+    for shape in shapes:
+        yield OpSampleInput(
+            op_input=make_tensor(shape, dtype, device=device),
+            op_args=(),
+            op_kwargs={},
+            op_name=f"{op_info.name}_tensor_inputs",
+        )
+
+
+def _generate_unary_op_small_value_tensor_inputs_func(
+    op_info: OpInfo,
+    dtype,
+    device=None,
+    **kwargs
+):
+    """Generate single-tensor inputs with small values for edge cases.
+
+    Args:
+        op_info: Operator metadata.
+        dtype: Data type of tensors to generate.
+        device: Target device.
+        kwargs: Additional options (unused).
+
+    Returns:
+        Generator[OpSampleInput]: Inputs covering representative small float/int/unsigned values.
+    """
+    _uint_values = (0, 1, 31, 63, 128, 195, 254)
+    _int_values = (0, -1, 1, -63, 63, -127, 127, -128)
+    _float_vals = (
+        0.0,
+        -0.0,
+        -1.0,
+        1.0,
+        -1.25e-1,
+        1.25e-1,
+        -1e-3,
+        1e-3,
+        -math.pi / 2,
+        math.pi / 2,
+        -math.pi + 1e-5,
+        math.pi - 1e-5,
+        -math.pi,
+        math.pi,
+        -math.pi - 1e-5,
+        math.pi + 1e-5,
+    )
+
+    if dtype.is_floating_point:
+        values = list(_float_vals)
+    elif dtype.is_complex:
+        values = [complex(r, i) for r, i in itertools.product(_float_vals, _float_vals)]
+    elif dtype in dtypes_integral and dtype != ms.bool_:
+        values = list(_uint_values) if (dtype in dtypes_extra_uint or dtype == ms.uint8) else list(_int_values)
+    else:
+        raise ValueError(f"Unsupported dtype: {dtype}!")
+
+    yield OpSampleInput(
+        op_input=make_tensor_with_np_array(np.array(values), dtype=dtype, device=device),
+        op_args=(),
+        op_kwargs={},
+        op_name=f"{op_info.name}_small_value_tensor_inputs",
+    )
+
+
+def _generate_unary_op_large_value_tensor_inputs_func(
+    op_info: OpInfo,
+    dtype,
+    device=None,
+    **kwargs
+):
+    """Generate single-tensor inputs with large values for stress testing.
+
+    Args:
+        op_info: Operator metadata.
+        dtype: Data type of tensors to generate.
+        device: Target device.
+        kwargs: Additional options (unused).
+
+    Returns:
+        Generator[OpSampleInput]: Inputs covering large-magnitude float/complex/integer values.
+    """
+    _int_values = (-1023, 1023, -10922, 10922)
+    _fp16_values = (-521, 521, -996.9, 996.9, -13141.5, 13141.5)
+    _fp32_values = _fp16_values + (-5062757.7, 5062757.7, -1e20, 1e20)
+
+    if dtype == ms.float16:
+        values = list(_fp16_values)
+    elif dtype.is_floating_point:
+        values = list(_fp32_values)
+    elif dtype.is_complex:
+        values = [complex(r, i) for r, i in itertools.product(_fp32_values, _fp32_values)]
+    elif dtype in (ms.int16, ms.int32, ms.int64):
+        values = list(_int_values)
+    else:
+        raise ValueError(f"Unsupported dtype: {dtype}!")
+
+    yield OpSampleInput(
+        op_input=make_tensor_with_np_array(np.array(values), dtype=dtype, device=device),
+        op_args=(),
+        op_kwargs={},
+        op_name=f"{op_info.name}_large_value_tensor_inputs",
+    )
+
+
+def _generate_unary_op_discontiguous_tensor_inputs_func(
+    op_info: OpInfo,
+    dtype,
+    device=None,
+    **kwargs
+):
+    """Generate contiguous and discontiguous tensor inputs for unary ops.
+
+    Args:
+        op_info: Operator metadata.
+        dtype: Data type of tensors to generate.
+        device: Target device.
+        kwargs: Additional options (unused).
+
+    Returns:
+        Generator[OpSampleInput]: Inputs covering contiguous/non-contiguous memory layouts.
+    """
+
+    shapes = (
+        (1,),
+        (3, 1),
+        (1, 2, 3),
+    )
+
+    for shape, discontiguous in itertools.product(shapes, [False, True]):
+        yield OpSampleInput(
+            op_input=make_tensor(shape, dtype=dtype, device=device, discontiguous=discontiguous),
+            op_args=(),
+            op_kwargs={},
+            op_name=f"{op_info.name}_discontiguous_tensor_inputs",
+        )
+
+
+def _generate_unary_op_extremal_value_tensor_inputs_func(
+    op_info: OpInfo,
+    dtype,
+    device=None,
+    **kwargs
+):
+    """Generate tensor with extremal value for a unary op.  
+
+    Args:
+        op_info: Operator metadata.
+        dtype: Data type of tensors to generate.
+        device: Target device.
+        kwargs: Additional options (unused).
+
+    Returns:
+        Generator[OpSampleInput]: Inputs covering extremal value.
+    """
+    # inf and nan is unsupported on Ascend910 devices.
+    if device == 'ascend':
+        ascend_name = MSContext.get_instance().get_ascend_soc_version()
+        if ascend_name == 'ascend910':
+            warnings.warn("Inf and NaN are unsupported on current Ascend devices.")
+            return
+
+    S = SMALL_DIM_SIZE
+    yield OpSampleInput(
+        op_input=make_tensor_with_np_array(np.full((S, S), np.inf), dtype=dtype, device=device),
+        op_args=(),
+        op_kwargs={},
+        op_name=op_info.name,
+    )
+    yield OpSampleInput(
+        op_input=make_tensor_with_np_array(np.full((S, S), -np.inf), dtype=dtype, device=device),
+        op_args=(),
+        op_kwargs={},
+        op_name=op_info.name,
+    )
+    yield OpSampleInput(
+        op_input=make_tensor_with_np_array(np.full((S, S), np.nan), dtype=dtype, device=device),
+        op_args=(),
+        op_kwargs={},
+        op_name=op_info.name,
+    )
+
+
+def extra_reference_inputs_unary_op_common_func(
+    op_info: OpInfo,
+    dtype,
+    device=None,
+    **kwargs
+):
+    """Generate comprehensive reference inputs for a unary op.
+
+    Args:
+        op_info: Operator metadata.
+        dtype: Data type of tensors to generate.
+        device: Target device.
+        kwargs: Additional options (unused).
+
+    Returns:
+        Generator[OpSampleInput]: Aggregated samples from multiple input generators.
+    """
+    if dtype in dtypes_extra_uint:
+        return
+    # tensors with many kinds of shapes
+    yield from _generate_unary_op_tensors_sample_inputs_func(op_info, dtype, device, **kwargs)
+    # tensors with small value
+    if dtype != ms.bool_:
+        yield from _generate_unary_op_small_value_tensor_inputs_func(op_info, dtype, device, **kwargs)
+    # tensors with large value
+    if dtype not in (ms.bool_, ms.uint8, ms.int8):
+        yield from _generate_unary_op_large_value_tensor_inputs_func(op_info, dtype, device, **kwargs)
+    # contiguous or discontiguous tensors
+    yield from _generate_unary_op_discontiguous_tensor_inputs_func(op_info, dtype, device, **kwargs)
+    # tensor with extremal value
+    if dtype.is_floating_point or dtype.is_complex:
+        yield from _generate_unary_op_extremal_value_tensor_inputs_func(op_info, dtype, device, **kwargs)
+
+
+# op_dynamic_inputs_func for unary ops
+def dynamic_inputs_unary_op_common_func(
+    op_info: OpInfo,
+    dtype,
+    device=None,
+    **kwargs
+):
+    """Generate dynamic-shape/rank inputs for a unary op.
+
+    Args:
+        op_info: Operator metadata.
+        dtype: Data type of tensors to generate.
+        device: Target device.
+        kwargs: Flags such as only_dynamic_shape/only_dynamic_rank.
+
+    Returns:
+        Generator[OpDynamicInput]: Dynamic compile-time and runtime inputs.
+    """
+    make_func = functools.partial(make_tensor, dtype=dtype, device=device)
+    if not kwargs.get("only_dynamic_rank", False):
+        # dynamic shape
+        yield OpDynamicInput(
+            op_compile_input=OpSampleInput(
+                op_input=ms.Tensor(shape=(None, None), dtype=dtype),
+                op_args=(),
+                op_kwargs={},
+                op_name=f"{op_info.name}_dynamic_shape_compile_input",
+            ),
+            op_running_inputs=(
+                OpSampleInput(
+                    op_input=make_func(shape=(2, 3)),
+                    op_args=(),
+                    op_kwargs={},
+                    op_name=f"{op_info.name}_dynamic_shape_running_input",
+                ),
+                OpSampleInput(
+                    op_input=make_func(shape=(4, 5)),
+                    op_args=(),
+                    op_kwargs={},
+                    op_name=f"{op_info.name}_dynamic_shape_running_input",
+                ),
+            ),
+        )
+    if not kwargs.get("only_dynamic_shape", False):
+        # dynamic rank
+        yield OpDynamicInput(
+            op_compile_input=OpSampleInput(
+                op_input=ms.Tensor(shape=None, dtype=dtype),
+                op_args=(),
+                op_kwargs={},
+                op_name=f"{op_info.name}_dynamic_rank_compile_input",
+            ),
+            op_running_inputs=(
+                OpSampleInput(
+                    op_input=make_func(shape=(2, 3)),
+                    op_args=(),
+                    op_kwargs={},
+                    op_name=f"{op_info.name}_dynamic_rank_running_input",
+                ),
+                OpSampleInput(
+                    op_input=make_func(shape=(2, 3, 4)),
+                    op_args=(),
+                    op_kwargs={},
+                    op_name=f"{op_info.name}_dynamic_rank_running_input",
+                ),
+            ),
+        )
+
+
+class UnaryOpInfo(OpInfo):
+
+    def __init__(
+            self,
+            name: str,
+            *,
+            op_basic_reference_inputs_func: Optional[Callable] = basic_reference_inputs_unary_op_common_func,
+            op_extra_reference_inputs_func: Optional[Callable] = extra_reference_inputs_unary_op_common_func,
+            op_dynamic_inputs_func: Optional[Callable] = dynamic_inputs_unary_op_common_func,
+            op_error_inputs_func: Optional[Callable] = None,
+            **kwargs,
+    ):
+        super().__init__(
+            name,
+            op_basic_reference_inputs_func=op_basic_reference_inputs_func,
+            op_extra_reference_inputs_func=op_extra_reference_inputs_func,
+            op_dynamic_inputs_func=op_dynamic_inputs_func,
+            **kwargs,
+        )
