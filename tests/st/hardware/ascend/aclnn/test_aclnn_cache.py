@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+"""test aclnn cache"""
 import os
 import time
 import multiprocessing
@@ -20,13 +21,13 @@ from tests.mark_utils import arg_mark
 
 import numpy as np
 import mindspore
-from mindspore import mint, context, mutable
+from mindspore import mint, context, mutable, jit
 from mindspore.nn import Cell
 
 
 class Net(Cell):
     def __init__(self):
-        super(Net, self).__init__()
+        super().__init__()
         self.op1 = mint.sin
         self.op2 = mint.cos
 
@@ -178,7 +179,7 @@ def test_aclnn_cache_with_multi_input():
 
 class SimpleNet1(Cell):
     def __init__(self):
-        super(SimpleNet1, self).__init__()
+        super().__init__()
         self.op1 = mint.sin
         self.op2 = mint.nonzero
         self.op3 = mint.cos
@@ -241,7 +242,7 @@ def test_aclnn_cache_host_memory_kbk():
 
 class SimpleNet2(Cell):
     def __init__(self):
-        super(SimpleNet2, self).__init__()
+        super().__init__()
         self.op = mint.cat
 
     def construct(self, x):
@@ -282,4 +283,59 @@ def test_aclnn_cache_host_memory_pyboost():
     # the 900th step and 1000th step memory usage change should be less than 0.1% in pyboost
     assert diff_percent <= 0.001
     os.system("rm -rf log_cache_memory_pyboost.txt")
+    del os.environ["MS_DEV_RUNTIME_CONF"]
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_sync_aclnn_op_kbyk():
+    """
+    Feature: sync aclnn op
+    Description: test sync aclnn op
+    Expectation: run successfully
+    """
+    os.environ["MS_DEV_RUNTIME_CONF"] = "aclnn_cache_queue_length:0"
+    class NonZeroNet(Cell):
+        @jit
+        def construct(self, x):
+            return mint.nonzero(x)
+    net = NonZeroNet()
+
+    # test static shape
+    x = mindspore.Tensor(shape=[100, 1000], dtype=mindspore.float32)
+    out = net(x)
+    print(out)
+
+    # test dynamic shape
+    t = mindspore.Tensor(shape=[None, None], dtype=mindspore.float32)
+    net.set_inputs(t)
+    x = mindspore.Tensor(shape=[100, 1000], dtype=mindspore.float32)
+    out = net(x)
+    print(out)
+
+    del os.environ["MS_DEV_RUNTIME_CONF"]
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_sync_aclnn_op_pyboost():
+    """
+    Feature: sync aclnn op
+    Description: test sync aclnn op
+    Expectation: run successfully
+    """
+    os.environ["MS_DEV_RUNTIME_CONF"] = "aclnn_cache_queue_length:0"
+    class NonZeroNet(Cell):
+        def construct(self, x):
+            return mint.nonzero(x)
+    net = NonZeroNet()
+
+    # test static shape
+    x = mindspore.Tensor(shape=[100, 1000], dtype=mindspore.float32)
+    out = net(x)
+    print(out)
+
+    # test dynamic shape
+    t = mindspore.Tensor(shape=[None, None], dtype=mindspore.float32)
+    net.set_inputs(t)
+    x = mindspore.Tensor(shape=[100, 1000], dtype=mindspore.float32)
+    out = net(x)
+    print(out)
+
     del os.environ["MS_DEV_RUNTIME_CONF"]
