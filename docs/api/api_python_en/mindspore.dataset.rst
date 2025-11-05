@@ -8,6 +8,7 @@ mindspore.dataset
    mindspore.dataset.loading
    mindspore.dataset.transforms
    mindspore.mindrecord
+   mindspore.dataset.dataloader
 
 MindSpore Dataset is a high-performance data engine module specifically designed within the MindSpore framework,
 dedicated to providing efficient, flexible, and user-friendly data loading and preprocessing solutions for deep learning tasks.
