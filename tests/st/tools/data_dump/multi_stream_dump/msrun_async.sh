@@ -18,16 +18,14 @@ echo "Please run the script as: "
 echo "bash msrun_single.sh <DATA_PATH> <DUMP_CONFIG_PATH>"
 echo "==========================================="
 
-DATA_PATH=$1
-DUMP_CONFIG_PATH=$2
+DUMP_CONFIG_PATH=$1
 
-echo "DATA PATH IS " $DATA_PATH
 echo "DUMP CONFIG PATH IS " $DUMP_CONFIG_PATH
-rm -rf msrun_log
-mkdir msrun_log
+rm -rf msrun_log_2
+mkdir msrun_log_2
 
 echo "start training"
 
 export MINDSPORE_DUMP_CONFIG=$DUMP_CONFIG_PATH
-export DATA_PATH=$DATA_PATH
-msrun --worker_num=8 --local_worker_num=8 --master_port=8762 --log_dir=msrun_log --join=True --cluster_time_out=300 net.py
+export ASCEND_RT_VISIBLE_DEVICES=4,5,6,7
+msrun --worker_num=4 --local_worker_num=4 --master_port=8762 --log_dir=msrun_log_2 --join=True --cluster_time_out=300 resnet.py
