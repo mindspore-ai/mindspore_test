@@ -225,6 +225,26 @@ class BackendFuncGraphMock {
     nodes_[dst_index]->set_abstract(nodes_[src_index]->abstract());
   }
 
+  void SetTarget(const py::object &cnode_obj, const py::object &target_obj) {
+    if (!py::isinstance<py::int_>(cnode_obj)) {
+      MS_LOG(ERROR) << "Expect int phase, but got " << py::str(cnode_obj);
+      return;
+    }
+    size_t node_index = IntToSize(py::cast<int>(cnode_obj));
+    if (nodes_.find(node_index) == nodes_.end() || nodes_[node_index] == nullptr) {
+      MS_LOG(ERROR) << "Failed to get node of index:" << node_index;
+      return;
+    }
+    if (!py::isinstance<py::str>(target_obj)) {
+      MS_LOG(ERROR) << "Expect int phase, but got " << py::str(cnode_obj);
+      return;
+    }
+    auto target = py::cast<std::string>(target_obj);
+    auto cnode = nodes_[node_index]->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(cnode);
+    cnode->set_user_data("primitive_target", std::make_shared<std::string>(target));
+  }
+
   void SetInput(const py::object &cnode_obj, const py::object &index_obj, const py::object &input_obj) {
     if (!py::isinstance<py::int_>(cnode_obj)) {
       MS_LOG(ERROR) << "Expect int phase, but got " << py::str(cnode_obj);
@@ -374,6 +394,7 @@ void RegBackendGraphMock(py::module *m) {
     .def("set_abstract_", &BackendFuncGraphMock::SetAbstract, "Executor SetAbstract function.")
     .def("set_cell_reuse_", &BackendFuncGraphMock::SetCellReuse, "Executor SetAbstract function.")
     .def("set_input_", &BackendFuncGraphMock::SetInput, "Executor SetAbstract function.")
+    .def("set_target_", &BackendFuncGraphMock::SetTarget, "Executor SetAbstract function.")
     .def("infer_", &BackendFuncGraphMock::Infer, "Executor Infer function.")
     .def("native_infer_", &BackendFuncGraphMock::NativeInfer, "Executor Infer function.")
     .def("compile_", &BackendFuncGraphMock::Compile, "Executor Compile function.")
