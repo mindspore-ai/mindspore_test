@@ -68,7 +68,7 @@ class HSDPAsyncGradHook(HSDPGradHook):
             return comm.all_reduce(grad, group=hsdp_param.unsharded_group_name, async_op=True)
 
         def grad_acc_all_reduce_hook(grad):
-            ops.assign_add(hsdp_param.acc_grad, grad)
+            hsdp_param.acc_grad.add_(grad)
             if not self.requires_grad_sync:
                 return grad, None
             return comm.all_reduce(hsdp_param.acc_grad, group=hsdp_param.unsharded_group_name, async_op=True)
@@ -85,13 +85,13 @@ class HSDPAsyncGradHook(HSDPGradHook):
             return comm.reduce_scatter_tensor(grad, group=hsdp_param.sharded_group_name, async_op=True)
 
         def grad_acc_reduce_scatter_hook(grad):
-            ops.assign_add(hsdp_param.acc_grad, grad)
+            hsdp_param.acc_grad.add_(grad)
             if not self.requires_grad_sync:
                 return grad, None
             return comm.reduce_scatter_tensor(hsdp_param.acc_grad, group=hsdp_param.sharded_group_name, async_op=True)
 
         def grad_reduce_scatter_acc_post_hook(output):
-            ops.assign_add(hsdp_param.acc_grad, output)
+            hsdp_param.acc_grad.add_(output)
             return hsdp_param.acc_grad
 
         if not self.requires_acc_grad:
@@ -109,7 +109,7 @@ class HSDPAsyncGradHook(HSDPGradHook):
             return comm.all_reduce(output, group=hsdp_param.unsharded_group_name, async_op=True)
 
         def grad_acc_reduce_scatter_hook(grad):
-            ops.assign_add(hsdp_param.acc_grad, grad)
+            hsdp_param.acc_grad.add_(grad)
             if not self.requires_grad_sync:
                 return grad, None
             output, _ = comm.reduce_scatter_tensor(hsdp_param.acc_grad, group=hsdp_param.sharded_group_name,
@@ -118,9 +118,9 @@ class HSDPAsyncGradHook(HSDPGradHook):
 
         def grad_reduce_scatter_acc_hook(grad):
             output, _ = comm.reduce_scatter_tensor(grad, group=hsdp_param.sharded_group_name, async_op=False)
-            ops.assign_add(hsdp_param.acc_grad, output)
+            hsdp_param.acc_grad.add_(output)
             if not self.requires_grad_sync:
-                return grad, None
+                return output, None
             return comm.all_reduce(hsdp_param.acc_grad, group=hsdp_param.unsharded_group_name, async_op=True)
 
         if not self.requires_acc_grad:

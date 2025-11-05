@@ -180,3 +180,33 @@ def test_zero3_partial_shard_with_async_acc_grad():
     '''
     case_name = "test_zero3_partial_shard_with_async_acc_grad"
     _run_hsdp_case_by_name(case_name)
+
+@arg_mark(plat_marks=["platform_ascend"], level_mark="level1", card_mark="allcards", essential_mark="essential")
+def test_zero3_with_comm_fusion():
+    '''
+    Feature: zero3 partial shard data parallel with comm fusion.
+    Description: zero3 data parallel.
+    Expectation: Run success
+    '''
+    case_name = "test_zero3_with_comm_fusion"
+    _run_hsdp_case_by_name(case_name)
+
+@arg_mark(plat_marks=["platform_ascend"], level_mark="level1", card_mark="allcards", essential_mark="essential")
+def test_zero3_with_comm_fusion_bucket_size():
+    '''
+    Feature: zero3 with comm fusion bucket size, gradient will be fused to buffer whose size is limited by bucket size.
+    Description: zero3 gradient fusion bucket size.
+    Expectation: Run success
+    '''
+    case_name = "test_zero3_with_comm_fusion_bucket_size"
+    _run_hsdp_case_by_name(case_name)
+
+@arg_mark(plat_marks=["platform_ascend"], level_mark="level1", card_mark="allcards", essential_mark="essential")
+def test_zero3_with_comm_fusion_bucket_size0():
+    '''
+    Feature: zero3 with comm fusion bucket size 0 which mean gradient will not be fused into buffer.
+    Description: zero3 data parallel.
+    Expectation: Run success
+    '''
+    case_name = "test_zero3_with_comm_fusion_bucket_size0"
+    _run_hsdp_case_by_name(case_name)

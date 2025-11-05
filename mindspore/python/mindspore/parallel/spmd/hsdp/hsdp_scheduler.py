@@ -27,51 +27,57 @@ class HSDPScheduler:
     """HSDPScheduler is used to imply optimizer level."""
 
     def __init__(self, cell, shard_size, threshold, shard_level, requires_acc_grad, grad_scale,
-                 reduce_dtype, comm_async):
+                 reduce_dtype, comm_async, comm_fusion, bucket_size):
         """init hsdp scheduler."""
         self.cell = cell
         self.shard_level = shard_level
         self.no_param_sharded = shard_size == 1
-        self.use_cell_hook = ms.get_context("mode") != ms.GRAPH_MODE
+        self.use_pynative_hook = ms.get_context("mode") != ms.GRAPH_MODE
         self.requires_acc_grad = requires_acc_grad
         self.requires_grad_sync = False
         self.reduce_dtype = reduce_dtype
+        self.forward_prefetch_cells = []
+        self.backward_prefetch_cells = []
         self.config = HSDPConfig(
             shard_size,
             threshold,
             requires_acc_grad,
+            grad_scale,
             shard_level,
-            self.use_cell_hook,
-            self.reduce_dtype
+            self.use_pynative_hook,
+            reduce_dtype,
+            comm_async,
+            comm_fusion,
+            bucket_size
         )
 
         self.hsdp_state = HSDPState(cell, self.config)
-        if comm_async:
-            self.grad_hook = HSDPAsyncGradHook(reduce_dtype, grad_scale, shard_level,
-                                               requires_acc_grad, self.use_cell_hook)
+        if self.use_pynative_hook:
+            if comm_async:
+                self.grad_hook = HSDPAsyncGradHook(reduce_dtype, grad_scale, shard_level,
+                                                   requires_acc_grad, self.use_pynative_hook)
+            else:
+                self.grad_hook = HSDPGradHook(reduce_dtype, grad_scale, shard_level,
+                                              requires_acc_grad, self.use_pynative_hook)
         else:
             self.grad_hook = HSDPGradHook(reduce_dtype, grad_scale, shard_level,
-                                          requires_acc_grad, self.use_cell_hook)
-        self.forward_prefetch_cells = []
-        self.backward_prefetch_cells = []
+                                          requires_acc_grad, self.use_pynative_hook)
 
-        if self.use_cell_hook:
-            self._register_cell_hooks()
+        if self.use_pynative_hook:
+            self._register_pynative_hooks()
         else:
-            self._register_param_hook()
+            self._register_graph_hook()
 
     def set_requires_grad_sync(self, requires_grad_sync):
         """set requires grad sync flag to control gradient sync."""
         self.requires_grad_sync = requires_grad_sync
         self.grad_hook.set_requires_grad_sync(requires_grad_sync)
+        self.hsdp_state.set_requires_grad_sync(requires_grad_sync)
 
     def zero_grads(self):
-        """set requires grad sync flag to control gradient sync."""
+        """set gradient to zero."""
         if self.requires_acc_grad:
-            for hsdp_param in self.hsdp_state.hsdp_params:
-                if not hsdp_param.param.requires_grad:
-                    continue
-                hsdp_param.zero_acc_grad()
+            self.hsdp_state.zero_grads()
 
     def _get_param_forward_hook(self, hsdp_param):
         """get param forward hook."""
@@ -109,7 +115,7 @@ class HSDPScheduler:
             return backward_acc_grad_hook
         return backward_hook
 
-    def _register_param_hook(self):
+    def _register_graph_hook(self):
         """register param forward and grad hook."""
         for hsdp_param in self.hsdp_state.hsdp_params:
             if not hsdp_param.sharded:
@@ -118,12 +124,16 @@ class HSDPScheduler:
                 hsdp_param.param.register_hsdp_hook(self._get_param_forward_hook(hsdp_param),
                                                     self._get_param_backward_hook(hsdp_param))
 
-    def _register_cell_hooks(self):
+    def _register_pynative_hooks(self):
         """register cell process hooks."""
         for hsdp_param in self.hsdp_state.hsdp_params:
             if not hsdp_param.param.requires_grad:
                 continue
-            hsdp_param.param.register_hook(self.grad_hook.get_hook(hsdp_param))
+            if self.config.grad_fusion:
+                hsdp_param.param.register_hook(self._get_grad_buffer_hook(hsdp_param))
+            else:
+                hsdp_param.param.register_hook(self.grad_hook.get_hook(hsdp_param))
+
         if self.no_param_sharded:
             return
 
@@ -161,6 +171,15 @@ class HSDPScheduler:
         """backward hook to shard parameter for grad accumulation when requires_grad_sync is True."""
         if self.requires_grad_sync:
             self.hsdp_state.shard()
+
+    def _get_grad_buffer_hook(self, hsdp_param):
+        """set grad for hsdp parameter."""
+        def hook(grad):
+            hsdp_param.grad = grad
+            hsdp_param.param.grad = grad
+            self.hsdp_state.set_grad_ready(hsdp_param)
+            return grad
+        return hook
 
     def set_forward_prefetch_cells(self, hsdp_cell_list):
         """set forward prefetch cells."""

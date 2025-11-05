@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+"""enable set hsdp comm reduce type"""
 import os
 import numpy as np
 import mindspore as ms
@@ -43,12 +44,12 @@ def test_hsdp_reduce_dtype():
     """
     hidden_size = 64
     batch_size = 4
-    net = nn.Dense(hidden_size, hidden_size, dtype=ms.bfloat16)
-    data = Tensor(np.random.randn(batch_size, hidden_size), ms.bfloat16)
-    label = Tensor(np.random.randn(batch_size, hidden_size), ms.bfloat16)
+    net = nn.Dense(hidden_size, hidden_size, dtype=ms.float16)
+    data = Tensor(np.random.randn(batch_size, hidden_size), ms.float16)
+    label = Tensor(np.random.randn(batch_size, hidden_size), ms.float16)
     shard_size = 4
     threshold = 0
-    hsdp(layer, shard_size, threshold, reduce_dtype=ms.float32)
+    hsdp(net, shard_size, threshold, reduce_dtype=ms.float32)
     grad_fn = ms.value_and_grad(get_forward_fn(net), None, net.trainable_params(), has_aux=True)
     train_steps = 2
     optimizer = nn.Adam(net.trainable_params(), 0.01)

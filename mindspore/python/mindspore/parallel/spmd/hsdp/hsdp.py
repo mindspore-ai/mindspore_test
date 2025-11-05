@@ -31,7 +31,7 @@ class HSDPCell:
         ``Ascend`` ``GPU`` ``CPU``
     """
     def hsdp_init(self, cell, shard_size, threshold, optimizer_level, enable_grad_accumulation, grad_scale,
-                  reduce_dtype, comm_async):
+                  reduce_dtype, comm_async, comm_fusion, bucket_size):
         """init hsdp scheduler."""
         from mindspore.parallel.spmd.hsdp.hsdp_scheduler import HSDPScheduler
         self.hsdp_scheduler = HSDPScheduler(cell,
@@ -41,7 +41,9 @@ class HSDPCell:
                                             enable_grad_accumulation,
                                             grad_scale,
                                             reduce_dtype,
-                                            comm_async)
+                                            comm_async,
+                                            comm_fusion,
+                                            bucket_size)
 
     def set_requires_grad_sync(self, requires_grad_sync):
         r"""
@@ -101,7 +103,7 @@ def _extend_cell_with_hsdp_interface(cell):
     cell.__class__ = extend_class
 
 def hsdp(cell, shard_size=-1, threshold=64, optimizer_level="level1", enable_grad_accumulation=False, grad_scale=1.0,
-         reduce_dtype=None, comm_async=False):
+         reduce_dtype=None, comm_async=False, comm_fusion=False, bucket_size=-1):
     r"""
         apply hybrid sharded data parallel.
 
@@ -136,7 +138,14 @@ def hsdp(cell, shard_size=-1, threshold=64, optimizer_level="level1", enable_gra
                 will be reduced with its origin dtype.
             comm_async (bool, optional): reduce gradient with async communication op for communication overlap. 
                 When comm_async is enable, ``hsdp_wait_grad_handle`` should be called before using generated
-                gradient. Default value is None, which means gradient will be reduced with sync communication op.
+                gradient. Default value is False, which means gradient will be reduced with sync communication op.
+            comm_fusion (bool, optional): fuse forward parameter allgathers and backward gradient reducescatters or 
+                allreduces into buffers communication to reduce the number of communication op. ``bucket_size` will
+                further control the size of backward gradient reduce buffer size.
+                Default value is False, which means communication op is not fused and will run one by one.
+            bucket_size (int, optional): bucket_size is used to control the size of comm fusion buffer. Unit: KB.
+                Default value is -1, which means gradient will be fused into a buffer. When value is 0, which means
+                gradients will not be fused, each gradient acts as a buffer.
 
         Raises:
             ValueError: If the `cell` is not a cell.
@@ -147,6 +156,8 @@ def hsdp(cell, shard_size=-1, threshold=64, optimizer_level="level1", enable_gra
             ValueError: If `grad_scale` is not float.
             ValueError: If `reduce_dtype` is not mindspore.dtype.
             ValueError: If `comm_async` is not bool.
+            ValueError: If `comm_fusion` is not bool.
+            ValueError: If the `bucket_size` is not a positive integer or -1.
         """
     from mindspore.nn.cell import Cell
     if not isinstance(cell, Cell):
@@ -167,6 +178,10 @@ def hsdp(cell, shard_size=-1, threshold=64, optimizer_level="level1", enable_gra
         raise ValueError(f"reduce_dtype must be mindspore.dtype but got {reduce_dtype}.")
     if not isinstance(comm_async, bool):
         raise ValueError(f"comm_async must be bool but got {comm_async}.")
+    if not isinstance(comm_fusion, bool):
+        raise ValueError(f"comm_fusion must be bool but got {comm_fusion}.")
+    if not isinstance(bucket_size, int) or (bucket_size < 0 and bucket_size != -1):
+        raise ValueError(f"bucket_size must be a positive integer or 0, but got {bucket_size}.")
     _extend_cell_with_hsdp_interface(cell)
     cell.hsdp_init(
         cell,
@@ -176,7 +191,9 @@ def hsdp(cell, shard_size=-1, threshold=64, optimizer_level="level1", enable_gra
         enable_grad_accumulation,
         grad_scale,
         reduce_dtype,
-        comm_async
+        comm_async,
+        comm_fusion,
+        bucket_size * 1024
     )
     return cell
 

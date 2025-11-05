@@ -12,27 +12,29 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-from mindspore import nn, ops
+"""common net"""
+from mindspore import nn, mint
 from mindspore.common.parameter import Parameter
 from mindspore.common.initializer import initializer
 
 class DenseL2(nn.Cell):
+    """dense cell with level 2 depth"""
     def __init__(self, in_channels, hidden_size):
-        super(DenseL2, self).__init__()
-        self.dense1 = nn.Dense(in_channels, hidden_size, weight_init="ones", has_bias=False)
+        super().__init__()
+        self.dense1 = nn.Dense(in_channels, hidden_size, weight_init="normal", has_bias=False)
         self.bias = Parameter(initializer("zeros", [hidden_size], self.dense1.weight.dtype))
-        self.add = ops.BiasAdd()
 
     def construct(self, x):
         x = self.dense1(x)
-        x = self.add(x, self.bias)
+        x = mint.add(x, self.bias)
         return x
 
 class DenseL3(nn.Cell):
+    """dense cell with level 3 depth"""
     def __init__(self, in_channels, out_channels, hidden_size):
-        super(DenseL3, self).__init__()
+        super().__init__()
         self.block = DenseL2(in_channels, hidden_size)
-        self.dense2 = nn.Dense(hidden_size, out_channels, weight_init="ones", has_bias=False)
+        self.dense2 = nn.Dense(hidden_size, out_channels, weight_init="normal", has_bias=False)
 
     def construct(self, x):
         x = self.block(x)
@@ -40,8 +42,9 @@ class DenseL3(nn.Cell):
         return x
 
 class SlimLeNet(nn.Cell):
+    """slim lenet"""
     def __init__(self):
-        super(SlimLeNet, self).__init__()
+        super().__init__()
         self.flatten = nn.Flatten()
         self.dense_relu_sequential = nn.SequentialCell(
             nn.Dense(28*28, 512, weight_init="normal", bias_init="zeros"),
@@ -57,10 +60,11 @@ class SlimLeNet(nn.Cell):
         return logits
 
 class DenseNet(nn.Cell):
+    """dense net with 2 dense cell"""
     def __init__(self, in_channels, out_channels, hidden_size):
-        super(DenseNet, self).__init__()
-        self.dense1 = nn.Dense(in_channels, hidden_size, weight_init="ones", has_bias=False)
-        self.dense2 = nn.Dense(hidden_size, out_channels, weight_init="ones", has_bias=False)
+        super().__init__()
+        self.dense1 = nn.Dense(in_channels, hidden_size, weight_init="normal", has_bias=False)
+        self.dense2 = nn.Dense(hidden_size, out_channels, weight_init="normal", has_bias=False)
 
     def construct(self, x):
         x = self.dense1(x)
@@ -69,8 +73,9 @@ class DenseNet(nn.Cell):
         return x
 
 class DenseMutiLayerNet(nn.Cell):
+    """dense net with configurable layer number"""
     def __init__(self, hidden_size, layer_num):
-        super(DenseMutiLayerNet, self).__init__()
+        super().__init__()
         self.layer_num = layer_num
         self.layers = nn.CellList()
         for _ in range(self.layer_num):

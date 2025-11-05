@@ -107,11 +107,13 @@ def hsdp_without_accumulate_grad(shard_size, threshold=64, optimizer_level="leve
             break
     assert final_loss < 0.95
 
-def hsdp_with_accumulate_grad(shard_size, threshold=64, optimizer_level="level1", micro_step=1, comm_async=False):
+def hsdp_with_accumulate_grad(shard_size, threshold=64, optimizer_level="level1", micro_step=1, comm_async=False,
+                              comm_fusion=False, bucket_size=-1):
     """test hsdp with acc grad"""
     data_set = create_dataset(local_batch_size=local_bs, num_shards=dp_size, shard_id=rank_id)
     net = SlimLeNet()
-    hsdp(net, shard_size, threshold, optimizer_level, enable_grad_accumulation=True, comm_async=comm_async)
+    hsdp(net, shard_size, threshold, optimizer_level, enable_grad_accumulation=True, comm_async=comm_async,
+         comm_fusion=comm_fusion, bucket_size=bucket_size)
     optimizer = nn.Adam(net.trainable_params(), learning_rate)
     grad_fn = ms.value_and_grad(get_forward_fn(net), None, net.trainable_params(), has_aux=True)
     loss_sync_allreduce = ops.AllReduce(ops.ReduceOp.SUM)
@@ -216,6 +218,35 @@ def test_zero3_partial_shard_with_async_acc_grad():
     '''
     init()
     hsdp_with_accumulate_grad(shard_size=4, optimizer_level="level3", micro_step=8, comm_async=True)
+
+def test_zero3_with_comm_fusion():
+    '''
+    Feature: zero3 with comm fusion, gradient will be fused to only one buffer.
+    Description: zero3 data parallel.
+    Expectation: Run success
+    '''
+    init()
+    hsdp_with_accumulate_grad(shard_size=4, optimizer_level="level3", micro_step=8, comm_async=True, comm_fusion=True)
+
+def test_zero3_with_comm_fusion_bucket_size():
+    '''
+    Feature: zero3 with comm fusion bucket size, gradient will be fused to buffer whose size is limited by bucket size.
+    Description: zero3 gradient fusion bucket size.
+    Expectation: Run success
+    '''
+    init()
+    hsdp_with_accumulate_grad(shard_size=4, optimizer_level="level3", micro_step=8, comm_async=True,
+                              comm_fusion=True, bucket_size=2000)
+
+def test_zero3_with_comm_fusion_bucket_size0():
+    '''
+    Feature: zero3 with comm fusion bucket size 0 which mean gradient will not be fused into buffer.
+    Description: zero3 data parallel.
+    Expectation: Run success
+    '''
+    init()
+    hsdp_with_accumulate_grad(shard_size=4, optimizer_level="level3", micro_step=8, comm_async=True,
+                              comm_fusion=True, bucket_size=0)
 
 @arg_mark(plat_marks=["platform_ascend"], level_mark="level1", card_mark="onecard", essential_mark="essential")
 def test_no_dp():
