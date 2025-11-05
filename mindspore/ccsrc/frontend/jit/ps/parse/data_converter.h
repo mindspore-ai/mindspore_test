@@ -57,7 +57,6 @@ bool IsClassType(const py::object &obj);
 py::object CreatePythonObject(const py::object &type, const py::tuple &args_kwargs);
 FRONTEND_EXPORT py::object CallPythonScript(const py::object &script, const py::tuple &args_kwargs);
 py::set GetPythonScriptIdAttrs(const py::object &script);
-void MakeProperNameToFuncGraph(const FuncGraphPtr &func_graph, std::string name);
 FRONTEND_EXPORT ValuePtr PyDataToValue(const py::object &obj);
 FRONTEND_EXPORT ValuePtr PyDataToStubNode(const py::object &obj);
 FRONTEND_EXPORT void ClearObjectCache();
@@ -84,7 +83,7 @@ class DataConverter {
 };
 
 FuncGraphPtr ConvertToBpropCut(const py::object &obj);
-FRONTEND_EXPORT ValuePtr ConvertSlice(const py::object &obj);
+ValuePtr ConvertSlice(const py::object &obj);
 
 using OpDefConvertFunc = ValuePtr (*)(const py::object &);
 OpDefConvertFunc GetConverterByType(int32_t dtype);

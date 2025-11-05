@@ -35,7 +35,7 @@ void RegPrimitive(const py::module *m) {
     .value("user_custom", PrimType::kPrimTypeUserCustom)
     .value("py_infer_check", PrimType::kPrimTypePyCheck);
   (void)py::class_<PrimitivePyAdapter, std::shared_ptr<PrimitivePyAdapter>>(*m, "Primitive_")
-    .def_readonly(PYTHON_PRIMITIVE_FLAG, &PrimitivePyAdapter::parse_info_)
+    .def_readonly("__primitive_flag__", &PrimitivePyAdapter::parse_info_)
     .def(py::init<py::str &>())
     .def("add_attr", &PrimitivePyAdapter::AddPyAttr, "add primitive attr")
     .def("del_attr", &PrimitivePyAdapter::DelPyAttr, "del primitive attr")
@@ -53,7 +53,7 @@ void RegPrimitive(const py::module *m) {
 
 void RegPrimitiveFunction(const py::module *m) {
   (void)py::class_<PrimitiveFunctionAdapter, std::shared_ptr<PrimitiveFunctionAdapter>>(*m, "PrimitiveFunction_")
-    .def_readonly(PYTHON_PRIMITIVE_FUNCTION_FLAG, &PrimitiveFunctionAdapter::parse_info_)
+    .def_readonly("__primitive_function_flag__", &PrimitiveFunctionAdapter::parse_info_)
     .def(py::init<>())
     .def_property_readonly("name", &PrimitiveFunctionAdapter::name, "Get function name.")
     .def("has_label", &PrimitiveFunctionAdapter::has_label, "Has function attr.")

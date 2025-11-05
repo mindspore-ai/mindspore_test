@@ -45,8 +45,8 @@ FRONTEND_EXPORT void CaptureResolveOperation(const py::tuple &args, const std::s
                                              py::object *res);
 py::object CaptureRun(const py::args &args, const py::object &res, const py::object &prim_py);
 FRONTEND_EXPORT bool IsTracing();
-FRONTEND_EXPORT py::object DefaultOutput();
-FRONTEND_EXPORT bool Compiled();
+py::object DefaultOutput();
+bool Compiled();
 
 class TraceRecorder {
  public:
