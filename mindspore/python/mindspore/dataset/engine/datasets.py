@@ -50,8 +50,7 @@ import mindspore._c_dataengine as cde
 from mindspore._c_expression import typing
 
 from mindspore import log as logger
-from mindspore.parallel._ps_context import _is_role_pserver, _is_role_sched, _get_ps_context, \
-    _enable_distributed_mindrt
+from mindspore.parallel._ps_context import _is_role_sched
 from mindspore.dataset.engine.offload import GetOffloadModel
 from mindspore.communication.management import get_group_size
 from mindspore.dataset.transforms import c_transforms
@@ -181,7 +180,7 @@ def _get_operator_process():
     for key in keys:
         try:
             op_process[key] = list(process_info[key][1])
-            item_full = (len(process_info[key][1]) == process_info[key][0])
+            item_full = len(process_info[key][1]) == process_info[key][0]
         except KeyError as err:
             raise err
         fetched_all = fetched_all and item_full
@@ -2064,20 +2063,6 @@ class Dataset:
         """
         return self.get_dataset_size()
 
-    @staticmethod
-    def _update_data_shard(num_shards, shard_id):
-        """
-        Update the shard number and shard id if necessary.
-        This is normally used in distributed training mode like Parameter Server training.
-        """
-        # If this is in distributed execution mode,
-        # the shard number and shard id might need to be updated according to the process's rank or role.
-        worker_num = _get_ps_context("worker_num")
-        server_num = _get_ps_context("server_num")
-        if _is_role_pserver() and _enable_distributed_mindrt() and (worker_num != server_num):
-            num_shards = worker_num
-            shard_id = 0
-        return num_shards, shard_id
 
     def pre_parse(self, getter_mode):
         if getter_mode:
@@ -2399,7 +2384,6 @@ class MappableDataset(SourceDataset):
 
     def __init__(self, num_parallel_workers=None, sampler=None, num_samples=None, shuffle=None, num_shards=None,
                  shard_id=None, cache=None):
-        num_shards, shard_id = self._update_data_shard(num_shards, shard_id)
         if sampler is None:
             if shuffle is None or shuffle is True:
                 shuffle = Shuffle.GLOBAL
@@ -2436,7 +2420,7 @@ class MappableDataset(SourceDataset):
                                "must not be Shuffle.PARTIAL.")
 
         if new_sampler.get_shuffle_mode() != Shuffle.GLOBAL and new_sampler.get_shuffle_mode() != Shuffle.FALSE:
-            raise RuntimeError(f"When multiple samplers are used, ensure that the shuffle of the input sampler " +
+            raise RuntimeError("When multiple samplers are used, ensure that the shuffle of the input sampler " +
                                f"must be Shuffle.FALSE or Shuffle.GLOBAL, but got: {new_sampler.get_shuffle_mode()}.")
 
         new_sampler.add_child(self.sampler)
@@ -2614,10 +2598,10 @@ def _check_shm_usage(num_worker, queue_size, in_rowsize, out_rowsize):
                 raise RuntimeError(
                     f"Insufficient shared memory available. Required: {shm_estimate_usage}, " +
                     f"Available: {shm_available}. The required memory can't exceed 80% of the available " +
-                    f"shared memory, it's recommended to reduce memory usage by following methods:\n" +
-                    f"1. reduce value of parameter max_rowsize or num_parallel_workers.\n" +
-                    f"2. reduce prefetch size by set_prefetch_size().\n" +
-                    f"3. disable shared memory by set_enable_shared_mem().")
+                    "shared memory, it's recommended to reduce memory usage by following methods:\n" +
+                    "1. reduce value of parameter max_rowsize or num_parallel_workers.\n" +
+                    "2. reduce prefetch size by set_prefetch_size().\n" +
+                    "3. disable shared memory by set_enable_shared_mem().")
         except FileNotFoundError as exc:
             raise RuntimeError("Expected /dev/shm to exist.") from exc
 
@@ -3732,14 +3716,14 @@ class MapDataset(UnionBaseDataset):
         for op in self.operations:
             # user define c_vision.HWC2CHW without parentheses is error
             if type(op) == type:  # pylint: disable=unidiomatic-typecheck
-                raise ValueError(f"Parameter operations's element of method map should be a dataset processing " +
+                raise ValueError("Parameter operations's element of method map should be a dataset processing " +
                                  f"operation instance, but got: {op}. It may be missing parentheses for " +
-                                 f"instantiation.")
+                                 "instantiation.")
             if not isinstance(op, (c_transforms.TensorOperation, py_transforms.PyTensorOperation)) \
                     and not callable(op):
-                raise ValueError(f"Parameter operations's element of method map should be a python function or " +
+                raise ValueError("Parameter operations's element of method map should be a python function or " +
                                  f"class method which should be callable, but got: {op}. It doesn't need parentheses " +
-                                 f"for python function or class method.")
+                                 "for python function or class method.")
 
         self.input_columns = to_list(input_columns)
         self.output_columns = to_list(output_columns)
@@ -4130,7 +4114,7 @@ class ConcatDataset(UnionBaseDataset):
         for item in self.children_sizes_:
             if item == 0:
                 raise ValueError(f"There are no samples in the dataset number {child_index}. " +
-                                 f"Please make sure there are valid samples in the dataset.")
+                                 "Please make sure there are valid samples in the dataset.")
             child_index += 1
 
         self._children_sizes = self.children_sizes_.copy()

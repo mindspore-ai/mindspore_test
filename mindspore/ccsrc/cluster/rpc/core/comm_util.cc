@@ -59,24 +59,6 @@ bool CommUtil::CheckIp(const std::string &ip) {
   return true;
 }
 
-bool CommUtil::CheckHttpUrl(const std::string &http_url) {
-  std::regex pattern(
-    "https?:\\/\\/(www\\.)?[-a-zA-Z0-9@:%._\\+~#=]{1,256}\\.[a-zA-Z0-9()]{1,6}\\b([-a-zA-Z0-9()@:%_\\+.~#?&//=]*)");
-  std::smatch res;
-  if (regex_match(http_url, res, pattern)) {
-    return true;
-  }
-  return false;
-}
-
-bool CommUtil::CheckPort(const uint16_t &port) {
-  if (port > kMaxPort) {
-    MS_LOG(ERROR) << "The range of port should be 1 to 65535.";
-    return false;
-  }
-  return true;
-}
-
 void CommUtil::GetAvailableInterfaceAndIP(std::string *interface, std::string *ip) {
   MS_EXCEPTION_IF_NULL(interface);
   MS_EXCEPTION_IF_NULL(ip);
@@ -107,28 +89,6 @@ void CommUtil::GetAvailableInterfaceAndIP(std::string *interface, std::string *i
   }
   MS_EXCEPTION_IF_NULL(if_address);
   freeifaddrs(if_address);
-}
-
-std::string CommUtil::GetLoopBackInterfaceName() {
-  struct ifaddrs *if_address = nullptr;
-  struct ifaddrs *ifa = nullptr;
-
-  if (getifaddrs(&if_address) == -1) {
-    MS_LOG(WARNING) << "Get ifaddrs failed.";
-  }
-  for (ifa = if_address; ifa != nullptr; ifa = ifa->ifa_next) {
-    if (ifa->ifa_addr == nullptr) {
-      continue;
-    }
-
-    if (ifa->ifa_flags & IFF_LOOPBACK) {
-      MS_LOG(INFO) << "Loop back interface name is " << ifa->ifa_name;
-      return ifa->ifa_name;
-    }
-  }
-  MS_EXCEPTION_IF_NULL(if_address);
-  freeifaddrs(if_address);
-  return "";
 }
 
 std::string CommUtil::GenerateUUID() {
@@ -229,23 +189,6 @@ bool CommUtil::Retry(const std::function<bool()> &func, size_t max_attempts, siz
     std::this_thread::sleep_for(std::chrono::milliseconds(interval_milliseconds));
   }
   return false;
-}
-
-void CommUtil::LogCallback(int severity, const char *msg) {
-  MS_EXCEPTION_IF_NULL(msg);
-  switch (severity) {
-    case EVENT_LOG_MSG:
-      MS_LOG(INFO) << kLibeventLogPrefix << msg;
-      break;
-    case EVENT_LOG_WARN:
-      MS_LOG(WARNING) << kLibeventLogPrefix << msg;
-      break;
-    case EVENT_LOG_ERR:
-      MS_LOG(ERROR) << kLibeventLogPrefix << msg;
-      break;
-    default:
-      break;
-  }
 }
 
 bool CommUtil::IsFileExists(const std::string &file) { return access(file.c_str(), F_OK) != -1; }
@@ -633,54 +576,6 @@ bool CommUtil::StringToBool(const std::string &alive) {
     return false;
   }
   return false;
-}
-
-Time CommUtil::GetNowTime() {
-  ps::core::Time time;
-  auto time_now = std::chrono::system_clock::now();
-  std::time_t tt = std::chrono::system_clock::to_time_t(time_now);
-  struct tm ptm;
-  (void)localtime_r(&tt, &ptm);
-  std::ostringstream time_mill_oss;
-  time_mill_oss << std::put_time(&ptm, "%Y-%m-%d %H:%M:%S");
-
-  // calculate millisecond, the format of time_str_mill is 2022-01-10 20:22:20.067
-  auto second_time_stamp = std::chrono::duration_cast<std::chrono::seconds>(time_now.time_since_epoch());
-  auto mill_time_stamp = std::chrono::duration_cast<std::chrono::milliseconds>(time_now.time_since_epoch());
-  auto ms_stamp = mill_time_stamp - second_time_stamp;
-  time_mill_oss << "." << std::setfill('0') << std::setw(kMillSecondLength) << ms_stamp.count();
-
-  time.time_stamp = LongToSize(mill_time_stamp.count());
-  time.time_str_mill = time_mill_oss.str();
-  return time;
-}
-
-bool CommUtil::ParseAndCheckConfigJson(Configuration *file_configuration, const std::string &key,
-                                       FileConfig *file_config) {
-  MS_EXCEPTION_IF_NULL(file_configuration);
-  MS_EXCEPTION_IF_NULL(file_config);
-  if (!file_configuration->Exists(key)) {
-    MS_LOG(WARNING) << key << " config is not set. Don't write.";
-    return false;
-  } else {
-    std::string value = file_configuration->Get(key, "");
-    nlohmann::json value_json;
-    try {
-      value_json = nlohmann::json::parse(value);
-    } catch (const std::exception &e) {
-      MS_LOG(EXCEPTION) << "The hyper-parameter data is not in json format.";
-    }
-    // Parse the storage type.
-    uint32_t storage_type = ps::core::CommUtil::JsonGetKeyWithException<uint32_t>(value_json, ps::kStoreType);
-    if (std::to_string(storage_type) != ps::kFileStorage) {
-      MS_LOG(EXCEPTION) << "Storage type " << storage_type << " is not supported.";
-    }
-    // Parse storage file path.
-    std::string file_path = ps::core::CommUtil::JsonGetKeyWithException<std::string>(value_json, ps::kStoreFilePath);
-    file_config->storage_type = storage_type;
-    file_config->storage_file_path = file_path;
-  }
-  return true;
 }
 }  // namespace core
 }  // namespace ps

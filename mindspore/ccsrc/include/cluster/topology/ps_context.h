@@ -54,11 +54,6 @@ class BACKEND_COMMON_EXPORT PSContext {
   bool is_worker() const;
   bool is_server() const;
   bool is_scheduler() const;
-  uint32_t initial_worker_num() const;
-  uint32_t initial_server_num() const;
-  std::string scheduler_host() const;
-  void SetPSRankId(uint32_t rank_id);
-  uint32_t ps_rank_id() const;
   void InsertHashTableSize(const std::string &param_name, size_t cache_vocab_size, size_t embedding_size,
                            size_t vocab_size, int32_t param_key) const;
   void ReInsertHashTableSize(const std::string &new_param_name, const std::string &cur_param_name) const;
@@ -113,11 +108,6 @@ class BACKEND_COMMON_EXPORT PSContext {
   char *server_password();
   void set_server_password(const char *password);
   void ClearServerPassword();
-
-  std::string http_url_prefix() const;
-
-  void set_instance_name(const std::string &instance_name);
-  const std::string &instance_name() const;
 
   // Whether distributed MindRT is enabled.
   bool enable_distributed_mindrt() const;

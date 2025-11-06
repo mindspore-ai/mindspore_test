@@ -731,7 +731,6 @@ PYBIND11_MODULE(_c_expression, m) {
     .def("is_worker", &PSContext::is_worker, "Get whether the role of this process is Worker.")
     .def("is_server", &PSContext::is_server, "Get whether the role of this process is PServer.")
     .def("is_scheduler", &PSContext::is_scheduler, "Get whether the role of this process is Scheduler.")
-    .def("ps_rank_id", &PSContext::ps_rank_id, "Get Worker and PServer rank id.")
     .def("insert_hash_table_size", &PSContext::InsertHashTableSize, "Insert hash table size.")
     .def("reinsert_hash_table_size", &PSContext::ReInsertHashTableSize,
          "Insert hash table size with new parameter name.")
@@ -764,7 +763,6 @@ PYBIND11_MODULE(_c_expression, m) {
          "Set configuration files required by the communication layer.")
     .def("config_file_path", &PSContext::config_file_path,
          "Get configuration files required by the communication layer.")
-    .def("enable_distributed_mindrt", &PSContext::enable_distributed_mindrt, "Whether distributed MindRT is enabled.")
     .def("set_checkpoint_load_status", &PSContext::set_checkpoint_load_status, "Set checkpoint load status.")
     .def("store_warm_up_ptr_by_tensor", &PSContext::StoreWarmUpPtrByTensor, "Store warm up host cache by tensor.")
     .def("store_warm_up_ptr_by_tensor_list", &PSContext::StoreWarmUpPtrByTensorList,

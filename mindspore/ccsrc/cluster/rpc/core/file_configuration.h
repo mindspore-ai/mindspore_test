@@ -100,9 +100,9 @@ class BACKEND_COMMON_EXPORT FileConfiguration : public Configuration {
 
   bool Exists(const std::string &key) const override;
 
-  void PersistFile(const core::ClusterConfig &clusterConfig) const override;
+  void PersistFile(const core::ClusterConfig &clusterConfig) const override {}
 
-  void PersistNodes(const core::ClusterConfig &clusterConfig) const override;
+  void PersistNodes(const core::ClusterConfig &clusterConfig) const override {}
 
   std::string file_path() const override;
 

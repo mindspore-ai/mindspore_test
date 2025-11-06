@@ -23,7 +23,6 @@ if(ENABLE_CPU)
         list(REMOVE_ITEM _CPU_SRC_LIST
             "res_manager/collective/ms_collective_comm_lib.cc"
             "res_manager/collective/allreduce_impl.cc"
-            "res_manager/collective/ms_collective_ops_impl.cc"
             "res_manager/collective/ms_collective_topo.cc"
             "res_manager/collective/ms_collective_node.cc")
     endif()

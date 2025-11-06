@@ -69,22 +69,7 @@ class BACKEND_COMMON_EXPORT Node {
 
   bool Wait(uint64_t request_id, const uint32_t &timeout = kCommTimeoutInSeconds);
 
-  bool SendMessageSync(const std::shared_ptr<TcpClient> &client, const std::shared_ptr<MessageMeta> &, const Protos &,
-                       const void *, size_t size, const uint32_t &timeout = kCommTimeoutInSeconds);
-
-  // Whether to enable disaster recovery.
-  bool EnableRecovery() const;
-
  protected:
-  bool WaitForStart(const uint32_t &timeout);
-
-  // Send data synchronously
-  bool SendMessageSync(const std::shared_ptr<TcpClient> &client, const CommMessage &message,
-                       const uint32_t &timeout = kCommTimeoutInSeconds);
-  // Send data asynchronously
-  bool SendMessageAsync(const std::shared_ptr<TcpClient> &client, const std::shared_ptr<MessageMeta> &meta,
-                        const Protos &protos, const void *data, size_t size);
-
   uint64_t AddMessageTrack(const uint32_t &expected_response);
   bool CheckMessageTrack(const uint64_t &request_id);
   void NotifyMessageArrival(const std::shared_ptr<MessageMeta> &meta);

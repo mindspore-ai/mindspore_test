@@ -325,18 +325,6 @@ void TcpClient::Start() {
     << "Event base dispatch with unexpected error code!";
 }
 
-void TcpClient::StartWithNoBlock() {
-  std::lock_guard<std::mutex> lock(connection_mutex_);
-  MS_LOG(INFO) << "Start tcp client with no block!";
-  MS_EXCEPTION_IF_NULL(event_base_);
-  int ret = event_base_loop(event_base_, EVLOOP_NONBLOCK);
-  MSLOG_IF(MsLogLevel::kInfo, ret == 0, NoExceptionType, nullptr) << "Event base loop success!";
-  MSLOG_IF(MsLogLevel::kError, ret == 1, NoExceptionType, nullptr)
-    << "Event base loop failed with no events pending or active!";
-  MSLOG_IF(MsLogLevel::kError, ret == -1, NoExceptionType, nullptr) << "Event base loop failed with error occurred!";
-  MSLOG_IF(MsLogLevel::kException, ret < -1, AbortedError, nullptr) << "Event base loop with unexpected error code!";
-}
-
 void TcpClient::SetMessageCallback(const OnMessage &cb) { message_callback_ = cb; }
 
 bool TcpClient::SendMessage(const CommMessage &message) const {
