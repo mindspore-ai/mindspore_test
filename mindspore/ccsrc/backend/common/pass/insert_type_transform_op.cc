@@ -841,9 +841,10 @@ AnfNodePtrList InsertTypeTransformOp::ProcessTupleToTensor(const FuncGraphPtr &f
   }
 
   if (IsNewKernel(node) && IsNewKernel(input)) {
-    MS_LOG_WITH_NODE(EXCEPTION, input) << "Insert TupleToTensor op for input:" << input->fullname_with_scope()
-                                       << " of node:" << node->fullname_with_scope()
-                                       << " in graph:" << func_graph->ToString();
+    MS_LOG_WITH_NODE(EXCEPTION, input)
+      << "Invalid kernel object type, a tensor type is required but the actual is tuple, input node:"
+      << input->fullname_with_scope() << " of node:" << node->fullname_with_scope()
+      << " in graph:" << func_graph->ToString();
   }
 
   // Data type of the tensor should be set as an attr of TupleToTensor op.
@@ -899,8 +900,9 @@ AnfNodePtrList InsertTypeTransformOp::ProcessScalarToTensor(const FuncGraphPtr &
   MS_EXCEPTION_IF_NULL(input);
   MS_EXCEPTION_IF_NULL(node);
   if (IsNewKernel(node) && IsNewKernel(input)) {
-    MS_LOG(EXCEPTION) << "Insert ScalarToTensor op for input:" << input->fullname_with_scope()
-                      << " of node:" << node->fullname_with_scope() << " in graph:" << func_graph->ToString();
+    MS_LOG(EXCEPTION) << "Invalid kernel object type, a tensor type is required but the actual is scalar, input node:"
+                      << input->fullname_with_scope() << " of node:" << node->fullname_with_scope()
+                      << " in graph:" << func_graph->ToString();
   }
 
   auto new_input = ConstructInputByValueNode(func_graph, input);
@@ -939,8 +941,9 @@ AnfNodePtrList InsertTypeTransformOp::ProcessTensorToTuple(const FuncGraphPtr &f
   MS_EXCEPTION_IF_NULL(input);
   MS_EXCEPTION_IF_NULL(node);
   if (IsNewKernel(node) && IsNewKernel(input)) {
-    MS_LOG(EXCEPTION) << "Insert TensorToTuple op for input:" << input->fullname_with_scope()
-                      << " of node:" << node->fullname_with_scope() << " in graph:" << func_graph->ToString();
+    MS_LOG(EXCEPTION) << "Invalid kernel object type, a tuple type is required but the actual is tensor, input node:"
+                      << input->fullname_with_scope() << " of node:" << node->fullname_with_scope()
+                      << " in graph:" << func_graph->ToString();
   }
   // Create TensorToTuple op.
   auto prim = NewValueNode(std::make_shared<Primitive>(prim::kPrimTensorToTuple->name()));
@@ -964,8 +967,9 @@ AnfNodePtrList InsertTypeTransformOp::ProcessTensorToScalar(const FuncGraphPtr &
   MS_EXCEPTION_IF_NULL(input);
   MS_EXCEPTION_IF_NULL(node);
   if (IsNewKernel(node) && IsNewKernel(input)) {
-    MS_LOG(EXCEPTION) << "Insert TensorToScalar op for input:" << input->fullname_with_scope()
-                      << " of node:" << node->fullname_with_scope() << " in graph:" << func_graph->ToString();
+    MS_LOG(EXCEPTION) << "Invalid kernel object type, a scalar type is required but the actual is tensor, input node:"
+                      << input->fullname_with_scope() << " of node:" << node->fullname_with_scope()
+                      << " in graph:" << func_graph->ToString();
   }
   // Create TensorToScalar op.
   auto prim = NewValueNode(std::make_shared<Primitive>(prim::kPrimTensorToScalar->name()));

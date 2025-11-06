@@ -48,8 +48,15 @@ class BackendGraph(BackendGraphMock_):
     def add_return(self, return_input):
         return self.add_return_(return_input)
 
-    def set_abstract(self, src, dst):
-        return self.set_abstract_(src, dst)
+    def set_abstract(self, *args):
+        '''
+        Two usage methods:
+        1. set_abstract(src_node, dst_node)
+        Assign the abstract property of the src node to the dst node.
+        2. set_abstract(node, type, shape)
+        Set the abstract property represented by type and shape to the node.
+        '''
+        return self.set_abstract_(args)
 
     def set_target(self, node, target):
         return self.set_target_(node, target)
@@ -72,6 +79,12 @@ class BackendGraph(BackendGraphMock_):
         Control flow is unsupported in this.
         '''
         return self.native_infer_()
+
+    def skip_infer(self):
+        '''
+        No need to generate abstract automatically.
+        '''
+        return self.skip_infer_()
 
     def compile(self):
         return self.compile_()

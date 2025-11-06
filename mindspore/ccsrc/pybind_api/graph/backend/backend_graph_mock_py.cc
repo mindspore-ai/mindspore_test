@@ -203,7 +203,49 @@ class BackendFuncGraphMock {
     context->SetCellReuseLevel(CellReuseLevel::kLazyInline);
   }
 
-  void SetAbstract(const py::object &src, const py::object &dst) {
+  void SetAbstract(const py::tuple &tuple) {
+    constexpr size_t kInputSizeOfSetAbstractByTypeAndShape = 3;
+    constexpr size_t kInputSizeOfSetAbstractByNode = 2;
+    constexpr size_t kTypeIndex = 1;
+    constexpr size_t kShapeIndex = 2;
+    if (tuple.size() == kInputSizeOfSetAbstractByTypeAndShape) {
+      if (!py::isinstance<py::int_>(tuple[0])) {
+        MS_LOG(ERROR) << "Expect int phase, but got " << tuple;
+        return;
+      }
+      size_t src_index = IntToSize(py::cast<int>(tuple[0]));
+      if (nodes_.find(src_index) == nodes_.end() || nodes_[src_index] == nullptr) {
+        MS_LOG(ERROR) << "Failed to get node of index:" << src_index;
+        return;
+      }
+      if (!py::isinstance<mindspore::Type>(tuple[kTypeIndex])) {
+        MS_LOG(ERROR) << "Invalid type:" << tuple;
+        return;
+      }
+      TypePtr type = py::cast<mindspore::TypePtr>(tuple[kTypeIndex]);
+      MS_EXCEPTION_IF_NULL(type);
+      ShapeVector shape;
+      if (!py::isinstance<py::tuple>(tuple[kShapeIndex])) {
+        MS_LOG(ERROR) << "Invalid shape:" << tuple;
+        return;
+      }
+      py::tuple shape_obj = py::cast<py::tuple>(tuple[kShapeIndex]);
+      for (size_t i = 0; i < shape_obj.size(); ++i) {
+        if (!py::isinstance<py::int_>(shape_obj[i])) {
+          MS_LOG(ERROR) << "Invalid shape" << shape_obj;
+          return;
+        }
+        shape.emplace_back(py::cast<int64_t>(shape_obj[i]));
+      }
+      nodes_[src_index]->set_abstract(std::make_shared<abstract::AbstractTensor>(type, shape));
+      return;
+    }
+    if (tuple.size() != kInputSizeOfSetAbstractByNode) {
+      MS_LOG(ERROR) << "Failed to set abstract for:" << tuple;
+      return;
+    }
+    py::object src = tuple[0];
+    py::object dst = tuple[1];
     if (!py::isinstance<py::int_>(src)) {
       MS_LOG(ERROR) << "Expect int phase, but got " << py::str(src);
       return;
@@ -344,6 +386,16 @@ class BackendFuncGraphMock {
     }
   }
 
+  void SkipInfer() {
+    MS_EXCEPTION_IF_NULL(resource_);
+    MS_EXCEPTION_IF_NULL(func_graph_);
+    auto manager = resource_->manager();
+    MS_EXCEPTION_IF_NULL(manager);
+    manager->AddFuncGraph(func_graph_);
+    resource_->set_func_graph(func_graph_);
+    resource_->set_pipeline_level(pipeline::kLevelJit);
+  }
+
   void Compile() {
     MS_EXCEPTION_IF_NULL(resource_);
     MS_EXCEPTION_IF_NULL(func_graph_);
@@ -397,6 +449,7 @@ void RegBackendGraphMock(py::module *m) {
     .def("set_target_", &BackendFuncGraphMock::SetTarget, "Executor SetAbstract function.")
     .def("infer_", &BackendFuncGraphMock::Infer, "Executor Infer function.")
     .def("native_infer_", &BackendFuncGraphMock::NativeInfer, "Executor Infer function.")
+    .def("skip_infer_", &BackendFuncGraphMock::SkipInfer, "Executor Infer function.")
     .def("compile_", &BackendFuncGraphMock::Compile, "Executor Compile function.")
     .def("__call__", &BackendFuncGraphMock::Run, "Executor Run function.");
 }
