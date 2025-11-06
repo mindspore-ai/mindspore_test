@@ -99,6 +99,18 @@ REG_BPROP_BUILDER("ClampTensor").SetUnusedInputs({i3}).SetBody(BODYFUNC(ib) {
   return {dout, ib->OutZeros(min), ib->OutZeros(max)};
 });
 
+REG_BPROP_BUILDER("ClampMin").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
+  auto x = ib->GetInput(i0);
+  auto min = ib->GetInput(i1);
+  auto dout = ib->GetInput(i3);
+
+  min = ib->ScalarToTensor(min, ib->GetDtype(x));
+  auto is_positive = ib->GreaterEqual(x, min);
+  auto zero = ib->Tensor(0., ib->GetDtype(dout));
+  auto dx = ib->Select(is_positive, dout, zero);
+  return {dx, ib->OutZeros(min)};
+});
+
 REG_BPROP_BUILDER("ClampScalar").SetUnusedInputs({i3}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(i0);
   auto min = ib->GetInput(i1);

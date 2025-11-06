@@ -14,7 +14,7 @@
 # ============================================================================
 """mint nn functional."""
 from __future__ import absolute_import
-import mindspore.ops as ops
+from mindspore import ops
 from mindspore import _checkparam as validator
 from mindspore.ops.function.nn_func import max_pool2d_ext as max_pool2d
 from mindspore.ops.functional import (
@@ -278,7 +278,7 @@ from mindspore.ops.function.nn_func import kl_div_ext as kl_div
 from mindspore.ops.function.nn_func import logsigmoid_ext as logsigmoid
 
 from mindspore.ops.auto_generate import adaptive_avg_pool1d
-
+from mindspore.ops.auto_generate import cosine_embedding_loss
 from mindspore.ops.functional import adaptive_avg_pool2d_ext as adaptive_avg_pool2d
 from mindspore.ops.function.nn_func import cross_entropy_ext as cross_entropy
 from mindspore.ops.function.nn_func import nll_loss_ext as nll_loss
@@ -1078,7 +1078,6 @@ __all__ = [
 
     # 11
     'relu',
-
     'relu_',
 
     # 12
@@ -1291,9 +1290,7 @@ __all__ = [
     # 258
     'mse_loss',
     # 259
-
     'adaptive_avg_pool1d',
-
     'adaptive_avg_pool2d',
 
     # 350
@@ -1310,4 +1307,5 @@ __all__ = [
     'relu6',
     # 548
     'kl_div',
+    'cosine_embedding_loss',
 ]

@@ -424,6 +424,7 @@ Dropout层
 
     mindspore.mint.nn.BCELoss
     mindspore.mint.nn.BCEWithLogitsLoss
+    mindspore.mint.nn.CosineEmbeddingLoss
     mindspore.mint.nn.CrossEntropyLoss
     mindspore.mint.nn.KLDivLoss
     mindspore.mint.nn.L1Loss
@@ -557,6 +558,7 @@ Dropout函数
 
     mindspore.mint.nn.functional.binary_cross_entropy
     mindspore.mint.nn.functional.binary_cross_entropy_with_logits
+    mindspore.mint.nn.functional.cosine_embedding_loss
     mindspore.mint.nn.functional.cross_entropy
     mindspore.mint.nn.functional.kl_div
     mindspore.mint.nn.functional.l1_loss

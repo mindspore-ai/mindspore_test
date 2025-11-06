@@ -18,13 +18,13 @@ Neural Networks Cells.
 Predefined building blocks or computing units to construct neural networks.
 """
 from __future__ import absolute_import
-import mindspore.ops as ops
+from mindspore import ops
 from mindspore.mint.nn import functional as F
 from mindspore.nn.cell import Cell
 from mindspore.nn import AdaptiveMaxPool2d
 from mindspore.nn import SoftMarginLoss
 from mindspore.nn import EmbeddingExt as Embedding, MaxPool2dExt as MaxPool2d, LayerNormExt as LayerNorm, Linear
-import mindspore.nn as nn
+from mindspore import nn
 
 # 1
 
@@ -364,7 +364,7 @@ class NLLLoss(Cell):
     """
 
     def __init__(self, weight=None, ignore_index=-100, reduction='mean'):
-        super(NLLLoss, self).__init__()
+        super().__init__()
         self.weight = weight
         self.ignore_index = ignore_index
         self.reduction = reduction
@@ -482,7 +482,7 @@ class CrossEntropyLoss(Cell):
     """
 
     def __init__(self, weight=None, ignore_index=-100, reduction='mean', label_smoothing=0.0):
-        super(CrossEntropyLoss, self).__init__()
+        super().__init__()
         self.weight = weight
         self.ignore_index = ignore_index
         self.reduction = reduction
@@ -564,7 +564,7 @@ class BCEWithLogitsLoss(Cell):
     """
 
     def __init__(self, weight=None, reduction='mean', pos_weight=None):
-        super(BCEWithLogitsLoss, self).__init__()
+        super().__init__()
         self.bce_with_logits = ops.auto_generate.BCEWithLogitsLoss(reduction)
         self.weight = weight
         self.pos_weight = pos_weight
@@ -602,7 +602,7 @@ class SELU(Cell):
 
     def __init__(self):
         """Initialize SELU"""
-        super(SELU, self).__init__()
+        super().__init__()
 
     def construct(self, input):
         return F.selu(input)
@@ -641,7 +641,7 @@ class GELU(Cell):
 
     def __init__(self, approximate="none"):
         """Initialize GELU"""
-        super(GELU, self).__init__()
+        super().__init__()
         self.approximate = approximate
 
     def construct(self, input):
@@ -676,7 +676,7 @@ class Hardtanh(Cell):
 
     def __init__(self, min_val=-1.0, max_val=1.0, inplace=False):
         """Initialize ReLU6"""
-        super(Hardtanh, self).__init__()
+        super().__init__()
         self.min_val = min_val
         self.max_val = max_val
         self.inplace = inplace
@@ -715,7 +715,7 @@ class ReLU6(Cell):
 
     def __init__(self, inplace=False):
         """Initialize ReLU6"""
-        super(ReLU6, self).__init__()
+        super().__init__()
         self.inplace = inplace
 
     def construct(self, input):
@@ -751,7 +751,7 @@ class Mish(Cell):
 
     def __init__(self):
         """Initialize Mish."""
-        super(Mish, self).__init__()
+        super().__init__()
 
     def construct(self, input):
         return F.mish(input)
@@ -824,7 +824,7 @@ class MSELoss(Cell):
     """
 
     def __init__(self, reduction='mean'):
-        super(MSELoss, self).__init__()
+        super().__init__()
         self.mse_loss = mse_loss_ext
         self.reduction = reduction
 
@@ -867,7 +867,7 @@ class SmoothL1Loss(Cell):
     """
 
     def __init__(self, reduction='mean', beta=1.0):
-        super(SmoothL1Loss, self).__init__()
+        super().__init__()
         self.smooth_l1_loss = ops.function.smooth_l1_loss
         self.reduction = reduction
         self.beta = beta
@@ -949,7 +949,7 @@ class BCELoss(Cell):
     """
 
     def __init__(self, weight=None, reduction='mean'):
-        super(BCELoss, self).__init__()
+        super().__init__()
         self.bce_loss = nn.loss.BCELoss(weight, reduction)
 
     def construct(self, input, target):
@@ -1019,7 +1019,7 @@ class KLDivLoss(Cell):
     """
 
     def __init__(self, reduction='mean', log_target=False):
-        super(KLDivLoss, self).__init__()
+        super().__init__()
         self.reduction = reduction
         self.log_target = log_target
 
@@ -1088,7 +1088,7 @@ class UpsamplingNearest2d(Cell):
 
     def __init__(self, size=None, scale_factor=None):
         """Initialize UpsamplingNearest2d."""
-        super(UpsamplingNearest2d, self).__init__()
+        super().__init__()
         self.size = size
         self.scale_factor = scale_factor
 
@@ -1157,7 +1157,7 @@ class UpsamplingBilinear2d(Cell):
 
     def __init__(self, size=None, scale_factor=None):
         """Initialize UpsamplingBilinear2d."""
-        super(UpsamplingBilinear2d, self).__init__()
+        super().__init__()
         self.size = size
         self.scale_factor = scale_factor
 
@@ -1183,11 +1183,78 @@ class PixelShuffle(Cell):
     """
 
     def __init__(self, upscale_factor):
-        super(PixelShuffle, self).__init__()
+        super().__init__()
         self.upscale_factor = upscale_factor
 
     def construct(self, input):
         return F.pixel_shuffle(input, self.upscale_factor)
+
+
+class CosineEmbeddingLoss(Cell):
+    r"""
+    CosineEmbeddingLoss creates a criterion to measure the similarity between two tensors using cosine distance.
+
+    Given two Tensors :math:`x1`, :math:`x2`, and a Tensor label :math:`y`
+    (positive samples use 1 and negative samples use -1), the formula is as follows:
+
+    .. math::
+        loss(x_1, x_2, y) = \begin{cases}
+        1-cos(x_1, x_2), & \text{if } y = 1\\
+        \max(0, cos(x_1, x_2)-margin), & \text{if } y = -1\\
+        \end{cases}
+
+    Args:
+        margin (float, optional): A tuning factor used in the negative-sample branch,
+            which should be in [-1.0, 1.0]. Default: ``0.0`` .
+        reduction (str, optional): Apply specific reduction method to the output: ``'none'`` , ``'mean'`` ,
+            ``'sum'`` . Default: ``'mean'`` .
+
+            - ``'none'`` : no reduction will be applied.
+            - ``'mean'`` : compute and return the mean of elements in the output.
+            - ``'sum'`` : the output elements will be summed.
+
+    Inputs:
+        - **input1** (Tensor) - Input Tensor of shape :math:`(N, D)` or :math:`(D)` ,
+          where :math:`N` is the batch size and :math:`D` is the embedding dimension.
+        - **input2** (Tensor) - Input Tensor of shape :math:`(N, D)` or :math:`(D)` , which has same dtype as `input1`,
+          and its shape should be the same as `input1` or broadcastable to the shape of `input1`.
+        - **target** (Tensor) - Target Tensor of shape :math:`(N)` or :math:`()` , contains value 1 or -1.
+
+    Outputs:
+        Tensor or Scalar, if `reduction` is ``"none"``, a Tensor with the same shape as `target` will be returned.
+        Otherwise, a Scalar value will be returned.
+
+    Raises:
+        ValueError: If `reduction` is not ``"none"``, ``"mean"`` or ``"sum"``.
+        ValueError: If `margin` is not in the range [-1.0, 1.0].
+        ValueError: If the shapes of `input1` and `input2` do not match.
+        ValueError: If the shape of `target` does not match `input1` and `input2`.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import mindspore as ms
+        >>> import numpy as np
+        >>> from mindspore import mint
+        >>> input1 = ms.Tensor(np.array([[0.3, 0.8], [0.4, 0.3]]), ms.float32)
+        >>> input2 = ms.Tensor(np.array([[0.4, 1.2], [-0.4, -0.9]]), ms.float32)
+        >>> target = ms.Tensor(np.array([1, -1]), ms.int32)
+        >>> cosine_embedding_loss = mint.nn.CosineEmbeddingLoss()
+        >>> output = cosine_embedding_loss(input1, input2, target)
+        >>> print(output)
+        0.0003425479
+    """
+
+    def __init__(self, margin=0.0, reduction='mean'):
+        """Initialize CosineEmbeddingLoss"""
+        super().__init__()
+        self.margin = margin
+        self.reduction = reduction
+
+    def construct(self, input1, input2, target):
+        return F.cosine_embedding_loss(input1, input2, target, self.margin,
+                                       self.reduction)
 
 
 __all__ = [
@@ -1461,4 +1528,5 @@ __all__ = [
     'BatchNorm3d',
     'UpsamplingNearest2d',
     'UpsamplingBilinear2d',
+    'CosineEmbeddingLoss',
 ]
