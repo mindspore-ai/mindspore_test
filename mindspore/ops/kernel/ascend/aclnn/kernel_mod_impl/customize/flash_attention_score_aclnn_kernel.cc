@@ -16,6 +16,7 @@
 #include "kernel/ascend/aclnn/kernel_mod_impl/customize/flash_attention_score_aclnn_kernel.h"
 #include <algorithm>
 #include <utility>
+#include <vector>
 #include "ir/tensor.h"
 
 namespace mindspore {
@@ -58,15 +59,20 @@ void FlashAttentionScoreAscend::GetWorkSpaceInfo(const std::vector<KernelTensor 
   if (input_layout_string == "TND") {
     auto actual_seq_qlen = inputs[kIndex8];
     MS_EXCEPTION_IF_NULL(actual_seq_qlen);
-    std::vector<int64_t> actual_seq_qlen_array;
-    if (actual_seq_qlen->type_id() != kMetaTypeNone) {
-      actual_seq_qlen_array = actual_seq_qlen->GetValueWithCheck<std::vector<int64_t>>();
-    }
     auto actual_seq_kvlen = inputs[kIndex9];
     MS_EXCEPTION_IF_NULL(actual_seq_kvlen);
-    std::vector<int64_t> actual_seq_kvlen_array;
-    if (actual_seq_kvlen->type_id() != kMetaTypeNone) {
-      actual_seq_kvlen_array = actual_seq_kvlen->GetValueWithCheck<std::vector<int64_t>>();
+
+    if (actual_seq_kvlen->type_id() == kMetaTypeNone || actual_seq_qlen->type_id() == kMetaTypeNone) {
+      MS_LOG(EXCEPTION) << "For [aclnnFlashAttentionVarLenScore], actual_seq_qlen and actual_seq_kvlen must be not "
+                           "none when input layout is TND.";
+    }
+
+    auto actual_seq_kvlen_array = actual_seq_kvlen->GetValueWithCheck<std::vector<int64_t>>();
+    auto actual_seq_qlen_array = actual_seq_qlen->GetValueWithCheck<std::vector<int64_t>>();
+    if (!CheckSeqList(actual_seq_kvlen_array, inputs[kIndex1]->GetShapeVector()) ||
+        !CheckSeqList(actual_seq_qlen_array, inputs[kIndex0]->GetShapeVector())) {
+      MS_LOG(EXCEPTION)
+        << "For actual_seq_qlen and actual_seq_kvlen, must be increasing array and the last number is equal to T.";
     }
 
     op_type_ = "aclnnFlashAttentionVarLenScore";

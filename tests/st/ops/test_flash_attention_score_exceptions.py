@@ -18,10 +18,20 @@ import pytest
 from mindspore.common.api import _pynative_executor
 
 import mindspore as ms
-from mindspore import Tensor
+from mindspore import Tensor, context
 from mindspore.ops import flash_attention_score
 from tests.mark_utils import arg_mark
 from tests.st.utils import test_utils
+
+
+def set_mode(mode):
+    """
+    Set context mode for test.
+    """
+    if mode == "KBK":
+        context.set_context(mode=context.GRAPH_MODE, jit_level='O0')
+    else:
+        context.set_context(mode=context.PYNATIVE_MODE)
 
 
 def _gen_bsh_inputs(batch=2, seq=16, heads=4, dim=8):
@@ -55,18 +65,20 @@ def _fas_call(query, key, value, head_num, real_shift=None, drop_mask=None,
     card_mark='onecard',
     essential_mark='unessential',
 )
-def test_keep_prob_zero_with_drop_mask_raises():
+@pytest.mark.parametrize('mode', ['KBK', 'pynative'])
+def test_keep_prob_zero_with_drop_mask_raises(mode):
     """
     Feature: flash_attention_score
     Description: keep_prob=0.0 with provided drop_mask should raise at runtime
     Expectation: raise RuntimeError
     """
+    set_mode(mode)
     q, k, v = _gen_bsh_inputs()
     # For B=2, N=4, S=16, KV=16 -> KV/8=2
     drop_mask = Tensor(np.zeros((2, 4, 16, 2), dtype=np.uint8))
     with pytest.raises(RuntimeError):
-        _ = _fas_call(q, k, v, 4, drop_mask=drop_mask, keep_prob=0.0, input_layout='BSH',
-                      sparse_mode=0)
+        _ = _fas_call(q, k, v, 4, drop_mask=drop_mask, keep_prob=0.0,
+                      input_layout='BSH', sparse_mode=0)
         _pynative_executor.sync()
 
 
@@ -76,12 +88,15 @@ def test_keep_prob_zero_with_drop_mask_raises():
     card_mark='onecard',
     essential_mark='unessential',
 )
-def test_tnd_missing_actual_seq_raises():
+@pytest.mark.parametrize('mode', ['KBK', 'pynative'])
+def test_tnd_missing_actual_seq_raises(mode):
     """
     Feature: flash_attention_score
-    Description: TND layout without actual_seq_qlen/actual_seq_kvlen should raise at runtime
+    Description: TND layout without actual_seq_qlen/actual_seq_kvlen
+                  should raise at runtime
     Expectation: raise RuntimeError
     """
+    set_mode(mode)
     tdim, heads, dim = 32, 2, 8
     q = Tensor(np.random.uniform(-1.0, 1.0, (tdim, heads, dim)).astype(
         np.float16), ms.float16)
@@ -93,24 +108,6 @@ def test_tnd_missing_actual_seq_raises():
         _ = _fas_call(q, k, v, heads, input_layout='TND', sparse_mode=0)
         _pynative_executor.sync()
 
-@arg_mark(
-    plat_marks=['platform_ascend910b'],
-    level_mark='level1',
-    card_mark='onecard',
-    essential_mark='unessential',
-)
-def test_keep_prob_out_of_range_raises():
-    """
-    Feature: flash_attention_score
-    Description: keep_prob not in (0, 1] should raise at runtime
-    Expectation: raise RuntimeError
-    """
-    q, k, v = _gen_bsh_inputs()
-    # keep_prob = 0.0 or >1.0 is invalid
-    with pytest.raises(RuntimeError):
-        _ = _fas_call(q, k, v, 4, keep_prob=1.5, input_layout='BSH',
-                      sparse_mode=0)
-        _pynative_executor.sync()
 
 @arg_mark(
     plat_marks=['platform_ascend910b'],
@@ -118,12 +115,125 @@ def test_keep_prob_out_of_range_raises():
     card_mark='onecard',
     essential_mark='unessential',
 )
-def test_bsh_hidden_not_divisible_by_headnum_raises():
+@pytest.mark.parametrize('mode', ['KBK', 'pynative'])
+def test_tnd_actual_seq_qlen_none_raises(mode):
     """
     Feature: flash_attention_score
-    Description: BSH hidden size not divisible by head_num should raise at runtime
+    Description: TND layout with actual_seq_qlen=None but actual_seq_kvlen
+                  provided should raise at runtime
     Expectation: raise RuntimeError
     """
+    set_mode(mode)
+    tdim, heads, dim = 32, 2, 8
+    q = Tensor(np.random.uniform(-1.0, 1.0, (tdim, heads, dim)).astype(
+        np.float16), ms.float16)
+    k = Tensor(np.random.uniform(-1.0, 1.0, (tdim, heads, dim)).astype(
+        np.float16), ms.float16)
+    v = Tensor(np.random.uniform(-1.0, 1.0, (tdim, heads, dim)).astype(
+        np.float16), ms.float16)
+    aseq_kv = Tensor(np.array([16, 32], dtype=np.int64), ms.int64)
+    with pytest.raises(RuntimeError):
+        _ = _fas_call(q, k, v, heads, actual_seq_kvlen=aseq_kv,
+                      input_layout='TND', sparse_mode=0)
+        _pynative_executor.sync()
+
+
+@arg_mark(
+    plat_marks=['platform_ascend910b'],
+    level_mark='level1',
+    card_mark='onecard',
+    essential_mark='unessential',
+)
+@pytest.mark.parametrize('mode', ['KBK', 'pynative'])
+def test_tnd_actual_seq_kvlen_none_raises(mode):
+    """
+    Feature: flash_attention_score
+    Description: TND layout with actual_seq_kvlen=None but actual_seq_qlen
+                  provided should raise at runtime
+    Expectation: raise RuntimeError
+    """
+    set_mode(mode)
+    tdim, heads, dim = 32, 2, 8
+    q = Tensor(np.random.uniform(-1.0, 1.0, (tdim, heads, dim)).astype(
+        np.float16), ms.float16)
+    k = Tensor(np.random.uniform(-1.0, 1.0, (tdim, heads, dim)).astype(
+        np.float16), ms.float16)
+    v = Tensor(np.random.uniform(-1.0, 1.0, (tdim, heads, dim)).astype(
+        np.float16), ms.float16)
+    aseq_q = Tensor(np.array([16, 32], dtype=np.int64), ms.int64)
+    with pytest.raises(RuntimeError):
+        _ = _fas_call(q, k, v, heads, actual_seq_qlen=aseq_q,
+                      input_layout='TND', sparse_mode=0)
+        _pynative_executor.sync()
+
+
+@arg_mark(
+    plat_marks=['platform_ascend910b'],
+    level_mark='level1',
+    card_mark='onecard',
+    essential_mark='unessential',
+)
+@pytest.mark.parametrize('mode', ['KBK', 'pynative'])
+def test_tnd_actual_seq_last_not_equal_t_raises(mode):
+    """
+    Feature: flash_attention_score
+    Description: TND layout requires actual_seq_qlen/actual_seq_kvlen
+                  last number equal to T
+    Expectation: raise RuntimeError
+    """
+    set_mode(mode)
+    tdim, heads, dim = 32, 2, 8
+    q = Tensor(np.random.uniform(-1.0, 1.0, (tdim, heads, dim)).astype(
+        np.float16), ms.float16)
+    k = Tensor(np.random.uniform(-1.0, 1.0, (tdim, heads, dim)).astype(
+        np.float16), ms.float16)
+    v = Tensor(np.random.uniform(-1.0, 1.0, (tdim, heads, dim)).astype(
+        np.float16), ms.float16)
+    # T=32, but last number is 30, should raise error
+    aseq = Tensor(np.array([16, 30], dtype=np.int64), ms.int64)
+    with pytest.raises(RuntimeError):
+        _ = _fas_call(q, k, v, heads, actual_seq_qlen=aseq,
+                      actual_seq_kvlen=aseq, input_layout='TND', sparse_mode=0)
+        _pynative_executor.sync()
+
+
+@arg_mark(
+    plat_marks=['platform_ascend910b'],
+    level_mark='level1',
+    card_mark='onecard',
+    essential_mark='unessential',
+)
+@pytest.mark.parametrize('mode', ['KBK', 'pynative'])
+def test_keep_prob_out_of_range_raises(mode):
+    """
+    Feature: flash_attention_score
+    Description: keep_prob not in (0, 1] should raise at runtime
+    Expectation: raise RuntimeError
+    """
+    set_mode(mode)
+    q, k, v = _gen_bsh_inputs()
+    # keep_prob = 0.0 or >1.0 is invalid
+    with pytest.raises(RuntimeError):
+        _ = _fas_call(q, k, v, 4, keep_prob=1.5, input_layout='BSH',
+                      sparse_mode=0)
+        _pynative_executor.sync()
+
+
+@arg_mark(
+    plat_marks=['platform_ascend910b'],
+    level_mark='level1',
+    card_mark='onecard',
+    essential_mark='unessential',
+)
+@pytest.mark.parametrize('mode', ['KBK', 'pynative'])
+def test_bsh_hidden_not_divisible_by_headnum_raises(mode):
+    """
+    Feature: flash_attention_score
+    Description: BSH hidden size not divisible by head_num should raise
+                  at runtime
+    Expectation: raise RuntimeError
+    """
+    set_mode(mode)
     # Hidden = 30, head_num = 8 -> not divisible
     q = Tensor(np.random.uniform(-1.0, 1.0, (2, 16, 30)).astype(np.float16),
                ms.float16)
@@ -135,18 +245,22 @@ def test_bsh_hidden_not_divisible_by_headnum_raises():
         _ = _fas_call(q, k, v, 8, input_layout='BSH', sparse_mode=0)
         _pynative_executor.sync()
 
+
 @arg_mark(
     plat_marks=['platform_ascend910b'],
     level_mark='level1',
     card_mark='onecard',
     essential_mark='unessential',
 )
-def test_bnsd_query_headnum_mismatch_raises():
+@pytest.mark.parametrize('mode', ['KBK', 'pynative'])
+def test_bnsd_query_headnum_mismatch_raises(mode):
     """
     Feature: flash_attention_score
-    Description: BNSD layout with query heads not equal to head_num should raise at runtime
+    Description: BNSD layout with query heads not equal to head_num
+                  should raise at runtime
     Expectation: raise RuntimeError
     """
+    set_mode(mode)
     # query heads = 4 but head_num = 8
     q = Tensor(np.random.uniform(-1.0, 1.0, (2, 4, 16, 8)).astype(np.float16),
                ms.float16)
@@ -158,18 +272,22 @@ def test_bnsd_query_headnum_mismatch_raises():
         _ = _fas_call(q, k, v, 8, input_layout='BNSD', sparse_mode=0)
         _pynative_executor.sync()
 
+
 @arg_mark(
     plat_marks=['platform_ascend910b'],
     level_mark='level1',
     card_mark='onecard',
     essential_mark='unessential',
 )
-def test_sbh_wrong_rank_raises():
+@pytest.mark.parametrize('mode', ['KBK', 'pynative'])
+def test_sbh_wrong_rank_raises(mode):
     """
     Feature: flash_attention_score
-    Description: SBH layout requires 3D inputs; providing wrong rank should raise at runtime
+    Description: SBH layout requires 3D inputs; providing wrong rank
+                  should raise at runtime
     Expectation: raise RuntimeError
     """
+    set_mode(mode)
     # Provide 2D tensors instead of [S, B, H]
     q = Tensor(np.random.uniform(-1.0, 1.0, (16, 32)).astype(np.float16),
                ms.float16)
@@ -196,12 +314,15 @@ def _gen_bsh_mismatch_heads(b=2, s=16, n_q=4, n_kv=3, d=16):
     card_mark='onecard',
     essential_mark='unessential',
 )
-def test_n2_not_factor_of_n1_raises():
+@pytest.mark.parametrize('mode', ['KBK', 'pynative'])
+def test_n2_not_factor_of_n1_raises(mode):
     """
     Feature: flash_attention_score
-    Description: KV head num must be a factor of Q head num; otherwise raise at runtime
+    Description: KV head num must be a factor of Q head num; otherwise
+                  raise at runtime
     Expectation: raise RuntimeError
     """
+    set_mode(mode)
     # N1=4, N2=3 -> not a factor
     q, k, v = _gen_bsh_mismatch_heads(n_q=4, n_kv=3, d=16)
     with pytest.raises(RuntimeError):
@@ -228,12 +349,14 @@ def _gen_tnd_inputs(b=2, n_q=2, n_kv=2, s1=8, s2=8, d=16):
     card_mark='onecard',
     essential_mark='unessential',
 )
-def test_tnd_attn_mask_wrong_shape_raises():
+@pytest.mark.parametrize('mode', ['KBK', 'pynative'])
+def test_tnd_attn_mask_wrong_shape_raises(mode):
     """
     Feature: flash_attention_score
     Description: TND requires attn_mask to be (2048, 2048) when provided
     Expectation: raise RuntimeError
     """
+    set_mode(mode)
     q, k, v = _gen_tnd_inputs()
     attn_mask = Tensor(np.ones((16, 16), dtype=np.uint8))
     aseq = Tensor(np.array([8, 16], dtype=np.int64), ms.int64)
@@ -242,18 +365,21 @@ def test_tnd_attn_mask_wrong_shape_raises():
                       actual_seq_kvlen=aseq, input_layout='TND', sparse_mode=3)
         _pynative_executor.sync()
 
+
 @arg_mark(
     plat_marks=['platform_ascend910b'],
     level_mark='level1',
     card_mark='onecard',
     essential_mark='unessential',
 )
-def test_tnd_actual_seq_len_mismatch_raises():
+@pytest.mark.parametrize('mode', ['KBK', 'pynative'])
+def test_tnd_actual_seq_len_mismatch_raises(mode):
     """
     Feature: flash_attention_score
     Description: TND requires actual_seq_qlen and actual_seq_kvlen length equal
     Expectation: raise RuntimeError
     """
+    set_mode(mode)
     q, k, v = _gen_tnd_inputs()
     aseq_q = Tensor(np.array([8, 16], dtype=np.int64), ms.int64)
     aseq_k = Tensor(np.array([8], dtype=np.int64), ms.int64)
@@ -269,12 +395,15 @@ def test_tnd_actual_seq_len_mismatch_raises():
     card_mark='onecard',
     essential_mark='unessential',
 )
-def test_tnd_actual_seq_not_monotonic_raises():
+@pytest.mark.parametrize('mode', ['KBK', 'pynative'])
+def test_tnd_actual_seq_not_monotonic_raises(mode):
     """
     Feature: flash_attention_score
-    Description: TND requires cumulative non-decreasing sequences for actual_seq lists
+    Description: TND requires cumulative non-decreasing sequences for
+                  actual_seq lists
     Expectation: raise RuntimeError
     """
+    set_mode(mode)
     q, k, v = _gen_tnd_inputs()
     aseq = Tensor(np.array([8, 7], dtype=np.int64), ms.int64)
     with pytest.raises(RuntimeError):
@@ -282,18 +411,22 @@ def test_tnd_actual_seq_not_monotonic_raises():
                       input_layout='TND', sparse_mode=3)
         _pynative_executor.sync()
 
+
 @arg_mark(
     plat_marks=['platform_ascend910b'],
     level_mark='level1',
     card_mark='onecard',
     essential_mark='unessential',
 )
-def test_tnd_real_shift_requires_same_seq_lists_raises():
+@pytest.mark.parametrize('mode', ['KBK', 'pynative'])
+def test_tnd_real_shift_requires_same_seq_lists_raises(mode):
     """
     Feature: flash_attention_score
-    Description: In TND, when real_shift is provided, two actual_seq lists must be identical
+    Description: In TND, when real_shift is provided, two actual_seq lists
+                  must be identical
     Expectation: raise RuntimeError
     """
+    set_mode(mode)
     q, k, v = _gen_tnd_inputs()
     real_shift = Tensor(np.random.uniform(-1.0, 1.0, (1, 2, 8, 8)).astype(
         np.float16), ms.float16)
@@ -312,12 +445,14 @@ def test_tnd_real_shift_requires_same_seq_lists_raises():
     card_mark='onecard',
     essential_mark='unessential',
 )
-def test_attn_mask_wrong_dtype_raises():
+@pytest.mark.parametrize('mode', ['KBK', 'pynative'])
+def test_attn_mask_wrong_dtype_raises(mode):
     """
     Feature: flash_attention_score
     Description: Attn mask wrong dtype should raise at runtime
     Expectation: raise RuntimeError
     """
+    set_mode(mode)
     q, k, v = _gen_bsh_inputs()
     attn_mask = Tensor(np.ones((16, 16), dtype=np.float16), ms.float16)
     with pytest.raises(RuntimeError):
