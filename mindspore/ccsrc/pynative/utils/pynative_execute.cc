@@ -25,6 +25,7 @@
 #include "pybind_api/pybind_patch.h"
 #include "pybind_api/gil_scoped_long_running.h"
 #include "pynative/backward/hook/hook_py.h"
+#include "pynative/backward/hook/saved_tensor_hook.h"
 #include "include/common/utils/config_manager.h"
 #include "include/common/pybind_api/api_register.h"
 #include "frontend/optimizer/ad/grad.h"
@@ -50,7 +51,7 @@ GradExecutorPtr PyNativeExecutor::grad_executor_ = nullptr;
 std::mutex PyNativeExecutor::instance_lock_;
 namespace {
 template <typename T, typename... Args>
-T PyNativeExecutorTry(const std::function<T(const Args &...)> &method, const Args &... args) {
+T PyNativeExecutorTry(const std::function<T(const Args &...)> &method, const Args &...args) {
   const auto &inst = PyNativeExecutor::GetInstance();
   MS_EXCEPTION_IF_NULL(inst);
   MS_EXCEPTION_IF_NULL(method);
@@ -346,6 +347,38 @@ void PyNativeExecutor::QueueBackwardFinalCallback(const py::object &callback) co
   });
 }
 
+void PyNativeExecutor::PushSavedTensorHook(const py::function &pack_hook, const py::function &unpack_hook) {
+  autograd::DefaultSavedTensorHookUtil::PushHook(pack_hook, unpack_hook);
+}
+
+void PyNativeExecutor::PopSavedTensorHook() { autograd::DefaultSavedTensorHookUtil::PopHook(); }
+
+std::optional<std::string> PyNativeExecutor::DisableSavedTensorHook(const string &error_msg,
+                                                                    bool is_error_on_outer_hook = true) {
+  auto pre_disable_error_msg = autograd::DefaultSavedTensorHookUtil::Disable(error_msg, is_error_on_outer_hook);
+  return pre_disable_error_msg;
+}
+
+void PyNativeExecutor::SetSavedTensorHookDisableErrorMessage(std::optional<std::string> error_msg) {
+  autograd::DefaultSavedTensorHookUtil::SetDisableErrorMessage(std::move(error_msg));
+}
+
+bool PyNativeExecutor::DisableFrontendAndBpropPipeline() {
+  auto &pipeline = runtime::Pipeline::Get();
+  bool pre_disable =
+    pipeline.frontend_stage()->IsMultiThreadDisabled() || pipeline.bprop_stage()->IsMultiThreadDisabled();
+
+  pipeline.WaitFrontendAndBprop();
+  pipeline.frontend_stage()->SetMultiThreadDisabled(true);
+  pipeline.bprop_stage()->SetMultiThreadDisabled(true);
+  return pre_disable;
+}
+
+void PyNativeExecutor::EnableFrontendAndBpropPipeline() {
+  runtime::Pipeline::Get().frontend_stage()->SetMultiThreadDisabled(false);
+  runtime::Pipeline::Get().backend_stage()->SetMultiThreadDisabled(false);
+}
+
 void RegPyNativeExecutor(const py::module *m) {
   autograd::RegFunctionBase(m);
 
@@ -392,7 +425,16 @@ void RegPyNativeExecutor(const py::module *m) {
     .def("constant_folding", &PyNativeExecutor::CallConstantFolding, "Call Constant Folding Primitive")
     .def("set_creation_type", &PyNativeExecutor::SetCreationType, "Set tensor's view creation type")
     .def("queue_backward_final_callback", &PyNativeExecutor::QueueBackwardFinalCallback,
-         "Queue Backward Final Callback");
+         "Queue Backward Final Callback")
+    .def("push_saved_tensor_hook", &PyNativeExecutor::PushSavedTensorHook, "push saved tensor hook")
+    .def("pop_saved_tensor_hook", &PyNativeExecutor::PopSavedTensorHook, "pop saved tensor hook")
+    .def("disable_saved_tensor_hook", &PyNativeExecutor::DisableSavedTensorHook, "disable saved tensors hook")
+    .def("set_saved_tensor_hook_disable_error_message", &PyNativeExecutor::SetSavedTensorHookDisableErrorMessage,
+         "set saved tensor hook disable error message")
+    .def("disable_frontend_and_bprop_pipeline", &PyNativeExecutor::DisableFrontendAndBpropPipeline,
+         "disable frontend and bprop pipeline")
+    .def("enable_frontend_and_bprop_pipeline", &PyNativeExecutor::EnableFrontendAndBpropPipeline,
+         "enable frontend and bprop pipeline,");
 }
 
 struct PyNativeExecutorRegister {

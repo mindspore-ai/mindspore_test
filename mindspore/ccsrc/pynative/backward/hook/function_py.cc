@@ -145,36 +145,38 @@ static TensorPtrSet parse_non_differentiable(const FunctionPtr &fptr) {
   return non_diff;
 }
 
-static TensorPtrSet parse_to_save(const FunctionPtr &fptr) {
-  TensorPtrSet to_save_tensors;
-  py::object to_save_obj = fptr->saved_tensors();
+static TensorPtrList parse_to_save(const std::shared_ptr<FunctionContext> &context, const FunctionPtr &fptr) {
+  auto to_save_obj = fptr->raw_saved_tensors();
   if (!to_save_obj) {
-    return to_save_tensors;
+    return {};
   }
-  if (!py::isinstance<py::tuple>(to_save_obj)) {
-    MS_LOG(EXCEPTION) << "saved_tensors of functionbase should be a tuple, but get a " << to_save_obj.get_type();
-  }
-  py::tuple to_save_tp = py::cast<py::tuple>(to_save_obj);
-  size_t num_to_save = to_save_tp.size();
+
+  auto check_is_output = [&context](const ValuePtr &val) {
+    return std::any_of(context->flatten_outputs.begin(), context->flatten_outputs.end(),
+                       [&val](const ValuePtr &output) { return val.get() == output.get(); });
+  };
+  auto to_save_list_obj = to_save_obj.cast<py::list>();
+  bool has_saved_tensors_hooks = DefaultSavedTensorHookUtil::GetTopHook() != nullptr;
+  size_t num_to_save = to_save_list_obj.size();
+  TensorPtrList to_save_tensors;
+  to_save_tensors.reserve(num_to_save);
+
   for (size_t i = 0; i < num_to_save; i++) {
-    py::object elem = to_save_tp[i];
-    if (!tensor::IsTensorPy(elem)) {
+    TensorPtr tensor = nullptr;
+    py::object elem = to_save_list_obj[i];
+    if (tensor::IsTensorPy(elem)) {
+      tensor = tensor::ConvertToTensor(elem);
+      if (check_is_output(tensor) || has_saved_tensors_hooks) {
+        to_save_list_obj[i] = py::object();
+      }
+    } else if (!py::isinstance<py::none>(elem)) {
       continue;
     }
-    auto base_tensor = tensor::ConvertToTensor(elem);
-    to_save_tensors.insert(base_tensor);
+    to_save_tensors.emplace_back(tensor);
   }
+  fptr->set_saved_tensors(to_save_list_obj);
   return to_save_tensors;
 }
-
-class ForwardGradGuard {
- public:
-  ForwardGradGuard() : enable_grad_(GradState::Get().enable_grad()) { GradState::Get().set_enable_grad(false); }
-  ~ForwardGradGuard() { GradState::Get().set_enable_grad(enable_grad_); }
-
- private:
-  bool enable_grad_;
-};
 
 void UpdateTensorSetIfNeeded(const std::shared_ptr<FunctionContext> &context, tensor::TensorPtr old_value,
                              tensor::TensorPtr new_value) {
@@ -197,10 +199,11 @@ void UpdateTensorSetIfNeeded(const std::shared_ptr<FunctionContext> &context, te
 
 void CleanBackwardUnusedTensorDeviceAddress(const std::shared_ptr<FunctionContext> &context) {
   std::unordered_map<tensor::TensorPtr, tensor::TensorPtr> changed;
+  TensorPtrSet save_tensors_set(context->to_save_tensors.begin(), context->to_save_tensors.end());
   for (size_t i = 0; i < context->inputs.size(); i++) {
     if (context->inputs[i]->isa<tensor::Tensor>()) {
       auto base_tensor = context->inputs[i]->cast<tensor::TensorPtr>();
-      if (context->to_save_tensors.count(base_tensor) == 0) {
+      if (save_tensors_set.count(base_tensor) == 0) {
         ValuePtr fake_value;
         if (changed.count(base_tensor) == 0) {
           fake_value = PyNativeAlgo::Common::CreateFakeValueWithoutDeviceAddress(base_tensor);
@@ -217,7 +220,7 @@ void CleanBackwardUnusedTensorDeviceAddress(const std::shared_ptr<FunctionContex
   for (size_t i = 0; i < context->flatten_outputs.size(); i++) {
     if (context->flatten_outputs[i]->isa<tensor::Tensor>()) {
       auto base_tensor = context->flatten_outputs[i]->cast<tensor::TensorPtr>();
-      if (context->to_save_tensors.count(base_tensor) == 0) {
+      if (save_tensors_set.count(base_tensor) == 0) {
         ValuePtr fake_value;
         if (changed.count(base_tensor) == 0) {
           fake_value = PyNativeAlgo::Common::CreateFakeValueWithoutDeviceAddress(base_tensor);
@@ -242,38 +245,42 @@ void ConstructContextAfterForward(const std::shared_ptr<FunctionContext> &contex
   // Convert object use decided to tensors.
   context->dirty_tensors = parse_mark_dirty(ctx);
   context->non_diff_tensors = parse_non_differentiable(ctx);
-  context->to_save_tensors = parse_to_save(ctx);
+  context->to_save_tensors = parse_to_save(context, ctx);
   MS_LOG(DEBUG) << "Parse info, dirty size: " << context->dirty_tensors.size()
                 << ", non_diff size: " << context->non_diff_tensors.size()
                 << "saved_tensors size: " << context->to_save_tensors.size();
 }
 
 py::object FunctionBase::saved_tensors() const {
-  if (!saved_tensors_) {
+  // forward
+  auto grad_node = weak_grad_node_.lock();
+  if (grad_node == nullptr) {
+    if (saved_tensors_) {
+      return saved_tensors_;
+    }
     return py::tuple();
   }
-  if (saved_nodes_.empty()) {
-    return py::cast<py::tuple>(saved_tensors_);
-  }
-  auto tensors = py::cast<py::list>(saved_tensors_);
-  py::tuple saved_tensors(tensors.size());
-  auto grad_node = weak_grad_node_.lock();
-  MS_EXCEPTION_IF_NULL(grad_node);
-  for (size_t i = 0; i < tensors.size(); ++i) {
-    auto iter = saved_nodes_.find(i);
-    if (iter == saved_nodes_.end()) {
-      saved_tensors[i] = tensors[i];
+
+  auto saved_tensors = grad_node->GetSavedTensors();
+
+  PyObject *saved_tensors_py = saved_tensors_.ptr();
+  auto res = py::tuple(saved_tensors.size());
+  for (size_t i = 0; i < saved_tensors.size(); i++) {
+    const auto &saved_tensor = saved_tensors[i];
+    if (saved_tensor == nullptr) {
+      res[i] = py::none();
       continue;
     }
-    const auto &saved_node = iter->second;
-    const auto tensor = saved_node->Unwrap(grad_node)->cast<tensor::TensorPtr>();
-    if (tensor == nullptr) {
-      saved_tensors[i] = py::none();
+
+    PyObject *elem = PyList_GetItem(saved_tensors_py, i);
+    if (elem != nullptr) {  // should not be replaced
+      saved_tensor->UnWrap(grad_node);
+      res[i] = py::reinterpret_borrow<py::object>(elem);
     } else {
-      saved_tensors[i] = py::reinterpret_steal<py::object>(tensor::PackTensor(tensor));
+      res[i] = PackTensorToPyObject(saved_tensor->UnWrapToTensor(grad_node));
     }
   }
-  return std::move(saved_tensors);
+  return res;
 }
 
 py::object FunctionBase::apply(const py::object &cls, const py::args &inputs) {
@@ -301,7 +308,7 @@ py::object FunctionBase::apply(const py::object &cls, const py::args &inputs) {
   // Call forward function.
   py::object outputs;
   {
-    ForwardGradGuard guard;
+    NoGradGuard no_grad;
     outputs = forward_fn(ctx_obj, *inputs);
   }
   bool modified = ensure_obj_tuple(&outputs);
@@ -310,7 +317,7 @@ py::object FunctionBase::apply(const py::object &cls, const py::args &inputs) {
   ConstructContextAfterForward(context, ctx, outputs);
   custom_fn->SetOutputSize(context->flatten_outputs.size());
   ctx->set_weak_grad_node(custom_fn);
-  context->grad_node = std::move(custom_fn);
+  context->grad_node = custom_fn;
 
   auto &flatten_outputs = context->flatten_outputs;
   const auto &non_diff_tensors = context->non_diff_tensors;
@@ -362,8 +369,6 @@ py::object FunctionBase::apply(const py::object &cls, const py::args &inputs) {
 
   // Clean device address to reduce the occupation of resources.
   CleanBackwardUnusedTensorDeviceAddress(context);
-  // Generate saved nodes， and clear saved tensor.
-  ctx->GenerateSavedNodes(context);
 
   const auto &pynative_executor = PyNativeAlgo::Common::GetPyNativeExecutor();
   const auto &forward_executor = pynative_executor->forward_executor();
@@ -380,36 +385,6 @@ py::object FunctionBase::apply(const py::object &cls, const py::args &inputs) {
     return output_ret[0];
   }
   return std::move(output_ret);
-}
-
-void FunctionBase::GenerateSavedNodes(const std::shared_ptr<FunctionContext> &ctx) {
-  if (!saved_tensors_) {
-    return;
-  }
-  py::list tensors = py::cast<py::list>(saved_tensors_);
-  if (!tensors) {
-    MS_LOG(EXCEPTION) << "save tensor should be tuple!";
-  }
-  auto check_is_output = [&ctx](const ValuePtr &val) {
-    return std::any_of(ctx->flatten_outputs.begin(), ctx->flatten_outputs.end(),
-                       [&val](const ValuePtr &output) { return val.get() == output.get(); });
-  };
-  saved_nodes_.reserve(tensors.size());
-  for (size_t i = 0; i < tensors.size(); ++i) {
-    const auto &obj = tensors[i];
-    if (tensor::IsTensorPy(obj)) {
-      auto tensor = tensor::ConvertToTensor(obj);
-      // Now custom function not support high order, this need to do later.
-      if (check_is_output(tensor)) {
-        saved_nodes_[i] = std::make_shared<SavedNode>(CommonUtils::ShallowCopyAndDetach(tensor), nullptr, false, true);
-        tensors[i] = py::object();
-      }
-    } else if (!py::isinstance<py::none>(obj)) {
-      MS_LOG(EXCEPTION)
-        << "Please check your custom function, that save_for_backward() only support None and tensor, but got "
-        << py::str(obj);
-    }
-  }
 }
 
 template <typename Getter>

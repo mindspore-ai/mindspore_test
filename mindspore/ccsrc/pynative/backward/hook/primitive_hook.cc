@@ -18,6 +18,7 @@
 #include <memory>
 #include <string>
 #include "include/common/utils/primitive_utils.h"
+#include "include/common/utils/tensor_py.h"
 #include "pynative/utils/pynative_execute.h"
 
 namespace mindspore {
@@ -199,8 +200,8 @@ BaseRef RunVariableHookFunction(const PrimitivePyPtr &self, const py::tuple &py_
   }
 }
 
-BaseRef RunHookFunction(const PrimitivePyPtr &self, const VectorRef &args) {
-  py::tuple py_args = ConvertDatatoPyTuple(args);
+BaseRef RunHookFunction(const PrimitivePyPtr &self, const ValuePtrList &args) {
+  py::tuple py_args = py::reinterpret_steal<py::tuple>(tensor::Wrap(args));
   MS_LOG(DEBUG) << "Get input args size " << py_args.size() << ", args are " << ConvertPyObjToString(py_args);
   // For cell has custom bprop function
   if (self->hook_type() == HookType::kCellCustomBprop) {
@@ -227,7 +228,7 @@ BaseRef RunHookFunction(const PrimitivePyPtr &self, const VectorRef &args) {
 struct RunPrimitivePyHookFunctionRegister {
   RunPrimitivePyHookFunctionRegister() {
     python_adapter::PyAdapterCallback::SetRunPrimitivePyHookFunctionHandler(
-      [](const PrimitivePtr &prim, const VectorRef &args) -> BaseRef {
+      [](const PrimitivePtr &prim, const ValuePtrList &args) -> BaseRef {
         auto py_prim = prim->cast<PrimitivePyPtr>();
         MS_EXCEPTION_IF_NULL(py_prim);
         return RunHookFunction(py_prim, args);

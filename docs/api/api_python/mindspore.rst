@@ -115,6 +115,7 @@ mindspore
     mindspore.jacrev
     mindspore.jvp
     mindspore.vjp
+    mindspore.saved_tensors_hooks
 
 并行优化
 ---------

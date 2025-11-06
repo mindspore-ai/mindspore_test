@@ -12,13 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+""" test_pynative_forward_hook """
 
 import pytest
 import numpy as np
 import mindspore as ms
-import mindspore.nn as nn
-from mindspore import Tensor
-from mindspore import context
+from mindspore import Tensor, nn, context
 from mindspore.ops import GradOperation
 from mindspore.common import ParameterTuple
 from mindspore.common.api import jit
@@ -68,11 +67,6 @@ def forward_hook_fn_mul(cell, inp, outp):
     return out
 
 
-@jit
-def forward_hook_fn_with_ms_func(cell, inp, outp):
-    return outp
-
-
 def backward_hook_fn(cell, grad_inp, grad_outp):
 
     return grad_inp
@@ -84,7 +78,7 @@ def backward_hook_fn_inner(cell, grad_inp, grad_outp):
 
 class SingleNet(nn.Cell):
     def __init__(self):
-        super(SingleNet, self).__init__()
+        super().__init__()
         self.conv = nn.Conv2d(2, 2, kernel_size=2, stride=1, padding=0, weight_init="ones", pad_mode="valid")
         self.relu = nn.ReLU()
         self.handle1 = self.conv.register_forward_hook(forward_hook_fn_add)
@@ -104,7 +98,7 @@ class SingleNet(nn.Cell):
 
 class SingleNetInConstruct(nn.Cell):
     def __init__(self):
-        super(SingleNetInConstruct, self).__init__()
+        super().__init__()
         self.handle1 = None
         self.handle2 = None
         self.handle3 = None
@@ -128,7 +122,7 @@ class SingleNetInConstruct(nn.Cell):
 
 class SingleNetMsFuncInner(nn.Cell):
     def __init__(self):
-        super(SingleNetMsFuncInner, self).__init__()
+        super().__init__()
         self.bn = nn.BatchNorm2d(2, momentum=0.99, eps=0.00001, gamma_init="ones")
         self.bn.register_forward_pre_hook(forward_pre_hook_fn_add)
         self.bn.register_forward_pre_hook(forward_pre_hook_fn_mul)
@@ -146,7 +140,7 @@ class SingleNetMsFuncInner(nn.Cell):
 
 class SingleNetMsFunc(nn.Cell):
     def __init__(self):
-        super(SingleNetMsFunc, self).__init__()
+        super().__init__()
         self.conv = nn.Conv2d(2, 2, kernel_size=2, stride=1, padding=0, weight_init="ones", pad_mode="valid")
         self.inner = SingleNetMsFuncInner()
         self.inner.register_forward_pre_hook(forward_pre_hook_fn_add)
@@ -164,7 +158,7 @@ class SingleNetMsFunc(nn.Cell):
 
 class CompareSingleNet1(nn.Cell):
     def __init__(self):
-        super(CompareSingleNet1, self).__init__()
+        super().__init__()
         self.conv = nn.Conv2d(2, 2, kernel_size=2, stride=1, padding=0, weight_init="ones", pad_mode="valid")
         self.bn = nn.BatchNorm2d(2, momentum=0.99, eps=0.00001, gamma_init="ones")
         self.relu = nn.ReLU()
@@ -179,7 +173,7 @@ class CompareSingleNet1(nn.Cell):
 
 class CompareSingleNet2(nn.Cell):
     def __init__(self):
-        super(CompareSingleNet2, self).__init__()
+        super().__init__()
         self.conv = nn.Conv2d(2, 2, kernel_size=2, stride=1, padding=0, weight_init="ones", pad_mode="valid")
         self.bn = nn.BatchNorm2d(2, momentum=0.99, eps=0.00001, gamma_init="ones")
         self.relu = nn.ReLU()
@@ -199,7 +193,7 @@ class CompareSingleNet2(nn.Cell):
 
 class CompareSingleNet3(nn.Cell):
     def __init__(self):
-        super(CompareSingleNet3, self).__init__()
+        super().__init__()
         self.conv = nn.Conv2d(2, 2, kernel_size=2, stride=1, padding=0, weight_init="ones", pad_mode="valid")
         self.bn = nn.BatchNorm2d(2, momentum=0.99, eps=0.00001, gamma_init="ones")
         self.relu = nn.ReLU()
@@ -216,7 +210,7 @@ class CompareSingleNet3(nn.Cell):
 
 class CompareSingleNet5(nn.Cell):
     def __init__(self):
-        super(CompareSingleNet5, self).__init__()
+        super().__init__()
         self.conv = nn.Conv2d(2, 2, kernel_size=2, stride=1, padding=0, weight_init="ones", pad_mode="valid")
         self.bn = nn.BatchNorm2d(2, momentum=0.99, eps=0.00001, gamma_init="ones")
         self.relu = nn.ReLU()
@@ -238,7 +232,7 @@ class CompareSingleNet5(nn.Cell):
 
 class MultiNet(nn.Cell):
     def __init__(self):
-        super(MultiNet, self).__init__()
+        super().__init__()
         self.mul1 = nn.MatMul()
         self.handle1 = self.mul1.register_forward_pre_hook(forward_pre_hook_fn_multi_add)
         self.handle2 = self.mul1.register_forward_hook(forward_hook_fn_conv)
@@ -256,7 +250,7 @@ class MultiNet(nn.Cell):
 
 class CompareMultiNet1(nn.Cell):
     def __init__(self):
-        super(CompareMultiNet1, self).__init__()
+        super().__init__()
         self.mul = nn.MatMul()
         self.conv = nn.Conv2d(2, 2, kernel_size=2, stride=1, padding=0, weight_init="ones", pad_mode="valid")
         self.bn = nn.BatchNorm2d(2, momentum=0.99, eps=0.00001, gamma_init="ones")
@@ -275,7 +269,7 @@ class CompareMultiNet1(nn.Cell):
 
 class CompareMultiNet2(nn.Cell):
     def __init__(self):
-        super(CompareMultiNet2, self).__init__()
+        super().__init__()
         self.mul = nn.MatMul()
         self.conv = nn.Conv2d(2, 2, kernel_size=2, stride=1, padding=0, weight_init="ones", pad_mode="valid")
         self.bn = nn.BatchNorm2d(2, momentum=0.99, eps=0.00001, gamma_init="ones")
@@ -432,9 +426,7 @@ def test_pynative_forward_hook_exception():
     with pytest.raises(TypeError):
         net.relu.register_forward_pre_hook("Test")
     with pytest.raises(TypeError):
-        net.conv.register_forward_pre_hook(forward_hook_fn_with_ms_func)
-    with pytest.raises(TypeError):
-        net.conv.register_forward_hook(forward_hook_fn_with_ms_func)
+        net.conv.register_forward_hook("Test")
         _pynative_executor.sync()
 
 
@@ -492,7 +484,7 @@ def forward_pre_hook_fn(cell, inputs):
 
 class TestHookNet(nn.Cell):
     def __init__(self):
-        super(TestHookNet, self).__init__()
+        super().__init__()
         self.relu = nn.ReLU()
         self.handle = self.relu.register_forward_pre_hook(forward_pre_hook_fn)
 
@@ -541,7 +533,7 @@ def forward_pre_hook_input_fn(cell, inputs):
 
 class TestHookInputNet(nn.Cell):
     def __init__(self):
-        super(TestHookInputNet, self).__init__()
+        super().__init__()
         self.relu = nn.ReLU()
         self.handle = self.relu.register_forward_pre_hook(forward_pre_hook_input_fn)
 
@@ -568,7 +560,6 @@ def test_pynative_forward_hook_cell_input():
 
     net(x, y)
     relu_id = id(net.relu)
-    global test_cell_id
     assert test_cell_id == relu_id
 
 

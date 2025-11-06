@@ -61,13 +61,14 @@ from mindspore.common.hook_handle import _hook_version
 from mindspore.common.jit_context import jit_context
 from mindspore.common.jit_trace import _jit_trace
 from mindspore.parallel._utils import _init_auto_parallel_context, _clear_auto_parallel_context
+from mindspore._check_jit_forbidden_api import jit_forbidden_register
 
 # Store jit class compiled pipeline cache.
 ms_compile_cache = set()
 # Store cell compiled pipeline cache.
 cells_compile_cache = {}
 # Store function compiled times information.
-function_phases = dict()
+function_phases = {}
 
 BROADCAST_PHASE = "_broadcast_"
 _PYNATIVE_PARALLEL_FUNC_NAME = "after_shard"
@@ -107,7 +108,7 @@ def _check_recompile_args(compile_args, kwargs):
 def _check_recompile(obj, compile_args, kwargs, full_function_name, create_time, echo_function_name):
     """Warning when the function has been compiled."""
     ignore_dirs = ["mindspore/ops", "mindspore/nn"]
-    if any((lambda x: x in full_function_name)(x) for x in ignore_dirs):
+    if any(x in full_function_name for x in ignore_dirs):
         return
 
     if full_function_name in function_phases:
@@ -159,8 +160,8 @@ def _convert_python_data(data):
         return PythonRowTensor(row_tensor=data)
     if data.__class__ is list:
         # Keep list object not change for inplace operation.
-        for i in range(len(data)):
-            data[i] = _convert_python_data(data[i])
+        for i, elem in enumerate(data):
+            data[i] = _convert_python_data(elem)
         return data
     if data.__class__ is dict:
         # Keep the dict object not change.
@@ -254,6 +255,7 @@ def _in_sys_path(file_path):
 
 def __get_compile_cache_dep_files(file_path, compile_cache_dep_files, pkg):
     """Get the dependency files of the network"""
+    # pylint: disable=W1514
     with open(file_path) as fh:
         root = ast.parse(fh.read(), file_path)
     for node in ast.iter_child_nodes(root):
@@ -347,7 +349,7 @@ def _add_mutable_attr(args_list, compile_args, is_grad):
 
 def _get_parameter_layout():
     graph_executor = GraphExecutor_.get_instance()
-    layout = dict()
+    layout = {}
     for phase in ms_compile_cache:
         layout.update(graph_executor.get_parameter_layout(phase))
     return layout
@@ -869,7 +871,7 @@ class _JitExecutor:
     def _generate_compile_args_by_input_signature(self, args_list):
         """Generate compile args by input_signature."""
         compile_args = list(_generate_dyn_compile_args(args_list, self.input_signature))
-        dyn_shape = any([is_shape_unknown(elem.shape) for elem in compile_args if isinstance(elem, PythonTensor)])
+        dyn_shape = any(is_shape_unknown(elem.shape) for elem in compile_args if isinstance(elem, PythonTensor))
         Validator.check_symbolic_shape(self.input_signature, args_list)
         if dyn_shape:
             # Checkout whether the `sens` has been added to args_list.
@@ -1088,6 +1090,7 @@ def _check_options(options, backend):
 
 def _jit_ast(hash_obj, dynamic, jit_config, jit_graph_name):
     """Return the wrapped function for ast mode jit."""
+
     def wrap_func(func):
         nonlocal hash_obj
         if hasattr(func, "construct"):
@@ -1579,6 +1582,7 @@ def _parameter_broadcast(obj):
 
 def _run_in_jit():
     """In jit, this function always returns true. Otherwise, returns false."""
+
     def _temp_func():
         return 0
 
@@ -1608,6 +1612,91 @@ class _no_grad(contextlib.ContextDecorator):
     def __exit__(self, exc_type, exc_val, exc_tb):
         _pynative_executor.set_enable_grad(self.prev_state)
         return False
+
+
+class saved_tensors_hooks:
+    """
+    A context manager used to customize how saved tensors are packed and unpacked.
+
+    Certain tensors from the forward pass are stored for use in the backward process.
+    By using this context, users can specify how these tensors are packed before saving and how they are restored
+    when accessed during gradient computation.
+
+    The hooks should have the following signatures:
+
+        pack_hook(tensor: Tensor) -> Any
+        unpack_hook(packed: Any) -> Tensor
+
+    Args:
+        pack_hook (Callable): A function that defines how to process a tensor before it is saved during the forward
+                              pass.
+        unpack_hook (Callable): A function that defines how to recover the tensor when it is needed during the
+                                backward computation.
+
+    Supported Platforms:
+        ``Ascend`` ``GPU`` ``CPU``
+
+    .. note::
+        This context manager is currently not supported in Graph and Jit mode.
+
+    .. warning ::
+        Performing in-place modifications on the tensor passed into a ``pack_hook`` is not allowed.
+
+    .. warning::
+        To prevent reference cycles, the object returned by ``pack_hook`` cannot hold a
+        direct reference to the original tensor.
+
+    Examples:
+        >>> import mindspore as ms
+        >>> from mindspore import ops
+        >>> def pack_hook(x):
+        ...     print("packing ", x)
+        ...     return x + 1
+        >>>
+        >>> def unpack_hook(x):
+        ...     print("unpacking ", x)
+        ...     return x
+        >>>
+        >>> def forward_fn(x, y):
+        ...     with ms.saved_tensors_hooks(pack_hook, unpack_hook):
+        ...         out = x * y
+        ...     print("forward end")
+        ...     return out
+        >>> x = ops.ones(2, dtype=ms.float32)
+        >>> y = ops.ones(2, dtype=ms.float32)
+        >>> ms.value_and_grad(forward_fn, grad_position=(0,1))(x, y)
+        packing [1. 1.]
+        packing [1. 1.]
+        forward end
+        unpacking [2. 2.]
+        unpacking [2. 2.]
+    """
+
+    @jit_forbidden_register
+    def __init__(self, pack_hook, unpack_hook):
+        self.pack_hook = pack_hook
+        self.unpack_hook = unpack_hook
+        self.pre_disable_async = False
+        self.pushed = False
+
+    def __enter__(self):
+        self.pre_disable_async = _pynative_executor.disable_frontend_and_bprop_pipeline()
+        _pynative_executor.push_saved_tensor_hook(self.pack_hook, self.unpack_hook)
+        self.pushed = True
+
+    def __exit__(self, *args):
+        if self.pushed:
+            _pynative_executor.pop_saved_tensor_hook()
+        if not self.pre_disable_async:
+            _pynative_executor.enable_frontend_and_bprop_pipeline()
+
+
+@jit_forbidden_register
+@contextlib.contextmanager
+def _disable_saved_tensors_hooks(error_msg: str, *, is_error_on_outer_hook=True):
+    pre_error_msg = _pynative_executor.disable_saved_tensor_hook(error_msg, is_error_on_outer_hook)
+    yield
+    _pynative_executor.set_saved_tensor_hook_disable_error_message(pre_error_msg)
 
 
 class _PyNativeExecutor:
@@ -1979,6 +2068,71 @@ class _PyNativeExecutor:
         """
         return self._executor.queue_backward_final_callback(callback)
 
+    def push_saved_tensor_hook(self, pack_hook, unpack_hook):
+        """
+        Push default saved tensor hook
+
+        Args:
+            pack_hook (Callable): pack hook
+            unpack_hook (Callable): unpack hook
+
+        Return:
+            None.
+        """
+        return self._executor.push_saved_tensor_hook(pack_hook, unpack_hook)
+
+    def pop_saved_tensor_hook(self):
+        """
+        Pop default saved tensor hook
+
+        Return:
+            None.
+        """
+        return self._executor.pop_saved_tensor_hook()
+
+    def disable_saved_tensor_hook(self, error_msg, is_error_on_outer_hook):
+        """
+        Disable default saved tensor hook
+
+        Args:
+            error_msg (str): error message to raise when disabling conflicts.
+            is_error_on_outer_hook (bool): Whether to raise an error if called inside
+            an active saved tensor hook scope.
+
+        Return:
+            None.
+        """
+        return self._executor.disable_saved_tensor_hook(error_msg, is_error_on_outer_hook)
+
+    def set_saved_tensor_hook_disable_error_message(self, error_msg):
+        """
+        Set saved tensor hook disable error message
+
+        Args:
+            error_msg (str): current disable message
+
+        Return:
+            None.
+        """
+        self._executor.set_saved_tensor_hook_disable_error_message(error_msg)
+
+    def disable_frontend_and_bprop_pipeline(self):
+        """
+        Disable frontend and bprop pipeline.
+
+        Return:
+            pre_is_disable(bool), indicates whether the pipeline was already disabled before this call.
+        """
+        return self._executor.disable_frontend_and_bprop_pipeline()
+
+    def enable_frontend_and_bprop_pipeline(self):
+        """
+        Enable frontend and bprop pipeline.
+
+        Return:
+            None.
+        """
+        self._executor.enable_frontend_and_bprop_pipeline()
 
 
 class _CellGraphExecutor:
@@ -2362,6 +2516,7 @@ def flops_collection(phase='train'):
 
 class _ScriptGraph:
     """Store the graph compiled by the frontend compiler."""
+
     def __init__(self, func_graph, func, origin_cell, mutable_flags, phase, enable_tuple_broaden):
         self.func_graph = func_graph
         self.func = func
@@ -2378,6 +2533,7 @@ class _ScriptGraph:
 
 def _frontend_compile_ast(dynamic, jit_config, jit_graph_name=''):
     """Return the wrapped function for ast mode jit."""
+
     def wrap_func(func):
         if hasattr(func, "construct") and isinstance(func, ms.nn.Cell):
             # Bound the cell object to get the self arg.
@@ -2482,6 +2638,7 @@ class _GraphFragment(_GraphFragment_):
     """
     Represents the output by backend graph split.
     """
+
     def __init__(self, frag):
         if frag is None or not isinstance(frag, _GraphFragment_):
             raise TypeError(f"Expect input `frag` to be a _GraphFragment_, but got {type(frag)}")
@@ -2544,6 +2701,7 @@ def _graph_split(script_graph):
     for arg in outputs:
         fragments.append(_GraphFragment(arg))
     return fragments
+
 
 _cell_graph_executor = _CellGraphExecutor()
 _pynative_executor = _PyNativeExecutor()

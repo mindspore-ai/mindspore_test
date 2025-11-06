@@ -40,6 +40,7 @@ class COMMON_EXPORT CommonUtils {
   static ValuePtrList FlattenTensorSeqInValue(const ValuePtr &v);
   static void FlattenValueSeqArg(const ValuePtr &v, bool is_only_flatten_tensor_seq, bool is_filter_tensor,
                                  std::vector<ValuePtr> *flatten_v);
+  static tensor::TensorPtr ShallowCopyAndDetachForTensor(const tensor::TensorPtr &tensor);
   static ValuePtr ShallowCopyAndDetach(const ValuePtr &value);
 };
 

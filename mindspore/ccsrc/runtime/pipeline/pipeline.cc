@@ -57,6 +57,12 @@ void Pipeline::WaitBpropStage() {
   bprop_stage()->Wait();
 }
 
+void Pipeline::WaitFrontendAndBprop() {
+  GilReleaseWithCheck gil_release;
+  frontend_stage_->Wait();
+  bprop_stage_->Wait();
+}
+
 void Pipeline::SetSpin(bool spin) {
   frontend_stage_->SetSpin(spin);
   bprop_stage_->SetSpin(spin);
@@ -88,7 +94,7 @@ void Pipeline::ParentBeforeFork() {
 }
 
 void Pipeline::DisablePipeline() {
-  auto disable_pipeline = [](const AsyncRQueuePtr &stage) { stage->DisableMultiThread(); };
+  auto disable_pipeline = [](const AsyncRQueuePtr &stage) { stage->SetMultiThreadDisabled(true); };
   disable_pipeline(frontend_stage_);
   disable_pipeline(bprop_stage_);
   disable_pipeline(backend_stage_);

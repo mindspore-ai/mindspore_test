@@ -90,7 +90,6 @@ ValuePtrList AutoCastAndReduce(const ValuePtrList &gradients, const std::vector<
 CustomBackward::~CustomBackward() {
   py::gil_scoped_acquire gil_acquire;
   bprop_fn_ = py::object();
-  bprop_inputs_ = py::object();
 }
 
 ValuePtrList CustomBackward::CallBackward(const ValuePtrList &grads) {
@@ -101,26 +100,15 @@ ValuePtrList CustomBackward::CallBackward(const ValuePtrList &grads) {
   // Python grad func can not process None, we need to convert None to zero tensor.
   auto func_builder = FuncBuilder(name_, device_target, nullptr);
   auto filled_zeros_grad = func_builder.FillZeros(gradient, out_abstract_);
+
+  auto bprop_inputs = SavedValueListToValueList(saved_values_, shared_from_this());
+  bprop_inputs.emplace_back(filled_zeros_grad);
+
   // Run bprop function.
   py::gil_scoped_acquire gil_acquire;
-  MS_EXCEPTION_IF_CHECK_FAIL(bprop_fn_.ptr() != nullptr, kCallBackwradTwiceErr);
-  py::object py_tensor_grad = CValueToPybindObj(filled_zeros_grad);
-  py::list list_inputs = bprop_inputs_.cast<py::list>();
-  size_t fn_size = is_recompute_ ? list_inputs.size() + kSizeOne : list_inputs.size() + kSizeTwo;
-  py::tuple fn_args(fn_size);
-  for (size_t i = 0; i < list_inputs.size(); ++i) {
-    fn_args[i] = list_inputs[i];
-  }
-  if (!is_recompute_) {
-    auto out = saved_output_->Unwrap(shared_from_this(), true);
-    py::object py_out = CValueToPybindObj(out);
-    fn_args[list_inputs.size()] = py_out;
-    fn_args[list_inputs.size() + kSizeOne] = py_tensor_grad;
-  } else {
-    fn_args[list_inputs.size()] = py_tensor_grad;
-  }
-  py::object grads_obj = bprop_fn_(*fn_args);
-  py::tuple input_grads = CheckBpropOut(grads_obj, fn_args, name());
+  auto bprop_fn_args = py::reinterpret_steal<py::tuple>(tensor::Wrap(bprop_inputs));
+  py::object grads_obj = bprop_fn_(*bprop_fn_args);
+  py::tuple input_grads = CheckBpropOut(grads_obj, bprop_fn_args, name());
   MS_LOG(DEBUG) << "Run cell custom bprop function end.";
   ValuePtrList gradient_values;
   ConvertPyObjectToCTensor(input_grads, &gradient_values, true);
@@ -145,10 +133,9 @@ ValuePtrList CustomBackward::PostProcess(const ValuePtrList &gradient_value) {
 }
 
 void CustomBackward::Release() {
-  saved_output_ = nullptr;
+  saved_values_.clear();
   py::gil_scoped_acquire gil_acquire;
   bprop_fn_ = py::object();
-  bprop_inputs_ = py::object();
 }
 
 ValuePtrList PyBackwardNode::CallBackward(const ValuePtrList &grads) {
@@ -156,7 +143,6 @@ ValuePtrList PyBackwardNode::CallBackward(const ValuePtrList &grads) {
   MS_LOG(DEBUG) << "Begin PyBackwardNode CallBackward";
   // Construct input for backward function.
   py::gil_scoped_acquire gil_acquire;
-  MS_EXCEPTION_IF_CHECK_FAIL(backward_fn_.ptr() != nullptr, kCallBackwradTwiceErr);
   auto gradients = ValueListToValue(grads);
   auto ctx = py::cast<FunctionPtr>(obj_);
   MS_EXCEPTION_IF_NULL(ctx);
@@ -220,6 +206,7 @@ void PyBackwardNode::Release() {
   py::gil_scoped_acquire gil_acquire;
   backward_fn_ = py::object();
   obj_ = py::object();
+  saved_tensors_.clear();
 }
 
 PyBackwardNode::~PyBackwardNode() {

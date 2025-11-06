@@ -102,7 +102,7 @@ py::object CastToPyObj(const T *ptr) {
 
 class COMMON_EXPORT PyAdapterCallback {
   HANDLER_DEFINE(ValuePtr, PyDataToValue, py::object);
-  HANDLER_DEFINE(BaseRef, RunPrimitivePyHookFunction, PrimitivePtr, VectorRef);
+  HANDLER_DEFINE(BaseRef, RunPrimitivePyHookFunction, PrimitivePtr, ValuePtrList);
   HANDLER_DEFINE(py::array, TensorToNumpy, tensor::Tensor);
   HANDLER_DEFINE(void, ProcessUnPairedCellHook, bool);
 };
