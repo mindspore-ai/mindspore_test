@@ -26,9 +26,14 @@ import torch
 import mindspore as ms
 from mindspore import mint, mutable
 from tests.st.ops.share._op_info.op_info import OpInfo, BinaryOpInfo, UnaryOpInfo
-from tests.st.ops.share._op_info.op_info import basic_reference_inputs_binary_op_common_func
-from tests.st.ops.share._op_info.op_common import dtypes_as_torch, dtypes_extra_uint
-from tests.st.ops.share._op_info.op_common import SMALL_DIM_SIZE
+from tests.st.ops.share._op_info.op_info import (
+    basic_reference_inputs_binary_op_common_func,
+    extra_reference_inputs_binary_op_common_func,
+    dynamic_inputs_binary_op_common_func
+)
+from tests.st.ops.share._op_info.op_common import (
+    dtypes_as_torch, dtypes_extra_uint, SMALL_DIM_SIZE
+)
 from tests.st.ops.share._internal.utils import OpSampleInput, OpDynamicInput, OpErrorInput, make_tensor
 
 
@@ -194,12 +199,87 @@ def add_ext_func_grad_without_kwargs(x, y, alpha=1):
 def sub_ext_func_grad_without_kwargs(x, y, alpha=1):
     return mint.sub(x, y, alpha=alpha)
 
+def equal_func_grad(x, other):
+    return mint.equal(x, other)
+
+def eq_func_grad(x, other):
+    return mint.eq(x, other)
+
+def greater_equal_func_grad(x, other):
+    return mint.greater_equal(x, other)
+
+def greater_func_grad(x, other):
+    return mint.greater(x, other)
+
+def less_equal_func_grad(x, other):
+    return mint.less_equal(x, other)
+
+def less_func_grad(x, other):
+    return mint.less(x, other)
+
+def ne_func_grad(x, other):
+    return mint.ne(x, other)
+
 # wrap tensor method for tanh
 def tensor_tanh_ms(op_input):
     return op_input.tanh()
 
 def tensor_tanh_torch(op_input):
     return op_input.tanh()
+
+def tensor_eq_ms(op_input, x):
+    return op_input.eq(x)
+
+def tensor_eq_torch(op_input, x):
+    return op_input.eq(x)
+
+def tensor_greater_equal_ms(op_input, x):
+    return op_input.greater_equal(x)
+
+def tensor_greater_equal_torch(op_input, x):
+    return op_input.greater_equal(x)
+
+def tensor_greater_ms(op_input, x):
+    return op_input.greater(x)
+
+def tensor_greater_torch(op_input, x):
+    return op_input.greater(x)
+
+def tensor_less_equal_ms(op_input, x):
+    return op_input.less_equal(x)
+
+def tensor_less_equal_torch(op_input, x):
+    return op_input.less_equal(x)
+
+def tensor_less_ms(op_input, x):
+    return op_input.less(x)
+
+def tensor_less_torch(op_input, x):
+    return op_input.less(x)
+
+def tensor_ne_ms(op_input, x):
+    return op_input.ne(x)
+
+def tensor_ne_torch(op_input, x):
+    return op_input.ne(x)
+
+def tensor_gt_ms(op_input, x):
+    return op_input.gt(x)
+
+def tensor_gt_torch(op_input, x):
+    return op_input.gt(x)
+
+def tensor_le_ms(op_input, x):
+    return op_input.le(x)
+
+def tensor_le_torch(op_input, x):
+    return op_input.le(x)
+
+def tensor_lt_ms(op_input, x):
+    return op_input.lt(x)
+
+def tensor_lt_torch(op_input, x):
+    return op_input.lt(x)
 
 # wrap nn method for tanh
 def nn_tanh_ms(op_input):
@@ -811,6 +891,139 @@ op_db: Dict[str, OpInfo] = {
         op_dynamic_inputs_func=dynamic_sample_inputs_add_sub_ext,
         op_error_inputs_func=error_inputs_add_sub_ext_func,
     ),
+    'mint.equal': BinaryOpInfo(
+        name='mint.equal',
+        op=mint.equal,
+        op_func_without_kwargs=equal_func_grad,
+        ref=torch.equal,
+        tensor_variant=lambda op_input, *op_args, **op_kwargs: op_input.equal(op_args[0]),
+        dtypes_ascend=tuple(d for d in dtypes_as_torch if not d.is_complex and d != ms.bfloat16),
+        dtypes_ascend910b=tuple(d for d in dtypes_as_torch if not d.is_complex),
+        dtypes_cpu=tuple(),
+        dtypes_gpu=tuple(),
+        op_basic_reference_inputs_func=basic_reference_inputs_binary_op_common_func,
+        op_extra_reference_inputs_func=extra_reference_inputs_binary_op_common_func,
+        op_dynamic_inputs_func=dynamic_inputs_binary_op_common_func,
+        op_error_inputs_func=None,
+        is_differentiable=False,
+        supports_left_python_scalar=False,
+        supports_right_python_scalar=False,
+        supports_both_python_scalar=False,
+    ),
+    'mint.eq': BinaryOpInfo(
+        name='mint.eq',
+        op=mint.eq,
+        op_func_without_kwargs=eq_func_grad,
+        ref=torch.eq,
+        tensor_variant=lambda op_input, *op_args, **op_kwargs: op_input.eq(op_args[0]),
+        dtypes_ascend=tuple(d for d in dtypes_as_torch if d != ms.bfloat16),
+        dtypes_ascend910b=dtypes_as_torch,
+        dtypes_cpu=tuple(),
+        dtypes_gpu=tuple(),
+        op_basic_reference_inputs_func=basic_reference_inputs_binary_op_common_func,
+        op_extra_reference_inputs_func=extra_reference_inputs_binary_op_common_func,
+        op_dynamic_inputs_func=dynamic_inputs_binary_op_common_func,
+        op_error_inputs_func=None,
+        is_differentiable=False,
+        supports_left_python_scalar=False,
+        supports_right_python_scalar=True,
+        supports_both_python_scalar=False,
+    ),
+    'mint.greater_equal': BinaryOpInfo(
+        name='mint.greater_equal',
+        op=mint.greater_equal,
+        op_func_without_kwargs=greater_equal_func_grad,
+        ref=torch.greater_equal,
+        tensor_variant=lambda op_input, *op_args, **op_kwargs: op_input.greater_equal(op_args[0]),
+        dtypes_ascend=tuple(d for d in dtypes_as_torch if not d.is_complex and d != ms.bfloat16),
+        dtypes_ascend910b=tuple(d for d in dtypes_as_torch if not d.is_complex),
+        dtypes_cpu=tuple(),
+        dtypes_gpu=tuple(),
+        op_basic_reference_inputs_func=basic_reference_inputs_binary_op_common_func,
+        op_extra_reference_inputs_func=extra_reference_inputs_binary_op_common_func,
+        op_dynamic_inputs_func=dynamic_inputs_binary_op_common_func,
+        op_error_inputs_func=None,
+        is_differentiable=False,
+        supports_left_python_scalar=False,
+        supports_right_python_scalar=True,
+        supports_both_python_scalar=False,
+    ),
+    'mint.greater': BinaryOpInfo(
+        name='mint.greater',
+        op=mint.greater,
+        op_func_without_kwargs=greater_func_grad,
+        ref=torch.greater,
+        tensor_variant=lambda op_input, *op_args, **op_kwargs: op_input.greater(op_args[0]),
+        dtypes_ascend=tuple(d for d in dtypes_as_torch if not d.is_complex and d != ms.bfloat16),
+        dtypes_ascend910b=tuple(d for d in dtypes_as_torch if not d.is_complex),
+        dtypes_cpu=tuple(),
+        dtypes_gpu=tuple(),
+        op_basic_reference_inputs_func=basic_reference_inputs_binary_op_common_func,
+        op_extra_reference_inputs_func=extra_reference_inputs_binary_op_common_func,
+        op_dynamic_inputs_func=dynamic_inputs_binary_op_common_func,
+        op_error_inputs_func=None,
+        is_differentiable=False,
+        supports_left_python_scalar=False,
+        supports_right_python_scalar=True,
+        supports_both_python_scalar=False,
+    ),
+    'mint.less_equal': BinaryOpInfo(
+        name='mint.less_equal',
+        op=mint.less_equal,
+        op_func_without_kwargs=less_equal_func_grad,
+        ref=torch.less_equal,
+        tensor_variant=lambda op_input, *op_args, **op_kwargs: op_input.less_equal(op_args[0]),
+        dtypes_ascend=tuple(d for d in dtypes_as_torch if not d.is_complex and d != ms.bfloat16),
+        dtypes_ascend910b=tuple(d for d in dtypes_as_torch if not d.is_complex),
+        dtypes_cpu=tuple(),
+        dtypes_gpu=tuple(),
+        op_basic_reference_inputs_func=basic_reference_inputs_binary_op_common_func,
+        op_extra_reference_inputs_func=extra_reference_inputs_binary_op_common_func,
+        op_dynamic_inputs_func=dynamic_inputs_binary_op_common_func,
+        op_error_inputs_func=None,
+        is_differentiable=False,
+        supports_left_python_scalar=False,
+        supports_right_python_scalar=True,
+        supports_both_python_scalar=False,
+    ),
+    'mint.less': BinaryOpInfo(
+        name='mint.less',
+        op=mint.less,
+        op_func_without_kwargs=less_func_grad,
+        ref=torch.less,
+        tensor_variant=lambda op_input, *op_args, **op_kwargs: op_input.less(op_args[0]),
+        dtypes_ascend=tuple(d for d in dtypes_as_torch if not d.is_complex and d != ms.bfloat16),
+        dtypes_ascend910b=tuple(d for d in dtypes_as_torch if not d.is_complex),
+        dtypes_cpu=tuple(),
+        dtypes_gpu=tuple(),
+        op_basic_reference_inputs_func=basic_reference_inputs_binary_op_common_func,
+        op_extra_reference_inputs_func=extra_reference_inputs_binary_op_common_func,
+        op_dynamic_inputs_func=dynamic_inputs_binary_op_common_func,
+        op_error_inputs_func=None,
+        is_differentiable=False,
+        supports_left_python_scalar=False,
+        supports_right_python_scalar=True,
+        supports_both_python_scalar=False,
+    ),
+    'mint.ne': BinaryOpInfo(
+        name='mint.ne',
+        op=mint.ne,
+        op_func_without_kwargs=ne_func_grad,
+        ref=torch.ne,
+        tensor_variant=lambda op_input, *op_args, **op_kwargs: op_input.ne(op_args[0]),
+        dtypes_ascend=tuple(d for d in dtypes_as_torch if d != ms.bfloat16),
+        dtypes_ascend910b=dtypes_as_torch,
+        dtypes_cpu=tuple(),
+        dtypes_gpu=tuple(),
+        op_basic_reference_inputs_func=basic_reference_inputs_binary_op_common_func,
+        op_extra_reference_inputs_func=extra_reference_inputs_binary_op_common_func,
+        op_dynamic_inputs_func=dynamic_inputs_binary_op_common_func,
+        op_error_inputs_func=None,
+        is_differentiable=False,
+        supports_left_python_scalar=False,
+        supports_right_python_scalar=True,
+        supports_both_python_scalar=False,
+    ),
     'mint.tanh': UnaryOpInfo(
         name='mint.tanh',
         op=mint.tanh,
@@ -959,6 +1172,132 @@ op_db: Dict[str, OpInfo] = {
         op_extra_reference_inputs_func=None,
         op_dynamic_inputs_func=functools.partial(dynamic_sample_inputs_mint_interpolate, mode="nearest3d"),
     ),
+    'Tensor.eq': BinaryOpInfo(
+        name='Tensor.eq',
+        op=tensor_eq_ms,
+        ref=tensor_eq_torch,
+        tensor_variant=lambda op_input, *op_args, **op_kwargs: op_input.eq(op_args[0]),
+        dtypes_ascend=tuple(d for d in dtypes_as_torch if d != ms.bfloat16),
+        dtypes_ascend910b=dtypes_as_torch,
+        dtypes_cpu=tuple(),
+        dtypes_gpu=tuple(),
+        is_differentiable=False,
+        supports_left_python_scalar=False,
+        supports_right_python_scalar=True,
+        supports_both_python_scalar=False,
+    ),
+    'Tensor.greater_equal': BinaryOpInfo(
+        name='Tensor.greater_equal',
+        op=tensor_greater_equal_ms,
+        ref=tensor_greater_equal_torch,
+        tensor_variant=lambda op_input, *op_args, **op_kwargs: op_input.greater_equal(op_args[0]),
+        dtypes_ascend=tuple(d for d in dtypes_as_torch if not d.is_complex and d != ms.bfloat16),
+        dtypes_ascend910b=tuple(d for d in dtypes_as_torch if not d.is_complex),
+        dtypes_cpu=tuple(),
+        dtypes_gpu=tuple(),
+        is_differentiable=False,
+        supports_left_python_scalar=False,
+        supports_right_python_scalar=True,
+        supports_both_python_scalar=False,
+    ),
+    'Tensor.greater': BinaryOpInfo(
+        name='Tensor.greater',
+        op=tensor_greater_ms,
+        ref=tensor_greater_torch,
+        tensor_variant=lambda op_input, *op_args, **op_kwargs: op_input.greater(op_args[0]),
+        dtypes_ascend=tuple(d for d in dtypes_as_torch if not d.is_complex and d != ms.bfloat16),
+        dtypes_ascend910b=tuple(d for d in dtypes_as_torch if not d.is_complex),
+        dtypes_cpu=tuple(),
+        dtypes_gpu=tuple(),
+        is_differentiable=False,
+        supports_left_python_scalar=False,
+        supports_right_python_scalar=True,
+        supports_both_python_scalar=False,
+    ),
+    'Tensor.less_equal': BinaryOpInfo(
+        name='Tensor.less_equal',
+        op=tensor_less_equal_ms,
+        ref=tensor_less_equal_torch,
+        tensor_variant=lambda op_input, *op_args, **op_kwargs: op_input.less_equal(op_args[0]),
+        dtypes_ascend=tuple(d for d in dtypes_as_torch if not d.is_complex and d != ms.bfloat16),
+        dtypes_ascend910b=tuple(d for d in dtypes_as_torch if not d.is_complex),
+        dtypes_cpu=tuple(),
+        dtypes_gpu=tuple(),
+        is_differentiable=False,
+        supports_left_python_scalar=False,
+        supports_right_python_scalar=True,
+        supports_both_python_scalar=False,
+    ),
+    'Tensor.less': BinaryOpInfo(
+        name='Tensor.less',
+        op=tensor_less_ms,
+        ref=tensor_less_torch,
+        tensor_variant=lambda op_input, *op_args, **op_kwargs: op_input.less(op_args[0]),
+        dtypes_ascend=tuple(d for d in dtypes_as_torch if not d.is_complex and d != ms.bfloat16),
+        dtypes_ascend910b=tuple(d for d in dtypes_as_torch if not d.is_complex),
+        dtypes_cpu=tuple(),
+        dtypes_gpu=tuple(),
+        is_differentiable=False,
+        supports_left_python_scalar=False,
+        supports_right_python_scalar=True,
+        supports_both_python_scalar=False,
+    ),
+    'Tensor.ne': BinaryOpInfo(
+        name='Tensor.ne',
+        op=tensor_ne_ms,
+        ref=tensor_ne_torch,
+        tensor_variant=lambda op_input, *op_args, **op_kwargs: op_input.ne(op_args[0]),
+        dtypes_ascend=tuple(d for d in dtypes_as_torch if d != ms.bfloat16),
+        dtypes_ascend910b=dtypes_as_torch,
+        dtypes_cpu=tuple(),
+        dtypes_gpu=tuple(),
+        is_differentiable=False,
+        supports_left_python_scalar=False,
+        supports_right_python_scalar=True,
+        supports_both_python_scalar=False,
+    ),
+    'Tensor.gt': BinaryOpInfo(
+        name='Tensor.gt',
+        op=tensor_gt_ms,
+        ref=tensor_gt_torch,
+        tensor_variant=lambda op_input, *op_args, **op_kwargs: op_input.gt(op_args[0]),
+        dtypes_ascend=tuple(d for d in dtypes_as_torch if not d.is_complex and d != ms.bfloat16),
+        dtypes_ascend910b=tuple(d for d in dtypes_as_torch if not d.is_complex),
+        dtypes_cpu=tuple(),
+        dtypes_gpu=tuple(),
+        is_differentiable=False,
+        supports_left_python_scalar=False,
+        supports_right_python_scalar=True,
+        supports_both_python_scalar=False,
+    ),
+    'Tensor.le': BinaryOpInfo(
+        name='Tensor.le',
+        op=tensor_le_ms,
+        ref=tensor_le_torch,
+        tensor_variant=lambda op_input, *op_args, **op_kwargs: op_input.le(op_args[0]),
+        dtypes_ascend=tuple(d for d in dtypes_as_torch if not d.is_complex and d != ms.bfloat16),
+        dtypes_ascend910b=tuple(d for d in dtypes_as_torch if not d.is_complex),
+        dtypes_cpu=tuple(),
+        dtypes_gpu=tuple(),
+        is_differentiable=False,
+        supports_left_python_scalar=False,
+        supports_right_python_scalar=True,
+        supports_both_python_scalar=False,
+    ),
+    'Tensor.lt': BinaryOpInfo(
+        name='Tensor.lt',
+        op=tensor_lt_ms,
+        ref=tensor_lt_torch,
+        tensor_variant=lambda op_input, *op_args, **op_kwargs: op_input.lt(op_args[0]),
+        dtypes_ascend=tuple(d for d in dtypes_as_torch if not d.is_complex and d != ms.bfloat16),
+        dtypes_ascend910b=tuple(d for d in dtypes_as_torch if not d.is_complex),
+        dtypes_cpu=tuple(),
+        dtypes_gpu=tuple(),
+        is_differentiable=False,
+        supports_left_python_scalar=False,
+        supports_right_python_scalar=True,
+        supports_both_python_scalar=False,
+    ),
 }
 
 all_op_db = list(op_db.keys())
@@ -966,6 +1305,22 @@ all_op_db = list(op_db.keys())
 binary_op_db = [
     'mint.add',
     'mint.sub',
+    'mint.equal',
+    'mint.eq',
+    'mint.greater_equal',
+    'mint.greater',
+    'mint.less_equal',
+    'mint.less',
+    'mint.ne',
+    'Tensor.eq',
+    'Tensor.greater_equal',
+    'Tensor.greater',
+    'Tensor.less_equal',
+    'Tensor.less',
+    'Tensor.ne',
+    'Tensor.gt',
+    'Tensor.le',
+    'Tensor.lt',
 ]
 
 unary_op_db = [

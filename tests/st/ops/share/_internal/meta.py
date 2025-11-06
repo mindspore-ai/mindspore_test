@@ -335,8 +335,13 @@ class OpsFactory():
                 if expect.dtype in extra_uint_np_dtypes and actual.dtype == np.int64:
                     actual = actual.astype(expect.dtype)
 
-            rtol = get_default_loss(actual.dtype) if rtol is None else rtol
-            atol = get_default_loss(actual.dtype) if atol is None else atol
+            if isinstance(actual, (ms.Tensor, torch.Tensor, np.ndarray)):
+                actual_dtype = actual.dtype
+            else:
+                actual_dtype = type(actual)
+
+            rtol = get_default_loss(actual_dtype) if rtol is None else rtol
+            atol = get_default_loss(actual_dtype) if atol is None else atol
 
             allclose_nparray(expect, actual, rtol, atol)
 
@@ -778,10 +783,14 @@ class OpsFactory():
                         op_type=OpTypes.COMPUTE_FLOAT
                     )
             else:
-                if self._default_loss_override and ms_outi.dtype in self._default_loss_override:
-                    loss = self._default_loss_override[ms_outi.dtype]
+                if isinstance(ms_outi, (ms.Tensor, torch.Tensor, np.ndarray)):
+                    ms_outi_dtype = ms_outi.dtype
                 else:
-                    loss = self._default_golden_loss_func(ms_outi.dtype)
+                    ms_outi_dtype = type(ms_outi)
+                if self._default_loss_override and ms_outi_dtype in self._default_loss_override:
+                    loss = self._default_loss_override[ms_outi_dtype]
+                else:
+                    loss = self._default_golden_loss_func(ms_outi_dtype)
                 self.assert_equal(
                     ms_outi,
                     pt_outi,
