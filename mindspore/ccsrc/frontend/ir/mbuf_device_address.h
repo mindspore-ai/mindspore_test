@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef MINDSPORE_MBUF_DEVICE_ADDRESS_H
-#define MINDSPORE_MBUF_DEVICE_ADDRESS_H
+#ifndef MINDSPORE_CCSRC_FRONTEND_IR_MBUF_DEVICE_ADDRESS_H
+#define MINDSPORE_CCSRC_FRONTEND_IR_MBUF_DEVICE_ADDRESS_H
 
 #include <string>
 #include <memory>
@@ -36,4 +36,4 @@ class MbufDeviceAddress : public device::DeviceAddress {
 };
 }  // namespace device
 }  // namespace mindspore
-#endif  // MINDSPORE_MBUF_DEVICE_ADDRESS_H
+#endif  // MINDSPORE_CCSRC_FRONTEND_IR_MBUF_DEVICE_ADDRESS_H

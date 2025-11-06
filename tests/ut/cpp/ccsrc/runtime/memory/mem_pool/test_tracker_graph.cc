@@ -15,7 +15,7 @@
  */
 
 #include "common/common_test.h"
-#include "include/runtime/memory/mem_pool/tracker_graph.h"
+#include "runtime/memory/mem_pool/tracker_graph.h"
 #include <gtest/gtest.h>
 
 namespace mindspore {

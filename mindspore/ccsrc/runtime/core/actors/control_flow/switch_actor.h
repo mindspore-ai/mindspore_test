@@ -21,7 +21,7 @@
 #include <string>
 #include <memory>
 #include <utility>
-#include "include/runtime/core/actors/base/actor_common.h"
+#include "runtime/core/actors/base/actor_common.h"
 #include "runtime/core/actors/control_flow/control_actor.h"
 
 namespace mindspore {

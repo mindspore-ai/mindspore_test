@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_MINDSPORE_CCSRC_DEBUG_DATA_DUMP_CSV_WRITER_H_
-#define MINDSPORE_MINDSPORE_CCSRC_DEBUG_DATA_DUMP_CSV_WRITER_H_
+#ifndef MINDSPORE_CCSRC_TOOLS_DATA_DUMP_COMMON_CSV_WRITER_H_
+#define MINDSPORE_CCSRC_TOOLS_DATA_DUMP_COMMON_CSV_WRITER_H_
 
 #include <memory>
 #include <string>
@@ -65,4 +65,4 @@ class CsvWriter {
   std::shared_mutex write_mutex_;
 };
 }  // namespace mindspore
-#endif  // MINDSPORE_MINDSPORE_CCSRC_DEBUG_DATA_DUMP_CSV_WRITER_H_
+#endif  // MINDSPORE_CCSRC_TOOLS_DATA_DUMP_COMMON_CSV_WRITER_H_

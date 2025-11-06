@@ -15,6 +15,10 @@
  */
 
 #include <vector>
+#include <string>
+#include <memory>
+#include <unordered_map>
+#include <map>
 #include "include/utils/pybind_api/api_register.h"
 #include "include/runtime/utils/runtime_conf/runtime_env.h"
 #include "tools/error_handler/exit_handler.h"

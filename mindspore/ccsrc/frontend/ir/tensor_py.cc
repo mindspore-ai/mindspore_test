@@ -19,6 +19,9 @@
 #include <utility>
 #include <algorithm>
 #include <map>
+#include <vector>
+#include <string>
+#include <memory>
 
 #include "pybind11/complex.h"
 #include "include/utils/convert_utils_py.h"
@@ -30,7 +33,7 @@
 #include "include/utils/pynative/adapter.h"
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "include/runtime/pipeline/pipeline.h"
-#include "include/backend/mbuf_device_address.h"
+#include "frontend/ir/mbuf_device_address.h"
 #include "runtime/core/graph_scheduler/base/move_to.h"
 #include "utils/value_utils.h"
 #include "ir/device_address_maker.h"

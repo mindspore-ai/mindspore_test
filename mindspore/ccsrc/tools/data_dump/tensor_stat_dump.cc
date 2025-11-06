@@ -16,9 +16,11 @@
 
 #include "include/backend/debug/data_dump/tensor_stat_dump.h"
 #include <map>
+#include <memory>
+#include <string>
 #include "tools/data_dump/debug_services.h"
 #include "tools/data_dump/utils.h"
-#include "include/backend/debug/common/csv_writer.h"
+#include "tools/data_dump/common/csv_writer.h"
 #include "include/backend/debug/debugger/debugger.h"
 #include "include/utils/common.h"
 namespace {

@@ -14,17 +14,17 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CCSRC_INCLUDE_RUNTIME_MEMORY_MEM_POOL_RACE_CHECKER_H_
-#define MINDSPORE_CCSRC_INCLUDE_RUNTIME_MEMORY_MEM_POOL_RACE_CHECKER_H_
+#ifndef MINDSPORE_CCSRC_RUNTIME_MEMORY_MEM_POOL_RACE_CHECKER_H_
+#define MINDSPORE_CCSRC_RUNTIME_MEMORY_MEM_POOL_RACE_CHECKER_H_
 
 #include <string>
 #include <unordered_map>
 #include <vector>
 
 #include "include/runtime/memory/mem_pool/mem_tracker.h"
-#include "include/runtime/memory/mem_pool/tracker_graph.h"
-#include "include/runtime/memory/mem_pool/address_discretizer.h"
-#include "include/runtime/memory/mem_pool/max_segment_tree.h"
+#include "runtime/memory/mem_pool/tracker_graph.h"
+#include "runtime/memory/mem_pool/address_discretizer.h"
+#include "runtime/memory/mem_pool/max_segment_tree.h"
 
 namespace mindspore {
 namespace device {
@@ -61,4 +61,4 @@ class RaceChecker {
 }  // namespace device
 }  // namespace mindspore
 
-#endif  // MINDSPORE_CCSRC_INCLUDE_RUNTIME_MEMORY_MEM_POOL_RACE_CHECKER_H_
+#endif  // MINDSPORE_CCSRC_RUNTIME_MEMORY_MEM_POOL_RACE_CHECKER_H_

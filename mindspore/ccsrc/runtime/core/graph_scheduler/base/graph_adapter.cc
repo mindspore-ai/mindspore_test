@@ -27,7 +27,7 @@
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/runtime/memory/mem_pool/mem_tracker.h"
 #include "include/runtime/hardware_abstract/kernel_base/device_tensor_store.h"
-#include "include/runtime/core/actors/base/actor_common.h"
+#include "runtime/core/actors/base/actor_common.h"
 #include "runtime/core/graph_scheduler/base/scheduler_helper.h"
 #include "backend/common/device_address_utils.h"
 

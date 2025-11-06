@@ -26,7 +26,7 @@
 
 #include "utils/hash_map.h"
 #include "runtime/hardware_abstract/device_context/device_context.h"
-#include "include/runtime/core/actors/base/actor_common.h"
+#include "runtime/core/actors/base/actor_common.h"
 #include "runtime/core/graph_scheduler/control_flow/control_node_parser.h"
 #include "backend/common/kernel_graph/session_basic.h"
 #include "backend/common/kernel_graph/session_factory.h"
@@ -72,7 +72,7 @@ using KernelMapPosition = std::map<KernelWithIndex, std::vector<size_t>, session
 // The origin parameters order is used to correspond to the input args.
 // The origin outputs order is used to correspond to the output args.
 // The need_erase means need erase this GraphCompilerInfo object after run actor set.
-struct BACKEND_EXPORT GraphCompilerInfo {
+struct GraphCompilerInfo {
   GraphCompilerInfo(const std::vector<KernelGraphPtr> &graphs, const std::vector<DeviceContext *> &device_contexts,
                     const std::vector<std::vector<int64_t> *> &tensors_mask,
                     const std::vector<std::vector<TensorPtr> *> &input_tensors,

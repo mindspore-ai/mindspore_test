@@ -27,7 +27,7 @@
 #include <queue>
 #include <utility>
 #include <algorithm>
-#include "include/runtime/core/actors/base/actor_common.h"
+#include "runtime/core/actors/base/actor_common.h"
 #include "runtime/core/actors/base/abstract_actor.h"
 #include "runtime/core/actors/base/memory_aware_actor.h"
 #include "runtime/core/actors/base/memory_manager_actor.h"

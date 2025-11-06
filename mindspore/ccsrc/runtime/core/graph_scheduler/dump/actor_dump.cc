@@ -20,6 +20,7 @@
 #include <map>
 #include <utility>
 #include "include/runtime/hardware_abstract/kernel_base/kernel.h"
+#include "runtime/core/graph_scheduler/base/parameter_store.h"
 #include "runtime/core/graph_scheduler/base/scheduler_helper.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 

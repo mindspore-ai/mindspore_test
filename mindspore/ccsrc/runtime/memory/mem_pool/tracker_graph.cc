@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "include/runtime/memory/mem_pool/tracker_graph.h"
+#include "runtime/memory/mem_pool/tracker_graph.h"
 
 #include <cctype>
 #include <fstream>
@@ -25,7 +25,7 @@
 #include <string_view>
 #include <unordered_map>
 
-#include "include/runtime/memory/mem_pool/race_checker.h"
+#include "runtime/memory/mem_pool/race_checker.h"
 #include "include/runtime/memory/mem_pool/dynamic_mem_pool.h"
 #include "ir/dtype.h"
 #include "utils/log_adapter.h"

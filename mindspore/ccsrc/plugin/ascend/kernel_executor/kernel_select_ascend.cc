@@ -44,7 +44,6 @@
 #include "mindspore/ccsrc/utils/ir_dump/anf_ir_dump.h"
 #include "tools/profiler/profiling.h"
 #include "backend/common/pass/insert_type_transform_op.h"
-#include "include/backend/common/ms_device_shape_transfer.h"
 #include "plugin/cpu/kernel_executor/kernel_select/kernel_select_cpu.h"
 #include "utils/anf_utils.h"
 #include "kernel/ascend/aclnn/kernel_mod_impl/customize/custom_aclnn_utils.h"
@@ -67,6 +66,14 @@ constexpr uint32_t kFirstItem = 0;
 constexpr size_t kOpTypeNumber = static_cast<size_t>(SelectedKernelType::NUM_KERNLE_TYPE);
 constexpr const char *kOpSelectedType[] = {"internal kernel", "aclnn kernel", "aclop kernel", "atb kernel",
                                            "hccl kernel",     "host kernel",  "custom kernel"};
+
+/**
+ * If you want extend format, make sure it has a data trans function at host in class
+ * 'FormatTransfer.format_trans_fp_map'
+ * */
+static const std::set<std::string> kFormatWithTransFunc = {
+  kOpFormat_HWCN,     kOpFormat_NHWC,      kOpFormat_FRAC_Z,      kOpFormat_FRAC_NZ,      kOpFormat_NC1HWC0,
+  kOpFormat_NDC1HWC0, kOpFormat_C1HWNCoC0, kOpFormat_NC1HWC0_C04, kOpFormat_FRACTAL_Z_3D, kOpFormat_FRACTAL_Z_C04};
 
 std::string KernelSelectDebugString(const kernel::KernelBuildInfo *build_info,
                                     const std::vector<std::shared_ptr<kernel::KernelBuildInfo>> &kernel_info_list) {
@@ -101,7 +108,7 @@ void SetWeightFormat(const AnfNodePtr &real_input_node, std::vector<string> outp
   // and there will be no HostToDeviceCopy in the follow-up. If host format conversion is disabled,
   // the TransData operator will be executed in each subsequent step, resulting in poor performance.
   if (disable_convert) {
-    disable_convert = trans::kFormatWithTransFunc.find(output_format[0]) == trans::kFormatWithTransFunc.end();
+    disable_convert = kFormatWithTransFunc.find(output_format[0]) == kFormatWithTransFunc.end();
   }
   // if not find in host convert format map means the host has not registered the convert function of this format
   if (output_format[0] != kOpFormat_DEFAULT && disable_convert) {

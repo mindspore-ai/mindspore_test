@@ -53,6 +53,7 @@ using DeviceTensor = mindspore::device::DeviceAddress;
 using DeviceTensorPtr = std::shared_ptr<DeviceTensor>;
 using mindspore::backend::ge_backend::DeviceAddressUtils;
 using mindspore::device::KernelInfo;
+using AddressPtrList = std::vector<kernel::AddressPtr>;
 template <typename T>
 using OpContext = OpRTContext<T>;
 template <typename T>
