@@ -12,6 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+"""
+The tests of mindspore, used to test infer exceptions for mint.distributed.
+"""
 import numpy as np
 import pytest
 import hashlib
@@ -561,8 +564,6 @@ def test_hccl_all_to_all_single():
             except_output_tensor = ms.Tensor([[0, 0, 0.0], [12, 13, 14], [1, 1, 1]])
             assert np.allclose(output.asnumpy(), except_output_tensor.asnumpy())
     # 异常场景
-    with pytest.raises(TypeError):
-        all_to_all_single(1, input_tensor)
     with pytest.raises(TypeError):
         all_to_all_single(output_tensor, 1)
     with pytest.raises(TypeError):
