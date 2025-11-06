@@ -72,7 +72,29 @@ class DvmKernelMod : public KernelMod {
 
   void UpdateInputShapeRef(size_t input_idx, dvm::ShapeRef *ref);
 
+  void CacheRefPair(const OutputInputRefMap &ref_map) { ref_map_ = ref_map; }
+
+  void CheckRefPair(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) {
+    for (const auto &item : ref_map_) {
+      auto output_idx = item.first;
+      auto input_idx = item.second;
+      if (output_idx < outputs.size() && input_idx < inputs.size()) {
+        auto output_addr = outputs[output_idx]->device_ptr();
+        auto input_addr = inputs[input_idx]->device_ptr();
+        if (output_addr != input_addr) {
+          MS_LOG(ERROR) << "For node [" << op_fullname_ << "], ref pair (" << output_idx << ", " << input_idx
+                        << ") got different device ptr: " << output_addr << " vs " << input_addr;
+        }
+      } else {
+        MS_LOG(ERROR) << "For node [" << op_fullname_ << "], ref pair (" << output_idx << ", " << input_idx
+                      << ") out of range: " << outputs.size() << ", " << inputs.size();
+      }
+    }
+  }
+
   bool EnableDump() const { return dump_kernel_; }
+
+  void DumpRefPair();
 
   std::ostringstream &DumpBuffer() { return dump_buf_; }
 
@@ -88,6 +110,7 @@ class DvmKernelMod : public KernelMod {
   dvm::RelocTable reloc_table_;
   std::vector<size_t> inputs_type_byte_;
   std::vector<size_t> outputs_type_byte_;
+  OutputInputRefMap ref_map_;
   dvm::Kernel kernel_;
   bool dump_kernel_{false};
   static std::mutex lock_;

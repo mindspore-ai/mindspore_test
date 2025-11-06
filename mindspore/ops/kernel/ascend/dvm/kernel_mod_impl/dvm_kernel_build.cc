@@ -35,6 +35,7 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_g.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
+#include "include/runtime/hardware_abstract/kernel_base/kernel_info.h"
 
 namespace mindspore {
 namespace kernel {
@@ -351,12 +352,19 @@ class OpBuilder {
   void HandlerAssignOp(const AnfNodePtr &anf_node) {
     const CNodePtr &node = anf_node->cast<CNodePtr>();
     auto out_type = AnfAlgo::GetOutputDeviceDataType(node, kIndex0);
-    auto input2 = EmitCast(GetInput(node->input(kIndex2)), out_type);
+    auto input_obj = GetInput(node->input(kIndex2));
+    // %0 = Assign(p0, p1)
+    // %1 = Div(p2, %0)
+    // %2 = Add(%1, p0)
+    // The second input of Div should be Load(p1), not Store(%0), precision error due to wrong local memory address
+    // The second input of Add should be Load(p1), not Load(p0)
+    ops_map_[anf_node] = input_obj;
+    ops_map_[node->input(kIndex1)] = input_obj;
+    auto input2 = EmitCast(input_obj, out_type);
     // store the second input of assign to the output of subgraph
     // the output addr of subgraph equals to the corresponding parameter addr of subgraph
     if (outputs_.find(node) != outputs_.end()) {
-      ops_map_[anf_node] = kernel_->Store(nullptr, input2);
-      outputs_[anf_node] = ops_map_[anf_node];
+      outputs_[anf_node] = kernel_->Store(nullptr, input2);
     } else {
       MS_LOG_WITH_NODE(EXCEPTION, node) << "AssignOp " << node->fullname_with_scope()
                                         << " is not in graph kernel 's outputs.";
@@ -661,6 +669,7 @@ class DvmKernelBuilder {
       outputs.emplace_back(out_node);
     }
     BuildKernel(graph, out_node, outputs);
+    CacheRefPair();
   }
 
   KernelModPtr Create() {
@@ -673,6 +682,7 @@ class DvmKernelBuilder {
     if (kernel_mod_->EnableDump()) {
       kernel_mod_->DumpBuffer() << "[func graph] " << kernel_name_ << " " << kernel_full_name_ << "\n";
       DumpIR(kernel_mod_->DumpBuffer(), func_graph, false);
+      kernel_mod_->DumpRefPair();
       kernel_mod_->DumpToFile();
     }
     if (!is_dynamic_) {
@@ -703,6 +713,19 @@ class DvmKernelBuilder {
   std::string kernel_full_name_;
   bool is_dynamic_;
   DvmKernelModPtr kernel_mod_;
+
+ private:
+  void CacheRefPair() {
+    auto info_ptr = node_->kernel_info();
+    if (info_ptr == nullptr) {
+      return;
+    }
+    auto kernel_info = dynamic_cast<device::KernelInfo *>(info_ptr);
+    if (kernel_info == nullptr) {
+      return;
+    }
+    kernel_mod_->CacheRefPair(kernel_info->out_in_ref_map());
+  }
 };
 
 class SingleDvmKernelBuilder : public DvmKernelBuilder {
