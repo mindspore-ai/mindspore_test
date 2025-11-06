@@ -85,7 +85,9 @@ bool EnableLccl() {
   } else {
     static bool enable_lccl = common::GetEnv("MS_ENABLE_LCCL") == "on";
     if (enable_lccl) {
-      return true;
+      MS_LOG(EXCEPTION)
+        << "Currently, the LCCL communication library is only supported in the inference boost scenario. "
+           "Please remove the environment variable MS_ENABLE_LCCL=on.";
     }
     return false;
   }
