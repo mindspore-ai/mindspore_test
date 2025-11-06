@@ -176,7 +176,7 @@ class Resource : public ResourceBase {
   // Reclaim resource and clear the cache.
   // ExecutorPy::Compile() can be called multiple times, so cache
   // should be cleared.
-  FRONTEND_EXPORT void Clean();
+  void Clean();
 
   // Get the mutex for backend initializing.
   static std::mutex &GetBackendInitMutex() { return backend_init_mutex_; }

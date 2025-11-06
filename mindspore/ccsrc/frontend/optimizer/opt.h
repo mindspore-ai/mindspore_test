@@ -86,7 +86,7 @@ class SubstitutionList {
       : list_(patterns), is_once_(is_once), global_sensitive_(global_sensitive) {}
   ~SubstitutionList() = default;
 
-  FRONTEND_EXPORT bool operator()(const FuncGraphPtr &func_graph, const OptimizerPtr &optimizer) const;
+  bool operator()(const FuncGraphPtr &func_graph, const OptimizerPtr &optimizer) const;
 
  private:
   bool ApplyIRToSubstitutions(const OptimizerPtr &optimizer, const FuncGraphPtr &func_graph) const;

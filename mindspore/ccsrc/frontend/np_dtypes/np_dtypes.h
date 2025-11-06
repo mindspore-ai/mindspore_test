@@ -22,8 +22,8 @@
 
 namespace py = pybind11;
 namespace mindspore {
-FRONTEND_EXPORT int GetBFloat16NpDType();
-FRONTEND_EXPORT bool IsCustomNumpyTypeValid(bool show_warning = false);
+int GetBFloat16NpDType();
+bool IsCustomNumpyTypeValid(bool show_warning = false);
 FRONTEND_EXPORT void RegNumpyTypes(py::module *m);
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_INCLUDE_COMMON_NP_DTYPE_NP_DTYPES_H_
