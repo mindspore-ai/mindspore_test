@@ -1924,8 +1924,8 @@ def flash_attention_score(query, key, value, head_num, real_shift=None, drop_mas
               :math:`(S1, S2)`.
 
         prefix (Union[Tensor, tuple[int], list[int]], optional): N value of each Batch in the prefix sparse calculation
-            scenario. Input tensor of shape :math:`(B,)`. B max value 32. Not none only when `sparse_mode` is 5.
-            Default: ``None``.
+            scenario. Input tensor of shape :math:`(B,)`. B max value 32. This parameter takes effect only when
+            `sparse_mode` is 5. Default: ``None``.
             If S1 > S2, N ranges from 0 to S2. If S1 <= S2, N ranges from S2 - S1 to S2.
         actual_seq_qlen (Union[Tensor, tuple[int], list[int]], optional): Size of query corresponding to each batch,
             array with increasing values and the last value equal to T1.
@@ -1994,8 +1994,8 @@ def flash_attention_score(query, key, value, head_num, real_shift=None, drop_mas
             - 4: Represents the band scenario, that is, the part between counting `next_tokens` and `pre_tokens`,
               and the optimized `attn_mask` matrix (2048*2048) is required.
             - 5: Represents the prefix scenario, that is, on the basis of rightDownCasual, a matrix with length S1 and
-              width N is added to the left side. The value of N is obtained by the new input prefix, and the N value
-              of each Batch axis is different, not implemented yet.
+              width N is added to the left side. The value of N is obtained by the new input `prefix`, and the N value
+              of each Batch axis is different. `prefix` takes effect only when `sparse_mode` is 5.
             - 6: Represents the global scenario, not implemented yet.
             - 7: Represents the dilated scenario, not implemented yet.
             - 8: Represents the block_local scenario, not implemented yet.
@@ -2560,8 +2560,9 @@ class WhileLoop(Primitive):
             while cond_func(val):
                 val = loop_func(val)
         except Exception as e:
-            raise ValueError(f"Invalid loop_func, please check input arguments and "
-                             f"return value, error info: {e}")
+            raise ValueError(
+                f"Invalid loop_func, please check input arguments and return value, error info: {e}"
+            ) from e
         return val
 
 
@@ -2656,8 +2657,9 @@ class Scan(Primitive):
                 ys.append(y)
                 i = i + 1
         except Exception as e:
-            raise ValueError(f"Invalid loop_func, please check input arguments and "
-                             f"return value, error info: {e}")
+            raise ValueError(
+                f"Invalid loop_func, please check input arguments and return value, error info: {e}"
+            ) from e
         return carry, ys
 
 
@@ -2732,6 +2734,7 @@ class ForiLoop(Primitive):
             for i in range(lower, upper):
                 val = loop_func(i, val)
         except Exception as e:
-            raise ValueError(f"Invalid loop_func, please check input arguments and "
-                             f"return value, error info: {e}")
+            raise ValueError(
+                f"Invalid loop_func, please check input arguments and return value, error info: {e}"
+            ) from e
         return val
