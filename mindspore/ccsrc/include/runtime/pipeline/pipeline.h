@@ -45,6 +45,8 @@ class RUNTIME_PIPELINE_EXPORT Pipeline {
 
   void WaitBpropStage();
 
+  void WaitFrontendAndBprop();
+
   void ChildAfterFork();
 
   void ParentBeforeFork();

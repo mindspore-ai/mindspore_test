@@ -38,9 +38,12 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 #include "mindspore/ccsrc/pynative/utils/pyboost/functions/auto_grad_guard.h"
 #include "mindspore/ccsrc/pynative/utils/pyboost/functions/auto_generate/functions.h"
+#include "pynative/backward/saved_tensor.h"
 
 namespace mindspore::pynative::autograd {
 namespace {
+constexpr char kCallBackwradTwiceErr[] =
+  "Try to backward the graph twice,  Specify retain_graph=True, if you want call again";
 constexpr char kInput[] = "input";
 ValuePtr Add(const ValuePtr &input, const ValuePtr &other, const FuncBuilderPtr &func_impl) {
   MS_EXCEPTION_IF_NULL(input);
@@ -77,22 +80,6 @@ ValuePtrList PaddingGradientInput(const ValuePtr &grad, size_t output_size, size
     }
   }
   return gradients;
-}
-
-VectorRef GeneratePythonArgs(const OpGradInfoPtr &op_grad_info, const PrimitivePyPtr &prim) {
-  VectorRef args;
-  size_t input_size = op_grad_info->input_value.size() - op_grad_info->weight_size;
-  if (PyNativeAlgo::Common::IsHookNeedSaveInputs(prim)) {
-    for (size_t i = 0; i < input_size; ++i) {
-      (void)args.emplace_back(op_grad_info->input_value[i]);
-    }
-    // If we not need recompute, we save output.
-    if (!op_grad_info->is_need_recompute) {
-      // Hook op can not execute high order now, so we just shallow copy to avoid circle ref.
-      (void)args.emplace_back(AutoGradUtil::ShallowCopyAndDetach(op_grad_info->out_value));
-    }
-  }
-  return args;
 }
 
 abstract::AbstractBasePtr GenerateFlattenAbs(const ValuePtrList &flatten_values) {
@@ -189,20 +176,55 @@ bool IsValidTensorInput(const ValuePtr &v) {
   return v->isa<tensor::Tensor>() || v->isa<tensor::MetaSparseTensor>();
 }
 
-NodePtrList GenerateNodeInputs(const OpGradInfoPtr &op_grad_info, const FuncBuilderPtr &emitter) {
-  NodePtrList node_inputs;
-  node_inputs.resize(op_grad_info->input_value.size() + kSizeTwo);
+ValuePtrList GenerateSavedInputValues(const OpGradInfoPtr &op_grad_info) {
+  ValuePtrList saved_inputs;
+  saved_inputs.reserve(op_grad_info->input_value.size());
   for (size_t i = 0; i < op_grad_info->input_value.size(); ++i) {
     auto input = op_grad_info->input_value[i];
     if (op_grad_info->clone_value != nullptr && i == kIndex0) {
-      // Replace input with clone value.
-      // Copy auto grad meta data to avoid need_compute_output flag error.
       input = op_grad_info->clone_value;
     }
-    auto func_node = emitter->NewFuncNode(input, op_grad_info->input_abs[i], op_grad_info->input_value_grad_type[i]);
-    node_inputs[i] = func_node;
+
+    if (input->isa<ValueSequence>()) {
+      auto values = input->cast<ValueSequencePtr>()->value();
+      // tuple[int]
+      if (values.empty() || !values[0]->isa<Tensor>()) {
+        saved_inputs.emplace_back(input);
+        continue;
+      }
+    }
+    saved_inputs.emplace_back(ValueToSavedValue(input, i, false));
   }
-  return node_inputs;
+  return saved_inputs;
+}
+
+ValuePtr GenerateSavedOutputValue(const ValuePtr &output_value) {
+  if (output_value->isa<Tensor>()) {
+    return ValueToSavedValue(output_value, kIndex0, true);
+  }
+
+  if (output_value->isa<ValueSequence>()) {
+    auto values = output_value->cast<ValueSequencePtr>()->value();
+    ValuePtrList saved_outputs;
+    saved_outputs.reserve(values.size());
+    for (size_t i = 0; i < values.size(); ++i) {
+      saved_outputs.emplace_back(ValueToSavedValue(values[i], i, true));
+    }
+    if (output_value->isa<ValueTuple>()) {
+      return std::make_shared<ValueTuple>(saved_outputs);
+    }
+    return std::make_shared<ValueList>(saved_outputs);
+  }
+
+  if (output_value->isa<ValueDictionary>()) {
+    auto &key_value = output_value->cast<ValueDictionaryPtr>()->value();
+    std::vector<std::pair<ValuePtr, ValuePtr>> res;
+    res.reserve(key_value.size());
+    for (size_t i = 0; i < key_value.size(); i++) {
+      res.emplace_back(key_value[i].first, ValueToSavedValue(key_value[i].second, i, true));
+    }
+  }
+  return output_value;
 }
 
 void RunCppTensorHook(const BackwardNodePtr &grad_node, ValuePtrList *grad_in) {
@@ -268,6 +290,9 @@ void ReleaseResource(const BackwardNodePtr &grad_node) {
     runtime::Pipeline::Get().backend_stage()->Push(std::make_shared<BpropTask>(task));
   } else {
     grad_node->Release();
+  }
+  if (!grad_node->IsLeaf()) {
+    grad_node->SetReleased(true);
   }
 }
 
@@ -358,62 +383,7 @@ void UpdateVersion(const OpGradInfoPtr &op_grad_info, const ValuePtrList &flatte
   }
 }
 
-void BuildCheckVersionFunc(const OpGradInfoPtr &op_grad_info, const BackwardNodePtr &func,
-                           const std::vector<ValuePtr> &flatten_inputs, const std::vector<ValuePtr> &flatten_outputs) {
-  std::vector<uint32_t> version_attr;
-  std::vector<std::pair<size_t, tensor::Version>> version_with_index;
-  auto total_size = flatten_inputs.size() + flatten_outputs.size();
-  version_attr.reserve(total_size);
-  version_with_index.reserve(total_size);
-  for (size_t i = 0; i < flatten_inputs.size(); ++i) {
-    const auto &input = flatten_inputs[i];
-    if (input->isa<tensor::Tensor>()) {
-      const auto flatten_tensor = input->cast<tensor::TensorPtr>();
-      if (flatten_tensor->used_in_bprop_graph()) {
-        (void)version_with_index.emplace_back(std::make_pair(i, flatten_tensor->version()));
-        (void)version_attr.emplace_back(flatten_tensor->version().current_version());
-      }
-    }
-  }
-  // We need update version after update next edges, to avoid update variable of inputs.
-  // We need collect version of inputs and outputs separately,
-  // to avoid that x *= x scene, which not detected.
-  UpdateVersion(op_grad_info, flatten_outputs);
-  size_t input_size = version_with_index.size();
-  for (size_t i = 0; i < flatten_outputs.size(); ++i) {
-    const auto &output = flatten_outputs[i];
-    if (output->isa<tensor::Tensor>()) {
-      const auto flatten_tensor = output->cast<tensor::TensorPtr>();
-      if (flatten_tensor->used_in_bprop_graph()) {
-        (void)version_with_index.emplace_back(std::make_pair(i, flatten_tensor->version()));
-        (void)version_attr.emplace_back(flatten_tensor->version().current_version());
-      }
-    }
-  }
-  std::function<void(const std::string &op_name)> check_version_func =
-    [inputs = std::move(version_with_index), versions = std::move(version_attr),
-     input_size](const std::string &func_name) -> void {
-    for (size_t i = 0; i < input_size; ++i) {
-      if (inputs[i].second.current_version() != versions[i]) {
-        MS_LOG(EXCEPTION)
-          << "The " << inputs[i].first << " 's input of " << func_name
-          << " has been modified by an inplace operation, which will cause the gradient error, please check your "
-             "inplace operator in code.";
-      }
-    }
-    for (size_t i = input_size; i < inputs.size(); ++i) {
-      if (inputs[i].second.current_version() != versions[i]) {
-        MS_LOG(EXCEPTION)
-          << "The " << inputs[i].first << " 's output of " << func_name
-          << " has been modified by an inplace operation, which will cause the gradient error, please check your "
-             "inplace operator in code.";
-      }
-    }
-  };
-  func->set_check_func(check_version_func);
-}
-
-SavedNodePtr ConstructPlaceHolder(const tensor::TensorPtr &output) {
+TensorPtr ConstructPlaceHolder(const tensor::TensorPtr &output) {
   auto place_holder = std::make_shared<tensor::Tensor>(*output);
   place_holder->set_device_address(nullptr);
   if (output->storage_info() != nullptr) {
@@ -421,7 +391,7 @@ SavedNodePtr ConstructPlaceHolder(const tensor::TensorPtr &output) {
   }
   place_holder->set_used_in_bprop_graph(false);
   place_holder->set_auto_grad_meta_data(nullptr);
-  return std::make_shared<SavedNode>(place_holder, nullptr, false, true);
+  return place_holder;
 }
 
 // When executing mul->expand_dims->inplace_copy which triggers inplace view operations,
@@ -648,6 +618,66 @@ tensor::TensorPtr GenerateUniqueGradTensor(const tensor::TensorPtr &grad_tensor)
   }
   return unique_tensor;
 }
+
+void ProcessFuncBackwardNode(const PrimitivePtr &prim, const expander::bprop::BpropBuilderFunc &func,
+                             const ValuePtrList &flatten_inputs, const OpGradInfoPtr &op_grad_info,
+                             const ValuePtrList &flatten_outputs) {
+  auto grad_node = BuildFuncBackwardNode(prim, func, flatten_inputs, op_grad_info, flatten_outputs.size());
+  auto saved_inputs = GenerateSavedInputValues(op_grad_info);
+  grad_node->SetSavedInputs(saved_inputs);
+
+  // We need update version after update next edges, to avoid update variable of inputs.
+  // We need collect version of inputs and outputs separately,
+  // to avoid that x *= x scene, which not detected.
+  UpdateVersion(op_grad_info, flatten_outputs);
+
+  ValuePtr saved_output;
+  if (op_grad_info->operator_type != OperatorType::kInplaceOp) {
+    SetVariable(flatten_outputs, grad_node);
+    saved_output = GenerateSavedOutputValue(op_grad_info->out_value);
+  } else {
+    CheckInplace(op_grad_info);
+    auto output_tensor = op_grad_info->out_value->cast<tensor::TensorPtr>();
+    MS_EXCEPTION_IF_NULL(output_tensor);
+    RebaseVariable(op_grad_info, grad_node, output_tensor, kIndex0);
+    MS_EXCEPTION_IF_NULL(grad_node);
+    bool is_view_inplace = impl::GetViewAutogradMetaImpl(output_tensor) != nullptr;
+    saved_output = ValueToSavedValue(output_tensor, kIndex0, true, is_view_inplace);
+  }
+  grad_node->SetSavedOutput(saved_output);
+}
+
+void ProcessCustomBackwardNode(const PrimitivePtr &prim, const ValuePtrList &flatten_inputs,
+                               const OpGradInfoPtr &op_grad_info, const ValuePtrList &flatten_outputs) {
+  auto grad_node = BuildCustomBackwardNode(prim, flatten_inputs, op_grad_info, flatten_outputs.size());
+  UpdateVersion(op_grad_info, flatten_outputs);
+  SetVariable(flatten_outputs, grad_node);
+  if (autograd::isa<HookBackwardNode>(grad_node)) {
+    const auto &custom_grad_node = std::dynamic_pointer_cast<HookBackwardNode>(grad_node);
+    ValuePtrList args;
+    size_t input_size = op_grad_info->input_value.size() - op_grad_info->weight_size;
+    for (size_t i = 0; i < input_size; ++i) {
+      (void)args.emplace_back(ValueToSavedValue(op_grad_info->input_value[i], i, false));
+    }
+    // If we not need recompute, we save output.
+    if (!op_grad_info->is_need_recompute) {
+      // Hook op can not execute high order now, so we just shallow copy to avoid circle ref.
+      (void)args.emplace_back(GenerateSavedOutputValue(op_grad_info->out_value));
+    }
+    custom_grad_node->SetSavedValues(std::move(args));
+  }
+}
+
+void ProcessHookBackwardNode(const PrimitivePtr &prim, const ValuePtrList &flatten_inputs,
+                             const OpGradInfoPtr &op_grad_info, const ValuePtrList &flatten_outputs) {
+  op_grad_info->out_abs = GenerateFlattenAbs(flatten_outputs);
+  auto grad_node = BuildHookBackwardNode(prim, flatten_inputs, op_grad_info, flatten_outputs.size());
+  if (IsPrimitiveEquals(prim, prim::kPrimCellBackwardHook)) {
+    op_grad_info->operator_type = OperatorType::kViewOp;
+    UpdateVersion(op_grad_info, flatten_outputs);
+  }
+  SetVariableCustom(flatten_inputs, flatten_outputs, grad_node);
+}
 }  // namespace
 
 void KPynativeOp(const GradParamPtr &grad_param) {
@@ -664,41 +694,19 @@ void KPynativeOp(const GradParamPtr &grad_param) {
     return;
   }
   auto flatten_inputs = CommonUtils::FlattenTensorSeqInValueSeq(grad_param->op_grad_info->input_value);
-  BackwardNodePtr fn = nullptr;
-  size_t flatten_output_size = flatten_outputs.size();
   bool is_custom_prim =
     IsPrimitiveEquals(prim, prim::kPrimHookBackward) || IsPrimitiveEquals(prim, prim::kPrimCellBackwardHook);
   if (!is_custom_prim) {
     auto handle = expander::bprop::BpropIRBuilderFactory::Instance().GetBuilder(prim->name());
     if (handle != nullptr) {
-      fn = BuildFuncBackwardNode(prim, handle->func, flatten_inputs, grad_param->op_grad_info, flatten_output_size);
+      ProcessFuncBackwardNode(prim, handle->func, flatten_inputs, grad_param->op_grad_info, flatten_outputs);
     } else {
-      fn = BuildCustomBackwardNode(prim, flatten_inputs, grad_param->op_grad_info, flatten_output_size);
+      ProcessCustomBackwardNode(prim, flatten_inputs, grad_param->op_grad_info, flatten_outputs);
     }
   } else {
-    grad_param->op_grad_info->out_abs = GenerateFlattenAbs(flatten_outputs);
-    fn = BuildHookBackwardNode(prim, flatten_inputs, grad_param->op_grad_info, flatten_output_size);
+    ProcessHookBackwardNode(prim, flatten_inputs, grad_param->op_grad_info, flatten_outputs);
   }
-  if (is_custom_prim) {
-    SetVariableCustom(flatten_inputs, flatten_outputs, fn);
-    ClearMetaInfofPlaceHolder(flatten_inputs);
-    return;
-  }
-  // Custom hook no need build check func
-  BuildCheckVersionFunc(grad_param->op_grad_info, fn, flatten_inputs, flatten_outputs);
-  if (grad_param->op_grad_info->operator_type != OperatorType::kInplaceOp) {
-    SetVariable(flatten_outputs, fn);
-  } else {
-    CheckInplace(grad_param->op_grad_info);
-    auto output_tensor = grad_param->op_grad_info->out_value->cast<tensor::TensorPtr>();
-    MS_EXCEPTION_IF_NULL(output_tensor);
-    RebaseVariable(grad_param->op_grad_info, fn, output_tensor, kIndex0);
-    if (impl::GetViewAutogradMetaImpl(output_tensor) != nullptr) {
-      auto grad_node = std::static_pointer_cast<FuncBackwardNode>(fn);
-      MS_EXCEPTION_IF_NULL(grad_node);
-      grad_node->set_saved_output(SavedNode::ConstructSavedNode(output_tensor, true));
-    }
-  }
+
   ClearMetaInfofPlaceHolder(flatten_inputs);
 }
 
@@ -718,7 +726,7 @@ void CallCustomBprop(const CustomContext &context) {
     MS_LOG(DEBUG) << "The custom bprop no need grad!";
     return;
   }
-  BackwardNodePtr custom_fn;
+  std::shared_ptr<CustomBackward> custom_fn;
   AutoGradUtil::CheckRecomputeInputs(context.inputs, context.is_recompute);
   auto flatten_inputs = CommonUtils::FlattenTensorSeqInValueSeq(context.inputs);
   auto flatten_outputs = CommonUtils::FlattenOnlyTensor(context.output);
@@ -726,17 +734,30 @@ void CallCustomBprop(const CustomContext &context) {
   auto input_meta = GenerateInputsMeta(flatten_inputs);
   {
     py::gil_scoped_acquire gil;
-    py::list bprop_inputs = context.original_inputs.cast<py::list>();
-    SavedNodePtr saved_output = nullptr;
-    if (!context.is_recompute) {
-      saved_output = SavedNode::ConstructSavedNode(context.output);
-    }
-    custom_fn = BackwardNode::Create<CustomBackward>("CellCustomBackward", context.bprop_fn, bprop_inputs, saved_output,
-                                                     std::move(input_meta), GenerateFlattenAbs(flatten_outputs),
-                                                     context.is_recompute, flatten_outputs.size());
+    custom_fn = BackwardNode::Create<CustomBackward>("CellCustomBackward", context.bprop_fn, std::move(input_meta),
+                                                     GenerateFlattenAbs(flatten_outputs), context.is_recompute,
+                                                     flatten_outputs.size());
   }
   UpdateNextEdges(custom_fn, flatten_inputs);
   SetVariable(flatten_outputs, custom_fn);
+  ValuePtrList saved_values;
+  const size_t input_len = context.inputs.size() - context.weight_size;
+  const auto &used_input_set = context.used_inputs_set;
+  for (size_t i = 0; i < input_len; i++) {
+    if (!used_input_set.empty() && used_input_set.count(static_cast<int64_t>(i)) == 0) {
+      saved_values.emplace_back(kNone);
+    } else {
+      saved_values.emplace_back(ValueToSavedValue(context.inputs[i], i, false));
+    }
+  }
+  if (!context.is_recompute) {
+    if (!used_input_set.empty() && used_input_set.count(static_cast<int64_t>(input_len)) == 0) {
+      saved_values.emplace_back(kNone);
+    } else {
+      saved_values.emplace_back(GenerateSavedOutputValue(context.output));
+    }
+  }
+  custom_fn->SetSavedValues(saved_values);
   ClearMetaInfofPlaceHolder(flatten_inputs);
   MS_LOG(DEBUG) << "End update next edge for custom bprop, " << custom_fn->ToString();
 }
@@ -770,17 +791,21 @@ BackwardNodePtr SafeGetGradNodeImpl(const tensor::TensorPtr &tensor) {
   auto strided_value = MakeValue(tensor->storage_info()->strides);
   auto offset_value = MakeValue(tensor->storage_info()->storage_offset);
   // Here we can not set base() as input, it may cause reference cycle.
-  auto base_node = emitter->NewFuncNode(CommonUtils::ShallowCopyAndDetach(view_meta->view_info().base()), nullptr,
-                                        InputType::kOpOutput);
-  auto shape_node = emitter->NewFuncNode(shape_value, nullptr, InputType::kConstant);
-  auto strided_node = emitter->NewFuncNode(strided_value, nullptr, InputType::kConstant);
-  auto offset_node = emitter->NewFuncNode(offset_value, nullptr, InputType::kConstant);
-  // Tow placeholder for out and dout.
-  NodePtrList inputs_node{base_node, shape_node, strided_node, offset_node, nullptr, nullptr};
-  mindspore::HashMap<std::string, ValuePtr> attrs;
+  auto base_value = CommonUtils::ShallowCopyAndDetach(view_meta->view_info().base());
+  ValuePtrList saved_inputs = {base_value, shape_value, strided_value, offset_value};
+  std::vector<InputType> inputs_type = {InputType::kOpOutput, InputType::kConstant, InputType::kConstant,
+                                        InputType::kConstant};
+  std::vector<AbstractBasePtr> inputs_abs;
+  inputs_abs.reserve(saved_inputs.size());
+  std::transform(saved_inputs.begin(), saved_inputs.end(), std::back_inserter(inputs_abs),
+                 [](const ValuePtr &v) { return v->ToAbstract(); });
+
+  HashMap<std::string, ValuePtr> attrs;
   auto saved_output = ConstructPlaceHolder(tensor);
-  auto fn = BackwardNode::Create<FuncBackwardNode>("AsStrided", handle->func, emitter, attrs, inputs_node, saved_output,
-                                                   nullptr, 1);
+  auto fn = BackwardNode::Create<FuncBackwardNode>("AsStrided", handle->func, emitter, attrs, inputs_abs, inputs_type,
+                                                   nullptr, kIndex1);
+  fn->SetSavedInputs(saved_inputs);
+  fn->SetSavedOutput(saved_output);
   if (view_meta->retains_grad()) {
     const auto &old_grad_node = view_meta->UnsafeGetGradNodeImpl();
     MS_EXCEPTION_IF_NULL(old_grad_node);
@@ -896,11 +921,8 @@ ValuePtrList FuncBackwardNode::CallBackward(const ValuePtrList &gradients_in) {
   runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kPynative, runtime::ProfilerEvent::kRunExpanderFunc,
                                      name(), false);
   MS_LOG(DEBUG) << "Begin CallBackward: " << name();
-  if (check_func_ != nullptr) {
-    check_func_(name());
-  }
-  PreProcess(gradients_in, emitter_);
-  emitter_->SetInputs(name(), &node_inputs_, &attrs_);
+  auto node_inputs = PreProcess(gradients_in, emitter_);
+  emitter_->SetInputs(name(), &node_inputs, &attrs_);
   const std::vector<NodePtr> cal_grads_node = grad_func()(emitter_.get());
   ValuePtrList cal_grads_values;
   cal_grads_values.reserve(cal_grads_node.size());
@@ -912,32 +934,30 @@ ValuePtrList FuncBackwardNode::CallBackward(const ValuePtrList &gradients_in) {
                          }
                          return node->Value();
                        });
-  // Set nullptr to avoid reference cycle.
-  node_inputs_[node_inputs_.size() - kSizeOne] = nullptr;
-  node_inputs_[node_inputs_.size() - kSizeTwo] = nullptr;
+  emitter_->ResetInputs();
   auto gradients = PostProcess(cal_grads_values);
   MS_LOG(DEBUG) << "End CallBackward: " << name();
   return gradients;
 }
 
-void FuncBackwardNode::PreProcess(const ValuePtrList &dout, const FuncBuilderPtr &emitter) {
-  // The flag of need compute grad should set after pruning graph, because we know whether input of network
-  // need grad in grad interface.
-  MS_EXCEPTION_IF_CHECK_FAIL(saved_output_ != nullptr, kCallBackwradTwiceErr);
+NodePtrList FuncBackwardNode::PreProcess(const ValuePtrList &dout, const FuncBuilderPtr &emitter) {
+  NodePtrList expander_input_nodes;
+  expander_input_nodes.resize(saved_inputs_.size() + kSizeTwo);
+
   int32_t index = 0;
-  for (size_t i = 0; i < node_inputs_.size() - kSizeTwo; ++i) {
-    auto value = node_inputs_[i]->Value();
-    auto func_node = std::dynamic_pointer_cast<expander::FuncNode>(node_inputs_[i]);
-    MS_EXCEPTION_IF_NULL(func_node);
+  // ops inputs
+  for (size_t i = 0; i < saved_inputs_.size(); ++i) {
+    auto recover_value = SavedValueToValue(saved_inputs_[i], shared_from_this());
+    auto func_node = emitter->NewFuncNode(recover_value, inputs_abs_[i], input_value_grad_type_[i]);
     if (MS_UNLIKELY(index >= static_cast<int32_t>(next_edges().size()))) {
       MS_LOG(EXCEPTION) << "Index should be less than next edges size, but got " << index + 1 << " vs "
                         << next_edges().size();
     }
     bool is_need_grad = false;
-    if (!value->isa<ValueSequence>()) {
+    if (!recover_value->isa<ValueSequence>()) {
       is_need_grad = impl::CurrentAutoDiffEngine()->IsInExecGraph(next_edges()[index++].grad_node);
     } else {
-      auto seq = value->cast<ValueSequencePtr>();
+      auto seq = recover_value->cast<ValueSequencePtr>();
       if (!seq->value().empty() && seq->value()[0]->isa<tensor::Tensor>()) {
         auto begin_index = index;
         index += static_cast<int32_t>(seq->value().size());
@@ -949,15 +969,23 @@ void FuncBackwardNode::PreProcess(const ValuePtrList &dout, const FuncBuilderPtr
       }
     }
     func_node->set_need_compute_grad_out(is_need_grad);
+    expander_input_nodes[i] = func_node;
   }
-  auto op_output = saved_output_->Unwrap(shared_from_this());
-  node_inputs_[node_inputs_.size() - kSizeTwo] = emitter->NewFuncNode(op_output, out_abs_, InputType::kOpOutput);
-  if (dout.size() == kSizeOne && !op_output->isa<ValueSequence>()) {
-    node_inputs_[node_inputs_.size() - kSizeOne] = emitter->NewFuncNode(dout[kIndex0], out_abs_, InputType::kOpOutput);
+
+  // ops outputs
+  auto recover_output = SavedValueToValue(saved_output_, shared_from_this());
+  expander_input_nodes[expander_input_nodes.size() - kSizeTwo] =
+    emitter->NewFuncNode(recover_output, out_abs_, InputType::kOpOutput);
+
+  // ops dout
+  if (dout.size() == kSizeOne && !recover_output->isa<ValueSequence>()) {
+    expander_input_nodes[expander_input_nodes.size() - kSizeOne] =
+      emitter->NewFuncNode(dout[kIndex0], out_abs_, InputType::kOpOutput);
   } else {
-    node_inputs_[node_inputs_.size() - kSizeOne] =
+    expander_input_nodes[expander_input_nodes.size() - kSizeOne] =
       emitter->NewFuncNode(std::make_shared<ValueTuple>(dout), out_abs_, InputType::kOpOutput);
   }
+  return expander_input_nodes;
 }
 
 ValuePtrList FuncBackwardNode::PostProcess(const ValuePtrList &gradient_value) {
@@ -966,13 +994,8 @@ ValuePtrList FuncBackwardNode::PostProcess(const ValuePtrList &gradient_value) {
 }
 
 void FuncBackwardNode::Release() {
-  for (size_t i = 0; i < node_inputs_.size() - kSizeTwo; ++i) {
-    const auto &node = node_inputs_[i];
-    MS_EXCEPTION_IF_NULL(node);
-    node->SetValue(nullptr);
-  }
-  check_func_ = nullptr;
-  saved_output_ = nullptr;
+  saved_inputs_.clear();
+  saved_output_.reset();
 }
 
 ValuePtrList HookBackwardNode::CallBackward(const ValuePtrList &grads) {
@@ -987,9 +1010,10 @@ ValuePtrList HookBackwardNode::CallBackward(const ValuePtrList &grads) {
   if (name_ != ops::kNameCellBackwardHook) {
     gradient = func_builder.FillZeros(gradient, out_abstract_);
   }
-  (void)args_.emplace_back(gradient);
+  auto input_args = SavedValueListToValueList(saved_values_, shared_from_this());
+  (void)input_args.emplace_back(gradient);
   py::gil_scoped_acquire gil_acquire;
-  auto out = RunHookFunction(prim_, args_);
+  auto out = RunHookFunction(prim_, input_args);
   ValuePtrList gradient_values;
   if (utils::isa<PyObjectRef>(out)) {
     PyObjectRef py_ref = utils::cast<PyObjectRef>(out);
@@ -1006,10 +1030,9 @@ ValuePtrList HookBackwardNode::CallBackward(const ValuePtrList &grads) {
 }
 
 void HookBackwardNode::Release() {
+  saved_values_.clear();
   py::gil_scoped_acquire gil;
   prim_ = nullptr;
-  args_.clear();
-  check_func_ = nullptr;
 }
 
 ValuePtrList GraphBackwardNode::CallBackward(const ValuePtrList &grads) {
@@ -1161,10 +1184,7 @@ ValuePtrList CopySliceNode::CallBackwardImpl(const NodePtr &grad_node) {
   return grad_inputs;
 }
 
-void CopySliceNode::Release() {
-  inplace_func_ = nullptr;
-  check_func_ = nullptr;
-}
+void CopySliceNode::Release() { inplace_func_ = nullptr; }
 
 void CallCustomPyFunction(const std::shared_ptr<FunctionContext> &context) {
   MS_LOG(DEBUG) << "Begin Call CallCustomPyFunction";
@@ -1173,7 +1193,8 @@ void CallCustomPyFunction(const std::shared_ptr<FunctionContext> &context) {
   custom_fn->SetOutAbstract(out_abstract);
   ProcessForwardOutput(context->flatten_outputs, context->input_base_tensors, context->dirty_tensors,
                        context->non_diff_tensors, context->inputs, context->input_value_grad_type, custom_fn);
-
+  auto saved_tensors = GenerateCustomSavedTensor(context->to_save_tensors, context->dirty_tensors, custom_fn);
+  custom_fn->SetSavedTensors(saved_tensors);
   MS_LOG(DEBUG) << "End Call CallCustomPyFunction, " << custom_fn->ToString();
 }
 
@@ -1223,16 +1244,15 @@ tensor::TensorPtrList SearchUnusedParameters(const tensor::TensorPtrList &output
   return unused_params;
 }
 
-BackwardNodePtr BuildFuncBackwardNode(const PrimitivePtr &prim, const expander::bprop::BpropBuilderFunc &func,
-                                      const ValuePtrList &flatten_inputs, const OpGradInfoPtr &op_grad_info,
-                                      size_t flatten_output_size) {
+FuncBackwardNodePtr BuildFuncBackwardNode(const PrimitivePtr &prim, const expander::bprop::BpropBuilderFunc &func,
+                                          const ValuePtrList &flatten_inputs, const OpGradInfoPtr &op_grad_info,
+                                          size_t flatten_output_size) {
   AutoGradUtil::CheckAndSetAbstract(op_grad_info);
   const auto &device_target = DeviceManagerConf::GetInstance()->device_type();
   auto emitter = std::make_shared<FuncBuilder>(prim->name(), device_target, nullptr);
-  auto node_inputs = GenerateNodeInputs(op_grad_info, emitter);
-  auto saved_output = SavedNode::ConstructSavedNode(op_grad_info->out_value);
-  auto fn = BackwardNode::Create<FuncBackwardNode>(prim->name(), func, emitter, prim->attrs(), node_inputs,
-                                                   saved_output, op_grad_info->out_abs, flatten_output_size);
+  auto fn = BackwardNode::Create<FuncBackwardNode>(prim->name(), func, emitter, prim->attrs(), op_grad_info->input_abs,
+                                                   op_grad_info->input_value_grad_type, op_grad_info->out_abs,
+                                                   flatten_output_size);
   UpdateNextEdges(fn, flatten_inputs);
   return fn;
 }
@@ -1266,10 +1286,8 @@ BackwardNodePtr BuildHookBackwardNode(const PrimitivePtr &prim, const ValuePtrLi
                                       const OpGradInfoPtr &op_grad_info, size_t flatten_output_size) {
   MS_EXCEPTION_IF_NULL(prim);
   auto bprop_cut = AutoGradUtil::BuildBpropCutPrim(prim, op_grad_info->is_need_recompute);
-  VectorRef args = GeneratePythonArgs(op_grad_info, bprop_cut);
   // Out abs used for fill zeros, which need be flatten like output.
-  auto fn = BackwardNode::Create<HookBackwardNode>(prim->name(), bprop_cut, std::move(args), flatten_output_size,
-                                                   op_grad_info->out_abs);
+  auto fn = BackwardNode::Create<HookBackwardNode>(prim->name(), bprop_cut, flatten_output_size, op_grad_info->out_abs);
   UpdateNextEdges(fn, flatten_inputs);
   return fn;
 }
@@ -1660,6 +1678,7 @@ void AutoDiff::BackPropagate() {
     auto fn = queue.top();
     queue.pop();
     MS_LOG(DEBUG) << "Begin calculate op: " << fn->UniqueId() << " gradients!";
+    MS_EXCEPTION_IF_CHECK_FAIL(!fn->IsReleased(), kCallBackwradTwiceErr);
     auto ctx_iter = gradient_contexts_.find(fn.get());
     if (!gradient_contexts_.empty() && ctx_iter == gradient_contexts_.end()) {
       MS_LOG(DEBUG) << "No need grad, grad fn is: " << fn->ToString();

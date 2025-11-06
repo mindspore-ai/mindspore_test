@@ -1435,6 +1435,11 @@ void FuncBuilder::SetInputs(std::string instance_name, const std::vector<NodePtr
   attrs_ptr_ = attrs_ptr;
 }
 
+void FuncBuilder::ResetInputs() {
+  inputs_ptr_ = nullptr;
+  attrs_ptr_ = nullptr;
+}
+
 NodePtrList FuncBuilder::FlattenNode(const NodePtr &input) {
   if (!input->Value()->isa<ValueSequence>()) {
     return {input};

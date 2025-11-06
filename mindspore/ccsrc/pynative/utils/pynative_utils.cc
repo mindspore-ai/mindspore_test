@@ -456,15 +456,10 @@ void Common::SetOutputUsedInBpropGraph(const ValuePtr &value) {
   }
 }
 
-ValuePtr Common::CreateFakeValueWithoutDeviceAddress(const ValuePtr &value, bool is_force_create_fake) {
+ValuePtr Common::CreateFakeValueWithoutDeviceAddress(const ValuePtr &value) {
   MS_EXCEPTION_IF_NULL(value);
   if (value->isa<tensor::Tensor>()) {
     const auto &v_t = value->cast<tensor::TensorPtr>();
-    // If the tensor used in bprop graph, no need create fake value
-    if (!is_force_create_fake && v_t->is_parameter()) {
-      return value;
-    }
-
     auto t = std::make_shared<tensor::Tensor>(*v_t);
     if (v_t->is_parameter()) {
       t->set_param_info(v_t->param_info());

@@ -383,6 +383,7 @@ class FuncBuilder : public BpropBuilder {
   ValuePtr Add(const ValuePtr &input, const ValuePtr &other);
   void SetInputs(std::string instance_name, const std::vector<NodePtr> *inputs,
                  mindspore::HashMap<std::string, ValuePtr> *attrs_ptr);
+  void ResetInputs();
   ValuePtr FillZeros(const ValuePtr &value, const abstract::AbstractBasePtr &abs);
 
  private:

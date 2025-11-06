@@ -555,6 +555,22 @@
         返回：
             一个句柄，可以通过调用 `handle.remove()` 来移除已添加的钩子。
 
+    .. py:method:: register_saved_tensors_hooks(pack_hook, unpack_hook)
+
+        注册用于处理保存张量（Saved Tensor）的打包（pack）和解包（unpack）钩子函数。
+
+        其作用范围限定在 :func:`mindspore.nn.Cell.construct` 内，更多使用说明请参考 :class:`mindspore.saved_tensors_hooks` 。
+
+        参数：
+            - `pack_hook` (Callable) - 定义前向计算保存张量时的处理方法，即“打包逻辑”。
+            - `unpack_hook` (Callable) - 定义反向计算恢复张量时的处理方法，即“解包逻辑”。
+
+        返回：
+            `None` 。
+
+        .. note::
+            当前该方法在 `Graph` 模式与 `Jit` 模式下不支持。
+
     .. py:method:: register_state_dict_post_hook(hook)
 
         为 :func:`mindspore.nn.Cell.state_dict` 方法注册一个后钩子。

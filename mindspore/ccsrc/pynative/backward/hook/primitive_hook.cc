@@ -18,6 +18,7 @@
 #include <memory>
 #include <string>
 #include "include/utils/primitive_utils.h"
+#include "include/utils/tensor_py.h"
 #include "pynative/utils/pynative_execute.h"
 
 namespace mindspore {
@@ -128,8 +129,8 @@ BaseRef RunVariableHookFunction(const PrimitivePyPtr &self, const py::tuple &py_
   return std::make_shared<PyObjectRef>(grad_output);
 }
 
-BaseRef RunHookFunction(const PrimitivePyPtr &self, const VectorRef &args) {
-  py::tuple py_args = ConvertDatatoPyTuple(args);
+BaseRef RunHookFunction(const PrimitivePyPtr &self, const ValuePtrList &args) {
+  py::tuple py_args = py::reinterpret_steal<py::tuple>(tensor::Wrap(args));
   MS_LOG(DEBUG) << "Get input args size " << py_args.size() << ", args are " << ConvertPyObjToString(py_args);
   BaseRef res;
   try {
