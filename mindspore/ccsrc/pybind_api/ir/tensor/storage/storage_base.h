@@ -20,7 +20,7 @@
 #include <string>
 #include <memory>
 #include <unordered_map>
-#include "ir/device_address.h"
+#include "device_address/device_address.h"
 
 namespace mindspore {
 class StorageBase {

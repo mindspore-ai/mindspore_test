@@ -29,7 +29,7 @@
 #include "tools/profiler/profiler.h"
 #include "actor/actormgr.h"
 #include "async/async.h"
-#include "ir/device_address.h"
+#include "device_address/device_address.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/utils/anfalgo.h"
 #include "include/utils/parallel_context.h"

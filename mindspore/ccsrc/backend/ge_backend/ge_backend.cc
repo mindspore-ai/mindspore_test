@@ -32,7 +32,7 @@
 #include "include/utils/callback.h"
 #include "include/utils/config_manager.h"
 #include "include/utils/convert_utils.h"
-#include "ir/device_address.h"
+#include "device_address/device_address.h"
 #include "tools/profiler/profiling.h"
 #include "tools/profiler/profiler.h"
 #include "utils/log_adapter.h"

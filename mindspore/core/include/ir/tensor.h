@@ -27,7 +27,7 @@
 #include <utility>
 #include <algorithm>
 #include <iomanip>
-#include "ir/device_address.h"
+#include "device_address/device_address.h"
 #include "ir/meta_tensor.h"
 #include "ir/device_type.h"
 #include "utils/log_adapter.h"

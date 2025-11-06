@@ -24,7 +24,7 @@
 #include <string>
 #include <unordered_map>
 #include "include/runtime/memory/mem_pool/dynamic_mem_pool.h"
-#include "ir/device_address.h"
+#include "device_address/device_address.h"
 #include "runtime/hardware_abstract/visible.h"
 
 namespace mindspore {

@@ -29,7 +29,7 @@
 #include "include/runtime/hardware_abstract/kernel_base/oplib/opinfo.h"
 #include "runtime/hardware_abstract/kernel_base/graph_fusion/kash/kernel_pack.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_build_info.h"
-#include "ir/device_address.h"
+#include "device_address/device_address.h"
 #include "ops/base_operator.h"
 #include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
 #include "runtime/hardware_abstract/visible.h"

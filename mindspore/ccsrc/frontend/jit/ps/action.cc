@@ -35,7 +35,7 @@
 #include "ir/func_graph_cloner.h"
 #include "ir/param_info.h"
 #include "ir/cell.h"
-#include "ir/device_address.h"
+#include "device_address/device_address.h"
 #include "include/utils/pynative/grad_state.h"
 #include "include/backend/py_execute_utils.h"
 #include "include/utils/python_adapter.h"

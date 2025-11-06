@@ -30,7 +30,7 @@
 #include "ir/func_graph.h"
 #include "ir/anf.h"
 #include "ir/device_type.h"
-#include "ir/device_address.h"
+#include "device_address/device_address.h"
 #include "backend/backend_manager/backend_jit_config.h"
 #include "include/backend/visible.h"
 
@@ -467,12 +467,12 @@ class BACKEND_COMMON_EXPORT KernelGraph : public FuncGraph {
     }
   }
 
-  const mindspore::HashMap<CNodePtr, std::vector<std::pair<CNodePtr, CNodePtr>>>
-    &send_recv_pairs_for_parallel_op_inputs() const {
+  const mindspore::HashMap<CNodePtr, std::vector<std::pair<CNodePtr, CNodePtr>>> &
+  send_recv_pairs_for_parallel_op_inputs() const {
     return send_recv_pairs_for_parallel_op_inputs_;
   }
-  const mindspore::HashMap<CNodePtr, std::vector<std::pair<CNodePtr, CNodePtr>>>
-    &send_recv_pairs_for_parallel_op_outputs() const {
+  const mindspore::HashMap<CNodePtr, std::vector<std::pair<CNodePtr, CNodePtr>>> &
+  send_recv_pairs_for_parallel_op_outputs() const {
     return send_recv_pairs_for_parallel_op_outputs_;
   }
 

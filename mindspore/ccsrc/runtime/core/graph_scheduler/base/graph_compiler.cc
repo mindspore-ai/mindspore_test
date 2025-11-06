@@ -25,7 +25,7 @@
 #include <utility>
 #include "include/runtime/core/graph_scheduler/base/graph_scheduler.h"
 #include "backend/common/device_address_utils.h"
-#include "ir/device_address.h"
+#include "device_address/device_address.h"
 #include "include/utils/convert_utils.h"
 #include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel_flags.h"
 #include "backend/common/pass_manager/common_backend_optimization.h"

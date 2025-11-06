@@ -22,7 +22,7 @@
 #include <utility>
 #include "include/runtime/hardware_abstract/kernel_base/kernel_build_info.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel.h"
-#include "ir/device_address.h"
+#include "device_address/device_address.h"
 #include "runtime/hardware_abstract/visible.h"
 
 namespace mindspore {

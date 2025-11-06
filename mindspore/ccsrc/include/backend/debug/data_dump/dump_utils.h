@@ -24,7 +24,7 @@
 
 #include "include/backend/kernel_graph.h"
 #include "include/utils/contract.h"
-#include "ir/device_address.h"
+#include "device_address/device_address.h"
 
 using DeviceTensor = mindspore::device::DeviceAddress;
 using DeviceTensorPtr = std::shared_ptr<DeviceTensor>;
