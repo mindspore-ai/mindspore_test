@@ -25,6 +25,7 @@ void RegisterOpPluginKernels() {
   for (const auto &op_name : op_names) {
     Factory<CustomOpPluginCpuKernelMod>::Instance().Register(
       op_name, []() { return std::make_shared<CustomOpPluginCpuKernelMod>(); });
+    MS_LOG(INFO) << "Register op plugin kernel: " << op_name;
   }
 }
 REGISTER_COMMON_CALLBACK(RegisterOpPluginKernels);

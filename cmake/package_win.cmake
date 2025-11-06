@@ -310,6 +310,14 @@ install(
   COMPONENT mindspore
 )
 
+## op plugin header file
+install(
+    DIRECTORY ${CMAKE_SOURCE_DIR}/mindspore/ops/kernel/cpu/custom/kernel_mod_impl
+    DESTINATION ${INSTALL_BASE_DIR}/include/mindspore/ops/kernel/cpu/custom/
+    COMPONENT mindspore
+    FILES_MATCHING PATTERN "*.h"
+)
+
 ## config files
 install(
         FILES ${CMAKE_SOURCE_DIR}/config/op_info.config

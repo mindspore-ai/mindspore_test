@@ -19,7 +19,6 @@
 
 #include <string>
 #include <vector>
-#include "include/runtime/hardware_abstract/kernel_base/kernel_tensor.h"
 
 namespace mindspore {
 class CustomKernelData {
@@ -68,40 +67,6 @@ class KernelInputInfo {
 
  private:
   CustomKernelData *kernel_data_{nullptr};
-};
-
-class KernelInputInfoImpl : public KernelInputInfo {
- public:
-  KernelInputInfoImpl() = default;
-  virtual ~KernelInputInfoImpl() = default;
-  void SetKernelInput(const std::vector<kernel::KernelTensor *> &inputs) { inputs_ = inputs; }
-  size_t GetInputSize() { return inputs_.size(); }
-  bool IsScalarInput(size_t idx) final { return inputs_[idx]->type_id() != TypeId::kObjectTypeTensorType; }
-
-  bool GetBoolInput(size_t idx) { return inputs_[idx]->GetValueWithCheck<bool>(); }
-
-  int64_t GetIntInput(size_t idx) { return inputs_[idx]->GetValueWithCheck<int64_t>(); }
-
-  float GetFloatInput(size_t idx) { return inputs_[idx]->GetValueWithCheck<float>(); }
-
-  std::string GetStrInput(size_t idx) { return inputs_[idx]->GetValueWithCheck<std::string>(); }
-
-  std::vector<int64_t> GetIntVecInput(size_t idx) { return inputs_[idx]->GetValueWithCheck<std::vector<int64_t>>(); }
-
-  std::vector<float> GetFloatVecInput(size_t idx) { return inputs_[idx]->GetValueWithCheck<std::vector<float>>(); }
-
-  std::vector<std::vector<int64_t>> GetInt2DVecInput(size_t idx) {
-    return inputs_[idx]->GetValueWithCheck<std::vector<std::vector<int64_t>>>();
-  }
-
-  std::vector<std::vector<float>> GetFloat2DVecInput(size_t idx) {
-    return inputs_[idx]->GetValueWithCheck<std::vector<std::vector<float>>>();
-  }
-
-  int GetInputTypeId(size_t idx) { return static_cast<int>(inputs_[idx]->dtype_id()); }
-
- private:
-  std::vector<kernel::KernelTensor *> inputs_;
 };
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_CPU_KERNEL_CUSTOM_CUSTOM_KERNEL_INPUT_INFO_H_
