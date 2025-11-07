@@ -279,33 +279,3 @@ def test_qwen3_dp8mp1pp1op():
         check_log(log_path, check_pair)
     check_peak_memory(log_path, "61277")
     check_compile_time(log_path, 15)
-
-
-def test_qwen3_dp2mp4pp2vpp4op_1f1b_mte():
-    """
-    Feature: test qwen3_cell_dp2mp4pp2vpp4op_1f1b_mte
-    Description: test qwen3_cell_dp2mp4pp2vpp4op_1f1b_mte
-    Expectation: st pass
-    """
-    os.environ["MS_ENABLE_LCCL"] = "on"
-    case_name = "qwen3_cell_dp2mp4pp2vpp4op_1f1b_mte"
-    rank_list = "0,8"
-    # wait for fixing
-    qwen3_config = LLMConfig(case_name, data_parallel=2, model_parallel=4, pipeline_stage=2,
-                             micro_batch_num=2, batch_size=1, pp_interleave_num=4,
-                             pipeline_interleave=True, pipeline_scheduler="1f1b",
-                             num_layers=8, recompute=False, use_seq_parallel=True,
-                             parallel_speed_up_json={
-                                 'enable_grad_comm_opt': 'false',
-                                 'enable_opt_shard_comm_opt': 'false',
-                                 'compute_communicate_fusion_level': 3})
-    output_file, file_path = prepare_testcase_env(case_name, qwen3_config)
-    sh_path = os.path.split(os.path.realpath(__file__))[0]
-    os.system(f"bash {sh_path}/run_llm_dryrun.sh 16 {rank_list} {file_path} {output_file} {case_name} pp")
-    check_pair = {"Training Over": 1}
-    real_log_path = log_path_preprocess(output_file, rank_list, case_name)
-    for log_path in real_log_path:
-        check_log(log_path, check_pair)
-        check_compile_time(log_path, 15)
-    check_peak_memory(real_log_path[0], "13497")
-    check_peak_memory(real_log_path[1], "16878")

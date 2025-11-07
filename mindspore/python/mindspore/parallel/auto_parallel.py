@@ -160,7 +160,7 @@ class AutoParallel(Cell):
     """
 
     def __init__(self, network, parallel_mode="semi_auto"):
-        super(AutoParallel, self).__init__(auto_prefix=False)
+        super().__init__(auto_prefix=False)
         self.network = network
 
         if parallel_mode not in ["semi_auto", "sharding_propagation", "recursive_programming"]:
@@ -194,7 +194,7 @@ class AutoParallel(Cell):
         self._pipeline_interleave = False
         self._pipeline_scheduler = "1f1b"
 
-        self._comm_fusion_config = dict()
+        self._comm_fusion_config = {}
 
         self._force_fp32_communication = False
         self._enable_alltoall = True
@@ -209,7 +209,7 @@ class AutoParallel(Cell):
         self._gradient_fp32_sync = True
         self._loss_repeated_mean = True
 
-        self._memory_offload_config = dict()
+        self._memory_offload_config = {}
         self._transformer_opt_config = None
 
     def no_init_parameters_in_compile(self):
@@ -699,11 +699,6 @@ class AutoParallel(Cell):
                   - 2: Apply fusion to backward nodes.
 
                   - 3: Apply fusion to all nodes.
-
-                  .. warning::
-                      After setting ``export MS_ENABLE_LCCL=on``, the fusion operator based on memory semantics will be
-                      used. Please note that this operator is still in an experimental stage and may be changed or
-                      removed in the future.
 
                 - dataset_broadcast_opt_level (int): Optimize the scenario that the dataset repeated reading. Only
                   support O0/O1 jit level. It doesn't work in O2 mode. Default: ``0``.
