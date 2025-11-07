@@ -632,12 +632,16 @@ class _JitExecutor:
 
     def _predict(self, *args, **kwargs):
         """Dedicated routine for predict."""
-        if not hasattr(self.obj, "phase"):
+        # check infer_boost instead check model phase to run infer mode
+        # the phaes check condition will delete in the next version
+        is_infer = self.jit_config_dict["infer_boost"] == "on"
+
+        if not is_infer and not hasattr(self.obj, "phase"):
             return False, None
 
         predict_vailid_phase = {"prefill", 'increment'}
         predict_phase = self.obj.phase
-        if predict_phase not in predict_vailid_phase:
+        if not is_infer and predict_phase not in predict_vailid_phase:
             return False, None
 
         args_list = args
