@@ -584,7 +584,7 @@ class Conv3d(_Conv):
             and width of the convolution kernel respectively.
         stride (Union[int, tuple[int], list[int]], optional): The movement stride of the 3D convolution kernel.
             The data type is an integer or a tuple/list of three integers. An integer represents the movement step size
-            in both height and width directions. A tuple/list of three integers represents the movement step size in the
+            in depth, height and width directions. A tuple/list of three integers represents the movement step size in the
             depth, height and width directions respectively. Default: ``1`` .
         padding (Union[int, tuple[int], list[int], str], optional): The number of padding
             on the depth, height and width directions of the input.
@@ -593,14 +593,14 @@ class Conv3d(_Conv):
 
             - ``"same"``: Pad the input around its edges so that the shape of input and output
               are the same when `stride` is set to ``1``.
-              The amount of padding to is calculated by the operator internally, If the amount is even, it is
+              The amount of padding is calculated by the operator internally. If the amount is even, it is
               uniformly distributed around the input, if it is odd, the excess amount goes to the right/bottom side.
 
             - ``"valid"``: No padding is applied to the input, and the output returns the maximum
-              possible height and width. Extra pixels that could not complete a full stride will
+              possible depth, height and width. Extra pixels that could not complete a full stride will
               be discarded.
 
-        dilation (Union[int, tuple[int], list[int]], optional): Controlling the space between the kernel points.
+        dilation (Union[int, tuple[int], list[int]], optional): Controlling the spacing between the kernel elements.
             Default: ``1`` .
         groups (int, optional): Splits filter into groups, `in_channels` and `out_channels` must be
             divisible by `groups`. If the groups is equal to `in_channels` and `out_channels`,
@@ -613,7 +613,7 @@ class Conv3d(_Conv):
             - :math:`(\text{weight[1]} = C_{in} / \text{groups})`
 
         bias (bool, optional): Whether the Conv3d layer has a bias parameter. Default: ``True`` .
-        padding_mode (str, optional): Specifies the padding mode with a padding value of 0. It can be set to:
+        padding_mode (str, optional): Specifies the padding mode, the padding value is 0. It can be set to:
             ``"zeros"`` , ``"reflect"`` or ``"replicate"`` . Default: ``"zeros"`` .
         dtype (:class:`mindspore.dtype`, optional): Dtype of Parameters. Default: ``None``, using ``mstype.float32``.
 
@@ -622,7 +622,7 @@ class Conv3d(_Conv):
           :math:`(C_{out}, C_{in} / \text{groups}, \text{kernel_size[0]},
           \text{kernel_size[1]}, \text{kernel_size[2]})`.
         - **bias** (Tensor) - The bias of the convolution layer, with shape
-          :math:`(C_{out})`. If bias is False, this will be None.
+          :math:`(C_{out})`. If `bias` is ``False``, this will be ``None``.
 
     Inputs:
         - **input** (Tensor) - Tensor of shape :math:`(N, C_{in}, D_{in}, H_{in}, W_{in})` \
@@ -666,8 +666,6 @@ class Conv3d(_Conv):
             \end{array}
 
     Raises:
-        TypeError: If `in_channels`, `out_channels` or `groups` is not an int.
-        TypeError: If `kernel_size`, `stride` or `dilation` is neither an int nor a tuple/list.
         ValueError: If `in_channels`, `out_channels`, `kernel_size`, `stride` or `dilation` is less than 1.
         ValueError: If `padding` is less than 0.
 
@@ -676,10 +674,9 @@ class Conv3d(_Conv):
 
     Examples:
         >>> import mindspore
-        >>> from mindspore import Tensor, mint
         >>> import numpy as np
-        >>> net = mint.nn.Conv3d(120, 10, 4)
-        >>> x = Tensor(np.ones([1, 120, 10, 23, 34]), mindspore.float32)
+        >>> net = mindspore.mint.nn.Conv3d(120, 10, 4)
+        >>> x = mindspore.Tensor(np.ones([1, 120, 10, 23, 34]), mindspore.float32)
         >>> output = net(x).shape
         >>> print(output)
         (1, 10, 7, 20, 31)
