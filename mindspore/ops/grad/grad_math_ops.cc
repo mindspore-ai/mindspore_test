@@ -3454,7 +3454,7 @@ REG_BPROP_BUILDER("Ceil").SetUnusedInputs({i0, i1, i2}).SetBody(ReturnZeros);
 REG_BPROP_BUILDER("Square").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(i0);
   auto dout = ib->GetInput(i2);
-  auto dx = dout * ib->Emit("Muls", {x, ib->Value<float>(2.0)});
+  auto dx = dout * ib->Emit("Muls", {ib->Emit("PowTensorScalar", {x, ib->Value<int64_t>(1)}), ib->Value<int64_t>(2)});
   return {dx};
 });
 
