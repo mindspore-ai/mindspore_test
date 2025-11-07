@@ -545,7 +545,7 @@ class OpsFactory():
         Returns:
             list: Outputs per dynamic-shape sample.
         """
-        op_net = self._op_net_class_no_kwargs(self.op_func_grad)
+        op_net = self._op_net_class_no_kwargs(self.op)
 
         compile_input = self._dynamic_inputs.op_compile_input.convert_to_args()
         op_net.set_inputs(*compile_input.op_args)
