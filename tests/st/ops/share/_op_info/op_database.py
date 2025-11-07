@@ -193,10 +193,24 @@ def add_ext_func_grad(x, y, alpha=1):
 def sub_ext_func_grad(x, y, alpha=1):
     return mint.sub(x, y, alpha=alpha)
 
+# wrap tensor method for tanh
+def tensor_tanh_ms(op_input):
+    return op_input.tanh()
+
+def tensor_tanh_torch(op_input):
+    return op_input.tanh()
+
+# wrap nn method for tanh
+def nn_tanh_ms(op_input):
+    return mint.nn.Tanh()(op_input)
+
+def nn_tanh_torch(op_input):
+    return torch.nn.Tanh()(op_input)
+
 # op database
 op_db: Dict[str, OpInfo] = {
-    'add_ext': BinaryOpInfo(
-        name='add_ext',
+    'mint.add': BinaryOpInfo(
+        name='mint.add',
         op=mint.add,
         op_func_grad=add_ext_func_grad,
         ref=torch.add,
@@ -209,8 +223,8 @@ op_db: Dict[str, OpInfo] = {
         op_dynamic_inputs_func=dynamic_inputs_add_sub_ext_func,
         op_error_inputs_func=error_inputs_add_sub_ext_func,
     ),
-    'sub_ext': BinaryOpInfo(
-        name='sub_ext',
+    'mint.sub': BinaryOpInfo(
+        name='mint.sub',
         op=mint.sub,
         op_func_grad=sub_ext_func_grad,
         ref=torch.sub,
@@ -223,15 +237,32 @@ op_db: Dict[str, OpInfo] = {
         op_dynamic_inputs_func=dynamic_inputs_add_sub_ext_func,
         op_error_inputs_func=error_inputs_add_sub_ext_func,
     ),
-    'tanh': UnaryOpInfo(
-        name='tanh',
+    'mint.tanh': UnaryOpInfo(
+        name='mint.tanh',
         op=mint.tanh,
         ref=torch.tanh,
-        tensor_variant=lambda op_input, *op_args, **op_kwargs: op_input.tanh(),
         dtypes_ascend=tuple(d for d in dtypes_as_torch if (not d.is_complex and d != ms.bfloat16 and d != ms.float64)),
         dtypes_ascend910b=tuple(d for d in dtypes_as_torch if (not d.is_complex and d != ms.float64)),
         #dtypes_cpu=tuple(d for d in dtypes_as_torch if (d.is_floating_point or d.is_complex) and d != ms.bfloat16),
         #dtypes_gpu=tuple(d for d in dtypes_as_torch if (d.is_floating_point or d.is_complex) and d != ms.bfloat16),
+        dtypes_cpu=(),
+        dtypes_gpu=(),
+    ),
+    'Tensor.tanh': UnaryOpInfo(
+        name='Tensor.tanh',
+        op=tensor_tanh_ms,
+        ref=tensor_tanh_torch,
+        dtypes_ascend=tuple(d for d in dtypes_as_torch if (not d.is_complex and d != ms.bfloat16 and d != ms.float64)),
+        dtypes_ascend910b=tuple(d for d in dtypes_as_torch if (not d.is_complex and d != ms.float64)),
+        dtypes_cpu=(),
+        dtypes_gpu=(),
+    ),
+    'mint.nn.Tanh': UnaryOpInfo(
+        name='mint.nn.Tanh',
+        op=nn_tanh_ms,
+        ref=nn_tanh_torch,
+        dtypes_ascend=tuple(d for d in dtypes_as_torch if (not d.is_complex and d != ms.bfloat16 and d != ms.float64)),
+        dtypes_ascend910b=tuple(d for d in dtypes_as_torch if (not d.is_complex and d != ms.float64)),
         dtypes_cpu=(),
         dtypes_gpu=(),
     ),
@@ -240,12 +271,14 @@ op_db: Dict[str, OpInfo] = {
 all_op_db = list(op_db.keys())
 
 binary_op_db = [
-    'add_ext',
-    'sub_ext',
+    'mint.add',
+    'mint.sub',
 ]
 
 unary_op_db = [
-    'tanh',
+    'mint.tanh',
+    'Tensor.tanh',
+    'mint.nn.Tanh',
 ]
 
 def get_op_info(op_name: str, *, op_database: Optional[Dict[str, OpInfo]] = None) -> OpInfo:
