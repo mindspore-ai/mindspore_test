@@ -266,7 +266,8 @@ Status Tensor::CreateFromPythonObject(const py::object &obj, std::shared_ptr<Ten
     (*out)->python_dict_ = obj;
 
     // serialize python object to bytes which used by dataset independent process mode
-    (*out)->python_dict_as_str_ = py::str(py::module::import("pickle").attr("dumps")((*out)->python_dict_));
+    (*out)->python_dict_as_str_ =
+      py::cast<std::string>(py::module::import("pickle").attr("dumps")((*out)->python_dict_));
     (*out)->data_ = reinterpret_cast<unsigned char *>((*out)->python_dict_as_str_.data());
     (*out)->data_end_ = (*out)->data_ + (*out)->python_dict_as_str_.length();
   }
