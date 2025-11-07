@@ -738,6 +738,9 @@ void Resource::GetCompileCacheResource(const py::list &compile_cache_dep_files, 
     }
   }
   func_graph_ = compile_cache_manager_->GetCachedFuncGraph(manager_, weights, queue_name);
+  if (func_graph_ != nullptr) {
+    set_is_load(true);
+  }
   layout_map_ = compile_cache_manager_->layout_map();
 }
 

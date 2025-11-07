@@ -272,8 +272,16 @@ bool Jit::GetJitGradGraph(const pipeline::ResourcePtr &resource, const std::stri
   MS_EXCEPTION_IF_NULL(resource);
   auto jit_forward_graph = resource->func_graph();
   MS_EXCEPTION_IF_NULL(jit_forward_graph);
-  auto primal_fg = BasicClone(jit_forward_graph);
   bool is_control_flow = PyNativeAlgo::Common::IsControlFlowGraph(jit_forward_graph);
+  // Set jit compile info
+  jit_compile_info_[graph_phase_] = JitCompileInfo();
+  jit_compile_info_[graph_phase_].is_control_flow_ = is_control_flow;
+  jit_compile_info_[graph_phase_].is_dynamic_shape_ = IsGraphDynamic(jit_forward_graph);
+  if (resource->is_load()) {
+    MS_LOG(DEBUG) << "Compile cache is loaded, skip grad graph generation.";
+    return true;
+  }
+  auto primal_fg = BasicClone(jit_forward_graph, true);
 
   // Get top cell recompute flag
   py::object input = resource->source_input();
@@ -296,10 +304,6 @@ bool Jit::GetJitGradGraph(const pipeline::ResourcePtr &resource, const std::stri
   auto actual_primal_graph = primal_fg_iter->second.func_graph();
   graph_executor->SetJitPrimalFuncGraph(actual_primal_graph, graph_phase_);
   graph_executor->SetJitGradGraph(grad_graph, graph_phase_);
-  // Set jit compile info
-  jit_compile_info_[graph_phase_] = JitCompileInfo();
-  jit_compile_info_[graph_phase_].is_control_flow_ = is_control_flow;
-  jit_compile_info_[graph_phase_].is_dynamic_shape_ = IsGraphDynamic(jit_forward_graph);
   CommonUtils::DumpGraphIR("jit_modify_before_forward_graph.ir", jit_forward_graph);
   MS_LOG(DEBUG) << "Func graph is control flow: " << jit_compile_info_[graph_phase_].is_control_flow_
                 << " , is dynamic shape: " << jit_compile_info_[graph_phase_].is_dynamic_shape_;
@@ -340,9 +344,14 @@ py::object Jit::GradJit(const py::args &args) {
   CommonUtils::DumpGraphIR("jit_forward_graph.ir", jit_forward_graph);
   // Get grad graph after adgrad
   auto jit_grad_graph = executor->GetJitGradGraph(graph_phase_);
-  MS_EXCEPTION_IF_NULL(jit_grad_graph);
   // Get primal graph
   auto jit_primal_graph = executor->GetJitPrimalFuncGraph(graph_phase_);
+
+  auto graphs = ad::CacheFuncGraphBeforeOpt(jit_grad_graph, jit_primal_graph);
+
+  jit_grad_graph = graphs.first;
+  jit_primal_graph = graphs.second;
+  MS_EXCEPTION_IF_NULL(jit_grad_graph);
   MS_EXCEPTION_IF_NULL(jit_primal_graph);
 
   py::object ret;

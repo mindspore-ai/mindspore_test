@@ -25,6 +25,7 @@
 #include "ir/tensor.h"
 #include "pynative/utils/base.h"
 #include "include/utils/pynative/variable.h"
+#include "frontend/jit/ps/compile_cache_manager.h"
 
 namespace mindspore {
 namespace ad {
@@ -97,6 +98,8 @@ void UpdateNextEdge(std::vector<pynative::autograd::Edge> *next_edges, const Fun
                     const VectorRef &args);
 std::pair<std::vector<bool>, int> CollectFilterMsg(const VectorRef &added_args, const FuncGraphPtr &func_graph);
 std::vector<bool> GetNeedGradIndexes(const VectorRef &args);
+FRONTEND_EXPORT std::pair<FuncGraphPtr, FuncGraphPtr> CacheFuncGraphBeforeOpt(const FuncGraphPtr &jit_grad_graph,
+                                                                              const FuncGraphPtr &jit_primal_graph);
 }  // namespace ad
 }  // namespace mindspore
 

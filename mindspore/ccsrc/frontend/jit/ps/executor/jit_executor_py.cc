@@ -30,6 +30,7 @@
 #include "include/utils/fallback.h"
 #include "include/utils/compile_cache_context.h"
 #include "backend/backend_manager/backend_manager.h"
+#include "include/utils/pynative/grad_state.h"
 
 namespace mindspore {
 namespace pipeline {
@@ -53,6 +54,9 @@ void Optimize(const ResourcePtr &resource, const std::vector<PassItem> &passes) 
   bool already_print_profile = false;
   ProfileExecute(MsProfile::GetProfile(), [&resource, &passes, &already_print_profile]() {
     static const std::string last_compile_action = kValidate;
+    const std::string last_compile_action_for_compile_cache = kBackendPass;
+    static const std::string jit_grad_last_compile_action = kGetJitBpropGraph;
+    bool is_jit_grad = pynative::GradState::Get().RequiresGrad();
     static const auto compile_profile_finish_action = common::GetCompileConfig("COMPILE_PROFILE_FINISH_ACTION");
     size_t counter = 0;
     for (auto &pass : passes) {
@@ -88,11 +92,15 @@ void Optimize(const ResourcePtr &resource, const std::vector<PassItem> &passes) 
       };
       ProfileExecute(profile_context, pass_func);
       ProcessStatus::GetInstance().RecordEnd();
+      if (pass.first == jit_grad_last_compile_action && is_jit_grad) {
+        CacheFuncGraph(resource);
+      } else if (pass.first == last_compile_action_for_compile_cache && !is_jit_grad) {
+        CacheFuncGraph(resource);
+      }
       if (pass.first == kTaskEmit) {
         SetLoopCount(resource);
       } else if (pass.first == last_compile_action) {
         CheckInterpretNodeLineInfos();
-        CacheFuncGraph(resource);
         ResetId(resource);
       } else if (pass.first == kAutoMonadReorder) {
         resource->set_optimize_graph(resource->func_graph());
@@ -304,7 +312,10 @@ void JitExecutorPy::ConvertArgs(const py::tuple &args, const py::dict &kwargs, c
     (void)args_abs.emplace_back(keyword_arg_abs);
     SetHookForArgAbstract(resource, py::cast<py::object>(item.second), value_abs);
   }
-  AddManagerForFuncGraphArgs(resource, arguments);
+  bool init_null = resource->func_graph() == nullptr;
+  if (!resource->EnableCompileCache() || init_null) {
+    AddManagerForFuncGraphArgs(resource, arguments);
+  }
   resource->set_arguments(arguments);
   resource->set_args_abs(args_abs);
   executor_info->arg_list_size = args.size() + kwargs.size();

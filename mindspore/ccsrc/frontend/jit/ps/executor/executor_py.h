@@ -62,7 +62,9 @@ class FRONTEND_EXPORT ExecutorPy : public std::enable_shared_from_this<ExecutorP
   void set_compile_cache_dep_files(const py::list &compile_cache_dep_files) {
     compile_cache_dep_files_ = compile_cache_dep_files;
   }
+  py::list compile_cache_dep_files() const { return compile_cache_dep_files_; }
   void set_weights_values(const py::dict &weights) { weights_ = weights; }
+  py::dict weights() const { return weights_; }
   // Check consistency of two arguments for mapping function graph
   void CheckArgumentsConsistency(const py::tuple &compile_args, const py::tuple &args_list, const py::object &target);
   py::bytes GetFuncGraphProto(const std::string &phase, const std::string &ir_type, const bool &incremental);
@@ -79,6 +81,7 @@ class FRONTEND_EXPORT ExecutorPy : public std::enable_shared_from_this<ExecutorP
   void set_max_call_depth(int32_t max_call_depth) { max_call_depth_ = max_call_depth; }
   const ValuePtrList &real_arguments() const { return real_arguments_; }
   void SetRealArguments(const py::tuple &args, const py::dict &kwargs);
+  bool compile_cache_consistent() const { return compile_cache_consistent_; }
 
  protected:
   virtual bool CompileInner(const py::object &source, const py::tuple &args, const py::dict &kwargs,

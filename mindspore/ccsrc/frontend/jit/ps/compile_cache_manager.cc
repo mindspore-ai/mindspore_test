@@ -118,8 +118,11 @@ std::string GetRole() {
   return "";
 }
 
-std::string GetCompileCachePath(size_t idx) {
-  return GetGraphCacheDir() + "/" + GetRole() + kCompileCacheFileName + "_" + std::to_string(idx) + kMindIrSuffix;
+std::string GetCompileCachePath(const std::string &id_extension, size_t idx) {
+  std::ostringstream oss;
+  oss << GetGraphCacheDir() << "/" << GetRole() << kCompileCacheFileName << "_" << std::to_string(idx) << id_extension
+      << kMindIrSuffix;
+  return oss.str();
 }
 
 std::string GetBackendCompileCachePathWithoutExtension(size_t idx) {
@@ -173,11 +176,11 @@ std::map<string, ValuePtr> GenerateWeightsValueMap(const py::dict &weights) {
   return ret;
 }
 
-std::pair<FuncGraphPtr, LayoutMap> LoadFuncGraphFromMindIR(const py::dict &weights, bool has_parallel_info,
-                                                           size_t idx) {
+std::pair<FuncGraphPtr, LayoutMap> LoadFuncGraphFromMindIR(const py::dict &weights, const std::string &id_extension,
+                                                           bool has_parallel_info, size_t idx) {
   MsProfileStatGuard stat_guard("LoadFuncGraphFromMindIR", "compile_cache", true);
   LayoutMap layout_map;
-  std::string compile_cache_path = GetCompileCachePath(idx);
+  std::string compile_cache_path = GetCompileCachePath(id_extension, idx);
   auto realpath = Common::CreatePrefixPath(compile_cache_path, true);
   if (!realpath.has_value()) {
     MS_LOG(ERROR) << "Get real path of file " << compile_cache_path << " failed.";
@@ -213,8 +216,9 @@ std::pair<FuncGraphPtr, LayoutMap> LoadFuncGraphFromMindIR(const py::dict &weigh
   return std::make_pair(fg, mindir_loader.layout_map());
 }
 
-bool ExportFuncGraphToMindIR(const FuncGraphPtr &fg, const FuncGraphPtr &layout_fg, size_t idx) {
-  std::string compile_cache_path = GetCompileCachePath(idx);
+bool ExportFuncGraphToMindIR(const FuncGraphPtr &fg, const FuncGraphPtr &layout_fg, const std::string &id_extension,
+                             size_t idx) {
+  std::string compile_cache_path = GetCompileCachePath(id_extension, idx);
   auto proto = GenBinaryProto(fg);
   if (proto == nullptr) {
     MS_LOG(ERROR) << "Get binary proto for graph " << fg->ToString() << " failed.";
@@ -370,23 +374,29 @@ std::string CompileCacheManager::GetCachedDataQueueName(const std::string &datas
   return queue_name;
 }
 
-void CompileCacheManager::CacheFuncGraph(const FuncGraphPtr &fg, const FuncGraphPtr &layout_fg) {
+void CompileCacheManager::CacheFuncGraph(const FuncGraphPtr &fg, const FuncGraphPtr &layout_fg, bool cache_hash,
+                                         bool backward_graph) {
   if (fg == nullptr) {
     MS_LOG(ERROR) << "The func_graph to be cached is null.";
     return;
   }
 
-  const auto &queue_name = GetDataQueueName(fg);
-  auto dataset_phase = ConfigManager::GetInstance().dataset_phase();
-  if (!ExportDataQueueName(dataset_phase, queue_name)) {
-    MS_LOG(ERROR) << "Failed to cache data queue name: " << queue_name;
-    return;
+  if (!backward_graph) {
+    const auto &queue_name = GetDataQueueName(fg);
+    auto dataset_phase = ConfigManager::GetInstance().dataset_phase();
+    if (!ExportDataQueueName(dataset_phase, queue_name)) {
+      MS_LOG(ERROR) << "Failed to cache data queue name: " << queue_name;
+      return;
+    }
   }
 
   SetCompileCacheDir(GetCompileCacheDir());
 
-  if (!ExportFuncGraphToMindIR(fg, layout_fg, compile_cache_id_)) {
+  if (!ExportFuncGraphToMindIR(fg, layout_fg, id_extension_, compile_cache_id_)) {
     MS_LOG(ERROR) << "Failed to cache graph: " << fg->ToString();
+    return;
+  }
+  if (!cache_hash) {
     return;
   }
   if (compile_cache_id_ == 0 && !ExportDepFilesHash(compile_cache_dep_files_hash_)) {
@@ -427,7 +437,7 @@ bool CompileCacheManager::CanLoadCache() {
     MS_LOG(WARNING) << "The compilation dependency files are changed.";
     return false;
   }
-  auto compile_cache_path = GetCompileCachePath(compile_cache_id_);
+  auto compile_cache_path = GetCompileCachePath(id_extension_, compile_cache_id_);
   struct stat buffer;
   if (stat(compile_cache_path.c_str(), &buffer) != 0) {
     MS_LOG(WARNING) << "Failed to find cache file, execute all the compilation actions.";
@@ -437,7 +447,7 @@ bool CompileCacheManager::CanLoadCache() {
 }
 
 FuncGraphPtr CompileCacheManager::GetCachedFuncGraph(const FuncGraphManagerPtr &manager, const py::dict &weights,
-                                                     const std::string &queue_name) {
+                                                     const std::string &queue_name, bool backward_graph) {
   // Determine whether to load parallel information.
   std::string parallel_mode = parallel::ParallelContext::GetInstance()->parallel_mode();
   bool has_parallel_info = false;
@@ -450,7 +460,7 @@ FuncGraphPtr CompileCacheManager::GetCachedFuncGraph(const FuncGraphManagerPtr &
     has_parallel_info = true;
   }
   // Load the compilation cache file.
-  auto pair = LoadFuncGraphFromMindIR(weights, has_parallel_info, compile_cache_id_);
+  auto pair = LoadFuncGraphFromMindIR(weights, id_extension_, has_parallel_info, compile_cache_id_);
   if (pair.first == nullptr) {
     MS_LOG(WARNING) << "Failed to load the compilation cache file. Execute all the compilation actions.";
     return nullptr;
@@ -461,24 +471,26 @@ FuncGraphPtr CompileCacheManager::GetCachedFuncGraph(const FuncGraphManagerPtr &
   MS_LOG(WARNING) << "Use the compilation cache and execute the backend actions only. Be aware of correctness risks.";
   FuncGraphManagerPtr mng = fg->manager();
   if (mng == nullptr) {
-    MS_EXCEPTION_IF_NULL(manager);
-    manager->AddFuncGraph(fg);
-    fg->set_manager(manager);
+    auto new_manager = manager == nullptr ? MakeManager({fg}, false) : manager;
+    new_manager->AddFuncGraph(fg);
+    fg->set_manager(new_manager);
   }
-  // The value of attr "shared_name" will changed every time.
-  auto cnodes = fg->GetOrderedCnodes();
-  for (const auto &cnode : cnodes) {
-    auto prim = GetValuePtr<Primitive>(cnode->input(0));
-    if (prim != nullptr && prim->HasAttr("shared_name")) {
-      prim->set_attr("shared_name", MakeValue(queue_name));
-      break;
+  if (!backward_graph) {
+    // The value of attr "shared_name" will changed every time.
+    auto cnodes = fg->GetOrderedCnodes();
+    for (const auto &cnode : cnodes) {
+      auto prim = GetValuePtr<Primitive>(cnode->input(0));
+      if (prim != nullptr && prim->HasAttr("shared_name")) {
+        prim->set_attr("shared_name", MakeValue(queue_name));
+        break;
+      }
     }
   }
 #ifdef ENABLE_DUMP_IR
   auto context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context);
   if (context->CanDump(kIntroductory)) {
-    DumpIR("cache_loaded_graph_" + std::to_string(compile_cache_id_) + ".ir", fg);
+    DumpIR("cache_loaded_graph_" + std::to_string(compile_cache_id_) + id_extension_ + ".ir", fg);
   }
 #endif
   return fg;

@@ -203,6 +203,44 @@ static inline std::pair<mindspore::HashSet<size_t>, mindspore::HashMap<size_t, s
   return {unused_parameter_indexes, only_return_parameter_indexes};
 }
 
+static inline void UpdateAbstractFunctions(const CNodePtr &caller, const CNodePtr &new_caller) {
+  auto origin_abs = caller->abstract();
+  MS_EXCEPTION_IF_NULL(origin_abs);
+  if (IsPrimitiveCNode(caller, prim::kPrimPartial) && origin_abs->isa<abstract::PartialAbstractClosure>()) {
+    auto original_partial_func = origin_abs->cast<abstract::PartialAbstractClosurePtr>();
+    original_partial_func->set_node(new_caller);
+  }
+  const FuncGraphManagerPtr &manager = caller->func_graph()->manager();
+  MS_EXCEPTION_IF_NULL(manager);
+  const auto &node_users = manager->node_users();
+  const auto &iter = node_users.find(caller);
+  if (iter == node_users.end() || iter->second.empty()) {
+    return;
+  }
+  auto &all_users = iter->second;
+  constexpr size_t switch_branch_pos = 2;
+  for (auto &user : all_users) {
+    auto node = user.first;
+    auto index = user.second;
+    MS_EXCEPTION_IF_NULL(node);
+    auto union_abs = node->abstract();
+    if (IsPrimitiveCNode(node, prim::kPrimSwitch) && union_abs->isa<abstract::AbstractFuncUnion>()) {
+      auto func_union_abstract = dyn_cast<abstract::AbstractFuncUnion>(union_abs);
+      const auto &func_list = func_union_abstract->func_list();
+      if (func_list.size() <= index - switch_branch_pos) {
+        MS_LOG(EXCEPTION) << "Func list size: " << func_list.size()
+                          << " is not compatible with function position: " << index - switch_branch_pos;
+      }
+      auto branch_abs = func_list[index - switch_branch_pos];
+      MS_EXCEPTION_IF_NULL(branch_abs);
+      if (branch_abs->isa<abstract::PartialAbstractClosure>()) {
+        auto branch_partial_func = branch_abs->cast<abstract::PartialAbstractClosurePtr>();
+        branch_partial_func->set_node(new_caller);
+      }
+    }
+  }
+}
+
 // Adjust the call arguments of func graph whose parameter's eliminated.
 static inline void AdjustCallerArgs(const FuncGraphPtr &called, const CNodePtr &caller,
                                     const mindspore::HashSet<size_t> &unused_parameter_indexes) {
@@ -244,6 +282,7 @@ static inline void AdjustCallerArgs(const FuncGraphPtr &called, const CNodePtr &
   new_caller->set_primal_attrs(caller->primal_attrs());
   new_caller->set_attrs(caller->attrs());
   new_caller->set_scope(caller->scope());
+  UpdateAbstractFunctions(caller, new_caller);
   new_caller->set_abstract(caller->abstract());
   // Should be done before manager. Replace as caller CNode will be dropped after Replace, the ReplaceInOrder will be
   // no effect.
@@ -309,7 +348,7 @@ class ParameterEliminator {
  public:
   ParameterEliminator() = default;
   virtual ~ParameterEliminator() = default;
-  bool operator()(const FuncGraphPtr &func_graph, const OptimizerPtr &) {
+  bool operator()(const FuncGraphPtr &func_graph, const OptimizerPtr &opt) {
     bool changes = false;
     while (true) {
       const auto &[fg, callers] = SearchFuncGraphCallers(func_graph, eliminate_only_returned_parameter_);
