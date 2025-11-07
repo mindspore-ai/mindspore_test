@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+"""parallel split"""
 
 import time
 import numpy as np
@@ -26,6 +27,7 @@ learning_rate = 0.01
 epochs = 2
 
 class SimpleModel(nn.Cell):
+    """simple model"""
     def __init__(self, batch_size, input_size, output_size):
         super().__init__()
         self.batch_size = batch_size
@@ -46,13 +48,17 @@ def create_dtensor(data, layout):
     return tensor.local_to_global(layout)
 
 
-def run_model(x, model):
+def run_model(x, model, parallel=False):
+    """run model"""
     def forward_fn(data):
         logits = model(data)
         return logits
 
     optimizer = nn.Adam(model.trainable_params(), learning_rate=learning_rate)
-    grad_fn = ms.value_and_grad(forward_fn, None, optimizer.parameters, has_aux=False)
+    if parallel is False:
+        grad_fn = ms.value_and_grad(forward_fn, None, optimizer.parameters, has_aux=False)
+    else:
+        grad_fn = ms.parallel.parallelize_value_and_grad(forward_fn, optimizer.parameters)
 
     ret_loss = None
     ret_grads = None
@@ -69,6 +75,7 @@ def run_model(x, model):
 
 
 def base_case(dp, mp, hsdp_shard_size):
+    """base case"""
     D.init()
 
     # standalone
@@ -106,7 +113,7 @@ def base_case(dp, mp, hsdp_shard_size):
     model = init_parameters(model)
 
     x = create_dtensor(local_x, x_layout)
-    parallel_loss, parallel_grads = run_model(x, model)
+    parallel_loss, parallel_grads = run_model(x, model, parallel=True)
 
     # compare loss
     assert np.allclose(standalone_loss.asnumpy(), parallel_loss.asnumpy(), 0.001, 0.001)

@@ -19,7 +19,7 @@ from mindspore import ops, mint, Parameter
 from mindspore.mint.distributed import isend, irecv, get_global_rank, broadcast, all_reduce
 from mindspore.communication.management import create_group, get_group_size, get_rank
 from mindspore.parallel.spmd.hsdp.hsdp import HSDPCell
-from ._utils import _RecvInfo, send_object, recv_object
+from ._utils import _RecvInfo, send_object, recv_object  # pylint: disable = E0402
 
 
 class SharedParameterInfo:
@@ -99,6 +99,7 @@ class PipelineStage(ABC):
         self._shape_been_communicated = False
         self.fwd_inputs_cache = {}
         self.fwd_outputs_cache = {}
+        self.last_stage_outputs = None
         self.args_recv_info = {}
         self.grad_recv_info = {}
         self.bwd_cache = {}
@@ -305,7 +306,30 @@ class PipelineStage(ABC):
         out_tuple = out if isinstance(out, tuple) else (out,)
         self.fwd_inputs_cache[micro_index] = (composite_args, composite_kwargs)
         self.fwd_outputs_cache[micro_index] = out_tuple
+        if self.is_last_stage:
+            self.last_stage_outputs = out
         return out
+
+    def get_last_stage_sens(self, last_stage_outputs):
+        """Get last stage sens"""
+        p_sens = None
+        if isinstance(last_stage_outputs, (list, tuple)):
+            p_sens = []
+            for _, out_i in enumerate(last_stage_outputs):
+                if out_i.layout is not None:
+                    repeat_num = out_i.layout.repeat_num()
+                    sens_i = ops.fill(ops.DType()(out_i), out_i.local_shape, 1.0 / repeat_num)
+                else:
+                    sens_i = ops.fill(ops.DType()(out_i), out_i.shape, 1.0)
+                p_sens.append(sens_i)
+        else:
+            if last_stage_outputs.layout is not None:
+                repeat_num = last_stage_outputs.layout.repeat_num()
+                p_sens = ops.fill(ops.DType()(last_stage_outputs), last_stage_outputs.local_shape, 1.0 / repeat_num)
+            else:
+                p_sens = ops.fill(ops.DType()(last_stage_outputs), last_stage_outputs.shape, 1.0)
+
+        return p_sens
 
     def backward_one_chunk(self, micro_index, last_backward=False):
         """Execution a backward function."""
@@ -321,7 +345,8 @@ class PipelineStage(ABC):
         if self.is_first_stage:
             grad_out = self._backward_func(*fwd_args, **fwd_kwargs, sens=recv_args)
         elif self.is_last_stage:
-            grad_out = self._backward_func(*fwd_args, **fwd_kwargs)
+            sens = self.get_last_stage_sens(self.last_stage_outputs)
+            grad_out = self._backward_func(*fwd_args, **fwd_kwargs, sens=sens)
         else:
             grad_out = self._backward_func(*fwd_args, **fwd_kwargs, sens=recv_args)
         self._clear_recv_buffer(micro_index)
@@ -422,7 +447,7 @@ class PipelineStage(ABC):
             self._backward_func = ops.GradOperation(get_by_list=True, sens_param=True)(
                 self.submodule, self.submodule.trainable_params())
         elif self.is_last_stage:
-            self._backward_func = ops.GradOperation(get_by_list=True, get_all=True, sens_param=False)(
+            self._backward_func = ops.GradOperation(get_by_list=True, get_all=True, sens_param=True)(
                 self.submodule, self.submodule.trainable_params())
         else:
             self._backward_func = ops.GradOperation(get_by_list=True, get_all=True, sens_param=True)(

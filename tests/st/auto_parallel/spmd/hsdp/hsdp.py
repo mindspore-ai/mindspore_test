@@ -89,7 +89,7 @@ def hsdp_without_accumulate_grad(shard_size, threshold=64, optimizer_level="leve
     net = SlimLeNet()
     hsdp(net, shard_size, threshold, optimizer_level, comm_async=comm_async)
     optimizer = nn.Adam(net.trainable_params(), learning_rate)
-    grad_fn = ms.value_and_grad(get_forward_fn(net), None, net.trainable_params(), has_aux=True)
+    grad_fn = ms.parallel.parallelize_value_and_grad(get_forward_fn(net), net.trainable_params())
     loss_sync_allreduce = ops.AllReduce(ops.ReduceOp.SUM)
     i = 0
     final_loss = 10
@@ -115,7 +115,7 @@ def hsdp_with_accumulate_grad(shard_size, threshold=64, optimizer_level="level1"
     hsdp(net, shard_size, threshold, optimizer_level, enable_grad_accumulation=True, comm_async=comm_async,
          comm_fusion=comm_fusion, bucket_size=bucket_size)
     optimizer = nn.Adam(net.trainable_params(), learning_rate)
-    grad_fn = ms.value_and_grad(get_forward_fn(net), None, net.trainable_params(), has_aux=True)
+    grad_fn = ms.parallel.parallelize_value_and_grad(get_forward_fn(net), net.trainable_params())
     loss_sync_allreduce = ops.AllReduce(ops.ReduceOp.SUM)
     i = 0
     micro_size = local_bs // micro_step

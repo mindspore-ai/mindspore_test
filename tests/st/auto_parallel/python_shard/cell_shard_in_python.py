@@ -13,16 +13,16 @@
 # limitations under the License.
 # ============================================================================
 
-import pytest
+"""cell shard in python"""
 import time
+import pytest
 import numpy as np
 import mindspore as ms
 import mindspore.communication.management as D
 import mindspore.common.dtype as mstype
-from mindspore import nn, Tensor, Parameter
+from mindspore import nn, Tensor, Parameter, ops
 from mindspore.parallel import Layout
 from mindspore.common.initializer import initializer
-import mindspore.ops as ops
 from tests.st.auto_parallel.python_shard.utils import global_to_local, local_to_global
 
 
@@ -60,6 +60,7 @@ class SimpleNet(nn.Cell):
 
 
 class SimpleModel(nn.Cell):
+    """simple model"""
     def __init__(self, input_size, output_size, strategy_list):
         super().__init__()
         self.weight = ms.Parameter(
@@ -126,6 +127,7 @@ def run_scenario(scenario_name, x_layout, x_shape, strategy_list):
 
 
 def run_scenario_with_bprop(x_layout, w_layout, target_layout, strategy_list):
+    """run_scenario_with_bprop"""
     D.init()
     input_size = 256
     output_size = 128
@@ -142,7 +144,7 @@ def run_scenario_with_bprop(x_layout, w_layout, target_layout, strategy_list):
         return loss, logits
 
     optimizer = nn.Adam(model.trainable_params(), learning_rate=learning_rate)
-    grad_fn = ms.value_and_grad(forward_fn, None, optimizer.parameters, has_aux=True)
+    grad_fn = ms.parallel.parallelize_value_and_grad(forward_fn, optimizer.parameters)
     np_x = np.random.randn(batch_size, input_size).astype(np.float32)
     np_target = np.random.randn(batch_size, output_size).astype(np.float32)
     x = create_dtensor(np_x, x_layout)

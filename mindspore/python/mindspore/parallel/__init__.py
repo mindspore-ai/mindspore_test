@@ -23,7 +23,7 @@ from mindspore.parallel.checkpoint_transform import rank_list_for_transform, tra
     merge_sliced_parameter, restore_group_info_list, build_searched_strategy
 from mindspore.parallel.checkpoint_convert import rank_list_for_convert, convert_checkpoint_by_rank, convert_checkpoints
 from mindspore.parallel.parameter_broadcast import parameter_broadcast
-from mindspore.parallel.shard import shard, Layout
+from mindspore.parallel.shard import shard, Layout, parallelize_value_and_grad
 from mindspore.parallel.local_func import custom_shard
 from mindspore.parallel.transform_safetensors import unified_safetensors
 from mindspore.parallel.spmd.hsdp.hsdp import hsdp, hsdp_wait_grad_handle, HSDPCell
@@ -35,4 +35,4 @@ __all__ = ["set_algo_parameters", "reset_algo_parameters", "get_algo_parameters"
            "unified_safetensors", "load_distributed_checkpoint", "merge_sliced_parameter", "restore_group_info_list",
            "build_searched_strategy", "set_op_strategy_config", "rank_list_for_convert",
            "convert_checkpoint_by_rank", "convert_checkpoints", "custom_shard", "hsdp", "hsdp_wait_grad_handle",
-           "HSDPCell", "init_parameters"]
+           "HSDPCell", "init_parameters", "parallelize_value_and_grad"]
