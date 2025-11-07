@@ -18,6 +18,7 @@ import numpy as np
 import torch
 import torch.nn as pynn
 import mindspore as ms
+from mindspore import mint
 from mindspore.ops import composite as C
 from mindspore import nn, Tensor, Parameter, _Function
 from mindspore.nn.optim import Momentum
@@ -513,6 +514,7 @@ def test_check_run_first_order_net():
 
 
 class CustomNet(nn.Cell):
+    """Class for testing requires grad"""
     def __init__(self):
         super().__init__()
         self.p1 = Parameter(Tensor(np.array([1.0], np.float32)), name='p1')
@@ -594,6 +596,7 @@ def test_requires_grad_set_false_in_construct():
     Expectation: Success.
     """
     class TestRequiresGradFalseNet(nn.Cell):
+        """Test requires grad net"""
         def __init__(self):
             super().__init__()
             self.p1 = Parameter(Tensor(2.0, dtype=ms.float32))
@@ -619,6 +622,7 @@ def test_requires_grad_set_true_in_construct():
     Expectation: Success.
     """
     class TestRequiresGradTrueNet(nn.Cell):
+        """Test requires grad true net"""
         def __init__(self):
             super().__init__()
             self.p1 = Parameter(Tensor(2.0, dtype=ms.float32))
@@ -644,6 +648,7 @@ def test_requires_grad_memory_check():
     Expectation: Success.
     """
     class TestRequiresGradMatmulNet(nn.Cell):
+        """Test requires grad matmul net"""
         def __init__(self):
             super().__init__()
             self.p1 = Parameter(Tensor(np.ones((5000, 5000), dtype=np.float32)))
@@ -859,6 +864,7 @@ def test_pynative_temporary_cell_variables():
     Expectation: No exception.
     """
     class Net(nn.Cell):
+        """Test temporary net"""
         def __init__(self):
             super().__init__()
             self.add = ops.Add()
@@ -872,6 +878,7 @@ def test_pynative_temporary_cell_variables():
             return x
 
     class TempCellNet(nn.Cell):
+        """Test temp cell net"""
         def __init__(self):
             super().__init__()
             self.add = ops.Add()
@@ -950,6 +957,26 @@ def test_pynative_grad_func_conv():
     assert np.allclose(torch_input.grad.numpy(), backout[0].asnumpy(), 0.01, 0.01)
 
 
+def test_reduce_scalar():
+    """
+    Feature: reduce scalar.
+    Description: Test auto reduce.
+    Expectation: success.
+    """
+    class SelectCell(nn.Cell):
+        def construct(self, x, y):
+            c = x + y * 2
+            d = c[1][1]
+            return d
+
+    x = Tensor([[3, 3, 3], [3, 3, 3]], ms.float32)
+    y = Tensor([[1, 2, 3], [1, 2, 3]], ms.float32)
+    net = SelectCell()
+    grad_net = C.GradOperation(get_all=True, sens_param=True)
+    sens = Tensor([1.])
+    grad_net(net)(x, y, sens)
+
+
 @arg_mark(plat_marks=['cpu_linux'],
           level_mark='level0',
           card_mark='onecard',
@@ -997,6 +1024,33 @@ def test_all_tests():
     test_pynative_temporary_cell_variables()
     test_pynative_autograd_change_input_shape_in_diff_call()
     test_pynative_grad_func_conv()
+    test_reduce_scalar()
+
+
+@arg_mark(plat_marks=['platform_ascend910b'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
+def test_reduce_grad_modify_output():
+    """
+    Feature: reduce grad.
+    Description: Test auto reduce with modify output.
+    Expectation: success.
+    """
+    class NormalCell(nn.Cell):
+        def construct(self, x, y):
+            c = x + y * 2
+            return c
+
+    x = Tensor([[3, 3, 3], [3, 3, 3]], ms.float32)
+    y = Tensor([[1, 2, 3], [1, 2, 3]], ms.float32)
+    net = NormalCell()
+    net.set_grad()
+    out = net(x, y)
+    out.data = mint.empty([1, 2], dtype=ms.float32)
+    grad_net = C.GradOperation(get_all=True, sens_param=True)
+    sens = Tensor([[[3, 3, 3], [3, 3, 3]]], dtype=ms.float32)
+    grad_net(net)(x, y, sens)
 
 
 @arg_mark(plat_marks=['platform_ascend910b'],

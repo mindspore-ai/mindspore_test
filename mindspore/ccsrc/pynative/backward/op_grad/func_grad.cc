@@ -16,9 +16,13 @@
 
 #include "pynative/backward/op_grad/func_grad.h"
 
+#include <unordered_map>
+#include <unordered_set>
 #include <algorithm>
 #include <iterator>
 #include <memory>
+#include <queue>
+#include <utility>
 #include <string>
 #include <vector>
 #include "ir/graph_utils.h"
@@ -140,32 +144,15 @@ bool IsNeedComputeGrad(const ValuePtr &input) {
   return false;
 }
 
-void SetTensorGradMetaData(const ValuePtr &value, const BackwardNodePtr &grad_node, size_t index) {
-  auto tensor = value->cast<tensor::TensorPtr>();
-  auto auto_grad_meta_data = tensor->auto_grad_meta_data();
-  if (auto_grad_meta_data == nullptr) {
-    MS_LOG(DEBUG) << "Tensor " << tensor->id() << " has no auto_grad_meta_data";
-    auto_grad_meta_data = std::make_shared<AutoGradMetaData>();
-    tensor->set_auto_grad_meta_data(auto_grad_meta_data);
-  }
-  auto_grad_meta_data->set_grad_node(grad_node);
-  auto_grad_meta_data->set_output_index(index);
-}
-
-void SetVariable(const ValuePtrList &flatten_outs, const BackwardNodePtr &grad_node) {
-  for (size_t i = 0; i < flatten_outs.size(); ++i) {
-    if (flatten_outs[i]->isa<tensor::Tensor>()) {
-      SetTensorGradMetaData(flatten_outs[i], grad_node, i);
-    }
-  }
-  MS_LOG(DEBUG) << "End update next edge for " << grad_node->ToString();
-}
-
 void SetVariableCustom(const ValuePtrList &flatten_inputs, const ValuePtrList &flatten_outs,
                        const BackwardNodePtr &grad_node) {
+  grad_node->mutable_metadata().reserve(flatten_outs.size());
   for (size_t i = 0; i < flatten_outs.size(); ++i) {
     if (flatten_outs[i]->isa<tensor::Tensor>() && IsNeedComputeGrad(flatten_inputs[i])) {
-      SetTensorGradMetaData(flatten_outs[i], grad_node, i);
+      auto tensor = flatten_outs[i]->cast<tensor::TensorPtr>();
+      impl::SetTensorGradMetaData(tensor, grad_node, i);
+    } else {
+      grad_node->mutable_metadata().emplace_back();
     }
   }
   MS_LOG(DEBUG) << "End update next edge for " << grad_node->ToString();
@@ -468,7 +455,15 @@ std::vector<TensorMeta> GenerateInputsMeta(const std::vector<ValuePtr> &inputs) 
   for (const auto &val : inputs) {
     if (val->isa<tensor::Tensor>()) {
       const auto tensor = val->cast<tensor::TensorPtr>();
-      (void)input_meta.emplace_back(TensorMeta(tensor->shape(), tensor->Dtype()));
+      auto grad_meta = tensor->auto_grad_meta_data();
+      auto grad_node = autograd::impl::GetUnsafeGradNodeImpl(tensor);
+      if (grad_meta == nullptr || grad_node == nullptr) {
+        (void)input_meta.emplace_back(TensorMeta(tensor->shape(), tensor->Dtype()));
+        continue;
+      }
+      MS_EXCEPTION_IF_CHECK_FAIL(grad_meta->output_index() < grad_node->mutable_metadata().size(),
+                                 "Output index out of range of metadata!");
+      (void)input_meta.emplace_back(grad_node->mutable_metadata()[grad_meta->output_index()]);
     } else {
       (void)input_meta.emplace_back();
     }
@@ -559,7 +554,7 @@ void ProcessForwardOutput(const ValuePtrList &flatten_outputs, const TensorPtrSe
         RebaseVariable(info, grad_node, base_tensor, i);
       } else {
         // For the tensor is input and output, we don't need to make a view for it.
-        SetTensorGradMetaData(flatten_outputs[i], grad_node, i);
+        impl::SetTensorGradMetaData(base_tensor, grad_node, i);
         MS_LOG(DEBUG) << "End update next edge for " << grad_node->ToString();
       }
     }
@@ -633,7 +628,7 @@ void ProcessFuncBackwardNode(const PrimitivePtr &prim, const expander::bprop::Bp
 
   ValuePtr saved_output;
   if (op_grad_info->operator_type != OperatorType::kInplaceOp) {
-    SetVariable(flatten_outputs, grad_node);
+    impl::SetVariable(flatten_outputs, grad_node);
     saved_output = GenerateSavedOutputValue(op_grad_info->out_value);
   } else {
     CheckInplace(op_grad_info);
@@ -651,7 +646,7 @@ void ProcessCustomBackwardNode(const PrimitivePtr &prim, const ValuePtrList &fla
                                const OpGradInfoPtr &op_grad_info, const ValuePtrList &flatten_outputs) {
   auto grad_node = BuildCustomBackwardNode(prim, flatten_inputs, op_grad_info, flatten_outputs.size());
   UpdateVersion(op_grad_info, flatten_outputs);
-  SetVariable(flatten_outputs, grad_node);
+  impl::SetVariable(flatten_outputs, grad_node);
   if (autograd::isa<HookBackwardNode>(grad_node)) {
     const auto &custom_grad_node = std::dynamic_pointer_cast<HookBackwardNode>(grad_node);
     ValuePtrList args;
@@ -715,7 +710,7 @@ bool KPynativeWithFProp(const GradParamPtr &grad_param) {
   MS_LOG(DEBUG) << "Do KPynativeWithFProp";
   auto grad_node = BuildGraphBackwardNode(grad_param);
   ValuePtrList flatten_outputs = CommonUtils::FlattenOnlyTensor(grad_param->op_grad_info->out_value);
-  SetVariable(flatten_outputs, grad_node);
+  impl::SetVariable(flatten_outputs, grad_node);
   MS_LOG(DEBUG) << "End update next edge for " << grad_node->ToString();
   return true;
 }
@@ -731,15 +726,14 @@ void CallCustomBprop(const CustomContext &context) {
   auto flatten_inputs = CommonUtils::FlattenTensorSeqInValueSeq(context.inputs);
   auto flatten_outputs = CommonUtils::FlattenOnlyTensor(context.output);
   UpdateCreationType(flatten_outputs);
-  auto input_meta = GenerateInputsMeta(flatten_inputs);
   {
     py::gil_scoped_acquire gil;
-    custom_fn = BackwardNode::Create<CustomBackward>("CellCustomBackward", context.bprop_fn, std::move(input_meta),
-                                                     GenerateFlattenAbs(flatten_outputs), context.is_recompute,
-                                                     flatten_outputs.size());
+    custom_fn =
+      BackwardNode::Create<CustomBackward>("CellCustomBackward", context.bprop_fn, GenerateFlattenAbs(flatten_outputs),
+                                           context.is_recompute, flatten_outputs.size());
   }
   UpdateNextEdges(custom_fn, flatten_inputs);
-  SetVariable(flatten_outputs, custom_fn);
+  impl::SetVariable(flatten_outputs, custom_fn);
   ValuePtrList saved_values;
   const size_t input_len = context.inputs.size() - context.weight_size;
   const auto &used_input_set = context.used_inputs_set;
@@ -813,6 +807,7 @@ BackwardNodePtr SafeGetGradNodeImpl(const tensor::TensorPtr &tensor) {
   }
   std::vector<ValuePtr> inputs{view_meta->view_info().base(), shape_value, strided_value, offset_value};
   UpdateNextEdges(fn, inputs);
+  fn->add_output_metadata(tensor);
   view_meta->set_grad_node(fn);
   view_meta->set_output_index(kIndex0);
   view_meta->set_version_attr(tensor->version().current_version());
@@ -844,6 +839,7 @@ BackwardNodePtr BuildGraphBackwardNode(const GradParamPtr &grad_param) {
 
 void RebaseVariable(const OpGradInfoPtr &op_grad_info, const BackwardNodePtr &func_node,
                     const tensor::TensorPtr &output_tensor, size_t output_index) {
+  func_node->add_output_metadata(output_tensor);
   auto view_meta = impl::GetViewAutogradMetaImpl(output_tensor);
   if (view_meta != nullptr) {
     MS_LOG(DEBUG) << "Inplace op: " << op_grad_info->op_prim->name()
@@ -1771,25 +1767,21 @@ void AutoDiff::CheckSensShapeAndType(const ValuePtr &sens_gradient) {
   const auto flatten_sens_gradient = CommonUtils::FlattenOnlyTensor(sens_gradient);
   MS_EXCEPTION_IF_CHECK_FAIL(flatten_sens_out_.size() == flatten_sens_gradient.size(),
                              "The given sens gradient's size should be same as out of network!");
+  std::vector<TensorMeta> outputs_meta = GenerateInputsMeta(flatten_sens_out_);
   for (size_t i = 0; i < flatten_sens_out_.size(); ++i) {
-    const auto &out_tensor = flatten_sens_out_[i]->cast<tensor::TensorPtr>();
-    MS_EXCEPTION_IF_NULL(out_tensor);
     const auto &sens_tensor = flatten_sens_gradient[i]->cast<tensor::TensorPtr>();
     MS_EXCEPTION_IF_NULL(sens_tensor);
-    const auto &out_shape = out_tensor->shape();
+    const auto &out_shape = outputs_meta[i].shape();
     const auto &sens_gradient_shape = sens_tensor->shape();
     if (!sens_gradient_shape.empty() && !out_shape.empty()) {
-      if (sens_gradient_shape != out_shape) {
-        MS_EXCEPTION(ValueError) << "The shape should be " << out_shape << ", but got " << sens_gradient_shape << ", "
-                                 << ", sens gradient abs " << sens_tensor->ToAbstract()->ToString() << ", out abs"
-                                 << out_tensor->ToAbstract()->ToString();
+      if (!outputs_meta[i].IsBroadcastTo(sens_gradient_shape)) {
+        MS_EXCEPTION(ValueError) << "The sens shape should be broadcast to" << out_shape << ", but got "
+                                 << sens_gradient_shape;
       }
       const auto &sens_gradient_dtype = sens_tensor->Dtype()->ToString();
-      const auto &out_dtype = out_tensor->Dtype()->ToString();
+      const auto &out_dtype = outputs_meta[i].dtype()->ToString();
       if (sens_gradient_dtype != out_dtype) {
-        MS_EXCEPTION(TypeError) << "The dtype should be " << out_dtype << ", but got " << sens_gradient_dtype << ", "
-                                << ", sens gradient abs " << sens_tensor->ToAbstract()->ToString() << ", out abs"
-                                << out_tensor->ToAbstract()->ToString();
+        MS_EXCEPTION(TypeError) << "The sens dtype should be " << out_dtype << ", but got " << sens_gradient_dtype;
       }
     }
   }
@@ -1811,7 +1803,8 @@ void AutoDiff::BuildGraphRoot(const ValuePtr &sens_gradient, bool has_aux) {
   if (sens_gradient == nullptr) {
     root_gradients_ = OnsLike(flatten_sens_out_);
   } else {
-    root_gradients_ = CommonUtils::FlattenOnlyTensor(sens_gradient);
+    root_gradients_ = AutoGradUtil::AutoCastAndReduce(CommonUtils::FlattenOnlyTensor(sens_gradient),
+                                                      GenerateInputsMeta(flatten_sens_out_));
   }
   if (root_gradients_.size() != flatten_sens_out_.size()) {
     MS_LOG(EXCEPTION) << "Sens size should be same as output, but got" << root_gradients_.size() << " vs "

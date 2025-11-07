@@ -68,25 +68,29 @@ class COMMON_EXPORT SavedNode {
 };
 using SavedNodePtr = std::shared_ptr<SavedNode>;
 
-class TensorDescriptor {
+class COMMON_EXPORT TensorMeta {
  public:
-  TensorDescriptor() = default;
-  TensorDescriptor(std::vector<int64_t> shape, std::vector<int64_t> strides, TypePtr dtype, size_t storage_offset)
+  TensorMeta() : is_default_(true) {}
+  TensorMeta(std::vector<int64_t> shape, TypePtr dtype, std::vector<int64_t> strides = {}, size_t storage_offset = 0)
       : shape_(std::move(shape)),
-        strides_(std::move(strides)),
         dtype_(std::move(dtype)),
+        strides_(std::move(strides)),
         storage_offset_(storage_offset) {}
 
   [[nodiscard]] const std::vector<int64_t> &shape() const { return shape_; }
   [[nodiscard]] const std::vector<int64_t> &strides() const { return strides_; }
   [[nodiscard]] const TypePtr &dtype() const { return dtype_; }
   [[nodiscard]] size_t storage_offset() const { return storage_offset_; }
+  [[nodiscard]] size_t is_default() const { return is_default_; }
+  [[nodiscard]] bool IsBroadcastTo(const ShapeVector &shape) const;
+  [[nodiscard]] bool IsSameShape(const ShapeVector &shape) const;
 
  private:
-  std::vector<int64_t> shape_;
-  std::vector<int64_t> strides_;
-  TypePtr dtype_;
+  std::vector<int64_t> shape_{};
+  TypePtr dtype_{nullptr};
+  std::vector<int64_t> strides_{};
   size_t storage_offset_{0};
+  bool is_default_{false};
 };
 
 class BackwardNode;
@@ -296,6 +300,12 @@ class COMMON_EXPORT BackwardNode : public std::enable_shared_from_this<BackwardN
   /// \brief Add next edges for backward node.
   void add_next_edge(Edge edge) { (void)next_edges_.emplace_back(std::move(edge)); }
 
+  /// \brief return mutable metadata
+  /// \return metadata
+  std::vector<TensorMeta> &mutable_metadata() { return metadata_; }
+
+  /// \brief add metadata of grad node.
+  void add_output_metadata(const tensor::TensorPtr &output);
   /// \brief name of this Node.
   /// \return name
   const std::string &name() const { return name_; }
@@ -353,6 +363,7 @@ class COMMON_EXPORT BackwardNode : public std::enable_shared_from_this<BackwardN
  protected:
   static void CustomDeleter(BackwardNode *grad_node);
   std::vector<Edge> next_edges_;
+  std::vector<TensorMeta> metadata_;
   std::string name_;
   size_t seq_id_;
   size_t output_size_;
@@ -396,6 +407,8 @@ class COMMON_EXPORT AutoDiffGuard {
 };
 
 namespace impl {
+COMMON_EXPORT void SetTensorGradMetaData(const TensorPtr &tensor, const BackwardNodePtr &grad_node, size_t index);
+COMMON_EXPORT void SetVariable(const ValuePtrList &flatten_outs, const BackwardNodePtr &grad_node);
 COMMON_EXPORT AutoGradMetaDataPtr GetAutogradMetaImpl(const tensor::TensorPtr &tensor);
 COMMON_EXPORT AutoGradMetaDataPtr GetAutogradMetaImpl(const tensor::Tensor &tensor);
 COMMON_EXPORT ViewAutoGradMetaDataPtr GetViewAutogradMetaImpl(const tensor::TensorPtr &tensor);

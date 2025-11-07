@@ -34,23 +34,6 @@ namespace mindspore {
 namespace pynative {
 using CallBackFn = std::function<VectorRef(const VectorRef &arg_list)>;
 enum class SpecialType { kZerosLikeType = 0, kOnesLikeType = 1 };
-class TensorMeta {
- public:
-  TensorMeta() : is_default_(true) {}
-  TensorMeta(const ShapeVector &shape, const TypePtr &dtype) : shape_(shape), dtype_(dtype) {}
-  bool IsBroadcastTo(const ShapeVector &shape) const;
-  bool IsSameShape(const ShapeVector &shape) const;
-  tensor::TensorPtr ReduceGrad(const tensor::TensorPtr &grad) const;
-  tensor::TensorPtr Cast(const tensor::TensorPtr &grad) const;
-  bool is_default() const { return is_default_; }
-  const ShapeVector &shape() const { return shape_; }
-  const TypePtr &dtype() const { return dtype_; }
-
- private:
-  ShapeVector shape_{};
-  TypePtr dtype_{nullptr};
-  bool is_default_{false};
-};
 
 class BpropCallback final : public expander::bprop::PynativeCallback {
  public:
@@ -128,6 +111,11 @@ struct AutoGradUtil {
   static TensorPtr ViewAsSelfWithNoGrad(const TensorPtr &self);
   static TensorPtr Add(const TensorPtr &input, const TensorPtr &other);
   static TensorPtr Clone(const TensorPtr &input);
+  static std::vector<autograd::TensorMeta> GenerateInputsMeta(const std::vector<autograd::Edge> &inputs);
+  static ValuePtrList AutoCastAndReduce(const ValuePtrList &gradients,
+                                        const std::vector<autograd::TensorMeta> &inputs_meta);
+  static tensor::TensorPtr ReduceGrad(const tensor::TensorPtr &grad, const std::vector<int64_t> &reduce_shape);
+  static tensor::TensorPtr Cast(const tensor::TensorPtr &grad, const TypePtr &dtype);
 };
 }  // namespace pynative
 }  // namespace mindspore
