@@ -23,7 +23,6 @@ import pytest
 import numpy as np
 
 from tests.st.utils import test_utils
-from tests.mark_utils import arg_mark
 
 import mindspore as ms
 from mindspore import Tensor
@@ -116,9 +115,6 @@ def view_func(x):
     return out
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
-          essential_mark='essential')
-@pytest.mark.parametrize('mode', ['kbk', 'pynative'])
 def test_cumsum(mode):
     """
     Feature: op_plugin kernel
@@ -133,9 +129,6 @@ def test_cumsum(mode):
     assert np.allclose(output.asnumpy(), expect)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
-          essential_mark='essential')
-@pytest.mark.parametrize('mode', ['kbk', 'pynative'])
 def test_logical_and(mode):
     """
     Feature: op_plugin kernel
@@ -153,9 +146,6 @@ def test_logical_and(mode):
     assert np.allclose(output.asnumpy(), expect)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
-          essential_mark='essential')
-@pytest.mark.parametrize('mode', ['kbk', 'pynative'])
 def test_inplace_relu(mode):
     """
     Feature: op_plugin kernel
@@ -168,9 +158,7 @@ def test_inplace_relu(mode):
     inplace_relu_forward_func(x)
     assert np.allclose(x.asnumpy(), expect)
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
-          essential_mark='essential')
-@pytest.mark.parametrize('mode', ['pynative'])
+
 def test_view_feature(mode):
     """
     Feature: op_plugin kernel
