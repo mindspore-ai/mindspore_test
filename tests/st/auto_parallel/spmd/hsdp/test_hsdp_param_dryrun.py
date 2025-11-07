@@ -14,19 +14,20 @@
 # ============================================================================
 """test hsdp param"""
 import os
-from tests.mark_utils import arg_mark
 from mindspore import nn
 from mindspore.parallel import Layout
 from mindspore.nn.utils import no_init_parameters
 from mindspore.communication.management import init
 from mindspore.parallel.spmd.hsdp.hsdp_param import HSDPParam
 from mindspore.parallel.spmd.hsdp.hsdp_utils import OptimizerLevel, HSDPConfig
+from tests.mark_utils import arg_mark
+from tests.st.auto_parallel.spmd.common_net import NetWithScaler
 os.environ["MS_SIMULATION_LEVEL"] = "0"
 os.environ["RANK_SIZE"] = "32"
 os.environ["RANK_ID"] = "9"
 init()
 
-def get_hsdp_param(net):
+def get_hsdp_param(net, param=None):
     """get hsdp param from net"""
     shard_size = 2
     threshold = 1
@@ -34,8 +35,10 @@ def get_hsdp_param(net):
     shard_level = OptimizerLevel.SHARD_OPT
     use_pynative_hook = True
     reduce_dtype = None
+    if param is None:
+        param = net.weight
     hsdp_config = HSDPConfig(shard_size, threshold, requires_acc_grad, shard_level, use_pynative_hook, reduce_dtype)
-    hsdp_param = HSDPParam(net, net.weight.name, net.weight, hsdp_config)
+    hsdp_param = HSDPParam(net, param.name, param, hsdp_config)
     return hsdp_param
 
 @arg_mark(plat_marks=["platform_ascend"], level_mark="level1", card_mark="onecard", essential_mark="essential")
@@ -48,11 +51,29 @@ def test_hsdp_param_to_unsharded():
     in_channels = 256
     out_channels = 64
     net = nn.Dense(in_channels, out_channels, weight_init="ones")
+    hsdp_param = get_hsdp_param(net)
     hsdp_param.to_sharded()
     assert net.weight.local_shape == (32, 256)
     hsdp_param.to_unsharded()
     assert net.weight.local_shape == (64, 256)
 
+@arg_mark(plat_marks=["platform_ascend"], level_mark="level0", card_mark="onecard", essential_mark="essential")
+def test_hsdp_scaler_param():
+    """
+    Feature: hsdp scaler param.
+    Description: scaler param.
+    Expectation: get hsdp scaler param without error.
+    """
+
+    in_channels = 256
+    out_channels = 64
+    net = NetWithScaler(in_channels, out_channels)
+    _ = get_hsdp_param(net, net.scaler)
+    hsdp_param = get_hsdp_param(net, net.dense.weight)
+    hsdp_param.to_sharded()
+    assert net.dense.weight.local_shape == (32, 256)
+    hsdp_param.to_unsharded()
+    assert net.dense.weight.local_shape == (64, 256)
 
 @arg_mark(plat_marks=["platform_ascend"], level_mark="level1", card_mark="onecard", essential_mark="essential")
 def test_hsdp_no_init_param_to_unsharded():
@@ -65,6 +86,7 @@ def test_hsdp_no_init_param_to_unsharded():
     out_channels = 64
     with no_init_parameters():
         net = nn.Dense(in_channels, out_channels, weight_init="ones")
+    hsdp_param = get_hsdp_param(net)
     hsdp_param.to_sharded()
     assert net.weight.local_shape == (32, 256)
     hsdp_param.to_unsharded()
