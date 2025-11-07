@@ -152,7 +152,7 @@ const char info5[] = "Parent process is not alive. Need to release the shm & msg
 
 bool PIDToString(pid_t pid, char *buffer, size_t buffer_size) {
   int num = (int)pid;
-  char temp[buffer_size] = {0};
+  char temp[g_pid_len] = {0};
   int i = 0;
   int j = 0;
 
@@ -261,7 +261,7 @@ void ReleaseShmAndMsg() {
     // Scenario 1: when the independent dataset exit and the main process is still alive, not need to release shm & msg
     // Scenario 2: when the tree_adapter launch Python Workers success, but launch C++ op failed, the status.msg_stime
     //             is not changed. Should release the shm & msg
-    if (g_ppid == g_substr_ppid && kill(std::stoi(g_ppid), 0) == 0) {
+    if (strcmp(g_ppid, g_substr_ppid) == 0 && kill(std::stoi(g_ppid), 0) == 0) {
       // get the msg queue status
       msqid_ds msg_status;
       if (g_msg_id[item.first] != -1 && msgctl(g_msg_id[item.first], IPC_STAT, &msg_status) != 0) {
