@@ -30,7 +30,7 @@
 #include "utils/check_convert_utils.h"
 #include "backend/ms_backend/graph_fusion/core/graph_builder.h"
 #include "backend/ms_backend/graph_fusion/core/graph_kernel_utils.h"
-#include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel_flags.h"
+#include "include/runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel_flags.h"
 #include "backend/ms_backend/graph_fusion/model/node.h"
 #include "backend/ms_backend/graph_fusion/model/op_node.h"
 #include "backend/ms_backend/graph_fusion/model/graph_builder.h"

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 #include "backend/ms_backend/graph_fusion/core/graph_kernel_op_combiner.h"
-#include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/graph_kernel_callback.h"
+#include "include/runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/graph_kernel_callback.h"
 #include "ir/graph_utils.h"
 
 namespace mindspore::graphkernel {

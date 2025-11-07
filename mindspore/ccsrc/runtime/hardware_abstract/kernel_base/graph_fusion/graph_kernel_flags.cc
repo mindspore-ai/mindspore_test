@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel_flags.h"
+#include "include/runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel_flags.h"
 
 #include <map>
 #include <string>

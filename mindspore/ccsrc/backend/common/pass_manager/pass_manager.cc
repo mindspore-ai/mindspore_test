@@ -18,7 +18,7 @@
 #include <string>
 #include "utils/ms_context.h"
 #include "mindspore/ccsrc/utils/ir_dump/anf_ir_dump.h"
-#include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel_flags.h"
+#include "include/runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel_flags.h"
 
 namespace mindspore {
 namespace opt {

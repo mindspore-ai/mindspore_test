@@ -26,8 +26,8 @@
 #include "include/backend/optimizer/optimizer.h"
 #include "include/backend/optimizer/helper.h"
 #include "include/utils/convert_utils.h"
-#include "runtime/hardware_abstract/kernel_base/graph_fusion/framework_utils.h"
-#include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/infershape_functor.h"
+#include "include/runtime/hardware_abstract/kernel_base/graph_fusion/framework_utils.h"
+#include "include/runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/infershape_functor.h"
 
 namespace mindspore::opt::dynamic_shape {
 BACKEND_COMMON_EXPORT BaseShapePtr InferShape(const PrimitivePtr &primitive,

@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CCSRC_KERNEL_GRAPH_KERNEL_INFO_H_
-#define MINDSPORE_CCSRC_KERNEL_GRAPH_KERNEL_INFO_H_
+#ifndef MINDSPORE_CCSRC_INCLUDE_RUNTIMR_HARDWARE_ABSTRACT_KERNEL_BASE_GRAPH_FUSION_GRAPH_KERNEL_INFO_H_
+#define MINDSPORE_CCSRC_INCLUDE_RUNTIMR_HARDWARE_ABSTRACT_KERNEL_BASE_GRAPH_FUSION_GRAPH_KERNEL_INFO_H_
 #include <iostream>
 #include <vector>
 #include <memory>
@@ -56,4 +56,4 @@ class RUNTIME_HARDWARE_EXPORT GraphKernelInfoRegister {
   static const GraphKernelInfoRegister g_graph_kernel_info_##DEVICE_TYPE##_##_reg( \
     DEVICE_TYPE, []() { return std::make_shared<KERNEL_CLASS>(); })
 }  // namespace mindspore
-#endif  // MINDSPORE_CCSRC_KERNEL_GRAPH_KERNEL_INFO_H_
+#endif  // MINDSPORE_CCSRC_INCLUDE_RUNTIMR_HARDWARE_ABSTRACT_KERNEL_BASE_GRAPH_FUSION_GRAPH_KERNEL_INFO_H_

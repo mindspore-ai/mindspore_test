@@ -29,7 +29,7 @@
 #include "include/utils/anfalgo.h"
 #include "include/utils/utils.h"
 #include "utils/trace_base.h"
-#include "runtime/hardware_abstract/kernel_base/graph_fusion/framework_utils.h"
+#include "include/runtime/hardware_abstract/kernel_base/graph_fusion/framework_utils.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 
 namespace mindspore {

@@ -16,7 +16,7 @@
 
 #include "include/utils/anfalgo.h"
 #include "backend/ms_backend/graph_fusion/common/graph_kernel_common_test_suite.h"
-#include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel_flags.h"
+#include "include/runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel_flags.h"
 #include "backend/ms_backend/graph_fusion/core/graph_kernel_pass_manager.h"
 #include "ir/func_graph_flag.h"
 #include "ir/graph_utils.h"

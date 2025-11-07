@@ -24,7 +24,7 @@
 #include "include/utils/anfalgo.h"
 #include "include/utils/utils.h"
 #include "ir/primitive.h"
-#include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel_info.h"
+#include "include/runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel_info.h"
 #include "mindspore/ops/op_def/nn_ops.h"
 #include "mindspore/ops/op_def/nn_optimizer_ops.h"
 #include "mindspore/ops/op_def/sequence_ops.h"

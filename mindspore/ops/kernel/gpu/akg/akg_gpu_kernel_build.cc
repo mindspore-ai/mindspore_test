@@ -17,11 +17,11 @@
 #include "kernel/gpu/akg/akg_gpu_kernel_build.h"
 #include <memory>
 #include <string>
-#include "runtime/hardware_abstract/kernel_base/graph_fusion/framework_utils.h"
+#include "include/runtime/hardware_abstract/kernel_base/graph_fusion/framework_utils.h"
 #include "kernel/gpu/akg/akg_gpu_kernel_mod.h"
 #include "utils/ms_utils.h"
 #include "include/backend/anf_runtime_algorithm.h"
-#include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel_flags.h"
+#include "include/runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel_flags.h"
 
 namespace mindspore {
 namespace kernel {

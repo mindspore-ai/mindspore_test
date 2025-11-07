@@ -71,7 +71,7 @@
 #include "utils/phase.h"
 #include "utils/compile_config.h"
 #include "load_mindir/infer_mindir.h"
-#include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel_flags.h"
+#include "include/runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel_flags.h"
 #include "tools/profiler/profiling.h"
 #include "frontend/optimizer/fallback_rewriter.h"
 #include "frontend/jit/ps/load_mindir.h"

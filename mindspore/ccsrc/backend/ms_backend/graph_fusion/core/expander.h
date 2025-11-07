@@ -18,7 +18,7 @@
 #include <vector>
 #include <memory>
 #include "ir/func_graph.h"
-#include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/graph_kernel_callback.h"
+#include "include/runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/graph_kernel_callback.h"
 
 namespace mindspore::graphkernel {
 class Expander {

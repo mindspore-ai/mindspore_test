@@ -22,7 +22,7 @@
 #include <memory>
 #include <utility>
 #include "nlohmann/json.hpp"
-#include "runtime/hardware_abstract/kernel_base/graph_fusion/framework_utils.h"
+#include "include/runtime/hardware_abstract/kernel_base/graph_fusion/framework_utils.h"
 #include "include/utils/thread_pool.h"
 #include "utils/ms_utils.h"
 #include "utils/file_utils.h"

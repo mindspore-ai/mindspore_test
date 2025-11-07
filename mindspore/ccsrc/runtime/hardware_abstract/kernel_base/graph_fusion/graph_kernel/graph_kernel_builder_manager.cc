@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/graph_kernel_builder_manager.h"
+#include "include/runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/graph_kernel_builder_manager.h"
 #include <memory>
 namespace mindspore {
 namespace kernel {

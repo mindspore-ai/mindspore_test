@@ -17,7 +17,7 @@
 #include "kernel/ascend/akg/kernel_mod_impl/akg_ascend_kernel_build.h"
 #include <memory>
 #include "ir/func_graph.h"
-#include "runtime/hardware_abstract/kernel_base/graph_fusion/framework_utils.h"
+#include "include/runtime/hardware_abstract/kernel_base/graph_fusion/framework_utils.h"
 #include "kernel/ascend/akg/kernel_mod_impl/akg_utils.h"
 #include "kernel/ascend/akg/kernel_mod_impl/akg_ascend_kernel_mod.h"
 #include "include/backend/anf_runtime_algorithm.h"

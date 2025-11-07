@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef MINDSPORE_CCSRC_RUNTIME_HARDWARE_ABSTRACT_KERNEL_BASE_GRAPH_FUSION_GRAPH_KERNEL_INFERSHAPE_FUNCTOR_H_
-#define MINDSPORE_CCSRC_RUNTIME_HARDWARE_ABSTRACT_KERNEL_BASE_GRAPH_FUSION_GRAPH_KERNEL_INFERSHAPE_FUNCTOR_H_
+#ifndef MINDSPORE_CCSRC_INCLUDE_RUNTIMR_HARDWARE_ABSTRACT_KERNEL_BASE_GRAPH_FUSION_GRAPH_KERNEL_INFERSHAPE_FUNCTOR_H_
+#define MINDSPORE_CCSRC_INCLUDE_RUNTIMR_HARDWARE_ABSTRACT_KERNEL_BASE_GRAPH_FUSION_GRAPH_KERNEL_INFERSHAPE_FUNCTOR_H_
 
 #include <string>
 #include <memory>
@@ -50,4 +50,4 @@ class RUNTIME_HARDWARE_EXPORT InferShapeFunctor : public Functor {
 using InferShapeFunctorPtr = std::shared_ptr<InferShapeFunctor>;
 constexpr auto kAttrInferShapeFunctor = "infer_shape_functor";
 }  // namespace mindspore::opt::dynamic_shape
-#endif
+#endif  // MINDSPORE_CCSRC_INCLUDE_RUNTIMR_HARDWARE_ABSTRACT_KERNEL_BASE_GRAPH_FUSION_GRAPH_KERNEL_INFERSHAPE_FUNCTOR_H_

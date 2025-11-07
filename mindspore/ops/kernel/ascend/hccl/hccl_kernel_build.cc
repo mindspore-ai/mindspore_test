@@ -23,7 +23,7 @@
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/backend/kernel_graph.h"
 #include "include/utils/anfalgo.h"
-#include "runtime/hardware_abstract/kernel_base/graph_fusion/framework_utils.h"
+#include "include/runtime/hardware_abstract/kernel_base/graph_fusion/framework_utils.h"
 
 namespace mindspore {
 namespace kernel {

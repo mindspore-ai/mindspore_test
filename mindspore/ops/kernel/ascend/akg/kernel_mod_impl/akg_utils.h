@@ -26,7 +26,7 @@
 #include <unordered_map>
 #include <mutex>
 #include "nlohmann/json.hpp"
-#include "runtime/hardware_abstract/kernel_base/graph_fusion/kash/kernel_pack.h"
+#include "include/runtime/hardware_abstract/kernel_base/graph_fusion/kash/kernel_pack.h"
 
 namespace mindspore {
 namespace kernel {

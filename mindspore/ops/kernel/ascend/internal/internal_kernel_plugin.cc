@@ -29,7 +29,7 @@
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/utils/anfalgo.h"
 #include "include/runtime/hardware_abstract/kernel_base/ms_factory.h"
-#include "runtime/hardware_abstract/kernel_base/graph_fusion/framework_utils.h"
+#include "include/runtime/hardware_abstract/kernel_base/graph_fusion/framework_utils.h"
 #include "op_def/math_op_name.h"
 #include "op_def/nn_op_name.h"
 #include "acl/acl_base.h"

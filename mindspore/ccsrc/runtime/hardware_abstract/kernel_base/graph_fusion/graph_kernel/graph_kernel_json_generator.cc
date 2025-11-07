@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/graph_kernel_json_generator.h"
+#include "include/runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/graph_kernel_json_generator.h"
 
 #include <set>
 #include <tuple>
@@ -28,7 +28,7 @@
 #include "utils/ms_context.h"
 #include "backend/ms_backend/graph_fusion/core/graph_builder.h"
 #include "include/utils/callback.h"
-#include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel_flags.h"
+#include "include/runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel_flags.h"
 #include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/graph_kernel_json_flags.h"
 #include "mindspore/ccsrc/utils/symbol_engine/symbol_engine_impl.h"
 #include "include/runtime/hardware_abstract/kernel_base/oplib/oplib.h"
@@ -255,6 +255,24 @@ class OpInfoExtractor {
   }
 
   CNodePtr cnode_;
+};
+
+class TargetInfoSetter {
+ public:
+  static void Set(nlohmann::json *kernel_info) {
+    static std::unique_ptr<TargetInfoSetter> instance = nullptr;
+    if (instance == nullptr) {
+      instance = std::make_unique<TargetInfoSetter>();
+      instance->GetTargetInfo();
+    }
+    instance->SetTargetInfo(kernel_info);
+  }
+
+ private:
+  void GetTargetInfo();
+  void SetTargetInfo(nlohmann::json *kernel_info) const;
+  nlohmann::json target_info_;
+  bool has_info_{true};
 };
 }  // namespace
 

@@ -35,7 +35,7 @@
 #include "include/utils/utils.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel.h"
 #include "utils/log_adapter.h"
-#include "runtime/hardware_abstract/kernel_base/graph_fusion/framework_utils.h"
+#include "include/runtime/hardware_abstract/kernel_base/graph_fusion/framework_utils.h"
 #include "mindspore/ops/op_def/math_ops.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"

@@ -20,7 +20,7 @@
 #include <tuple>
 #include <string>
 #include <set>
-#include "runtime/hardware_abstract/kernel_base/graph_fusion/framework_utils.h"
+#include "include/runtime/hardware_abstract/kernel_base/graph_fusion/framework_utils.h"
 #include "mindspore/ops/op_def/random_op_name.h"
 #include "mindspore/ops/op_def/nn_optimizer_op_name.h"
 #include "mindspore/ops/op_def/sparse_ops.h"

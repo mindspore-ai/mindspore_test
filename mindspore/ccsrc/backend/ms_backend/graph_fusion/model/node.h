@@ -26,7 +26,7 @@
 #include "utils/hash_map.h"
 #include "include/backend/visible.h"
 #include "ops_utils/op_constants.h"
-#include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/graph_kernel_callback.h"
+#include "include/runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/graph_kernel_callback.h"
 
 namespace mindspore::graphkernel::inner {
 enum class NType {

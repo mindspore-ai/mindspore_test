@@ -21,7 +21,7 @@
 
 #include "ir/scope.h"
 #include "utils/anf_utils.h"
-#include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/graph_kernel_callback.h"
+#include "include/runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/graph_kernel_callback.h"
 #include "backend/ms_backend/graph_fusion/core/graph_kernel_utils.h"
 #include "backend/ms_backend/graph_fusion/core/value_depend_op_utils.h"
 #include "backend/ms_backend/graph_fusion/expanders/op_desc_registry.h"

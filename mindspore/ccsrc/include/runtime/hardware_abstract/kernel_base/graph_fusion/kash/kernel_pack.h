@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_KASH_KERNEL_PACK_H_
-#define MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_KASH_KERNEL_PACK_H_
+#ifndef MINDSPORE_CCSRC_INCLUDE_RUNTIMR_HARDWARE_ABSTRACT_KERNEL_BASE_GRAPH_FUSION_KASH_KERNEL_PACK_H_
+#define MINDSPORE_CCSRC_INCLUDE_RUNTIMR_HARDWARE_ABSTRACT_KERNEL_BASE_GRAPH_FUSION_KASH_KERNEL_PACK_H_
 #include <string>
 #include <vector>
 #include <memory>
@@ -123,4 +123,4 @@ using KernelPackPtr = std::shared_ptr<KernelPack>;
 }  // namespace kernel
 }  // namespace mindspore
 
-#endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_KASH_KERNEL_PACK_H_
+#endif  // MINDSPORE_CCSRC_INCLUDE_RUNTIMR_HARDWARE_ABSTRACT_KERNEL_BASE_GRAPH_FUSION_KASH_KERNEL_PACK_H_

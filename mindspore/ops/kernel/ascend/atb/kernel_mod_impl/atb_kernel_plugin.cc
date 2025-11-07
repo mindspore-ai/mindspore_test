@@ -24,7 +24,7 @@
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/utils/anfalgo.h"
 #include "include/runtime/hardware_abstract/kernel_base/ms_factory.h"
-#include "runtime/hardware_abstract/kernel_base/graph_fusion/framework_utils.h"
+#include "include/runtime/hardware_abstract/kernel_base/graph_fusion/framework_utils.h"
 #include "ops/op_def.h"
 #include "kernel/ascend/atb/kernel_mod_impl/atb_kernel_mod.h"
 #include "utils/trace_base.h"

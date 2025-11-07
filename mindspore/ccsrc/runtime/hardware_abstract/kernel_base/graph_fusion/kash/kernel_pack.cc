@@ -23,8 +23,8 @@
 #include "utils/log_adapter.h"
 #include "utils/system/sha256.h"
 #include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
-#include "runtime/hardware_abstract/kernel_base/graph_fusion/framework_utils.h"
-#include "runtime/hardware_abstract/kernel_base/graph_fusion/kash/kernel_pack.h"
+#include "include/runtime/hardware_abstract/kernel_base/graph_fusion/framework_utils.h"
+#include "include/runtime/hardware_abstract/kernel_base/graph_fusion/kash/kernel_pack.h"
 
 namespace mindspore {
 namespace kernel {

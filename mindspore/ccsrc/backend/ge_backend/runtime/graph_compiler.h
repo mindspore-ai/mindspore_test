@@ -30,7 +30,7 @@
 #include "backend/common/kernel_graph/session_basic.h"
 #include "backend/common/kernel_graph/session_factory.h"
 #include "ir/tensor.h"
-#include "runtime/hardware_abstract/kernel_base/graph_fusion/framework_utils.h"
+#include "include/runtime/hardware_abstract/kernel_base/graph_fusion/framework_utils.h"
 #include "ir/device_type.h"
 #include "backend/ge_backend/executor/ge_graph_executor.h"
 #include "utils/ms_utils.h"

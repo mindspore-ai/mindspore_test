@@ -17,6 +17,7 @@
 
 #include <vector>
 #include <set>
+#include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/kernel_pool.h"
 
 namespace mindspore {
 namespace kernel {

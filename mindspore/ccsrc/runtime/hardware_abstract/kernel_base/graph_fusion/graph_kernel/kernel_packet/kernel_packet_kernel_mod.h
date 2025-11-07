@@ -25,7 +25,7 @@
 #include "include/utils/anfalgo.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel.h"
 #include "base/base.h"
-#include "runtime/hardware_abstract/kernel_base/graph_fusion/framework_utils.h"
+#include "include/runtime/hardware_abstract/kernel_base/graph_fusion/framework_utils.h"
 
 namespace mindspore {
 namespace kernel {

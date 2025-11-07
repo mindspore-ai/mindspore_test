@@ -27,7 +27,7 @@
 #include "ir/anf.h"
 #include "ir/graph_utils.h"
 #include "utils/anf_utils.h"
-#include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/graph_kernel_callback.h"
+#include "include/runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/graph_kernel_callback.h"
 #include "backend/ms_backend/graph_fusion/core/graph_builder.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"

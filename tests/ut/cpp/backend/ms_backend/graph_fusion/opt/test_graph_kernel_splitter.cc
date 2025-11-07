@@ -20,7 +20,7 @@
 #include "utils/anf_utils.h"
 #include "abstract/abstract_value.h"
 #include "common/graph_optimizer_test_framework.h"
-#include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel_flags.h"
+#include "include/runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel_flags.h"
 #include "backend/ms_backend/graph_fusion/adapter/graph_kernel_expander_cloud.h"
 #include "backend/ms_backend/graph_fusion/adapter/graph_kernel_cluster_cloud.h"
 #include "backend/ms_backend/graph_fusion/adapter/symbol_engine_builder.h"
@@ -56,7 +56,7 @@ FuncGraphPtr ConstructGraph_1() {
   return c.GetGraph();
 }
 
-/// Feature: Test graph kernel splitter pass 
+/// Feature: Test graph kernel splitter pass
 /// Description: op will expand, then split, check main graph multiple output when no inline.
 /// Expectation: After split pass, the output should be maketuple, and inputs should be gk node.
 TEST_F(TestGraphSplit, no_inline_main_graph_multi_output) {
@@ -132,7 +132,7 @@ TEST_F(TestGraphSplit, flag_path) {
   ASSERT_EQ(GetAllGKNodes(fg).size(), 5);
 }
 
-/// Feature: Test graph kernel splitter pass 
+/// Feature: Test graph kernel splitter pass
 /// Description: op will expand, then split, check gk graph single output when no inline.
 /// Expectation: After split pass, the gk single output should not be maketuple.
 TEST_F(TestGraphSplit, no_inline_gk_graph_single_output) {
@@ -157,7 +157,7 @@ TEST_F(TestGraphSplit, no_inline_gk_graph_single_output) {
   ASSERT_EQ(GetAllGKNodes(fg).size(), 5);
 }
 
-/// Feature: Test graph kernel splitter pass 
+/// Feature: Test graph kernel splitter pass
 /// Description: op will expand, then split, check gk graph multiple output when no inline.
 /// Expectation: After split pass, the gk multiple output should be maketuple, and should have tuplegetitem.
 TEST_F(TestGraphSplit, no_inline_gk_graph_multi_output) {
@@ -203,7 +203,7 @@ FuncGraphPtr ConstructGraph_2() {
   return c.GetGraph();
 }
 
-/// Feature: Test graph kernel splitter pass 
+/// Feature: Test graph kernel splitter pass
 /// Description: op will expand, then split, check main graph single output when no inline.
 /// Expectation: After split pass, the output should be gk node.
 TEST_F(TestGraphSplit, no_inline_main_single_out) {
@@ -218,7 +218,7 @@ TEST_F(TestGraphSplit, no_inline_main_single_out) {
   ASSERT_EQ(GetAllGKNodes(fg).size(), 5);
 }
 
-/// Feature: Test graph kernel splitter pass 
+/// Feature: Test graph kernel splitter pass
 /// Description: op will expand, then split, check main graph node and gk node when partial inline.
 /// Expectation: After split pass, the main graph should have inline node and gk node.
 TEST_F(TestGraphSplit, partial_inline) {
@@ -238,7 +238,7 @@ TEST_F(TestGraphSplit, partial_inline) {
   GlobalMockObject::verify();
 }
 
-/// Feature: Test graph kernel splitter pass 
+/// Feature: Test graph kernel splitter pass
 /// Description: op will expand, then split, check main graph node when all inline.
 /// Expectation: After split pass, the main graph should have all inline node and no gk node.
 TEST_F(TestGraphSplit, all_inline) {

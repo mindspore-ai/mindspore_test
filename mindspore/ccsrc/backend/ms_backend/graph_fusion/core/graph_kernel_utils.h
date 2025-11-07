@@ -29,7 +29,7 @@
 #include "include/utils/anfalgo.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "backend/ms_backend/graph_fusion/model/lite_graph.h"
-#include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/graph_kernel_callback.h"
+#include "include/runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/graph_kernel_callback.h"
 
 namespace mindspore::graphkernel {
 constexpr auto kGraphKernelDumpPath = "graph_kernel_dump";
