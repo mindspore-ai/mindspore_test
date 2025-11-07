@@ -958,6 +958,40 @@ NodePtrList BinopGradSelect(BpropBuilder *ib, const NodePtr &cond, const NodePtr
   return reduce;
 }
 
+NodePtrList BroadcastToBackward(BpropBuilder *ib) {
+  auto x = ib->GetInput(i0);
+  auto dout = ib->GetInput(i3);
+  auto x_shape = ib->GetShape(x);
+  auto dout_shape = ib->GetShape(dout);
+
+  bool input_dynamic = IsDynamic(x_shape) || IsDynamic(dout_shape);
+  if (!input_dynamic && x_shape == dout_shape) {
+    return {dout, ib->OutZeros(ib->GetInput(i1))};
+  }
+
+  auto x_shape_node = ib->Shape(x);
+  auto broadcast_axes = ib->BroadcastGradientArgs(dout, x);
+  MS_EXCEPTION_IF_CHECK_FAIL(!broadcast_axes.empty(), "BroadcastGradientArgs out should not be empty!");
+  auto reduction_axes = broadcast_axes[i1];
+  NodePtr reduced_grad = dout;
+  auto abs = reduction_axes->abstract();
+  MS_EXCEPTION_IF_NULL(abs);
+  auto base_shape = abs->GetShape();
+  MS_EXCEPTION_IF_NULL(base_shape);
+  auto is_dyn_seq = base_shape->isa<abstract::DynamicSequenceShape>();
+  if (is_dyn_seq) {
+    reduced_grad = ib->ReduceSum(dout, reduction_axes, true, true);
+  } else {
+    auto sequence_shape = base_shape->cast<abstract::TupleShapePtr>();
+    MS_EXCEPTION_IF_NULL(sequence_shape);
+    if (sequence_shape->size() != 0) {
+      reduced_grad = ib->SumExt(dout, reduction_axes, ib->Value(true));
+    }
+  }
+  auto dx = ib->Reshape(reduced_grad, x_shape_node);
+  return {dx, ib->OutZeros(ib->GetInput(i1))};
+}
+
 REG_BPROP_BUILDERS_BEGIN(GradArrayOps)
 REG_BPROP_BUILDER("GatherD").SetUnusedInputs({i3}).SetBody(BODYFUNC(ib) {
   const auto &x = ib->GetInput(i0);
@@ -2083,60 +2117,11 @@ REG_BPROP_BUILDER("BatchToSpaceND").SetUnusedInputs({i0, i1}).SetBody(BODYFUNC(i
 });
 
 REG_BPROP_BUILDER("BroadcastTo").SetUnusedInputs({i0, i1, i2}).SetBody(BODYFUNC(ib) {
-  const auto &x = ib->GetInput(i0);
-  const auto &dout = ib->GetInput(i3);
-  auto x_shape = ib->GetShape(x);
-  auto dout_shape = ib->GetShape(dout);
-
-  bool input_dynamic = IsDynamic(x_shape) || IsDynamic(dout_shape);
-  if (!input_dynamic && x_shape == dout_shape) {
-    return {dout, ib->OutZeros(ib->GetInput(i1))};
-  }
-
-  auto x_shape_node = ib->Shape(x);
-  auto broadcast_axes = ib->BroadcastGradientArgs(dout, x);
-  MS_EXCEPTION_IF_CHECK_FAIL(!broadcast_axes.empty(), "BroadcastGradientArgs out should not be empty!");
-  auto reduction_axes = broadcast_axes[i1];
-  NodePtr reduced_grad = dout;
-  auto abs = reduction_axes->abstract();
-  MS_EXCEPTION_IF_NULL(abs);
-  auto base_shape = abs->GetShape();
-  MS_EXCEPTION_IF_NULL(base_shape);
-  auto is_dyn_seq = base_shape->isa<abstract::DynamicSequenceShape>();
-  if (is_dyn_seq) {
-    reduced_grad = ib->ReduceSum(dout, reduction_axes, true, true);
-  } else {
-    auto sequence_shape = base_shape->cast<abstract::TupleShapePtr>();
-    MS_EXCEPTION_IF_NULL(sequence_shape);
-    if (sequence_shape->size() != 0) {
-      reduced_grad = ib->SumExt(dout, reduction_axes, ib->Value(true));
-    }
-  }
-  auto dx = ib->Reshape(reduced_grad, x_shape_node);
-  return {dx, ib->OutZeros(ib->GetInput(i1))};
+  return BroadcastToBackward(ib);
 });
 
 REG_BPROP_BUILDER("BroadcastToView").SetUnusedInputs({i0, i1, i2}).SetBody(BODYFUNC(ib) {
-  const auto &x = ib->GetInput(i0);
-  const auto &dout = ib->GetInput(i3);
-  auto x_shape = ib->GetShape(x);
-  auto dout_shape = ib->GetShape(dout);
-
-  bool input_dynamic = IsDynamic(x_shape) || IsDynamic(dout_shape);
-  if (!input_dynamic && x_shape == dout_shape) {
-    return {dout, ib->OutZeros(ib->GetInput(i1))};
-  }
-
-  auto x_shape_node = ib->Shape(x);
-  auto broadcast_axes = ib->BroadcastGradientArgs(dout, x);
-  MS_EXCEPTION_IF_CHECK_FAIL(!broadcast_axes.empty(), "BroadcastGradientArgs out should not be empty!");
-  auto reduction_axes = broadcast_axes[i1];
-  NodePtr reduced_grad = nullptr;
-
-  reduced_grad = ib->ReduceSum(dout, reduction_axes, true, true);
-  auto dx = ib->Reshape(reduced_grad, x_shape_node);
-
-  return {dx, ib->OutZeros(ib->GetInput(i1))};
+  return BroadcastToBackward(ib);
 });
 
 REG_BPROP_BUILDER("ExpandAs").SetUnusedInputs({i0, i1, i2}).SetBody(BODYFUNC(ib) {

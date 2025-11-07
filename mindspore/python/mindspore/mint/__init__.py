@@ -169,7 +169,7 @@ from mindspore.ops.function.random_func import normal_ext as normal
 # 56
 from mindspore.ops.function.math_func import norm_ext as norm
 # 57
-from mindspore.ops.functional import broadcast_to
+from mindspore.ops.auto_generate import broadcast_to_view as broadcast_to
 # 58
 from mindspore.ops.functional_overload import greater_equal, ge
 
