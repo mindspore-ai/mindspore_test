@@ -238,6 +238,107 @@ class PipelineScheduleRuntime(ABC):
             self._wait_p2p(send_handle.pop())
 
 
+def add_send_recv(scheduler, stage_num, real_stage_num, style='loop'):
+    """
+    Create schedule for each rank and automatically add communication operations
+
+    Args:
+        scheduler: Compute schedule table with None
+        stage_num: Total number of pipeline stages
+        real_stage_num: Number of actual physical stages/ranks
+        style: Communication style ('loop' or 'v')
+
+    Returns:
+        Complete schedule table for each rank (including communication operations)
+    """
+
+    def _need_com(action, style, stage_num):
+        """Determine if communication is needed"""
+        if action.type == MetaStepType.FWD:
+            if action.stage_index == stage_num - 1:
+                return False  # Last stage doesn't need forward communication
+            next_stage_rank = stage_to_rank(action.stage_index + 1, style, stage_num, real_stage_num)
+            current_rank = stage_to_rank(action.stage_index, style, stage_num, real_stage_num)
+            return next_stage_rank != current_rank
+        if action.type == MetaStepType.BWD:
+            if action.stage_index == 0:
+                return False  # First stage doesn't need backward communication
+            prev_stage_rank = stage_to_rank(action.stage_index - 1, style, stage_num, real_stage_num)
+            current_rank = stage_to_rank(action.stage_index, style, stage_num, real_stage_num)
+            return prev_stage_rank != current_rank
+        return False
+
+    def stage_to_rank(stage_index, style, stage_num, real_stage_num):
+        """Map stage index to rank"""
+        if style == 'loop':
+            return stage_index % real_stage_num
+        if style == 'v':
+            if stage_index < real_stage_num:
+                return stage_index
+            return stage_num - 1 - stage_index
+        raise ValueError("Invalid style")
+
+    def process_rank_communication(rank, operation, new_schedule, style, stage_num, real_stage_num):
+        """Process communication operations for single rank"""
+        if operation is None:
+            return
+
+        stage_index = operation.stage_index
+        pre_rank = stage_to_rank(stage_index - 1, style, stage_num, real_stage_num) if stage_index > 0 else 0
+        nxt_rank = stage_to_rank(stage_index + 1, style, stage_num, real_stage_num) if stage_index < stage_num else None
+
+        if (operation.type == MetaStepType.FWD and
+                _need_com(operation, style, stage_num) and nxt_rank is not None):
+            new_schedule[rank].append(MetaStep(
+                micro_index=operation.micro_index,
+                meta_type=MetaStepType.FWD_SEND,  # 注意：使用 FWD_SEND 而不是 FWD_SEND
+                stage_index=stage_index
+            ))
+            new_schedule[nxt_rank].append(MetaStep(
+                micro_index=operation.micro_index,
+                meta_type=MetaStepType.FWD_RECV,  # 注意：使用 FWD_RECV 而不是 FWD_RECV
+                stage_index=stage_index + 1
+            ))
+        elif (operation.type == MetaStepType.BWD and
+              _need_com(operation, style, stage_num) and pre_rank is not None):
+            new_schedule[rank].append(MetaStep(
+                micro_index=operation.micro_index,
+                meta_type=MetaStepType.BWD_SEND,  # 注意：使用 BWD_SEND 而不是 BWD_SEND
+                stage_index=stage_index
+            ))
+            new_schedule[pre_rank].append(MetaStep(
+                micro_index=operation.micro_index,
+                meta_type=MetaStepType.BWD_RECV,  # 注意：使用 BWD_RECV 而不是 BWD_RECV
+                stage_index=stage_index - 1
+            ))
+
+    # Main logic
+    max_length = max(len(schedule) for schedule in scheduler.values())
+    new_schedule = {rank: [] for rank in range(real_stage_num)}
+
+    for time_step in range(max_length):
+        current_operations = {}
+        for rank in range(real_stage_num):
+            if time_step < len(scheduler[rank]):
+                operation = scheduler[rank][time_step]
+                current_operations[rank] = operation
+                if operation is not None:
+                    new_schedule[rank].append(operation)
+            else:
+                current_operations[rank] = None
+
+        # Process even rank communication
+        for rank in range(0, real_stage_num, 2):
+            process_rank_communication(rank, current_operations[rank], new_schedule,
+                                       style, stage_num, real_stage_num)
+
+        # Process odd rank communication
+        for rank in range(1, real_stage_num, 2):
+            process_rank_communication(rank, current_operations[rank], new_schedule,
+                                       style, stage_num, real_stage_num)
+
+    return new_schedule
+
 class ScheduleGPipe(PipelineScheduleRuntime):
     """
     The Gpipe schedule.
@@ -318,7 +419,6 @@ class Schedule1F1B(PipelineScheduleRuntime):
             if self.real_stage_num - stage_index > self.micro_batch_num:
                 order_list.append(MetaStep(fwd_index - 1, MetaStepType.FWD_SEND, stage_index))
                 fwd_index += 1
-
             # steady phase
             steady_micro_batches = self.micro_batch_num - warmup_micro_batches
             for _ in range(steady_micro_batches):
@@ -347,7 +447,6 @@ class Schedule1F1B(PipelineScheduleRuntime):
                     order_list.append(MetaStep(bwd_index, MetaStepType.BWD_SEND, stage_index))
                 bwd_index += 1
             self.exec_order[stage_index] = order_list
-
 
 class ScheduleInterleaved1F1B(PipelineScheduleRuntime):
     """
@@ -385,6 +484,7 @@ class ScheduleInterleaved1F1B(PipelineScheduleRuntime):
         self.n_microbatch_per_round_accu.insert(0, 0)
         for stage_index in range(self.real_stage_num):
             self.exec_order[stage_index] = self.construct_stage_exec_order(stage_index)
+        self.exec_order = add_send_recv(self.exec_order, self._stage_num, self.real_stage_num, style = 'loop')
 
     def warmup_ops(self, stage_index):
         """warmup phase."""
@@ -396,14 +496,14 @@ class ScheduleInterleaved1F1B(PipelineScheduleRuntime):
         """obtain forward stage_index based on op_index."""
         accu_index = bisect.bisect_right(self.n_microbatch_per_round_accu, op_index) - 1
         local_index = (op_index - self.n_microbatch_per_round_accu[accu_index]) // \
-            self.n_microbatch_per_round[accu_index]
+                      self.n_microbatch_per_round[accu_index]
         return (local_index * self.real_stage_num) + stage_index
 
     def backward_stage_index(self, op_index, stage_index):
         """obtain backward stage_index based on op_index."""
         accu_index = bisect.bisect_right(self.n_microbatch_per_round_accu, op_index) - 1
         local_index = (op_index - self.n_microbatch_per_round_accu[accu_index]) // \
-            self.n_microbatch_per_round[accu_index]
+                      self.n_microbatch_per_round[accu_index]
         local_index = self.n_local_stages - 1 - local_index
         return (local_index * self.real_stage_num) + stage_index
 
@@ -449,7 +549,6 @@ class ScheduleInterleaved1F1B(PipelineScheduleRuntime):
                 if stage_index == self.real_stage_num - 1:
                     order_list.extend([None] * (self.real_stage_num - self.micro_batch_num))
             bwd_stage_micro_index[bwd_stage_idx] += 1
-
         # cooldown phase
         for op_idx in range(warmup_ops+fwd_bwd_ops, total_ops):
             order_list.append(None)
