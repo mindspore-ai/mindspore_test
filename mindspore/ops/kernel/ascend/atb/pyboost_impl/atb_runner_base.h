@@ -20,7 +20,7 @@
 #include <string>
 #include <memory>
 #include "ir/tensor.h"
-#include "runtime/hardware_abstract/device_context/device_context.h"
+#include "include/runtime/hardware_abstract/device_context/device_context.h"
 #include "include/runtime/hardware_abstract/kernel_base/ms_factory.h"
 
 namespace mindspore::kernel::pyboost {

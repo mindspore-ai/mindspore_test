@@ -40,7 +40,7 @@
 #include "runtime/core/graph_scheduler/optimizer/invalid_data_arrow_elimination.h"
 #include "runtime/core/graph_scheduler/optimizer/batch_data_arrow_fusion.h"
 #include "runtime/core/graph_scheduler/optimizer/multi_actor_fusion.h"
-#include "runtime/core/graph_scheduler/base/parameter_store.h"
+#include "include/runtime/core/graph_scheduler/base/parameter_store.h"
 #include "include/runtime/core/graph_scheduler/base/graph_parameter_store.h"
 #include "runtime/core/graph_executor/kernel_capture/graph_capture_manager.h"
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"

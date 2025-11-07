@@ -25,7 +25,7 @@
 #include "backend/ge_backend/runtime/actor/control_flow/entrance_actor.h"
 #include "async/async.h"
 #include "utils/log_adapter.h"
-#include "runtime/hardware_abstract/device_context/device_context.h"
+#include "include/runtime/hardware_abstract/device_context/device_context.h"
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
 
 namespace mindspore {

@@ -23,7 +23,7 @@
 #include "tools/data_dump/debugger/debugger_utils.h"
 #include "include/utils/common.h"
 #include "include/runtime/hardware_abstract/stream/multi_stream_controller.h"
-#include "runtime/hardware_abstract/device_context/device_context.h"
+#include "include/runtime/hardware_abstract/device_context/device_context.h"
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "tools/data_dump/device_statistic/kernel_factory.h"
 #include "tools/data_dump/device_statistic/mem_manager.h"

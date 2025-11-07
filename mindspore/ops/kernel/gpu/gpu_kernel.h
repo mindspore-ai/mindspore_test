@@ -41,7 +41,7 @@
 #include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/cuda_common.h"
 #include "utils/ms_context.h"
-#include "runtime/hardware_abstract/device_context/device_context.h"
+#include "include/runtime/hardware_abstract/device_context/device_context.h"
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "runtime/hardware_abstract/utils.h"
 
@@ -77,7 +77,7 @@ static std::map<int, int> kNHWCToNCHWAxisMap = {
   {3, 1},
 };
 
-static auto Anyone = [](auto &&k, auto &&... args) { return ((args == k) || ...); };
+static auto Anyone = [](auto &&k, auto &&...args) { return ((args == k) || ...); };
 
 inline int CeilDivide(int m, int n) { return (m + n - 1) / n; }
 

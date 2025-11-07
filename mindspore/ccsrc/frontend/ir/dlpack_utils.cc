@@ -26,7 +26,7 @@
 #include "include/runtime/hardware_abstract/kernel_base/kernel.h"
 #include "ir/device_type.h"
 #include "ir/tensor_storage_info.h"
-#include "runtime/hardware_abstract/device_context/device_context.h"
+#include "include/runtime/hardware_abstract/device_context/device_context.h"
 #include "backend/common/device_address_utils.h"
 #include "include/runtime/pipeline/pipeline.h"
 #include "mindspore/ccsrc/pynative/utils/pyboost/functions/auto_generate/functions.h"

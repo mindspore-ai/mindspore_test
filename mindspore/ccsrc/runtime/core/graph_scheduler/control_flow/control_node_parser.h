@@ -29,7 +29,7 @@
 #include <unordered_map>
 
 #include "utils/hash_map.h"
-#include "runtime/hardware_abstract/device_context/device_context.h"
+#include "include/runtime/hardware_abstract/device_context/device_context.h"
 #include "include/backend/kernel_graph.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_info.h"
 

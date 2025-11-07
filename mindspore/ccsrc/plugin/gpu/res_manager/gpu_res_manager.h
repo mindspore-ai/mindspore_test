@@ -21,7 +21,7 @@
 #include <string>
 #include <unordered_map>
 #include <memory>
-#include "runtime/hardware_abstract/device_context/device_context.h"
+#include "include/runtime/hardware_abstract/device_context/device_context.h"
 #include "include/runtime/hardware_abstract/memory_manager/swap_manager.h"
 #include "plugin/gpu/res_manager/gpu_res_manager.h"
 #include "plugin/gpu/res_manager/mem_manager/gpu_memory_manager.h"

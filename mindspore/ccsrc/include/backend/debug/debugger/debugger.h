@@ -28,7 +28,7 @@
 #include "include/backend/kernel_graph.h"
 #include "device_address/device_address.h"
 #include "include/backend/visible.h"
-#include "runtime/hardware_abstract/device_context/device_context.h"
+#include "include/runtime/hardware_abstract/device_context/device_context.h"
 
 namespace debugger {
 class Chunk;

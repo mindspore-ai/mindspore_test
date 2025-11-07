@@ -20,7 +20,7 @@
 #include <vector>
 #include "utils/ms_utils.h"
 #include "include/backend/anf_runtime_algorithm.h"
-#include "runtime/hardware_abstract/device_context/device_context.h"
+#include "include/runtime/hardware_abstract/device_context/device_context.h"
 
 namespace mindspore {
 namespace checksum {

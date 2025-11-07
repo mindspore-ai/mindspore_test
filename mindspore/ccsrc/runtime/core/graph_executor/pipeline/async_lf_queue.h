@@ -25,7 +25,7 @@
 #include <functional>
 #include <cstddef>
 
-#include "runtime/hardware_abstract/device_context/device_context.h"
+#include "include/runtime/hardware_abstract/device_context/device_context.h"
 #include "runtime/core/graph_executor/pipeline/lf_ring_queue.h"
 #include "utils/log_adapter.h"
 
@@ -50,7 +50,7 @@ class AsyncLFQueue {
   // Push element to lock free queue, the args parameter must be of type std::function<void()> or convertible to this
   // type. Push is multi thread safety.
   template <typename... Args>
-  void Push(Args &&... args) {
+  void Push(Args &&...args) {
     if (!init_ || worker_ == nullptr) {
       MS_LOG(EXCEPTION) << "The queue is not initialized before.";
     }

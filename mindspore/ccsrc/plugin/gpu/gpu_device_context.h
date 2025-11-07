@@ -23,7 +23,7 @@
 #include <string>
 #include <utility>
 #include <unordered_map>
-#include "runtime/hardware_abstract/device_context/device_context.h"
+#include "include/runtime/hardware_abstract/device_context/device_context.h"
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/cuda_device_info.h"
 #include "plugin/gpu/res_manager/gpu_res_manager.h"

@@ -28,7 +28,7 @@
 #include "include/runtime/hardware_abstract/kernel_base/device_tensor_store.h"
 #include "runtime/core/actors/base/actor_common.h"
 #include "runtime/core/actors/base/abstract_actor.h"
-#include "runtime/hardware_abstract/device_context/device_context.h"
+#include "include/runtime/hardware_abstract/device_context/device_context.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/utils/anfalgo.h"
 #include "include/utils/stub_tensor.h"

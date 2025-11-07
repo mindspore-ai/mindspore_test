@@ -13,12 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "runtime/core/graph_scheduler/base/move_to.h"
+#include "include/runtime/core/graph_scheduler/base/move_to.h"
 #include <string>
 #include <memory>
 #include <algorithm>
 #include "utils/stream_guard.h"
-#include "runtime/hardware_abstract/device_context/device_context.h"
+#include "include/runtime/hardware_abstract/device_context/device_context.h"
 #include "ir/device_type.h"
 #include "include/runtime/memory/mem_pool/mem_tracker.h"
 #include "device_address/device_address.h"

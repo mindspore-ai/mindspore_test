@@ -31,7 +31,7 @@
 #include "include/backend/debug/debugger/debugger.h"
 #endif
 #include "include/backend/visible.h"
-#include "runtime/hardware_abstract/device_context/device_context.h"
+#include "include/runtime/hardware_abstract/device_context/device_context.h"
 
 #ifndef ENABLE_DEBUGGER
 class Debugger;

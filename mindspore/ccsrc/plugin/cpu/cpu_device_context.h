@@ -21,7 +21,7 @@
 #include <string>
 #include <utility>
 #include <mutex>
-#include "runtime/hardware_abstract/device_context/device_context.h"
+#include "include/runtime/hardware_abstract/device_context/device_context.h"
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "include/runtime/hardware_abstract/collective/collective_communication_lib.h"
 #include "include/runtime/hardware_abstract/collective/collective_comm_lib_loader.h"

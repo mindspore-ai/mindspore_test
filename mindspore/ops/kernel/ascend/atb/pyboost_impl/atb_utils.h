@@ -19,7 +19,7 @@
 #include <vector>
 #include <string>
 #include <memory>
-#include "runtime/hardware_abstract/device_context/device_context.h"
+#include "include/runtime/hardware_abstract/device_context/device_context.h"
 #include "ir/tensor.h"
 #include "kernel/ascend/atb/pyboost_impl/atb_runner_base.h"
 
