@@ -24,25 +24,39 @@ import functools
 import numpy as np
 from typing import Dict, Optional
 import torch
+import warnings
 import itertools
 import mindspore as ms
 from mindspore import mint, mutable
-from tests.st.ops.share._op_info.op_info import OpInfo, BinaryOpInfo, UnaryOpInfo, ReductionOpInfo
+from mindspore._c_expression import MSContext
+from tests.st.ops.share._op_info.op_info import OpInfo, BinaryOpInfo, ReductionOpInfo, UnaryOpInfo
 from tests.st.ops.share._op_info.op_info import (
-    basic_reference_inputs_reduction_op_common_func,
-    extra_reference_inputs_reduction_op_common_func,
+    _generate_unary_op_extremal_value_tensor_inputs_func,
+    _generate_unary_op_large_value_tensor_inputs_func,
+    _generate_unary_op_small_value_tensor_inputs_func,
+    _generate_unary_op_tensors_sample_inputs_func,
     basic_reference_inputs_binary_op_common_func,
+    basic_reference_inputs_reduction_op_common_func,
+    dynamic_inputs_binary_op_common_func,
     extra_reference_inputs_binary_op_common_func,
-    dynamic_inputs_binary_op_common_func
-)
-from tests.st.ops.share._internal.utils import (
-    OpSampleInput, OpDynamicInput, OpErrorInput,
-    make_tensor, skip_sample_inputs
+    extra_reference_inputs_reduction_op_common_func,
 )
 from tests.st.ops.share._op_info.op_common import (
-    dtypes_as_torch, dtypes_extra_uint, SMALL_DIM_SIZE, MEDIUM_DIM_SIZE, EXTRA_SMALL_DIM_SIZE, LARGE_DIM_SIZE
+    EXTRA_SMALL_DIM_SIZE,
+    LARGE_DIM_SIZE,
+    MEDIUM_DIM_SIZE,
+    SMALL_DIM_SIZE,
+    dtypes_as_torch,
+    dtypes_extra_uint,
 )
-
+from tests.st.ops.share._internal.utils import (
+    OpSampleInput,
+    OpDynamicInput,
+    OpErrorInput,
+    make_tensor,
+    make_tensor_with_np_array,
+    skip_sample_inputs,
+)
 
 # op_basic_reference_inputs_func for ops
 def basic_sample_inputs_add_sub_ext(
@@ -386,6 +400,608 @@ def pow_ext_func_grad_without_kwargs(op_input, exponent):
 def floor_divide_ext_func_grad_without_kwargs(op_input, other):
     return mint.floor_divide(op_input, other)
 
+def sample_inputs_broadcast_to(op_info, dtype, device, **kwargs):
+    S = SMALL_DIM_SIZE
+
+    test_cases = (
+        ((S, S, S, S, 1, 1), (S, S, S, S, S, S)),
+        ((S, 1, 1), (S, S, S)),
+        ((S, 1, S), (S, S, S)),
+        ((S, 1), (S, S, S)),
+        ((1,), (S, S, S)),
+        ((1, S), (1, 1, S)),
+        ((), ()),
+        ((), (1, 3, 2)),
+    )
+
+    return (
+        OpSampleInput(
+            make_tensor(size, dtype=dtype, device=device, low=None, high=None),
+            op_args=(shape,),
+            sample_name=op_info.name,
+        ) for size, shape in test_cases)
+
+def sample_inputs_binary_cross_entropy(op_info, dtype, device, logits=False, **kwargs):
+    S = SMALL_DIM_SIZE
+
+    make = functools.partial(make_tensor, device=device, dtype=dtype)
+    # Lower bounds must be greater than 'eps' defined in gradcheck.py::gradgradcheck() -> eps
+    # otherwise perturbation calculation causes Tensor value to become negative triggering
+    # a device-side hardware assertion
+    make_prob = functools.partial(make, low=1e-6, high=1)
+
+    reductions = ("mean", "sum", "none")
+
+    shapes_and_kwargs = [
+        *[(shape, None) for shape in ((), (1,), (S,), (S, S), (S, S, S))],
+        # Now framework does not support passing parameters in an arbitrary order during the backward process.
+        # *[((S, S), dict(reduction=reduction)) for reduction in reductions],
+        *[((S, S), {"weight": make((S, S)), "reduction": reduction}) for reduction in reductions],
+    ]
+
+    if logits:
+        shapes_and_kwargs.extend(
+            [((S, S), {"reduction": reduction, "pos_weight": make((S, ), low=0)}) for reduction in reductions]
+        )
+
+    for shape, kwargs in shapes_and_kwargs:
+        yield OpSampleInput(
+            (make if logits else make_prob)(shape),
+            op_args=(make_prob(shape),),
+            op_kwargs=kwargs,
+            sample_name=op_info.name,
+        )
+
+def sample_inputs_binary_cross_entropy_with_logits(op_info, dtype, device, **kwargs):
+    S = SMALL_DIM_SIZE
+
+    make = functools.partial(make_tensor, device=device, dtype=dtype)
+    make_prob = functools.partial(make, low=0, high=1)
+    reductions = ("mean", "sum", "none")
+
+    def make_weight_shape_kwargs():
+        kwargs = []
+        for shape in ((1,), (1, S), (S), (S, S)):
+            kwargs.extend([((S, S), {"weight": make(shape), "reduction": reduction}) for reduction in reductions])
+        return kwargs
+
+    shapes_and_kwargs = [
+        *[(shape, None) for shape in ((), (1,), (S,), (S, S), (S, S, S))],
+        # *[((S, S), dict(reduction=reduction)) for reduction in reductions],
+        *make_weight_shape_kwargs(),
+        # *[((S, S), dict(reduction=reduction, pos_weight=make((S,), low=0))) for reduction in reductions],
+        *[
+            ((S, S), {"weight": make((S, S)), "reduction": reduction, "pos_weight": make((S,), low=0)})
+            for reduction in reductions
+        ],
+    ]
+
+    for shape, kwargs in shapes_and_kwargs:
+        yield OpSampleInput(
+            make(shape),
+            op_args=(make_prob(shape),),
+            op_kwargs=kwargs,
+            sample_name=op_info.name,
+        )
+
+def sample_inputs_loss(op_info, dtype, device, **kwargs):
+    S = SMALL_DIM_SIZE
+
+    _make_tensor = functools.partial(make_tensor, device=device, dtype=dtype)
+
+    # Although most losses also support the reduce and size_average combination instead of reduce, the former is
+    # deprecated since 0.4.1 and thus is not tested
+    shapes_and_kwargs = (
+        ((), None),
+        ((S,), {"reduction": "mean"}),
+        ((S,), {"reduction": "sum"}),
+        ((S,), {"reduction": "none"}),
+        ((S, S), None),
+        ((S, 1), None),
+        ((S, S, S), None),
+    )
+
+    for shape, kwargs in shapes_and_kwargs:
+        yield OpSampleInput(
+            _make_tensor(shape), op_args=(_make_tensor(shape),), op_kwargs=kwargs, sample_name=op_info.name
+        )
+
+def sample_inputs_l1_loss(op_info, dtype, device, **kwargs):
+    yield from sample_inputs_loss(op_info, dtype, device, **kwargs)
+
+# Used for log_softmax, softmax, softmin
+def sample_inputs_softmax_variant(
+    op_info,
+    dtype,
+    device,
+    use_zero_dimensions=True,
+    **kwargs,
+):
+    S = SMALL_DIM_SIZE
+    M = MEDIUM_DIM_SIZE
+
+    make_arg = functools.partial(make_tensor, device=device, dtype=dtype)
+    cases = [
+        ((S,), (0,)),
+        ((S, S), (0,)),
+        ((S, S), (1,)),
+        ((S, S), (-1,)),
+        ((S, M, S), (2,)),
+        ((S, M, S, M), (-1,)),
+        *([((S, 0, 0), (-1,))] if use_zero_dimensions else []),
+    ]
+
+    return (
+        OpSampleInput(make_arg(shape), op_args=dim, op_kwargs=kwargs, sample_name=op_info.name) for shape, dim in cases
+    )
+
+def sample_inputs_matmul(op_info, dtype, device, is_rmatmul=False, **kwargs):
+    S = SMALL_DIM_SIZE
+    M = SMALL_DIM_SIZE if kwargs.get("only_small_tensor_size", False) else MEDIUM_DIM_SIZE
+    L = SMALL_DIM_SIZE if kwargs.get("only_small_tensor_size", False) else LARGE_DIM_SIZE
+
+    make_arg = functools.partial(make_tensor, dtype=dtype, device=device, low=None, high=None)
+    test_cases = (((L,), (L,)),
+                  ((S, M), (M,)),
+                  ((M,), (M, S)),
+                  ((S, M), (M, S)),
+                  ((S, 0), (0, M)),
+                  ((S, S, M), (M,)),
+                  ((S, S, M), (M, S)),
+                  ((S, S, 0), (0, S)),
+                  ((M,), (S, M, S)),
+                  ((S, M), (S, M, S)),
+                  ((0, 0), (S, 0, 0)),
+                  ((S, S, M, M), (S, S, M, S)),
+                  ((S, S, M, M), (M,)),
+                  ((M,), (S, S, M, S)),
+                  ((S, S, S), (1, S, S))
+                  )
+    for lhs_shape, rhs_shape in test_cases:
+        lhs = make_arg(lhs_shape)
+        rhs = make_arg(rhs_shape)
+        if not is_rmatmul:
+            yield OpSampleInput(lhs, op_args=(rhs,), sample_name=op_info.name)
+        else:
+            yield OpSampleInput(rhs, op_args=(lhs,), sample_name=op_info.name)
+
+def sample_inputs_batch_norm(op_info, dtype, device, **kwargs):
+    S = SMALL_DIM_SIZE
+
+    make_arg = functools.partial(make_tensor, device=device, dtype=dtype)
+    make_arg_without_requires_grad = functools.partial(make_tensor, device=device, dtype=dtype)
+
+    # Ordered as: input shape, kwargs for training, momentum, eps
+    cases: tuple[tuple[int], dict] = (  # type: ignore[assignment]
+        ((S, S, S), {'training': True, 'momentum': 0.5, 'eps': 0.6}),
+        ((3, 2, 4), {'training': False, 'momentum': -1.2}),
+        ((3, 1), {'training': True, 'momentum': 0.0}),
+        # empty value is not supported in mindspore
+        # ((0,), {'training': True}),
+        # ((0,), {'training': False}),
+        ((3, 2, 3, 4), {'training': True, 'momentum': -1.0, 'eps': 0.5}),
+        ((3, 2, 3, 4), {'training': False, 'momentum': -1.0, 'eps': 0.5}),
+        ((2, 1), {}),
+    )
+
+    for input_shape, kwargs in cases:
+        # args: running mean, running var, weight and bias should necessarily be of shape: (channels,)
+        channels = input_shape[1] if len(input_shape) > 1 else 0
+        weight = make_arg(channels) if channels > 0 else None
+        bias = make_arg(channels) if channels > 0 else None
+        running_mean = make_arg_without_requires_grad(channels, low=0)
+        running_var = make_arg_without_requires_grad(channels, low=0)
+
+        yield OpSampleInput(
+            make_arg(input_shape),
+            op_args=(
+                running_mean,
+                running_var,
+                weight,
+                bias
+            ),
+            op_kwargs=kwargs,
+            sample_name=op_info.name,
+        )
+
+    # Checking for permutations of weights and biases as `None`
+    is_training = [True, False, False]
+
+    for training in is_training:
+        yield OpSampleInput(
+            make_arg(input_shape),
+            op_args=(
+                running_mean,
+                running_var,
+                make_arg(channels),
+                make_arg(channels)
+            ),
+            op_kwargs={'training': training},
+            sample_name=op_info.name,
+        )
+
+    # Test case for no optional kwargs
+    # running_mean and running_var are required in evaluation mode (training: False) but not in training mode
+    # yield OpSampleInput(
+    #     make_arg((1, 2, 3)), op_args=(None, None, None, None), op_kwargs={'training': True}, sample_name=op_info.name
+    # )
+
+# basic op_basic_reference_inputs_func for glu ops
+def basic_sample_inputs_glu_func(
+    op_info: OpInfo,
+    dtype,
+    device=None,
+    **kwargs
+):
+    """Yield typical shape cases for glu ops.
+
+    Covers vectors, singleton dims, medium 2D/3D, and empty-dimension cases.
+
+    Args:
+        op_info: OpInfo object.
+        dtype: Data type of the tensors.
+        device: Device of the tensors.
+        kwargs: Additional keyword arguments.
+    Returns:
+        Generator of OpSampleInput objects.
+    """
+    S = SMALL_DIM_SIZE - 1
+    M = SMALL_DIM_SIZE if kwargs.get("only_small_tensor_size", False) else MEDIUM_DIM_SIZE
+    L = SMALL_DIM_SIZE if kwargs.get("only_small_tensor_size", False) else LARGE_DIM_SIZE
+
+    make_func = functools.partial(
+        make_tensor,
+        device=device,
+        dtype=dtype,
+        random_method='randn',
+    )
+
+    shapes = (
+        (S,),
+        (M, S),
+        (S, S, L),
+        (3, 0, 2),
+        (2, 1, 3, 2),
+        (2, 3, 4, 1, 2),
+        (2, 1, 2, 2, 1, 2),
+        (2, 1, 2, 2, 1, 2, 2),
+        (2, 1, 2, 2, 1, 2, 1, 2),
+    )
+
+    for input_shape in shapes:
+        _input = make_func(input_shape)
+
+        yield OpSampleInput(
+            _input,
+            op_args=(),
+            sample_name=op_info.name,
+        )
+
+# op_extra_reference_inputs_func for glu ops
+def _generate_glu_tensors_sample_inputs_func(
+    op_info: OpInfo,
+    dtype,
+    device=None,
+    **kwargs
+):
+    """Generate single-tensor sample inputs for glu.
+
+    Args:
+        op_info: Operator metadata.
+        dtype: Data type of tensors to generate.
+        device: Target device.
+        kwargs: Additional options (unused).
+
+    Returns:
+        Generator[OpSampleInput]: Inputs covering empty/scalar/various shapes.
+    """
+    shapes = (
+        (0,),        # empty tensors
+        (1, 0, 4),   # empty tensors
+        (20,),       # 1D tensors with small size
+        (812,),      # 1D tensors with medium size
+        (1029, 918), # 2D tensors with large size
+    )
+
+    for shape in shapes:
+        yield OpSampleInput(
+            op_input=make_tensor(shape, dtype, device=device, random_method='randn'),
+            op_args=(),
+            op_kwargs={},
+            sample_name=f"{op_info.name}_tensor_inputs",
+        )
+
+def _generate_glu_discontiguous_tensor_inputs_func(
+    op_info: OpInfo,
+    dtype,
+    device=None,
+    **kwargs
+):
+    """Generate contiguous and discontiguous tensor inputs for glu ops.
+
+    Args:
+        op_info: Operator metadata.
+        dtype: Data type of tensors to generate.
+        device: Target device.
+        kwargs: Additional options (unused).
+
+    Returns:
+        Generator[OpSampleInput]: Inputs covering contiguous/non-contiguous memory layouts.
+    """
+
+    shapes = (
+        (2,),
+        (3, 2),
+        (1, 2, 4),
+    )
+
+    for shape, discontiguous in itertools.product(shapes, [False, True]):
+        yield OpSampleInput(
+            op_input=make_tensor(shape, dtype=dtype, device=device, discontiguous=discontiguous, random_method='randn'),
+            op_args=(),
+            op_kwargs={},
+            sample_name=f"{op_info.name}_discontiguous_tensor_inputs",
+        )
+
+def _generate_glu_extremal_value_tensor_inputs_func(
+    op_info: OpInfo,
+    dtype,
+    device=None,
+    **kwargs
+):
+    """Generate tensor with extremal value for glu.
+
+    Args:
+        op_info: Operator metadata.
+        dtype: Data type of tensors to generate.
+        device: Target device.
+        kwargs: Additional options (unused).
+
+    Returns:
+        Generator[OpSampleInput]: Inputs covering extremal value.
+    """
+    # inf and nan is unsupported on Ascend910 devices.
+    if device == 'ascend':
+        ascend_name = MSContext.get_instance().get_ascend_soc_version()
+        if ascend_name == 'ascend910':
+            warnings.warn("Inf and NaN are unsupported on current Ascend devices.")
+            return
+
+    S = SMALL_DIM_SIZE - 1
+    yield OpSampleInput(
+        op_input=make_tensor_with_np_array(np.full((S, S), np.inf), dtype=dtype, device=device),
+        op_args=(),
+        op_kwargs={},
+        sample_name=op_info.name,
+    )
+    yield OpSampleInput(
+        op_input=make_tensor_with_np_array(np.full((S, S), -np.inf), dtype=dtype, device=device),
+        op_args=(),
+        op_kwargs={},
+        sample_name=op_info.name,
+    )
+    yield OpSampleInput(
+        op_input=make_tensor_with_np_array(np.full((S, S), np.nan), dtype=dtype, device=device),
+        op_args=(),
+        op_kwargs={},
+        sample_name=op_info.name,
+    )
+
+def extra_sample_inputs_glu_func(
+    op_info: OpInfo,
+    dtype,
+    device=None,
+    **kwargs
+):
+    """Generate comprehensive reference inputs for glu.
+
+    Args:
+        op_info: Operator metadata.
+        dtype: Data type of tensors to generate.
+        device: Target device.
+        kwargs: Additional options (unused).
+
+    Returns:
+        Generator[OpSampleInput]: Aggregated samples from multiple input generators.
+    """
+    if dtype in dtypes_extra_uint:
+        return
+    # tensors with many kinds of shapes
+    yield from _generate_glu_tensors_sample_inputs_func(op_info, dtype, device, **kwargs)
+    # tensors with small value
+    if dtype != ms.bool_:
+        yield from _generate_unary_op_small_value_tensor_inputs_func(op_info, dtype, device, **kwargs)
+    # tensors with large value
+    if dtype not in (ms.bool_, ms.uint8, ms.int8):
+        yield from _generate_unary_op_large_value_tensor_inputs_func(op_info, dtype, device, **kwargs)
+    # contiguous or discontiguous tensors
+    yield from _generate_glu_discontiguous_tensor_inputs_func(op_info, dtype, device, **kwargs)
+    # tensor with extremal value
+    if dtype.is_floating_point or dtype.is_complex:
+        yield from _generate_glu_extremal_value_tensor_inputs_func(op_info, dtype, device, **kwargs)
+
+# op_dynamic_inputs_func for glu ops
+def dynamic_sample_inputs_glu_func(
+    op_info: OpInfo,
+    dtype,
+    device=None,
+    **kwargs
+):
+    """Generate dynamic-shape/rank inputs for glu.
+
+    Args:
+        op_info: Operator metadata.
+        dtype: Data type of tensors to generate.
+        device: Target device.
+        kwargs: Flags such as only_dynamic_shape/only_dynamic_rank.
+
+    Returns:
+        Generator[OpDynamicInput]: Dynamic compile-time and runtime inputs.
+    """
+    make_func = functools.partial(make_tensor, dtype=dtype, device=device)
+    if not kwargs.get("only_dynamic_rank", False):
+        # dynamic shape
+        yield OpDynamicInput(
+            op_compile_input=OpSampleInput(
+                op_input=ms.Tensor(shape=(None, None), dtype=dtype),
+                op_args=(),
+                op_kwargs={},
+                sample_name=f"{op_info.name}_dynamic_shape_compile_input",
+            ),
+            op_running_inputs=(
+                OpSampleInput(
+                    op_input=make_func(shape=(2, 4)),
+                    op_args=(),
+                    op_kwargs={},
+                    sample_name=f"{op_info.name}_dynamic_shape_running_input",
+                ),
+                OpSampleInput(
+                    op_input=make_func(shape=(4, 6)),
+                    op_args=(),
+                    op_kwargs={},
+                    sample_name=f"{op_info.name}_dynamic_shape_running_input",
+                ),
+            ),
+        )
+    if not kwargs.get("only_dynamic_shape", False):
+        # dynamic rank
+        yield OpDynamicInput(
+            op_compile_input=OpSampleInput(
+                op_input=ms.Tensor(shape=None, dtype=dtype),
+                op_args=(),
+                op_kwargs={},
+                sample_name=f"{op_info.name}_dynamic_rank_compile_input",
+            ),
+            op_running_inputs=(
+                OpSampleInput(
+                    op_input=make_func(shape=(2, 4)),
+                    op_args=(),
+                    op_kwargs={},
+                    sample_name=f"{op_info.name}_dynamic_rank_running_input",
+                ),
+                OpSampleInput(
+                    op_input=make_func(shape=(2, 3, 4)),
+                    op_args=(),
+                    op_kwargs={},
+                    sample_name=f"{op_info.name}_dynamic_rank_running_input",
+                ),
+            ),
+        )
+
+def _generate_tensor_is_contiguous_contiguous_tensor_inputs_func(
+    op_info: OpInfo,
+    dtype,
+    device=None,
+    **kwargs
+):
+    """Generate contiguous tensor inputs for tensor.is_contiguous.
+
+    Args:
+        op_info: Operator metadata.
+        dtype: Data type of tensors to generate.
+        device: Target device.
+        kwargs: Additional options (unused).
+
+    Returns:
+        Generator[OpSampleInput]: Inputs covering contiguous/non-contiguous memory layouts.
+    """
+
+    shapes = (
+        (1,),
+        (3, 1),
+        (1, 2, 3),
+    )
+
+    for shape, discontiguous in itertools.product(shapes, [False]):
+        yield OpSampleInput(
+            op_input=make_tensor(shape, dtype=dtype, device=device, discontiguous=discontiguous),
+            op_args=(),
+            op_kwargs={},
+            sample_name=f"{op_info.name}_discontiguous_tensor_inputs",
+        )
+
+def extra_sample_inputs_tensor_is_contiguous_func(
+    op_info: OpInfo,
+    dtype,
+    device=None,
+    **kwargs
+):
+    """Generate comprehensive reference inputs for tensor.is_contiguous.
+
+    Args:
+        op_info: Operator metadata.
+        dtype: Data type of tensors to generate.
+        device: Target device.
+        kwargs: Additional options (unused).
+
+    Returns:
+        Generator[OpSampleInput]: Aggregated samples from multiple input generators.
+    """
+    if dtype in dtypes_extra_uint:
+        return
+    # tensors with many kinds of shapes
+    yield from _generate_unary_op_tensors_sample_inputs_func(op_info, dtype, device, **kwargs)
+    # tensors with small value
+    if dtype != ms.bool_:
+        yield from _generate_unary_op_small_value_tensor_inputs_func(op_info, dtype, device, **kwargs)
+    # tensors with large value
+    if dtype not in (ms.bool_, ms.uint8, ms.int8):
+        yield from _generate_unary_op_large_value_tensor_inputs_func(op_info, dtype, device, **kwargs)
+    # contiguous tensors
+    yield from _generate_tensor_is_contiguous_contiguous_tensor_inputs_func(op_info, dtype, device, **kwargs)
+    # tensor with extremal value
+    if dtype.is_floating_point or dtype.is_complex:
+        yield from _generate_unary_op_extremal_value_tensor_inputs_func(op_info, dtype, device, **kwargs)
+
+# wrap tensor method for astype
+def tensor_astype_ms(op_input, dtype=ms.float32, copy=False):
+    return op_input.astype(dtype=dtype, copy=copy)
+
+def tensor_astype_torch(op_input, other=torch.tensor(1.0, dtype=torch.float32)):
+    return op_input.type_as(other=other)
+
+# wrap tensor method for byte
+def tensor_byte_ms(op_input):
+    return op_input.byte()
+
+def tensor_byte_torch(op_input):
+    return op_input.byte()
+
+# wrap tensor method for clone
+def tensor_clone_ms(op_input):
+    return op_input.clone()
+
+def tensor_clone_torch(op_input):
+    return op_input.clone()
+
+# wrap tensor method for contiguous
+def tensor_contiguous_ms(op_input):
+    return op_input.contiguous()
+
+def tensor_contiguous_torch(op_input):
+    return op_input.contiguous()
+
+# wrap tensor method for is_contiguous
+def tensor_is_contiguous_ms(op_input):
+    return op_input.is_contiguous()
+
+def tensor_is_contiguous_torch(op_input):
+    return op_input.is_contiguous()
+
+# wrap tensor method for matmul
+def tensor_matmul_ms(op_input, x):
+    return op_input.matmul(x)
+
+def tensor_matmul_torch(op_input, x):
+    return op_input.matmul(x)
+
+# wrap tensor method for numpy
+def tensor_numpy_ms(op_input):
+    return op_input.numpy()
+
+def tensor_numpy_torch(op_input):
+    return op_input.numpy()
+
 # wrap tensor method for tanh
 def tensor_tanh_ms(op_input):
     return op_input.tanh()
@@ -613,6 +1229,76 @@ def tensor_abs_torch(op_input):
 
 def tensor_floor_divide_torch(op_input, other):
     return op_input.floor_divide(other)
+
+# wrap tensor method for to
+def tensor_to_ms(op_input, dtype=ms.uint8):
+    return op_input.to(dtype=dtype)
+
+def tensor_to_torch(op_input, dtype=torch.uint8):
+    return op_input.to(dtype=dtype)
+
+# wrap method for empty
+def empty_ms(op_input):
+    return mint.empty(op_input.shape, dtype=op_input.dtype).shape
+
+def empty_torch(op_input):
+    return torch.empty(op_input.shape, dtype=op_input.dtype).shape
+
+# wrap method for empty_like
+def empty_like_ms(op_input):
+    return mint.empty_like(op_input).shape
+
+def empty_like_torch(op_input):
+    return torch.empty_like(op_input).shape
+
+# wrap nn method for gelu
+def nn_gelu_ms(op_input):
+    return mint.nn.GELU()(op_input)
+
+def nn_gelu_torch(op_input):
+    return torch.nn.GELU()(op_input)
+
+# wrap nn method for glu
+def nn_glu_ms(op_input):
+    return mint.nn.GLU()(op_input)
+
+def nn_glu_torch(op_input):
+    return torch.nn.GLU()(op_input)
+
+# wrap nn method for identity
+def nn_identity_ms(op_input):
+    return mint.nn.Identity()(op_input)
+
+def nn_identity_torch(op_input):
+    return torch.nn.Identity()(op_input)
+
+# wrap nn method for logsigmoid
+def nn_logsigmoid_ms(op_input):
+    return mint.nn.LogSigmoid()(op_input)
+
+def nn_logsigmoid_torch(op_input):
+    return torch.nn.LogSigmoid()(op_input)
+
+# wrap nn method for prelu
+def nn_prelu_ms(op_input):
+    return mint.nn.PReLU(dtype=op_input.dtype)(op_input)
+
+def nn_prelu_torch(op_input):
+    return torch.nn.PReLU(dtype=op_input.dtype)(op_input)
+
+# wrap nn method for relu
+def nn_relu_ms(op_input):
+    return mint.nn.ReLU()(op_input)
+
+def nn_relu_torch(op_input):
+    return torch.nn.ReLU()(op_input)
+
+# wrap nn method for relu6
+def nn_relu6_ms(op_input):
+    return mint.nn.ReLU6()(op_input)
+
+def nn_relu6_torch(op_input):
+    return torch.nn.ReLU6()(op_input)
 
 # wrap nn method for tanh
 def nn_tanh_ms(op_input):
@@ -1191,6 +1877,59 @@ def dynamic_sample_inputs_mint_interpolate(op_info: OpInfo, dtype=None, device=N
             )
 
 
+# basic op_basic_reference_inputs_func for prelu
+def basic_sample_inputs_prelu_func(
+    op_info: OpInfo,
+    dtype,
+    device=None,
+    **kwargs
+):
+    """Yield typical shape cases for unary ops.
+
+    Covers scalars, vectors, singleton dims, medium 2D/3D, and empty-dimension cases.
+
+    Args:
+        op_info: OpInfo object.
+        dtype: Data type of the tensors.
+        device: Device of the tensors.
+        kwargs: Additional keyword arguments.
+    Returns:
+        Generator of OpSampleInput objects.
+    """
+    S = SMALL_DIM_SIZE if kwargs.get("only_small_tensor_size", False) else EXTRA_SMALL_DIM_SIZE
+    M = SMALL_DIM_SIZE if kwargs.get("only_small_tensor_size", False) else MEDIUM_DIM_SIZE
+    L = SMALL_DIM_SIZE if kwargs.get("only_small_tensor_size", False) else LARGE_DIM_SIZE
+
+    make_func = functools.partial(
+        make_tensor,
+        device=device,
+        dtype=dtype,
+    )
+
+    # 1D shape is not supported in grad of mint.nn.PReLU
+    shapes = (
+        (S,),
+        (M, S),
+        (S, S, L),
+        (3, 0, 1),
+        (2, 1, 3, 2),
+        (2, 3, 4, 1, 2),
+        (2, 1, 2, 2, 1, 2),
+        (2, 1, 2, 2, 1, 2, 1),
+        (2, 1, 2, 2, 1, 2, 1, 2),
+    )
+
+    for input_shape in shapes:
+        _input = make_func(input_shape)
+
+        yield OpSampleInput(
+            _input,
+            op_args=(),
+            sample_name=op_info.name,
+        )
+
+
+
 def tensor_sum_ms(op_input, *op_args, **op_kwargs):
     return op_input.sum(*op_args, **op_kwargs)
 
@@ -1655,6 +2394,94 @@ def extra_sample_inputs_mint_reshape(op_info: OpInfo, dtype=None, device=None, *
 
 # op database
 op_db: Dict[str, OpInfo] = {
+    'Tensor.astype': UnaryOpInfo(
+        name='Tensor.astype',
+        op=tensor_astype_ms,
+        ref=tensor_astype_torch,
+        dtypes_ascend=tuple(d for d in dtypes_as_torch if d != ms.bfloat16),
+        dtypes_ascend910b=tuple(d for d in dtypes_as_torch),
+        dtypes_cpu=(),
+        dtypes_gpu=(),
+    ),
+    'Tensor.byte': UnaryOpInfo(
+        name='Tensor.byte',
+        op=tensor_byte_ms,
+        ref=tensor_byte_torch,
+        # int32, int64, float32, float64, complex has precision issue
+        dtypes_ascend=(ms.bool_, ms.int8, ms.int16, ms.uint8, ms.float16),
+        # float64, complex has precision issue
+        dtypes_ascend910b=tuple(d for d in dtypes_as_torch if (not d.is_complex and d != ms.float64)),
+        dtypes_cpu=(),
+        dtypes_gpu=(),
+        is_differentiable=False,
+    ),
+    'Tensor.clone': UnaryOpInfo(
+        name='Tensor.clone',
+        op=tensor_clone_ms,
+        ref=tensor_clone_torch,
+        dtypes_ascend=tuple(d for d in dtypes_as_torch if d != ms.bfloat16),
+        dtypes_ascend910b=tuple(d for d in dtypes_as_torch),
+        dtypes_cpu=(),
+        dtypes_gpu=(),
+    ),
+    'Tensor.contiguous': UnaryOpInfo(
+        name='Tensor.contiguous',
+        op=tensor_contiguous_ms,
+        ref=tensor_contiguous_torch,
+        dtypes_ascend=tuple(d for d in dtypes_as_torch if d != ms.bfloat16),
+        dtypes_ascend910b=tuple(d for d in dtypes_as_torch),
+        dtypes_cpu=(),
+        dtypes_gpu=(),
+    ),
+    # supported only in pynative mode
+    'Tensor.is_contiguous': UnaryOpInfo(
+        name='Tensor.is_contiguous',
+        op=tensor_is_contiguous_ms,
+        ref=tensor_is_contiguous_torch,
+        dtypes_ascend=tuple(d for d in dtypes_as_torch if d != ms.bfloat16),
+        dtypes_ascend910b=tuple(d for d in dtypes_as_torch),
+        dtypes_cpu=(),
+        dtypes_gpu=(),
+        is_differentiable=False,
+        op_extra_reference_inputs_func=extra_sample_inputs_tensor_is_contiguous_func,
+    ),
+    'Tensor.matmul': OpInfo(
+        name='Tensor.matmul',
+        op=tensor_matmul_ms,
+        ref=tensor_matmul_torch,
+        # 910A underlying architecture does not support fp32 and will convert to fp16 operations.
+        # Therefore, float32 will be skipped in 910A.
+        dtypes_ascend=(ms.float16,),
+        dtypes_ascend910b=(ms.float16, ms.float32),
+        dtypes_cpu=(),
+        dtypes_gpu=(),
+        op_basic_reference_inputs_func=sample_inputs_matmul,
+        op_extra_reference_inputs_func=None,
+        op_dynamic_inputs_func=None,
+    ),
+    # supported only in pynative mode
+    'Tensor.numpy': UnaryOpInfo(
+        name='Tensor.numpy',
+        op=tensor_numpy_ms,
+        ref=tensor_numpy_torch,
+        dtypes_ascend=tuple(d for d in dtypes_as_torch if d != ms.bfloat16),
+        dtypes_ascend910b=tuple(d for d in dtypes_as_torch if d != ms.bfloat16),
+        dtypes_cpu=(),
+        dtypes_gpu=(),
+        is_differentiable=False,
+    ),
+    'Tensor.to': UnaryOpInfo(
+        name='Tensor.to',
+        op=tensor_to_ms,
+        ref=tensor_to_torch,
+        # int32, int64, float32, float64 and complex have precision issue
+        dtypes_ascend=(ms.bool_, ms.int8, ms.int16, ms.uint8, ms.float16),
+        # float64 and complex have precision issue
+        dtypes_ascend910b=tuple(d for d in dtypes_as_torch if (not d.is_complex and d != ms.float64)),
+        dtypes_cpu=(),
+        dtypes_gpu=(),
+        is_differentiable=False,
+    ),
     'mint.add': BinaryOpInfo(
         name='mint.add',
         op=mint.add,
@@ -1668,6 +2495,310 @@ op_db: Dict[str, OpInfo] = {
         op_basic_reference_inputs_func=basic_sample_inputs_add_sub_ext,
         op_dynamic_inputs_func=dynamic_sample_inputs_add_sub_ext,
         op_error_inputs_func=error_inputs_add_sub_ext_func,
+    ),
+    'mint.broadcast_to': OpInfo(
+        name='mint.broadcast_to',
+        op=mint.broadcast_to,
+        ref=torch.broadcast_to,
+        # bfloat16 has precision issue
+        dtypes_ascend=tuple(
+            d for d in dtypes_as_torch if (not d.is_complex and d != ms.int16 and d != ms.bfloat16 and d != ms.float64)
+        ),
+        # bfloat16 has precision issue
+        dtypes_ascend910b=tuple(
+            d for d in dtypes_as_torch if (not d.is_complex and d != ms.int16 and d != ms.bfloat16 and d != ms.float64)
+        ),
+        dtypes_cpu=(),
+        dtypes_gpu=(),
+        op_basic_reference_inputs_func=sample_inputs_broadcast_to,
+        op_extra_reference_inputs_func=None,
+        op_dynamic_inputs_func=None,
+    ),
+    'mint.clone': UnaryOpInfo(
+        name='mint.clone',
+        op=mint.clone,
+        ref=torch.clone,
+        dtypes_ascend=tuple(d for d in dtypes_as_torch if d != ms.bfloat16),
+        dtypes_ascend910b=tuple(d for d in dtypes_as_torch),
+        dtypes_cpu=(),
+        dtypes_gpu=(),
+    ),
+    'mint.empty': UnaryOpInfo(
+        name='mint.empty',
+        op=empty_ms,
+        ref=empty_torch,
+        dtypes_ascend=tuple(d for d in dtypes_as_torch if d != ms.bfloat16),
+        dtypes_ascend910b=tuple(d for d in dtypes_as_torch),
+        dtypes_cpu=(),
+        dtypes_gpu=(),
+        is_differentiable=False,
+    ),
+    'mint.empty_like': UnaryOpInfo(
+        name='mint.empty_like',
+        op=empty_like_ms,
+        ref=empty_like_torch,
+        dtypes_ascend=tuple(d for d in dtypes_as_torch if d != ms.bfloat16),
+        dtypes_ascend910b=tuple(d for d in dtypes_as_torch),
+        dtypes_cpu=(),
+        dtypes_gpu=(),
+        is_differentiable=False,
+    ),
+    'mint.matmul': OpInfo(
+        name='mint.matmul',
+        op=mint.matmul,
+        ref=torch.matmul,
+        # 910A underlying architecture does not support fp32 and will convert to fp16 operations.
+        # Therefore, float32 will be skipped in 910A.
+        dtypes_ascend=(ms.float16,),
+        dtypes_ascend910b=(ms.float16, ms.float32),
+        dtypes_cpu=(),
+        dtypes_gpu=(),
+        op_basic_reference_inputs_func=sample_inputs_matmul,
+        op_extra_reference_inputs_func=None,
+        op_dynamic_inputs_func=None,
+    ),
+    'mint.nn.functional.batch_norm': OpInfo(
+        name='mint.nn.functional.batch_norm',
+        op=mint.nn.functional.batch_norm,
+        ref=torch.nn.functional.batch_norm,
+        # float16 has precision issue
+        dtypes_ascend=(ms.float32,),
+        # bfloat16 and float16 has precision issue
+        dtypes_ascend910b=(ms.float32,),
+        dtypes_cpu=(),
+        dtypes_gpu=(),
+        op_basic_reference_inputs_func=sample_inputs_batch_norm,
+        op_extra_reference_inputs_func=None,
+        op_dynamic_inputs_func=None,
+    ),
+    'mint.nn.functional.binary_cross_entropy': OpInfo(
+        name='mint.nn.functional.binary_cross_entropy',
+        op=mint.nn.functional.binary_cross_entropy,
+        ref=torch.nn.functional.binary_cross_entropy,
+        # float16 has occasional precision issue
+        dtypes_ascend=(ms.float32,),
+        # float16 has precision issue
+        dtypes_ascend910b=(ms.float32,),
+        dtypes_cpu=(),
+        dtypes_gpu=(),
+        op_basic_reference_inputs_func=sample_inputs_binary_cross_entropy,
+        op_extra_reference_inputs_func=None,
+        op_dynamic_inputs_func=None,
+    ),
+    'mint.nn.functional.binary_cross_entropy_with_logits': OpInfo(
+        name='mint.nn.functional.binary_cross_entropy_with_logits',
+        op=mint.nn.functional.binary_cross_entropy_with_logits,
+        ref=torch.nn.functional.binary_cross_entropy_with_logits,
+        # float16 has precision issue
+        dtypes_ascend=(ms.float32,),
+        # bfloat16 and float16 has precision issue
+        dtypes_ascend910b=(ms.float32,),
+        dtypes_cpu=(),
+        dtypes_gpu=(),
+        op_basic_reference_inputs_func=sample_inputs_binary_cross_entropy_with_logits,
+        op_extra_reference_inputs_func=None,
+        op_dynamic_inputs_func=None,
+    ),
+    'mint.nn.functional.gelu': UnaryOpInfo(
+        name='mint.nn.functional.gelu',
+        op=mint.nn.functional.gelu,
+        ref=torch.nn.functional.gelu,
+        dtypes_ascend=(ms.float16, ms.float32),
+        dtypes_ascend910b=(ms.bfloat16, ms.float16, ms.float32),
+        dtypes_cpu=(),
+        dtypes_gpu=(),
+    ),
+    'mint.nn.GELU': UnaryOpInfo(
+        name='mint.nn.GELU',
+        op=nn_gelu_ms,
+        ref=nn_gelu_torch,
+        dtypes_ascend=(ms.float16, ms.float32),
+        dtypes_ascend910b=(ms.bfloat16, ms.float16, ms.float32),
+        dtypes_cpu=(),
+        dtypes_gpu=(),
+    ),
+    'mint.nn.functional.glu': UnaryOpInfo(
+        name='mint.nn.functional.glu',
+        op=mint.nn.functional.glu,
+        ref=torch.nn.functional.glu,
+        # float16 precision is not supported for `glu` since precision issue in 910A
+        dtypes_ascend=(ms.float32, ms.float64),
+        # bfloat16 precision is not supported for `glu` since precision issue in 910B
+        dtypes_ascend910b=(ms.float16, ms.float32, ms.float64),
+        dtypes_cpu=(),
+        dtypes_gpu=(),
+        op_basic_reference_inputs_func=basic_sample_inputs_glu_func,
+        op_extra_reference_inputs_func=extra_sample_inputs_glu_func,
+        op_dynamic_inputs_func=dynamic_sample_inputs_glu_func,
+    ),
+    'mint.nn.GLU': UnaryOpInfo(
+        name='mint.nn.GLU',
+        op=nn_glu_ms,
+        ref=nn_glu_torch,
+        # float16 precision is not supported for `glu` since precision issue in 910A
+        dtypes_ascend=(ms.float32, ms.float64),
+        # bfloat16 precision is not supported for `glu` since precision issue in 910B
+        dtypes_ascend910b=(ms.float16, ms.float32, ms.float64),
+        dtypes_cpu=(),
+        dtypes_gpu=(),
+        op_basic_reference_inputs_func=basic_sample_inputs_glu_func,
+        op_extra_reference_inputs_func=extra_sample_inputs_glu_func,
+        op_dynamic_inputs_func=dynamic_sample_inputs_glu_func,
+    ),
+    'mint.nn.functional.hardsigmoid': UnaryOpInfo(
+        name='mint.nn.functional.hardsigmoid',
+        op=mint.nn.functional.hardsigmoid,
+        ref=torch.nn.functional.hardsigmoid,
+        # Remove int32 from the dtypes since it's not supported by torch in cpu backend.
+        dtypes_ascend=(ms.float16, ms.float32),
+        dtypes_ascend910b=(ms.bfloat16, ms.float16, ms.float32),
+        dtypes_cpu=(),
+        dtypes_gpu=(),
+    ),
+    'mint.nn.functional.hardswish': UnaryOpInfo(
+        name='mint.nn.functional.hardswish',
+        op=mint.nn.functional.hardswish,
+        ref=torch.nn.functional.hardswish,
+        dtypes_ascend=(ms.float16, ms.float32),
+        dtypes_ascend910b=(ms.bfloat16, ms.float16, ms.float32),
+        dtypes_cpu=(),
+        dtypes_gpu=(),
+    ),
+    'mint.nn.functional.l1_loss': OpInfo(
+        name='mint.nn.functional.l1_loss',
+        op=mint.nn.functional.l1_loss,
+        ref=torch.nn.functional.l1_loss,
+        dtypes_ascend=(ms.float16, ms.float32),
+        # bfloat16 has occasional accuracy issue
+        dtypes_ascend910b=(ms.float16, ms.float32),
+        dtypes_cpu=(),
+        dtypes_gpu=(),
+        op_basic_reference_inputs_func=sample_inputs_l1_loss,
+        op_extra_reference_inputs_func=None,
+        op_dynamic_inputs_func=None,
+    ),
+    'mint.nn.functional.leaky_relu': UnaryOpInfo(
+        name='mint.nn.functional.leaky_relu',
+        op=mint.nn.functional.leaky_relu,
+        ref=torch.nn.functional.leaky_relu,
+        dtypes_ascend=(ms.float16, ms.float32, ms.float64),
+        dtypes_ascend910b=(ms.bfloat16, ms.float16, ms.float32, ms.float64),
+        dtypes_cpu=(),
+        dtypes_gpu=(),
+    ),
+    'mint.nn.functional.log_softmax': OpInfo(
+        name='mint.nn.functional.log_softmax',
+        op=mint.nn.functional.log_softmax,
+        ref=torch.nn.functional.log_softmax,
+        # float64 has precision issue
+        dtypes_ascend=(ms.float16, ms.float32),
+        # bfloat16 and float64 has precision issue
+        dtypes_ascend910b=(ms.float16, ms.float32),
+        dtypes_cpu=(),
+        dtypes_gpu=(),
+        op_basic_reference_inputs_func=sample_inputs_softmax_variant,
+        op_extra_reference_inputs_func=None,
+        op_dynamic_inputs_func=None,
+    ),
+    'mint.nn.functional.logsigmoid': UnaryOpInfo(
+        name='mint.nn.functional.logsigmoid',
+        op=mint.nn.functional.logsigmoid,
+        ref=torch.nn.functional.logsigmoid,
+        dtypes_ascend=(ms.float16, ms.float32),
+        dtypes_ascend910b=(ms.bfloat16, ms.float16, ms.float32),
+        dtypes_cpu=(),
+        dtypes_gpu=(),
+    ),
+    'mint.nn.functional.mse_loss': OpInfo(
+        name='mint.nn.functional.mse_loss',
+        op=mint.nn.functional.mse_loss,
+        ref=torch.nn.functional.mse_loss,
+        dtypes_ascend=(ms.float16, ms.float32),
+        # bfloat16 is not supported in torch cpu
+        dtypes_ascend910b=(ms.float16, ms.float32),
+        dtypes_cpu=(),
+        dtypes_gpu=(),
+        op_basic_reference_inputs_func=sample_inputs_loss,
+        op_extra_reference_inputs_func=None,
+        op_dynamic_inputs_func=None,
+    ),
+    'mint.nn.functional.softmax': OpInfo(
+        name='mint.nn.functional.softmax',
+        op=mint.nn.functional.softmax,
+        ref=torch.nn.functional.softmax,
+        # float64 has precision issue
+        dtypes_ascend=(ms.float16, ms.float32),
+        # float64 has precision issue
+        dtypes_ascend910b=(ms.bfloat16, ms.float16, ms.float32),
+        dtypes_cpu=(),
+        dtypes_gpu=(),
+        op_basic_reference_inputs_func=sample_inputs_softmax_variant,
+        op_extra_reference_inputs_func=None,
+        op_dynamic_inputs_func=None,
+    ),
+    'mint.nn.Identity': UnaryOpInfo(
+        name='mint.nn.Identity',
+        op=nn_identity_ms,
+        ref=nn_identity_torch,
+        dtypes_ascend=tuple(d for d in dtypes_as_torch if d != ms.bfloat16),
+        dtypes_ascend910b=tuple(d for d in dtypes_as_torch),
+        dtypes_cpu=(),
+        dtypes_gpu=(),
+    ),
+    'mint.nn.LogSigmoid': UnaryOpInfo(
+        name='mint.nn.LogSigmoid',
+        op=nn_logsigmoid_ms,
+        ref=nn_logsigmoid_torch,
+        dtypes_ascend=(ms.float16, ms.float32),
+        dtypes_ascend910b=(ms.bfloat16, ms.float16, ms.float32),
+        dtypes_cpu=(),
+        dtypes_gpu=(),
+    ),
+    'mint.nn.PReLU': UnaryOpInfo(
+        name='mint.nn.PReLU',
+        op=nn_prelu_ms,
+        ref=nn_prelu_torch,
+        dtypes_ascend=(ms.float16, ms.float32),
+        dtypes_ascend910b=(ms.bfloat16, ms.float16, ms.float32),
+        dtypes_cpu=(),
+        dtypes_gpu=(),
+        op_basic_reference_inputs_func=basic_sample_inputs_prelu_func,
+    ),
+    'mint.nn.functional.relu': UnaryOpInfo(
+        name='mint.nn.functional.relu',
+        op=mint.nn.functional.relu,
+        ref=torch.nn.functional.relu,
+        dtypes_ascend=(ms.float16, ms.float32, ms.int8, ms.int32, ms.int64, ms.uint8),
+        dtypes_ascend910b=(ms.bfloat16, ms.float16, ms.float32, ms.int8, ms.int32, ms.int64, ms.uint8),
+        dtypes_cpu=(),
+        dtypes_gpu=(),
+    ),
+    'mint.nn.ReLU': UnaryOpInfo(
+        name='mint.nn.ReLU',
+        op=nn_relu_ms,
+        ref=nn_relu_torch,
+        dtypes_ascend=(ms.float16, ms.float32, ms.int8, ms.int32, ms.int64, ms.uint8),
+        dtypes_ascend910b=(ms.bfloat16, ms.float16, ms.float32, ms.int8, ms.int32, ms.int64, ms.uint8),
+        dtypes_cpu=(),
+        dtypes_gpu=(),
+    ),
+    'mint.nn.functional.relu6': UnaryOpInfo(
+        name='mint.nn.functional.relu6',
+        op=mint.nn.functional.relu6,
+        ref=torch.nn.functional.relu6,
+        dtypes_ascend=(ms.float16, ms.float32, ms.int8, ms.int16, ms.int32, ms.int64, ms.uint8),
+        dtypes_ascend910b=(ms.bfloat16, ms.float16, ms.float32, ms.int8, ms.int16, ms.int32, ms.int64, ms.uint8),
+        dtypes_cpu=(),
+        dtypes_gpu=(),
+    ),
+    'mint.nn.ReLU6': UnaryOpInfo(
+        name='mint.nn.ReLU6',
+        op=nn_relu6_ms,
+        ref=nn_relu6_torch,
+        dtypes_ascend=(ms.float16, ms.float32, ms.int8, ms.int16, ms.int32, ms.int64, ms.uint8),
+        dtypes_ascend910b=(ms.bfloat16, ms.float16, ms.float32, ms.int8, ms.int16, ms.int32, ms.int64, ms.uint8),
+        dtypes_cpu=(),
+        dtypes_gpu=(),
     ),
     'mint.sub': BinaryOpInfo(
         name='mint.sub',
@@ -2796,6 +3927,31 @@ binary_op_db = [
 ]
 
 unary_op_db = [
+    'Tensor.astype',
+    'Tensor.byte',
+    'Tensor.clone',
+    'Tensor.contiguous',
+    'Tensor.is_contiguous',
+    'Tensor.numpy',
+    'Tensor.to',
+    'mint.clone',
+    'mint.empty',
+    'mint.empty_like',
+    'mint.nn.functional.gelu',
+    'mint.nn.GELU',
+    'mint.nn.functional.glu',
+    'mint.nn.GLU',
+    'mint.nn.functional.hardsigmoid',
+    'mint.nn.functional.hardswish',
+    'mint.nn.functional.leaky_relu',
+    'mint.nn.functional.logsigmoid',
+    'mint.nn.Identity',
+    'mint.nn.LogSigmoid',
+    'mint.nn.PReLU',
+    'mint.nn.functional.relu',
+    'mint.nn.ReLU',
+    'mint.nn.functional.relu6',
+    'mint.nn.ReLU6',
     'mint.tanh',
     'Tensor.tanh',
     'mint.nn.Tanh',
@@ -2839,6 +3995,16 @@ other_op_db = [
     'mint.nn.functional.one_hot',
     'mint.flatten',
     'mint.reshape',
+    'Tensor.matmul',
+    'mint.broadcast_to',
+    'mint.matmul',
+    'mint.nn.functional.batch_norm',
+    'mint.nn.functional.binary_cross_entropy',
+    'mint.nn.functional.binary_cross_entropy_with_logits',
+    'mint.nn.functional.l1_loss',
+    'mint.nn.functional.log_softmax',
+    'mint.nn.functional.mse_loss',
+    'mint.nn.functional.softmax',
 ]
 
 reduction_op_db = [
