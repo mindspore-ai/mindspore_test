@@ -25,7 +25,7 @@
 #include "mindapi/base/shape_vector.h"
 #include "ir/device_type.h"
 #include "ir/tensor_data.h"
-#include "ir/device_address.h"
+#include "device_address/device_address.h"
 
 namespace mindspore {
 using DeviceAddress = device::DeviceAddress;

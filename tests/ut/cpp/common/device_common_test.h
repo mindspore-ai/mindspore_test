@@ -30,7 +30,7 @@
 #include "backend/common/pass/communication_op_fusion.h"
 #include "runtime/hardware_abstract/device_context/device_context.h"
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
-#include "ir/device_address.h"
+#include "device_address/device_address.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_tensor.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_utils.h"
 #include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
@@ -55,7 +55,6 @@ using device::DeviceType;
 using kernel::AddressPtr;
 using kernel::KernelTensorPtr;
 using session::KernelGraph;
-
 
 }  // namespace test
 }  // namespace runtime

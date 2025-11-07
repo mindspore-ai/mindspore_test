@@ -38,7 +38,7 @@
 #include "ir/tensor.h"
 #include "ir/kernel_tensor_value.h"
 #include "runtime/hardware_abstract/visible.h"
-#include "ir/device_address.h"
+#include "device_address/device_address.h"
 
 namespace mindspore {
 namespace kernel {

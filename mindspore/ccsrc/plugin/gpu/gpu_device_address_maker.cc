@@ -15,7 +15,7 @@
  */
 
 #include "ir/device_type.h"
-#include "ir/device_address.h"
+#include "device_address/device_address.h"
 #include "ir/device_address_maker.h"
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
 

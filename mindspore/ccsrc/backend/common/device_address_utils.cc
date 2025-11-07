@@ -31,7 +31,7 @@
 #include "ir/tensor_new.h"
 #include "ir/dtype/tensor_type.h"
 #include "ir/graph_utils.h"
-#include "ir/device_address.h"
+#include "device_address/device_address.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_info.h"
 #include "include/backend/py_execute_utils.h"
 #include "include/utils/anfalgo.h"

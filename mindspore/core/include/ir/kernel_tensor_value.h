@@ -24,7 +24,7 @@
 #include <memory>
 #include "ir/value.h"
 #include "ir/tensor.h"
-#include "ir/device_address.h"
+#include "device_address/device_address.h"
 
 namespace mindspore {
 using DeviceAddress = device::DeviceAddress;

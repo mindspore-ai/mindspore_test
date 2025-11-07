@@ -32,7 +32,7 @@
 #include "acl/acl_base.h"
 #include "ir/tensor.h"
 #include "kernel/ascend/acl_ir/acl_convert.h"
-#include "ir/device_address.h"
+#include "device_address/device_address.h"
 #include "kernel/ascend/acl_ir/acl_helper.h"
 
 namespace mindspore::device::ascend {
@@ -588,7 +588,7 @@ T ConvertType(T value) {
 }
 
 template <typename... Ts>
-constexpr auto ConvertTypes(const Ts &... args) {
+constexpr auto ConvertTypes(const Ts &...args) {
   return std::make_tuple(ConvertType(args)...);
 }
 
@@ -658,7 +658,7 @@ inline std::vector<void *> GetAddr(T) {
 inline void FillAddress(std::vector<std::vector<void *>> *) {}
 
 template <typename T, typename... Ts>
-inline void FillAddress(std::vector<std::vector<void *>> *address_list, const T &arg, const Ts &... args) {
+inline void FillAddress(std::vector<std::vector<void *>> *address_list, const T &arg, const Ts &...args) {
   // Current only input/output support nullptr.
   if constexpr (std::is_same_v<T, std::nullptr_t>) {
     std::vector<void *> empty_addr = {nullptr};
@@ -670,7 +670,7 @@ inline void FillAddress(std::vector<std::vector<void *>> *address_list, const T 
 }
 
 template <typename... Ts>
-inline std::vector<std::vector<void *>> GetTensorAddress(const Ts &... args) {
+inline std::vector<std::vector<void *>> GetTensorAddress(const Ts &...args) {
   std::vector<std::vector<void *>> address_list;
   FillAddress(&address_list, args...);
   return address_list;

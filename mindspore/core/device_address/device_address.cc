@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "ir/device_address.h"
+#include "device_address/device_address.h"
 #include <complex>
 #include "ir/format_utils.h"
 #include "utils/ms_context.h"

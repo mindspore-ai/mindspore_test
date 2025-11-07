@@ -19,7 +19,7 @@
 #include <vector>
 #include <map>
 #include <memory>
-#include "ir/device_address.h"
+#include "device_address/device_address.h"
 #include "include/runtime/hardware_abstract/memory_manager/memory_manager.h"
 #include "plugin/cpu/res_manager/mem_manager/cpu_memory_pool.h"
 
