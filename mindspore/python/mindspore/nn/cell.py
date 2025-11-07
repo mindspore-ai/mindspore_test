@@ -1339,7 +1339,8 @@ class Cell(Cell_):
         if not hasattr(self, "phase"):
             return False, None
         if (self.phase == "prefill" or self.phase == 'increment') and self.phase in self.phase_cache:
-            new_args = _get_args_for_run(self, args, kwargs, self._has_mutable_args_list, True)
+            new_args = _get_args_for_run(self, args, kwargs, self._has_mutable_args_list, self.sequence_modified,
+                                         True, True)
             if self.jit_config_dict:
                 jit_config_dict = self.jit_config_dict
             else:
@@ -1730,6 +1731,7 @@ class Cell(Cell_):
         _init_auto_parallel_context(self)
         compile_args = self._get_compile_args(args)
         self._has_mutable_args_list = _get_mutable_flags(compile_args)
+        self.sequence_modified = []
         _cell_graph_executor.set_real_args(args, kwargs)
         _cell_graph_executor.compile(self, *compile_args, phase=self.phase,
                                      jit_config_dict=self._jit_config_dict, **kwargs)
@@ -1750,7 +1752,7 @@ class Cell(Cell_):
             Object, the result of executing.
         """
         self.compile(*args, **kwargs)
-        new_args = _get_args_for_run(self, args, kwargs, self._has_mutable_args_list, False)
+        new_args = _get_args_for_run(self, args, kwargs, self._has_mutable_args_list, self.sequence_modified, False)
         if self.jit_config_dict:
             jit_config_dict = self.jit_config_dict
         else:

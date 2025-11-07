@@ -402,7 +402,8 @@ def _handle_arg_predict(obj, arg, has_mutable_arg):
     return arg
 
 
-def _get_args_for_run(obj, args, kwargs, has_mutable_args_list, sequence_modified, is_predict=False):
+def _get_args_for_run(obj, args, kwargs, has_mutable_args_list, sequence_modified, is_predict=False,
+                      is_in_phase_cache=False):
     """Get the actual input args and kwargs for runtime."""
     new_args = []
     sequence_index = 0
@@ -410,8 +411,8 @@ def _get_args_for_run(obj, args, kwargs, has_mutable_args_list, sequence_modifie
         new_arg = _handle_arg(obj, arg, has_mutable_arg, is_predict)
         if new_arg is not None:
             new_args.append(new_arg)
-        elif isinstance(arg, (list, tuple)):
-            if sequence_modified and sequence_index < len(sequence_modified) and sequence_modified[
+        elif not is_in_phase_cache and sequence_modified and isinstance(arg, (list, tuple)):
+            if sequence_index < len(sequence_modified) and sequence_modified[
                 sequence_index] is True:
                 logger.debug(f'The list or tuple need append: `{arg}')
                 new_args.append(arg)
@@ -624,7 +625,7 @@ class _JitExecutor:
             self._graph_executor = GraphExecutor_.get_instance()
         self._create_time = ms_create_time
         self._mutable_flags = None
-        self.sequence_modified = None
+        self.sequence_modified = []
         self._enable_auto_dynamic = dynamic == 1
         self.jit_config_dict = jit_config.jit_config_dict if jit_config else None
         self._cell_cache_key_extend = cell_cache_key_extend
@@ -815,7 +816,6 @@ class _JitExecutor:
 
         # If a sequence is modified in-place, it must be included as an input to the top-level graph.
         self.sequence_modified = self._graph_executor.check_func_graph_sequence_parameter(phase)
-        logger.debug(f'The sequence_modified: `{self.sequence_modified}')
         return phase
 
     @staticmethod
