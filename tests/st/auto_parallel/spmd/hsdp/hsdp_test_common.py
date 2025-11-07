@@ -1,9 +1,25 @@
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ============================================================================
+"""hsdp common utils"""
 from typing import List, Tuple
 import re
+import os
+import time
+import mindspore as ms
+from mindspore import nn
+from mindspore.parallel import hsdp_wait_grad_handle
 
 hsdp_network_ckpt_path: str = "hsdp_network.ckpt"
 
 def extract_metrics_from_log(log_path: str) -> List[Tuple]:
+    """extract loss from log file"""
     # expected log format
     pattern = r"step: (\d+), loss: ([\d.]+)"
     # [(loss_0, ), (loss_1, )...(loss_n, )]
@@ -22,6 +38,7 @@ def extract_metrics_from_log(log_path: str) -> List[Tuple]:
     return indicator_list
 
 class ErrorComparator:
+    """compare baseline loss with hsdp loss"""
     def __init__(self, baseline_log_path: str, hsdp_case_log_path: str):
         self.baseline_path = baseline_log_path
         self.hsdp_case_path = hsdp_case_log_path
@@ -61,3 +78,40 @@ class ErrorComparator:
             return []
         loss_list: List[float] = [per_step_metric[0] for per_step_metric in metrics_list]
         return loss_list
+
+loss_fn = nn.MSELoss()
+def get_forward_fn(net):
+    """return forward func with data and label input"""
+    def forward_fn(data, label):
+        logits = net(data)
+        loss = loss_fn(logits, label)
+        return loss, logits
+    return forward_fn
+
+def train_with_data_label(net, data, label, comm_async=True, train_steps=10):
+    """train net with data and label"""
+    train_steps = max(train_steps, 1)
+    train_steps = train_steps + 1
+    optimizer = nn.Adam(net.trainable_params(), 0.01)
+    grad_fn = ms.value_and_grad(get_forward_fn(net), None, net.trainable_params(), has_aux=True)
+    cost_time = 0
+    for i in range(train_steps):
+        if i != 0:
+            start_time = time.time()
+        _, grads = grad_fn(data, label)
+        if comm_async:
+            hsdp_wait_grad_handle()
+        if i != 0:
+            end_time = time.time()
+            cost_time = end_time - start_time + cost_time
+        optimizer(grads)
+    return cost_time
+
+def run_hsdp_case_by_name(file_name: str, case_name: str):
+    """msrun hsdp test case with 8 workers"""
+    log = f"log_{case_name}"
+    ret = os.system(
+        f"msrun --worker_num=8 --local_worker_num=8 --log_dir={log} --join=True --master_port=18182\
+            pytest -s {file_name}::{case_name}"
+    )
+    assert ret == 0

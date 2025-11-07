@@ -23,14 +23,14 @@ import mindspore.parallel.spmd.hsdp.hsdp_comm as comm
 class HSDPGradHook:
     """HSDP gradient hook"""
 
-    def __init__(self, reduce_dtype, grad_scale, shard_level, requires_acc_grad, use_cell_hook):
+    def __init__(self, reduce_dtype, grad_scale, shard_level, requires_acc_grad, use_pynative_hook):
         """init"""
         self.reduce_dtype = reduce_dtype
         self.grad_scale = grad_scale
         self.shard_level = shard_level
         self.requires_acc_grad = requires_acc_grad
-        self.use_cell_hook = use_cell_hook
-        if self.use_cell_hook:
+        self.use_pynative_hook = use_pynative_hook
+        if self.use_pynative_hook:
             self.requires_grad_sync = False
         else:
             self.requires_grad_sync = Parameter(Tensor(False), name="hsdp_requires_grad_sync", requires_grad=False)
@@ -65,7 +65,7 @@ class HSDPGradHook:
             return output
 
         def grad_hook(grad):
-            ops.assign_add(hsdp_param.acc_grad, grad)
+            hsdp_param.acc_grad.add_(grad)
             return hsdp_param.acc_grad
 
         if not self.requires_acc_grad:
@@ -79,7 +79,7 @@ class HSDPGradHook:
             return output
 
         def grad_acc_all_reduce_hook(grad):
-            ops.assign_add(hsdp_param.acc_grad, grad)
+            hsdp_param.acc_grad.add_(grad)
             if self.requires_grad_sync:
                 output, _ = comm.all_reduce(hsdp_param.acc_grad, group=hsdp_param.unsharded_group_name)
                 return output
@@ -98,7 +98,7 @@ class HSDPGradHook:
             return output
 
         def grad_acc_reduce_scatter_hook(grad):
-            ops.assign_add(hsdp_param.acc_grad, grad)
+            hsdp_param.acc_grad.add_(grad)
             if self.requires_grad_sync:
                 output, _ = comm.reduce_scatter_tensor(hsdp_param.acc_grad, group=hsdp_param.sharded_group_name)
                 return output
@@ -106,7 +106,7 @@ class HSDPGradHook:
 
         def grad_reduce_scatter_acc_hook(grad):
             output, _ = comm.reduce_scatter_tensor(grad, group=hsdp_param.sharded_group_name)
-            ops.assign_add(hsdp_param.acc_grad, output)
+            hsdp_param.acc_grad.add_(output)
             return hsdp_param.acc_grad
 
         if not self.requires_acc_grad:
@@ -125,7 +125,7 @@ class HSDPGradHook:
             return sliced_grad
 
         def grad_acc_reduce_scatter_hook(grad):
-            ops.assign_add(hsdp_param.acc_grad, grad)
+            hsdp_param.acc_grad.add_(grad)
             if self.requires_grad_sync:
                 output, _ = comm.reduce_scatter_tensor(hsdp_param.acc_grad, group=hsdp_param.sharded_group_name)
                 sliced_grad, _ = comm.all_reduce(output, group=hsdp_param.unsharded_group_name)
@@ -134,7 +134,7 @@ class HSDPGradHook:
 
         def grad_reduce_scatter_acc_hook(grad):
             output, _ = comm.reduce_scatter_tensor(grad, group=hsdp_param.sharded_group_name)
-            ops.assign_add(hsdp_param.acc_grad, output)
+            hsdp_param.acc_grad.add_(output)
             if self.requires_grad_sync:
                 output, _ = comm.all_reduce(hsdp_param.acc_grad, group=hsdp_param.unsharded_group_name)
                 return output
@@ -162,7 +162,7 @@ class HSDPGradHook:
 
     def set_requires_grad_sync(self, requires_grad_sync):
         """set requires grad sync flag to control gradient sync."""
-        if self.use_cell_hook:
+        if self.use_pynative_hook:
             self.requires_grad_sync = requires_grad_sync
         else:
             ops.assign(self.requires_grad_sync, Tensor(requires_grad_sync))

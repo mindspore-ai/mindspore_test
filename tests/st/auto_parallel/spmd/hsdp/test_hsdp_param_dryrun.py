@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+"""test hsdp param"""
 import os
 from tests.mark_utils import arg_mark
 from mindspore import nn
@@ -26,13 +27,14 @@ os.environ["RANK_ID"] = "9"
 init()
 
 def get_hsdp_param(net):
+    """get hsdp param from net"""
     shard_size = 2
     threshold = 1
     requires_acc_grad = True
     shard_level = OptimizerLevel.SHARD_OPT
-    use_cell_hook = True
+    use_pynative_hook = True
     reduce_dtype = None
-    hsdp_config = HSDPConfig(shard_size, threshold, requires_acc_grad, shard_level, use_cell_hook, reduce_dtype)
+    hsdp_config = HSDPConfig(shard_size, threshold, requires_acc_grad, shard_level, use_pynative_hook, reduce_dtype)
     hsdp_param = HSDPParam(net, net.weight.name, net.weight, hsdp_config)
     return hsdp_param
 
