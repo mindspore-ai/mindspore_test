@@ -13,8 +13,11 @@
 # limitations under the License.
 # ============================================================================
 
+"""Test PyNative mutli-stream"""
+
 import numpy as np
 import mindspore as ms
+from mindspore import context
 from tests.mark_utils import arg_mark
 
 
@@ -51,3 +54,31 @@ def test_pynative_multi_stream():
         cur_stream.wait_event(event)
 
         np.allclose(z.asnumpy(), np.matmul(x_np + 1, x_np + 1))
+
+
+def test_pynative_aclop_multi_stream():
+    """
+    Feature: PyNative multi-stream
+    Description: Test PyNative multi-stream with aclop cache hit.
+    Expectation: run success
+    """
+    context.set_context(mode=context.GRAPH_MODE)
+
+    x = np.ones((192,), dtype=np.float32)
+    # data on Device with stream 0
+    a = ms.from_numpy(x).sin()
+
+    # data on Device with stream 3
+    s1 = ms.runtime.Stream()
+    with ms.runtime.StreamCtx(s1):
+        b = ms.from_numpy(x).sin()
+    ms.runtime.synchronize()
+
+    # data on Device with stream 0
+    c = ms.from_numpy(x)
+
+    ms.ops.Identity()(a)
+    ms.ops.Identity()(b)
+    ms.ops.Identity()(c)
+
+    ms.runtime.synchronize()

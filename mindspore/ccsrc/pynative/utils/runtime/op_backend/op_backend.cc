@@ -650,7 +650,7 @@ void ViewBackend::AllocateMemForTensor(const tensor::TensorPtr &tensor, DeviceCo
     tensor->is_parameter() ? memory::mem_pool::MemType::kWeight : memory::mem_pool::MemType::kPyNativeInput;
   device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, "PyNative", mem_type, device_address->GetSize(),
                                                  device_address.get());
-  if (!device_context->device_res_manager_->AllocateMemory(device_address.get())) {
+  if (!device_context->device_res_manager_->AllocateMemory(device_address.get(), CurrentStream::id())) {
     MS_LOG(EXCEPTION) << "Allocate memory failed";
   }
   MS_LOG(DEBUG) << "Start lazy copy for tensor " << tensor->ToString();

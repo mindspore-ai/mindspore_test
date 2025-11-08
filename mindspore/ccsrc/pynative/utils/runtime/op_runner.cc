@@ -180,7 +180,7 @@ void CopyTensorDataToDevice(const tensor::TensorPtr &tensor, const AnfNodePtr &n
   device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, "PyNative", mem_type, device_address->GetSize(),
                                                  device_address.get());
   if ((device_address->GetPtr() == nullptr) &&
-      (!device_context->device_res_manager_->AllocateMemory(device_address.get()))) {
+      (!device_context->device_res_manager_->AllocateMemory(device_address.get(), CurrentStream::id()))) {
     MS_LOG(EXCEPTION) << "Allocate memory failed, alloc size " << device_address->GetSize() << "B";
   }
 
@@ -309,7 +309,7 @@ bool MallocForKernelInput(const std::shared_ptr<OpRuntimeInfo> &runtime_info,
     if (input_address->GetPtr() == nullptr) {
       device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, "PyNative", memory::mem_pool::MemType::kPyNativeOutput,
                                                      input_address->GetSize(), input_address.get());
-      if (!device_context->device_res_manager_->AllocateMemory(input_address.get())) {
+      if (!device_context->device_res_manager_->AllocateMemory(input_address.get(), CurrentStream::id())) {
         MS_LOG(EXCEPTION) << "Allocate memory failed, alloc size " << input_address->GetSize() << "B";
       }
     }
@@ -354,7 +354,7 @@ bool MallocForKernelOutput(const std::shared_ptr<OpRuntimeInfo> &runtime_info, c
     if (device_address->GetPtr() == nullptr) {
       device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, "PyNative", memory::mem_pool::MemType::kPyNativeOutput,
                                                      device_address->GetSize(), device_address.get());
-      if (!device_context->device_res_manager_->AllocateMemory(device_address.get())) {
+      if (!device_context->device_res_manager_->AllocateMemory(device_address.get(), CurrentStream::id())) {
         MS_LOG(EXCEPTION) << "Allocate output memory failed, alloc node:" << node->fullname_with_scope()
                           << " alloc size:" << device_address->GetSize() << "B";
       }
@@ -406,7 +406,7 @@ std::vector<kernel::KernelTensor *> GetWorkspaceKernelTensors(const std::shared_
     device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, "PyNative", memory::mem_pool::MemType::kWorkSpace,
                                                    device_address->GetSize(), device_address.get());
     if (device_address->GetPtr() == nullptr &&
-        !device_context->device_res_manager_->AllocateMemory(device_address.get())) {
+        !device_context->device_res_manager_->AllocateMemory(device_address.get(), CurrentStream::id())) {
       MS_LOG(EXCEPTION) << "Allocate workspace memory failed, alloc size:" << device_address->GetSize() << "B";
     }
     (void)workspaces.emplace_back(kernel_tensor.get());
@@ -465,7 +465,7 @@ std::vector<kernel::KernelTensor *> GetWorkspaceKernelTensors(const std::shared_
     device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, "PyNative", memory::mem_pool::MemType::kWorkSpace,
                                                    device_address->GetSize(), device_address.get());
     if (device_address->GetPtr() == nullptr &&
-        !device_context->device_res_manager_->AllocateMemory(device_address.get())) {
+        !device_context->device_res_manager_->AllocateMemory(device_address.get(), CurrentStream::id())) {
       MS_LOG(EXCEPTION) << "Allocate workspace memory failed, alloc size:" << device_address->GetSize() << "B";
     }
     (void)workspaces.emplace_back(kernel_tensor.get());
@@ -496,7 +496,7 @@ std::vector<kernel::KernelTensor *> GetWorkspaceKernelTensorsDynamic(
     device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, "PyNative", memory::mem_pool::MemType::kWorkSpace,
                                                    device_address->GetSize(), device_address.get());
     if (device_address->GetPtr() == nullptr &&
-        !device_context->device_res_manager_->AllocateMemory(device_address.get())) {
+        !device_context->device_res_manager_->AllocateMemory(device_address.get(), CurrentStream::id())) {
       MS_LOG(EXCEPTION) << "Allocate dynamic workspace memory failed, alloc size:" << device_address->GetSize() << "B";
     }
     MS_EXCEPTION_IF_NULL(workspace_kts);
@@ -700,7 +700,7 @@ void AllocateOutputMemory(const std::vector<EdgePtr> &output_edges, const device
       device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, "PyNative", memory::mem_pool::MemType::kPyNativeOutput,
                                                      device_address->GetSize(), device_address.get());
       MS_EXCEPTION_IF_NULL(device_context->device_res_manager_);
-      if (!device_context->device_res_manager_->AllocateMemory(device_address.get())) {
+      if (!device_context->device_res_manager_->AllocateMemory(device_address.get(), CurrentStream::id())) {
         MS_LOG(EXCEPTION) << "Allocate device memory failed, alloc size:" << device_address->GetSize() << "B";
       }
     }
@@ -801,6 +801,18 @@ std::vector<kernel::KernelTensor *> GetOutputKernelTensors(const std::vector<Edg
   }
   return output_kernel_tensors;
 }
+
+void CheckInputTensorStream(const TensorPtr &tensor) {
+  const auto &address = tensor->device_address();
+  if (address == nullptr) {
+    MS_LOG(INFO) << "Input tensor address is null, " << tensor->ToString();
+    return;
+  }
+  if (address->stream_id() != CurrentStream::id()) {
+    MS_LOG(INFO) << "Input " << tensor->ToString() << " stream id:" << address->stream_id()
+                 << " current stream id:" << CurrentStream::id();
+  }
+}
 }  // namespace
 
 std::vector<tensor::TensorPtr> OpRunner::GetTensorWithoutValueMask(const session::BackendOpRunInfoPtr &op_run_info) {
@@ -818,7 +830,9 @@ std::vector<tensor::TensorPtr> OpRunner::GetTensorWithoutValueMask(const session
         MS_LOG(EXCEPTION) << "The " << index << "' input shoulde be a Tensor, but got "
                           << input_values[index]->ToString();
       }
-      (void)tensors_without_value_node.emplace_back(input_values.at(index)->cast<tensor::TensorPtr>());
+      auto tensor = input_values.at(index)->cast<tensor::TensorPtr>();
+      CheckInputTensorStream(tensor);
+      (void)tensors_without_value_node.emplace_back(tensor);
     }
   }
   return tensors_without_value_node;
@@ -1079,7 +1093,7 @@ void DynamicOpRunner::CopyHostToDevice(const OpCompilerInfoPtr &op_compiler_info
       input_tensor->is_parameter() ? memory::mem_pool::MemType::kWeight : memory::mem_pool::MemType::kPyNativeInput;
     device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, "PyNative", mem_type, device_address->GetSize(),
                                                    device_address.get());
-    if (!device_context->device_res_manager_->AllocateMemory(device_address.get())) {
+    if (!device_context->device_res_manager_->AllocateMemory(device_address.get(), CurrentStream::id())) {
       MS_LOG(EXCEPTION) << "Device(id:" << device_context->device_context_key().device_id_
                         << ") memory isn't enough and alloc failed, kernel name: " << input_node->DebugString()
                         << ", alloc size: " << device_address->GetSize() << "B.";
