@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # Copyright 2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,12 +14,12 @@
 # limitations under the License.
 # ============================================================================
 """
-Tests for unary operation.
+Tests for other operations (non-unary/binary), e.g., chunk/gather.
 """
 import pytest
 from tests.mark_utils import arg_mark
-from tests.st.ops.share._internal.unary_ops import UnaryOpsFactory
-from tests.st.ops.share._op_info.op_database import get_op_info, unary_op_db
+from tests.st.ops.share._internal.meta import OpsFactory
+from tests.st.ops.share._op_info.op_database import get_op_info, other_op_db
 
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_ascend910b',
@@ -28,18 +29,18 @@ from tests.st.ops.share._op_info.op_database import get_op_info, unary_op_db
           card_mark='onecard',
           essential_mark='essential')
 @pytest.mark.parametrize("mode", ['pynative', 'kbk'])
-@pytest.mark.parametrize("op_info", unary_op_db)
-def test_unary_op_reference_forward(mode, op_info):
+@pytest.mark.parametrize("op_info", other_op_db)
+def test_other_ops_reference_forward(mode, op_info):
     '''
-    Feature: Unary operations
+    Feature: Other operations
     Description: Compare forward.
     Expectation: MindSpore matches Benchmark for outputs.
     '''
-    fact = UnaryOpsFactory(
+    fact = OpsFactory(
         op_info=get_op_info(op_info),
     )
     fact.set_context_mode(mode=mode)
-    fact.test_unary_op_reference()
+    fact.test_op_reference()
 
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_ascend910b',
@@ -49,18 +50,18 @@ def test_unary_op_reference_forward(mode, op_info):
           card_mark='onecard',
           essential_mark='essential')
 @pytest.mark.parametrize("mode", ['pynative', 'kbk'])
-@pytest.mark.parametrize("op_info", unary_op_db)
-def test_unary_op_reference_backward(mode, op_info):
+@pytest.mark.parametrize("op_info", other_op_db)
+def test_other_ops_reference_backward(mode, op_info):
     '''
-    Feature: Unary operations
+    Feature: Other operations
     Description: Compare gradients.
     Expectation: MindSpore matches Benchmark for gradients.
     '''
-    fact = UnaryOpsFactory(
+    fact = OpsFactory(
         op_info=get_op_info(op_info),
     )
     fact.set_context_mode(mode=mode)
-    fact.test_unary_op_reference(grad_cmp=True)
+    fact.test_op_reference(grad_cmp=True)
 
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_ascend910b',
@@ -70,19 +71,19 @@ def test_unary_op_reference_backward(mode, op_info):
           card_mark='onecard',
           essential_mark='essential')
 @pytest.mark.parametrize("mode", ['kbk'])
-@pytest.mark.parametrize("op_info", unary_op_db)
-def test_unary_op_dynamic_forward(mode, op_info):
+@pytest.mark.parametrize("op_info", other_op_db)
+def test_other_ops_dynamic_forward(mode, op_info):
     '''
-    Feature: Unary operations
+    Feature: Other operations
     Description: Dynamic shape forward.
     Expectation: Outputs match Benchmark.
     '''
-    fact = UnaryOpsFactory(
+    fact = OpsFactory(
         op_info=get_op_info(op_info),
     )
     fact.set_context_mode(mode=mode)
-    fact.test_unary_op_dynamic(only_dynamic_shape=True)
-    fact.test_unary_op_dynamic(only_dynamic_rank=True)
+    fact.test_op_dynamic(only_dynamic_shape=True)
+    fact.test_op_dynamic(only_dynamic_rank=True)
 
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_ascend910b',
@@ -92,16 +93,16 @@ def test_unary_op_dynamic_forward(mode, op_info):
           card_mark='onecard',
           essential_mark='essential')
 @pytest.mark.parametrize("mode", ['kbk'])
-@pytest.mark.parametrize("op_info", unary_op_db)
-def test_unary_op_dynamic_backward(mode, op_info):
+@pytest.mark.parametrize("op_info", other_op_db)
+def test_other_ops_dynamic_backward(mode, op_info):
     '''
-    Feature: Unary operations
+    Feature: Other operations
     Description: Dynamic shape backward.
     Expectation: Gradients match Benchmark.
     '''
-    fact = UnaryOpsFactory(
+    fact = OpsFactory(
         op_info=get_op_info(op_info),
     )
     fact.set_context_mode(mode=mode)
-    fact.test_unary_op_dynamic(only_dynamic_shape=True, grad_cmp=True)
-    fact.test_unary_op_dynamic(only_dynamic_rank=True, grad_cmp=True)
+    fact.test_op_dynamic(only_dynamic_shape=True, grad_cmp=True)
+    fact.test_op_dynamic(only_dynamic_rank=True, grad_cmp=True)

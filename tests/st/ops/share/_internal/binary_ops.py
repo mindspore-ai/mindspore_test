@@ -21,7 +21,6 @@ This module provides:
 """
 import functools
 import pytest
-import torch
 import numpy as np
 import mindspore as ms
 from mindspore.common.api import _pynative_executor
@@ -29,7 +28,6 @@ from tests.st.ops.share._internal.meta import OpsFactory, OpCommonGradNetAllInpu
 from tests.st.ops.share._internal.utils import OpSampleInput, make_tensor, make_tensor_with_np_array
 from tests.st.ops.share._op_info.op_info import OpInfo
 from tests.st.ops.share._op_info.op_common import dtypes_as_torch, SMALL_DIM_SIZE
-from tqdm import tqdm
 
 
 class BinaryOpsFactory(OpsFactory):
@@ -50,126 +48,6 @@ class BinaryOpsFactory(OpsFactory):
         self.update_op_net_class(op_grad_net_class=OpCommonGradNetAllInput)
         # Ensure pylint knows _douts is defined in this class.
         self._douts = None
-
-    def grad_pytorch_impl(self):
-        """Compute gradients using the PyTorch reference.
-
-        Args:
-            None
-
-        Returns:
-            list: One or two gradients for the input tensors.
-
-        Note:
-            Use this function while op is Add, Adds, etc.
-        """
-        torch_douts = self._generate_random_dout(return_torch_douts=True)
-
-        torch_fn = self.ref
-        grads = []
-
-        for idx, sample_input in enumerate(self._sample_inputs):
-            if self._inplace_op:
-                sample_input = sample_input.copy()
-            sample_input = sample_input.astorch(convert_half_to_float=self._convert_half_to_float)
-            op_input, op_args, op_kwargs = sample_input.op_input, sample_input.op_args, sample_input.op_kwargs
-
-            if isinstance(op_input, torch.Tensor):
-                op_input.requires_grad = True # input
-            if isinstance(sample_input.op_args[0], torch.Tensor):
-                sample_input.op_args[0].requires_grad = True # other
-
-            outi = torch_fn(op_input, *op_args, **op_kwargs)
-            outi.backward(gradient=torch_douts[idx])
-
-            if isinstance(op_input, torch.Tensor) and isinstance(sample_input.op_args[0], torch.Tensor):
-                grads.append((op_input.grad.detach(), sample_input.op_args[0].grad.detach()))
-            elif isinstance(op_input, torch.Tensor):
-                grads.append((op_input.grad.detach(),))
-            elif isinstance(sample_input.op_args[0], torch.Tensor):
-                grads.append((sample_input.op_args[0].grad.detach(),))
-            else:
-                raise ValueError(f"BinaryOpsFactory.grad_pytorch_impl suppose one or two input tensors, "
-                                 f"but got {type(op_input)} and {type(sample_input.op_args[0])}")
-        return grads
-
-    def grad_pytorch_dynamic_shape_impl(self):
-        """Compute gradients with PyTorch for dynamic-shape cases.
-
-        Args:
-            None.
-
-        Returns:
-            list: One or two gradients for the input tensors.
-
-        Note:
-            Use this function while op is Add, Adds, etc.
-        """
-        torch_fn = self.ref
-        grads = []
-
-        for running_input in self._dynamic_inputs.op_running_inputs:
-            if self._inplace_op:
-                running_input = running_input.copy()
-            running_input = running_input.astorch(convert_half_to_float=self._convert_half_to_float)
-            op_input, op_args, op_kwargs = running_input.op_input, running_input.op_args, running_input.op_kwargs
-
-            if isinstance(op_input, torch.Tensor):
-                op_input.requires_grad = True # input
-            if isinstance(running_input.op_args[0], torch.Tensor):
-                running_input.op_args[0].requires_grad = True # other
-
-            outi = torch_fn(op_input, *op_args, **op_kwargs)
-            outi_grad = torch.ones_like(outi)
-            outi.backward(gradient=outi_grad)
-
-            if isinstance(op_input, torch.Tensor) and isinstance(running_input.op_args[0], torch.Tensor):
-                grads.append((op_input.grad.detach(), running_input.op_args[0].grad.detach()))
-            elif isinstance(op_input, torch.Tensor):
-                grads.append((op_input.grad.detach(),))
-            elif isinstance(running_input.op_args[0], torch.Tensor):
-                grads.append((running_input.op_args[0].grad.detach(),))
-            else:
-                raise ValueError(f"BinaryOpsFactory.grad_pytorch_dynamic_shape_impl suppose one or two input tensors, "
-                                 f"but got {type(op_input)} and {type(running_input.op_args[0])}")
-        return grads
-
-    def test_binary_op_reference(
-        self,
-        *,
-        grad_cmp=False
-    ):
-        """Run reference parity tests against Benchmark.
-
-        Args:
-            grad_cmp: When True, restrict to floating dtypes and compare
-                first-order gradients in addition to forward results.
-        """
-        try:
-            print(f"\nop_name: {self.op_name}, mode:{self._context_mode}, test_binary_op_reference...")
-            if grad_cmp:
-                self.supported_dtypes = tuple(d for d in self.supported_dtypes if d.is_floating_point)
-            for dtype in tqdm(self.supported_dtypes):
-                if grad_cmp:
-                    for sample_input in self.op_basic_reference_inputs_func(self.op_info, dtype, device=self._device):
-                        self.compare_with_torch(sample_inputs=sample_input, grad_cmp=True)
-                else:
-                    for sample_input in self.op_basic_reference_inputs_func(self.op_info, dtype, device=self._device):
-                        self.compare_with_torch(sample_inputs=sample_input)
-                    if self.op_extra_reference_inputs_func is not None:
-                        for sample_input in self.op_extra_reference_inputs_func(
-                                self.op_info,
-                                dtype,
-                                device=self._device,
-                        ):
-                            self.compare_with_torch(sample_inputs=sample_input)
-        except Exception as e:
-            print(f"\ntest_binary_op_reference failed:"
-                  f"\nop_name: {self.op_name}"
-                  f"\nmode: {self._context_mode}"
-                  f"\ndtype: {dtype}"
-                  f"\n{sample_input.summary(True)}")
-            raise e
 
     def test_binary_op_tensor_type_promotion(self):
         """Test tensor-tensor type promotion across mixed dtypes.
@@ -461,42 +339,6 @@ class BinaryOpsFactory(OpsFactory):
                   f"\nmode: {self._context_mode}"
                   f"\ndtype: {dtype}"
                   f"\n{sample_input.summary()}")
-            raise e
-
-    def test_binary_op_dynamic(
-        self,
-        *,
-        grad_cmp=False,
-        only_dynamic_shape=False,
-        only_dynamic_rank=False,
-    ):
-        """Run dynamic-shape tests against Benchmark.
-
-        Args:
-            grad_cmp: When True, also compare first-order gradients.
-            only_dynamic_shape: If True, only run dynamic-shape cases (fixed rank).
-            only_dynamic_rank: If True, only run dynamic-rank cases (shape varies in rank).
-        """
-        if self.op_info.op_dynamic_inputs_func is None:
-            print(f"\nop_name: {self.op_name} has no op_dynamic_inputs_func, "
-                  f"skip test_binary_op_dynamic.")
-            return
-
-        try:
-            print(f"\nop_name: {self.op_name}, mode:{self._context_mode}, test_binary_op_dynamic...")
-            for op_dynamic_input in self.op_info.op_dynamic_inputs_func(self.op_info, dtype=ms.float32,
-                                                                        device=self._device,
-                                                                        only_dynamic_shape=only_dynamic_shape,
-                                                                        only_dynamic_rank=only_dynamic_rank):
-                if grad_cmp:
-                    self.compare_with_torch_dynamic(op_dynamic_inputs=op_dynamic_input, grad_cmp=True)
-                else:
-                    self.compare_with_torch_dynamic(op_dynamic_inputs=op_dynamic_input)
-        except Exception as e:
-            print(f"\test_binary_op_dynamic failed:"
-                  f"\nop_name: {self.op_name}"
-                  f"\nmode: {self._context_mode}"
-                  f"\n{op_dynamic_input.summary()}")
             raise e
 
     def test_binary_op_error(self):

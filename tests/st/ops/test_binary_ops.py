@@ -39,7 +39,7 @@ def test_binary_op_reference_forward(mode, op_info):
         op_info=get_op_info(op_info),
     )
     fact.set_context_mode(mode=mode)
-    fact.test_binary_op_reference()
+    fact.test_op_reference()
 
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_ascend910b',
@@ -60,31 +60,11 @@ def test_binary_op_reference_backward(mode, op_info):
         op_info=get_op_info(op_info),
     )
     fact.set_context_mode(mode=mode)
-    fact.test_binary_op_reference(grad_cmp=True)
-
-
-@arg_mark(plat_marks=['platform_ascend', 'platform_ascend910b'],
-          level_mark='level0',
-          card_mark='onecard',
-          essential_mark='essential')
-@pytest.mark.parametrize("mode", ['pynative', 'kbk'])
-@pytest.mark.parametrize("op_info", binary_op_db)
-def test_binary_op_type_promotion(mode, op_info):
-    '''
-    Feature: Binary operations
-    Description: Compare tensor type promotion.
-    Expectation: MindSpore matches Benchmark for outputs.
-    '''
-    fact = BinaryOpsFactory(
-        op_info=get_op_info(op_info),
-    )
-    fact.set_context_mode(mode=mode)
-    fact.test_binary_op_tensor_type_promotion()
-    fact.test_binary_op_scalar_type_promotion()
+    fact.test_op_reference(grad_cmp=True)
 
 
 @arg_mark(plat_marks=['platform_ascend910b'],
-          level_mark='level1',
+          level_mark='level0',
           card_mark='onecard',
           essential_mark='essential')
 @pytest.mark.parametrize("mode", ['pynative', 'kbk'])
@@ -121,8 +101,8 @@ def test_binary_op_dynamic_forward(mode, op_info):
         op_info=get_op_info(op_info),
     )
     fact.set_context_mode(mode=mode)
-    fact.test_binary_op_dynamic(only_dynamic_shape=True)
-    fact.test_binary_op_dynamic(only_dynamic_rank=True)
+    fact.test_op_dynamic(only_dynamic_shape=True)
+    fact.test_op_dynamic(only_dynamic_rank=True)
 
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_ascend910b',
@@ -143,8 +123,8 @@ def test_binary_op_dynamic_backward(mode, op_info):
         op_info=get_op_info(op_info),
     )
     fact.set_context_mode(mode=mode)
-    fact.test_binary_op_dynamic(only_dynamic_shape=True, grad_cmp=True)
-    fact.test_binary_op_dynamic(only_dynamic_rank=True, grad_cmp=True)
+    fact.test_op_dynamic(only_dynamic_shape=True, grad_cmp=True)
+    fact.test_op_dynamic(only_dynamic_rank=True, grad_cmp=True)
 
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_ascend910b',

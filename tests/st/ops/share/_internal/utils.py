@@ -103,7 +103,9 @@ class OpSampleInput:
         """Flatten input/args/kwargs (and optional dout) into a single args tuple.
 
         Args:
-            append_dout: Optional extra output gradients to append.
+            append_dout: Optional extra output gradients (sens) to append as a single
+                positional argument. For multi-output ops, pass a tuple of dout
+                tensors and it will be appended as one argument without expansion.
 
         Returns:
             A new OpSampleInput whose `op_args` contains all flattened arguments,
@@ -122,7 +124,9 @@ class OpSampleInput:
         op_args.extend(_to_args_list(self.op_args))
         op_args.extend(_to_args_list(self.op_kwargs))
         if append_dout is not None:
-            op_args.extend(_to_args_list(append_dout))
+            # Append sens as a single argument (do NOT expand lists/tuples),
+            # so that multi-output dout can be passed correctly.
+            op_args.append(append_dout)
 
         return OpSampleInput(
             op_input=None,
