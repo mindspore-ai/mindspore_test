@@ -68,23 +68,23 @@ class StopAtEpochNew(Callback):
         super().__init__()
         self.start_epoch = start_epoch
         self.stop_epoch = stop_epoch
-        self.profiler = mindspore.profiler.profile(start_profile=self.start_profile,
-                                                   activities=self.activities, with_stack=self.with_stack,
-                                                   profile_memory=self.profile_memory, data_process=self.data_process,
-                                                   parallel_strategy=self.parallel_strategy,
-                                                   hbm_ddr=self.hbm_ddr, pcie=self.pcie,
-                                                   on_trace_ready=mindspore.profiler.tensorboard_trace_handler(
-                                                       dir_name=self.dir_name, worker_name=self.worker_name,
-                                                       analyse_flag=self.analyse_flag,
-                                                       async_mode=self.async_mode),
-                                                   schedule=mindspore.profiler.schedule(
-                                                       wait=self.wait, warmup=self.warmup, active=self.active,
-                                                       repeat=self.repeat, skip_first=self.skip_first),
-                                                   experimental_config=mindspore.profiler._ExperimentalConfig(
-                                                       profiler_level=self.profiler_level, mstx=True,
-                                                       data_simplification=self.data_simplification,
-                                                       aic_metrics=self.aic_metrics, l2_cache=self.l2_cache,
-                                                       export_type=self.export_type))
+        self.profiler = ms.profiler.profile(start_profile=self.start_profile,
+                                            activities=self.activities, with_stack=self.with_stack,
+                                            profile_memory=self.profile_memory, data_process=self.data_process,
+                                            parallel_strategy=self.parallel_strategy,
+                                            hbm_ddr=self.hbm_ddr, pcie=self.pcie,
+                                            on_trace_ready=ms.profiler.tensorboard_trace_handler(
+                                                dir_name=self.dir_name, worker_name=self.worker_name,
+                                                analyse_flag=self.analyse_flag,
+                                                async_mode=self.async_mode),
+                                            schedule=ms.profiler.schedule(
+                                                wait=self.wait, warmup=self.warmup, active=self.active,
+                                                repeat=self.repeat, skip_first=self.skip_first),
+                                            experimental_config=ms.profiler._ExperimentalConfig(
+                                                profiler_level=self.profiler_level, mstx=True,
+                                                data_simplification=self.data_simplification,
+                                                aic_metrics=self.aic_metrics, l2_cache=self.l2_cache,
+                                                export_type=self.export_type))
 
     def on_train_epoch_begin(self, run_context):
         """epoch_begin"""
@@ -136,26 +136,26 @@ class StopAtStepNew(Callback):
         super().__init__()
         self.start_step = self.skip_first
         self.stop_step = self.skip_first + self.repeat * (self.wait + self.warmup + self.active)
-        self.profiler = mindspore.profiler.profile(start_profile=self.start_profile, activities=self.activities,
-                                                   with_stack=self.with_stack,
-                                                   profile_memory=self.profile_memory, data_process=self.data_process,
-                                                   parallel_strategy=self.parallel_strategy,
-                                                   hbm_ddr=self.hbm_ddr, pcie=self.pcie,
-                                                   record_shapes=self.record_shapes,
-                                                   on_trace_ready=mindspore.profiler.tensorboard_trace_handler(
-                                                       dir_name=self.dir_name, worker_name=self.worker_name,
-                                                       analyse_flag=self.analyse_flag,
-                                                       async_mode=self.async_mode),
-                                                   schedule=mindspore.profiler.schedule(
-                                                       wait=self.wait, warmup=self.warmup, active=self.active,
-                                                       repeat=self.repeat, skip_first=self.skip_first),
-                                                   experimental_config=mindspore.profiler._ExperimentalConfig(
-                                                       profiler_level=self.profiler_level, mstx=True,
-                                                       data_simplification=self.data_simplification,
-                                                       aic_metrics=self.aic_metrics, l2_cache=self.l2_cache,
-                                                       export_type=self.export_type, host_sys=self.host_sys,
-                                                       mstx_domain_include=self.mstx_domain_include,
-                                                       mstx_domain_exclude=self.mstx_domain_exclude))
+        self.profiler = ms.profiler.profile(start_profile=self.start_profile, activities=self.activities,
+                                            with_stack=self.with_stack,
+                                            profile_memory=self.profile_memory, data_process=self.data_process,
+                                            parallel_strategy=self.parallel_strategy,
+                                            hbm_ddr=self.hbm_ddr, pcie=self.pcie,
+                                            record_shapes=self.record_shapes,
+                                            on_trace_ready=ms.profiler.tensorboard_trace_handler(
+                                                dir_name=self.dir_name, worker_name=self.worker_name,
+                                                analyse_flag=self.analyse_flag,
+                                                async_mode=self.async_mode),
+                                            schedule=ms.profiler.schedule(
+                                                wait=self.wait, warmup=self.warmup, active=self.active,
+                                                repeat=self.repeat, skip_first=self.skip_first),
+                                            experimental_config=ms.profiler._ExperimentalConfig(
+                                                profiler_level=self.profiler_level, mstx=True,
+                                                data_simplification=self.data_simplification,
+                                                aic_metrics=self.aic_metrics, l2_cache=self.l2_cache,
+                                                export_type=self.export_type, host_sys=self.host_sys,
+                                                mstx_domain_include=self.mstx_domain_include,
+                                                mstx_domain_exclude=self.mstx_domain_exclude))
         data = {"world_size": 2, "sequence_parallel": False, "hooks": "dajl"}
         self.profiler.add_metadata("gsfa", "13")
         self.profiler.add_metadata("q3123", "12%")
@@ -176,6 +176,7 @@ class StopAtStepNew(Callback):
             self.profiler.step()
         if step_num == self.stop_step:
             self.profiler.stop()
+            run_context.request_stop()
 
 
 class StopAtEpoch(Callback):
