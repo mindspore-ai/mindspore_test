@@ -66,8 +66,11 @@ class BACKEND_COMMON_EXPORT TcpNodeBase : public NodeBase {
   // ReConnect to the meta server node.
   bool ReConnect();
 
-  // Return client ip of this cgn which is used for cluster building.
+  // Return client ip of this node which is used for cluster building.
   const std::string &client_ip() const { return client_ip_; }
+
+  // Return tcp client which sends message to server node.
+  const std::unique_ptr<rpc::TCPClient> &tcp_client() const { return tcp_client_; }
 
   // Get all the hostnames of one type of roles.
   std::vector<std::string> GetHostNames(const std::string &role);
@@ -81,7 +84,7 @@ class BACKEND_COMMON_EXPORT TcpNodeBase : public NodeBase {
   // The meta server address used to synchronize metadata with other compute graph nodes.
   MetaServerAddress meta_server_addr_;
 
-  // The TCP client is used to send messages to meta server node.
+  // The TCP client is used to send messages to server node.
   std::unique_ptr<rpc::TCPClient> tcp_client_;
   std::string address_id_;
   // unit: milliseconds

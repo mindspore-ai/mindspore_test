@@ -59,8 +59,16 @@ class BACKEND_COMMON_EXPORT ComputeGraphNode : public TcpNodeBase {
 
   void set_abnormal_callback(std::shared_ptr<std::function<void(void)>> abnormal_callback) override;
 
+  // Call the `Reconnect` function if the input func execution failed.
+  bool ReconnectWithTimeout(size_t timeout);
+  bool ReconnectIfNeeded(const std::function<bool(void)> &func, const std::string &error, size_t retry);
+  bool ReconnectWithTimeoutWindow(const std::function<bool(void)> &func, const std::string &error, size_t time_out);
+
   // Return client ip of this cgn which is used for cluster building.
-  const std::string &client_ip() const;
+  const std::string &client_ip() const { return client_ip_; }
+
+  // Return tcp client which sends heartbeat to meta server.
+  const std::unique_ptr<rpc::TCPClient> &hb_client() const { return hb_client_; }
 
  private:
   // Send the register message to the meta server node when this node process startup.
@@ -71,10 +79,6 @@ class BACKEND_COMMON_EXPORT ComputeGraphNode : public TcpNodeBase {
 
   // Send the heartbeat message to the meta server node.
   bool Heartbeat();
-
-  // Call the `Reconnect` function if the input func execution failed.
-  bool ReconnectIfNeeded(const std::function<bool(void)> &func, const std::string &error, size_t retry);
-  bool ReconnectWithTimeoutWindow(const std::function<bool(void)> &func, const std::string &error, size_t time_out);
 
   // Reconnect to the meta server node.
   bool Reconnect();

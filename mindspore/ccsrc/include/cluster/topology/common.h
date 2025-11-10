@@ -81,18 +81,16 @@ enum class MessageName {
   kInvalidMetadata
 };
 
-// The retry and interval configuration used for the macro `EXECUTE_WITH_RETRY`.
-static const size_t kExecuteRetryNum = 210;
 // The retry number of cgn and msn for reconnecting.
-static const size_t kCgnExecuteRetryNum = 210;
-static const size_t kMsnExecuteRetryNum = 210;
 static const size_t kNoRetry = 1;
+// The retry timeout of cgn and msn for reconnecting is 20 seconds.
+static const size_t kExecuteRetryTimeout = 20;
 
 // Cluster building time out window in second. Default: 30 minutes.
 constexpr char kEnvTopoTimeOut[] = "MS_TOPO_TIMEOUT";
 static const size_t kDefaultTopoTimeOut = 30 * 60;
 
-// The timeout(second) window for heartbeat from compute graph node to meta server. Default: 15 seconds.
+// The timeout(second) window for heartbeat from compute graph node to meta server. Default: 30 seconds.
 constexpr char kEnvNodeTimeOut[] = "MS_NODE_TIMEOUT";
 static const size_t kDefaultNodeTimeout = 30;
 

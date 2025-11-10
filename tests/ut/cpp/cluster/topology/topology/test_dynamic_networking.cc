@@ -375,6 +375,100 @@ TEST_F(TestDynamicNetworking, GetHostNames) {
 
   msn.Finalize();
 }
+
+/// Feature: Verify that ReconnectWithTimeout successfully reconnects when MetaServer is functioning normally.
+/// Description: Launch the MetaServer to accept connections, then invoke ReconnectWithTimeout to validate successful
+/// reconnection.
+/// Expectation: Reconnection is successful; both tcp_client and hb_client remain in a connected state.
+TEST_F(TestDynamicNetworking, ReconnectWithTimeout) {
+  std::string server_host = "127.0.0.1";
+  std::string server_port = "8090";
+  std::string server_url = server_host + ":" + server_port;
+  common::SetEnv(kEnvMetaServerHost, server_host.c_str());
+  common::SetEnv(kEnvMetaServerPort, server_port.c_str());
+
+  size_t total_node_num = 1;
+  common::SetEnv(kEnvWorkerNum, std::to_string(total_node_num).c_str());
+  MetaServerNode msn("meta_server_node", "MS_SCHED", total_node_num);
+  ASSERT_TRUE(msn.Initialize());
+
+  auto cgn = std::make_shared<ComputeGraphNode>("compute_graph_node", "MS_WORKER");
+  ASSERT_TRUE(cgn->Initialize());
+
+  auto initial_url = cgn->meta_server_addr_.GetUrl();
+  while (cgn->tcp_client()->IsConnected(initial_url)) {
+    cgn->tcp_client()->Disconnect(initial_url);
+  }
+  while (cgn->hb_client()->IsConnected(initial_url)) {
+    cgn->hb_client()->Disconnect(initial_url);
+  }
+
+  sleep(1);
+  bool result = cgn->ReconnectWithTimeout(5);
+
+  ASSERT_TRUE(result);
+  ASSERT_TRUE(cgn->tcp_client()->IsConnected(server_url));
+  ASSERT_TRUE(cgn->hb_client()->IsConnected(server_url));
+
+  cgn->Finalize();
+  msn.Finalize();
+}
+
+/// Feature: Verify that ReconnectWithTimeout fails to reconnect when MetaServer is killed during reconnection.
+/// Description: Launch MetaServer in a child process, kill the process during reconnection, then invoke
+/// ReconnectWithTimeout to validate reconnection failure due to server unavailability.
+/// Expectation: Reconnection fails after timeout; both tcp_client and hb_client remain disconnected.
+TEST_F(TestDynamicNetworking, ReconnectWithTimeout_FailWhenMetaServerKilled) {
+  std::string server_host = "127.0.0.1";
+  std::string server_port = "8090";
+  std::string server_url = server_host + ":" + server_port;
+  common::SetEnv(kEnvMetaServerHost, server_host.c_str());
+  common::SetEnv(kEnvMetaServerPort, server_port.c_str());
+
+  size_t total_node_num = 1;
+  common::SetEnv(kEnvWorkerNum, std::to_string(total_node_num).c_str());
+
+  pid_t msn_pid = fork();
+  ASSERT_LE(0, msn_pid) << "Fork MetaServer process failed";
+
+  if (msn_pid == 0) {
+    // Child process: run MetaServer
+    MetaServerNode msn("meta_server_node", "MS_SCHED", total_node_num);
+    ASSERT_TRUE(msn.Initialize());
+    while (true) {
+      sleep(1);
+    }
+    exit(0);
+  }
+
+  sleep(2);
+
+  auto cgn = std::make_shared<ComputeGraphNode>("compute_graph_node", "MS_WORKER");
+  ASSERT_TRUE(cgn->Initialize());
+
+  auto initial_url = cgn->meta_server_addr_.GetUrl();
+  while (cgn->tcp_client()->IsConnected(initial_url)) {
+    cgn->tcp_client()->Disconnect(initial_url);
+  }
+  while (cgn->hb_client()->IsConnected(initial_url)) {
+    cgn->hb_client()->Disconnect(initial_url);
+  }
+
+  std::thread kill_thread([&]() {
+    kill(msn_pid, SIGKILL);
+    MS_LOG(INFO) << "MetaServer process (pid=" << msn_pid << ") killed";
+  });
+
+  kill_thread.join();
+  sleep(1);
+  bool result = cgn->ReconnectWithTimeout(5);
+
+  ASSERT_FALSE(result);
+  ASSERT_FALSE(cgn->tcp_client()->IsConnected(server_url));
+  ASSERT_FALSE(cgn->hb_client()->IsConnected(server_url));
+
+  cgn->Finalize();
+}
 }  // namespace topology
 }  // namespace cluster
 }  // namespace distributed

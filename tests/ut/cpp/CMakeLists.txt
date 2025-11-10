@@ -92,7 +92,7 @@ file(GLOB_RECURSE UT_SYMBOL_ENGINE_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
         ./backend/graph_optimizer_test_framework.cc ./symbol_engine/*.cc)
 # plugin/device/cpu/hal/test_ms_collective_topo.cc will also open 127.0.0.1:8090
 file(GLOB_RECURSE UT_PS_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ./cluster/rpc/core/*.cc ./cluster/rpc/tcp/*.cc
-        ./plugin/device/cpu/hal/*.cc)
+        ./cluster/topology/*.cc ./plugin/device/cpu/hal/*.cc)
 file(GLOB_RECURSE UT_CCSRC_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ./ccsrc/*.cc)
 file(GLOB_RECURSE UT_OTHERS_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ./debug/*.cc ./place/*.cc)
 file(GLOB_RECURSE UT_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ./stub/*.cc ./common/*.cc ./mock/*.cc
@@ -102,15 +102,6 @@ file(GLOB_RECURSE UT_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ./stub/*.cc ./com
         ../../../mindspore/ccsrc/pybind_api/ir/tensor/tensor_py.cc
         ../../../mindspore/ccsrc/pybind_api/ir/tensor/dlpack_utils.cc
         ../../../mindspore/ccsrc/pybind_api/ir/tensor/device_type_utils.cc)
-
-if(NOT ENABLE_CPU OR WIN32 OR APPLE)
-    file(GLOB_RECURSE UT_DISTRIBUTED_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
-            ./cluster/persistent/*.cc
-            ./cluster/rpc/tcp/*.cc
-            ./cluster/rpc/core/*.cc
-            ./cluster/topology/*.cc)
-    list(APPEND UT_PS_SRCS ${UT_DISTRIBUTED_SRCS})
-endif()
 
 # split minddata
 list(REMOVE_ITEM UT_MINDDATA_SRCS ${UT_MINDDATA_COMMON_SRCS})
