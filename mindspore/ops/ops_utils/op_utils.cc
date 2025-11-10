@@ -1154,8 +1154,9 @@ TypeId ConvertTypeBetweenTensorAndScalar(const TypeId &tensor_type_id, const Typ
   if (iter != scalar_tensor_convert_map.end()) {
     return iter->second;
   }
-  MS_EXCEPTION(TypeError) << "Type implicit conversion between Tensor[" << TypeIdToString(tensor_type_id) << "] and "
-                          << TypeIdToString(scalar_type_id) << " is not supported.";
+  MS_LOG(INFO) << "Type implicit conversion between Tensor[" << TypeIdToString(tensor_type_id) << "] and "
+               << TypeIdToString(scalar_type_id) << " is not supported.";
+  return kTypeUnknown;
 }
 
 size_t GetHashId(int a, int b) { return a < b ? hash_combine(a, b) : hash_combine(b, a); }

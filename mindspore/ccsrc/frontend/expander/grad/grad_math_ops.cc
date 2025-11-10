@@ -106,7 +106,9 @@ NodePtrList IgammaBpropExpanderDyn(BpropBuilder *ib) {
   auto partial_a = ib->Emit("IgammaGradA", {a, x});
   auto lgamma = LGamma(ib, a);
   auto partial_x = ib->Exp(
-    ib->Sub((ib->Add((ib->Neg(x)), (ib->Mul((ib->Sub(a, (ib->Tensor(1, ib->GetDtype(a))))), (ib->Log(x)))))), lgamma));
+    ib->Sub((ib->Add((ib->Neg(x)),
+                     (ib->Mul((ib->SubScalar(a, ib->ValueByType(1, ib->GetDtype(a)), ib->Value(1))), (ib->Log(x)))))),
+            lgamma));
   auto r1 = ib->Reshape(ib->ReduceSum(ib->Mul(partial_a, dout), ra, false, true), sa);
   auto r2 = ib->Reshape(ib->ReduceSum(ib->Mul(partial_x, dout), rx, false, true), sx);
   return {r1, r2};
@@ -126,7 +128,9 @@ NodePtrList IgammaBpropExpander(BpropBuilder *ib) {
   auto partial_a = ib->Emit("IgammaGradA", {a, x});
   auto lgamma = ib->Emit("Lgamma", {a});
   auto partial_x = ib->Exp(
-    ib->Sub((ib->Add((ib->Neg(x)), (ib->Mul((ib->Sub(a, (ib->Tensor(1, ib->GetDtype(a))))), (ib->Log(x)))))), lgamma));
+    ib->Sub((ib->Add((ib->Neg(x)),
+                     (ib->Mul((ib->SubScalar(a, ib->ValueByType(1, ib->GetDtype(a)), ib->Value(1))), (ib->Log(x)))))),
+            lgamma));
   auto dout = ib->GetInput(i3);
   NodePtr r1 = nullptr;
   NodePtr r2 = nullptr;
@@ -256,7 +260,7 @@ NodePtrList MinimumMaximumGrad(BpropBuilder *ib, const NodePtr &x, const NodePtr
   if (!x->need_compute_grad_out() && !y->need_compute_grad_out()) {
     return {grad_x, grad_y};
   }
-  auto half_dout = ib->Cast(ib->Div(dout, ib->Tensor(2, ib->GetDtype(dout))), ib->GetDtype(x));
+  auto half_dout = ib->Cast(ib->Divs(dout, ib->ValueByType(2, ib->GetDtype(dout))), ib->GetDtype(x));
   auto equal_mask = ib->Equal(x, y);
   auto zeros = ib->Tensor(0, ib->GetDtype(dout));
   auto is_less = ib->Less(x, y);
@@ -348,8 +352,8 @@ NodePtrList BpropAddcCommon(BpropBuilder *ib, const std::string &op_name) {
   if (op_name == "Addcdiv") {
     constexpr int64_t const_val = -2;
     inner_out = ib->Add((ib->Mul(value, ib->Div(x1, x2))), input_data);
-    dx2 =
-      ib->Neg(ib->Mul(ib->Mul(ib->Mul(x1, value), ib->Pow(x2, ib->Tensor(const_val, ib->GetDtype(x2)))), dinput_data));
+    dx2 = ib->Neg(ib->Mul(
+      ib->Mul(ib->Mul(x1, value), ib->PowTensorScalar(x2, ib->ValueByType(const_val, ib->GetDtype(x2)))), dinput_data));
     dx1 = ib->Mul(dinput_data, ib->Div(value, x2));
     dvalue = ib->Mul(dinput_data, ib->Div(x1, x2));
   } else {
@@ -544,6 +548,7 @@ NodePtr MeanExtGrad(BpropBuilder *ib, const NodePtr &input, NodePtr axis, const 
   grad = ib->Cast(grad, ib->GetDtype(input));
 
   NodePtr div_shape_node;
+  NodePtr dx;
   if (IsDynamic(ib->GetShape(input)) || IsDynamic(ib->GetShape(out))) {
     auto shape_out_sz = ib->DynSize(out, kFloat32);
     auto true_branch = [&](Emitter *e) -> NodePtrList { return {ib->Tensor(1, kFloat32)}; };
@@ -551,12 +556,13 @@ NodePtr MeanExtGrad(BpropBuilder *ib, const NodePtr &input, NodePtr axis, const 
     auto is_zero_out_sz = ib->Equal(shape_out_sz, ib->Tensor(0, kFloat32));
     auto div_shape = ib->Conditional(is_zero_out_sz, true_branch, false_branch);
     div_shape_node = ib->Cast(div_shape, ib->GetDtype(grad));
+    dx = ib->Div(grad, div_shape_node);
   } else {
     auto shape_out_sz = ib->GetSize(out);
     auto div_shape = shape_out_sz == 0 ? 1 : ib->GetSize(input) / shape_out_sz;
-    div_shape_node = ib->Tensor(div_shape, ib->GetDtype(grad));
+    div_shape_node = ib->ValueByType(div_shape, ib->GetDtype(grad));
+    dx = ib->Divs(grad, div_shape_node);
   }
-  auto dx = ib->Div(grad, div_shape_node);
   return dx;
 }
 
@@ -1778,8 +1784,8 @@ REG_BPROP_BUILDER("InplaceAddExt").SetUnusedInputs({i0, i1, i3}).SetBody(BODYFUN
       auto alpha_tensor = ib->ScalarToTensor(alpha, ib->GetDtype(x));
       dy = ib->Mul(dy, alpha_tensor);
     } else if (alpha_opt.value() != 1) {
-      auto alpha_tensor = ib->Tensor(alpha_opt.value(), ib->GetDtype(x));
-      dy = ib->Mul(dy, alpha_tensor);
+      auto alpha_tensor = ib->ValueByType(alpha_opt.value(), ib->GetDtype(x));
+      dy = ib->Muls(dy, alpha_tensor);
     }
   }
 
@@ -2258,8 +2264,9 @@ REG_BPROP_BUILDER("AsinGrad").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
   NodePtr d2x;
   if (x->need_compute_grad_out()) {
     auto one = ib->Tensor(1, ib->GetDtype(x));
-    auto minus_one_p5 = ib->Tensor(-1.5, ib->GetDtype(x));
-    d2x = ib->Mul((ib->Mul((ib->Mul(dout, grad)), x)), (ib->Pow(ib->Sub(one, (ib->Mul(x, x))), minus_one_p5)));
+    auto minus_one_p5 = ib->ValueByType(-1.5, ib->GetDtype(x));
+    d2x =
+      ib->Mul((ib->Mul((ib->Mul(dout, grad)), x)), (ib->PowTensorScalar(ib->Sub(one, (ib->Mul(x, x))), minus_one_p5)));
   } else {
     d2x = ib->OutZeros(x);
   }
@@ -2282,7 +2289,7 @@ REG_BPROP_BUILDER("AsinhExt").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
   if (x_dtype_id == kNumberTypeComplex64 || x_dtype_id == kNumberTypeComplex128) {
     MS_EXCEPTION(TypeError) << "For 'Asinh', gradient not support for complex type currently.";
   } else {
-    dx = dout * ib->Rsqrt(ib->Add(ib->Square(x), ib->Tensor(1, ib->GetDtype(x))));
+    dx = dout * ib->Rsqrt(ib->AddScalar(ib->Square(x), ib->ValueByType(1, ib->GetDtype(x)), ib->Value(1)));
   }
   return {dx};
 });
@@ -2294,8 +2301,8 @@ REG_BPROP_BUILDER("AsinhGrad").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
   const auto &dout = ib->GetInput(i3);
   NodePtr dy;
   if (y->need_compute_grad_out()) {
-    auto minus_one = ib->Tensor(-1.0, ib->GetDtype(out));
-    dy = ib->Mul(ib->Mul(ib->Mul(dout, out), minus_one), ib->Tanh(y));
+    auto minus_one = ib->Value(-1.0);
+    dy = ib->Mul(ib->Muls(ib->Mul(dout, out), minus_one), ib->Tanh(y));
   } else {
     dy = ib->OutZeros(y);
   }
@@ -2346,8 +2353,9 @@ REG_BPROP_BUILDER("ACosGrad").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
   NodePtr d2x;
   if (x->need_compute_grad_out()) {
     auto one = ib->Tensor(1, ib->GetDtype(x));
-    auto minus_one_p5 = ib->Tensor(-1.5, ib->GetDtype(x));
-    d2x = ib->Mul((ib->Mul((ib->Mul(ib->Neg(dout), grad)), x)), (ib->Pow(ib->Sub(one, (ib->Mul(x, x))), minus_one_p5)));
+    auto minus_one_p5 = ib->ValueByType(-1.5, ib->GetDtype(x));
+    d2x = ib->Mul((ib->Mul((ib->Mul(ib->Neg(dout), grad)), x)),
+                  (ib->PowTensorScalar(ib->Sub(one, (ib->Mul(x, x))), minus_one_p5)));
   } else {
     d2x = ib->OutZeros(x);
   }
@@ -2370,7 +2378,7 @@ REG_BPROP_BUILDER("AcoshExt").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
   if (x_dtype_id == kNumberTypeComplex64 || x_dtype_id == kNumberTypeComplex128) {
     MS_EXCEPTION(TypeError) << "For 'Acosh', gradient not support for complex type currently.";
   } else {
-    dx = dout * ib->Rsqrt(ib->Sub(ib->Square(x), ib->Tensor(1, ib->GetDtype(x))));
+    dx = dout * ib->Rsqrt(ib->SubScalar(ib->Square(x), ib->ValueByType(1, ib->GetDtype(x)), ib->Value(1)));
   }
   return {dx};
 });
@@ -2381,7 +2389,7 @@ REG_BPROP_BUILDER("AcoshGrad").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
   const auto &out = ib->GetInput(i2);
   const auto &dout = ib->GetInput(i3);
   auto dy = y->need_compute_grad_out()
-              ? ib->RealDiv((ib->Mul((ib->Mul(dout, out)), ib->Tensor(-1.0, ib->GetDtype(out)))), (ib->Tanh(y)))
+              ? ib->RealDiv((ib->Muls((ib->Mul(dout, out)), ib->ValueByType(-1.0, ib->GetDtype(out)))), (ib->Tanh(y)))
               : ib->OutZeros(y);
   auto dgrad = grad->need_compute_grad_out() ? ib->Emit("AcoshGrad", {y, dout}) : ib->OutZeros(grad);
   return {dy, dgrad};
@@ -2483,7 +2491,7 @@ REG_BPROP_BUILDER("AtanExt").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
   if (x_dtype_id == kNumberTypeComplex64 || x_dtype_id == kNumberTypeComplex128) {
     MS_EXCEPTION(TypeError) << "For 'Atan', gradient not support for complex type currently.";
   } else {
-    dx = ib->Div(dout, ib->Add(ib->Square(x), ib->Tensor(1, ib->GetDtype(x))));
+    dx = ib->Div(dout, ib->AddScalar(ib->Square(x), ib->Value(1), ib->Value(1)));
   }
   return {dx};
 });
@@ -2493,15 +2501,16 @@ REG_BPROP_BUILDER("AtanGrad").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
   const auto &out = ib->GetInput(i2);
   const auto &dout = ib->GetInput(i3);
   auto dgrad = ib->Emit("AtanGrad", {x, dout});
-  auto dx = x->need_compute_grad_out() ? ib->Mul((ib->Mul((ib->Mul(out, dgrad)), ib->Tensor(-2.0, ib->GetDtype(x)))), x)
-                                       : ib->OutZeros(x);
+  auto dx = x->need_compute_grad_out()
+              ? ib->Mul((ib->Muls((ib->Mul(out, dgrad)), ib->ValueByType(-2.0, ib->GetDtype(x)))), x)
+              : ib->OutZeros(x);
   return {dx, dgrad};
 });
 
 REG_BPROP_BUILDER("Log1p").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
   const auto &x = ib->GetInput(i0);
   const auto &dout = ib->GetInput(i2);
-  auto x_1p = ib->Add(x, ib->Tensor(1, ib->GetDtype(x)));
+  auto x_1p = ib->AddScalar(x, ib->ValueByType(1, ib->GetDtype(x)), ib->Value(1));
   TypeId exp_type = ib->GetDtypeId(x);
   if (exp_type == kNumberTypeComplex64 || exp_type == kNumberTypeComplex128) {
     x_1p = ib->Conj(x_1p);
@@ -2514,8 +2523,8 @@ REG_BPROP_BUILDER("LogAddExp").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
   const auto &x = ib->GetInput(i0);
   const auto &y = ib->GetInput(i1);
   const auto &dout = ib->GetInput(i3);
-  auto exp_x_y_1p = ib->Add(ib->Exp(ib->Sub(x, y)), ib->Tensor(1, ib->GetDtype(x)));
-  auto exp_y_x_1p = ib->Add(ib->Exp(ib->Sub(y, x)), ib->Tensor(1, ib->GetDtype(x)));
+  auto exp_x_y_1p = ib->AddScalar(ib->Exp(ib->Sub(x, y)), ib->ValueByType(1, ib->GetDtype(x)), ib->Value(1));
+  auto exp_y_x_1p = ib->AddScalar(ib->Exp(ib->Sub(y, x)), ib->ValueByType(1, ib->GetDtype(x)), ib->Value(1));
   auto dx = ib->Div(dout, exp_y_x_1p);
   auto dy = ib->Div(dout, exp_x_y_1p);
   return BinopGradCommon(ib, x, y, dx, dy);
@@ -2525,8 +2534,10 @@ REG_BPROP_BUILDER("LogAddExp2").FreeUselessValues_O({}).SetBody(BODYFUNC(ib) {
   const auto &x = ib->GetInput(i0);
   const auto &y = ib->GetInput(i1);
   const auto &dout = ib->GetInput(i3);
-  auto exp_x_y_1p = ib->Add(ib->PowScalarTensor(ib->Value(2), ib->Sub(x, y)), ib->Tensor(1, ib->GetDtype(x)));
-  auto exp_y_x_1p = ib->Add(ib->PowScalarTensor(ib->Value(2), ib->Sub(y, x)), ib->Tensor(1, ib->GetDtype(x)));
+  auto exp_x_y_1p =
+    ib->AddScalar(ib->PowScalarTensor(ib->Value(2), ib->Sub(x, y)), ib->ValueByType(1, ib->GetDtype(x)), ib->Value(1));
+  auto exp_y_x_1p =
+    ib->AddScalar(ib->PowScalarTensor(ib->Value(2), ib->Sub(y, x)), ib->ValueByType(1, ib->GetDtype(x)), ib->Value(1));
   auto dx = ib->Div(dout, exp_y_x_1p);
   auto dy = ib->Div(dout, exp_x_y_1p);
   return BinopGradCommon(ib, x, y, dx, dy);
@@ -2555,18 +2566,18 @@ REG_BPROP_BUILDER("LogSumExp").SetBody(BODYFUNC(ib) {
 REG_BPROP_BUILDER("Erf").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
   const auto &x = ib->GetInput(i0);
   const auto &dout = ib->GetInput(i2);
-  auto half_root_pi = ib->Tensor(2 / sqrt(pi), ib->GetDtype(x));
+  auto half_root_pi = ib->ValueByType(2 / sqrt(pi), ib->GetDtype(x));
   auto x_square = ib->Square(x);
-  auto dx = ib->Mul((ib->Mul(dout, half_root_pi)), (ib->Exp(ib->Neg(x_square))));
+  auto dx = ib->Mul((ib->Muls(dout, half_root_pi)), (ib->Exp(ib->Neg(x_square))));
   return {dx};
 });
 
 REG_BPROP_BUILDER("Erfc").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
   const auto &x = ib->GetInput(i0);
   const auto &dout = ib->GetInput(i2);
-  auto half_root_pi = ib->Tensor(-2 / sqrt(pi), ib->GetDtype(x));
+  auto half_root_pi = ib->ValueByType(-2 / sqrt(pi), ib->GetDtype(x));
   auto x_square = ib->Square(x);
-  auto dx = ib->Mul((ib->Mul(dout, half_root_pi)), (ib->Exp(ib->Neg(x_square))));
+  auto dx = ib->Mul((ib->Muls(dout, half_root_pi)), (ib->Exp(ib->Neg(x_square))));
   return {dx};
 });
 
@@ -2582,7 +2593,8 @@ REG_BPROP_BUILDER("Pow").SetBody(BODYFUNC(ib) {
   NodePtr dx = nullptr;
   NodePtr grad_power = nullptr;
   if (x->need_compute_grad_out()) {
-    dx = ib->Mul((ib->Mul(power, (ib->Pow(x, ib->Sub(power, ib->Tensor(1.0, ib->GetDtype(x))))))), dout);
+    dx = ib->Mul(
+      (ib->Mul(power, (ib->Pow(x, ib->SubScalar(power, ib->ValueByType(1.0, ib->GetDtype(x)), ib->Value(1)))))), dout);
   }
   if (power->need_compute_grad_out()) {
     x = ib->Select(ib->Less(x, ib->Tensor(0, ib->GetDtype(x))), ib->Fill(1.0, ib->Shape(x), ib->GetDtype(x)->type_id()),
@@ -2616,7 +2628,7 @@ REG_BPROP_BUILDER("PowScalarTensor").SetBody(BODYFUNC(ib) {
     double input_value = PowFetchScalarValue(input_ptr, "input", "PowScalarTensor");
     auto grad_lambda = ib->Muls(out, ib->Value<double>(std::log(input_value)));
     if (fabs(input_value) < 1e-15) {
-      auto exp_positive = ib->GreaterEqual(exponent, ib->Tensor(0, ib->GetDtype(exponent)));
+      auto exp_positive = ib->GreaterEqualScalar(exponent, ib->ValueByType(0, ib->GetDtype(exponent)));
       auto zero_tensor = ib->ZerosLikeExt(exponent, ib->EmitValue(kNone));
       dexponent = ib->Select(exp_positive, zero_tensor, grad_lambda);
     } else {
@@ -2691,7 +2703,7 @@ REG_BPROP_BUILDER("Expm1").FreeUselessValues_I({}).SetBody(BODYFUNC(ib) {
   if (exp_type == kNumberTypeComplex64 || exp_type == kNumberTypeComplex128) {
     out = ib->Conj(out);
   }
-  auto out_1p = ib->Add(out, ib->Tensor(1, ib->GetDtype(out)));
+  auto out_1p = ib->AddScalar(out, ib->ValueByType(1, ib->GetDtype(out)), ib->Value(1));
   auto dx = ib->Mul(dout, out_1p);
   return {dx};
 });
@@ -2702,7 +2714,7 @@ REG_BPROP_BUILDER("Exp2").SetUnusedInputs({i0}).SetBody(BODYFUNC(ib) {
   const auto &dout = ib->GetInput(i2);
 
   // dx = dout * ln2 * 2^x -> dx = dout * ln2 * out
-  auto dx = ib->Mul(dout, ib->Mul(out, ib->Tensor(LOG_2, ib->GetDtype(out))));
+  auto dx = ib->Mul(dout, ib->Muls(out, ib->ValueByType(LOG_2, ib->GetDtype(out))));
   return {dx};
 });
 
@@ -2896,7 +2908,7 @@ REG_BPROP_BUILDER("Tan").SetBody(BODYFUNC(ib) {
   if (x_dtype_id == kNumberTypeComplex64 || x_dtype_id == kNumberTypeComplex128) {
     MS_EXCEPTION(TypeError) << "For 'Tan', gradient not support for complex type currently.";
   } else {
-    dx = dout * ib->Add(ib->Tensor(1, ib->GetDtype(x)), ib->Square(out));
+    dx = dout * ib->AddScalar(ib->Square(out), ib->ValueByType(1, ib->GetDtype(x)), ib->Value(1));
   }
   return {dx};
 });
@@ -3093,7 +3105,7 @@ REG_BPROP_BUILDER("Sinc").SetBody(BODYFUNC(ib) {
   const auto &x = ib->GetInput(i0);
   const auto &out = ib->GetInput(i1);
   const auto &dout = ib->GetInput(i2);
-  auto product = ib->Mul(ib->Tensor(pi, ib->GetDtype(x)), x);
+  auto product = ib->Muls(x, ib->ValueByType(pi, ib->GetDtype(x)));
   auto dx = ib->Div((ib->Mul((ib->Sub((ib->Cos(product)), out)), dout)), x);
   TypeId x_type = ib->GetDtypeId(x);
   if (x_type == kNumberTypeComplex64 || x_type == kNumberTypeComplex128) {
@@ -3533,7 +3545,7 @@ REG_BPROP_BUILDER("SquaredDifference").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib
   const auto &x = ib->GetInput(i0);
   const auto &y = ib->GetInput(i1);
   const auto &dout = ib->GetInput(i3);
-  auto dx = dout * (x - y) * ib->Tensor(2.0, ib->GetDtype(x));
+  auto dx = ib->Muls(dout * (x - y), ib->ValueByType(2.0, ib->GetDtype(x)));
   return {BinopGradCommon(ib, x, y, dx, -dx)};
 });
 
@@ -3544,14 +3556,14 @@ REG_BPROP_BUILDER("SquareSumAll").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
   NodePtr dx;
   if (x->need_compute_grad_out()) {
     auto dout_0 = ib->TupleGetItem(dout, i0);
-    dx = dout_0 * x * ib->Tensor(2.0, ib->GetDtype(x));
+    dx = ib->Muls(dout_0 * x, ib->ValueByType(2.0, ib->GetDtype(x)));
   } else {
     dx = ib->OutZeros(x);
   }
   NodePtr dy;
   if (y->need_compute_grad_out()) {
     auto dout_1 = ib->TupleGetItem(dout, i1);
-    dy = dout_1 * y * ib->Tensor(2.0, ib->GetDtype(y));
+    dy = ib->Muls(dout_1 * y, ib->ValueByType(2.0, ib->GetDtype(y)));
   } else {
     dy = ib->OutZeros(y);
   }
@@ -3734,7 +3746,7 @@ REG_BPROP_BUILDER("Erfinv").SetUnusedInputs({i0}).SetBody(BODYFUNC(ib) {
   const auto &dout = ib->GetInput(i2);
   auto x_type = ib->GetDtype(x);
   auto pow = ib->Exp(ib->PowTensorScalar(out, ib->Value(2)));
-  auto dx = ib->Mul(ib->Mul(ib->Tensor(sqrt(pi) / 2, x_type), pow), dout);
+  auto dx = ib->Mul(ib->Muls(pow, ib->ValueByType(sqrt(pi) / 2, x_type)), dout);
   return {dx};
 });
 
@@ -3751,7 +3763,7 @@ REG_BPROP_BUILDER("InplaceErfinv").CloneInplaceInput(CloneInplaceInputFuncForInp
   const auto &dout = ib->GetInput(i2);
   auto x_type = ib->GetDtype(x);
   auto exp_self_erfinv_pow_2 = ib->Exp(ib->PowTensorScalar(out, ib->Value(2)));
-  auto dx = ib->Mul(ib->Mul(ib->Tensor(sqrt(pi) / 2, x_type), exp_self_erfinv_pow_2), dout);
+  auto dx = ib->Mul(ib->Muls(exp_self_erfinv_pow_2, ib->ValueByType(sqrt(pi) / 2, x_type)), dout);
   return {dx};
 });
 
@@ -3998,10 +4010,11 @@ REG_BPROP_BUILDER("Betainc").SetUnusedInputs({i3}).SetBody(BODYFUNC(ib) {
   auto sx = ib->Shape(input_x);
   auto log_beta =
     ib->Emit("Lgamma", {input_a}) + ib->Emit("Lgamma", {input_b}) - ib->Emit("Lgamma", {ib->Add(input_a, input_b)});
-  auto partial_x = ib->Exp(
-    ib->Sub((ib->Add((ib->Mul((ib->Sub(input_b, ib->Tensor(1, ib->GetDtype(input_b)))), (ib->Log1p(ib->Neg(input_x))))),
-                     (ib->Xlogy(ib->Sub(input_a, ib->Tensor(1, ib->GetDtype(input_b))), input_x)))),
-            log_beta));
+  auto partial_x = ib->Exp(ib->Sub(
+    (ib->Add((ib->Mul((ib->SubScalar(input_b, ib->ValueByType(1, ib->GetDtype(input_b)), ib->Value(1))),
+                      (ib->Log1p(ib->Neg(input_x))))),
+             (ib->Xlogy(ib->SubScalar(input_a, ib->ValueByType(1, ib->GetDtype(input_b)), ib->Value(1)), input_x)))),
+    log_beta));
   return {ib->OutZeros(input_a), ib->OutZeros(input_b), ib->Reshape(ib->Mul(partial_x, dout), sx)};
 });
 
@@ -4537,8 +4550,9 @@ REG_BPROP_BUILDER("LpNorm").SetBody(BODYFUNC(ib) {
     return {ib->Mul(input_scaled, scale_v)};
   } else {
     auto input_x_abs = ib->Abs(input_x);
-    auto input_scaled = ib->Mul(ib->Pow(input_x_abs, ib->Tensor(p - 2, ib->GetDtype(input_x_abs))), input_x);
-    auto scale_v = ib->RealDiv(dout, ib->Pow(out, ib->Tensor(p - 1, ib->GetDtype(out))));
+    auto input_scaled =
+      ib->Mul(ib->PowTensorScalar(input_x_abs, ib->ValueByType(p - 2, ib->GetDtype(input_x_abs))), input_x);
+    auto scale_v = ib->RealDiv(dout, ib->PowTensorScalar(out, ib->ValueByType(p - 1, ib->GetDtype(out))));
     auto equal_zero = ib->Equal(input_scaled, ib->Tensor(0, ib->GetDtype(input_scaled)));
     return {ib->Select(equal_zero, ib->Fill(0.0, ib->Shape(input_scaled), ib->GetDtype(input_scaled)->type_id()),
                        ib->Mul(input_scaled, scale_v))};
@@ -4578,17 +4592,17 @@ REG_BPROP_BUILDER("Renorm").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
       ib->MaskedFill(m, ib->Equal(norm, (ib->Tensor(0.0, ib->GetDtype(norm)))), ib->Tensor(0.0, ib->GetDtype(m)));
   } else {
     auto abs_ = ib->Abs(input_x);
-    auto input_scaled = ib->Mul(input_x, ib->Pow(abs_, ib->Tensor(p - 2)));
-    auto pow_ = ib->Pow(norm, ib->Tensor(p - 1));
+    auto input_scaled = ib->Mul(input_x, ib->PowTensorScalar(abs_, ib->Value(p - 2)));
+    auto pow_ = ib->PowTensorScalar(norm, ib->Value(p - 1));
     auto scale_v = ib->RealDiv(grad_out, pow_);
     scale_v = ib->MaskedFill(scale_v, ib->Equal(norm, (ib->Tensor(0.0, ib->GetDtype(norm)))),
                              ib->Tensor(0.0, ib->GetDtype(scale_v)));
     norm_bp = ib->Mul(input_scaled, scale_v);
   }
 
-  auto v = ib->Add(norm, ib->Tensor(ext, ib->GetDtype(norm)));
+  auto v = ib->AddScalar(norm, ib->ValueByType(ext, ib->GetDtype(norm)), ib->Value(1));
   auto inv_norm = ib->Reciprocal(v);
-  auto grad_norm = ib->Mul(ib->Mul(ib->Tensor(max_norm, ib->GetDtype(inv_norm)), inv_norm),
+  auto grad_norm = ib->Mul(ib->Muls(inv_norm, ib->ValueByType(max_norm, ib->GetDtype(inv_norm))),
                            ib->Sub(dout, (ib->Mul(inv_norm, norm_bp))));
   auto q = ib->Greater(norm, ib->Tensor(max_norm, ib->GetDtype(norm)));
   return {ib->Select(q, grad_norm, dout)};
@@ -4991,8 +5005,8 @@ REG_BPROP_BUILDER("Polygamma").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
   auto a = ib->GetInput(i0);
   auto x = ib->GetInput(i1);
   const auto &dout = ib->GetInput(i3);
-  auto one = ib->Tensor(1);
-  a = ib->Add(a, one);
+  auto one = ib->Value(1);
+  a = ib->AddScalar(a, one, ib->Value(1));
   NodePtr dx;
   if (ib->GetDtypeId(x) == kNumberTypeFloat16) {
     x = ib->Cast(x, kNumberTypeFloat64);
@@ -5071,7 +5085,9 @@ REG_BPROP_BUILDER("Zeta").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
   const auto &q = ib->GetInput(i1);
   const auto &dout = ib->GetInput(i3);
   auto dq =
-    ib->Mul((ib->Mul((ib->Neg(x)), (ib->Emit("Zeta", {ib->Add(x, (ib->Tensor(1, ib->GetDtype(x)))), q})))), dout);
+    ib->Mul((ib->Mul((ib->Neg(x)),
+                     (ib->Emit("Zeta", {ib->AddScalar(x, ib->ValueByType(1, ib->GetDtype(x)), ib->Value(1)), q})))),
+            dout);
   return {ib->OutZeros(x), dq};
 });
 

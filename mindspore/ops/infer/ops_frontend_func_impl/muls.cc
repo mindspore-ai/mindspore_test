@@ -150,7 +150,7 @@ class MulsFrontendFuncImpl : public OpFrontendFuncImpl {
     }
 
     auto x1_tensor = x1->cast<tensor::TensorPtr>();
-    auto x2_number = GetScalarCastValue<float>("muls", x2);
+    auto x2_number = GetScalarCastValue<double>("muls", x2);
     MS_EXCEPTION_IF_NULL(x1_tensor);
 
     auto x1_shape = input_args[kIndex0]->GetShape()->GetShapeVector();
@@ -163,6 +163,9 @@ class MulsFrontendFuncImpl : public OpFrontendFuncImpl {
     auto x2_type = input_args[kIndex1]->GetType()->type_id();
     // get common type between tensor and scalar
     TypeId common_type = ConvertTypeBetweenTensorAndScalar(x1_type, x2_type, GetHashId(x1_type, x2_type));
+    if (common_type == kTypeUnknown) {
+      return nullptr;
+    }
     MS_LOG(DEBUG) << "For [" << primitive->name() << "], first input type: " << input_args[kIndex0]->GetType()
                   << ", typeid: " << input_args[kIndex0]->GetType()->type_id();
     MS_LOG(DEBUG) << "For [" << primitive->name() << "], second input type: " << input_args[kIndex1]->GetType()

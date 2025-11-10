@@ -165,6 +165,27 @@ bool BF16Imm::operator==(const Value &other) const {
   }
 }
 bool BF16Imm::operator==(const BF16Imm &other) const { return v_ == other.v_; }
+
+bool Complex64Imm::operator==(const Value &other) const {
+  if (other.isa<Complex64Imm>()) {
+    auto &other_ = static_cast<const Complex64Imm &>(other);
+    return *this == other_;
+  } else {
+    return false;
+  }
+}
+bool Complex64Imm::operator==(const Complex64Imm &other) const { return v_ == other.v_; }
+
+bool Complex128Imm::operator==(const Value &other) const {
+  if (other.isa<Complex128Imm>()) {
+    auto &other_ = static_cast<const Complex128Imm &>(other);
+    return *this == other_;
+  } else {
+    return false;
+  }
+}
+bool Complex128Imm::operator==(const Complex128Imm &other) const { return v_ == other.v_; }
+
 bool ValueSequence::operator==(const Value &other) const {
   if (other.isa<ValueSequence>()) {
     auto &other_ = static_cast<const ValueSequence &>(other);

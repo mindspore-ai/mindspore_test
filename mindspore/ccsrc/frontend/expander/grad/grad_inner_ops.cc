@@ -245,7 +245,7 @@ REG_BPROP_BUILDER("SiLUGrad").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
   if (y->need_compute_grad_out()) {
     auto mul1 = ib->Mul(grad, sig_grad1);
     auto mul2 = ib->Mul(mul0, dout);
-    auto mul3 = ib->Mul(ib->Tensor(2, ib->GetDtype(sig)), sig);
+    auto mul3 = ib->Muls(sig, ib->ValueByType(2, ib->GetDtype(sig)));
     auto sub1 = ib->Sub(ib->Tensor(1, ib->GetDtype(mul3)), mul3);
     auto mul4 = ib->Mul(mul2, sub1);
     auto mul5 = ib->Mul(grad, dout);

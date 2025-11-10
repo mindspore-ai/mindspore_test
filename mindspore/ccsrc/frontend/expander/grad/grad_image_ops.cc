@@ -104,9 +104,9 @@ REG_BPROP_BUILDER("RGBToHSV").SetBody(BODYFUNC(ib) {
   }
   auto tensor_0 = ib->Tensor(0, kFloat32);
   auto tensor_1 = ib->Tensor(1, kFloat32);
-  auto tensor_n1 = ib->Tensor(-1, kFloat32);
-  auto tensor_60 = ib->Tensor(60, kFloat32);
-  auto tensor_360 = ib->Tensor(360, kFloat32);
+  auto negative_one = ib->ValueByType(-1, kFloat32);
+  auto value_sixty = ib->ValueByType(60, kFloat32);
+  auto value_360 = ib->ValueByType(360, kFloat32);
   auto crcp = [&tensor_1, &ib](const NodePtr &x) { return ib->DivNoNan(tensor_1, x); };
 
   auto reds = ib->StridedSlice(images, {{-1, {0}}});
@@ -126,53 +126,56 @@ REG_BPROP_BUILDER("RGBToHSV").SetBody(BODYFUNC(ib) {
   auto dv_db = blue_biggest;
 
   auto dsr2 = red_biggest * (green_smallest * greens + blue_smallest * blues) * crcp(ib->Square(reds));
-  auto dsr3 = red_smallest * tensor_n1 * crcp((green_biggest * greens) + (blue_biggest * blues));
+  auto dsr3 = ib->Muls(red_smallest, negative_one) * crcp((green_biggest * greens) + (blue_biggest * blues));
   auto ds_dr = dsr1 * (dsr2 + dsr3);
   auto dsg1 = ib->Greater(greens, tensor_0, kFloat32);
   auto dsg2 = green_biggest * (red_smallest * reds + blue_smallest * blues) * crcp(ib->Square(greens));
-  auto dsg3 = green_smallest * tensor_n1 * crcp((red_biggest * reds) + (blue_biggest * blues));
+  auto dsg3 = ib->Muls(green_smallest, negative_one) * crcp((red_biggest * reds) + (blue_biggest * blues));
   auto ds_dg = dsg1 * (dsg2 + dsg3);
 
   auto dsb1 = ib->Greater(blues, tensor_0, kFloat32);
   auto dsb2 = blue_biggest * (green_smallest * greens + red_smallest * reds) * crcp(ib->Square(blues));
-  auto dsb3 = blue_smallest * tensor_n1 * crcp((green_biggest * greens) + (red_biggest * reds));
+  auto dsb3 = ib->Muls(blue_smallest, negative_one) * crcp((green_biggest * greens) + (red_biggest * reds));
   auto ds_db = dsb1 * (dsb2 + dsb3);
 
   auto dhr1 = (greens - blues) * crcp(ib->Square(saturation)) * crcp(ib->Square(value));
-  auto dh_dr_1 = tensor_60 * (ib->Greater(reds, tensor_0, kFloat32) * red_biggest * tensor_n1 * dhr1);
+  auto dh_dr_1 =
+    ib->Muls((ib->Muls(ib->Greater(reds, tensor_0, kFloat32) * red_biggest, negative_one) * dhr1), value_sixty);
   auto dhr2 = red_smallest * (blues - greens) * crcp(ib->Square(reds - greens));
-  auto dh_dr_2 = tensor_60 * (ib->Greater(greens, tensor_0, kFloat32) * green_biggest * dhr2);
-  auto dhr3 = (blue_smallest * tensor_n1) * crcp(greens - blues);
-  auto dh_dr_3 = tensor_60 * (ib->Greater(greens, tensor_0, kFloat32) * green_biggest * dhr3);
+  auto dh_dr_2 = ib->Muls((ib->Greater(greens, tensor_0, kFloat32) * green_biggest * dhr2), value_sixty);
+  auto dhr3 = ib->Muls(blue_smallest, negative_one) * crcp(greens - blues);
+  auto dh_dr_3 = ib->Muls((ib->Greater(greens, tensor_0, kFloat32) * green_biggest * dhr3), value_sixty);
   auto dhr4 = red_smallest * (blues - greens) * crcp(ib->Square(blues - reds));
-  auto dh_dr_4 = tensor_60 * (ib->Greater(blues, tensor_0, kFloat32) * blue_biggest * dhr4);
+  auto dh_dr_4 = ib->Muls((ib->Greater(blues, tensor_0, kFloat32) * blue_biggest * dhr4), value_sixty);
   auto dhr5 = green_smallest * crcp(blues - greens);
-  auto dh_dr_5 = tensor_60 * (ib->Greater(blues, tensor_0, kFloat32) * blue_biggest * dhr5);
-  auto dh_dr = (dh_dr_1 + dh_dr_2 + dh_dr_3 + dh_dr_4 + dh_dr_5) / tensor_360;
+  auto dh_dr_5 = ib->Muls((ib->Greater(blues, tensor_0, kFloat32) * blue_biggest * dhr5), value_sixty);
+  auto dh_dr = ib->Divs((dh_dr_1 + dh_dr_2 + dh_dr_3 + dh_dr_4 + dh_dr_5), value_360);
 
   auto dhg1 = (blues - reds) * crcp(ib->Square(saturation)) * crcp(ib->Square(value));
-  auto dh_dg_1 = tensor_60 * (ib->Greater(greens, tensor_0, kFloat32) * green_biggest * tensor_n1 * dhg1);
+  auto dh_dg_1 =
+    ib->Muls((ib->Muls(ib->Greater(greens, tensor_0, kFloat32) * green_biggest, negative_one) * dhg1), value_sixty);
   auto dhg2 = green_smallest * (reds - blues) * crcp(ib->Square(reds - greens));
-  auto dh_dg_2 = tensor_60 * (ib->Greater(reds, tensor_0, kFloat32) * red_biggest * dhg2);
+  auto dh_dg_2 = ib->Muls((ib->Greater(reds, tensor_0, kFloat32) * red_biggest * dhg2), value_sixty);
   auto dhg3 = blue_smallest * crcp(reds - blues);
-  auto dh_dg_3 = tensor_60 * (ib->Greater(reds, tensor_0, kFloat32) * red_biggest * dhg3);
+  auto dh_dg_3 = ib->Muls((ib->Greater(reds, tensor_0, kFloat32) * red_biggest * dhg3), value_sixty);
   auto dhg4 = green_smallest * (reds - blues) * crcp(ib->Square(blues - greens));
-  auto dh_dg_4 = tensor_60 * (ib->Greater(blues, tensor_0, kFloat32) * blue_biggest * dhg4);
-  auto dhg5 = red_smallest * tensor_n1 * crcp(blues - reds);
-  auto dh_dg_5 = tensor_60 * (ib->Greater(blues, tensor_0, kFloat32) * blue_biggest * dhg5);
-  auto dh_dg = (dh_dg_1 + dh_dg_2 + dh_dg_3 + dh_dg_4 + dh_dg_5) / tensor_360;
+  auto dh_dg_4 = ib->Muls((ib->Greater(blues, tensor_0, kFloat32) * blue_biggest * dhg4), value_sixty);
+  auto dhg5 = ib->Muls(red_smallest, negative_one) * crcp(blues - reds);
+  auto dh_dg_5 = ib->Muls((ib->Greater(blues, tensor_0, kFloat32) * blue_biggest * dhg5), value_sixty);
+  auto dh_dg = ib->Divs((dh_dg_1 + dh_dg_2 + dh_dg_3 + dh_dg_4 + dh_dg_5), value_360);
 
   auto dhb1 = (reds - greens) * crcp(ib->Square(saturation)) * crcp(ib->Square(value));
-  auto dh_db_1 = tensor_60 * (ib->Greater(blues, tensor_0, kFloat32) * blue_biggest * tensor_n1 * dhb1);
+  auto dh_db_1 =
+    ib->Muls((ib->Muls(ib->Greater(blues, tensor_0, kFloat32) * blue_biggest, negative_one) * dhb1), value_sixty);
   auto dhb2 = blue_smallest * (greens - reds) * crcp(ib->Square(reds - blues));
-  auto dh_db_2 = tensor_60 * (ib->Greater(reds, tensor_0, kFloat32) * red_biggest * dhb2);
-  auto dhb3 = green_smallest * tensor_n1 * crcp(reds - greens);
-  auto dh_db_3 = tensor_60 * (ib->Greater(reds, tensor_0, kFloat32) * red_biggest * dhb3);
+  auto dh_db_2 = ib->Muls((ib->Greater(reds, tensor_0, kFloat32) * red_biggest * dhb2), value_sixty);
+  auto dhb3 = ib->Muls(green_smallest, negative_one) * crcp(reds - greens);
+  auto dh_db_3 = ib->Muls((ib->Greater(reds, tensor_0, kFloat32) * red_biggest * dhb3), value_sixty);
   auto dhb4 = blue_smallest * (greens - reds) * crcp(ib->Square(greens - blues));
-  auto dh_db_4 = tensor_60 * (ib->Greater(greens, tensor_0, kFloat32) * green_biggest * dhb4);
+  auto dh_db_4 = ib->Muls((ib->Greater(greens, tensor_0, kFloat32) * green_biggest * dhb4), value_sixty);
   auto dhb5 = red_smallest * crcp(greens - reds);
-  auto dh_db_5 = tensor_60 * (ib->Greater(greens, tensor_0, kFloat32) * green_biggest * dhb5);
-  auto dh_db = (dh_db_1 + dh_db_2 + dh_db_3 + dh_db_4 + dh_db_5) / tensor_360;
+  auto dh_db_5 = ib->Muls((ib->Greater(greens, tensor_0, kFloat32) * green_biggest * dhb5), value_sixty);
+  auto dh_db = ib->Divs((dh_db_1 + dh_db_2 + dh_db_3 + dh_db_4 + dh_db_5), value_360);
 
   auto dout_r = ib->StridedSlice(dout, {{-1, {0}}});
   auto dout_g = ib->StridedSlice(dout, {{-1, {1}}});

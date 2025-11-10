@@ -68,6 +68,12 @@ T GetScalarCastValue(const std::string &op_name, const ValuePtr &elem) {
   } else if (elem->isa<BoolImm>()) {
     auto elem_value = GetValue<bool>(elem);
     res = static_cast<T>(elem_value);
+  } else if (elem->isa<FP16Imm>()) {
+    auto elem_value = GetValue<float16>(elem);
+    res = static_cast<T>(elem_value);
+  } else if (elem->isa<BF16Imm>()) {
+    auto elem_value = GetValue<bfloat16>(elem);
+    res = static_cast<T>(elem_value);
   } else {
     MS_EXCEPTION(TypeError) << "For op '" << op_name
                             << "' input must be [int32, int64, float32, float64, bool], but got " << elem->ToString();
