@@ -17,7 +17,7 @@
 
 #include "abstract/ops/primitive_infer_map.h"
 #include "kernel/host/view/view_utils.h"
-#include "view/slice_ext_strides_calc.h"
+#include "view/narrow_strides_calc.h"
 #include "view/view_strides_calculator.h"
 
 namespace mindspore {
@@ -25,12 +25,12 @@ namespace kernel {
 
 void NarrowView::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                   const std::vector<KernelTensor *> &outputs) {
-  ops::OldTensorInfoPtr old_info = GetOldTensorInfo(inputs[kIndex0]);
+  const auto &input = inputs[kIndex0];
   const auto dim = inputs[kIndex1]->GetValueWithCheck<int64_t>();
   const auto start = inputs[kIndex2]->GetValueWithCheck<int64_t>();
-  const auto end = inputs[kIndex3]->GetValueWithCheck<int64_t>();
-  info_ = ops::SliceExtStridesCalc(old_info->old_shape, old_info->old_strides, inputs[kIndex0]->tensor_storage_info(),
-                                   dim, start, start + end, 1);
+  const auto length = inputs[kIndex3]->GetValueWithCheck<int64_t>();
+  info_ = ops::NarrowStridesCalc(input->GetShapeVector(), GetTensorStride(input), input->tensor_storage_info(), dim,
+                                 start, length);
   outputs[kIndex0]->set_tensor_storage_info(info_[0]);
 }
 
