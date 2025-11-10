@@ -82,11 +82,11 @@ class ASCEND_RES_MANAGER_EXPORT AscendResManager : public DeviceResManager {
                                        uint32_t stream_id) const override;
 
   bool SyncCopy(const DeviceAddressPtr &dst_device_sync, const DeviceAddressPtr &src_device_sync, size_t stream_id,
-                const DeviceAddressMetaData &src_metadata = {},
-                const DeviceAddressMetaData &dst_metadata = {}) const override;
+                const DeviceAddressExtPtr &src_ext = nullptr,
+                const DeviceAddressExtPtr &dst_ext = nullptr) const override;
   bool AsyncCopy(const DeviceAddressPtr &dst_device_sync, const DeviceAddressPtr &src_device_sync, size_t stream_id,
-                 bool keep_src, const DeviceAddressMetaData &src_metadata = {},
-                 const DeviceAddressMetaData &dst_metadata = {}) const override;
+                 bool keep_src, const DeviceAddressExtPtr &src_ext = nullptr,
+                 const DeviceAddressExtPtr &dst_ext = nullptr) const override;
   bool Copy(void *dst, const void *src, uint64_t size, CopyType kind, size_t stream_id) const override;
   bool CopyDirectly(void *dst, size_t dst_size, const void *src, size_t src_size, CopyType kind) const override;
   bool LoadCollectiveCommLib() override;
@@ -197,29 +197,40 @@ class ASCEND_RES_MANAGER_EXPORT AscendResManager : public DeviceResManager {
 
  private:
   bool SyncDeviceToHost(const DeviceAddressPtr &dst_device_sync, const DeviceAddressPtr &src_device_sync,
-                        size_t stream_id) const;
+                        size_t stream_id, const DeviceAddressExtPtr &src_ext, const DeviceAddressExtPtr &dst_ext) const;
   bool SyncHostToDevice(const DeviceAddressPtr &dst_device_sync, const DeviceAddressPtr &src_device_sync,
-                        size_t stream_id) const;
+                        size_t stream_id, const DeviceAddressExtPtr &src_ext, const DeviceAddressExtPtr &dst_ext) const;
   bool SyncDeviceToDevice(const DeviceAddressPtr &dst_device_sync, const DeviceAddressPtr &src_device_sync,
-                          size_t stream_id) const;
+                          size_t stream_id, const DeviceAddressExtPtr &src_ext,
+                          const DeviceAddressExtPtr &dst_ext) const;
   bool AsyncDeviceToHost(const DeviceAddressPtr &dst_device_sync, const DeviceAddressPtr &src_device_sync,
-                         size_t stream_id) const;
+                         size_t stream_id, const DeviceAddressExtPtr &src_ext,
+                         const DeviceAddressExtPtr &dst_ext) const;
   bool AsyncHostToDevice(const DeviceAddressPtr &dst_device_sync, const DeviceAddressPtr &src_device_sync,
-                         size_t stream_id, bool keep_src) const;
+                         size_t stream_id, bool keep_src, const DeviceAddressExtPtr &src_ext,
+                         const DeviceAddressExtPtr &dst_ext) const;
   bool AsyncDeviceToDevice(const DeviceAddressPtr &dst_device_sync, const DeviceAddressPtr &src_device_sync,
-                           size_t stream_id) const;
+                           size_t stream_id, const DeviceAddressExtPtr &src_ext,
+                           const DeviceAddressExtPtr &dst_ext) const;
   bool CopyDeviceToHostForDiffFormat(const DeviceAddress *dst_device_address, const DeviceAddress *src_device_address,
-                                     size_t stream_id) const;
+                                     size_t stream_id, const DeviceAddressExtPtr &src_ext,
+                                     const DeviceAddressExtPtr &dst_ext) const;
   bool CopyDeviceToHostForDiffType(const DeviceAddress *dst_device_address, const DeviceAddress *src_device_address,
-                                   size_t stream_id) const;
+                                   size_t stream_id, const DeviceAddressExtPtr &src_ext,
+                                   const DeviceAddressExtPtr &dst_ext) const;
   bool CopyHostToDeviceForDiffFormat(const DeviceAddress *dst_device_address, const DeviceAddress *src_device_address,
-                                     size_t stream_id) const;
+                                     size_t stream_id, const DeviceAddressExtPtr &src_ext,
+                                     const DeviceAddressExtPtr &dst_ext) const;
   bool CopyHostToDeviceForDiffType(const DeviceAddress *dst_device_address, const DeviceAddress *src_device_address,
-                                   size_t stream_id) const;
+                                   size_t stream_id, const DeviceAddressExtPtr &src_ext,
+                                   const DeviceAddressExtPtr &dst_ext) const;
   bool SyncDeviceToDeviceWithDiffFormatType(const DeviceAddressPtr &dst_device_sync,
-                                            const DeviceAddressPtr &src_device_sync, size_t stream_id) const;
+                                            const DeviceAddressPtr &src_device_sync, size_t stream_id,
+                                            const DeviceAddressExtPtr &src_ext,
+                                            const DeviceAddressExtPtr &dst_ext) const;
   bool CopyHostToDevice(const DeviceAddress *dst_device_address, const DeviceAddress *src_device_address,
-                        const void *src, uint64_t size, aclrtMemcpyKind kind, size_t stream_id,
+                        const DeviceAddressExtPtr &src_ext, const DeviceAddressExtPtr &dst_ext, const void *src,
+                        uint64_t size, aclrtMemcpyKind kind, size_t stream_id,
                         const DeviceAddressPtr src_device_sync = nullptr) const;
   bool BaseCopy(void *dst, const void *src, uint64_t size, aclrtMemcpyKind kind, size_t stream_id,
                 const DeviceAddressPtr src_device_sync = nullptr) const;

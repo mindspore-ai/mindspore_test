@@ -124,8 +124,8 @@ class DataPrepareActor : public DebugAwareActor {
 
   // The device tensor stores may exist the two device tensors and need copy data in the heterogeneous scene.
   void CopyDataFromDeviceTensorStore(const AnfNodePtr &front_node, const AnfNodePtr &backend_node,
-                                     const device::DeviceAddressPtr &host_tensor_address,
-                                     const DeviceContext *device_context, OpContext<KernelTensor> *context) const;
+                                     const kernel::KernelTensorPtr &kernel_tensor, const DeviceContext *device_context,
+                                     OpContext<KernelTensor> *context) const;
 
   void RecordGraphInputs(const std::vector<TensorPtr> &host_tensors, const std::vector<size_t> &host_param_indexes);
 

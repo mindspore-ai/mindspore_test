@@ -640,7 +640,7 @@ void ControlActor::MergeDeviceAddress(OpContext<KernelTensor> *const context,
       }
     }
     if (!SyncAllStreamForDeviceAddress(tmp_device_tensor, addr_list[i]->device_address()) ||
-        !SyncCopy(tmp_device_tensor, addr_list[i]->device_address(), kDefaultStreamIndex)) {
+        !SyncCopy(tmp_kernel_tensor.get(), addr_list[i], kDefaultStreamIndex)) {
       SET_OPCONTEXT_FAIL_RET_WITH_ERROR(*context, "Sync device to device failed.");
     }
     tmp_device_tensor->set_ptr((reinterpret_cast<char *>(tmp_device_tensor->GetMutablePtr())) +

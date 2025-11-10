@@ -23,7 +23,8 @@
 #include "include/utils/convert_utils.h"
 #include "ir/dtype/tensor_type.h"
 
-namespace mindspore::kernel {
+namespace mindspore {
+namespace kernel {
 namespace {
 void TransposeDefaultShape(const ShapeVector *host_shape_vector, ShapeVector *device_shape_vector) {
   MS_EXCEPTION_IF_NULL(host_shape_vector);
@@ -799,4 +800,85 @@ void KernelTensor::set_pointer_ref_count(KernelTensor *const other) {
   device_address_->set_device_pointer(other_device_address->device_pointer());
   ref_cnt_ = other->ref_cnt_;
 }
-}  // namespace mindspore::kernel
+}  // namespace kernel
+
+bool SyncCopy(kernel::KernelTensor *const dst_kernel_tensor, kernel::KernelTensor *const src_kernel_tensor,
+              size_t stream_id) {
+  MS_EXCEPTION_IF_NULL(dst_kernel_tensor);
+  MS_EXCEPTION_IF_NULL(src_kernel_tensor);
+  MS_EXCEPTION_IF_NULL(dst_kernel_tensor->device_address());
+  MS_EXCEPTION_IF_NULL(src_kernel_tensor->device_address());
+  DeviceAddressExtPtr src_ext = std::make_shared<DeviceAddressExt>(
+    src_kernel_tensor->format(), src_kernel_tensor->dtype_id(), src_kernel_tensor->GetShapeVector());
+  DeviceAddressExtPtr dst_ext = std::make_shared<DeviceAddressExt>(
+    dst_kernel_tensor->format(), dst_kernel_tensor->dtype_id(), dst_kernel_tensor->GetShapeVector());
+  return SyncCopy(dst_kernel_tensor->device_address(), src_kernel_tensor->device_address(), stream_id, src_ext,
+                  dst_ext);
+}
+
+bool AsyncCopy(kernel::KernelTensor *const dst_kernel_tensor, kernel::KernelTensor *const src_kernel_tensor,
+               size_t stream_id, bool keep_src) {
+  MS_EXCEPTION_IF_NULL(dst_kernel_tensor);
+  MS_EXCEPTION_IF_NULL(src_kernel_tensor);
+  MS_EXCEPTION_IF_NULL(dst_kernel_tensor->device_address());
+  MS_EXCEPTION_IF_NULL(src_kernel_tensor->device_address());
+  DeviceAddressExtPtr src_ext = std::make_shared<DeviceAddressExt>(
+    src_kernel_tensor->format(), src_kernel_tensor->dtype_id(), src_kernel_tensor->GetShapeVector());
+  DeviceAddressExtPtr dst_ext = std::make_shared<DeviceAddressExt>(
+    dst_kernel_tensor->format(), dst_kernel_tensor->dtype_id(), dst_kernel_tensor->GetShapeVector());
+  return AsyncCopy(dst_kernel_tensor->device_address(), src_kernel_tensor->device_address(), stream_id, keep_src,
+                   src_ext, dst_ext);
+}
+
+bool SyncCopy(kernel::KernelTensor *const dst_kernel_tensor, tensor::Tensor *const src_tensor, size_t stream_id) {
+  MS_EXCEPTION_IF_NULL(dst_kernel_tensor);
+  MS_EXCEPTION_IF_NULL(src_tensor);
+  MS_EXCEPTION_IF_NULL(dst_kernel_tensor->device_address());
+  MS_EXCEPTION_IF_NULL(src_tensor->device_address());
+  DeviceAddressExtPtr src_ext = std::make_shared<DeviceAddressExt>(kernel::GetFormatFromStrToEnum(src_tensor->format()),
+                                                                   src_tensor->data_type(), src_tensor->shape());
+  DeviceAddressExtPtr dst_ext = std::make_shared<DeviceAddressExt>(
+    dst_kernel_tensor->format(), dst_kernel_tensor->dtype_id(), dst_kernel_tensor->GetShapeVector());
+  return SyncCopy(dst_kernel_tensor->device_address(), src_tensor->device_address(), stream_id, src_ext, dst_ext);
+}
+
+bool AsyncCopy(kernel::KernelTensor *const dst_kernel_tensor, tensor::Tensor *const src_tensor, size_t stream_id,
+               bool keep_src) {
+  MS_EXCEPTION_IF_NULL(dst_kernel_tensor);
+  MS_EXCEPTION_IF_NULL(src_tensor);
+  MS_EXCEPTION_IF_NULL(dst_kernel_tensor->device_address());
+  MS_EXCEPTION_IF_NULL(src_tensor->device_address());
+  DeviceAddressExtPtr src_ext = std::make_shared<DeviceAddressExt>(kernel::GetFormatFromStrToEnum(src_tensor->format()),
+                                                                   src_tensor->data_type(), src_tensor->shape());
+  DeviceAddressExtPtr dst_ext = std::make_shared<DeviceAddressExt>(
+    dst_kernel_tensor->format(), dst_kernel_tensor->dtype_id(), dst_kernel_tensor->GetShapeVector());
+  return AsyncCopy(dst_kernel_tensor->device_address(), src_tensor->device_address(), stream_id, keep_src, src_ext,
+                   dst_ext);
+}
+
+bool SyncCopy(const tensor::TensorPtr &dst_tensor, kernel::KernelTensor *const src_kernel_tensor, size_t stream_id) {
+  MS_EXCEPTION_IF_NULL(dst_tensor);
+  MS_EXCEPTION_IF_NULL(src_kernel_tensor);
+  MS_EXCEPTION_IF_NULL(dst_tensor->device_address());
+  MS_EXCEPTION_IF_NULL(src_kernel_tensor->device_address());
+  DeviceAddressExtPtr src_ext = std::make_shared<DeviceAddressExt>(
+    src_kernel_tensor->format(), src_kernel_tensor->dtype_id(), src_kernel_tensor->GetShapeVector());
+  DeviceAddressExtPtr dst_ext = std::make_shared<DeviceAddressExt>(kernel::GetFormatFromStrToEnum(dst_tensor->format()),
+                                                                   dst_tensor->data_type(), dst_tensor->shape());
+  return SyncCopy(dst_tensor->device_address(), src_kernel_tensor->device_address(), stream_id, src_ext, dst_ext);
+}
+
+bool AsyncCopy(const tensor::TensorPtr &dst_tensor, kernel::KernelTensor *const src_kernel_tensor, size_t stream_id,
+               bool keep_src) {
+  MS_EXCEPTION_IF_NULL(dst_tensor);
+  MS_EXCEPTION_IF_NULL(src_kernel_tensor);
+  MS_EXCEPTION_IF_NULL(dst_tensor->device_address());
+  MS_EXCEPTION_IF_NULL(src_kernel_tensor->device_address());
+  DeviceAddressExtPtr src_ext = std::make_shared<DeviceAddressExt>(
+    src_kernel_tensor->format(), src_kernel_tensor->dtype_id(), src_kernel_tensor->GetShapeVector());
+  DeviceAddressExtPtr dst_ext = std::make_shared<DeviceAddressExt>(kernel::GetFormatFromStrToEnum(dst_tensor->format()),
+                                                                   dst_tensor->data_type(), dst_tensor->shape());
+  return AsyncCopy(dst_tensor->device_address(), src_kernel_tensor->device_address(), stream_id, keep_src, src_ext,
+                   dst_ext);
+}
+}  // namespace mindspore

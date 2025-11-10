@@ -143,8 +143,8 @@ void GetDumpIntShape(const AnfNodePtr &node, size_t index, NotNull<ShapeVector *
   }
 }
 
-const DeviceTensorPtr GetParameterInfo(const AnfNodePtr &node, NotNull<ShapeVector *> const int_shapes,
-                                       NotNull<TypeId *> const host_type, NotNull<TypeId *> const device_type) {
+const kernel::KernelTensorPtr GetParameterInfo(const AnfNodePtr &node, NotNull<ShapeVector *> const int_shapes,
+                                               NotNull<TypeId *> const host_type, NotNull<TypeId *> const device_type) {
   const auto &kernel_tensors = DeviceTensorStore::GetInstance().Fetch(node.get());
   if (kernel_tensors.size() < 1) {
     return nullptr;
@@ -159,7 +159,7 @@ const DeviceTensorPtr GetParameterInfo(const AnfNodePtr &node, NotNull<ShapeVect
   GetDumpIntShape(ref_node, kParameterOutputIndex, int_shapes, trans_flag);
   *host_type = common::AnfAlgo::GetOutputInferDataType(ref_node, kParameterOutputIndex);
   *device_type = AnfAlgo::GetOutputDeviceDataType(ref_node, kParameterOutputIndex);
-  return device_addr;
+  return kernel_tensors[0];
 }
 
 bool CPUDumpMemToFile(const device::DeviceAddress &addr, const std::string &filepath, const std::string &,
@@ -221,6 +221,7 @@ bool AscendDumpMemToFile(const device::DeviceAddress &addr, const std::string &f
       addr.GetMutablePtr(), addr.GetSize(), addr.GetShapeVector(), kernel::GetFormatFromStrToEnum(addr.format()),
       addr.type_id(), device::GetDeviceNameByType(addr.GetDeviceType()), addr.stream_id());
     MS_EXCEPTION_IF_NULL(out_tensor->device_address());
+    // No need add device address info for same device address.
     ret = SyncCopy(out_tensor->device_address(), clone_device_address, addr.stream_id());
     if (!ret) {
       MS_LOG(ERROR) << "Copy device mem to host failed";
@@ -254,10 +255,13 @@ void DumpMemToFile(const std::string &file_path, const device::DeviceAddress &ad
 }
 
 #ifdef ENABLE_DEBUGGER
-mindspore::tensor::TensorPtr LoadDeviceAddressToHost(const device::DeviceAddress &addr, const std::string &tensor_name,
-                                                     const ShapeVector &host_shape, TypeId host_type, bool trans_flag,
-                                                     bool async_copy) {
-  device::DeviceContextKey host_key = {addr.GetDeviceType(), addr.device_id()};
+mindspore::tensor::TensorPtr LoadDeviceAddressToHost(kernel::KernelTensor *const kernel_tensor,
+                                                     const std::string &tensor_name, const ShapeVector &host_shape,
+                                                     TypeId host_type, bool trans_flag, bool async_copy) {
+  MS_EXCEPTION_IF_NULL(kernel_tensor);
+  MS_EXCEPTION_IF_NULL(kernel_tensor->device_address());
+  const auto &addr = *(kernel_tensor->device_address());
+  device::DeviceContextKey host_key = {kernel_tensor->GetDeviceType(), kernel_tensor->device_id()};
   device::DeviceContext *host_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
   MS_EXCEPTION_IF_NULL(host_context);
   MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
@@ -283,21 +287,9 @@ mindspore::tensor::TensorPtr LoadDeviceAddressToHost(const device::DeviceAddress
   if (async_copy) {
     if (trans_flag) {
       MS_EXCEPTION_IF_NULL(out_tensor->device_address());
-      const auto &host_device_address = dynamic_cast<device::DeviceAddress *>(out_tensor->device_address().get());
-      MS_EXCEPTION_IF_NULL(host_device_address);
-      const auto &clone_dst_device_address = host_device_address->CloneDeviceAddress();
-      MS_EXCEPTION_IF_NULL(clone_dst_device_address);
-      clone_dst_device_address->set_ptr(host_device_address->GetMutablePtr());
-      clone_dst_device_address->SetSize(host_size);
-      clone_dst_device_address->SetShapeVector(corrected_host_shape);
-      auto clone_src_device_address = host_context->device_res_manager_->CreateDeviceAddress(
-        addr.GetMutablePtr(), addr.GetSize(), addr.GetShapeVector(), kernel::GetFormatFromStrToEnum(addr.format()),
-        addr.type_id(), device::GetDeviceNameByType(addr.GetDeviceType()), addr.stream_id());
-      MS_EXCEPTION_IF_NULL(clone_src_device_address);
-      MS_LOG(DEBUG) << "src device address:" << addr.ToString() << " clone:" << clone_src_device_address->ToString()
-                    << "dst device address shape:" << corrected_host_shape << " size:" << host_size
-                    << " type:" << host_type << " clone:" << clone_dst_device_address->ToString();
-      ret_sync = SyncCopy(clone_dst_device_address, clone_src_device_address, addr.stream_id());
+      MS_LOG(DEBUG) << "src kernel tensor:" << kernel_tensor->ToString()
+                    << "dst device address:" << out_tensor->device_address()->ToString();
+      ret_sync = SyncCopy(out_tensor, kernel_tensor, addr.stream_id());
     } else {
       ret_sync = host_context->device_res_manager_->Copy(out_tensor->data_c(), addr.GetMutablePtr(), host_size,
                                                          device::CopyType::kD2H, addr.stream_id());
@@ -367,15 +359,16 @@ mindspore::tensor::TensorPtr ExtractContiguousTensor(const tensor::TensorPtr &or
   return out_tensor;
 }
 
-bool LoadMemToHost(const device::DeviceAddress &addr, const std::string &tensor_name, const std::string &host_fmt,
-                   const ShapeVector &host_shape, TypeId host_type, size_t slot, bool keep_prev, uint32_t root_graph_id,
-                   bool force_update, bool trans_flag, bool async_copy) {
+bool LoadMemToHost(kernel::KernelTensor *const kernel_tensor, const std::string &tensor_name,
+                   const std::string &host_fmt, const ShapeVector &host_shape, TypeId host_type, size_t slot,
+                   bool keep_prev, uint32_t root_graph_id, bool force_update, bool trans_flag, bool async_copy) {
+  MS_EXCEPTION_IF_NULL(kernel_tensor);
   bool ret = false;
-  if (addr.GetSize() == 0) {
+  if (kernel_tensor->GetSize() == 0) {
     MS_VLOG(VL_DUMP) << tensor_name << " size is 0, skip it.";
     return true;
   }
-  if (addr.GetPtr() == nullptr) {
+  if (kernel_tensor->device_ptr() == nullptr) {
     MS_VLOG(VL_DUMP) << tensor_name << " device address ptr is null, skip it.";
     return true;
   }
@@ -391,12 +384,13 @@ bool LoadMemToHost(const device::DeviceAddress &addr, const std::string &tensor_
   }
   // For non-contiguous cases, dump the original tensor.
   auto correct_shape = host_shape;
-  auto tensor_storage_info = addr.GetTensorStorageInfo();
+  auto tensor_storage_info = kernel_tensor->tensor_storage_info();
   if (tensor_storage_info != nullptr) {
     MS_VLOG(VL_DUMP) << "Get dump value from non-contiguous Kernel Tensor:" << tensor_name;
     correct_shape = tensor_storage_info->ori_shape;
   }
-  auto out_tensor = LoadDeviceAddressToHost(addr, tensor_name, correct_shape, host_type, trans_flag, async_copy);
+  auto out_tensor =
+    LoadDeviceAddressToHost(kernel_tensor, tensor_name, correct_shape, host_type, trans_flag, async_copy);
   // Convert to contiguous on host side.
   if (tensor_storage_info != nullptr) {
     MS_VLOG(VL_DUMP) << "Convert the non-contiguous Kernel Tensor:" << tensor_name << " to contiguous";
@@ -412,7 +406,7 @@ bool LoadMemToHost(const device::DeviceAddress &addr, const std::string &tensor_
     MS_VLOG(VL_DUMP) << tensor_name << " datasize is 0, skip it.";
     return true;
   }
-  std::string tensor_format = trans_flag ? host_fmt : addr.format();
+  std::string tensor_format = trans_flag ? host_fmt : kernel::GetFormatFromEnumToStr(kernel_tensor->format());
   size_t host_size = LongToSize(out_tensor->DataNBytes());
   if (host_type == kNumberTypeInt4) {
     const int int4_nums_per_byte = 2;

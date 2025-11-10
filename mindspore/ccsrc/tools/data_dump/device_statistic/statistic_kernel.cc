@@ -49,7 +49,7 @@ TensorPtr SyncDeviceToHostTensor(KernelTensorPtr kernel_tensor) {
   MS_EXCEPTION_IF_NULL(host_context);
   MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
   if (!host_context->device_res_manager_->SyncAllStreams() ||
-      !SyncCopy(out_tensor->device_address(), device_addr, device_addr->stream_id())) {
+      !SyncCopy(out_tensor, kernel_tensor.get(), device_addr->stream_id())) {
     const auto &dst_address = dynamic_cast<device::DeviceAddress *>(out_tensor->device_address().get());
     MS_EXCEPTION_IF_NULL(dst_address);
     MS_LOG(EXCEPTION) << "Convert format or Copy device mem to host failed, from device address:"

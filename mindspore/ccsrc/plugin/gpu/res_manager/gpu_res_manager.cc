@@ -274,7 +274,11 @@ std::pair<std::vector<size_t>, std::vector<size_t>> GPUResManager::AllocDeviceMe
     MS_EXCEPTION_IF_NULL(host_context);
     MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
     host_context->device_res_manager_->SyncAllStreams();
-    SyncCopy(device_address, tensor->device_address(), device_address->stream_id());
+    DeviceAddressExtPtr src_ext = std::make_shared<DeviceAddressExt>(kernel::GetFormatFromStrToEnum(tensor->format()),
+                                                                     tensor->data_type(), tensor->shape());
+    DeviceAddressExtPtr dst_ext =
+      std::make_shared<DeviceAddressExt>(Format::DEFAULT_FORMAT, tensor->data_type(), tensor->shape());
+    SyncCopy(device_address, tensor->device_address(), device_address->stream_id(), src_ext, dst_ext);
     tensor->set_device_address(device_address);
   }
   return std::make_pair(before_padding_sizes, after_padding_sizes);
@@ -397,8 +401,8 @@ DeviceAddressPtr GPUResManager::CreateDeviceAddress(void *ptr, size_t size, cons
 }
 
 bool GPUResManager::SyncCopy(const DeviceAddressPtr &dst_device_sync, const DeviceAddressPtr &src_device_sync,
-                             size_t stream_id, const DeviceAddressMetaData &src_metadata,
-                             const DeviceAddressMetaData &dst_metadata) const {
+                             size_t stream_id, const DeviceAddressExtPtr &src_ext,
+                             const DeviceAddressExtPtr &dst_ext) const {
   MS_EXCEPTION_IF_NULL(dst_device_sync);
   MS_EXCEPTION_IF_NULL(src_device_sync);
   if (dst_device_sync->GetDeviceType() == DeviceType::kGPU && src_device_sync->GetDeviceType() == DeviceType::kCPU) {
@@ -411,8 +415,8 @@ bool GPUResManager::SyncCopy(const DeviceAddressPtr &dst_device_sync, const Devi
 }
 
 bool GPUResManager::AsyncCopy(const DeviceAddressPtr &dst_device_sync, const DeviceAddressPtr &src_device_sync,
-                              size_t stream_id, bool keep_src, const DeviceAddressMetaData &src_metadata,
-                              const DeviceAddressMetaData &dst_metadata) const {
+                              size_t stream_id, bool keep_src, const DeviceAddressExtPtr &src_ext,
+                              const DeviceAddressExtPtr &dst_ext) const {
   MS_EXCEPTION_IF_NULL(dst_device_sync);
   MS_EXCEPTION_IF_NULL(src_device_sync);
   if (dst_device_sync->GetDeviceType() == DeviceType::kGPU && src_device_sync->GetDeviceType() == DeviceType::kCPU) {
@@ -526,14 +530,6 @@ bool GPUResManager::Copy(const DeviceAddressPtr &dst_device_sync, const DeviceAd
     MS_LOG(WARNING) << "Src size is greater than dst size, src device address:" << src_device_address->ToString()
                     << " dst:" << dst_device_address->ToString();
     copy_size = dst_device_address->GetSize();
-  }
-
-  if (copy_type == cudaMemcpyKind::cudaMemcpyDeviceToDevice &&
-      (dst_device_address->format() != src_device_address->format() ||
-       dst_device_address->type_id() != src_device_address->type_id())) {
-    MS_LOG(ERROR) << "Format or type is different,  src device address:" << src_device_address->ToString()
-                  << " dst:" << dst_device_address->ToString();
-    return false;
   }
 
   auto stream = GPUDeviceManager::GetInstance().GetStream(stream_id);
@@ -743,7 +739,7 @@ std::shared_ptr<void> GPUResManager::AllocateHostMemory(size_t size) const {
 MS_REGISTER_HAL_COPY_FUNC(
   DeviceType::kGPU,
   ([](const DeviceAddressPtr &dst_device_sync, const DeviceAddressPtr &src_device_sync, size_t stream_id,
-      const DeviceAddressMetaData &src_metadata, const DeviceAddressMetaData &dst_metadata) {
+      const DeviceAddressExtPtr &src_ext, const DeviceAddressExtPtr &dst_ext) {
     auto context = MsContext::GetInstance();
     MS_EXCEPTION_IF_NULL(context);
     auto device_id = context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
@@ -752,11 +748,10 @@ MS_REGISTER_HAL_COPY_FUNC(
       device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
     MS_EXCEPTION_IF_NULL(host_context);
     MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
-    return host_context->device_res_manager_->SyncCopy(dst_device_sync, src_device_sync, stream_id, src_metadata,
-                                                       dst_metadata);
+    return host_context->device_res_manager_->SyncCopy(dst_device_sync, src_device_sync, stream_id, src_ext, dst_ext);
   }),
   ([](const DeviceAddressPtr &dst_device_sync, const DeviceAddressPtr &src_device_sync, size_t stream_id, bool keep_src,
-      const DeviceAddressMetaData &src_metadata, const DeviceAddressMetaData &dst_metadata) {
+      const DeviceAddressExtPtr &src_ext, const DeviceAddressExtPtr &dst_ext) {
     auto context = MsContext::GetInstance();
     MS_EXCEPTION_IF_NULL(context);
     auto device_id = context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
@@ -765,8 +760,8 @@ MS_REGISTER_HAL_COPY_FUNC(
       device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
     MS_EXCEPTION_IF_NULL(host_context);
     MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
-    return host_context->device_res_manager_->AsyncCopy(dst_device_sync, src_device_sync, stream_id, keep_src,
-                                                        src_metadata, dst_metadata);
+    return host_context->device_res_manager_->AsyncCopy(dst_device_sync, src_device_sync, stream_id, keep_src, src_ext,
+                                                        dst_ext);
   }),
   ([](void *dst, const void *src, uint64_t size, size_t stream_id) {
     auto context = MsContext::GetInstance();
