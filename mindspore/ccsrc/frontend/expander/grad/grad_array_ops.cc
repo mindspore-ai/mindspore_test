@@ -2423,7 +2423,7 @@ REG_BPROP_BUILDER("TransposeView").SetUnusedInputs({i0, i2}).SetBody(BODYFUNC(ib
   const auto &perm = ib->GetInput(i1);
   const auto &dout = ib->GetInput(i3);
   auto res_perm = ib->ShapeCalc(g_transpose, {perm}, {0})[0];
-  return {ib->Transpose(dout, res_perm), ib->OutZeros(perm)};
+  return {ib->TransposeView(dout, res_perm), ib->OutZeros(perm)};
 });
 
 REG_BPROP_BUILDER("TransposeExtView").SetUnusedInputs({i0, i3}).SetBody(BODYFUNC(ib) {

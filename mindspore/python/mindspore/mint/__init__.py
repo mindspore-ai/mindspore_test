@@ -1196,7 +1196,7 @@ def permute(input, dims):
           [ 8. 11.]
           [ 9. 12.]]]
     """
-    return ops.functional.permute(input, dims)
+    return ops.auto_generate.transpose_view(input, dims)
 
 
 def split(tensor, split_size_or_sections, dim=0):

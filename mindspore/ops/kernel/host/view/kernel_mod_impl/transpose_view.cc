@@ -24,15 +24,14 @@ namespace kernel {
 
 void TransposeView::UpdateOutputTensorInfo(const std::vector<KernelTensor *> &inputs,
                                            const std::vector<KernelTensor *> &outputs) {
-  ops::OldTensorInfoPtr old_info = GetOldTensorInfo(inputs[kIndex0]);
   const auto &dims = inputs[kIndex1]->GetValueWithCheck<std::vector<int64_t>>();
-  auto shape = inputs[kIndex0]->GetShapeVector();
-  auto size = shape.size();
-  if (dims.size() != size) {
-    MS_LOG(EXCEPTION) << "DIMS should be same with shape size which is " << dims << " ,and shape " << shape;
+  const auto &input = inputs[kIndex0];
+  const auto &shape = input->GetShapeVector();
+  if (dims.size() != shape.size()) {
+    MS_LOG(EXCEPTION) << "dims should be same with shape size which is " << dims << " , and shape " << shape;
   }
   auto infos =
-    ops::TransposeStridesCalc(old_info->old_shape, old_info->old_strides, inputs[kIndex0]->tensor_storage_info(), dims);
+    ops::TransposeStridesCalc(input->GetShapeVector(), GetTensorStride(input), input->tensor_storage_info(), dims);
   outputs[kIndex0]->set_tensor_storage_info(infos[0]);
 }
 
