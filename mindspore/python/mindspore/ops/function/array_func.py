@@ -4551,6 +4551,54 @@ def split_ext(tensor, split_size, dim=0):
     return res
 
 
+def split_view(tensor, split_size, dim=0):
+    """
+    Splits the Tensor into chunks along the given dim.
+
+    Args:
+        tensor (Tensor): A Tensor to be divided.
+        split_size (Union[int, tuple(int), list(int)]):
+            If `split_size` is an int type, `tensor` will be split into equally sized chunks,
+            each chunk with size `split_size`. Last chunk will be smaller than `split_size`
+            if `tensor.shape[dim]` is not divisible by `split_size`.
+            If `split_size` is a list type, then `tensor` will be split into len(split_size)
+            chunks with sizes `split_size` along the given `dim`.
+        dim (int): The dim along which to split. Default: ``0`` .
+
+    Returns:
+        A tuple of sub-tensors.
+
+    Raises:
+        TypeError: If argument `tensor` is not Tensor.
+        TypeError: If argument `dim` is not int.
+        ValueError: If argument `dim` is out of range of :[-tensor.ndim, tensor.ndim).
+        TypeError: If each element in `split_size` is not integer.
+        TypeError: If argument `split_size` is not int, tuple(int) or list(int).
+        ValueError: The sum of `split_size` is not equal to x.shape[dim].
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import numpy as np
+        >>> from mindspore import ops, Tensor
+        >>> input_x = np.arange(9).astype("float32")
+        >>> output = ops.function.array_func.split_view(Tensor(input_x), 3)
+        >>> print(output)
+        (Tensor(shape=[3], dtype=Float32, value= [ 0.00000000e+00,  1.00000000e+00,  2.00000000e+00]),
+         Tensor(shape=[3], dtype=Float32, value= [ 3.00000000e+00,  4.00000000e+00,  5.00000000e+00]),
+         Tensor(shape=[3], dtype=Float32, value= [ 6.00000000e+00,  7.00000000e+00,  8.00000000e+00]))
+    """
+    if isinstance(split_size, int):
+        res = ops.auto_generate.split_tensor_view_op(tensor, split_size, dim)
+    elif isinstance(split_size, (list, tuple)):
+        res = ops.auto_generate.split_with_size_view_op(tensor, split_size, dim)
+    else:
+        raise TypeError(f"Type of Argument `split_size` should be integer, tuple(int) or list(int), "
+                        f"but got {type(split_size)}")
+    return res
+
+
 def tril(input, diagonal=0):  # pylint: disable=redefined-outer-name
     """
     Zero the input tensor above the diagonal specified.

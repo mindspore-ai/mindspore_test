@@ -1237,7 +1237,7 @@ def split(tensor, split_size_or_sections, dim=0):
          Tensor(shape=[3], dtype=Float32, value= [ 3.00000000e+00,  4.00000000e+00,  5.00000000e+00]),
          Tensor(shape=[3], dtype=Float32, value= [ 6.00000000e+00,  7.00000000e+00,  8.00000000e+00]))
     """
-    return ops.function.array_func.split_ext(tensor, split_size_or_sections, dim)
+    return ops.function.array_func.split_view(tensor, split_size_or_sections, dim)
 
 
 def sqrt(input):

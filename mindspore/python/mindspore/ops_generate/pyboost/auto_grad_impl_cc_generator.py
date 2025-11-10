@@ -69,8 +69,8 @@ class AutoGradImplGenerator(BaseGenerator):
             if op_proto.op_view and not op_proto.bprop_expander:
                 continue
             auto_grad_reg_list.append(self.auto_grad_reg_template.replace(class_name=op_proto.op_class.name))
-            do_single_grad_op_str = self._get_single_do_grad_view_op(op_proto)\
-                  if op_proto.op_view else self._get_single_do_grad_op(op_proto)
+            do_single_grad_op_str = self._get_single_do_grad_view_op(op_proto) \
+                if op_proto.op_view else self._get_single_do_grad_op(op_proto)
             do_grad_op_list.append(do_single_grad_op_str)
             ops_inc_head_set.add(self.OP_DEF_INC_HEAD_TEMPLATE.replace(prefix_char=op_proto.op_class.name[0].lower()))
         pyboost_func_h_str = self.AUTO_GRAD_IMPL_CC_TEMPLATE.replace(do_grad_op=do_grad_op_list,
@@ -96,7 +96,7 @@ class AutoGradImplGenerator(BaseGenerator):
         inner_grad_args_with_type = self._get_input_args(op_proto, True, False, False)
         multi_output_str = 'Multi' if is_op_multi_output(op_proto.op_returns) else ''
         grad_args_with_type_str = self.do_grad_op_args_with_type.replace(input_args_with_type=input_args_with_type_str)
-        inner_grad_args_with_type =\
+        inner_grad_args_with_type = \
             self.do_grad_op_args_with_type.replace(input_args_with_type=inner_grad_args_with_type)
         op_def_name_str = "g" + op_proto.op_class.name
         TRUE = "true"
@@ -129,10 +129,10 @@ class AutoGradImplGenerator(BaseGenerator):
         input_args_with_type_str = self._get_input_args(op_proto, True, False, True)
         inner_grad_args_with_type = self._get_input_args(op_proto, True, False, False)
         view_arg_str = self._get_view_str(input_args_str)
-        grad_args_with_type_str = self.do_grad_view_op_args_with_type\
+        grad_args_with_type_str = self.do_grad_view_op_args_with_type \
             .replace(input_args_with_type=input_args_with_type_str,
                      output_args_with_type=self._get_output_arg(op_proto))
-        inner_grad_args_with_type =\
+        inner_grad_args_with_type = \
             self.do_grad_view_op_args_with_type.replace(output_args_with_type="const ValuePtr &output_value",
                                                         input_args_with_type=inner_grad_args_with_type)
         op_def_name_str = "g" + op_proto.op_class.name
@@ -140,9 +140,10 @@ class AutoGradImplGenerator(BaseGenerator):
         FALSE = "false"
         bprop_expander = TRUE if op_proto.bprop_expander else FALSE
         non_differentiable = TRUE if op_proto.non_differentiable else FALSE
-        if op_proto.op_name in ["reshape", "view", "expand_dims", "transpose", "slice_ext_view",\
-                                 "select_ext_view", "transpose_ext_view", "split_tensor", "split_with_size",
-                                 "expand_dims_view", "squeeze", "transpose_view"]:
+        if op_proto.op_name in ["reshape", "view", "expand_dims", "transpose", "slice_ext_view",
+                                "select_ext_view", "transpose_ext_view", "split_tensor", "split_with_size",
+                                "expand_dims_view", "squeeze", "transpose_view", "split_tensor_view",
+                                "split_with_size_view"]:
             do_view_grad_function_body_tpl = self.DO_VIEW_CUSTOMIZE_GRAD_FUNCTION_BODY_TEMPLATE
             convert_basic_to_value = ""
         else:
@@ -159,7 +160,6 @@ class AutoGradImplGenerator(BaseGenerator):
                                                       bprop_expander=bprop_expander,
                                                       non_differentiable=non_differentiable,
                                                       convert_basic_to_value=convert_basic_to_value)
-
 
     def _get_input_args(self, op_proto, has_type, with_optional, use_basic_type=False):
         """

@@ -14,7 +14,7 @@
 """Test Mindformers mcore DeepSeekv3 pretrain"""
 import os
 import re
-import pytest
+
 import numpy as np
 from tests.st.networks.llm_parallel_feature.utils import check_log, check_peak_memory, clear_directory
 from tests.st.networks.llm_parallel_feature.deepseekv3.utils import DeepseekConfig, prepare_deepseekv3_testcase_env
@@ -79,7 +79,6 @@ def log_path_preprocess(case_name, device_num):
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='allcards', essential_mark='essential')
-@pytest.mark.skip(reason="mint.permute will influence the final loss.")
 def test_deepseekv3_cell_dp2mp2ep2pp2mb4gas1bs1_8p():
     """
     Feature: test deepseekv3 cell dp2mp2ep4pp2mb4gas1bs1 8p

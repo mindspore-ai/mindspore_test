@@ -16,6 +16,7 @@
 Test the paralleled infer interface used for mindformers.
 """
 import os
+import pytest
 
 from multiprocessing.pool import Pool
 from tests.mark_utils import arg_mark
@@ -46,6 +47,7 @@ class TestInferParallel:
         if not ascend_home_path:
             os.environ['ASCEND_HOME_PATH'] = "/usr/local/Ascend/latest"
 
+    @pytest.mark.skip(reason="Internal op doesn't support view's input.")
     @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='allcards', essential_mark='essential')
     def test_base_cases(self):
         """
