@@ -373,6 +373,9 @@ class MSANFModelParser {
   void SetLite() { is_lite_ = true; }
   bool IsLite() const { return is_lite_; }
   void SetMindIRPath(const std::string &file_path) { mindir_path_ = file_path; }
+  void SetExternalWeightBuffer(const void *weight_buffer, const size_t weight_size) {
+    weight_buffer_ = std::make_pair(weight_buffer, weight_size);
+  }
   void SetMindIRDecKey(const unsigned char *dec_key) { mindir_dec_key_ = dec_key; }
   void SetMindIRKeySize(size_t size) { mindir_key_size_ = size; }
   void SetMindIRDecMode(const std::string &dec_mode) { mindir_dec_mode_ = dec_mode; }
@@ -453,6 +456,7 @@ class MSANFModelParser {
   bool abstract_valid_ = false;
   mindspore::HashMap<std::string, AnfNodePtr> anfnode_build_map_;
   std::string mindir_path_;
+  std::pair<const void *, size_t> weight_buffer_{nullptr, 0};
   const unsigned char *mindir_dec_key_{nullptr};
   size_t mindir_key_size_{0};
   std::string mindir_dec_mode_;
@@ -1039,7 +1043,7 @@ bool MSANFModelParser::GetTensorDataFromExternal(const mind_ir::TensorProto &ten
     data = it->second.get();
   } else {
     std::string file = mindir_path_ + "/" + tensor_proto.external_data().location();
-    if (mindir_dec_key_ != nullptr) {
+    if (weight_buffer_.first == nullptr && mindir_dec_key_ != nullptr) {
       size_t plain_len;
       auto plain_data =
         Decrypt(&plain_len, file, mindir_dec_key_, mindir_key_size_, mindir_dec_mode_, mindir_dec_num_parallel_);
@@ -1055,7 +1059,7 @@ bool MSANFModelParser::GetTensorDataFromExternal(const mind_ir::TensorProto &ten
       }
       data = plain_data.get();
       (void)tenor_data_.emplace(tensor_proto.external_data().location(), std::move(plain_data));
-    } else {
+    } else if (weight_buffer_.first == nullptr) {
       // Read file
       std::basic_ifstream<char> fid(file, std::ios::in | std::ios::binary);
       if (!fid) {
@@ -1082,6 +1086,18 @@ bool MSANFModelParser::GetTensorDataFromExternal(const mind_ir::TensorProto &ten
       data = reinterpret_cast<const unsigned char *>(plain_data.get());
       (void)tenor_data_.emplace(tensor_proto.external_data().location(),
                                 std::unique_ptr<Byte[]>(reinterpret_cast<Byte *>(plain_data.release())));
+    } else if (mindir_dec_key_ != nullptr) {
+      MS_LOG(ERROR)
+        << "Currently, the external weight data doesn't support encryption if weight is passed by buffer not file.";
+      return false;
+    } else {
+      data = reinterpret_cast<const unsigned char *>(weight_buffer_.first);
+      if (LongToSize(tensor_proto.external_data().offset() + tensor_proto.external_data().length()) >
+          weight_buffer_.second) {
+        MS_LOG(ERROR)
+          << "Weight buffer doesn't match model, please check whether the weight buffer belongs to the model by user.";
+        return false;
+      }
     }
   }
   auto *tensor_data_buf = reinterpret_cast<uint8_t *>(tensor_info->data_c());
@@ -1380,7 +1396,7 @@ bool MSANFModelParser::SetPrimitiveAttrWithType(const PrimitivePtr &prim, const 
       (void)prim->AddAttr(attr_name, MakeValue<int64_t>(index));
     }
     MS_EXCEPTION(NotSupportError)
-      << "The primtive[HistogramFixedWidth] not supported only support attribute[dtype] is 'int32',but got"
+      << "The primitive[HistogramFixedWidth] not supported only support attribute[dtype] is 'int32',but got"
       << value->ToString();
   }
   (void)prim->AddAttr(attr_name, value);
@@ -1420,7 +1436,7 @@ bool MSANFModelParser::GetAttrValueForCNode(const PrimitivePtr &prim, const mind
             break;
           }
           MS_EXCEPTION(NotSupportError)
-            << "The primtive[HistogramFixedWidth] not supported only support attribute[dtype] is 'int32',but got"
+            << "The primitive[HistogramFixedWidth] not supported only support attribute[dtype] is 'int32',but got"
             << res->ToString();
         }
         (void)prim->AddAttr(attr_name, res);
@@ -3099,6 +3115,44 @@ bool MindIRLoader::LoadMindIR(const void *buffer, const size_t &size, const std:
   model_parser.SetMindIRDecMode(cryptoInfo.mode);
   model_parser.SetMindIRDecParallelNum(cryptoInfo.parallel_num);
   *func_graph = model_parser.Parse(model);
+  std::stringstream user_info_buffer;
+  // user_info to string
+  auto user_info = model.user_info();
+  user_info_buffer << "{";
+  for (auto it = user_info.begin(); it != user_info.end(); it++) {
+    if (it != user_info.begin()) {
+      user_info_buffer << ", ";
+    }
+    user_info_buffer << "\"" << it->first << "\": \"" << it->second + "\"";
+  }
+  user_info_buffer << "}";
+  *user_info_string = user_info_buffer.str();
+  return true;
+}
+
+bool MindIRLoader::LoadMindIR(const void *model_buffer, const size_t &model_size, const void *weight_buffer,
+                              const size_t &weight_size, FuncGraphPtr *func_graph, std::string *user_info_string) {
+  if (func_graph == nullptr) {
+    MS_LOG(ERROR) << "LoadMindIR parameter [func_graph] is a nullptr.";
+    return false;
+  }
+  mind_ir::ModelProto model;
+  auto ret = model.ParseFromArray(model_buffer, SizeToInt(model_size));
+  if (!ret) {
+    MS_LOG(ERROR) << "ParseFromArray failed.";
+    return false;
+  }
+  if (!CheckModelConfigureInfo(model)) {
+    MS_LOG(ERROR) << "Check configuration info for pb file failed!";
+    return false;
+  }
+  MSANFModelParser model_parser;
+  InitModelParser(&model_parser, this);
+  model_parser.SetExternalWeightBuffer(weight_buffer, weight_size);
+  *func_graph = model_parser.Parse(model);
+  if (user_info_string == nullptr) {
+    return true;
+  }
   std::stringstream user_info_buffer;
   // user_info to string
   auto user_info = model.user_info();
