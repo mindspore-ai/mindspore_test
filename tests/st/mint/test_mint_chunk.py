@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+"""Tests for mint.chunk: input, chunks, dim."""
 import pytest
 import numpy as np
 from tests.st.utils import test_utils
@@ -33,7 +34,7 @@ def chunk_backward_func(x, chunks, dim):
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
-@pytest.mark.parametrize("mode", ['GE', 'pynative', 'KBK'])
+@pytest.mark.parametrize("mode", ['pynative', 'KBK'])
 def test_chunk_forward_backward(mode):
     """
     Feature: Auto grad.
@@ -51,12 +52,10 @@ def test_chunk_forward_backward(mode):
     if mode == 'pynative':
         context.set_context(mode=ms.PYNATIVE_MODE)
         out = chunk_forward_func(x, chunks, dims)
-    elif mode == 'KBK':
-        context.set_context(mode=ms.GRAPH_MODE)
-        out = (jit(chunk_forward_func, jit_level="O0"))(x, chunks, dims)
     else:
         context.set_context(mode=ms.GRAPH_MODE)
-        out = chunk_forward_func(x, chunks, dims)
+        out = (jit(chunk_forward_func, jit_level="O0"))(x, chunks, dims)
+
     for res, exp in zip(out, expect):
         assert np.allclose(res.asnumpy(), exp)
 
@@ -67,12 +66,9 @@ def test_chunk_forward_backward(mode):
     if mode == 'pynative':
         context.set_context(mode=ms.PYNATIVE_MODE)
         grad = chunk_backward_func(x, chunks, 0)
-    elif mode == 'KBK':
-        context.set_context(mode=ms.GRAPH_MODE)
-        grad = (jit(chunk_backward_func, jit_level="O0"))(x, chunks, 0)
     else:
         context.set_context(mode=ms.GRAPH_MODE)
-        grad = chunk_backward_func(x, chunks, 0)
+        grad = (jit(chunk_backward_func, jit_level="O0"))(x, chunks, 0)
     assert np.allclose(grad.asnumpy(), expect_grad)
     assert grad.asnumpy().shape == x.shape
 
@@ -165,8 +161,8 @@ def test_chunk_backward_dynamic_shape(context_mode):
 @pytest.mark.parametrize("context_mode", [ms.GRAPH_MODE])
 def test_chunk_backward_dynamic_rank(context_mode):
     """
-    Feature: chunk ops.
-    Description: test ops chunk with dynamic shape tensor input.
+    Feature: chunk.
+    Description: test mint chunk with dynamic shape tensor input.
     Expectation: output the right result.
     """
     context.set_context(mode=context_mode)

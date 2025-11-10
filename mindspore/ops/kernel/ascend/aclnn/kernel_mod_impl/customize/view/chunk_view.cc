@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 #include "kernel/ascend/aclnn/kernel_mod_impl/customize/view/chunk_view.h"
-
+#include <vector>
 #include "kernel/ascend/aclnn/kernel_mod_impl/customize/view/view_utils.h"
 #include "view/chunk_strides_calc.h"
 
@@ -23,15 +23,14 @@ namespace kernel {
 
 void ChunkView::UpdateOutputTensorInfo(const std::vector<KernelTensor *> &inputs,
                                        const std::vector<KernelTensor *> &outputs) {
-  ops::OldTensorInfoPtr old_info = GetOldTensorInfo(inputs[kIndex0]);
+  const auto &input = inputs[kIndex0];
   auto chunks = inputs[kIndex1]->GetValueWithCheck<int64_t>();
   if (chunks < 0) {
     MS_LOG(EXCEPTION) << "Chunks must > 0, but got " << chunks;
   }
   auto dim = inputs[kIndex2]->GetValueWithCheck<int64_t>();
-
-  auto storage_info = inputs[kIndex0]->tensor_storage_info();
-  info_ = ops::ChunkStridesCalc(old_info->old_shape, old_info->old_strides, storage_info, chunks, dim);
+  info_ =
+    ops::ChunkStridesCalc(input->GetShapeVector(), GetTensorStride(input), input->tensor_storage_info(), chunks, dim);
   for (size_t i = 0; i < outputs.size(); i++) {
     outputs[i]->set_tensor_storage_info(info_[i]);
   }

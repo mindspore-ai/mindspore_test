@@ -992,6 +992,47 @@ def chunk_ext(input, chunks, dim=0):
     return chunk_op(input, chunks, dim)
 
 
+def chunk_view(input, chunks, dim=0):
+    """
+    Cut the input Tensor into `chunks` sub-tensors along the specified axis.
+
+    Note:
+        This function may return less than the specified number of chunks!
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
+    Args:
+        input (Tensor): A Tensor to be cut.
+        chunks (int): Number of sub-tensors to cut.
+        dim (int, optional): Specify the dimensions that you want to split. Default: ``0`` .
+
+    Returns:
+        A tuple of sub-tensors.
+
+    Raises:
+        TypeError: If argument `input` is not Tensor.
+        TypeError: The sum of `chunks` is not int.
+        TypeError: If argument `dim` is not int.
+        ValueError: If argument `dim` is out of range of :math:`[-input.ndim, input.ndim)` .
+        ValueError: If argument `chunks` is not positive number.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import numpy as np
+        >>> import mindspore
+        >>> input_x = np.arange(9).astype("float32")
+        >>> output = mindspore.ops.function.array_func.chunk_view(mindspore.Tensor(input_x), 3)
+        >>> print(output)
+        (Tensor(shape=[3], dtype=Float32, value= [ 0.00000000e+00,  1.00000000e+00,  2.00000000e+00]),
+         Tensor(shape=[3], dtype=Float32, value= [ 3.00000000e+00,  4.00000000e+00,  5.00000000e+00]),
+         Tensor(shape=[3], dtype=Float32, value= [ 6.00000000e+00,  7.00000000e+00,  8.00000000e+00]))
+    """
+    return ops.auto_generate.chunk_view_op(input, chunks, dim)
+
+
 def fills(x, value):
     """
     `fills` is deprecated, please use `ops.fill` instead.
@@ -4397,7 +4438,7 @@ def split(tensor, split_size_or_sections, axis=0):
 
     Args:
         tensor (Tensor): The input tensor.
-        split_size_or_sections (Union[int, tuple(int), list(int)]): The size of chunks after splited.
+        split_size_or_sections (Union[int, tuple(int), list(int)]): The size of chunks after splitting.
         axis (int, optional): The axis along which to split. Default ``0`` .
 
     .. note::
