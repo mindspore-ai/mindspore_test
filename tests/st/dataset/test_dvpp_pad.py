@@ -52,7 +52,7 @@ def test_dvpp_pad_operation_01():
     fill_value = 2
     padding_mode = v_Border.CONSTANT
     ### First dataset
-    ds1 = ds.ImageFolderDataset(data_dir)
+    ds1 = ds.ImageFolderDataset(data_dir, shuffle=False)
     transforms = [
         vision.Decode(to_pil=False),
         vision.ToTensor()
@@ -60,7 +60,7 @@ def test_dvpp_pad_operation_01():
     transform = trans.Compose(transforms)
     ds1 = ds1.map(input_columns=["image"], operations=transform)
     ### Second dataset
-    ds2 = ds.ImageFolderDataset(data_dir)
+    ds2 = ds.ImageFolderDataset(data_dir, shuffle=False)
     transforms1 = [
         vision.Decode(to_pil=False),
         vision.Pad(padding=padding, fill_value=fill_value, padding_mode=padding_mode).device(device_target="Ascend"),
@@ -115,7 +115,7 @@ def test_dvpp_pad_operation_01():
     fill_value = 2
     padding_mode = v_Border.SYMMETRIC
     ### First dataset
-    ds1 = ds.ImageFolderDataset(data_dir)
+    ds1 = ds.ImageFolderDataset(data_dir, shuffle=False)
     transforms = [
         vision.Decode(),
         vision.ToTensor()
@@ -123,7 +123,7 @@ def test_dvpp_pad_operation_01():
     transform = trans.Compose(transforms)
     ds1 = ds1.map(input_columns=["image"], operations=transform)
     ### Second dataset
-    ds2 = ds.ImageFolderDataset(data_dir)
+    ds2 = ds.ImageFolderDataset(data_dir, shuffle=False)
     transforms1 = [
         vision.Decode(),
         vision.Pad(padding=padding, fill_value=fill_value, padding_mode=padding_mode).device(device_target="Ascend"),
@@ -154,7 +154,7 @@ def test_dvpp_pad_operation_02():
     fill_value = 2
     padding_mode = v_Border.REFLECT
     ### First dataset
-    ds1 = ds.ImageFolderDataset(data_dir)
+    ds1 = ds.ImageFolderDataset(data_dir, shuffle=False)
     transforms = [
         vision.Decode(),
         vision.ToTensor()
@@ -162,7 +162,7 @@ def test_dvpp_pad_operation_02():
     transform = trans.Compose(transforms)
     ds1 = ds1.map(input_columns=["image"], operations=transform)
     ### Second dataset
-    ds2 = ds.ImageFolderDataset(data_dir)
+    ds2 = ds.ImageFolderDataset(data_dir, shuffle=False)
     transforms1 = [
         vision.Decode(),
         vision.Pad(padding=padding, fill_value=fill_value, padding_mode=padding_mode).device(device_target="Ascend"),
@@ -185,7 +185,7 @@ def test_dvpp_pad_operation_02():
     fill_value = 2
     padding_mode = v_Border.REFLECT
     ### First dataset
-    ds1 = ds.ImageFolderDataset(data_dir)
+    ds1 = ds.ImageFolderDataset(data_dir, shuffle=False)
     transforms = [
         vision.Decode(),
         vision.ToTensor()
@@ -193,7 +193,7 @@ def test_dvpp_pad_operation_02():
     transform = trans.Compose(transforms)
     ds1 = ds1.map(input_columns=["image"], operations=transform)
     ### Second dataset
-    ds2 = ds.ImageFolderDataset(data_dir)
+    ds2 = ds.ImageFolderDataset(data_dir, shuffle=False)
     transforms1 = [
         vision.Decode(),
         vision.Pad(padding=padding, fill_value=fill_value, padding_mode=padding_mode).device(device_target="Ascend"),
@@ -216,7 +216,7 @@ def test_dvpp_pad_operation_02():
     fill_value = 2
     padding_mode = v_Border.CONSTANT
     ### First dataset
-    ds1 = ds.ImageFolderDataset(data_dir)
+    ds1 = ds.ImageFolderDataset(data_dir, shuffle=False)
     transforms = [
         vision.Decode(),
         vision.ToTensor()
@@ -224,7 +224,7 @@ def test_dvpp_pad_operation_02():
     transform = trans.Compose(transforms)
     ds1 = ds1.map(input_columns=["image"], operations=transform)
     ### Second dataset
-    ds2 = ds.ImageFolderDataset(data_dir)
+    ds2 = ds.ImageFolderDataset(data_dir, shuffle=False)
     transforms1 = [
         vision.Decode(),
         vision.Pad(padding=padding, fill_value=fill_value, padding_mode=padding_mode).device(device_target="Ascend"),
@@ -255,7 +255,7 @@ def test_dvpp_pad_operation_03():
     fill_value = 2
     padding_mode = v_Border.EDGE
     ### First dataset
-    ds1 = ds.ImageFolderDataset(data_dir)
+    ds1 = ds.ImageFolderDataset(data_dir, shuffle=False)
     transforms = [
         vision.Decode(),
         vision.ToTensor()
@@ -263,7 +263,7 @@ def test_dvpp_pad_operation_03():
     transform = trans.Compose(transforms)
     ds1 = ds1.map(input_columns=["image"], operations=transform)
     ### Second dataset
-    ds2 = ds.ImageFolderDataset(data_dir)
+    ds2 = ds.ImageFolderDataset(data_dir, shuffle=False)
     transforms1 = [
         vision.Decode(),
         vision.Pad(padding=padding, fill_value=fill_value, padding_mode=padding_mode).device(device_target="Ascend"),
@@ -286,7 +286,7 @@ def test_dvpp_pad_operation_03():
     fill_value = 2
     padding_mode = v_Border.CONSTANT
     ### First dataset
-    ds1 = ds.ImageFolderDataset(data_dir)
+    ds1 = ds.ImageFolderDataset(data_dir, shuffle=False)
     transforms = [
         vision.Decode(),
         vision.ToTensor()
@@ -294,7 +294,7 @@ def test_dvpp_pad_operation_03():
     transform = trans.Compose(transforms)
     ds1 = ds1.map(input_columns=["image"], operations=transform)
     ### Second dataset
-    ds2 = ds.ImageFolderDataset(data_dir)
+    ds2 = ds.ImageFolderDataset(data_dir, shuffle=False)
     transforms1 = [
         vision.Decode(),
         vision.Pad(padding=padding, fill_value=fill_value, padding_mode=padding_mode).device(device_target="Ascend"),
@@ -317,7 +317,7 @@ def test_dvpp_pad_operation_03():
     fill_value = 2
     padding_mode = v_Border.EDGE
     ### First dataset
-    ds1 = ds.ImageFolderDataset(data_dir)
+    ds1 = ds.ImageFolderDataset(data_dir, shuffle=False)
     transforms = [
         vision.Decode(),
         vision.ToTensor()
@@ -325,7 +325,7 @@ def test_dvpp_pad_operation_03():
     transform = trans.Compose(transforms)
     ds1 = ds1.map(input_columns=["image"], operations=transform)
     ### Second dataset
-    ds2 = ds.ImageFolderDataset(data_dir)
+    ds2 = ds.ImageFolderDataset(data_dir, shuffle=False)
     transforms1 = [
         vision.Decode(),
         vision.Pad(padding=padding, fill_value=fill_value, padding_mode=padding_mode).device(device_target="Ascend"),
@@ -356,7 +356,7 @@ def test_dvpp_pad_operation_04():
     fill_value = 100
     padding_mode = v_Border.CONSTANT
     ### First dataset
-    ds1 = ds.ImageFolderDataset(data_dir)
+    ds1 = ds.ImageFolderDataset(data_dir, shuffle=False)
     transforms = [
         vision.Decode(),
         vision.ToTensor()
@@ -364,7 +364,7 @@ def test_dvpp_pad_operation_04():
     transform = trans.Compose(transforms)
     ds1 = ds1.map(input_columns=["image"], operations=transform)
     ### Second dataset
-    ds2 = ds.ImageFolderDataset(data_dir)
+    ds2 = ds.ImageFolderDataset(data_dir, shuffle=False)
     transforms1 = [
         vision.Decode(),
         vision.Pad(padding=padding, fill_value=fill_value, padding_mode=padding_mode).device(device_target="Ascend"),
@@ -388,7 +388,7 @@ def test_dvpp_pad_operation_04():
     fill_value = 0
     padding_mode = v_Border.CONSTANT
     ### First dataset
-    ds1 = ds.ImageFolderDataset(data_dir)
+    ds1 = ds.ImageFolderDataset(data_dir, shuffle=False)
     transforms = [
         vision.Decode(),
         vision.ToTensor()
@@ -396,7 +396,7 @@ def test_dvpp_pad_operation_04():
     transform = trans.Compose(transforms)
     ds1 = ds1.map(input_columns=["image"], operations=transform)
     ### Second dataset
-    ds2 = ds.ImageFolderDataset(data_dir)
+    ds2 = ds.ImageFolderDataset(data_dir, shuffle=False)
     transforms1 = [
         vision.Decode(),
         vision.Pad(padding=padding, fill_value=fill_value, padding_mode=padding_mode).device(device_target="Ascend"),
@@ -420,7 +420,7 @@ def test_dvpp_pad_operation_04():
     fill_value = (5, 10, 20)
     padding_mode = v_Border.CONSTANT
     ### First dataset
-    ds1 = ds.ImageFolderDataset(data_dir)
+    ds1 = ds.ImageFolderDataset(data_dir, shuffle=False)
     transforms = [
         vision.Decode(),
         vision.ToTensor()
@@ -428,7 +428,7 @@ def test_dvpp_pad_operation_04():
     transform = trans.Compose(transforms)
     ds1 = ds1.map(input_columns=["image"], operations=transform)
     ### Second dataset
-    ds2 = ds.ImageFolderDataset(data_dir)
+    ds2 = ds.ImageFolderDataset(data_dir, shuffle=False)
     transforms1 = [
         vision.Decode(),
         vision.Pad(padding=padding, fill_value=fill_value, padding_mode=padding_mode).device(device_target="Ascend"),
@@ -460,7 +460,7 @@ def test_dvpp_pad_operation_05():
     fill_value = (0, 100, 0)
     padding_mode = v_Border.CONSTANT
     ### First dataset
-    ds1 = ds.ImageFolderDataset(data_dir)
+    ds1 = ds.ImageFolderDataset(data_dir, shuffle=False)
     transforms = [
         vision.Decode(),
         vision.ToTensor()
@@ -468,7 +468,7 @@ def test_dvpp_pad_operation_05():
     transform = trans.Compose(transforms)
     ds1 = ds1.map(input_columns=["image"], operations=transform)
     ### Second dataset
-    ds2 = ds.ImageFolderDataset(data_dir)
+    ds2 = ds.ImageFolderDataset(data_dir, shuffle=False)
     transforms1 = [
         vision.Decode(),
         vision.Pad(padding=padding, fill_value=fill_value, padding_mode=padding_mode).device(device_target="Ascend"),
@@ -492,7 +492,7 @@ def test_dvpp_pad_operation_05():
     fill_value = (0, 0, 200)
     padding_mode = v_Border.CONSTANT
     ### First dataset
-    ds1 = ds.ImageFolderDataset(data_dir)
+    ds1 = ds.ImageFolderDataset(data_dir, shuffle=False)
     transforms = [
         vision.Decode(),
         vision.ToTensor()
@@ -500,7 +500,7 @@ def test_dvpp_pad_operation_05():
     transform = trans.Compose(transforms)
     ds1 = ds1.map(input_columns=["image"], operations=transform)
     ### Second dataset
-    ds2 = ds.ImageFolderDataset(data_dir)
+    ds2 = ds.ImageFolderDataset(data_dir, shuffle=False)
     transforms1 = [
         vision.Decode(),
         vision.Pad(padding=padding, fill_value=fill_value, padding_mode=padding_mode).device(device_target="Ascend"),
