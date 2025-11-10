@@ -15,7 +15,7 @@
  */
 #include "frontend/expander/bprop/bprop_irbuilder.h"
 #include "mindspore/ops/op_def/other_op_name.h"
-#include "grad/grad_utils.h"
+#include "frontend/expander/grad/grad_utils.h"
 #include "ir/anf.h"
 
 namespace mindspore::expander::bprop {

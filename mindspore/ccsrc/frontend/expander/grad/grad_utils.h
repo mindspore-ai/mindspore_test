@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef MINDSPORE_OPS_GRAD_GRAD_UTILS_H_
-#define MINDSPORE_OPS_GRAD_GRAD_UTILS_H_
+#ifndef MINDSPORE_CCSRC_FRONTEND_EXPANDER_GRAD_GRAD_UTILS_H_
+#define MINDSPORE_CCSRC_FRONTEND_EXPANDER_GRAD_GRAD_UTILS_H_
 
 #include <cmath>
 #include <memory>
@@ -142,4 +142,4 @@ NodePtr VectorNormGrad(BpropBuilder *ib, const NodePtr &input_node, const NodePt
                        const NodePtr &keepdim, const NodePtr &out_node, const NodePtr &dout_node);
 std::optional<float> GetAlpha(const NodePtr &alpha);
 }  // namespace mindspore::expander::bprop
-#endif  // MINDSPORE_OPS_GRAD_GRAD_UTILS_H_
+#endif  // MINDSPORE_CCSRC_FRONTEND_EXPANDER_GRAD_GRAD_UTILS_H_

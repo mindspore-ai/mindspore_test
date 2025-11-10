@@ -16,7 +16,7 @@
 
 #include <map>
 #include "frontend/expander/bprop/bprop_irbuilder.h"
-#include "grad/grad_utils.h"
+#include "frontend/expander/grad/grad_utils.h"
 #include "ops_utils/op_utils.h"
 #include "mindspore/ops/op_def/op_enum.h"
 

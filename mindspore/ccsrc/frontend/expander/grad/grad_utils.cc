@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "grad/grad_utils.h"
+#include "frontend/expander/grad/grad_utils.h"
 
 #include <algorithm>
 #include <limits>

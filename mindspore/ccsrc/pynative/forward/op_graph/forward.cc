@@ -331,6 +331,11 @@ void ContiguousInputByRunInfo(const BackendOpRunInfoPtr &op_run_info) {
     inputs[i] = contiguous_tensor;
   }
 }
+
+bool HasBpropExpander(const std::string &prim_name) {
+  auto handle = expander::bprop::GetBpropIRBuilder(prim_name);
+  return handle != nullptr;
+}
 }  // namespace
 
 void ForwardExecutor::WaitForwardTask() {
@@ -654,7 +659,7 @@ void ForwardExecutor::RunOpBackendSync(const FrontendOpRunInfoPtr &op_run_info) 
 void ForwardExecutor::OpRunInfoUsePrimC(const FrontendOpRunInfoPtr &op_run_info) const {
   auto prim = op_run_info->op_grad_info->op_prim;
   auto op_name = prim->name();
-  if (EnablePipeline(op_name) && expander::bprop::HasBpropExpander(op_name) &&
+  if (EnablePipeline(op_name) && HasBpropExpander(op_name) &&
       abstract::GetFrontendPrimitiveInferImpl(prim).has_value()) {
     auto new_prim = std::make_shared<Primitive>(*prim);
     new_prim->EnableSharedMutex();
