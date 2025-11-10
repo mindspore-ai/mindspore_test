@@ -110,7 +110,7 @@ class OpsFactory():
         self._context_mode = 'pynative'
         self._op_net_class = OpsCommonNet
         self._op_net_class_no_kwargs = OpsCommonNetNoKwargs
-        self._op_grad_net_class = OpCommonGradNetFirstInput
+        self._op_grad_net_class = OpCommonGradNetAllInput
 
         self._parse_op_info(self.op_info)
 
@@ -123,7 +123,7 @@ class OpsFactory():
                 sample input builder, compare method, etc.
         """
         self.op = op_info.op
-        self.op_func_grad = op_info.op_func_grad
+        self.op_func_without_kwargs = op_info.op_func_without_kwargs
         self.ref = op_info.ref
         self.op_name = op_info.name
         self.op_basic_reference_inputs_func = op_info.op_basic_reference_inputs_func
@@ -174,15 +174,30 @@ class OpsFactory():
         Returns:
             list | None: Random douts or None when not requested.
         """
+
         if self._douts is None:
+            def _make_ms_dout_for_output(out_obj):
+                # Create MindSpore sens matching output structure for multi-output ops.
+                if isinstance(out_obj, (tuple, list)):
+                    return tuple(make_tensor(o.shape, o.dtype, random_method='randn') for o in out_obj)
+                return make_tensor(out_obj.shape, out_obj.dtype, random_method='randn')
+
             ms_out = self.forward_mindspore_impl()
-            self._douts = [make_tensor(outi.shape, outi.dtype, random_method='randn') for outi in ms_out]
+            self._douts = [_make_ms_dout_for_output(outi) for outi in ms_out]
 
         if return_torch_douts:
-            torch_douts = [torch.tensor(ms_asnumpy(d)) for d in self._douts]
-            if self._convert_half_to_float:
-                torch_douts = [d.float() if d.dtype == torch.float16 else d for d in torch_douts]
-            return torch_douts
+            def _to_torch(d):
+                if isinstance(d, (tuple, list)):
+                    converted = tuple(torch.tensor(ms_asnumpy(x)) for x in d)
+                    if self._convert_half_to_float:
+                        converted = tuple(x.float() if x.dtype == torch.float16 else x for x in converted)
+                    return converted
+                t = torch.tensor(ms_asnumpy(d))
+                if self._convert_half_to_float and t.dtype == torch.float16:
+                    t = t.float()
+                return t
+
+            return [_to_torch(d) for d in self._douts]
         return None
 
     @final
@@ -467,18 +482,30 @@ class OpsFactory():
         self._douts = None
         self._generate_random_dout()
 
-        net = self._op_net_class_no_kwargs(self.op_func_grad)
+        net = self._op_net_class_no_kwargs(self.op_func_without_kwargs)
         grad_net = self._op_grad_net_class(net)
         grads = []
+
+        def _ms_tensor_supports_grad(t):
+            return isinstance(t, ms.Tensor) and (t.dtype.is_floating_point or t.dtype.is_complex)
 
         for idx, sample_input in enumerate(self._sample_inputs):
             if self._inplace_op:
                 sample_input = sample_input.copy()
-            sample_input = sample_input.convert_to_args(append_dout=self._douts[idx])
+            # No-dout args for indexing; with-dout args for actual grad call
+            args_no_dout = sample_input.convert_to_args().op_args
+            # Use convert_to_args to append dout as a single positional argument (supports multi-output sens)
+            args_with_dout = sample_input.convert_to_args(append_dout=self._douts[idx]).op_args
 
-            # After convert_to_args, op_input, op_args, op_kwargs and dout are all in op_args now.
-            grad_outi = grad_net(*sample_input.op_args)
-            grads.append(grad_outi)
+            grad_outi = grad_net(*args_with_dout)
+
+            tensor_indices = [i for i, v in enumerate(args_no_dout) if _ms_tensor_supports_grad(v)]
+            if isinstance(grad_outi, (tuple, list)):
+                filtered = tuple(grad_outi[i] for i in tensor_indices)
+            else:
+                # Single grad output: keep only if the first input is tensor
+                filtered = (grad_outi,) if tensor_indices and tensor_indices[0] == 0 else tuple()
+            grads.append(filtered)
 
         return grads
 
@@ -489,28 +516,52 @@ class OpsFactory():
     ):
         """Compute gradients with the PyTorch reference implementation.
 
-        Args:
-            *args: Positional arguments (unused; present for API symmetry).
-            **kwargs: Keyword arguments (unused; present for API symmetry).
+        Computes gradients for all tensor inputs among (op_input, *op_args).
 
         Returns:
-            list: Gradients per sample input.
+            list[tuple]: Per-sample tuple of gradients matching tensor inputs order.
         """
         torch_douts = self._generate_random_dout(return_torch_douts=True)
 
         torch_fn = self.ref
         grads = []
 
+        def _torch_dtype_supports_grad(t: torch.Tensor) -> bool:
+            return torch.is_floating_point(t) or torch.is_complex(t)
+
         for idx, sample_input in enumerate(self._sample_inputs):
             if self._inplace_op:
                 sample_input = sample_input.copy()
             sample_input = sample_input.astorch(convert_half_to_float=self._convert_half_to_float)
             op_input, op_args, op_kwargs = sample_input.op_input, sample_input.op_args, sample_input.op_kwargs
-            op_input.requires_grad = True
+
+            tensor_inputs = []
+            if isinstance(op_input, torch.Tensor) and _torch_dtype_supports_grad(op_input):
+                op_input.requires_grad = True
+                tensor_inputs.append(('input', op_input))
+            arg_tensors = []
+            for arg in op_args:
+                if isinstance(arg, torch.Tensor) and _torch_dtype_supports_grad(arg):
+                    arg.requires_grad = True
+                    arg_tensors.append(arg)
+            tensor_inputs.extend(('arg', t) for t in arg_tensors)
 
             outi = torch_fn(op_input, *op_args, **op_kwargs)
-            outi.backward(gradient=torch_douts[idx])
-            grads.append(op_input.grad.detach())
+            # If no grad-capable inputs, skip backward to avoid autograd errors
+            if not tensor_inputs:
+                grads.append(tuple())
+                continue
+            # Support multi-output backward with matching grad structure
+            dout_i = torch_douts[idx]
+            if isinstance(outi, (tuple, list)):
+                torch.autograd.backward(list(outi), grad_tensors=list(dout_i))
+            else:
+                outi.backward(gradient=dout_i)
+
+            grad_tuple = []
+            for _, tin in tensor_inputs:
+                grad_tuple.append(tin.grad.detach())
+            grads.append(tuple(grad_tuple))
 
         return grads
 
@@ -545,7 +596,7 @@ class OpsFactory():
         Returns:
             list: Outputs per dynamic-shape sample.
         """
-        op_net = self._op_net_class_no_kwargs(self.op)
+        op_net = self._op_net_class_no_kwargs(self.op_func_without_kwargs)
 
         compile_input = self._dynamic_inputs.op_compile_input.convert_to_args()
         op_net.set_inputs(*compile_input.op_args)
@@ -603,20 +654,29 @@ class OpsFactory():
         Returns:
             list: Gradients per dynamic-shape sample.
         """
-        net = self._op_net_class_no_kwargs(self.op_func_grad)
+        net = self._op_net_class_no_kwargs(self.op_func_without_kwargs)
         grad_net = self._op_grad_net_class(net, sens_param=False)
         compile_input = self._dynamic_inputs.op_compile_input.convert_to_args()
         grad_net.set_inputs(*compile_input.op_args)
         grads = []
 
+        def _ms_tensor_supports_grad(t):
+            return isinstance(t, ms.Tensor) and (t.dtype.is_floating_point or t.dtype.is_complex)
+
         for running_input in self._dynamic_inputs.op_running_inputs:
             if self._inplace_op:
                 running_input = running_input.copy()
-            running_input = running_input.convert_to_args()
+            args_no_dout = running_input.convert_to_args().op_args
 
             # After convert_to_args, op_input, op_args and op_kwargs are all in op_args now.
-            grad_outi = grad_net(*running_input.op_args)
-            grads.append(grad_outi)
+            grad_outi = grad_net(*args_no_dout)
+
+            tensor_indices = [i for i, v in enumerate(args_no_dout) if _ms_tensor_supports_grad(v)]
+            if isinstance(grad_outi, (tuple, list)):
+                filtered = tuple(grad_outi[i] for i in tensor_indices)
+            else:
+                filtered = (grad_outi,) if tensor_indices and tensor_indices[0] == 0 else tuple()
+            grads.append(filtered)
 
         return grads
 
@@ -627,15 +687,16 @@ class OpsFactory():
     ):
         """Compute gradients with PyTorch for dynamic-shape execution.
 
-        Args:
-            *args: Positional arguments (unused; present for API symmetry).
-            **kwargs: Keyword arguments (unused; present for API symmetry).
+        Computes gradients for all tensor inputs among (op_input, *op_args).
 
         Returns:
-            list: Gradients per dynamic-shape sample.
+            list[tuple]: Per-sample tuple of gradients matching tensor inputs order.
         """
         torch_fn = self.ref
         grads = []
+
+        def _torch_dtype_supports_grad(t: torch.Tensor) -> bool:
+            return torch.is_floating_point(t) or torch.is_complex(t)
 
         for running_input in self._dynamic_inputs.op_running_inputs:
             if self._inplace_op:
@@ -643,12 +704,33 @@ class OpsFactory():
             running_input = running_input.astorch(convert_half_to_float=self._convert_half_to_float)
             op_input, op_args, op_kwargs = running_input.op_input, running_input.op_args, running_input.op_kwargs
 
-            op_input.requires_grad = True
+            tensor_inputs = []
+            if isinstance(op_input, torch.Tensor) and _torch_dtype_supports_grad(op_input):
+                op_input.requires_grad = True
+                tensor_inputs.append(('input', op_input))
+            arg_tensors = []
+            for arg in op_args:
+                if isinstance(arg, torch.Tensor) and _torch_dtype_supports_grad(arg):
+                    arg.requires_grad = True
+                    arg_tensors.append(arg)
+            tensor_inputs.extend(('arg', t) for t in arg_tensors)
 
             outi = torch_fn(op_input, *op_args, **op_kwargs)
-            outi_grad = torch.ones_like(outi)
-            outi.backward(gradient=outi_grad)
-            grads.append(op_input.grad.detach())
+            if not tensor_inputs:
+                grads.append(tuple())
+                continue
+            # For dynamic, use ones_like grads; handle multi-output
+            if isinstance(outi, (tuple, list)):
+                grad_list = [torch.ones_like(o) for o in outi]
+                torch.autograd.backward(list(outi), grad_tensors=grad_list)
+            else:
+                outi_grad = torch.ones_like(outi)
+                outi.backward(gradient=outi_grad)
+
+            grad_tuple = []
+            for _, tin in tensor_inputs:
+                grad_tuple.append(tin.grad.detach())
+            grads.append(tuple(grad_tuple))
 
         return grads
 
@@ -731,6 +813,85 @@ class OpsFactory():
                     self.assert_equal(ms_outi_tensor, pt_outi_tensor)
             else:
                 self.assert_equal(ms_outi, pt_outi)
+
+    def test_op_reference(
+            self,
+            *,
+            grad_cmp: bool = False,
+    ):
+        """Run reference parity tests against Benchmark for all supported dtypes.
+
+        Args:
+            grad_cmp: When True, restrict to floating dtypes and compare first-order gradients.
+        """
+        if self.op_basic_reference_inputs_func is None:
+            print(f"\nop_name: {self.op_name} has no op_basic_reference_inputs_func, skip test_op_reference.")
+            return
+
+        try:
+            print(f"\nop_name: {self.op_name}, mode:{self._context_mode}, test_op_reference...")
+            if grad_cmp:
+                self.supported_dtypes = tuple(d for d in self.supported_dtypes if d.is_floating_point)
+            for dtype in self.supported_dtypes:
+                if grad_cmp:
+                    for sample_input in self.op_basic_reference_inputs_func(self.op_info, dtype, device=self._device):
+                        self.compare_with_torch(sample_inputs=sample_input, grad_cmp=True)
+                else:
+                    for sample_input in self.op_basic_reference_inputs_func(self.op_info, dtype, device=self._device):
+                        self.compare_with_torch(sample_inputs=sample_input)
+                    if self.op_extra_reference_inputs_func is not None:
+                        for sample_input in self.op_extra_reference_inputs_func(
+                                self.op_info,
+                                dtype,
+                                device=self._device,
+                        ):
+                            self.compare_with_torch(sample_inputs=sample_input)
+        except Exception as e:
+            print(f"\ntest_op_reference failed:"
+                  f"\nop_name: {self.op_name}"
+                  f"\nmode: {self._context_mode}"
+                  f"\ndtype: {dtype}"
+                  f"\n{sample_input.summary(True)}")
+            raise e
+
+    def test_op_dynamic(
+            self,
+            *,
+            grad_cmp: bool = False,
+            only_dynamic_shape: bool = False,
+            only_dynamic_rank: bool = False,
+            dtype = ms.float32,
+    ):
+        """Run dynamic-shape tests against Benchmark.
+
+        Args:
+            grad_cmp: When True, also compare first-order gradients.
+            only_dynamic_shape: If True, only run dynamic-shape cases (fixed rank).
+            only_dynamic_rank: If True, only run dynamic-rank cases (shape varies in rank).
+            dtype: Dtype used by dynamic input generator; default float32.
+        """
+        if self.op_info.op_dynamic_inputs_func is None:
+            print(f"\nop_name: {self.op_name} has no op_dynamic_inputs_func, skip test_op_dynamic.")
+            return
+
+        try:
+            print(f"\nop_name: {self.op_name}, mode:{self._context_mode}, test_op_dynamic...")
+            for op_dynamic_input in self.op_info.op_dynamic_inputs_func(
+                    self.op_info,
+                    dtype=dtype,
+                    device=self._device,
+                    only_dynamic_shape=only_dynamic_shape,
+                    only_dynamic_rank=only_dynamic_rank):
+                if grad_cmp:
+                    self.compare_with_torch_dynamic(op_dynamic_inputs=op_dynamic_input, grad_cmp=True)
+                else:
+                    self.compare_with_torch_dynamic(op_dynamic_inputs=op_dynamic_input)
+        except Exception as e:
+            print(f"\ntest_op_dynamic failed:"
+                  f"\nop_name: {self.op_name}"
+                  f"\nmode: {self._context_mode}"
+                  f"\n{op_dynamic_input.summary()}")
+            raise e
 
     def forward_cmp(
             self,

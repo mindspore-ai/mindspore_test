@@ -45,8 +45,8 @@ class OpInfo:
     Attributes:
         name: Short op alias used in logs and test names.
         op: MindSpore callable implementation.
-        op_func_grad: MindSpore callable used for gradient nets; falls back to
-            ``op`` if not provided (e.g., when kwargs need special handling).
+        op_func_without_kwargs: MindSpore callable used for gradient/dynamic nets;
+            falls back to ``op`` if not provided (e.g., when kwargs need special handling).
         ref: Reference implementation (e.g., PyTorch/NumPy callable).
         tensor_variant: Tensor method variant of the operator, if applicable.
 
@@ -77,7 +77,7 @@ class OpInfo:
     # name of primitive, defined in xxx_op.yaml file.
     name: str
     op: Optional[Callable] = None
-    op_func_grad: Optional[Callable] = None
+    op_func_without_kwargs: Optional[Callable] = None
     ref: Optional[Callable] = None
     tensor_variant: Optional[Callable] = None
 
@@ -112,8 +112,8 @@ class OpInfo:
             self.dtypes_intersection = tuple(
                 set(self.dtypes_ascend) & set(self.dtypes_ascend910b) & set(self.dtypes_cpu) & set(self.dtypes_gpu)
             )
-        if self.op_func_grad is None:
-            self.op_func_grad = self.op
+        if self.op_func_without_kwargs is None:
+            self.op_func_without_kwargs = self.op
 
 # basic op_basic_reference_inputs_func for ops
 def basic_reference_inputs_binary_op_common_func(
