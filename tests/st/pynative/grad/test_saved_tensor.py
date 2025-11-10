@@ -868,6 +868,34 @@ def test_saved_tensors_hooks_ignore_wrapped_number():
           level_mark='level0',
           card_mark='onecard',
           essential_mark='essential')
+def test_saved_tensors_hooks_pre_disable_async():
+    """
+    Features: Saved Tensor Hook.
+    Description: Verify the behavior of pre_disable_async when entering nested saved tensor hooks.
+    Expectation: The first context keeps pre_disable_async as False, while the nested context sets it to True.
+    """
+    ctx1 = ms.saved_tensors_hooks(pack_hook_stop_gradient, pack_hook_stop_gradient)
+    ctx2 = ms.saved_tensors_hooks(pack_hook_stop_gradient, pack_hook_stop_gradient)
+    assert not ctx1.pre_disable_async
+
+    ctx1.__enter__()
+    assert not ctx1.pre_disable_async
+    ctx2.__enter__()
+    assert ctx2.pre_disable_async
+
+    ctx2.__exit__()
+    ctx1.__exit__()
+
+    ctx3 = ms.saved_tensors_hooks(pack_hook_stop_gradient, pack_hook_stop_gradient)
+    ctx3.__enter__()
+    assert not ctx3.pre_disable_async
+    ctx3.__exit__()
+
+
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
 def test_disable_saved_tensor_hook():
     """
     Features: Disable Saved Tensor Hook.
