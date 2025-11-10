@@ -1,5 +1,5 @@
 /**
- * Copyright 2021-2023 Huawei Technologies Co., Ltd
+ * Copyright 2021-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,19 +26,15 @@
 #endif
 
 #include <fstream>
-#include <iostream>
-#include <map>
 #include <memory>
-#include <sstream>
 #include <string>
-#include <unordered_map>
 #include <vector>
 
 #include "include/api/dual_abi_helper.h"
 #include "include/api/status.h"
+#include "minddata/dataset/util/visible.h"
 
-namespace mindspore {
-namespace dataset {
+namespace mindspore::dataset {
 /// \brief Simple class to do data manipulation, contains helper function to update json files in dataset
 class DATASET_API DataHelper {
  public:
@@ -490,6 +486,5 @@ class DATASET_API DataHelper {
                        const std::vector<char> &out_file);
   Status RemoveKeyIF(const std::vector<char> &in_file, const std::vector<char> &key, const std::vector<char> &out_file);
 };
-}  // namespace dataset
-}  // namespace mindspore
+}  // namespace mindspore::dataset
 #endif  // MINDSPORE_CCSRC_MINDDATA_DATASET_INCLUDE_DATASET_DATA_HELPER_H_

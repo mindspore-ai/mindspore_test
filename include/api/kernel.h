@@ -21,8 +21,6 @@
 #include <utility>
 #include <map>
 #include "schema/model_generated.h"
-#include "include/api/types.h"
-#include "include/api/context.h"
 #include "include/api/kernel_api.h"
 
 namespace mindspore::kernel {

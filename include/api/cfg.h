@@ -22,7 +22,6 @@
 #include <memory>
 #include "include/api/data_type.h"
 #include "include/api/dual_abi_helper.h"
-#include "include/api/types.h"
 
 namespace mindspore {
 constexpr int iter_th = 1000;

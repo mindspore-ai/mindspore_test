@@ -1,5 +1,5 @@
 /**
- * Copyright 2021 Huawei Technologies Co., Ltd
+ * Copyright 2021-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,6 @@
 #define MINDSPORE_INCLUDE_API_ALLOCATOR_H
 
 #include <memory>
-#include "include/api/types.h"
 
 namespace mindspore {
 /// \brief Allocator defined a memory pool for malloc memory and free memory dynamically.
@@ -37,9 +36,7 @@ class MS_API Allocator {
   /// \param[in] weight Defines the width of memory to request
   /// \param[in] height Defines the height of memory to request
   /// \param[in] type Defines the data type of memory to request
-  virtual void *Malloc(size_t weight, size_t height, DataType type) {
-    return nullptr;
-  }
+  virtual void *Malloc(size_t weight, size_t height, DataType type) { return nullptr; }
 
   /// \brief Method to free memory.
   ///

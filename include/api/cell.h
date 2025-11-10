@@ -20,7 +20,6 @@
 #include <map>
 #include <memory>
 #include "include/api/status.h"
-#include "include/api/types.h"
 #include "include/api/graph.h"
 
 namespace mindspore {

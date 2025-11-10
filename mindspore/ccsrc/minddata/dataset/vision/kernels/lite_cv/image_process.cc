@@ -71,10 +71,12 @@
 
 #include "minddata/dataset/vision/kernels/lite_cv/image_process.h"
 
+#include <algorithm>
 #include <cfloat>
 #include <climits>
 #include <cmath>
 #include <cstring>
+#include <iterator>
 #include <limits>
 #include <random>
 #include <utility>
@@ -84,8 +86,7 @@
 #include <arm_neon.h>
 #endif
 
-namespace mindspore {
-namespace dataset {
+namespace mindspore::dataset {
 constexpr uint32_t kR2Gray = 9798;
 constexpr uint32_t kG2Gray = 19235;
 constexpr uint32_t kB2Gray = 3735;
@@ -581,18 +582,18 @@ static bool ConvertYUV420SPToBGR(const uint8_t *data, LDataType data_type, bool 
           u = uv_buf[0];
           v = uv_buf[1];
         }
-        uint32_t tmp_y = (uint32_t)(y_buf[0] * kYScale * kY2G) >> 16;
+        uint32_t tmp_y = static_cast<uint32_t>(y_buf[0] * kYScale * kY2G) >> 16;
         // b
-        bgr_buf[0] = std::clamp((int32_t)(-(u * kU2B) + tmp_y + kB2B) >> 6, 0, 255);
+        bgr_buf[0] = std::clamp(static_cast<int32_t>(-(u * kU2B) + tmp_y + kB2B) >> 6, 0, 255);
         // g
-        bgr_buf[1] = std::clamp((int32_t)(-(u * kU2G + v * kV2G) + tmp_y + kB2G) >> 6, 0, 255);
+        bgr_buf[1] = std::clamp(static_cast<int32_t>(-(u * kU2G + v * kV2G) + tmp_y + kB2G) >> 6, 0, 255);
         // r
-        bgr_buf[2] = std::clamp((int32_t)(-(v * kV2R) + tmp_y + kB2R) >> 6, 0, 255);
+        bgr_buf[2] = std::clamp(static_cast<int32_t>(-(v * kV2R) + tmp_y + kB2R) >> 6, 0, 255);
 
-        tmp_y = (uint32_t)(y_buf[1] * kYScale * kY2G) >> 16;
-        bgr_buf[3] = std::clamp((int32_t)(-(u * kU2B) + tmp_y + kB2B) >> 6, 0, 255);
-        bgr_buf[4] = std::clamp((int32_t)(-(u * kU2G + v * kV2G) + tmp_y + kB2G) >> 6, 0, 255);
-        bgr_buf[5] = std::clamp((int32_t)(-(v * kV2R) + tmp_y + kB2R) >> 6, 0, 255);
+        tmp_y = static_cast<uint32_t>(y_buf[1] * kYScale * kY2G) >> 16;
+        bgr_buf[3] = std::clamp(static_cast<int32_t>(-(u * kU2B) + tmp_y + kB2B) >> 6, 0, 255);
+        bgr_buf[4] = std::clamp(static_cast<int32_t>(-(u * kU2G + v * kV2G) + tmp_y + kB2G) >> 6, 0, 255);
+        bgr_buf[5] = std::clamp(static_cast<int32_t>(-(v * kV2R) + tmp_y + kB2R) >> 6, 0, 255);
 
         y_buf += 2;
         uv_buf += 2;
@@ -608,10 +609,10 @@ static bool ConvertYUV420SPToBGR(const uint8_t *data, LDataType data_type, bool 
           u = uv_buf[0];
           v = uv_buf[1];
         }
-        uint32_t tmp_y = (uint32_t)(y_buf[0] * kYScale * kY2G) >> 16;
-        bgr_buf[0] = std::clamp((int32_t)(-(u * kU2B) + tmp_y + kB2B) >> 6, 0, 255);
-        bgr_buf[1] = std::clamp((int32_t)(-(u * kU2G + v * kV2G) + tmp_y + kB2G) >> 6, 0, 255);
-        bgr_buf[2] = std::clamp((int32_t)(-(v * kV2R) + tmp_y + kB2R) >> 6, 0, 255);
+        uint32_t tmp_y = static_cast<uint32_t>(y_buf[0] * kYScale * kY2G) >> 16;
+        bgr_buf[0] = std::clamp(static_cast<int32_t>(-(u * kU2B) + tmp_y + kB2B) >> 6, 0, 255);
+        bgr_buf[1] = std::clamp(static_cast<int32_t>(-(u * kU2G + v * kV2G) + tmp_y + kB2G) >> 6, 0, 255);
+        bgr_buf[2] = std::clamp(static_cast<int32_t>(-(v * kV2R) + tmp_y + kB2R) >> 6, 0, 255);
       }
 
       bgr_ptr += bgr_stride;
@@ -2211,5 +2212,4 @@ bool HWC2CHW(LiteMat &src, LiteMat &dst) {
   }
   return true;
 }
-}  // namespace dataset
-}  // namespace mindspore
+}  // namespace mindspore::dataset

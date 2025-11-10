@@ -1,5 +1,5 @@
 /**
- * Copyright 2020-2024 Huawei Technologies Co., Ltd
+ * Copyright 2020-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,8 +34,7 @@ namespace py = pybind11;
 #include "minddata/dataset/core/global_context.h"
 #include "minddata/dataset/util/status.h"
 
-namespace mindspore {
-namespace dataset {
+namespace mindspore::dataset {
 // Class that represents a shape of a Tensor. A shape can be:
 // -# Known shape (mKnown = true)
 //        -# Scalar --> empty vector        --> <>
@@ -48,7 +47,7 @@ namespace dataset {
 //              <2,?,?,?> (all dims but the 0th dim are unknown)
 
 /// \brief  TensorShape supports any dim > 0 and < 2^31-1
-class DATASET_API TensorShape {
+class TensorShape {
  public:
   static constexpr dsize_t kDimUnknown = -1;  // constant for an unknown dimension
 
@@ -213,6 +212,5 @@ class DATASET_API TensorShape {
   template <typename T>
   void AddListToShape(const T &list);
 };
-}  // namespace dataset
-}  // namespace mindspore
+}  // namespace mindspore::dataset
 #endif  // MINDSPORE_CCSRC_MINDDATA_DATASET_CORE_TENSOR_SHAPE_H_

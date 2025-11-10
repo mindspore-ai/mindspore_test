@@ -21,7 +21,6 @@
 #include <map>
 #include <memory>
 #include "include/api/status.h"
-#include "include/api/types.h"
 #include "include/api/model.h"
 #include "include/api/graph.h"
 #include "include/api/dual_abi_helper.h"

@@ -23,7 +23,6 @@
 #include <utility>
 #include "include/api/data_type.h"
 #include "include/api/dual_abi_helper.h"
-#include "include/api/types.h"
 
 namespace mindspore {
 class Model;

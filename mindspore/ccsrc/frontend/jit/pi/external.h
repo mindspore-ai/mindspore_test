@@ -17,7 +17,6 @@
 #define MINDSPORE_CCSRC_FRONTEND_JIT_PI_EXTERNAL_H
 
 #include "pybind11/pybind11.h"
-#include "include/api/visible.h"
 
 namespace py = pybind11;
 namespace mindspore {
