@@ -20,6 +20,7 @@
 #include <set>
 #include <string>
 #include <unordered_set>
+#include <mutex>
 #include "include/common/utils/convert_utils.h"
 #include "include/common/utils/utils.h"
 #include "include/runtime/hardware_abstract/kernel_base/oplib/oplib.h"
@@ -43,6 +44,8 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 #include "include/backend/anf_runtime_algorithm.h"
+#include "include/common/callback.h"
+#include "kernel/cpu/custom/kernel_mod_impl/op_plugin_utils.h"
 
 namespace mindspore {
 namespace device {
@@ -728,16 +731,23 @@ std::pair<std::string, ExceptionType> SetKernelInfoWithMsg(const CNodePtr &kerne
     return {};
   }
 
+  // Check op plugin kernel
+  static auto op_plugin_path = common::EnvHelper::GetInstance()->GetEnv("MS_OP_PLUGIN_PATH");
+  if (op_plugin_path != nullptr) {
+    static std::once_flag once;
+    std::call_once(once, callback::CommonCallback::GetInstance().GetCallback<void>(
+                           "RegisterOpPluginKernels"));  // register op plugin kernels
+    static const auto &op_plugin_kernels = kernel::op_plugin::GetAllOpPluginKernelNames();
+    if (op_plugin_kernels.find(op_name) != op_plugin_kernels.end()) {
+      UpdateCustomKernelBuildInfo(kernel_node, false);
+      return {};
+    }
+  }
+
   // First select the kernel object types.
   std::vector<kernel::KernelAttr> object_selected_kernel_attrs;
   const auto &kernel_attrs = kernel::NativeCpuKernelMod::GetCpuSupportedList(op_name);
   if (kernel_attrs.empty()) {
-    static auto op_plugin_path = common::EnvHelper::GetInstance()->GetEnv("MS_OP_PLUGIN_PATH");
-    if (op_plugin_path != nullptr) {
-      // if env var MS_OP_PLUGIN_PATH is set, then use custom op plugin to load op
-      UpdateCustomKernelBuildInfo(kernel_node, false);
-      return {};
-    }
     return KernelNotSupportWarning(kernel_node, false);
   } else if (kernel_attrs[0].GetSkipCheck()) {
     object_selected_kernel_attrs = kernel_attrs;

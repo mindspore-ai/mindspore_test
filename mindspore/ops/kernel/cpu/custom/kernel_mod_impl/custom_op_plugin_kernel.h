@@ -20,13 +20,13 @@
 #include <vector>
 #include <string>
 #include <map>
-#include "kernel/cpu/custom/kernel_mod_impl/custom_kernel_input_info.h"
+#include "kernel/cpu/custom/kernel_mod_impl/custom_kernel_input_info_impl.h"
 #include "kernel/cpu/cpu_kernel.h"
 #include "kernel/cpu/utils/visible.h"
 
 namespace mindspore {
 namespace kernel {
-
+namespace op_plugin {
 class OPS_HOST_API CustomOpPluginCpuKernelMod : public NativeCpuKernelMod {
  public:
   CustomOpPluginCpuKernelMod() = default;
@@ -53,7 +53,7 @@ class OPS_HOST_API CustomOpPluginCpuKernelMod : public NativeCpuKernelMod {
  private:
   void SetKernelPath();
 };
+}  // namespace op_plugin
 }  // namespace kernel
 }  // namespace mindspore
-
 #endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_CPU_KERNEL_CUSTOM_CUSTOM_OP_PLUGIN_CPU_KERNEL_H_

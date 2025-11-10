@@ -17,19 +17,18 @@
 #include "kernel/cpu/custom/kernel_mod_impl/custom_op_plugin_kernel.h"
 #include "kernel/cpu/custom/kernel_mod_impl/op_plugin_utils.h"
 #include "include/runtime/hardware_abstract/kernel_base/ms_factory.h"
+#include "include/common/callback.h"
 
 namespace mindspore::kernel {
-static bool g_init_op_plugin_kernels = []() noexcept {
-  try {
-    const auto &op_names = GetAllOpPluginKernelNames();
-    for (const auto &op_name : op_names) {
-      Factory<CustomOpPluginCpuKernelMod>::Instance().Register(
-        op_name, []() { return std::make_shared<CustomOpPluginCpuKernelMod>(); });
-    }
-  } catch (...) {
-    MS_LOG(ERROR) << "Failed to register op plugin kernels";
-    return false;
+namespace op_plugin {
+void RegisterOpPluginKernels() {
+  const auto &op_names = GetAllOpPluginKernelNames();
+  for (const auto &op_name : op_names) {
+    Factory<CustomOpPluginCpuKernelMod>::Instance().Register(
+      op_name, []() { return std::make_shared<CustomOpPluginCpuKernelMod>(); });
+    MS_LOG(INFO) << "Register op plugin kernel: " << op_name;
   }
-  return true;
-}();
+}
+REGISTER_COMMON_CALLBACK(RegisterOpPluginKernels);
+}  // namespace op_plugin
 }  // namespace mindspore::kernel

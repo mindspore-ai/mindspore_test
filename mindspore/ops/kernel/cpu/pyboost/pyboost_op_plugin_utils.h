@@ -61,14 +61,14 @@ constexpr bool is_value_tuple_ptr_v = std::is_same_v<std::decay_t<T>, ValueTuple
 // These functions are mainly view functions, which do not really have an op plugin kernel.
 template <std::size_t... InplaceIndices, typename... Args>
 std::enable_if_t<has_int_or_vector_int_v<Args...>, std::vector<tensor::TensorPtr>> PyboostLaunchOpPluginKernel(
-  std::shared_ptr<OpRunner> op, Args &&... args) {
+  std::shared_ptr<OpRunner> op, Args &&...args) {
   return {};
 }
 
 // The InplaceIndex indicates the input tensor the output corresponds to in a inplace operation.
 template <std::size_t... InplaceIndices, typename... Args>
 std::enable_if_t<!has_int_or_vector_int_v<Args...>, std::vector<tensor::TensorPtr>> PyboostLaunchOpPluginKernel(
-  std::shared_ptr<OpRunner> op, Args &&... args) {
+  std::shared_ptr<OpRunner> op, Args &&...args) {
   MS_EXCEPTION_IF_NULL(op->primitive());
   const auto &op_name = op->primitive()->name();
   MS_LOG(DEBUG) << op_name << " calls op plugin kernel.";
@@ -110,9 +110,9 @@ std::enable_if_t<!has_int_or_vector_int_v<Args...>, std::vector<tensor::TensorPt
   op->ProfileTrackerTask();
 
   // Async
-  PyBoostUtils::DispatchRun(std::make_shared<runtime::PyBoostDeviceTask>([op, &op_name, args...]() {
+  // pass 'outputs' by value because op->outputs() is occasionally broken in the dispatch task
+  PyBoostUtils::DispatchRun(std::make_shared<runtime::PyBoostDeviceTask>([op, &op_name, outputs, args...]() {
     auto device_context = op->device_context();
-    const auto &outputs = op->outputs();
     constexpr bool is_inplace_lambda = sizeof...(InplaceIndices) > 0;
 
     // Process tensor arguments for MallocOpInputs
@@ -136,8 +136,9 @@ std::enable_if_t<!has_int_or_vector_int_v<Args...>, std::vector<tensor::TensorPt
     const auto &output_address_info =
       PyBoostUtils::GetAddressInfo(device_context, op->stream_id(), {op->output_abs()}, outputs);
     std::vector<kernel::KernelTensor *> workspace_tensors;
-    auto op_plugin_param = CreateOpPluginParam(input_address_info.first, output_address_info.first, workspace_tensors);
-    auto ret = LaunchOpPluginKernel(op_name, &op_plugin_param);
+    auto op_plugin_param =
+      op_plugin::CreateOpPluginParam(input_address_info.first, output_address_info.first, workspace_tensors);
+    auto ret = op_plugin::LaunchOpPluginKernel(op_name, &op_plugin_param);
     if (ret != 0) {
       MS_LOG(EXCEPTION) << "Launch op plugin kernel failed, op name: " << op_name << ", return code: " << ret;
     }

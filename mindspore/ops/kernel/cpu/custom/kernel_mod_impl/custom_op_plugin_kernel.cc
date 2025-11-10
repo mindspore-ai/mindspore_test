@@ -33,6 +33,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace op_plugin {
 void CustomOpPluginCpuKernelMod::SetKernelPath() {
   const char *op_plugin_path = common::EnvHelper::GetInstance()->GetEnv("MS_OP_PLUGIN_PATH");
 
@@ -107,7 +108,7 @@ bool CustomOpPluginCpuKernelMod::Launch(const std::vector<KernelTensor *> &input
   int ret = 0;
   try {
     ret = LaunchOpPluginKernel(kernel_name_, params.size(), params.data(), ndims_.data(), shapes_.data(),
-                               type_pointer_list_.data(), nullptr, reinterpret_cast<void *>(&kernel_info_));
+                               type_pointer_list_.data(), reinterpret_cast<void *>(&kernel_info_), nullptr);
   } catch (const std::exception &e) {
     MS_LOG(EXCEPTION) << "For '" << kernel_name_ << "' on CPU, operator failed when executing user defined file "
                       << file_path_ << "! "
@@ -152,5 +153,6 @@ int CustomOpPluginCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs
   return static_cast<int>(KRET_OK);
 }
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, CustomOpPlugin, CustomOpPluginCpuKernelMod);
+}  // namespace op_plugin
 }  // namespace kernel
 }  // namespace mindspore

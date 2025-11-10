@@ -15,6 +15,7 @@
  */
 
 #include "kernel/cpu/custom/kernel_mod_impl/op_plugin_utils.h"
+#include <unordered_set>
 #if defined(_WIN32)
 #include <windows.h>
 #define DL_OPEN(path)                                                                                   \
@@ -53,6 +54,7 @@
 #include "utils/log_adapter.h"
 
 namespace mindspore::kernel {
+namespace op_plugin {
 void *GetOpPluginHandle() {
   static bool is_initialized = false;
   static void *handle = nullptr;
@@ -100,11 +102,11 @@ bool IsOpPluginKernel(const std::string &op_name) {
   }
   return reg_func != nullptr && reg_func(op_name.c_str());
 }
-const std::vector<std::string> &GetAllOpPluginKernelNames() {
+const std::unordered_set<std::string> &GetAllOpPluginKernelNames() {
   static bool initialized = false;
   static int (*get_op_count)() = nullptr;
   static char **(*get_all_ops)() = nullptr;
-  static std::vector<std::string> op_names;
+  static std::unordered_set<std::string> op_names;
   if (!initialized) {
     initialized = true;
     void *handle = GetOpPluginHandle();
@@ -122,9 +124,8 @@ const std::vector<std::string> &GetAllOpPluginKernelNames() {
     }
     int op_count = get_op_count();
     char **op_names_ptr = get_all_ops();
-    op_names.reserve(op_count);
-    for (int i = 0; i < op_count; i++) {
-      op_names.push_back(op_names_ptr[i]);
+    for (int i = 0; i < op_count; ++i) {
+      op_names.insert(std::string(op_names_ptr[i]));
     }
   }
   return op_names;
@@ -187,12 +188,13 @@ int LaunchOpPluginKernel(const std::string &op_name, size_t nparam, void **param
     return -1;
   }
 
-  return op_plugin_func(nparam, params, ndims, shapes, dtypes, kernel_info, stream);
+  return op_plugin_func(nparam, params, ndims, shapes, dtypes, stream, kernel_info);
 }
 
 int LaunchOpPluginKernel(const std::string &op_name, OpPluginKernelParam *param) {
   return LaunchOpPluginKernel(op_name, param->params.size(), param->params.data(), param->ndims.data(),
-                              param->shapes.data(), param->dtypes.data(), param->stream,
-                              reinterpret_cast<void *>(&param->kernel_info));
+                              param->shapes.data(), param->dtypes.data(), reinterpret_cast<void *>(&param->kernel_info),
+                              param->stream);
 }
+}  // namespace op_plugin
 }  // namespace mindspore::kernel
