@@ -21,7 +21,6 @@
 #include <memory>
 #include <set>
 #include <string>
-#include <stack>
 #include <vector>
 #include <tuple>
 
@@ -176,7 +175,6 @@ std::vector<std::pair<CNodePtr, size_t>> GetAllUserNode(const AnfNodePtr &node, 
                                                         const NodeUsersMap &node_users) {
   std::vector<std::pair<CNodePtr, size_t>> ret;
   std::stack<std::pair<AnfNodePtr, int>> to_visit;
-  std::stack<int> make_tuple_idx;
   to_visit.emplace(node, index);
   while (!to_visit.empty()) {
     auto [user, idx] = to_visit.top();
@@ -198,21 +196,20 @@ std::vector<std::pair<CNodePtr, size_t>> GetAllUserNode(const AnfNodePtr &node, 
         continue;
       }
       for (const auto &node_idx : iter->second) {
-        to_visit.push(node_idx);
-      }
-      make_tuple_idx.push(idx);
-    } else if (IsPrimitiveCNode(user, prim::kPrimTupleGetItem)) {
-      const auto get_item_idx = common::AnfAlgo::GetTupleGetItemOutIndex(user->cast<CNodePtr>());
-      if (SizeToInt(get_item_idx) != make_tuple_idx.top()) {
-        continue;
-      }
-      make_tuple_idx.pop();
-      const auto &iter = node_users.find(user);
-      if (iter == node_users.end()) {
-        continue;
-      }
-      for (const auto &node_idx : iter->second) {
-        to_visit.push(node_idx);
+        if (node_idx.first == nullptr || !IsPrimitiveCNode(node_idx.first, prim::kPrimTupleGetItem)) {
+          continue;
+        }
+        const auto get_item_idx = common::AnfAlgo::GetTupleGetItemOutIndex(node_idx.first->cast<CNodePtr>());
+        if (SizeToInt(get_item_idx) != idx) {
+          continue;
+        }
+        const auto &get_item_users = node_users.find(node_idx.first);
+        if (get_item_users == node_users.end()) {
+          continue;
+        }
+        for (const auto &get_item_user : get_item_users->second) {
+          to_visit.push(get_item_user);
+        }
       }
     } else {
       ret.emplace_back(user->cast<CNodePtr>(), idx);
