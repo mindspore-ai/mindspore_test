@@ -60,7 +60,6 @@
 #if defined(__linux__) && defined(WITH_BACKEND)
 #include "plugin/cpu/res_manager/collective/ms_collective_comm_lib.h"
 #endif
-#include "include/backend/debug/data_dump/dump_json_parser.h"
 #ifdef ENABLE_DUMP_IR
 #include "mindspore/ccsrc/utils/ir_dump/anf_ir_dump.h"
 #endif
@@ -229,10 +228,29 @@ void CPUDeviceContext::Initialize() {
   if (ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET) == kCPUDevice) {
     // Dump json config file if dump is enabled.
     uint32_t rank_id = 0;
-    auto &json_parser = DumpJsonParser::GetInstance();
-    json_parser.Parse();
-    json_parser.CopyDumpJsonToDir(rank_id);
-    json_parser.CopyMSCfgJsonToDir(rank_id);
+    constexpr char kParse[] = "DumpJsonParserParse";
+    static auto parse_callback = callback::CommonCallback::GetInstance().GetCallback<void>(kParse);
+    if (parse_callback) {
+      parse_callback();
+    } else {
+      MS_LOG(WARNING) << "Failed to get DumpJsonParserParse, data dump function may not work.";
+    }
+    constexpr char kCopyDumpJsonToDir[] = "CopyDumpJsonToDir";
+    static auto copy_dump_json_to_dir_callback =
+      callback::CommonCallback::GetInstance().GetCallback<void, uint32_t>(kCopyDumpJsonToDir);
+    if (copy_dump_json_to_dir_callback) {
+      copy_dump_json_to_dir_callback(rank_id);
+    } else {
+      MS_LOG(WARNING) << "Failed to get CopyDumpJsonToDir, data dump function may not work.";
+    }
+    constexpr char kCopyMSCfgJsonToDir[] = "CopyMSCfgJsonToDir";
+    static auto copy_mscfg_json_to_dir_callback =
+      callback::CommonCallback::GetInstance().GetCallback<void, uint32_t>(kCopyMSCfgJsonToDir);
+    if (copy_mscfg_json_to_dir_callback) {
+      copy_mscfg_json_to_dir_callback(rank_id);
+    } else {
+      MS_LOG(WARNING) << "Failed to get CopyMSCfgJsonToDir, data dump function may not work.";
+    }
   }
 #ifdef __linux__
   if (ms_context->IsDefaultDeviceTarget() && ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET) == kCPUDevice) {

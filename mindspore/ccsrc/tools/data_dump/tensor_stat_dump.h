@@ -14,22 +14,22 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_MINDSPORE_CCSRC_DEBUG_DATA_DUMP_TENSOR_STAT_DUMP_H_
-#define MINDSPORE_MINDSPORE_CCSRC_DEBUG_DATA_DUMP_TENSOR_STAT_DUMP_H_
+#ifndef MINDSPORE_MINDSPORE_CCSRC_TOOLS_DATA_DUMP_TENSOR_STAT_DUMP_H_
+#define MINDSPORE_MINDSPORE_CCSRC_TOOLS_DATA_DUMP_TENSOR_STAT_DUMP_H_
 
 #include <memory>
 #include <string>
 #include <fstream>
 #include <mutex>
 #include "utils/ms_utils.h"
-#include "include/backend/visible.h"
+#include "tools/visible.h"
 #include "ir/dtype/type_id.h"
 
 namespace mindspore {
 class Debugger;
 class TensorData;
 
-class BACKEND_COMMON_EXPORT TensorStatDump {
+class TOOLS_EXPORT TensorStatDump {
  public:
   TensorStatDump(const std::string &op_type, const std::string &op_name, uint32_t task_id, uint32_t stream_id,
                  uint64_t timestamp, bool input, size_t slot, size_t tensor_loader_slot_);
@@ -49,4 +49,4 @@ class BACKEND_COMMON_EXPORT TensorStatDump {
   mindspore::TypeId data_type_{mindspore::TypeId::kTypeUnknown};
 };
 }  // namespace mindspore
-#endif  // MINDSPORE_MINDSPORE_CCSRC_DEBUG_DATA_DUMP_TENSOR_STAT_DUMP_H_
+#endif  // MINDSPORE_MINDSPORE_CCSRC_TOOLS_DATA_DUMP_TENSOR_STAT_DUMP_H_

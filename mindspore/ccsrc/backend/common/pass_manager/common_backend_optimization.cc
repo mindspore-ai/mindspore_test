@@ -41,9 +41,6 @@
 #include "utils/ms_context.h"
 #include "mindspore/ccsrc/utils/ir_dump/anf_ir_dump.h"
 #ifdef ENABLE_DUMP_IR
-#include "include/backend/debug/data_dump/dump_json_parser.h"
-#include "include/backend/debug/data_dump/dump_utils.h"
-#include "include/backend/debug/debugger/proto_exporter.h"
 #include "backend/common/kernel_graph/session_basic.h"
 #endif
 

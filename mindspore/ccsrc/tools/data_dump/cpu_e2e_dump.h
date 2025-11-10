@@ -20,12 +20,12 @@
 #include <map>
 #include <string>
 
-#include "include/backend/debug/data_dump/dump_json_parser.h"
-#include "include/backend/debug/data_dump/dump_utils.h"
-#include "include/backend/visible.h"
+#include "tools/data_dump/dump_json_parser.h"
+#include "tools/data_dump/dump_utils.h"
+#include "tools/visible.h"
 
 namespace mindspore {
-class BACKEND_COMMON_EXPORT CPUE2eDump {
+class TOOLS_EXPORT CPUE2eDump {
  public:
   CPUE2eDump() = default;
   ~CPUE2eDump() = default;

@@ -104,11 +104,13 @@ bool TdtManager::OpenTsd(const std::shared_ptr<MsContext> &ms_context_ptr) {
     static auto tensordump_callback =
       callback::CommonCallback::GetInstance().GetCallback<void, const std::string &, const std::vector<MbufDataItem> &>(
         kMbufTensorDumpCallback);
-    if (!tensordump_callback) {
+    if (tensordump_callback) {
+      device::ascend::MbufDataHandlerManager::GetInstance().AddHandler(
+        std::make_unique<device::ascend::MbufDataHandler>(tensordump_callback, device_id, kTensorDumpChannelName,
+                                                          kTensorDumpOpName));
+    } else {
       MS_LOG(WARNING) << "Failed to get MbufTensorDumpCallback, tensor dump function may not work.";
     }
-    device::ascend::MbufDataHandlerManager::GetInstance().AddHandler(std::make_unique<device::ascend::MbufDataHandler>(
-      tensordump_callback, device_id, kTensorDumpChannelName, kTensorDumpOpName));
     if (TensorReportUtils::IsEnable()) {
       MbufDataHandlerManager::GetInstance().AddHandler(std::make_unique<MbufDataHandler>(
         std::bind(&TensorReportUtils::ReportReceiveData, &TensorReportUtils::GetInstance(), std::placeholders::_1,

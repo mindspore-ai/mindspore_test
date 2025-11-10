@@ -21,7 +21,7 @@
 #include <string>
 #include <set>
 #include <algorithm>
-#include "include/backend/debug/data_dump/dump_json_parser.h"
+#include "tools/data_dump/dump_json_parser.h"
 #include "include/utils/anfalgo.h"
 #include "tools/data_dump/cpu_e2e_dump.h"
 #include "tools/data_dump/data_dump.h"
@@ -29,7 +29,7 @@
 #include "tools/silent_detect/silent_detector.h"
 #include "utils/log_adapter.h"
 #ifdef ENABLE_DEBUGGER
-#include "include/backend/debug/debugger/debugger.h"
+#include "tools/data_dump/debugger/debugger.h"
 #include "tools/data_dump/device_statistic/mem_manager.h"
 #endif
 

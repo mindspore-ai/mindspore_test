@@ -22,8 +22,8 @@
 #include "tools/dump/utils.h"
 #include "tools/data_dump/utils.h"
 #include "tools/data_dump/common/csv_writer.h"
-#include "include/backend/debug/data_dump/dump_json_parser.h"
-#include "include/backend/debug/data_dump/dump_utils.h"
+#include "tools/data_dump/dump_json_parser.h"
+#include "tools/data_dump/dump_utils.h"
 #include "mindspore/ccsrc/utils/ir_dump/anf_dump_utils.h"
 #include "backend/common/kernel_graph/session_basic.h"
 

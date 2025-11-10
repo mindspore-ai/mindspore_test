@@ -67,10 +67,6 @@
 #if !defined(_WIN32) && !defined(_WIN64) && !defined(__APPLE__)
 #include "include/cluster/topology/compute_graph_node.h"
 #endif
-#include "include/backend/debug/data_dump/dump_json_parser.h"
-#ifdef ENABLE_DEBUGGER
-#include "include/backend/debug/debugger/debugger.h"
-#endif
 #include "tools/profiler/profiling.h"
 #include "include/utils/common.h"
 #include "include/cluster/topology/collective_manager.h"
@@ -770,21 +766,37 @@ void GraphScheduler::BuildAndScheduleGlobalActor() {
   // Create and schedule debug actor.
   // debugger_actor_need is true for CPU when e2e dump is enabled and for Ascend and GPU is true when debugger or dump
   // is enabled.
-  auto &json_parser = DumpJsonParser::GetInstance();
-  json_parser.Parse();
-  bool debugger_actor_need = DumpJsonParser::GetInstance().e2e_dump_enabled();
+  constexpr char kParse[] = "DumpJsonParserParse";
+  static auto parse_callback = callback::CommonCallback::GetInstance().GetCallback<void>(kParse);
+  if (parse_callback) {
+    parse_callback();
+  } else {
+    MS_LOG(WARNING) << "Failed to get DumpJsonParserParse, data dump function may not work.";
+  }
+  constexpr char kE2eDumpEnabled[] = "E2eDumpEnabled";
+  static auto e2e_dump_enabled_callback = callback::CommonCallback::GetInstance().GetCallback<bool>(kE2eDumpEnabled);
+  bool debugger_actor_need = false;
+  if (e2e_dump_enabled_callback) {
+    debugger_actor_need = e2e_dump_enabled_callback();
+  } else {
+    MS_LOG(WARNING) << "Failed to get e2e_dump_enabled, data dump function may not work.";
+  }
 #ifdef ENABLE_DEBUGGER
-  auto debugger = Debugger::GetInstance();
-  MS_EXCEPTION_IF_NULL(debugger);
-  if (debugger->DebuggerBackendEnabled()) {
+  constexpr char kDebuggerBackendEnabled[] = "DebuggerBackendEnabled";
+  static auto debugger_backend_enabled_callback =
+    callback::CommonCallback::GetInstance().GetCallback<bool>(kDebuggerBackendEnabled);
+  if (debugger_backend_enabled_callback && debugger_backend_enabled_callback()) {
     debugger_actor_need = true;
+  } else {
+    MS_LOG(WARNING) << "Failed to get DebuggerBackendEnabled, data dump function may not work.";
   }
 #endif
   // if silent check is enabled, create debugger actor for CheckSum
   constexpr char kNeedEnableCheckSum[] = "NeedEnableCheckSum";
   static const auto need_enable_checksum =
     callback::CommonCallback::GetInstance().GetCallback<bool>(kNeedEnableCheckSum);
-  MS_EXCEPTION_IF_CHECK_FAIL(need_enable_checksum, "Failed to get NeedEnableCheckSum");
+  MS_EXCEPTION_IF_CHECK_FAIL(need_enable_checksum,
+                             "Failed to get NeedEnableCheckSum, silent detect function may not work.");
   if (need_enable_checksum()) {
     debugger_actor_need = true;
   }
@@ -2610,10 +2622,11 @@ CopyActor *GraphScheduler::CreateCopyActor(AbstractActor *const from_actor, Abst
   MS_EXCEPTION_IF_NULL(to_actor);
   auto from_kernel = from_kernel_with_output_idx.first;
   MS_EXCEPTION_IF_NULL(from_kernel);
-  std::string name = "copy_from:" + from_actor->GetAID().Name() + "_node:" +
-                     (from_kernel->fullname_with_scope() == "" ? std::to_string((int64_t)(from_kernel.get()))
-                                                               : from_kernel->fullname_with_scope()) +
-                     "_output_index:" + std::to_string(from_kernel_with_output_idx.second);
+  std::string name =
+    "copy_from:" + from_actor->GetAID().Name() + "_node:" +
+    (from_kernel->fullname_with_scope() == "" ? std::to_string(reinterpret_cast<int64_t>(from_kernel.get()))
+                                              : from_kernel->fullname_with_scope()) +
+    "_output_index:" + std::to_string(from_kernel_with_output_idx.second);
   CopyActor *copy_actor = dynamic_cast<CopyActor *>(FetchActor(name));
   // Link between from actor and copy actor.
   if (copy_actor == nullptr) {

@@ -27,7 +27,6 @@
 #include "include/utils/parallel_context.h"
 #include "include/utils/scoped_long_running.h"
 #include "include/cluster/topology/constants.h"
-#include "include/backend/debug/data_dump/dump_json_parser.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "plugin/ascend/res_manager/device_context_conf/op_debug_conf.h"
 #include "plugin/ascend/res_manager/device_context_conf/op_precision_conf.h"
@@ -187,8 +186,13 @@ void AscendDeviceContext::InitDump() const {
     MS_LOG(INFO) << "In the ge backend, dump is initialized at the same time as the backend.";
     return;
   }
-  auto &dump_parser = DumpJsonParser::GetInstance();
-  dump_parser.Parse();
+  constexpr char kParse[] = "DumpJsonParserParse";
+  static auto parse_callback = callback::CommonCallback::GetInstance().GetCallback<void>(kParse);
+  if (parse_callback) {
+    parse_callback();
+  } else {
+    MS_LOG(WARNING) << "Failed to get DumpJsonParserParse, data dump function may not work.";
+  }
 }
 
 uint32_t AscendDeviceContext::GetDeviceCount() { return AscendHalManager::GetInstance().GetDeviceCount(); }

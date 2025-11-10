@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_MINDSPORE_CCSRC_DEBUG_DATA_DUMP_E_2_E_DUMP_H_
-#define MINDSPORE_MINDSPORE_CCSRC_DEBUG_DATA_DUMP_E_2_E_DUMP_H_
+#ifndef MINDSPORE_MINDSPORE_CCSRC_TOOLS_DATA_DUMP_E_2_E_DUMP_H_
+#define MINDSPORE_MINDSPORE_CCSRC_TOOLS_DATA_DUMP_E_2_E_DUMP_H_
 
 #include <dirent.h>
 #include <map>
@@ -25,13 +25,13 @@
 
 #include "include/backend/kernel_graph.h"
 #include "device_address/device_address.h"
-#include "include/backend/debug/data_dump/dump_json_parser.h"
-#include "include/backend/debug/data_dump/dump_utils.h"
+#include "tools/data_dump/dump_json_parser.h"
+#include "tools/data_dump/dump_utils.h"
 #ifdef ENABLE_DEBUGGER
-#include "include/backend/debug/debugger/debugger.h"
+#include "tools/data_dump/debugger/debugger.h"
 #endif
-#include "include/backend/visible.h"
 #include "include/runtime/hardware_abstract/device_context/device_context.h"
+#include "tools/visible.h"
 
 #ifndef ENABLE_DEBUGGER
 class Debugger;
@@ -39,7 +39,7 @@ class Debugger;
 namespace mindspore {
 using mindspore::device::DeviceContext;
 
-class BACKEND_COMMON_EXPORT E2eDump {
+class TOOLS_EXPORT E2eDump {
  public:
   E2eDump() = default;
   ~E2eDump() = default;
@@ -98,4 +98,4 @@ class BACKEND_COMMON_EXPORT E2eDump {
   inline static unsigned int starting_graph_id = INT32_MAX;
 };
 }  // namespace mindspore
-#endif  // MINDSPORE_MINDSPORE_CCSRC_DEBUG_DATA_DUMP_E_2_E_DUMP_UTIL_H_
+#endif  // MINDSPORE_MINDSPORE_CCSRC_TOOLS_DATA_DUMP_E_2_E_DUMP_H_

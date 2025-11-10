@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "include/backend/debug/data_dump/dump_json_parser.h"
+#include "tools/data_dump/dump_json_parser.h"
 #include <algorithm>
 #include <fstream>
 #include <chrono>
@@ -32,7 +32,7 @@
 #include "utils/convert_utils_base.h"
 #include "utils/log_adapter.h"
 #include "utils/ms_context.h"
-#include "include/backend/debug/data_dump/dump_control.h"
+#include "tools/data_dump/dump_control.h"
 
 namespace {
 constexpr auto kCommonDumpSettings = "common_dump_settings";
@@ -1163,4 +1163,19 @@ void DumpJsonParser::UpdateNeedDumpKernels(const session::KernelGraph &kernel_gr
 
 bool DumpJsonParser::IsDeviceStatHighPrecisionMode() const { return device_stat_precision_mode_ == kHighPrecision; }
 
+void DumpJsonParserParse() { DumpJsonParser::GetInstance().Parse(); }
+bool AsyncDumpEnabled() { return DumpJsonParser::GetInstance().async_dump_enabled(); }
+bool E2eDumpEnabled() { return DumpJsonParser::GetInstance().e2e_dump_enabled(); }
+std::string DumpJsonParserPath() { return DumpJsonParser::GetInstance().path(); }
+bool InputNeedDump() { return DumpJsonParser::GetInstance().InputNeedDump(); }
+void CopyDumpJsonToDir(uint32_t rank_id) { return DumpJsonParser::GetInstance().CopyDumpJsonToDir(rank_id); }
+void CopyMSCfgJsonToDir(uint32_t rank_id) { return DumpJsonParser::GetInstance().CopyMSCfgJsonToDir(rank_id); }
+void DumpJsonParserFinalize() { return DumpJsonParser::GetInstance().Finalize(); }
+void UpdateNeedDumpKernels(const session::KernelGraph &kernel_graph) {
+  return DumpJsonParser::GetInstance().UpdateNeedDumpKernels(kernel_graph);
+}
+bool DumpJsonParserDumpToFile(const std::string &filename, const void *data, size_t len, const ShapeVector &shape,
+                              TypeId type) {
+  return DumpJsonParser::GetInstance().DumpToFile(filename, data, len, shape, type);
+}
 }  // namespace mindspore

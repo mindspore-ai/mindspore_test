@@ -20,6 +20,11 @@
 #include "tools/silent_detect/silent_detect_config_parser.h"
 #include "tools/tensor_dump/tensordump_utils.h"
 #include "tools/summary/summary.h"
+#include "tools/data_dump/dump_json_parser.h"
+#include "tools/data_dump/e2e_dump.h"
+#include "tools/data_dump/dump_utils.h"
+#include "tools/data_dump/debugger/proto_exporter.h"
+#include "tools/data_dump/debugger/debugger.h"
 namespace mindspore {
 namespace tools {
 
@@ -37,5 +42,24 @@ REGISTER_COMMON_CALLBACK(IsSilentDetectEnable);
 REGISTER_COMMON_CALLBACK(RecurseSetSummaryNodesForAllGraphs);
 REGISTER_COMMON_CALLBACK(SummaryTensor);
 REGISTER_COMMON_CALLBACK(RegisterSummaryCallBackFunc);
+REGISTER_COMMON_CALLBACK(DumpJsonParserParse);
+REGISTER_COMMON_CALLBACK(AsyncDumpEnabled);
+REGISTER_COMMON_CALLBACK(E2eDumpEnabled);
+REGISTER_COMMON_CALLBACK(DumpJsonParserPath);
+REGISTER_COMMON_CALLBACK(GenerateDumpPath);
+REGISTER_COMMON_CALLBACK(CopyDumpJsonToDir);
+REGISTER_COMMON_CALLBACK(CopyMSCfgJsonToDir);
+REGISTER_COMMON_CALLBACK(DumpJsonParserFinalize);
+REGISTER_COMMON_CALLBACK(UpdateNeedDumpKernels);
+REGISTER_COMMON_CALLBACK(DumpJsonParserDumpToFile);
+REGISTER_COMMON_CALLBACK(InputNeedDump);
+#ifdef ENABLE_DEBUGGER
+REGISTER_COMMON_CALLBACK(DumpIRProtoWithSrcInfoDebugWholeStack);
+REGISTER_COMMON_CALLBACK(DebuggerReset);
+REGISTER_COMMON_CALLBACK(DebuggerInit);
+REGISTER_COMMON_CALLBACK(DumpInGraphCompiler);
+REGISTER_COMMON_CALLBACK(DebuggerBackendEnabled);
+REGISTER_COMMON_CALLBACK(DebuggerLoadGraphs);
+#endif
 }  // namespace tools
 }  // namespace mindspore

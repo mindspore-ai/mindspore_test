@@ -22,16 +22,16 @@
 #include <algorithm>
 #include "utils/log_adapter.h"
 #include "tools/data_dump/cpu_e2e_dump.h"
-#include "include/backend/debug/data_dump/e2e_dump.h"
+#include "tools/data_dump/e2e_dump.h"
 #include "utils/ms_context.h"
 #ifdef ENABLE_DEBUGGER
-#include "include/backend/debug/debugger/debugger.h"
+#include "tools/data_dump/debugger/debugger.h"
 #include "tools/data_dump/debugger/debugger_utils.h"
 #include "tools/data_dump/device_statistic/mem_manager.h"
 #endif
 #include "include/utils/callback.h"
 #include "include/utils/common.h"
-#include "include/backend/debug/data_dump/dump_json_parser.h"
+#include "tools/data_dump/dump_json_parser.h"
 #include "tools/silent_detect/checksum/checksum.h"
 #include "include/utils/anfalgo.h"
 #include "tools/tensor_dump/tensordump_utils.h"

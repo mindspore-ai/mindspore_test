@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_MINDSPORE_CCSRC_DEBUG_DUMP_JSON_PARSER_H_
-#define MINDSPORE_MINDSPORE_CCSRC_DEBUG_DUMP_JSON_PARSER_H_
+#ifndef MINDSPORE_MINDSPORE_CCSRC_TOOLS_DATA_DUMP_DUMP_JSON_PARSER_H_
+#define MINDSPORE_MINDSPORE_CCSRC_TOOLS_DATA_DUMP_DUMP_JSON_PARSER_H_
 
 #include <string>
 #include <map>
@@ -27,14 +27,14 @@
 #include "nlohmann/json.hpp"
 #include "utils/ms_utils.h"
 #include "include/backend/kernel_graph.h"
-#include "include/backend/visible.h"
+#include "tools/visible.h"
 
 namespace mindspore {
 void CheckJsonUnsignedType(const nlohmann::json &content, const std::string &key);
 void CheckJsonStringType(const nlohmann::json &content, const std::string &key);
 void CheckJsonArrayType(const nlohmann::json &content, const std::string &key);
 
-class BACKEND_COMMON_EXPORT DumpJsonParser {
+class TOOLS_EXPORT DumpJsonParser {
  public:
   static DumpJsonParser &GetInstance() {
     std::call_once(instance_mutex_, []() {
@@ -196,5 +196,15 @@ class BACKEND_COMMON_EXPORT DumpJsonParser {
   void HandleHostStatisticCategory(const nlohmann::json::const_iterator user_statistics,
                                    std::string *unsupported_items);
 };
+bool InputNeedDump();
+void DumpJsonParserParse();
+void CopyDumpJsonToDir(uint32_t);
+void CopyMSCfgJsonToDir(uint32_t);
+bool E2eDumpEnabled();
+bool AsyncDumpEnabled();
+std::string DumpJsonParserPath();
+void DumpJsonParserFinalize();
+void UpdateNeedDumpKernels(const session::KernelGraph &);
+bool DumpJsonParserDumpToFile(const std::string &, const void *, size_t, const ShapeVector &, TypeId);
 }  // namespace mindspore
-#endif  // MINDSPORE_MINDSPORE_CCSRC_DEBUG_DUMP_JSON_PARSER_H_
+#endif  // MINDSPORE_MINDSPORE_CCSRC_TOOLS_DATA_DUMP_DUMP_JSON_PARSER_H_

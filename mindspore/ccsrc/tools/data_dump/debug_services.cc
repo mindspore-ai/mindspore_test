@@ -31,7 +31,7 @@
 
 #include "ir/tensor_new.h"
 #include "include/utils/common.h"
-#include "include/backend/debug/debugger/debugger.h"
+#include "tools/data_dump/debugger/debugger.h"
 #include "mindspore/ccsrc/utils/ir_dump/anf_dump_utils.h"
 #include "include/utils/anfalgo.h"
 #include "tools/data_dump/utils.h"
@@ -40,7 +40,7 @@
 #include "utils/file_utils.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "utils/ms_utils.h"
-#include "include/backend/debug/data_dump/dump_json_parser.h"
+#include "tools/data_dump/dump_json_parser.h"
 
 namespace mindspore {
 

@@ -210,6 +210,8 @@ mindspore/mindspore/ops/kernel/cpu/mkldnn/pooling_cpu_kernel_nnacl.cc:mindspore:
 mindspore/mindspore/ccsrc/frontend/ir/tensor_py.cc:mindspore::tensor::TensorPybind::Item
 mindspore/mindspore/ccsrc/frontend/ir/tensor_py.cc:mindspore::tensor::GetItemForToList
 mindspore/mindspore/python/mindspore/nn/cell.py:_load_from_state_dict
+mindspore/mindspore/ccsrc/runtime/core/graph_scheduler/base/graph_compiler.cc:mindspore::runtime::GraphCompiler::CompileGraphImpl
+mindspore/mindspore/ccsrc/runtime/core/graph_scheduler/base/graph_scheduler.cc:mindspore::runtime::GraphScheduler::LinkControlArrowByAutoMonad
 
 # AICPU migration
 mindspore/mindspore/ops/kernel/ascend/aicpu/aicpu_ops/cpu_kernel/ms_kernel/bias_add_grad.cc:aicpu::BiasAddGradCpuKernel::BiasAddGradCompute

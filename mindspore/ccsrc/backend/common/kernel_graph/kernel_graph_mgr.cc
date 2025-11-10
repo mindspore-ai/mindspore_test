@@ -35,8 +35,6 @@
 #include "utils/trace_info.h"
 #include "ir/func_graph_cloner.h"
 #include "ir/tensor_new.h"
-#include "include/backend/debug/data_dump/dump_json_parser.h"
-#include "include/backend/debug/data_dump/e2e_dump.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/utils/compile_cache_context.h"
 #include "include/utils/config_manager.h"

@@ -17,7 +17,7 @@
 #include <memory>
 #include <string>
 #include "utils/ms_context.h"
-#include "include/backend/visible.h"
+#include "tools/visible.h"
 #include "ir/anf.h"
 #include "include/runtime/hardware_abstract/device_context/device_context.h"
 

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "include/backend/debug/data_dump/dump_utils.h"
+#include "tools/data_dump/dump_utils.h"
 #include <dirent.h>
 #ifdef ENABLE_DEBUGGER
 #include <sys/stat.h>
@@ -25,13 +25,14 @@
 #include <queue>
 #include <memory>
 #include <algorithm>
+#include <functional>
 
 #include "mindspore/core/include/ir/tensor_new.h"
 #include "utils/ms_context.h"
-#include "include/backend/debug/data_dump/dump_json_parser.h"
+#include "tools/data_dump/dump_json_parser.h"
 #ifdef ENABLE_DEBUGGER
-#include "include/backend/debug/debugger/debugger.h"
-#include "include/backend/debug/tensor_data.h"
+#include "tools/data_dump/debugger/debugger.h"
+#include "tools/tensor_data.h"
 #endif
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/utils/anfalgo.h"

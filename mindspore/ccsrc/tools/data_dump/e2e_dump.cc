@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "include/backend/debug/data_dump/e2e_dump.h"
+#include "tools/data_dump/e2e_dump.h"
 
 #include <unistd.h>
 #include <sstream>
@@ -26,7 +26,7 @@
 #include <vector>
 #include <string>
 #include "ir/tensor_new.h"
-#include "include/backend/debug/data_dump/dump_json_parser.h"
+#include "tools/data_dump/dump_json_parser.h"
 #include "mindspore/ccsrc/utils/ir_dump/anf_dump_utils.h"
 #include "include/utils/common.h"
 #include "include/utils/convert_utils.h"
@@ -35,7 +35,7 @@
 #include "utils/ms_context.h"
 #include "include/utils/config_manager.h"
 #include "utils/file_utils.h"
-#include "include/backend/debug/data_dump/tensor_stat_dump.h"
+#include "tools/data_dump/tensor_stat_dump.h"
 #include "tools/data_dump/common/csv_writer.h"
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "tools/data_dump/debugger/debugger_utils.h"
@@ -43,7 +43,7 @@
 #include "ops/op_def.h"
 #include "tools/data_dump/debug_services.h"
 #include "tools/data_dump/tensor_load.h"
-#include "include/backend/debug/debugger/debugger.h"
+#include "tools/data_dump/debugger/debugger.h"
 #endif
 
 namespace mindspore {

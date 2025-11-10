@@ -22,7 +22,7 @@ list(APPEND MINDSPORE_PROTO_LIST ${DISTRIBUTED_CLUSTER_TOPOLOGY_SRCS})
 
 if(ENABLE_DEBUGGER)
     # debugger: compile proto files
-    include_directories("${CMAKE_BINARY_DIR}/tools/debugger")
+    include_directories("${CMAKE_BINARY_DIR}/tools/data_dump/debugger")
     file(
         GLOB_RECURSE DEBUGGER_PROTO_LIST
         RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}

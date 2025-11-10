@@ -26,9 +26,9 @@
 #include <deque>
 #include <algorithm>
 #include "ir/tensor_new.h"
-#include "include/backend/debug/tensor_data.h"
-#include "include/backend/debug/data_dump/dump_json_parser.h"
-#include "include/backend/debug/data_dump/dump_utils.h"
+#include "tools/tensor_data.h"
+#include "tools/data_dump/dump_json_parser.h"
+#include "tools/data_dump/dump_utils.h"
 
 namespace mindspore {
 class TensorLoader {

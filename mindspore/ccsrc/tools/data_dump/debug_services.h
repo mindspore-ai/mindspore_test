@@ -30,7 +30,7 @@
 #include <sstream>
 #include <utility>
 #include "tools/data_dump/tensor_load.h"
-#include "include/backend/debug/tensor_data.h"
+#include "tools/tensor_data.h"
 #include "base/float16.h"
 
 namespace mindspore {

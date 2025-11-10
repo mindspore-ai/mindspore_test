@@ -117,6 +117,7 @@ target_link_libraries(mindspore_ms_backend PRIVATE mindspore_core mindspore_ops
         mindspore_runtime_utils)
 
 target_link_libraries(mindspore_backend_common PRIVATE mindspore::securec)
+target_link_libraries(mindspore_tools PRIVATE mindspore::securec)
 target_link_libraries(mindspore_ms_backend PRIVATE mindspore::securec)
 if(CMAKE_SYSTEM_NAME MATCHES "Darwin")
     set_target_properties(mindspore_backend_common PROPERTIES MACOSX_RPATH ON)
@@ -130,6 +131,7 @@ endif()
 
 if(NOT WIN32)
     target_link_libraries(mindspore_backend_common PRIVATE mindspore::ssl mindspore::crypto)
+    target_link_libraries(mindspore_tools PRIVATE mindspore::ssl mindspore::crypto)
 endif()
 
 if(ENABLE_DEBUGGER)
