@@ -145,7 +145,7 @@ class AutoGradImplGenerator(BaseGenerator):
                                  "select_ext_view", "transpose_ext_view",
                                  "split_tensor", "split_with_size",
                                  "expand_dims_view", "squeeze", "transpose_view",
-                                ]:
+                                 "split_tensor_view", "split_with_size_view"]:
             do_view_grad_function_body_tpl = self.DO_VIEW_CUSTOMIZE_GRAD_FUNCTION_BODY_TEMPLATE
             convert_basic_to_value = ""
         else:

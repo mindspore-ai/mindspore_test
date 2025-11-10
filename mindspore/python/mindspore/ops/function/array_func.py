@@ -971,7 +971,7 @@ def chunk_ext(input, chunks, dim=0):
 
     Raises:
         TypeError: If argument `input` is not Tensor.
-        TypeError: The sum of `chunks` is not int.
+        TypeError: If argument `chunks` is not int.
         TypeError: If argument `dim` is not int.
         ValueError: If argument `dim` is out of range of :math:`[-input.ndim, input.ndim)` .
         ValueError: If argument `chunks` is not positive number.
@@ -1012,7 +1012,7 @@ def chunk_view(input, chunks, dim=0):
 
     Raises:
         TypeError: If argument `input` is not Tensor.
-        TypeError: The sum of `chunks` is not int.
+        TypeError: If argument `chunks` is not int.
         TypeError: If argument `dim` is not int.
         ValueError: If argument `dim` is out of range of :math:`[-input.ndim, input.ndim)` .
         ValueError: If argument `chunks` is not positive number.
@@ -4548,6 +4548,55 @@ def split_ext(tensor, split_size, dim=0):
     else:
         raise TypeError(f"Type of Argument `split_size` should be integer, tuple(int) or list(int), "
                         f"but got {type(split_size)}")
+    return res
+
+
+def split_view(tensor, split_size_or_sections, dim=0):
+    """
+    Splits the Tensor into chunks along the given dim.
+
+    Args:
+        tensor (Tensor): A Tensor to be divided.
+        split_size_or_sections (Union[int, tuple(int), list(int)]):
+            If `split_size_or_sections` is an int type, `tensor` will be split into equally sized chunks,
+            each chunk with size `split_size_or_sections`. Last chunk will be smaller than `split_size_or_sections`
+            if `tensor.shape[dim]` is not divisible by `split_size_or_sections`.
+            If `split_size_or_sections` is a list type, then `tensor` will be split into len(split_size_or_sections)
+            chunks with sizes `split_size_or_sections` along the given `dim`.
+        dim (int, optional): The dim along which to split. Default: ``0`` .
+
+    Returns:
+        A tuple of sub-tensors.
+
+    Raises:
+        TypeError: If argument `tensor` is not Tensor.
+        TypeError: If argument `dim` is not int.
+        ValueError: If argument `dim` is out of range of [-tensor.ndim, tensor.ndim).
+        TypeError: If each element in `split_size_or_sections` is not integer.
+        TypeError: If argument `split_size_or_sections` is not int, tuple(int) or list(int).
+        ValueError: The sum of `split_size_or_sections` is not equal to tensor.shape[dim].
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import numpy as np
+        >>> import mindspore
+        >>> from mindspore import Tensor
+        >>> input_x = np.arange(9).astype("float32")
+        >>> output = mindspore.ops.function.array_func.split_view(Tensor(input_x), 3)
+        >>> print(output)
+        (Tensor(shape=[3], dtype=Float32, value= [ 0.00000000e+00,  1.00000000e+00,  2.00000000e+00]),
+         Tensor(shape=[3], dtype=Float32, value= [ 3.00000000e+00,  4.00000000e+00,  5.00000000e+00]),
+         Tensor(shape=[3], dtype=Float32, value= [ 6.00000000e+00,  7.00000000e+00,  8.00000000e+00]))
+    """
+    if isinstance(split_size_or_sections, int):
+        res = ops.auto_generate.split_tensor_view_op(tensor, split_size_or_sections, dim)
+    elif isinstance(split_size_or_sections, (list, tuple)):
+        res = ops.auto_generate.split_with_size_view_op(tensor, split_size_or_sections, dim)
+    else:
+        raise TypeError(f"Type of Argument `split_size_or_sections` should be integer, tuple(int) or list(int), "
+                        f"but got {type(split_size_or_sections)}")
     return res
 
 

@@ -40,6 +40,9 @@ TensorStorageInfoPtrList SplitWithSizeStridesCalc(const std::vector<int64_t> &cu
                                                   const std::vector<int64_t> &cur_strides,
                                                   const TensorStorageInfoPtr &cur_storage_info,
                                                   const std::vector<int64_t> &split_size, const int64_t &dim) {
+  MS_LOG(DEBUG) << "SplitWithSize: input shape " << cur_shape << ", input stride " << cur_strides << ", storage_info "
+                << (cur_storage_info != nullptr ? cur_storage_info->ToString() : "null") << ", split_size "
+                << split_size << ", dim " << dim;
   auto [ori_shape, ori_strides, current_offset] = GetOriShapeStridesAndOffset(cur_shape, cur_strides, cur_storage_info);
 
   auto rank = SizeToLong(cur_shape.size());
@@ -65,6 +68,7 @@ TensorStorageInfoPtrList SplitWithSizeStridesCalc(const std::vector<int64_t> &cu
     bool is_contiguous = IsContiguous(slice_shape, cur_strides);
     auto new_storage_info = std::make_shared<TensorStorageInfo>(std::move(slice_shape), cur_strides, new_storage_offset,
                                                                 ori_shape, ori_strides, is_contiguous);
+    MS_LOG(DEBUG) << "SplitWithSize: output[" << i << "] storage_info " << new_storage_info->ToString();
     storage_info_list.push_back(std::move(new_storage_info));
   }
 

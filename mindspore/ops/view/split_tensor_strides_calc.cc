@@ -27,6 +27,9 @@ TensorStorageInfoPtrList SplitTensorStridesCalc(const std::vector<int64_t> &old_
                                                 const std::vector<int64_t> &old_strides,
                                                 const TensorStorageInfoPtr &old_storage_info, const int64_t &split_size,
                                                 const int64_t &dim) {
+  MS_LOG(DEBUG) << "SplitTensor: input shape " << old_shape << ", input stride " << old_strides << ", storage_info "
+                << (old_storage_info != nullptr ? old_storage_info->ToString() : "null") << ", split_size "
+                << split_size << ", dim " << dim;
   auto [ori_shape, ori_strides, current_offset] = GetOriShapeStridesAndOffset(old_shape, old_shape, old_storage_info);
 
   auto ndim = old_shape.size();
@@ -63,6 +66,7 @@ TensorStorageInfoPtrList SplitTensorStridesCalc(const std::vector<int64_t> &old_
     bool is_contiguous = IsContiguous(slice_shape, old_strides);
     auto new_storage_info = std::make_shared<TensorStorageInfo>(std::move(slice_shape), old_strides, new_storage_offset,
                                                                 ori_shape, ori_strides, is_contiguous);
+    MS_LOG(DEBUG) << "SplitTensor: output[" << idx << "] storage_info " << new_storage_info->ToString();
     storage_info_list.push_back(std::move(new_storage_info));
   }
 
