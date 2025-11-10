@@ -222,7 +222,7 @@ from mindspore.ops.auto_generate import index_select_ext as index_select
 # 82
 from mindspore.ops.auto_generate import cummin_ext as cummin
 # 83
-from mindspore.ops.auto_generate import narrow
+from mindspore.ops.auto_generate import narrow_view as narrow
 # 84
 
 # 85
