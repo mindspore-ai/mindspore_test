@@ -19,7 +19,7 @@
 #include <functional>
 #include "ir/tensor.h"
 #include "view/transpose_ext_view_strides_calc.h"
-#include "kernel/ascend/aclnn/kernel_mod_impl/customize/view/view_utils.h"
+#include "kernel/host/view/view_utils.h"
 
 namespace mindspore {
 namespace kernel {

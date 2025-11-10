@@ -51,7 +51,7 @@ if(ENABLE_CPU)
     target_link_libraries(mindspore_cpu PRIVATE mindspore_core mindspore_ops mindspore_common mindspore_ops_cpu
         mindspore_backend_common mindspore_hardware_abstract mindspore_profiler mindspore_memory_pool proto_input
         mindspore_runtime_utils mindspore::dnnl mindspore::pybind11_module
-        mindspore::securec)
+        mindspore::securec mindspore_ops_host)
     if(CMAKE_SYSTEM_NAME MATCHES "Darwin")
         set_target_properties(mindspore_cpu PROPERTIES INSTALL_RPATH @loader_path:@loader_path/plugin)
     else()

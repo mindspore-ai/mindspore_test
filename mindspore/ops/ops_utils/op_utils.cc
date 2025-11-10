@@ -37,6 +37,7 @@
 #include "ir/value.h"
 #include "ir/kernel_tensor_value.h"
 #include "mindapi/base/type_id.h"
+#include "mindspore/core/include/utils/anf_utils.h"
 #include "mindapi/helper.h"
 #include "primitive/op_name.h"
 #include "include/op_def.h"
@@ -1158,5 +1159,11 @@ TypeId ConvertTypeBetweenTensorAndScalar(const TypeId &tensor_type_id, const Typ
 }
 
 size_t GetHashId(int a, int b) { return a < b ? hash_combine(a, b) : hash_combine(b, a); }
+
+bool IsEnableHostNode(const AnfNodePtr &node) {
+  OpDefPtr op_def = GetOpDef(AnfUtils::GetCNodeName(node));
+  bool is_view = op_def != nullptr ? op_def->is_graph_view_ : false;
+  return is_view;
+}
 }  // namespace ops
 }  // namespace mindspore

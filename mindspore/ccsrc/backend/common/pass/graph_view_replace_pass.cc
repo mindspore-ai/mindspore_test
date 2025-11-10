@@ -98,7 +98,7 @@ void CreateViewNode(const std::string &name, const AnfNodePtr &origin_node,
   view_node->set_abstract(origin_node->abstract());
   view_node->set_kernel_info(origin_node->kernel_info_ptr());
   const auto &kernel_build_info = AnfAlgo::GetSelectKernelBuildInfo(view_node);
-  kernel_build_info->set_kernel_type(OPAPI_KERNEL);
+  kernel_build_info->set_kernel_type(HOST_KERNEL);
   view_node->AddAttr("enable_view", MakeValue(true));
   MakeRefPairForNode(view_node);
   // Replace node
