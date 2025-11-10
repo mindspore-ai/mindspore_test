@@ -131,6 +131,7 @@ void SavedTensor::CheckVersion(const std::string &grad_node_name) const {
 }
 
 ValuePtr ValueToSavedValue(const ValuePtr &input, size_t seq_nr, bool is_output, bool is_view_inplace) {
+  MS_EXCEPTION_IF_NULL(input);
   if (input->isa<tensor::Tensor>()) {
     auto tensor = input->cast<tensor::TensorPtr>();
     if (!tensor->used_in_bprop_graph()) {
@@ -172,6 +173,7 @@ ValuePtr ValueToSavedValue(const ValuePtr &input, size_t seq_nr, bool is_output,
 }
 
 ValuePtr SavedValueToValue(const ValuePtr &saved_value, const BackwardNodePtr &grad_node) {
+  MS_EXCEPTION_IF_NULL(saved_value);
   if (saved_value->isa<SavedTensor>()) {
     return saved_value->cast<SavedTensorPtr>()->UnWrap(grad_node);
   }

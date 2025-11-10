@@ -480,3 +480,23 @@ def test_tensor_hook_with_reduce_scatter():
     """
     return_code = os.system("mpirun --allow-run-as-root -n 8 pytest -s test_tensor_hook_reduce_scatter.py")
     assert return_code == 0
+
+
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
+def test_tensor_backward_hook_with_jit():
+    """
+    Feature: Tensor hook
+    Description: register a tensor hook decorated with jit.
+    Expectation: Raise TypeError.
+    """
+
+    @ms.jit
+    def hook_fn_with_jit(grad):
+        return grad * 2.0
+
+    x = ms.Tensor(1.0)
+    with pytest.raises(TypeError):
+        x.register_hook(hook_fn_with_jit)
