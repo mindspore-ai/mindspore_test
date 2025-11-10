@@ -32,6 +32,9 @@ from mindspore.ops.auto_generate.gen_ops_prim import expand_dims_view_op
 
 def _configure_and_build_mock_plugin() -> str:
     """Configure and build the mock op plugin and return the built library path."""
+    system = platform.system().lower()
+    if system == "windows": # windows is not supported for now
+        return ""
     this_dir = Path(__file__).resolve().parent
     plugin_src_dir = this_dir / "mock_op_plugin"
     build_dir = plugin_src_dir / "build"
@@ -40,8 +43,6 @@ def _configure_and_build_mock_plugin() -> str:
     repo_root = ms.__path__[0]
     # include path for custom_kernel_input_info.h
     include_dir = os.path.join(repo_root, "include", "mindspore", "ops", "kernel", "cpu", "custom", "kernel_mod_impl")
-
-    system = platform.system().lower()
 
     cmake_args = [
         "cmake",
@@ -115,7 +116,10 @@ def view_func(x):
     return out
 
 
-def test_cumsum(mode):
+@arg_mark(plat_marks=['cpu_linux', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
+@pytest.mark.parametrize('mode', ['kbk', 'pynative'])
+def test_normal_op(mode):
     """
     Feature: op_plugin kernel
     Description: Test op_plugin kernel
@@ -129,7 +133,10 @@ def test_cumsum(mode):
     assert np.allclose(output.asnumpy(), expect)
 
 
-def test_logical_and(mode):
+@arg_mark(plat_marks=['cpu_linux', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
+@pytest.mark.parametrize('mode', ['kbk', 'pynative'])
+def test_op_with_existing_cpu_kernelmod(mode):
     """
     Feature: op_plugin kernel
     Description: Test op_plugin kernel when normal cpu kernelmod exists
@@ -146,7 +153,10 @@ def test_logical_and(mode):
     assert np.allclose(output.asnumpy(), expect)
 
 
-def test_inplace_relu(mode):
+@arg_mark(plat_marks=['cpu_linux', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
+@pytest.mark.parametrize('mode', ['kbk', 'pynative'])
+def test_inplace_op(mode):
     """
     Feature: op_plugin kernel
     Description: Test op_plugin kernel for inplace op
@@ -158,8 +168,10 @@ def test_inplace_relu(mode):
     inplace_relu_forward_func(x)
     assert np.allclose(x.asnumpy(), expect)
 
-
-def test_view_feature(mode):
+@arg_mark(plat_marks=['cpu_linux', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
+@pytest.mark.parametrize('mode', ['pynative'])
+def test_view_op(mode):
     """
     Feature: op_plugin kernel
     Description: Test op_plugin kernel for view feature. Disabled for now
@@ -170,7 +182,26 @@ def test_view_feature(mode):
     expected_x_after_inplace_relu = np.maximum(x.asnumpy(), 0.0)
     expect_view = expected_x_after_inplace_relu.reshape(6, 1)
     view = view_func(x)
-    # TODO: fix the issue of view feature in op plugin
-    # assert np.allclose(x.asnumpy(), expected_x_after_inplace_relu)
-    # assert np.allclose(view.asnumpy(), expect_view)
+    assert np.allclose(x.asnumpy(), expected_x_after_inplace_relu)
+    assert np.allclose(view.asnumpy(), expect_view)
     assert expect_view.shape == view.shape
+
+@arg_mark(plat_marks=['cpu_linux', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
+@pytest.mark.parametrize('mode', ['pynative', 'kbk'])
+def test_noncontiguous_input_op(mode):
+    """
+    Feature: op_plugin kernel
+    Description: Test op_plugin kernel for noncontiguous input op
+    Expectation: Correct result.
+    """
+    set_mode(mode)
+    orig_x = np.random.randint(0, 2, size=(4, 4)) == 1
+    orig_y = np.random.randint(0, 2, size=(4, 4)) == 1
+    x_np = orig_x[1:, ::2]
+    y_np = orig_y[1:, ::2]
+    x_noncontiguous = Tensor(orig_x, ms.bool_)[1:, ::2]
+    y_noncontiguous = Tensor(orig_y, ms.bool_)[1:, ::2]
+    expect = np.logical_or(x_np, y_np)
+    output = logical_and_forward_func(x_noncontiguous, y_noncontiguous)
+    assert np.allclose(output.asnumpy(), expect)

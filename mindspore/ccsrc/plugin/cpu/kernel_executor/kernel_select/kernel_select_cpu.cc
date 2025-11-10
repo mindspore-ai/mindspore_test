@@ -737,7 +737,7 @@ std::pair<std::string, ExceptionType> SetKernelInfoWithMsg(const CNodePtr &kerne
     static std::once_flag once;
     std::call_once(once, callback::CommonCallback::GetInstance().GetCallback<void>(
                            "RegisterOpPluginKernels"));  // register op plugin kernels
-    static const auto &op_plugin_kernels = kernel::GetAllOpPluginKernelNames();
+    static const auto &op_plugin_kernels = kernel::op_plugin::GetAllOpPluginKernelNames();
     if (op_plugin_kernels.find(op_name) != op_plugin_kernels.end()) {
       UpdateCustomKernelBuildInfo(kernel_node, false);
       return {};

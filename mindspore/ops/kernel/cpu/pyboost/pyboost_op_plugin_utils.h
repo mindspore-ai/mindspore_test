@@ -136,8 +136,9 @@ std::enable_if_t<!has_int_or_vector_int_v<Args...>, std::vector<tensor::TensorPt
     const auto &output_address_info =
       PyBoostUtils::GetAddressInfo(device_context, op->stream_id(), {op->output_abs()}, outputs);
     std::vector<kernel::KernelTensor *> workspace_tensors;
-    auto op_plugin_param = CreateOpPluginParam(input_address_info.first, output_address_info.first, workspace_tensors);
-    auto ret = LaunchOpPluginKernel(op_name, &op_plugin_param);
+    auto op_plugin_param =
+      op_plugin::CreateOpPluginParam(input_address_info.first, output_address_info.first, workspace_tensors);
+    auto ret = op_plugin::LaunchOpPluginKernel(op_name, &op_plugin_param);
     if (ret != 0) {
       MS_LOG(EXCEPTION) << "Launch op plugin kernel failed, op name: " << op_name << ", return code: " << ret;
     }
