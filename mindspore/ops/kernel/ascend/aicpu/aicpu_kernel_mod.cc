@@ -38,6 +38,7 @@
 #include "plugin/ascend/res_manager/symbol_interface/acl_rt_symbol.h"
 #include "plugin/ascend/res_manager/symbol_interface/symbol_utils.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
+#include "kernel/ascend/aclop/kernel_mod_impl/acl_kernel/getnext_kernel_mod.h"
 
 namespace mindspore {
 namespace kernel {
@@ -241,7 +242,7 @@ void AicpuOpKernelMod::CreateCpuKernelInfo(const std::vector<AddressPtr> &inputs
 
 void AicpuOpKernelMod::CloseTdtWingManQueue() {
   if (IsGetNextOp(kernel_name_) && !is_dynamic_shape_) {
-    device::CloseTdtWingManQueue(primitive_);
+    kernel::CloseTdtWingManQueue(primitive_);
   }
 }
 
@@ -254,7 +255,7 @@ bool AicpuOpKernelMod::Init(const std::vector<KernelTensor *> &inputs, const std
 
 int AicpuOpKernelMod::Resize(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) {
   if (IsGetNextOp(kernel_name_)) {
-    auto wingman_queue = device::GetTdtWingManQueue(primitive_);
+    auto wingman_queue = kernel::GetTdtWingManQueue(primitive_);
     MS_EXCEPTION_IF_NULL(wingman_queue);
     std::vector<device::DataQueueItem> data;
     RetryPeakItemFromDataQueue(nullptr, wingman_queue, &data);

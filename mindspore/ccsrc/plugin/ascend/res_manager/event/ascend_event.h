@@ -57,11 +57,5 @@ class ASCEND_RES_MANAGER_EXPORT AscendEvent : public DeviceEvent {
   bool event_destroyed_{false};
   bool has_flag_{false};
 };
-
-class AscendTimeEvent : public AscendEvent {
- public:
-  AscendTimeEvent();
-  ~AscendTimeEvent() override = default;
-};
 }  // namespace mindspore::device::ascend
 #endif  // MINDSPORE_ASCEND_EVENT_H

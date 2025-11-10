@@ -16,7 +16,9 @@
 #ifndef MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_ACL_GETNEXT_KERNEL_MOD_H_
 #define MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_ACL_GETNEXT_KERNEL_MOD_H_
 #include <vector>
+#include <memory>
 #include "kernel/ascend/aclop/kernel_mod_impl/acl_kernel_mod.h"
+#include "include/runtime/hardware_abstract/data_queue/blocking_queue.h"
 
 namespace mindspore {
 namespace kernel {
@@ -38,6 +40,11 @@ class GetNextAclKernelMod : public AclKernelMod {
   bool Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
               const std::vector<KernelTensor *> &outputs, void *stream_ptr) override;
 };
+
+std::shared_ptr<device::BlockingQueue> GetTdtWingManQueue(const PrimitivePtr &prim);
+std::shared_ptr<device::BlockingQueue> GetTdtWingManQueue(const std::shared_ptr<AnfNode> &node);
+void CloseTdtWingManQueue(const PrimitivePtr &prim);
+void CloseTdtWingManQueue(const std::shared_ptr<AnfNode> &node);
 }  // namespace kernel
 }  // namespace mindspore
 

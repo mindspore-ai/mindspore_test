@@ -39,7 +39,6 @@ struct MemUceInfo {
   std::vector<aclrtMemUceInfo> info;
   size_t retSize = 0;
 };
-std::string GetCurrentDir();
 
 class ASCEND_RES_MANAGER_EXPORT PinMemoryAllocator : public AddressAllocator {
  public:
