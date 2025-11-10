@@ -12,9 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
-"""
-Collate module.
-"""
+"""Collate module."""
 
 import collections
 import copy
@@ -31,8 +29,9 @@ from mindspore.common import float64, Tensor
 # O: Python object type.
 np_str_obj_array_pattern = re.compile(r"[SaUO]")
 
-DEFAULT_COLLATE_ERR_MSG_FORMAT = ("default_collate: batch must contain tensors, numpy arrays, numbers, "
-                                  "dicts or lists; found {}")
+DEFAULT_COLLATE_ERR_MSG_FORMAT = (
+    "default_collate: batch must contain tensors, numpy arrays, numbers, dicts or lists; found {}"
+)
 
 
 def default_convert(data: Any) -> Any:
@@ -77,7 +76,6 @@ def default_convert(data: Any) -> Any:
 
     elem_type = type(data)
 
-    # return if tensor
     if isinstance(data, Tensor):
         return data
 
@@ -128,9 +126,9 @@ def default_convert(data: Any) -> Any:
 
 
 def collate(
-        batch: list,
-        *,
-        collate_fn_map: Optional[dict[Union[type, tuple[type, ...]], Callable]] = None,
+    batch: list,
+    *,
+    collate_fn_map: Optional[dict[Union[type, tuple[type, ...]], Callable]] = None,
 ) -> Any:
     """
     Collate the input batch of data by the appropriate function for each element type selected from the type
@@ -174,8 +172,7 @@ def collate(
         >>> collate([0, 1, 2], collate_fn_map=collate_map)
         Tensor(shape=[3], dtype=Int64, value= [0, 1, 2])
         >>>
-        >>> collate([{"data": 0, "label": 2},
-        ...          {"data": 1, "label": 3}], collate_fn_map=collate_map)
+        >>> collate([{"data": 0, "label": 2}, {"data": 1, "label": 3}], collate_fn_map=collate_map)
         {'data': Tensor(shape=[2], dtype=Int64, value= [0, 1]), 'label': Tensor(shape=[2], dtype=Int64, value= [2, 3])}
         >>>
         >>> collate([(0, 3), (1, 4), (2, 5)], collate_fn_map=collate_map)
@@ -214,12 +211,13 @@ def collate(
         it = iter(batch)
         elem_size = len(next(it))
         if not all(len(elem) == elem_size for elem in it):
-            raise RuntimeError("each element in list of batch should be of equal size")
+            raise RuntimeError("each element in list of batch must be of equal size")
         transposed = list(zip(*batch))  # It may be accessed twice, so we use a list.
 
         if isinstance(elem, tuple):
-            return [collate(samples, collate_fn_map=collate_fn_map)
-                    for samples in transposed]  # Backwards compatibility.
+            return [
+                collate(samples, collate_fn_map=collate_fn_map) for samples in transposed
+            ]  # Backwards compatibility.
 
         try:
             if isinstance(elem, collections.abc.MutableSequence):
@@ -239,22 +237,19 @@ def collate(
     raise TypeError(DEFAULT_COLLATE_ERR_MSG_FORMAT.format(elem_type))
 
 
+# pylint: disable=unused-argument
 def collate_tensor_fn(
-        batch,
-        *,
-        collate_fn_map: Optional[dict[Union[type, tuple[type, ...]], Callable]] = None,
+    batch,
+    *,
+    collate_fn_map: Optional[dict[Union[type, tuple[type, ...]], Callable]] = None,
 ):
-    """ Collate function for :class:`mindspore.Tensor`. """
+    """Collate function for :class:`mindspore.Tensor`."""
 
     return Tensor(np.stack(batch, axis=0))
 
 
-def collate_numpy_array_fn(
-        batch,
-        *,
-        collate_fn_map: Optional[dict[Union[type, tuple[type, ...]], Callable]] = None
-):
-    """ Collate function for :class:`numpy.ndarray`. """
+def collate_numpy_array_fn(batch, *, collate_fn_map: Optional[dict[Union[type, tuple[type, ...]], Callable]] = None):
+    """Collate function for :class:`numpy.ndarray`."""
 
     elem = batch[0]
     # array of string classes and object
@@ -264,41 +259,29 @@ def collate_numpy_array_fn(
 
 
 def collate_numpy_scalar_fn(
-        batch,
-        *,
-        collate_fn_map: Optional[dict[Union[type, tuple[type, ...]], Callable]] = None,
+    batch,
+    *,
+    collate_fn_map: Optional[dict[Union[type, tuple[type, ...]], Callable]] = None,
 ):
-    """ Collate function for :class:`numpy.number`, :class:`numpy.bool_` and :class:`numpy.object_`. """
+    """Collate function for :class:`numpy.number`, :class:`numpy.bool_` and :class:`numpy.object_`."""
 
     return Tensor(batch)
 
 
-def collate_float_fn(
-        batch,
-        *,
-        collate_fn_map: Optional[dict[Union[type, tuple[type, ...]], Callable]] = None
-):
-    """ Collate function for :class:`float`. """
+def collate_float_fn(batch, *, collate_fn_map: Optional[dict[Union[type, tuple[type, ...]], Callable]] = None):
+    """Collate function for :class:`float`."""
 
     return Tensor(batch, dtype=float64)
 
 
-def collate_int_fn(
-        batch,
-        *,
-        collate_fn_map: Optional[dict[Union[type, tuple[type, ...]], Callable]] = None
-):
-    """ Collate function for :class:`int`. """
+def collate_int_fn(batch, *, collate_fn_map: Optional[dict[Union[type, tuple[type, ...]], Callable]] = None):
+    """Collate function for :class:`int`."""
 
     return Tensor(batch)
 
 
-def collate_str_fn(
-        batch,
-        *,
-        collate_fn_map: Optional[dict[Union[type, tuple[type, ...]], Callable]] = None
-):
-    """ Collate function for :class:`str` and :class:`bytes`. """
+def collate_str_fn(batch, *, collate_fn_map: Optional[dict[Union[type, tuple[type, ...]], Callable]] = None):
+    """Collate function for :class:`str` and :class:`bytes`."""
 
     return batch
 
@@ -342,8 +325,7 @@ def default_collate(batch: list) -> Any:
         >>> default_collate([0, 1, 2])
         Tensor(shape=[3], dtype=Int64, value= [0, 1, 2])
         >>>
-        >>> default_collate([{"data": 0, "label": 2},
-        ...                  {"data": 1, "label": 3}])
+        >>> default_collate([{"data": 0, "label": 2}, {"data": 1, "label": 3}])
         {'data': Tensor(shape=[2], dtype=Int64, value= [0, 1]), 'label': Tensor(shape=[2], dtype=Int64, value= [2, 3])}
         >>>
         >>> default_collate([(0, 3), (1, 4), (2, 5)])

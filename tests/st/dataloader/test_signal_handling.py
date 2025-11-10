@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
+"""Test signal handling."""
 
 import ctypes
 import re
@@ -31,7 +32,7 @@ class SignalHandlingDataset(Dataset):
     def __init__(self, process_fn):
         self.process_fn = process_fn
         self.num_samples = 10
-        self.data = [idx for idx in range(self.num_samples)]
+        self.data = list(range(self.num_samples))
 
     def __getitem__(self, index):
         data = np.array(self.data[index], dtype=np.uint8)
@@ -46,7 +47,7 @@ class TestSignalHandler:
     Test signal handling.
     """
 
-    @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+    @arg_mark(plat_marks=["cpu_linux"], level_mark="level0", card_mark="onecard", essential_mark="essential")
     def test_segmentation_fault(self):
         """
         Test worker raises segmentation fault.
@@ -66,7 +67,7 @@ class TestSignalHandler:
             assert re.search("DataLoader worker .* exited unexpectedly", tb_info)
             assert re.search("Dataset worker process .* core dumped: Segmentation fault", tb_info)
 
-    @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+    @arg_mark(plat_marks=["cpu_linux"], level_mark="level0", card_mark="onecard", essential_mark="essential")
     def test_signal_abort(self):
         """
         Test worker raises abort.

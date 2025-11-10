@@ -19,6 +19,8 @@ from typing import Generic, Iterable, Iterator, TypeVar, Union
 
 import numpy as np
 
+from ._utils import check_type, check_positive
+
 _T_co = TypeVar("_T_co", covariant=True)
 
 
@@ -78,11 +80,11 @@ class RandomSampler(Sampler[int]):
     """
 
     def __init__(
-            self,
-            data_source,
-            replacement: bool = False,
-            num_samples: Union[int, None] = None,
-            generator=None,
+        self,
+        data_source,
+        replacement: bool = False,
+        num_samples: Union[int, None] = None,
+        generator=None,
     ) -> None:
         super().__init__(data_source)
         if not isinstance(replacement, bool):
@@ -100,6 +102,13 @@ class RandomSampler(Sampler[int]):
 
     @property
     def num_samples(self) -> int:
+        """
+        Get the number of samples to be drawn.
+
+        Returns:
+            int, the number of samples to be drawn.
+        """
+
         if self._num_samples is None:
             return len(self.data_source)
         return self._num_samples
@@ -119,7 +128,7 @@ class RandomSampler(Sampler[int]):
         else:
             for _ in range(self.num_samples // n):
                 yield from generator.permutation(n).tolist()
-            yield from generator.permutation(n).tolist()[:self.num_samples % n]
+            yield from generator.permutation(n).tolist()[: self.num_samples % n]
 
     def __len__(self) -> int:
         return self.num_samples
@@ -151,12 +160,9 @@ class BatchSampler(Sampler[list[int]]):
 
     def __init__(self, sampler: Union[Sampler, Iterable], batch_size: int, drop_last: bool) -> None:
         super().__init__()
-        if not isinstance(batch_size, int) or isinstance(batch_size, bool):
-            raise TypeError(f"batch_size must be int, but got: {type(batch_size).__name__}")
-        if batch_size <= 0:
-            raise ValueError(f"batch_size must be positive, but got batch_size = {batch_size}")
-        if not isinstance(drop_last, bool):
-            raise TypeError(f"drop_last must be bool, but got: {type(drop_last).__name__}")
+        check_type(batch_size, "batch_size", valid_type=int, invalid_type=bool)
+        check_positive(batch_size, "batch_size")
+        check_type(drop_last, "drop_last", valid_type=bool)
 
         self.sampler = sampler
         self.batch_size = batch_size
@@ -188,5 +194,6 @@ class InfiniteSampler(Sampler):
     """
 
     def __iter__(self):
+        # pylint: disable=infinite-loop
         while True:
             yield None

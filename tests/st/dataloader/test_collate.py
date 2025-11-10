@@ -12,18 +12,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
+"""Test collate function."""
 
 import collections
+from types import MappingProxyType
 
 import numpy as np
 import pytest
 
 import mindspore as ms
-from mindspore.dataset.dataloader import DataLoader, Dataset, default_convert, default_collate
+from mindspore.dataset.dataloader import DataLoader, Dataset, default_collate, default_convert
 from tests.mark_utils import arg_mark
 
 
 class ImmutableMapping(collections.abc.Mapping):
+    """
+    An immutable mapping.
+    """
 
     def __init__(self, data):
         self._data = data
@@ -39,6 +44,9 @@ class ImmutableMapping(collections.abc.Mapping):
 
 
 class UnsupportedMutableMapping(collections.abc.MutableMapping):
+    """
+    A mutable mapping that is not supported by the default collate function.
+    """
 
     def __init__(self, data):
         self._data = data
@@ -63,29 +71,55 @@ class UnsupportedMutableMapping(collections.abc.MutableMapping):
         raise TypeError("not support copy operation")
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+class MutableMappingWithExtraProperty(collections.abc.MutableMapping):
+    """A mutable mapping with some extra properties."""
+
+    def __init__(self, data, extra_property=None):
+        self._data = dict(data)
+        self.extra_property = extra_property
+
+    def __getitem__(self, key):
+        return self._data[key]
+
+    def __setitem__(self, key, value):
+        self._data[key] = value
+
+    def __delitem__(self, key):
+        del self._data[key]
+
+    def __iter__(self):
+        return iter(self._data)
+
+    def __len__(self):
+        return len(self._data)
+
+    def __eq__(self, other):
+        if not isinstance(other, type(self)):
+            return False
+        return self.extra_property == other.extra_property and self._data == other._data
+
+
+@arg_mark(plat_marks=["cpu_linux"], level_mark="level0", card_mark="onecard", essential_mark="essential")
 def test_default_convert_class_type():
     """
     Feature: Test default_convert function.
     Description: Test default_convert function with ImmutableMapping and UnsupportedMutableMapping.
     Expectation: The result is as expected.
     """
-
     dataloader1 = default_convert(ImmutableMapping({0: "a", 1: "b"}))
     print(dataloader1)
     dataloader2 = default_convert(UnsupportedMutableMapping({0: "x", 1: "y"}))
     print(dataloader2)
-    assert dataloader2 == {0: 'x', 1: 'y'}
+    assert dataloader2 == {0: "x", 1: "y"}
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=["cpu_linux"], level_mark="level0", card_mark="onecard", essential_mark="essential")
 def test_default_convert_common_type():
     """
     Feature: Test default_convert function.
     Description: Test default_convert function with Tensor, number, Type SaUO (byte, string, unicode, object).
     Expectation: The result is as expected.
     """
-
     # Tensor
     assert default_convert(ms.Tensor(1)) == ms.Tensor(1)
 
@@ -118,7 +152,11 @@ def test_default_convert_common_type():
     compare_dict(default_convert(data), data)
 
     data = {"a": np.array(1), "b": np.ones((2, 3)), "c": np.array([4, 5, 6])}
-    expected = {"a": ms.Tensor(data["a"]), "b": ms.Tensor(data["b"]), "c": ms.Tensor(data["c"])}
+    expected = {
+        "a": ms.Tensor(data["a"]),
+        "b": ms.Tensor(data["b"]),
+        "c": ms.Tensor(data["c"]),
+    }
     compare_dict(default_convert(data), expected)
 
     # list
@@ -126,7 +164,7 @@ def test_default_convert_common_type():
         assert len(l1) == len(l2)
         for v1, v2 in zip(l1, l2):
             if isinstance(v1, dict):
-                v1, v2 = v1["d"], v2['d']
+                v1, v2 = v1["d"], v2["d"]
             if isinstance(v1, ms.Tensor) and isinstance(v2, ms.Tensor):
                 assert (v1 == v2).all()
             else:
@@ -142,29 +180,37 @@ def test_default_convert_common_type():
     compare_seq(default_convert(data), expected)
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=["cpu_linux"], level_mark="level0", card_mark="onecard", essential_mark="essential")
 def test_default_collate():
     """
     Feature: Test default_collate function.
     Description: Test default_collate function with same type and different type.
     Expectation: The result is as expected.
     """
-
     # same type
-    inputs = [ms.Tensor(np.array(1, dtype=np.uint8)), ms.Tensor(np.array(0, dtype=np.uint8))]
+    inputs = [
+        ms.Tensor(np.array(1, dtype=np.uint8)),
+        ms.Tensor(np.array(0, dtype=np.uint8)),
+    ]
     assert (default_collate(inputs) == ms.Tensor([1, 0])).all()
 
     # different type, not support by ops
-    inputs = [ms.Tensor(np.array(1, dtype=np.uint8)), ms.Tensor(np.array(2, dtype=np.float32))]
+    inputs = [
+        ms.Tensor(np.array(1, dtype=np.uint8)),
+        ms.Tensor(np.array(2, dtype=np.float32)),
+    ]
     assert (default_collate(inputs) == ms.Tensor([1, 2])).all()
 
 
 class MyDataset(Dataset):
+    """
+    A map style dataset that returns as many samples as requested.
+    """
 
     def __init__(self, num_samples):
         super().__init__()
         self.num_samples = num_samples
-        self.data = [idx for idx in range(num_samples)]
+        self.data = list(range(num_samples))
 
     def __getitem__(self, index):
         return np.array(self.data[index])
@@ -173,7 +219,7 @@ class MyDataset(Dataset):
         return self.num_samples
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=["cpu_linux"], level_mark="level0", card_mark="onecard", essential_mark="essential")
 def test_collate_fn():
     """
     Feature: Test collate_fn function.
@@ -191,27 +237,161 @@ def test_collate_fn():
 
 
 class TestDefaultConvert:
-    """ Test default_convert function. """
+    """Test default_convert function."""
 
-    @pytest.mark.parametrize("data",
-                             (np.int8(-1), np.uint16(0), np.float32(3.14), np.bool_(True), np.complex64(1 + 2j)))
-    def test_type_should_convert(self, data):
+    @arg_mark(plat_marks=["cpu_linux"], level_mark="level0", card_mark="onecard", essential_mark="essential")
+    @pytest.mark.parametrize(
+        "data",
+        (
+            ms.Tensor(True, dtype=ms.bool),
+            ms.Tensor([0], dtype=ms.uint8),
+            ms.Tensor([[-1], [1]], dtype=ms.int32),
+            ms.Tensor([[[3.14], [-3.14]], [[3.14], [-3.14]]], dtype=ms.float32),
+            ms.Tensor([1 + 2j], dtype=ms.complex64),
+        ),
+    )
+    def test_convert_tensor(self, data):
+        """
+        Feature: Test default_convert function.
+        Description: Test default_convert function with Tensor.
+        Expectation: The result is unchanged.
+        """
+        result = default_convert(data)
+        assert isinstance(result, ms.Tensor)
+        np.testing.assert_equal(data.asnumpy(), result.asnumpy())
+
+    @arg_mark(plat_marks=["cpu_linux"], level_mark="level0", card_mark="onecard", essential_mark="essential")
+    @pytest.mark.parametrize(
+        "data",
+        (
+            np.bool_(True),
+            np.uint8(0),
+            np.int32(-1),
+            np.float32(3.14),
+            np.complex64(1 + 2j),
+        ),
+    )
+    def test_convert_numpy_scalar(self, data):
         """
         Feature: Test default_convert function.
         Description: Test default_convert function with numpy primitive type that should be converted.
         Expectation: The result is a Tensor.
         """
+        result = default_convert(data)
+        assert isinstance(result, ms.Tensor)
+        np.testing.assert_equal(data, result.asnumpy())
 
-        assert default_convert(data) == ms.Tensor(data)
-        assert isinstance(default_convert(data), ms.Tensor)
-
+    @arg_mark(plat_marks=["cpu_linux"], level_mark="level0", card_mark="onecard", essential_mark="essential")
     @pytest.mark.parametrize("data", (np.str_("abc"), np.bytes_(b"0xffff")))
-    def test_type_should_not_convert(self, data):
+    def test_convert_unsupported_numpy_scalar(self, data):
         """
         Feature: Test default_convert function.
         Description: Test default_convert function with numpy primitive type that should not be converted.
-        Expectation: The result is the same as the input.
+        Expectation: The result is unchanged.
+        """
+        result = default_convert(data)
+        assert isinstance(result, type(data))
+        assert result == data
+
+    @arg_mark(plat_marks=["cpu_linux"], level_mark="level0", card_mark="onecard", essential_mark="essential")
+    @pytest.mark.parametrize(
+        "data",
+        (
+            np.array([True], dtype=np.bool_),
+            np.array([0], dtype=np.uint8),
+            np.array([[-1], [1]], dtype=np.int32),
+            np.array([[[3.14], [-3.14]], [[3.14], [-3.14]]], dtype=np.float32),
+            np.array([1 + 2j], dtype=np.complex64),
+        ),
+    )
+    def test_convert_numpy_array(self, data):
+        """
+        Feature: Test default_convert function.
+        Description: Test default_convert function with numpy array that should be converted.
+        Expectation: The result is a Tensor.
+        """
+        result = default_convert(data)
+        assert isinstance(result, ms.Tensor)
+        np.testing.assert_equal(data, result.asnumpy())
+
+    @arg_mark(plat_marks=["cpu_linux"], level_mark="level0", card_mark="onecard", essential_mark="essential")
+    @pytest.mark.parametrize(
+        "data",
+        (
+            np.array([b"abc"], dtype=np.bytes_),
+            np.array(["abc"], dtype=np.str_),
+            np.array([{"data": "abc"}], dtype=np.object_),
+        ),
+    )
+    def test_convert_unsupported_numpy_array(self, data):
+        """
+        Feature: Test default_convert function.
+        Description: Test default_convert function with numpy array that should not be converted.
+        Expectation: The result is unchanged.
+        """
+        result = default_convert(data)
+        assert isinstance(result, type(data))
+        np.testing.assert_equal(data, result)
+
+    @arg_mark(plat_marks=["cpu_linux"], level_mark="level0", card_mark="onecard", essential_mark="essential")
+    @pytest.mark.parametrize(
+        "data",
+        (
+            MutableMappingWithExtraProperty(
+                {"uint8": np.uint8(0), "int32": np.int32(-1), "float32": np.float32(3.14)}, extra_property="converted"
+            ),
+            MutableMappingWithExtraProperty({"str": "a", "bytes": b"b"}, extra_property="unchanged"),
+        ),
+    )
+    def test_convert_mutable_mapping_with_extra_property(self, data):
+        """
+        Feature: Test default_convert function.
+        Description: Test default_convert function with mutable mapping with extra property that should be converted.
+        Expectation: The result is a mapping with values converted to Tensor and extra property is preserved.
+        """
+        result = default_convert(data)
+        assert isinstance(result, MutableMappingWithExtraProperty)
+        assert data == result
+
+    @arg_mark(plat_marks=["cpu_linux"], level_mark="level0", card_mark="onecard", essential_mark="essential")
+    @pytest.mark.parametrize(
+        "data",
+        (
+            {"1": np.int32(1), "2": np.int32(2), "3": np.int32(3)},
+            collections.OrderedDict({"1": np.int32(1), "2": np.int32(2), "3": np.int32(3)}),
+            collections.defaultdict(np.int32, {"1": np.int32(1), "2": np.int32(2), "3": np.int32(3)}),
+            MappingProxyType({"1": np.int32(1), "2": np.int32(2), "3": np.int32(3)}),
+        ),
+    )
+    def test_convert_mapping(self, data):
+        """
+        Feature: Test default_convert function.
+        Description: Test default_convert function with mutable mapping that should be converted.
+        Expectation: The result is a mapping with values converted to Tensor.
+        """
+        result = default_convert(data)
+        assert isinstance(result, type(data))
+        assert data.keys() == result.keys()
+        for key, value in data.items():
+            assert isinstance(result[key], ms.Tensor)
+            np.testing.assert_equal(value, result[key].asnumpy())
+
+    @arg_mark(plat_marks=["cpu_linux"], level_mark="level0", card_mark="onecard", essential_mark="essential")
+    def test_convert_mapping_not_support_copy(self):
+        """
+        Feature: Test default_convert function.
+        Description: Test default_convert function with mutable mapping that should be converted.
+        Expectation: The result is a mapping with values converted to Tensor.
         """
 
-        assert default_convert(data) == data
-        assert isinstance(default_convert(data), type(data))
+        def unimplemented_copy(self):
+            raise TypeError
+
+        MutableMappingWithExtraProperty.__copy__ = unimplemented_copy
+        data = MutableMappingWithExtraProperty({"uint8": np.uint8(0)}, extra_property="converted")
+        result = default_convert(data)
+        assert isinstance(result, dict)
+        assert data.keys() == result.keys()
+        for key, value in data.items():
+            assert isinstance(result[key], ms.Tensor)
+            np.testing.assert_equal(value, result[key].asnumpy())

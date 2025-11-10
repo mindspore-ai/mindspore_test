@@ -24,10 +24,6 @@ import mindspore as ms
 from .dataset import Dataset
 from .sampler import Sampler
 
-
-__all__ = ["DistributedSampler"]
-
-
 _T_co = TypeVar("_T_co", covariant=True)
 
 
@@ -55,13 +51,13 @@ class DistributedSampler(Sampler[_T_co]):
     """
 
     def __init__(
-            self,
-            dataset: Dataset,
-            num_replicas: Optional[int] = None,
-            rank: Optional[int] = None,
-            shuffle: Optional[bool] = True,
-            seed: Optional[int] = 0,
-            drop_last: Optional[bool] = False,
+        self,
+        dataset: Dataset,
+        num_replicas: Optional[int] = None,
+        rank: Optional[int] = None,
+        shuffle: Optional[bool] = True,
+        seed: Optional[int] = 0,
+        drop_last: Optional[bool] = False,
     ) -> None:
         super().__init__(dataset)
         if num_replicas is not None and not isinstance(num_replicas, int):
@@ -83,13 +79,9 @@ class DistributedSampler(Sampler[_T_co]):
                 raise RuntimeError("MindSpore distributed feature is not available.")
             rank = ms.mint.distributed.get_rank()
         if num_replicas <= 0:
-            raise ValueError(
-                f"Invalid num_replicas: {num_replicas}, num_replicas should be greater than 0."
-            )
+            raise ValueError(f"Invalid num_replicas: {num_replicas}, num_replicas must be greater than 0.")
         if rank >= num_replicas or rank < 0:
-            raise ValueError(
-                f"Invalid rank: {rank}, rank should be in the interval [0, {num_replicas - 1}]"
-            )
+            raise ValueError(f"Invalid rank: {rank}, rank must be in the interval [0, {num_replicas - 1}]")
         self.dataset = dataset
         self.num_replicas = num_replicas
         self.rank = rank
@@ -107,7 +99,6 @@ class DistributedSampler(Sampler[_T_co]):
     def __iter__(self) -> Iterator[_T_co]:
         if self.shuffle:
             g = np.random.default_rng(self.seed + self.epoch)
-            # TODO: need to use mint operator on cpu backend
             indices = g.permutation(len(self.dataset)).tolist()
         else:
             indices = list(range(len(self.dataset)))
@@ -117,15 +108,15 @@ class DistributedSampler(Sampler[_T_co]):
             if padding_size <= len(indices):
                 indices += indices[:padding_size]
             else:
-                indices += (indices * math.ceil(padding_size / len(indices)))[
-                    :padding_size
-                ]
+                indices += (indices * math.ceil(padding_size / len(indices)))[:padding_size]
         else:
             indices = indices[: self.total_samples]
-        assert len(indices) == self.total_samples
+        if len(indices) != self.total_samples:
+            raise RuntimeError("The length of total indices must be equal to the number of total samples.")
 
         indices = indices[self.rank : self.total_samples : self.num_replicas]
-        assert len(indices) == self.num_samples
+        if len(indices) != self.num_samples:
+            raise RuntimeError("The length of indices must be equal to the number of samples in this replica.")
 
         return iter(indices)
 
