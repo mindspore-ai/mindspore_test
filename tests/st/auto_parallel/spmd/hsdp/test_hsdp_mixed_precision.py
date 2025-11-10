@@ -50,7 +50,7 @@ def test_hsdp_reduce_dtype():
     shard_size = 4
     threshold = 0
     hsdp(net, shard_size, threshold, reduce_dtype=ms.float32)
-    grad_fn = ms.value_and_grad(get_forward_fn(net), None, net.trainable_params(), has_aux=True)
+    grad_fn = ms.parallel.parallelize_value_and_grad(get_forward_fn(net), net.trainable_params())
     train_steps = 2
     optimizer = nn.Adam(net.trainable_params(), 0.01)
     for _ in range(train_steps):

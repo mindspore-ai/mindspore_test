@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+"""loss repeat mean"""
 
 import time
 import numpy as np
@@ -24,6 +25,7 @@ learning_rate = 0.01
 epochs = 2
 
 class SimpleModel(nn.Cell):
+    """simple model"""
     def __init__(self, input_size, output_size):
         super().__init__()
         self.weight = ms.Parameter(
@@ -46,10 +48,12 @@ def create_dtensor(data, layout):
 
 
 def create_tensor(data):
+    """create tensor """
     return Tensor(data, dtype=ms.float32)
 
 
 def run_standalone(x, input_size, output_size):
+    """run standalone"""
     model = SimpleModel(input_size, output_size)
 
     def forward_fn(data):
@@ -76,6 +80,7 @@ def run_standalone(x, input_size, output_size):
 
 
 def run_parallel(local_x, local_input_size, local_output_size, x_layout, w_layout, relu_strategy, hsdp_shard_size):
+    """run parallel"""
     model = SimpleModel(local_input_size, local_output_size)
 
     model.weight = model.weight.local_to_global(w_layout)
@@ -88,7 +93,7 @@ def run_parallel(local_x, local_input_size, local_output_size, x_layout, w_layou
         return logits
 
     optimizer = nn.Adam(model.trainable_params(), learning_rate=learning_rate)
-    grad_fn = ms.value_and_grad(forward_fn, None, optimizer.parameters, has_aux=False)
+    grad_fn = ms.parallel.parallelize_value_and_grad(forward_fn, optimizer.parameters)
 
     x = create_dtensor(local_x, x_layout)
 
@@ -107,6 +112,7 @@ def run_parallel(local_x, local_input_size, local_output_size, x_layout, w_layou
 
 
 def base_case(dp, mp, hsdp_shard_size):
+    """base case"""
     D.init()
 
     # standalone

@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+"""test hsdp dryrun"""
+
 import os
 import numpy as np
 import mindspore as ms
@@ -37,11 +39,12 @@ def get_forward_fn(net):
     return forward_fn
 
 def run_hsdp(net, data, label, optimizer_level="level1", enable_grad_accumulation=False):
+    """run hsdp"""
     shard_size = 4
     threshold = 0
     hsdp(net, shard_size, threshold, optimizer_level, enable_grad_accumulation)
 
-    grad_fn = ms.value_and_grad(get_forward_fn(net), None, net.trainable_params(), has_aux=True)
+    grad_fn = ms.parallel.parallelize_value_and_grad(get_forward_fn(net), net.trainable_params())
 
     train_steps = 2
     for i in range(train_steps):

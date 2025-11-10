@@ -12,9 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+"""test shard in python with bprop"""
 
-import numpy as np
 from collections import OrderedDict
+import numpy as np
 import mindspore as ms
 from mindspore.ops.operations import _inner_ops as inner
 import mindspore.communication.management as D
@@ -24,6 +25,7 @@ from mindspore.parallel import Layout
 ms.set_context(mode=ms.PYNATIVE_MODE)
 D.init()
 class SimpleModel(nn.Cell):
+    """simple model"""
     def __init__(self, input_size, output_size):
         super().__init__()
         self.weight = ms.Parameter(
@@ -55,6 +57,7 @@ def print_layout_info(tensor, name):
         print(f"{name} has no layout information")
 
 def run_network(x_layout, w_layout, target_layout):
+    """run network"""
     input_size = 10
     output_size = 5
     batch_size = 4
@@ -70,7 +73,7 @@ def run_network(x_layout, w_layout, target_layout):
         return loss, logits
 
     optimizer = nn.Adam(model.trainable_params(), learning_rate=learning_rate)
-    grad_fn = ms.value_and_grad(forward_fn, None, optimizer.parameters, has_aux=True)
+    grad_fn = ms.parallel.parallelize_value_and_grad(forward_fn, optimizer.parameters)
     np_x = np.random.randn(batch_size, input_size).astype(np.float32)
     np_target = np.random.randn(batch_size, output_size).astype(np.float32)
     x = create_dtensor(np_x, x_layout)
