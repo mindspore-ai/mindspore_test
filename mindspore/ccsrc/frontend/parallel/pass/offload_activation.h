@@ -21,7 +21,7 @@
 #include <utility>
 #include <vector>
 
-#include "frontend/optimizer/optimizer.h"
+#include "include/frontend/optimizer/optimizer.h"
 
 namespace mindspore {
 namespace parallel {

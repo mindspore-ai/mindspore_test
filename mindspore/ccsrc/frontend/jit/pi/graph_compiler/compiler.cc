@@ -25,7 +25,7 @@
 #include "ir/func_graph_cloner.h"
 #include "frontend/jit/pi/graph_compiler/utils.h"
 #include "frontend/jit/pi/graph_compiler/parser/byte_code_parser.h"
-#include "frontend/jit/ps/executor/jit_executor_py.h"
+#include "include/frontend/jit/ps/executor/jit_executor_py.h"
 #include "frontend/jit/ps/pipeline.h"
 #include "frontend/jit/pi/utils/utils.h"
 #include "include/utils/pynative/grad_state.h"

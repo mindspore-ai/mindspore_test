@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-#include "frontend/jit/ps/executor/graph_executor_py.h"
+#include "include/frontend/jit/ps/executor/graph_executor_py.h"
 
 #include <memory>
 #include <map>
@@ -53,6 +53,8 @@
 #include "frontend/jit/ps/event_message_print.h"
 #include "frontend/jit/ps/pass_config.h"
 #include "frontend/jit/ps/pipeline.h"
+#include "include/frontend/jit/ps/pass_interface.h"
+#include "include/frontend/jit/ps/pipeline_interface.h"
 
 #include "pybind_api/pybind_patch.h"
 #include "pybind11/pybind11.h"

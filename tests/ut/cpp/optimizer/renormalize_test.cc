@@ -23,11 +23,12 @@
 #include "ir/anf.h"
 #include "ir/visitor.h"
 #include "ir/func_graph_cloner.h"
-#include "frontend/optimizer/optimizer.h"
+#include "include/frontend/optimizer/optimizer.h"
 #include "frontend/optimizer/anf_visitor.h"
 #include "frontend/optimizer/irpass.h"
 #include "frontend/optimizer/irpass/arithmetic_simplify.h"
 #include "frontend/jit/ps/action.h"
+#include "include/frontend/jit/ps/action_interface.h"
 
 #include "mindspore/ccsrc/utils/ir_dump/draw.h"
 #include "frontend/operator/ops.h"

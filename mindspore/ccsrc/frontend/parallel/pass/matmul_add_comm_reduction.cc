@@ -22,7 +22,7 @@
 #include <utility>
 #include "ir/tensor_new.h"
 #include "include/utils/utils.h"
-#include "frontend/optimizer/optimizer.h"
+#include "include/frontend/optimizer/optimizer.h"
 #include "frontend/parallel/step_parallel.h"
 #include "frontend/parallel/step_parallel_utils.h"
 #include "mindspore/ops/op_def/math_ops.h"

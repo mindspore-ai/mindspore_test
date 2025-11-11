@@ -28,7 +28,7 @@
 #include "ir/anf.h"
 #include "ir/manager.h"
 #include "ir/graph_utils.h"
-#include "frontend/optimizer/optimizer.h"
+#include "include/frontend/optimizer/optimizer.h"
 #include "frontend/jit/ps/validator.h"
 #include "frontend/jit/ps/pass_config.h"
 #include "utils/log_adapter.h"

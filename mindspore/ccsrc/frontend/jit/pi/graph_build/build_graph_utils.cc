@@ -34,7 +34,7 @@
 #include "frontend/jit/ps/parse/parse_base.h"
 #include "frontend/jit/ps/parse/data_converter.h"
 #include "frontend/jit/ps/static_analysis/static_analysis.h"
-#include "frontend/operator/primitive_py.h"
+#include "include/frontend/operator/primitive_py.h"
 #include "frontend/jit/pi/utils/utils.h"
 #include "include/utils/pynative/variable.h"
 #include "frontend/operator/composite/auto_generate/functional_map.h"

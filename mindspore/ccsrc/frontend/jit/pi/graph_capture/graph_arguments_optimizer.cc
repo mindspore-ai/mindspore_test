@@ -29,7 +29,7 @@
 #include "frontend/jit/pi/graph_compiler/pi_ir/ctrl_flow.h"
 #include "frontend/jit/pi/graph_guard/cache.h"
 #include "frontend/jit/pi/utils/opcode_declare.h"
-#include "frontend/jit/ps/executor/jit_executor_py.h"
+#include "include/frontend/jit/ps/executor/jit_executor_py.h"
 
 namespace mindspore {
 namespace pijit {

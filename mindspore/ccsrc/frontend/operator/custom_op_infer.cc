@@ -19,7 +19,7 @@
 
 #include "include/utils/utils.h"
 #include "mindspore/ops/op_def/framework_ops.h"
-#include "frontend/operator/primitive_py.h"
+#include "include/frontend/operator/primitive_py.h"
 #include "frontend/jit/ps/static_analysis/prim.h"
 #include "frontend/jit/ps/static_analysis/prim_utils.h"
 #include "abstract/ops/primitive_infer_map.h"

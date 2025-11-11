@@ -41,7 +41,7 @@
 #include "frontend/jit/pi/graph_guard/strategy.h"
 #include "frontend/jit/pi/graph_guard/shape_ctx.h"
 #include "frontend/jit/pi/capture_context.h"
-#include "frontend/jit/ps/executor/jit_executor_py.h"
+#include "include/frontend/jit/ps/executor/jit_executor_py.h"
 #include "frontend/jit/pi/python_adapter/py_frame.h"
 #include "include/runtime/pipeline/pipeline.h"
 #include "mindspore/ccsrc/utils/ir_dump/anf_ir_dump.h"

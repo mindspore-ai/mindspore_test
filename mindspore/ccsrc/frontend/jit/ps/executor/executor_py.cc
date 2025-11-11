@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-#include "frontend/jit/ps/executor/executor_py.h"
+#include "include/frontend/jit/ps/executor/executor_py.h"
 
 #include <memory>
 #include <map>
@@ -44,8 +44,8 @@
 
 #include "frontend/jit/ps/compile_cache_manager.h"
 #include "frontend/jit/ps/debug/trace.h"
-#include "frontend/jit/ps/executor/graph_executor_py.h"
-#include "frontend/jit/ps/executor/jit_executor_py.h"
+#include "include/frontend/jit/ps/executor/graph_executor_py.h"
+#include "include/frontend/jit/ps/executor/jit_executor_py.h"
 #include "frontend/jit/ps/parse/data_converter.h"
 #include "frontend/jit/ps/pipeline.h"
 
@@ -808,6 +808,16 @@ void ExecutorPy::ConvertSymbolicShape(const py::tuple &args, AbstractBasePtrList
     abs->SetSymbolicShape(symbolic_shape_list[i]);
     (*args_abs)[i] = abs;
   }
+}
+
+pipeline::ExecutorPyPtr GetExecutor(const std::string &phase) {
+  if (common::GetEnv("MS_DEV_JIT_PIPELINE") == "0") {
+    return pipeline::GraphExecutorPy::GetInstance();
+  }
+  if (phase.empty() || pipeline::JitExecutorPy::GetInstance()->HasCompiled(phase)) {
+    return pipeline::JitExecutorPy::GetInstance();
+  }
+  return pipeline::GraphExecutorPy::GetInstance();
 }
 
 void CleanCache() {

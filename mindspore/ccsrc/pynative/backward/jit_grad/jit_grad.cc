@@ -24,7 +24,7 @@
 #include "pynative/backward/grad_utils.h"
 #include "pynative/utils/pynative_utils.h"
 #include "frontend/jit/ps/pipeline.h"
-#include "frontend/jit/ps/executor/jit_executor_py.h"
+#include "include/frontend/jit/ps/executor/jit_executor_py.h"
 #include "ir/func_graph_cloner.h"
 #include "frontend/expander/bprop/bprop.h"
 #include "include/utils/pynative/common_utils.h"

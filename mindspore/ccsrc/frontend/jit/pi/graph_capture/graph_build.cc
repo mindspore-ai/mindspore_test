@@ -42,7 +42,7 @@
 #include "mindspore/ops/op_def/structure_ops.h"
 #include "ir/cell.h"
 #include "ir/func_graph_cloner.h"
-#include "frontend/operator/primitive_py.h"
+#include "include/frontend/operator/primitive_py.h"
 #include "frontend/jit/pi/python_adapter/pydef.h"
 #include "frontend/jit/ps/parse/data_converter.h"
 #include "include/utils/tensor_py.h"

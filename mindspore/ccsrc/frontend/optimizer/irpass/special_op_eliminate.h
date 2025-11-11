@@ -34,7 +34,7 @@
 #include "frontend/operator/ops.h"
 #include "frontend/optimizer/irpass.h"
 #include "frontend/optimizer/irpass/prim_eliminate.h"
-#include "frontend/optimizer/optimizer.h"
+#include "include/frontend/optimizer/optimizer.h"
 #include "include/utils/comm_manager.h"
 #include "include/utils/parallel_context.h"
 #include "frontend/parallel/step_parallel_utils.h"

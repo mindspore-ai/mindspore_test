@@ -19,7 +19,7 @@
 
 #include <set>
 
-#include "frontend/optimizer/optimizer.h"
+#include "include/frontend/optimizer/optimizer.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "frontend/optimizer/anf_visitor.h"

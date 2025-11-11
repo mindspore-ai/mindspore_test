@@ -31,7 +31,7 @@
 #include "include/utils/parallel_context.h"
 #include "ir/graph_utils.h"
 #include "frontend/parallel/step_parallel_utils.h"
-#include "frontend/optimizer/optimizer.h"
+#include "include/frontend/optimizer/optimizer.h"
 #include "include/utils/utils.h"
 #include "frontend/jit/ps/graph_circle_handler.h"
 #include "frontend/parallel/graph_util/pipeline_split_utils.h"

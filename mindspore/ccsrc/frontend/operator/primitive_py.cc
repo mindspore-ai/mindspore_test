@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "frontend/operator/primitive_py.h"
+#include "include/frontend/operator/primitive_py.h"
 
 #include <map>
 #include "ir/signature.h"

@@ -19,7 +19,7 @@
 
 #include "ir/anf.h"
 #include "mindspore/ops/op_def/structure_ops.h"
-#include "frontend/optimizer/optimizer.h"
+#include "include/frontend/optimizer/optimizer.h"
 #include "frontend/optimizer/anf_visitor.h"
 
 namespace mindspore::opt::irpass {

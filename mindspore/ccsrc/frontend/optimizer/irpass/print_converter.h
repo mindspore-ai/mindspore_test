@@ -20,7 +20,7 @@
 #include <vector>
 #include <memory>
 #include <string>
-#include "frontend/optimizer/optimizer.h"
+#include "include/frontend/optimizer/optimizer.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "frontend/optimizer/irpass.h"

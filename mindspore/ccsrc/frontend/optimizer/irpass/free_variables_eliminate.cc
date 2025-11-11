@@ -25,6 +25,7 @@
 #include "ir/func_graph_cloner.h"
 #include "frontend/jit/ps/action.h"
 #include "frontend/optimizer/irpass/view_inplace_utils.h"
+#include "include/frontend/jit/ps/action_interface.h"
 
 namespace mindspore {
 namespace opt {

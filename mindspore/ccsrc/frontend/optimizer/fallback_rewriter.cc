@@ -44,6 +44,7 @@
 #include "frontend/operator/composite/composite.h"
 #include "include/utils/fallback.h"
 #include "include/utils/convert_utils_py.h"
+#include "include/frontend/jit/ps/action_interface.h"
 #include "ir/anf.h"
 #include "ir/value.h"
 #include "ir/graph_utils.h"

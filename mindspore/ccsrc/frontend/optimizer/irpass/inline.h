@@ -25,7 +25,7 @@
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "frontend/optimizer/irpass.h"
 #include "include/utils/parallel_context.h"
-#include "frontend/optimizer/optimizer.h"
+#include "include/frontend/optimizer/optimizer.h"
 #include "frontend/optimizer/anf_visitor.h"
 #include "frontend/optimizer/utils.h"
 #include "ir/func_graph.h"

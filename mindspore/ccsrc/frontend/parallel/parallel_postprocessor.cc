@@ -40,7 +40,7 @@
 #include "frontend/parallel/ops_info/ops_utils.h"
 #include "frontend/parallel/auto_parallel/operator_costmodel.h"
 #include "frontend/operator/ops.h"
-#include "frontend/optimizer/optimizer.h"
+#include "include/frontend/optimizer/optimizer.h"
 #include "frontend/parallel/auto_parallel/graph_costmodel.h"
 #include "frontend/parallel/parallel_processor_context.h"
 #include "frontend/parallel/device_manager.h"
