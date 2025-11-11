@@ -44,6 +44,7 @@ from types import GeneratorType
 import copy
 import weakref
 import platform
+import numpy as np
 
 import mindspore._c_dataengine as cde
 from mindspore._c_expression import typing
@@ -57,13 +58,17 @@ from mindspore.dataset.debug import DebugHook
 
 from mindspore.dataset.engine import samplers
 from mindspore.dataset.engine.samplers import Shuffle
+from mindspore.common import Tensor
+from mindspore.common import dtype as mstype
+import mindspore as ms
+
 from .iterators import DictIterator, TupleIterator, DummyIterator, check_iterator_cleanup, _set_iterator_cleanup, \
     ITERATORS_LIST, _unset_iterator_cleanup, _cleanup_the_iterators_if_created
 from .validators import check_batch, check_shuffle, check_map, check_filter, check_repeat, check_skip, check_zip, \
     check_rename, check_device_send, check_take, check_output_shape, check_project, \
     check_sync_wait, check_zip_dataset, check_add_column, check_concat, check_split, check_bucket_batch_by_length, \
     check_save, check_tuple_iterator, check_dict_iterator, check_schema, check_to_device_send, check_padded_batch, \
-    check_total_batch, check_sync_update
+    check_total_batch, check_sync_update, check_send, check_recv
 from ..core.config import get_callback_timeout, _init_device_info, get_num_parallel_workers, \
     get_enable_watchdog, get_seed, set_seed, get_debug_mode, get_multiprocessing_timeout_interval, \
     _get_debug_hook_list, get_multiprocessing_start_method, get_video_backend, set_video_backend, \
@@ -202,6 +207,46 @@ def _set_dataset_permissions(file_name, num_files):
             index_file = item + ".db"
             if os.path.exists(index_file):
                 os.chmod(index_file, stat.S_IRUSR | stat.S_IWUSR)
+
+
+# dict used to cast mstype to int
+mstype_to_int = {mstype.bool: 0,
+                 mstype.int8: 1,
+                 mstype.int16: 2,
+                 mstype.short: 3,
+                 mstype.int32: 4,
+                 mstype.int: 5,
+                 mstype.int64: 6,
+                 mstype.long: 7,
+                 mstype.uint8: 8,
+                 mstype.uint16: 9,
+                 mstype.uint32: 10,
+                 mstype.uint64: 11,
+                 mstype.float16: 12,
+                 mstype.half: 13,
+                 mstype.float32: 14,
+                 mstype.float: 15,
+                 mstype.float64: 16,
+                 mstype.double: 17,
+                 mstype.bfloat16: 18}
+
+
+int_to_mstype = {value: key for key, value in mstype_to_int.items()}
+
+
+MAX_METADATA_LENGTH = 2048
+
+
+def flatten_single_lists(nested_list):
+    """
+    Recursively remove list nesting of length 1
+    """
+    if not isinstance(nested_list, list):
+        return nested_list
+
+    if len(nested_list) == 1 and isinstance(nested_list[0], list):
+        return flatten_single_lists(nested_list[0])
+    return [flatten_single_lists(item) for item in nested_list]
 
 
 class Dataset:
@@ -2088,6 +2133,249 @@ class Dataset:
         # When there are multiple children, we cannot tell from which child to get the initial step,
         # so we initialize from the beginning
         return 0
+
+    def _send(self, tensor_list, dst_list, group):
+        """Sending data in two steps"""
+        # get meta by calculate list[Tensor]
+        meta_info = []
+        meta_info.append(len(tensor_list))                 # num of tensor_list
+        for t in tensor_list:
+            meta_info.append(t.ndim)                       # ndim of tensor_list[i]
+            for shape in t.shape:
+                meta_info.append(shape)                    # tensor_list[i].shape[0], ...
+            if t.dtype not in mstype_to_int:
+                raise RuntimeError(f"Tensor of dtype: {t.dtype} is not supported to send.")
+            meta_info.append(mstype_to_int[t.dtype])       # tensor_list[i].dtype
+
+        if len(meta_info) >= MAX_METADATA_LENGTH:
+            raise RuntimeError("The metadata for sending data is too large.")
+
+        meta_info = meta_info + [0] * (MAX_METADATA_LENGTH - len(meta_info))
+        meta = Tensor(meta_info, dtype=ms.int64)
+
+        for dst_rank in dst_list:
+            ## first: send the meta to dst
+            ms.mint.distributed.send(meta, dst_rank, group)
+
+            ## second: send the tensor to dst
+            for t in tensor_list:
+                ms.mint.distributed.send(t, dst_rank, group)
+
+    @check_send
+    def send(self, tensor=None, dst=0, group=None):
+        """
+        The dataset communication interface sends data to the target `Dataset`,
+        which can be received through :class:`mindspore.dataset.Dataset.recv`.
+
+        The send operation only send data once.
+
+        Note:
+            This is an experimental API that is subject to change or deletion.
+
+        Args:
+            tensor (Union[Tensor, list[Tensor]], optional): List of the Tensor(s) to send. Default: ``None`` ,
+                retrieve data from the current dataset and send it.
+            dst (Union[int, list[int]], optional): List of the dst rank id(s) to send. It cannot be the
+                current Rank ID or contain the current Rank ID. Default: ``0`` ,
+                which indicates send data to dst rank 0.
+            group (str, optional): The communication group to work on. The group is created
+                by :func:`mindspore.communication.create_group` . Default: ``None``,
+                which indicates ``GlobalComm.WORLD_COMM_GROUP`` .
+
+        Examples:
+            >>> import mindspore as ms
+            >>> from mindspore.mint.distributed import init_process_group
+            >>> from mindspore.mint.distributed import get_rank
+            >>> from mindspore import Tensor
+            >>> import mindspore.dataset as ds
+            >>> import numpy as np
+            >>>
+            >>> # Launch 8 processes by msrun --worker_num=8 --local_worker_num=8 script.py
+            >>> init_process_group()
+            >>> this_rank = get_rank()
+            >>>
+            >>> # Create a dataset with 3 columns
+            >>> input_columns = ["column1", "column2", "column3"]
+            >>> dataset = ds.GeneratorDataset([(1, 2, 3), (3, 4, 5), (5, 6, 7)], column_names=input_columns)
+            >>>
+            >>> # Send a data from the current dataset to the dst rank: 0
+            >>> if this_rank == 2:
+            >>>     dataset.send()
+            >>> if this_rank == 0:
+            >>>     data = dataset.recv(2)
+            >>>
+            >>> # Send the data "send_tensor" to the dst rank: 7
+            >>> if this_rank == 0:
+            >>>     send_tensor = Tensor(np.zeros([2, 2, 3]), ms.float32)
+            >>>     dataset.send(send_tensor, 7)
+            >>> if this_rank == 7:
+            >>>     recv_tensor = dataset.recv(0)
+            >>>
+            >>> # Send the list of data to dst rank [0, 2, 4, 6]
+            >>> if this_rank in [1, 3, 5, 7]:
+            >>>     send_data = Tensor(np.zeros([2, 2, 3]), ms.float32)
+            >>>     send_label = Tensor(np.zeros([3,]), ms.bool)
+            >>>     dataset.send([send_data, send_label], [0, 2, 4, 6])
+            >>> if this_rank in [0, 2, 4, 6]:
+            >>>     recv_tensors = dataset.recv([1, 3, 5, 7])
+        """
+
+        # cast the dst to list[int]
+        dst_list = dst
+        if isinstance(dst, int):
+            dst_list = [dst]
+
+        data_to_send = None
+        if tensor is not None:
+            # the input tensor is not None
+            tensor_list = tensor
+            if isinstance(tensor, Tensor):
+                tensor_list = [tensor]
+            data_to_send = tensor_list
+        else:
+            # get data from dataset_iter
+            if not hasattr(self, "_dataset_iter"):
+                self._dataset_iter = self.create_tuple_iterator()
+
+            while True:
+                try:
+                    data_to_send = next(self._dataset_iter)
+                except StopIteration:
+                    continue
+                break  # already got data
+
+            # check the type of the data from dataset
+            for index, item in enumerate(data_to_send):
+                if not isinstance(item, Tensor):
+                    raise RuntimeError(f"The data column at index: {index} is not Tensor which is not " \
+                                        "supported to send. You can remove it using the dataset.project operation.")
+        # check the dtype of the Tensor
+        for t in data_to_send:
+            if t.dtype not in mstype_to_int:
+                raise RuntimeError(f"Tensor of dtype: {t.dtype} is not supported to send.")
+
+        return self._send(data_to_send, dst_list, group)
+
+    def _recv(self, src_rank, group):
+        """Receiving data in two steps"""
+        ## first: get meta
+        meta = Tensor(np.zeros([MAX_METADATA_LENGTH,]).astype(np.int64))
+        out = ms.mint.distributed.recv(meta, src_rank, group)
+        if out != 0:
+            raise RuntimeError("Receive meta failed by mint.recv(...)")
+
+        meta_index = 0
+        tensor_list = []
+        tensor_list_size = int(meta[0])
+        meta_index += 1
+        for _ in range(tensor_list_size):                 # num of tensor_list
+            ndim_tensor = int(meta[meta_index])           # ndim of tensor_list[i]
+            meta_index += 1
+            shape = []
+            for _ in range(ndim_tensor):
+                shape.append(int(meta[meta_index]))       # tensor_list[i].shape[0]
+                meta_index += 1
+
+            dtype = int_to_mstype[int(meta[meta_index])]  # dtype
+            meta_index += 1
+            tensor_list.append(Tensor(np.zeros(shape), dtype=dtype))
+
+        ## second: get data
+        for item in tensor_list:
+            out = ms.mint.distributed.recv(item, src_rank, group)
+            if out != 0:
+                raise RuntimeError("Receive data failed by mint.recv(...)")
+
+        flatten_tensor_list = flatten_single_lists(tensor_list)
+        if len(flatten_tensor_list) == 1:
+            return flatten_tensor_list[0]
+
+        return flatten_tensor_list
+
+    @check_recv
+    def recv(self, src=0, group=None):
+        """
+        The dataset communication interface receives data sent by the source `Dataset`
+        using :class:`mindspore.dataset.Dataset.send` .
+
+        Each call to the recv operation only receives data once.
+
+        Note:
+            This is an experimental API that is subject to change or deletion.
+
+        Args:
+            src (Union[int, list[int]], optional): List of the src rank id(s) to receive. If the Rank ID of the
+                current process is specified, data will be obtained directly from itself. Default: ``0`` ,
+                which indicates receive data from src rank 0.
+            group (str, optional): The communication group to work on. The group is created
+                by :func:`mindspore.communication.create_group` . Default: ``None``,
+                which indicates ``GlobalComm.WORLD_COMM_GROUP`` .
+
+        Returns:
+            Union[Tensor, list[Tensor]], List of the Tensor(s) received.
+
+        Examples:
+            >>> from mindspore.mint.distributed import init_process_group
+            >>> from mindspore.mint.distributed import get_rank
+            >>> import mindspore.dataset as ds
+            >>>
+            >>> # Launch 8 processes by msrun --worker_num=8 --local_worker_num=8 script.py
+            >>> init_process_group()
+            >>> this_rank = get_rank()
+            >>>
+            >>> # Create a dataset with 3 columns
+            >>> input_columns = ["column1", "column2", "column3"]
+            >>> dataset = ds.GeneratorDataset([(1, 2, 3), (3, 4, 5), (5, 6, 7)], column_names=input_columns)
+            >>>
+            >>> # Send data from rank: 0 to rank: [1, 2, 3, 4, 5, 6, 7]
+            >>> if this_rank == 0:
+            >>>     dataset.send(dst=[1, 2, 3, 4, 5, 6, 7])
+            >>> if this_rank in [1, 2, 3, 4, 5, 6, 7]:
+            >>>     data1 = dataset.recv()
+            >>>
+            >>> # Receive a data from the current dataset
+            >>> data2 = dataset.recv(src=get_rank())
+            >>>
+            >>> # Send data from rank: [1, 2, 3, 4, 5, 6, 7] to rank: 0
+            >>> if this_rank in [1, 2, 3, 4, 5, 6, 7]:
+            >>>     dataset.send()
+            >>> if this_rank == 0:
+            >>>     data3 = dataset.recv(src=[1, 2, 3, 4, 5, 6, 7])
+        """
+
+        # cast the src to list[int]
+        src_list = src
+        if isinstance(src, int):
+            src_list = [src]
+
+        current_rank = ms.mint.distributed.get_rank()
+
+        # get data from src
+        all_tensor_list = []
+        for src_rank in src_list:
+            # get data from current dataset
+            if src_rank == current_rank:
+                if not hasattr(self, "_dataset_iter"):
+                    self._dataset_iter = self.create_tuple_iterator()
+
+                while True:
+                    try:
+                        data_to_return = next(self._dataset_iter)
+                    except StopIteration:
+                        continue
+                    break  # already got data
+
+                # convert the dict to list
+                all_tensor_list.append(data_to_return)
+            else:
+                # get data from remote dataset
+                all_tensor_list.append(self._recv(src_rank, group))
+
+        flatten_all_tensor_list = flatten_single_lists(all_tensor_list)
+        if len(flatten_all_tensor_list) == 1:
+            return flatten_all_tensor_list[0]
+
+        return flatten_all_tensor_list
 
 
 class VisionBaseDataset(Dataset):

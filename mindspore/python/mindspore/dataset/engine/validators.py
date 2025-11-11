@@ -26,11 +26,12 @@ import numpy as np
 
 from mindspore._c_expression import typing
 from mindspore import log as logger
+from mindspore.common import Tensor
 from ..core.validator_helpers import parse_user_args, type_check, type_check_list, check_value, \
     INT32_MAX, check_valid_detype, check_dir, check_file, check_sampler_shuffle_shard_options, \
     validate_dataset_param_value, check_padding_options, \
     check_num_parallel_workers, check_columns, check_pos_int32, check_valid_str, check_dataset_num_shards_shard_id, \
-    check_valid_list_tuple, check_int32, check_independent_mode
+    check_valid_list_tuple, check_int32, check_independent_mode, check_uint32
 from . import datasets
 from . import samplers
 from . import cache_client
@@ -1328,8 +1329,8 @@ def get_batch_kwargs_from_dict(param_dict):
         output_columns = param_dict.get("output_columns", None)
         python_multiprocessing = param_dict.get("python_multiprocessing", False)
         max_rowsize = param_dict.get("max_rowsize", None)
-    return per_batch_map, input_columns, output_columns, python_multiprocessing, max_rowsize
-
+        return per_batch_map, input_columns, output_columns, python_multiprocessing, max_rowsize
+    return None, None, None, None, None
 
 def check_batch(method):
     """check the input arguments of batch."""
@@ -1467,7 +1468,8 @@ def get_map_kwargs_from_dict(param_dict):
         cache = param_dict.get("cache", None)
         callbacks = param_dict.get("callbacks", None)
         offload = param_dict.get("offload", None)
-    return python_multiprocessing, max_rowsize, cache, callbacks, offload
+        return python_multiprocessing, max_rowsize, cache, callbacks, offload
+    return None, None, None, None, None
 
 
 def check_max_rowsize(max_rowsize):
@@ -2000,6 +2002,56 @@ def check_split(method):
             epsilon = 0.00001
             if not abs(sum(sizes) - 1) < epsilon:
                 raise ValueError("sizes is a list of float, but the percentages do not sum up to 1.")
+
+        return method(self, *args, **kwargs)
+
+    return new_method
+
+
+def check_send(method):
+    """check the input arguments of send."""
+
+    @wraps(method)
+    def new_method(self, *args, **kwargs):
+        [tensor, dst, group], _ = parse_user_args(method, *args, **kwargs)
+
+        if tensor is not None:
+            type_check(tensor, (Tensor, list), "tensor")
+            if isinstance(tensor, list):
+                for item in tensor:
+                    type_check(item, (Tensor,), "element of tensor")
+
+        type_check(dst, (int, list), "dst")
+        if isinstance(dst, int):
+            check_uint32(dst, "dst")
+        if isinstance(dst, list):
+            for item in dst:
+                check_uint32(item, "element of dst")
+
+        if group is not None:
+            type_check(group, (str,), "group")
+
+        return method(self, *args, **kwargs)
+
+    return new_method
+
+
+def check_recv(method):
+    """check the input arguments of recv."""
+
+    @wraps(method)
+    def new_method(self, *args, **kwargs):
+        [src, group], _ = parse_user_args(method, *args, **kwargs)
+
+        type_check(src, (int, list), "src")
+        if isinstance(src, int):
+            check_uint32(src, "src")
+        if isinstance(src, list):
+            for item in src:
+                check_uint32(item, "element of src")
+
+        if group is not None:
+            type_check(group, (str,), "group")
 
         return method(self, *args, **kwargs)
 
