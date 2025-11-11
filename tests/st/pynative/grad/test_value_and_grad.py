@@ -15,11 +15,11 @@
 """ test_auto_grad """
 
 import numpy as np
+import pytest
 import mindspore as ms
 from mindspore import Tensor, Parameter
 from mindspore import nn
 from mindspore import ops
-import pytest
 from tests.mark_utils import arg_mark
 
 
@@ -212,7 +212,7 @@ def test_value_and_grad_multiple_weights():
 
 class NormalNet(nn.Cell):
     def __init__(self):
-        super(NormalNet, self).__init__()
+        super().__init__()
         self.p1 = Parameter(Tensor([1], dtype=ms.float32))
         self.p2 = Parameter(Tensor([2], dtype=ms.float32))
 
@@ -377,3 +377,23 @@ def test_value_and_grad_invalid_return_ids_type():
     with pytest.raises(TypeError):
         ms.value_and_grad(fn, return_ids="invalid")(x)
         ms.runtime.synchronize()
+
+
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
+def test_value_and_grad_output_as_input():
+    """
+    Feature: Value and grad.
+    Description: Test feeding the forward output as input into another value_and_grad call.
+    Expectation: Success.
+    """
+    def forward_fn(x):
+        return x * x
+
+    x = ops.rand(5, 5, dtype=ms.float32)
+    output, _ = ms.value_and_grad(forward_fn)(x)
+
+    _, grad = ms.value_and_grad(forward_fn)(output)
+    assert np.allclose(grad.asnumpy(), (output * 2).asnumpy())

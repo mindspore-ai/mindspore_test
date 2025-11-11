@@ -171,7 +171,7 @@ ValuePtrList GenerateSavedInputValues(const OpGradInfoPtr &op_grad_info) {
     if (op_grad_info->clone_value != nullptr && i == kIndex0) {
       input = op_grad_info->clone_value;
     }
-
+    MS_EXCEPTION_IF_NULL(input);
     if (input->isa<ValueSequence>()) {
       auto values = input->cast<ValueSequencePtr>()->value();
       // tuple[int]
@@ -186,6 +186,7 @@ ValuePtrList GenerateSavedInputValues(const OpGradInfoPtr &op_grad_info) {
 }
 
 ValuePtr GenerateSavedOutputValue(const ValuePtr &output_value) {
+  MS_EXCEPTION_IF_NULL(output_value);
   if (output_value->isa<Tensor>()) {
     return ValueToSavedValue(output_value, kIndex0, true);
   }
@@ -1036,7 +1037,6 @@ ValuePtrList GraphBackwardNode::CallBackward(const ValuePtrList &grads) {
                                      name(), false);
   MS_LOG(DEBUG) << "Begin GraphBackwardNode CallBackward ";
   MS_LOG(DEBUG) << PyNativeAlgo::Common::PrintDebugInfo(grads, "bprop cut input grads: ");
-  MS_EXCEPTION_IF_CHECK_FAIL(func_graph_ != nullptr, kCallBackwradTwiceErr);
   const auto &new_args_and_graph = ad::FilterGraph(args_, added_args_, func_graph_, cache_key_, &next_edges_);
   func_graph_ = new_args_and_graph.first;
   added_args_ = new_args_and_graph.second;
@@ -1674,7 +1674,6 @@ void AutoDiff::BackPropagate() {
     auto fn = queue.top();
     queue.pop();
     MS_LOG(DEBUG) << "Begin calculate op: " << fn->UniqueId() << " gradients!";
-    MS_EXCEPTION_IF_CHECK_FAIL(!fn->IsReleased(), kCallBackwradTwiceErr);
     auto ctx_iter = gradient_contexts_.find(fn.get());
     if (!gradient_contexts_.empty() && ctx_iter == gradient_contexts_.end()) {
       MS_LOG(DEBUG) << "No need grad, grad fn is: " << fn->ToString();
@@ -1690,6 +1689,7 @@ void AutoDiff::BackPropagate() {
       CaptureTensorGrads(gradient_in, ctx_iter);
       continue;
     }
+    MS_EXCEPTION_IF_CHECK_FAIL(!fn->IsReleased(), kCallBackwradTwiceErr);
     CallBackwardNodePreHooks(fn, &gradient_in);
     auto gradient_out = fn->CallBackward(gradient_in);
     MS_LOG(DEBUG) << PyNativeAlgo::Common::PrintDebugInfo(gradient_out, "Begin print gradient out: ");
