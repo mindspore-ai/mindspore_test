@@ -15,14 +15,15 @@
  */
 
 #include "common/common_test.h"
-#include "utils/ms_exception.h"
+#include "tools/error_handler/error_config.h"
+#include "tools/error_handler/error_handler.h"
 #include "utils/ms_utils.h"
 
 namespace mindspore {
-class TestUCEException : public UT::Common {
+class TestErrorHandler : public UT::Common {
  public:
-  TestUCEException() = default;
-  virtual ~TestUCEException() = default;
+  TestErrorHandler() = default;
+  virtual ~TestErrorHandler() = default;
 
   void SetUp() override {}
   void TearDown() override {}
@@ -32,32 +33,28 @@ class TestUCEException : public UT::Common {
 /// Description:Test all interfaces in the instance.
 /// Expectation: The return value of the normal interface is as expected, and the exception branch is expected to catch
 /// the exception.
-TEST_F(TestUCEException, test_interface) {
-  EXPECT_EQ(UCEException::IsEnableUCE(), false);
+TEST_F(TestErrorHandler, test_interface) {
+  EXPECT_EQ(tools::TftConfig::GetInstance()->IsEnableUCE(), false);
+  EXPECT_EQ(tools::ErrorHandler::GetInstance().HasThrownError(), false);
+  EXPECT_EQ(tools::ErrorHandler::GetInstance().GetForceStopFlag(), false);
+  EXPECT_EQ(tools::ErrorHandler::GetInstance().GetUceFlag(), false);
+  EXPECT_EQ(tools::ErrorHandler::GetInstance().IsRebootNode(), false);
+  EXPECT_EQ(tools::ErrorHandler::GetInstance().IsArf(), false);
 
-  // test arf/uce/ttp basic interface
-  const auto kTftEnv = "MS_ENABLE_TFT";
-  common::SetEnv(kTftEnv, "{TTP:1,UCE:1,ARF:1}");
-  EXPECT_NO_THROW(UCEException::GetInstance().CheckUceARFEnv());
-  EXPECT_EQ(UCEException::IsEnableUCE(), false);
-  EXPECT_EQ(UCEException::GetInstance().get_has_throw_error(), false);
-  EXPECT_EQ(UCEException::GetInstance().get_force_stop_flag(), false);
-  EXPECT_EQ(UCEException::GetInstance().get_uce_flag(), false);
-  EXPECT_EQ(UCEException::GetInstance().is_reboot_node(), false);
-  EXPECT_EQ(UCEException::GetInstance().is_arf(), false);
+  // test arf/uce/ttp basic interface  
+  EXPECT_NO_THROW(tools::ErrorHandler::GetInstance().SetIsArf(true));
+  EXPECT_NO_THROW(tools::ErrorHandler::GetInstance().SetRebootNode(true));
+  EXPECT_EQ(tools::ErrorHandler::GetInstance().IsRebootNode(), true);
+  EXPECT_EQ(tools::ErrorHandler::GetInstance().IsArf(), true);
+  EXPECT_EQ(tools::ErrorHandler::GetInstance().HasThrownError(), true);
 
-  EXPECT_NO_THROW(UCEException::GetInstance().set_is_arf(true));
-  EXPECT_NO_THROW(UCEException::GetInstance().set_reboot_node(true));
-  EXPECT_EQ(UCEException::GetInstance().is_reboot_node(), true);
-  EXPECT_EQ(UCEException::GetInstance().is_arf(), true);
-  EXPECT_EQ(UCEException::GetInstance().get_has_throw_error(), true);
+  EXPECT_NO_THROW(tools::ErrorHandler::GetInstance().SetForceStopFlag(true));
+  EXPECT_EQ(tools::ErrorHandler::GetInstance().GetForceStopFlag(), true);
 
-  EXPECT_NO_THROW(UCEException::GetInstance().set_force_stop_flag(true));
-  EXPECT_EQ(UCEException::GetInstance().get_force_stop_flag(), true);
+  EXPECT_NO_THROW(tools::ErrorHandler::GetInstance().SetRebootType("arf"));
+  EXPECT_EQ(tools::ErrorHandler::GetInstance().GetRebootType(), "arf");
 
-  EXPECT_NO_THROW(UCEException::GetInstance().set_reboot_type("arf"));
-  EXPECT_EQ(UCEException::GetInstance().get_reboot_type(), "arf");
-  EXPECT_EQ(UCEException::GetInstance().get_suspect_remote_flag(), false);
-  EXPECT_EQ(UCEException::GetInstance().get_has_throw_error(), true);
+  EXPECT_EQ(tools::ErrorHandler::GetInstance().GetSuspectRemoteFlag(), false);
+  EXPECT_EQ(tools::ErrorHandler::GetInstance().HasThrownError(), true);
 }
 }  // namespace mindspore

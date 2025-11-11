@@ -15,6 +15,7 @@
  */
 
 #include "plugin/ascend/res_manager/ascend_res_manager.h"
+#include "tools/error_handler/error_handler.h"
 #ifndef _WIN32
 #include <dlfcn.h>
 #include <libgen.h>
@@ -410,8 +411,8 @@ void AscendResManager::Destroy() {
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
   // destroy hccl things
-  if (tools::TftConfig::GetInstance() != nullptr && (tools::TftConfig::GetInstance()->IsEnableWatchdog() ||
-                                                     tools::TftConfig::GetInstance()->IsEnableSaveHcclOpStatus())) {
+  static auto watchdog_enabled_cb = GET_COMMON_CALLBACK(IsEnableWatchDog, bool);
+  if (watchdog_enabled_cb != nullptr && watchdog_enabled_cb()) {
     device::ascend::HcclWatchDogManager::GetInstance().DestroyHandler();
   }
 
@@ -669,11 +670,11 @@ bool SyncStreamForCopy(const AscendResManager *const res_manager, size_t stream_
   MS_EXCEPTION_IF_NULL(res_manager);
   bool ret = res_manager->SyncStream(stream_id);
   if (!ret) {
-    MS_LOG(WARNING) << "Uce flag: " << UCEException::GetInstance().get_uce_flag()
-                    << ", force stop flag: " << UCEException::GetInstance().get_force_stop_flag();
-    if (UCEException::GetInstance().get_uce_flag()) {
+    MS_LOG(WARNING) << "Uce flag: " << tools::ErrorHandler::GetInstance().GetUceFlag()
+                    << ", force stop flag: " << tools::ErrorHandler::GetInstance().GetForceStopFlag();
+    if (tools::ErrorHandler::GetInstance().GetUceFlag()) {
       MS_LOG(EXCEPTION) << "UCEError occurs when execute.";
-    } else if (UCEException::GetInstance().get_force_stop_flag()) {
+    } else if (tools::ErrorHandler::GetInstance().GetForceStopFlag()) {
       MS_LOG(EXCEPTION) << "ForceStopError occurs when execute.";
     }
     MS_LOG(EXCEPTION) << "Sync stream error!";
@@ -1792,14 +1793,14 @@ void AscendResManager::UceMemRepair(int32_t device_id) {
 
 std::vector<uint64_t> AscendResManager::GetOptimizerTimestamps() {
   OptimizerEventInfo::GetInstance().GetOptimizerTimestamp(false);
-  auto hbm_error_time = UCEException::GetInstance().get_uce_occur_time();
+  auto hbm_error_time = tools::ErrorHandler::GetInstance().GetUceOccurTime();
   auto opt_start_timestamp = OptimizerEventInfo::GetInstance().get_optimizer_start_timestamp();
   auto opt_end_timestamp = OptimizerEventInfo::GetInstance().get_optimizer_end_timestamp();
   return std::vector<uint64_t>{hbm_error_time, opt_start_timestamp, opt_end_timestamp};
 }
 
 void AscendResManager::StopDevice(int32_t device_id) {
-  UCEException::GetInstance().set_force_stop_flag(true);
+  tools::ErrorHandler::GetInstance().SetForceStopFlag(true);
   // Wait 1 s to avoid stop device and suspension occur at the same time.
   const int64_t kTimeToWait = 1;
   std::this_thread::sleep_for(std::chrono::seconds(kTimeToWait));

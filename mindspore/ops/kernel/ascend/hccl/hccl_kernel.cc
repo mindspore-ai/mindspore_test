@@ -34,7 +34,7 @@
 #include "plugin/ascend/res_manager/collective/ascend_collective_comm_lib.h"
 #include "plugin/ascend/res_manager/mem_manager/ascend_memory_manager.h"
 #include "plugin/ascend/res_manager/hal_manager/ascend_hal_manager.h"
-#include "utils/ms_exception.h"
+#include "include/utils/callback.h"
 
 using AscendCollectiveCommLib = mindspore::device::ascend::AscendCollectiveCommLib;
 using MultiAscendCollectiveCommLib = mindspore::device::ascend::MultiAscendCollectiveCommLib;
@@ -288,7 +288,10 @@ void HcclKernel::LoadHcclLibrary() {
   primitive_->set_attr(kAttrCollectiveCommLib, MakeValue<std::string>("HCCL"));
 }
 
-bool HcclKernel::NeedReGetHcom() { return mindspore::UCEException::GetInstance().rebuild_group_flag(); }
+bool HcclKernel::NeedReGetHcom() {
+  static auto need_rebuild_group_cb = GET_COMMON_CALLBACK(NeedRebuildGroup, bool);
+  return need_rebuild_group_cb != nullptr && need_rebuild_group_cb();
+}
 
 #ifdef ENABLE_INTERNAL_KERNELS
 void HcclKernel::LoadLcclLibrary() {

@@ -23,14 +23,21 @@
 #include "utils/ms_utils.h"
 #include "utils/log_adapter.h"
 #include "utils/ms_context.h"
+#include "include/utils/utils.h"
+#include "include/utils/callback.h"
 
 namespace mindspore {
 namespace tools {
 namespace {
 // training fault tolerance config env var 'MS_ENABLE_TFT'
 constexpr char kMsEnableTft[] = "MS_ENABLE_TFT";
+constexpr char kTftKeyUce[] = "UCE";
+constexpr char kTftKeyHcce[] = "HCCE";
+constexpr char kTftKeyArf[] = "ARF";
+constexpr char kTftKeyRsc[] = "RSC";
 constexpr char kTftKeyTre[] = "TRE";
 constexpr char kTftKeyTreSnapShotSteps[] = "TRE_SNAPSHOT_STEPS";
+constexpr char kTftValueEnable[] = "1";
 constexpr char kTftValueNormalTRE[] = "1";
 constexpr char kTftValueStepTRE[] = "2";
 constexpr size_t kTftSubItemNumElems = 2;
@@ -199,6 +206,26 @@ int TftConfig::GetSnapShotSteps() {
   return mem_cfg_steps;
 }
 
+bool TftConfig::IsEnableUCE() {
+  static bool is_enable_uce = IsEnableFeature(kTftKeyUce);
+  return is_enable_uce && mindspore::IsGraphPipelineCompiled();
+}
+
+bool TftConfig::IsEnableHCCE() {
+  static bool is_enable_hcce = IsEnableFeature(kTftKeyHcce);
+  return is_enable_hcce && mindspore::IsGraphPipelineCompiled();
+}
+
+bool TftConfig::IsEnableARF() {
+  static bool is_enable_arf = IsEnableFeature(kTftKeyArf);
+  return is_enable_arf && mindspore::IsGraphPipelineCompiled();
+}
+
+bool TftConfig::IsEnableRsc() {
+  static bool is_enable_rsc = IsEnableFeature(kTftKeyArf) || IsEnableFeature(kTftKeyRsc);
+  return is_enable_rsc && mindspore::IsGraphPipelineCompiled();
+}
+
 std::map<std::string, std::string> &TftConfig::GetConfigMap() {
   static std::map<std::string, std::string> configs;
   static bool config_parsed = false;
@@ -240,5 +267,22 @@ std::map<std::string, std::string> &TftConfig::GetConfigMap() {
 
   return configs;
 }
+
+bool TftConfig::IsEnableFeature(const std::string &feature_name) {
+  auto iter = GetConfigMap().find(feature_name);
+  if (iter == GetConfigMap().end()) {
+    return false;
+  }
+  return iter->second == kTftValueEnable;
+}
+
+bool IsEnableArf() { return mindspore::tools::TftConfig::GetInstance()->IsEnableARF(); }
+bool IsEnableWatchDog() {
+  return tools::TftConfig::GetInstance()->IsEnableWatchdog() ||
+         tools::TftConfig::GetInstance()->IsEnableSaveHcclOpStatus();
+}
+
+REGISTER_COMMON_CALLBACK(IsEnableArf);
+REGISTER_COMMON_CALLBACK(IsEnableWatchDog);
 }  // namespace tools
 }  // namespace mindspore

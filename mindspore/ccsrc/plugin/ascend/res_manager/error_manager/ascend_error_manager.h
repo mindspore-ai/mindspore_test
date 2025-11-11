@@ -33,7 +33,7 @@ class ASCEND_RES_MANAGER_EXPORT AscendSnapshotMgr : public SnapshotMgr {
   static std::shared_ptr<AscendSnapshotMgr> GetInstance();
 
   AscendSnapshotMgr() = default;
-  ~AscendSnapshotMgr();
+  ~AscendSnapshotMgr() override;
   // disable copy constructor and the assignment operator
   AscendSnapshotMgr(const AscendSnapshotMgr &) = delete;
   AscendSnapshotMgr &operator=(const AscendSnapshotMgr &) = delete;

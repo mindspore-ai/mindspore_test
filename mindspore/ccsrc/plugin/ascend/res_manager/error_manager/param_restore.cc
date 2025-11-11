@@ -25,6 +25,7 @@
 #include "plugin/ascend/res_manager/symbol_interface/acl_rt_symbol.h"
 #include "plugin/ascend/res_manager/symbol_interface/symbol_utils.h"
 #include "include/cluster/topology/collective_manager.h"
+#include "tools/error_handler/error_handler.h"
 #include "utils/log_adapter.h"
 
 namespace mindspore {
@@ -298,7 +299,7 @@ int ParamReplication::SendRecv(const std::vector<tensor::TensorPtr> &params, int
   size_t xchg_buf_size = GetExchangeBufferSize(local_info, remote_info);
   void *xchg_buf_addr = nullptr;
   if (xchg_buf_size != DataExchangeInfo::kInvalidParamSize &&
-      UceCanUseBatchCopy(xchg_buf_size, local_info.GetFreeDevMem()) && !UCEException::GetInstance().is_arf()) {
+      UceCanUseBatchCopy(xchg_buf_size, local_info.GetFreeDevMem()) && !tools::ErrorHandler::GetInstance().IsArf()) {
     xchg_buf_addr = res_mgr_->AllocateMemory(xchg_buf_size, stream_id_);
   }
 

@@ -102,8 +102,7 @@ class AscendKernelExecutor : public KernelExecutor {
   bool MemoryCopyAsync(const CNodePtr &node, const std::vector<KernelTensor *> &inputs,
                        const std::vector<KernelTensor *> &outputs, void *stream) const;
   void DoAsyncCkpt(const CNodePtr &kernel) const;
-  void SetArfError() const;
-  void SetUceError() const;
+  void SetResumableError() const;
   bool PreSaveWeight(const CNodePtr &kernel, KernelMod *kernel_mod, const std::vector<KernelTensor *> &inputs,
                      void *stream) const;
   bool LaunchCallback(CallbackFunc callback_func, size_t stream_id, bool is_block) const;

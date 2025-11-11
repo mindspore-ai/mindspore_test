@@ -15,6 +15,7 @@
  */
 
 #include "plugin/ascend/res_manager/collective/ascend_communication_group.h"
+#include "include/utils/callback.h"
 #if !defined(_WIN32) && !defined(_WIN64)
 #include <arpa/inet.h>
 #endif
@@ -22,7 +23,6 @@
 #include <variant>
 #include <unordered_map>
 #include <algorithm>
-#include "tools/error_handler/error_config.h"
 #include "include/cluster/topology/collective_manager.h"
 #include "plugin/ascend/res_manager/hccl_adapter/hccl_adapter.h"
 #include "plugin/ascend/res_manager/error_manager/collective_comm_monitor.h"
@@ -119,9 +119,8 @@ bool AscendCommunicationGroup::Initialize(void *root_info) {
   initialized_ = true;
 
   // Initialize watch dog for every group.
-  if (common::GetEnv(kSimulationLevel).empty() && tools::TftConfig::GetInstance() != nullptr &&
-      (tools::TftConfig::GetInstance()->IsEnableWatchdog() ||
-       tools::TftConfig::GetInstance()->IsEnableSaveHcclOpStatus())) {
+  static auto watchdog_enabled_cb = GET_COMMON_CALLBACK(IsEnableWatchDog, bool);
+  if (common::GetEnv(kSimulationLevel).empty() && watchdog_enabled_cb != nullptr && watchdog_enabled_cb()) {
     MS_LOG(INFO) << "Start initializing hccl watchdog on device side for group: " << name_
                  << ", rank: " << global_rank_;
     HcclWatchDogManager::GetInstance().AddHandler(

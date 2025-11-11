@@ -56,16 +56,16 @@ constexpr auto RS_UNKNOWN = "RS_UNKNOWN";
 }  // namespace
 
 bool SkipHcomInitWait() {
-  auto reboot_type = UCEException::GetInstance().get_reboot_type();
-  auto rebuild_flag = UCEException::GetInstance().rebuild_group_flag();
+  auto reboot_type = tools::ErrorHandler::GetInstance().GetRebootType();
+  auto rebuild_flag = tools::ErrorHandler::GetInstance().GetRebuildGroupFlag();
   return reboot_type == "hot_switch" && !rebuild_flag;
 }
 
 REGISTER_COMMON_CALLBACK(SkipHcomInitWait);
 
 bool SkipSubmitTask() {
-  auto reboot_type = UCEException::GetInstance().get_reboot_type();
-  auto rebuild_flag = UCEException::GetInstance().rebuild_group_flag();
+  auto reboot_type = tools::ErrorHandler::GetInstance().GetRebootType();
+  auto rebuild_flag = tools::ErrorHandler::GetInstance().GetRebuildGroupFlag();
   auto flag = reboot_type == "hot_switch" && !rebuild_flag;
   if (flag) {
     MS_LOG(WARNING) << "HOT Switch node no need submit hcom init task before rebuild hcom flag";
@@ -211,7 +211,7 @@ void FinalizeCommunication() {
 void RebuildGroup() {
   // rebuild comm
   MS_LOG(WARNING) << "Try to rebuild group communication";
-  UCEException::GetInstance().set_rebuild_group_flag(true);
+  tools::ErrorHandler::GetInstance().SetRebuildGroupFlag(true);
   auto group_info = distributed::collective::CollectiveManager::instance()->get_group_info();
   device::GroupOptions config = {};
   config.async = true;
@@ -225,36 +225,37 @@ void RebuildGroup() {
   }
   (void)distributed::collective::CollectiveManager::instance()->WaitAllCommInitDone();
   MS_LOG(WARNING) << "All group init done";
-  UCEException::GetInstance().set_force_stop_flag(false);
-  UCEException::GetInstance().clear_uce_error();
+  tools::ErrorHandler::GetInstance().ClearErrorType();
   MS_LOG(WARNING) << "Rebuild communication end";
 }
-bool IsRebootNode() { return UCEException::GetInstance().is_reboot_node(); }
+bool IsRebootNode() { return tools::ErrorHandler::GetInstance().IsRebootNode(); }
 
 void SetIsRebootNode(bool is_reboot) {
   MS_LOG(WARNING) << "Set is reboot node flag: " << is_reboot;
-  UCEException::GetInstance().set_reboot_node(is_reboot);
+  tools::ErrorHandler::GetInstance().SetRebootNode(is_reboot);
 }
 
 void SetRebootNodeType(const std::string &type) {
   MS_LOG(WARNING) << "Set is reboot node reboot type: " << type;
-  UCEException::GetInstance().set_reboot_type(type);
+  tools::ErrorHandler::GetInstance().SetRebootType(type);
 }
 
-string GetRebootNodeType() { return UCEException::GetInstance().get_reboot_type(); }
+string GetRebootNodeType() { return tools::ErrorHandler::GetInstance().GetRebootType(); }
 
 void SetIsArf(bool is_arf) {
   MS_LOG(WARNING) << "Set is arf flag: " << is_arf;
-  UCEException::GetInstance().set_is_arf(is_arf);
+  tools::ErrorHandler::GetInstance().SetIsArf(is_arf);
   if (!is_arf) {
     // reset reboot node flag when reset arf flag at train step end
-    UCEException::GetInstance().set_reboot_node(false);
-    UCEException::GetInstance().set_reboot_type("");
-    UCEException::GetInstance().set_rebuild_group_flag(false);
+    tools::ErrorHandler::GetInstance().SetRebootNode(false);
+    tools::ErrorHandler::GetInstance().SetRebootType("");
+    tools::ErrorHandler::GetInstance().SetRebuildGroupFlag(false);
   }
 }
 
-bool GetIsArf() { return UCEException::GetInstance().is_arf(); }
+bool GetIsArf() { return tools::ErrorHandler::GetInstance().IsArf(); }
+
+void ResetErrorState() { tools::ErrorHandler::GetInstance().SetForceStopFlag(false); }
 
 void RePreLaunchSendRecv(int32_t device_id) {
   MS_LOG(WARNING) << "Try to pre-launch send recv. device id: " << device_id;
@@ -373,5 +374,6 @@ void RegTFT(py::module *m) {
   (void)m->def("_clear_snapshot_saving_flag", &mindspore::ClearSnapshotSavingFlag, "Clear snapshot saving flag.");
   (void)m->def("_get_snapshot_params", &mindspore::GetSnapshotParams, "Get parameters from snapshot");
   (void)m->def("tft_register_config", &RegisterConfig, "Register all configs.");
+  (void)m->def("_reset_error_state", &ResetErrorState, "Reset error state of ErrorHandler.");
 }
 }  // namespace mindspore

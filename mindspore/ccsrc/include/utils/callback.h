@@ -94,6 +94,9 @@ class CommonCallbackRegister {
 #define REGISTER_COMMON_CALLBACK(func)                                                    \
   static const mindspore::callback::CommonCallbackRegister<std::function<decltype(func)>> \
     g_##func##_callback_register(#func, func)
+
+#define GET_COMMON_CALLBACK(CALLBACK, ...) \
+  mindspore::callback::CommonCallback::GetInstance().GetCallback<__VA_ARGS__>(#CALLBACK)
 }  // namespace mindspore::callback
 
 #endif  // MINDSPORE_CALLBACK_CALLBACK_H_
