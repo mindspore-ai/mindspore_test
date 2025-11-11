@@ -12,6 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+"""
+Tests the data dump functionality for bfloat16 data type
+"""
 import os
 import tempfile
 import time
@@ -19,11 +22,13 @@ import numpy as np
 from mindspore import Tensor
 from mindspore.nn import Cell
 from mindspore.common import dtype as mstype
-import mindspore.context as context
+from mindspore import context
 import csv
 from dump_test_utils import generate_statistic_dump_json
 from tests.mark_utils import arg_mark
 from tests.security_utils import security_off_wrap
+from dump_check import SyncDumpCheck
+import json
 
 class MultiOpNetBfloat16Net(Cell):
     def construct(self, x, y):
@@ -64,7 +69,11 @@ def run_dump_bfloat16(dump_scene):
         find_statistic_cmd = f'find {dump_path} -name "statistic.csv"'
         statistic_file = os.popen(find_statistic_cmd).read().strip()
         assert os.path.exists(statistic_file)
-        with open(statistic_file) as f:
+        with open(dump_config_path, 'r', encoding="utf-8") as f:
+            dump_json = json.load(f)
+        dump_check = SyncDumpCheck(dump_json, iteration_id_list=1)
+        dump_check.dump_result_check()
+        with open(statistic_file, encoding="utf-8") as f:
             reader = csv.DictReader(f)
             stats = list(reader)
             bfloat16_stats = [s for s in stats if s['Data Type'] == 'bfloat16']
