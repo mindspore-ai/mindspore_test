@@ -308,6 +308,7 @@ class SuperKernelActor : public DebugAwareActor {
 
   static std::vector<std::pair<size_t, void *>> streams_;
   static std::vector<DeviceEventPtr> events_;
+  static std::vector<DeviceEventPtr> events_to_default_stream_;
   static std::vector<AsyncRQueuePtr> queues_;
 
   bool enable_infer_boost_{false};

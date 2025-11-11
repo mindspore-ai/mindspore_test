@@ -48,6 +48,7 @@ size_t SuperKernelActor::parallel_slice_num_ = 4;
 
 std::vector<std::pair<size_t, void *>> SuperKernelActor::streams_;
 std::vector<DeviceEventPtr> SuperKernelActor::events_;
+std::vector<DeviceEventPtr> SuperKernelActor::events_to_default_stream_;
 std::vector<AsyncRQueuePtr> SuperKernelActor::queues_;
 
 static SpinLock spin_lock;
@@ -224,6 +225,9 @@ void SuperKernelActor::ClearParallelDispatchResource() {
     if (!events_.empty()) {
       events_.clear();
     }
+    if (!events_to_default_stream_.empty()) {
+      events_to_default_stream_.clear();
+    }
     if (!serial_launch_kernels_to_events_.empty()) {
       serial_launch_kernels_to_events_.clear();
     }
@@ -322,34 +326,43 @@ void SuperKernelActor::Init() {
 }
 
 void SuperKernelActor::InitParallelDispatchResource() {
-  if (streams_.empty()) {
-    streams_.resize(parallel_dispatch_num_);
-    for (size_t i = 0; i < parallel_dispatch_num_; i++) {
-      if (!device_contexts_[0]->device_res_manager_->CreateStream(&(streams_[i].first))) {
-        MS_LOG(EXCEPTION) << "Create stream failed.";
-      }
-      streams_[i].second = device_contexts_[0]->device_res_manager_->GetStream(streams_[i].first);
-      MS_EXCEPTION_IF_NULL(streams_[i].second);
+  MS_EXCEPTION_IF_CHECK_FAIL(streams_.empty(),
+                             "streams_ is not empty, parallel dispatch resource is already initialized.");
+  streams_.resize(parallel_dispatch_num_);
+  for (size_t i = 0; i < parallel_dispatch_num_; i++) {
+    if (!device_contexts_[0]->device_res_manager_->CreateStream(&(streams_[i].first))) {
+      MS_LOG(EXCEPTION) << "Create stream failed.";
     }
+    streams_[i].second = device_contexts_[0]->device_res_manager_->GetStream(streams_[i].first);
+    MS_EXCEPTION_IF_NULL(streams_[i].second);
   }
 
-  if (events_.empty()) {
-    // New one more for sync between default stream and last launch stream;
-    for (size_t i = 0; i < parallel_dispatch_num_ * parallel_slice_num_ + 1; i++) {
-      auto event = device_contexts_[0]->device_res_manager_->CreateEventWithFlag(false, false, false);
-      MS_EXCEPTION_IF_NULL(event);
-      events_.push_back(event);
-    }
+  MS_EXCEPTION_IF_CHECK_FAIL(events_.empty(),
+                             "events_ is not empty, parallel dispatch resource is already initialized.");
+  // New one more for sync between default stream and last launch stream;
+  for (size_t i = 0; i < parallel_dispatch_num_ * parallel_slice_num_ + 1; i++) {
+    auto event = device_contexts_[0]->device_res_manager_->CreateEventWithFlag(false, false, false);
+    MS_EXCEPTION_IF_NULL(event);
+    events_.push_back(event);
   }
 
-  if (queues_.empty()) {
-    for (size_t i = 0; i < parallel_dispatch_num_; i++) {
-      auto queue = std::make_unique<AsyncRQueue>(std::string("batch_launch_") + std::to_string(i),
-                                                 runtime::kThreadWaitLevel::kLevelDevice);
-      MS_EXCEPTION_IF_NULL(queue);
-      queue->SetSpin(false);
-      queues_.push_back(std::move(queue));
-    }
+  MS_EXCEPTION_IF_CHECK_FAIL(
+    events_to_default_stream_.empty(),
+    "events_to_default_stream_ is not empty, parallel dispatch resource is already initialized.");
+  for (size_t i = 0; i < streams_.size(); i++) {
+    auto event = device_contexts_[0]->device_res_manager_->CreateEventWithFlag(false, false, true);
+    MS_EXCEPTION_IF_NULL(event);
+    events_to_default_stream_.push_back(event);
+  }
+
+  MS_EXCEPTION_IF_CHECK_FAIL(queues_.empty(),
+                             "queues_ is not empty, parallel dispatch resource is already initialized.");
+  for (size_t i = 0; i < parallel_dispatch_num_; i++) {
+    auto queue = std::make_unique<AsyncRQueue>(std::string("batch_launch_") + std::to_string(i),
+                                               runtime::kThreadWaitLevel::kLevelDevice);
+    MS_EXCEPTION_IF_NULL(queue);
+    queue->SetSpin(false);
+    queues_.push_back(std::move(queue));
   }
 
   const size_t kEventNum = 2;
@@ -1269,6 +1282,14 @@ void SuperKernelActor::ParallelDispatchKernels(OpContext<KernelTensor> *const co
         e->ResetEvent();
       }
     }
+  }
+  // It must be ensured that the reset at the tail is executed within the step, or an event create via
+  // aclrtCreateEventExWithFlag is inserted between the parallel stream and the default stream.
+  size_t parallel_stream_size = streams_.size();
+  for (size_t i = 0; i < parallel_stream_size; ++i) {
+    auto &e = events_to_default_stream_[i];
+    e->RecordEvent(streams_[i].first);
+    e->WaitEventWithoutReset(0);
   }
   MS_LOG(INFO) << "End parallel dispatch kernels for graph: " << graph_->ToString();
 }
