@@ -64,8 +64,8 @@ class TestSignalHandler:
                 pass
         except RuntimeError:
             tb_info = traceback.format_exc()
-            assert re.search("DataLoader worker .* exited unexpectedly", tb_info)
-            assert re.search("Dataset worker process .* core dumped: Segmentation fault", tb_info)
+            assert re.search(r"DataLoader worker \(pid\(s\): .*\) exited unexpectedly", tb_info)
+            assert re.search(r"DataLoader worker \(pid: .*\) core dumped: Segmentation fault", tb_info)
 
     @arg_mark(plat_marks=["cpu_linux"], level_mark="level0", card_mark="onecard", essential_mark="essential")
     def test_signal_abort(self):
@@ -84,5 +84,5 @@ class TestSignalHandler:
                 pass
         except RuntimeError:
             tb_info = traceback.format_exc()
-            assert re.search("DataLoader worker .* exited unexpectedly", tb_info)
-            assert re.search("Dataset worker process .* core dumped: Aborted", tb_info)
+            assert re.search(r"DataLoader worker \(pid\(s\): .*\) exited unexpectedly", tb_info)
+            assert re.search(r"DataLoader worker \(pid: .*\) core dumped: Aborted", tb_info)

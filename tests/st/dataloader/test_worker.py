@@ -42,9 +42,7 @@ def test_generate_state(base_seed, worker_id):
 
 
 class WorkerInfoDataset(Dataset):
-    """
-    A dataset for testing worker info.
-    """
+    """A dataset for testing worker info."""
 
     def __init__(self, num_samples):
         super().__init__()
@@ -57,10 +55,8 @@ class WorkerInfoDataset(Dataset):
         return self.num_samples
 
 
-class WorkerInitFnDataset(IterableDataset):
-    """
-    A dataset for testing worker init function.
-    """
+class WorkerInitFnDataset(IterableDataset):  # pylint: disable=abstract-method
+    """A dataset for testing worker init function."""
 
     def __init__(self, num_samples):
         super().__init__()
@@ -74,9 +70,7 @@ class WorkerInitFnDataset(IterableDataset):
 
 
 class TestWorker:
-    """
-    Test Worker.
-    """
+    """Test Worker."""
 
     @arg_mark(plat_marks=["cpu_linux"], level_mark="level0", card_mark="onecard", essential_mark="essential")
     def test_worker_init_fn(self):
@@ -132,7 +126,6 @@ class TestWorker:
         Description: Test printing the worker info.
         Expectation: The result is as expected.
         """
-
         worker_info = WorkerInfo(id=0, num_workers=4, seed=0, dataset=None)
         assert str(worker_info) == "WorkerInfo: {id: 0, num_workers: 4, seed: 0, dataset: None}"
 
@@ -143,7 +136,6 @@ class TestWorker:
         Description: Test modifying the attributes of the worker info.
         Expectation: Raise RuntimeError.
         """
-
         worker_info = WorkerInfo(id=0, num_workers=4, seed=0, dataset=None)
         with pytest.raises(
             RuntimeError, match="Cannot modify the attributes of WorkerInfo object after initialization"
@@ -158,10 +150,15 @@ class TestWorker:
         Description: Test raising exception in the worker.
         Expectation: Raise RuntimeError.
         """
+        worker_id = 0
+        msg = "We have trouble"
 
-        with pytest.raises(RuntimeError, match=r"DataLoader worker .* \(pid: .*\) caught .* with message"):
+        with pytest.raises(
+            RuntimeError,
+            match=rf"DataLoader worker {worker_id} \(pid: .*\) caught {exc_type.__name__} with message:(\n|.)*{msg}",
+        ):
             try:
-                raise exc_type("We have trouble.")
+                raise exc_type(msg)
             except Exception:  # pylint: disable=W0703
-                worker_exception = WorkerException(worker_id=0)
+                worker_exception = WorkerException(worker_id=worker_id)
                 worker_exception.reraise()

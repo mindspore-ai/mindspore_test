@@ -103,7 +103,7 @@ class FetcherFactory:
             return MapDatasetFetcher(dataset, auto_collation, collate_fn)
         if dataset_type == DatasetType.IterableDataset:
             return IterableDatasetFetcher(dataset, auto_collation, collate_fn, drop_last)
-        raise ValueError(f"Unknown dataset type: {dataset_type}")
+        raise ValueError(f"Unknown dataset type: {dataset_type}.")
 
 
 class DataLoader(Generic[_T_co]):
@@ -614,11 +614,11 @@ class _MultiProcessIterator(_Iterator):
             status, data = self._try_get_data(self.timeout)
             if status:
                 return data
-            raise RuntimeError(f"DataLoader get data timeout after {self.timeout} seconds.")
+            raise RuntimeError(f"DataLoader timed out waiting for data after {self.timeout} seconds.")
 
         while True:
             if self.pin_memory and not self.pin_worker_thread.is_alive():
-                raise RuntimeError("DataLoader pin memory thread is not alive.")
+                raise RuntimeError("DataLoader pin memory thread exited unexpectedly.")
             success, data = self._try_get_data()
             if success:
                 return data
@@ -632,14 +632,14 @@ class _MultiProcessIterator(_Iterator):
             return True, data
         except Exception as exc:  # pylint: disable=W0703
             failed_workers = []
-            for worker_id, w in enumerate(self.data_workers):
-                if self.worker_status[worker_id] and not w.is_alive():
-                    failed_workers.append(w)
+            for worker_id, worker in enumerate(self.data_workers):
+                if self.worker_status[worker_id] and not worker.is_alive():
+                    failed_workers.append(worker)
                     self.index_queues[worker_id].put(None)
                     self.worker_status[worker_id] = False
             if failed_workers:
-                pids_str = ", ".join(str(w.pid) for w in failed_workers)
-                raise RuntimeError(f"DataLoader worker (pid(s) {pids_str}) exited unexpectedly") from exc
+                pids_str = ", ".join(str(worker.pid) for worker in failed_workers)
+                raise RuntimeError(f"DataLoader worker (pid(s): {pids_str}) exited unexpectedly.") from exc
             if isinstance(exc, queue.Empty):
                 return False, None
             raise
@@ -668,13 +668,14 @@ class _MultiProcessIterator(_Iterator):
                 for index_queue in self.index_queues:
                     index_queue.close()
                     index_queue.join_thread()
-            except Exception as e:
-                raise e
             finally:
                 cde.deregister_worker_pids(id(self))
-                for worker in self.data_workers:
+                for worker_id, worker in enumerate(self.data_workers):
                     if worker.is_alive():
-                        logger.warning(f"terminate worker {worker.pid}")
+                        logger.warning(
+                            f"DataLoader worker {worker_id} (pid: {worker.pid}) failed to join within "
+                            f"{WORKER_TIME_OUT} seconds and will be terminated manually."
+                        )
                         worker.terminate()
 
     def __del__(self):
