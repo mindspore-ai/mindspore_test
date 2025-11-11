@@ -157,12 +157,14 @@ void CopyData(const DeviceAddress *src_device_address, const DeviceAddress *dst_
 }  // namespace
 
 bool TestResManager::SyncCopy(const DeviceAddressPtr &dst_device_sync, const DeviceAddressPtr &src_device_sync,
-                              size_t stream_id) const {
+                              size_t stream_id, const DeviceAddressExtPtr &src_ext,
+                              const DeviceAddressExtPtr &dst_ext) const {
   return AsyncCopy(dst_device_sync, src_device_sync, stream_id, false);
 }
 
 bool TestResManager::AsyncCopy(const DeviceAddressPtr &dst_device_sync, const DeviceAddressPtr &src_device_sync,
-                               size_t stream_id, bool) const {
+                               size_t stream_id, bool, const DeviceAddressExtPtr &src_ext,
+                               const DeviceAddressExtPtr &dst_ext) const {
   const auto &dst_device_address = dynamic_cast<const TestDeviceAddress *>(dst_device_sync.get());
   const auto &src_device_address = dynamic_cast<const TestDeviceAddress *>(src_device_sync.get());
   MS_EXCEPTION_IF_NULL(dst_device_address);
@@ -217,7 +219,8 @@ bool TestResManager::AsyncCopy(const DeviceAddressPtr &dst_device_sync, const De
 
 MS_REGISTER_HAL_COPY_FUNC(
   DeviceType::kCPU,
-  ([](const DeviceAddressPtr &dst_device_sync, const DeviceAddressPtr &src_device_sync, size_t stream_id) {
+  ([](const DeviceAddressPtr &dst_device_sync, const DeviceAddressPtr &src_device_sync, size_t stream_id,
+      const DeviceAddressExtPtr &src_ext, const DeviceAddressExtPtr &dst_ext) {
     auto context = MsContext::GetInstance();
     MS_EXCEPTION_IF_NULL(context);
     auto device_id = context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
@@ -226,9 +229,10 @@ MS_REGISTER_HAL_COPY_FUNC(
       device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
     MS_EXCEPTION_IF_NULL(host_context);
     MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
-    return host_context->device_res_manager_->SyncCopy(dst_device_sync, src_device_sync, stream_id);
+    return host_context->device_res_manager_->SyncCopy(dst_device_sync, src_device_sync, stream_id, src_ext, dst_ext);
   }),
-  ([](const DeviceAddressPtr &dst_device_sync, const DeviceAddressPtr &src_device_sync, size_t stream_id, bool) {
+  ([](const DeviceAddressPtr &dst_device_sync, const DeviceAddressPtr &src_device_sync, size_t stream_id, bool,
+      const DeviceAddressExtPtr &src_ext, const DeviceAddressExtPtr &dst_ext) {
     auto context = MsContext::GetInstance();
     MS_EXCEPTION_IF_NULL(context);
     auto device_id = context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
@@ -237,7 +241,7 @@ MS_REGISTER_HAL_COPY_FUNC(
       device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
     MS_EXCEPTION_IF_NULL(host_context);
     MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
-    return host_context->device_res_manager_->SyncCopy(dst_device_sync, src_device_sync, stream_id);
+    return host_context->device_res_manager_->SyncCopy(dst_device_sync, src_device_sync, stream_id, src_ext, dst_ext);
   }),
   ([](void *dst, const void *src, uint64_t size, size_t stream_id) { return true; }));
 }  // namespace test

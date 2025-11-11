@@ -100,10 +100,8 @@ class GEBackend : public BackendBase {
                                 const mindspore::device::DeviceAddressPtr &device_tensor,
                                 const tensor::TensorPtr &input_tensor);
   void SetTensorUpdateCallback(const tensor::TensorPtr &update_tensor);
-  void SyncTensorData(const tensor::TensorPtr &host_tensor, const std::shared_ptr<device::DeviceAddress> &device_tensor,
-                      const AnfNodePtr &node);
-  bool Copy(const mindspore::device::DeviceAddressPtr &dst_device_tensor,
-            const mindspore::device::DeviceAddressPtr &src_device_tensor) const;
+  bool Copy(KernelTensor *const dst_kernel_tensor, const tensor::TensorPtr &src_tensor) const;
+  bool Copy(KernelTensor *const dst_kernel_tensor, KernelTensor *const src_kernel_tensor) const;
   // outputs
   void ConstructOutputs(const KernelGraphPtr &func_graph, std::vector<tensor::TensorPtr> *outputs,
                         std::vector<TypePtr> *output_types);
@@ -134,8 +132,8 @@ class GEBackend : public BackendBase {
   std::set<GraphId> graph_ids_;
   std::vector<AnfNodePtr> control_nodes_;
 
-  // All the backend graphs shared the members and status in the graph building and running. Need clear the object when
-  // the graph destroy.
+  // All the backend graphs shared the members and status in the graph building and running. Need clear the object
+  // when the graph destroy.
   mindspore::HashMap<BackendGraphId, KernelGraphPtr> graph_map_;
   mindspore::HashMap<BackendGraphId, FuncGraphPtr> root_graph_map_;
   // if param init in device, for refmode

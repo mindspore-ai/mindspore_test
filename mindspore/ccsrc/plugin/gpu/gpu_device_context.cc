@@ -765,8 +765,10 @@ void MallocMemoryForDeviceAddress(device::DeviceAddress *device_address, const d
   }
 }
 
-void MallocMemoryAndCopyValue(const device::DeviceAddressPtr &device_address,
-                              const device::DeviceContext *device_context, std::vector<int64_t> vec) {
+void MallocMemoryAndCopyValue(const kernel::KernelTensorPtr &kernel_tensor, const device::DeviceContext *device_context,
+                              std::vector<int64_t> vec) {
+  MS_EXCEPTION_IF_NULL(kernel_tensor);
+  const auto &device_address = kernel_tensor->device_address();
   MS_EXCEPTION_IF_NULL(device_address);
   device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, "Graph", "Contiguous", "");
   device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, "Graph", device::tracker::MemType::kWorkSpace,
@@ -793,7 +795,7 @@ void MallocMemoryAndCopyValue(const device::DeviceAddressPtr &device_address,
   MS_EXCEPTION_IF_NULL(host_context);
   MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
   if (!host_context->device_res_manager_->SyncAllStreams(true) ||
-      !SyncCopy(device_address, tensor->device_address(), device_address->stream_id())) {
+      !SyncCopy(kernel_tensor.get(), tensor.get(), device_address->stream_id())) {
     MS_LOG(EXCEPTION) << "SyncHostToDevice failed, vec:" << vec;
   }
 }
@@ -841,8 +843,8 @@ bool GPUKernelExecutor::ExecuteKernelTask(const runtime::KernelTaskType &task_ty
     shape_dev_addr = shape_kernel_tensor->device_address();
     strides_dev_addr = strides_kernel_tensor->device_address();
 
-    MallocMemoryAndCopyValue(shape_dev_addr, device_context_, input_storage_info->shape);
-    MallocMemoryAndCopyValue(strides_dev_addr, device_context_, input_storage_info->strides);
+    MallocMemoryAndCopyValue(shape_kernel_tensor, device_context_, input_storage_info->shape);
+    MallocMemoryAndCopyValue(strides_kernel_tensor, device_context_, input_storage_info->strides);
   }
 
   kernel::ContiguousGpuKernel contiguous_kernel;

@@ -1065,7 +1065,7 @@ void KernelRunner::CopyInputDeviceTensor(KernelTensorPtr kernel_tensor, size_t i
                << " to device address:" << new_kernel_tensor->ToString();
   // Copy from the real parameter to formal parameter and insert the device tensor copy store.
   if (!SyncAllStreamForDeviceAddress(new_device_tensor, device_tensor) ||
-      !SyncCopy(new_device_tensor, device_tensor, kDefaultStreamIndex)) {
+      !SyncCopy(new_kernel_tensor.get(), kernel_tensor.get(), kDefaultStreamIndex)) {
     std::string error_info = "Copy device tensor failed: " + GetAID().Name();
     SET_OPCONTEXT_FAIL_RET_WITH_ERROR_BY_STRATEGY(strategy_, *context, error_info);
   }
@@ -1862,7 +1862,7 @@ void KernelRunner::RefreshDeviceTensorCopyStore(OpContext<KernelTensor> *const c
 
       if (!SyncAllStreamForDeviceAddress(new_kernel_tensor->device_address(), input_kernel_tensor->device_address(),
                                          kDefaultStreamIndex, false) ||
-          !SyncCopy(new_kernel_tensor->device_address(), input_kernel_tensor->device_address(), kDefaultStreamIndex)) {
+          !SyncCopy(new_kernel_tensor, input_kernel_tensor.get(), kDefaultStreamIndex)) {
         std::string error_info = "Copy input device tensor failed: " + GetAID().Name();
         SET_OPCONTEXT_FAIL_RET_WITH_ERROR_BY_STRATEGY(strategy_, *context, error_info);
       }
@@ -1893,7 +1893,7 @@ void KernelRunner::RefreshDeviceTensorCopyStore(OpContext<KernelTensor> *const c
 
       if (!SyncAllStreamForDeviceAddress(new_kernel_tensor->device_address(), output_kernel_tensor->device_address(),
                                          kDefaultStreamIndex, false) ||
-          !SyncCopy(new_kernel_tensor->device_address(), output_kernel_tensor->device_address(), kDefaultStreamIndex)) {
+          !SyncCopy(new_kernel_tensor, output_kernel_tensor.get(), kDefaultStreamIndex)) {
         std::string error_info = "Copy output device tensor failed: " + GetAID().Name();
         SET_OPCONTEXT_FAIL_RET_WITH_ERROR_BY_STRATEGY(strategy_, *context, error_info);
       }

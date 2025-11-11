@@ -34,6 +34,7 @@
 #include "mindapi/base/format.h"
 #include "mindapi/base/types.h"
 #include "ir/device_type.h"
+#include "ir/format_utils.h"
 
 using std::string;
 
@@ -145,7 +146,7 @@ struct HeterogeneousInfo {
   std::optional<size_t> aio_token_;
   // Mark which heterogeneous resource should be allocated.
   NeedAllocateHeteRes need_alloc_hete_res_{NeedAllocateHeteRes::NoNeedHeteRes};
-  std::string ToString() {
+  std::string ToString() const {
     std::ostringstream ofs;
     ofs << this << " host ptr:" << host_ptr_ << " file name:" << file_name_
         << " need alloc hete res:" << need_alloc_hete_res_;
@@ -314,9 +315,28 @@ struct DevicePtrDeleterMakerRegister {
   }
 }  // namespace device
 
+struct DeviceAddressExt {
+  Format format_{Format::DEFAULT_FORMAT};
+  TypeId dtype_id_{kTypeUnknown};
+  ShapeVector shape_vector_{};
+  std::string ToString() const {
+    std::ostringstream ofs;
+    ofs << this << " format:" << kernel::GetFormatFromEnumToStr(format_) << " type id:" << TypeIdLabel(dtype_id_)
+        << " shape: {";
+    std::for_each(shape_vector_.begin(), shape_vector_.end(), [&ofs](auto axis) { ofs << axis << " "; });
+    ofs << "}";
+    return ofs.str();
+  }
+  DeviceAddressExt(Format format, TypeId dtype_id, const ShapeVector &shape_vector)
+      : format_(format), dtype_id_(dtype_id), shape_vector_(shape_vector) {}
+};
+using DeviceAddressExtPtr = std::shared_ptr<DeviceAddressExt>;
+
 using DeviceAddressPtr = device::DeviceAddressPtr;
-using SyncCopyFunc = std::function<bool(const DeviceAddressPtr &, const DeviceAddressPtr &, size_t)>;
-using AsyncCopyFunc = std::function<bool(const DeviceAddressPtr &, const DeviceAddressPtr &, size_t, bool)>;
+using SyncCopyFunc = std::function<bool(const DeviceAddressPtr &, const DeviceAddressPtr &, size_t,
+                                        const DeviceAddressExtPtr &, const DeviceAddressExtPtr &)>;
+using AsyncCopyFunc = std::function<bool(const DeviceAddressPtr &, const DeviceAddressPtr &, size_t, bool,
+                                         const DeviceAddressExtPtr &, const DeviceAddressExtPtr &)>;
 using SyncPtrFunc = std::function<bool(void *, const void *, uint64_t, size_t)>;
 
 MS_CORE_API void SetCopyFunc(device::DeviceType device_type, SyncCopyFunc &&sync_func, AsyncCopyFunc &&async_func,
@@ -335,10 +355,15 @@ struct CopyFuncRegister {
   }
 MS_CORE_API bool CopyToHost(device::DeviceType device_type, void *dst, const void *src, uint64_t size,
                             size_t stream_id);
+// DeviceAddressExtPtr record the type shape and format information of the device address. If not provided, the
+// copy interface will simply copy the data; otherwise, it will perform conversions for different types and formats.
 MS_CORE_API bool SyncCopy(const DeviceAddressPtr &dst_device_address, const DeviceAddressPtr &src_device_address,
-                          size_t stream_id);
+                          size_t stream_id, const DeviceAddressExtPtr &src_ext = nullptr,
+                          const DeviceAddressExtPtr &dst_ext = nullptr);
 MS_CORE_API bool AsyncCopy(const DeviceAddressPtr &dst_device_address, const DeviceAddressPtr &src_device_address,
-                           size_t stream_id, bool keep_src = true);
-MS_CORE_API bool HostCopy(const DeviceAddressPtr &dst_device_address, const DeviceAddressPtr &src_device_address);
+                           size_t stream_id, bool keep_src = true, const DeviceAddressExtPtr &src_ext = nullptr,
+                           const DeviceAddressExtPtr &dst_ext = nullptr);
+MS_CORE_API bool HostCopy(const DeviceAddressPtr &dst_device_address, const DeviceAddressPtr &src_device_address,
+                          const DeviceAddressExtPtr &src_ext = nullptr, const DeviceAddressExtPtr &dst_ext = nullptr);
 }  // namespace mindspore
 #endif  // MINDSPORE_CORE_IR_DEVICE_ADDRESS_H_

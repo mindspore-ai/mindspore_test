@@ -440,7 +440,7 @@ void OutputActor::UpdateOutputDeviceAddress() {
       continue;
     }
 
-    auto tensor_device_address = std::dynamic_pointer_cast<DeviceTensor>(tensor->device_address());
+    auto tensor_device_address = tensor->device_address();
     MS_EXCEPTION_IF_NULL(tensor_device_address);
     // Update tensor device address by device tensor of output node.
     output_kernel_tensors_[i]->set_original_ref_count(SIZE_MAX);
@@ -477,7 +477,7 @@ void OutputActor::UpdateOutputDeviceAddress() {
       if (mindspore::runtime::IsDisableRuntimeConfig(mindspore::runtime::kRuntimeCopyAsync)) {
         MS_LOG(DEBUG) << "Sync device data from device tensor: " << device_tensor
                       << ", to device tensor: " << tensor_device_address << ", size: " << device_tensor->GetSize();
-        if (!SyncCopy(tensor_device_address, device_tensor, kDefaultStreamIndex) ||
+        if (!SyncCopy(tensor, output_kernel_tensors_[i].get(), kDefaultStreamIndex) ||
             !host_context->device_res_manager_->SyncAllStreams()) {
           MS_LOG_WITH_NODE(EXCEPTION, output_node)
             << "Sync device to device failed, device type: " << tensor_device_address->GetDeviceType()
@@ -486,7 +486,7 @@ void OutputActor::UpdateOutputDeviceAddress() {
       } else {
         MS_LOG(DEBUG) << "Async device data from device tensor: " << device_tensor
                       << ", to device tensor: " << tensor_device_address << ", size: " << device_tensor->GetSize();
-        if (!AsyncCopy(tensor_device_address, device_tensor, kDefaultStreamIndex)) {
+        if (!AsyncCopy(tensor, output_kernel_tensors_[i].get(), kDefaultStreamIndex)) {
           MS_LOG_WITH_NODE(EXCEPTION, output_node)
             << "Async device to device failed, device type: " << tensor_device_address->GetDeviceType()
             << ", output node: " << output_node->fullname_with_scope();

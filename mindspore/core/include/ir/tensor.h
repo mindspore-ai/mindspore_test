@@ -255,6 +255,16 @@ class MS_CORE_API Tensor : public MetaTensor {
   /// \return [ShapeVector]
   const ShapeVector &shape_c() const;
 
+  /// \brief Get the tensor's format
+  ///
+  /// \return Get the data format
+  std::string format() const;
+
+  /// \brief Set the tensor's format
+  ///
+  /// \param[in] format The Tensor format to be seted
+  void set_format(const std::string &format);
+
   /// \brief Get Tensor data pointer for c++ type
   ///
   /// \return The pointer to the object
@@ -923,6 +933,10 @@ MS_CORE_API std::string ShapeToString(const ShapeVector &shape);
 
 using RowTensorPtr = std::shared_ptr<RowTensor>;
 }  // namespace tensor
+// Tensor copy interface
+MS_CORE_API bool SyncCopy(const tensor::TensorPtr &dst, const tensor::TensorPtr &src, size_t stream_id);
+MS_CORE_API bool AsyncCopy(const tensor::TensorPtr &dst, const tensor::TensorPtr &src, size_t stream_id,
+                           bool keep_src = true);
 }  // namespace mindspore
 
 #endif  // MINDSPORE_CORE_IR_TENSOR_H_

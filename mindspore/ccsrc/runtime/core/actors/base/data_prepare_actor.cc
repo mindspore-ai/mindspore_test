@@ -147,7 +147,7 @@ void SyncTensorData(const TensorPtr &host_tensor, const KernelTensorPtr &kernel_
       host_shape = real_host_tensor->shape();
     }
     if (!skip_h2d && (!device_context->device_res_manager_->SyncAllStreams() ||
-                      !SyncCopy(device_tensor, real_host_tensor->device_address(), kDefaultStreamIndex))) {
+                      !SyncCopy(kernel_tensor.get(), real_host_tensor.get(), kDefaultStreamIndex))) {
       std::string error_info = "SyncHostToDevice failed, node name: " + node->fullname_with_scope() +
                                ", host tensor size: " + std::to_string(host_tensor_size) +
                                ", host tensor type: " + std::to_string(static_cast<int>(host_tensor_type)) +
@@ -955,7 +955,7 @@ void DataPrepareActor::PrepareDataForValueNodeTensor(const ValueNodePtr &node, c
   MS_EXCEPTION_IF_NULL(device_tensor);
   // If the ptr of device tensor is not nullptr, it indicates that the device data has been prepared.
   if (device_tensor->IsPtrValid()) {
-    CopyDataFromDeviceTensorStore(front_node, node, device_tensor, device_context, context);
+    CopyDataFromDeviceTensorStore(front_node, node, kernel_tensor, device_context, context);
     if (UCEException::GetInstance().get_uce_flag()) {
       SyncTensorData(tensor, kernel_tensor, node, device_context, context, real_strategy_);
     }
@@ -967,7 +967,7 @@ void DataPrepareActor::PrepareDataForValueNodeTensor(const ValueNodePtr &node, c
   MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
     << "Prepare device data for value node: " << node->DebugString() << ", output index: " << 0
     << " device address:" << device_tensor << " ptr:" << device_tensor->GetPtr();
-  CopyDataFromDeviceTensorStore(front_node, node, device_tensor, device_context, context);
+  CopyDataFromDeviceTensorStore(front_node, node, kernel_tensor, device_context, context);
 }
 
 void DataPrepareActor::PrepareDataForControlValueNode(const KernelWithIndex &node_with_index,
@@ -1048,7 +1048,7 @@ void DataPrepareActor::PrepareDataForControlValueNode(const KernelWithIndex &nod
     return;
   }
   if (!device_context->device_res_manager_->SyncAllStreams() ||
-      !SyncCopy(device_tensor, tensor->device_address(), kDefaultStreamIndex)) {
+      !SyncCopy(kernel_tensor.get(), tensor.get(), kDefaultStreamIndex)) {
     std::string error_info = "Sync host to device failed for node:" + node->DebugString();
     SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), error_info);
   }
@@ -1085,7 +1085,7 @@ void DataPrepareActor::PrepareDataForStringValue(const ValueNodePtr &node, size_
     host_device_address->SetSize(tensor_size + 1);
     MS_LOG(DEBUG) << "Sync string to device for string:" << node_value->ToString() << " size:" << tensor_size;
     if (!SyncAllStreamForDeviceAddress(device_tensor, string_tensor->device_address()) ||
-        !SyncCopy(device_tensor, string_tensor->device_address(), kDefaultStreamIndex)) {
+        !SyncCopy(kernel_tensor.get(), string_tensor.get(), kDefaultStreamIndex)) {
       std::string error_info = "SyncHostToDevice failed, node name: " + node->fullname_with_scope();
       SET_OPCONTEXT_FAIL_RET_WITH_ERROR_BY_STRATEGY(real_strategy_, (*context), error_info);
     }
@@ -1094,7 +1094,7 @@ void DataPrepareActor::PrepareDataForStringValue(const ValueNodePtr &node, size_
   // If the ptr of device tensor is not nullptr, it indicates that the device data has been prepared.
   if (device_tensor->GetPtr() != nullptr) {
     if (first_step_ || UCEException::GetInstance().get_uce_flag()) {
-      CopyDataFromDeviceTensorStore(front_node, node, device_tensor, device_context, context);
+      CopyDataFromDeviceTensorStore(front_node, node, kernel_tensor, device_context, context);
     }
     if (UCEException::GetInstance().get_uce_flag()) {
       copy_to_device();
@@ -1124,7 +1124,7 @@ void DataPrepareActor::PrepareDataForStringValue(const ValueNodePtr &node, size_
   }
 
   copy_to_device();
-  CopyDataFromDeviceTensorStore(front_node, node, device_tensor, device_context, context);
+  CopyDataFromDeviceTensorStore(front_node, node, kernel_tensor, device_context, context);
 }
 
 void DataPrepareActor::PrepareDataForSequenceAndScalarValue(const ValueNodePtr &node, size_t index,
@@ -1158,14 +1158,14 @@ void DataPrepareActor::PrepareDataForSequenceAndScalarValue(const ValueNodePtr &
     auto tensor = tensor::from_buffer(kernel_tensor->dtype_id(), kernel_tensor->GetShapeVector(),
                                       const_cast<void *>(kernel_tensor->GetValuePtr()), kernel_tensor->size());
     if (!SyncAllStreamForDeviceAddress(device_tensor, tensor->device_address()) ||
-        !SyncCopy(device_tensor, tensor->device_address(), kDefaultStreamIndex)) {
+        !SyncCopy(kernel_tensor.get(), tensor.get(), kDefaultStreamIndex)) {
       std::string error_info = "SyncHostToDevice failed, node name: " + node->fullname_with_scope();
       SET_OPCONTEXT_FAIL_RET_WITH_ERROR_BY_STRATEGY(real_strategy_, (*context), error_info);
     }
   };
   // If the ptr of device tensor is not nullptr, it indicates that the device data has been prepared.
   if (device_tensor->GetPtr() != nullptr) {
-    CopyDataFromDeviceTensorStore(front_node, node, device_tensor, device_context, context);
+    CopyDataFromDeviceTensorStore(front_node, node, kernel_tensor, device_context, context);
     if (UCEException::GetInstance().get_uce_flag()) {
       copy_to_device();
     }
@@ -1199,7 +1199,7 @@ void DataPrepareActor::PrepareDataForSequenceAndScalarValue(const ValueNodePtr &
   copy_to_device();
 
   // 3. Handle heterogeneous scene.
-  CopyDataFromDeviceTensorStore(front_node, node, device_tensor, device_context, context);
+  CopyDataFromDeviceTensorStore(front_node, node, kernel_tensor, device_context, context);
 }
 
 // Prepare the device data for persistent device tensor of value node.
@@ -1232,12 +1232,14 @@ void DataPrepareActor::PrepareDataForValueNode(const ValueNodePtr &node, const A
 }
 
 void DataPrepareActor::CopyDataFromDeviceTensorStore(const AnfNodePtr &front_node, const AnfNodePtr &backend_node,
-                                                     const device::DeviceAddressPtr &host_tensor_address,
+                                                     const KernelTensorPtr &host_kernel_tensor,
                                                      const DeviceContext *device_context,
                                                      OpContext<KernelTensor> *context) const {
   MS_EXCEPTION_IF_NULL(backend_node);
   MS_EXCEPTION_IF_NULL(device_context);
   MS_EXCEPTION_IF_NULL(context);
+  MS_EXCEPTION_IF_NULL(host_kernel_tensor);
+  const auto &host_tensor_address = host_kernel_tensor->device_address();
   const auto &kernel_tensors = DeviceTensorStore::GetInstance().Fetch(front_node.get());
   MS_LOG(DEBUG) << "Front node: " << front_node->DebugString() << ", node addr: " << front_node.get()
                 << ", kernel tensor num is: " << kernel_tensors.size();
@@ -1291,7 +1293,7 @@ void DataPrepareActor::CopyDataFromDeviceTensorStore(const AnfNodePtr &front_nod
                  << " to:" << another_device_tensor;
     auto skip_h2d = UCEException::GetInstance().is_reboot_node();
     if (!skip_h2d && (!SyncAllStreamForDeviceAddress(another_device_tensor, host_tensor_address) ||
-                      !SyncCopy(another_device_tensor, host_tensor_address, kDefaultStreamIndex))) {
+                      !SyncCopy(another_kernel_tensor.get(), host_kernel_tensor.get(), kDefaultStreamIndex))) {
       std::string error_info = "Sync data error.";
       SET_OPCONTEXT_FAIL_RET_WITH_ERROR_BY_STRATEGY(real_strategy_, (*context), error_info);
     }
@@ -1327,12 +1329,12 @@ void DataPrepareActor::PrepareDataForWeightNode(const AnfNodePtr &backend_node, 
   MS_EXCEPTION_IF_NULL(node_kernel_tensor);
   auto device_tensor = node_kernel_tensor->device_address();
   MS_EXCEPTION_IF_NULL(device_tensor);
-  auto host_tensor_address = std::dynamic_pointer_cast<DeviceTensor>(tensor->device_address());
+  auto host_tensor_address = tensor->device_address();
   if (host_tensor_address == nullptr) {
     // Tensor with initializer but didn't init_data yet.
     auto empty_tensor = tensor::from_spec(tensor->data_type(), tensor->shape(), device::DeviceType::kCPU);
     tensor->set_device_address(empty_tensor->device_address());
-    host_tensor_address = std::static_pointer_cast<DeviceTensor>(empty_tensor->device_address());
+    host_tensor_address = empty_tensor->device_address();
     MS_EXCEPTION_IF_NULL(host_tensor_address);
     MS_LOG(DEBUG) << "Create device address:" << host_tensor_address->ToString() << " for host tensor:" << tensor.get()
                   << " for backend node:" << backend_node->DebugString() << " front node:" << front_node->DebugString();
@@ -1386,7 +1388,7 @@ void DataPrepareActor::PrepareDataForWeightNode(const AnfNodePtr &backend_node, 
         static std::string name = "Alloc memory";
         host_kernel_tensor->IncreaseNewRefCount(name);
         if (!skip_h2d && (!SyncAllStreamForDeviceAddress(device_tensor, host_tensor_address) ||
-                          !SyncCopy(device_tensor, host_tensor_address, kDefaultStreamIndex))) {
+                          !SyncCopy(node_kernel_tensor.get(), tensor.get(), kDefaultStreamIndex))) {
           std::string error_info = "Sync data error.";
           SET_OPCONTEXT_FAIL_RET_WITH_ERROR_BY_STRATEGY(real_strategy_, (*context), error_info);
         }
@@ -1414,7 +1416,7 @@ void DataPrepareActor::PrepareDataForWeightNode(const AnfNodePtr &backend_node, 
   tensor->set_device_address(host_tensor_address);
 
   // Allocate another device memory and copy data from host tensor to another device(if exist).
-  CopyDataFromDeviceTensorStore(front_node, backend_node, host_tensor_address, device_context, context);
+  CopyDataFromDeviceTensorStore(front_node, backend_node, host_kernel_tensor, device_context, context);
 }
 
 void DataPrepareActor::PrepareDeviceTensorStoreForControlNode(const ControlNodeParserPtr &control_node_parser,

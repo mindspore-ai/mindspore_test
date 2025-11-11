@@ -154,11 +154,13 @@ class RUNTIME_HARDWARE_EXPORT DeviceResManager {
     MS_LOG(EXCEPTION) << "Unimplemented interface.";
   }
   virtual bool SyncCopy(const DeviceAddressPtr &dst_device_sync, const DeviceAddressPtr &src_device_sync,
-                        size_t stream_id) const {
+                        size_t stream_id, const DeviceAddressExtPtr &src_ext,
+                        const DeviceAddressExtPtr &dst_ext) const {
     MS_LOG(EXCEPTION) << "Unimplemented interface.";
   }
   virtual bool AsyncCopy(const DeviceAddressPtr &dst_device_sync, const DeviceAddressPtr &src_device_sync,
-                         size_t stream_id, bool keep_src) const {
+                         size_t stream_id, bool keep_src, const DeviceAddressExtPtr &src_ext,
+                         const DeviceAddressExtPtr &dst_ext) const {
     MS_LOG(EXCEPTION) << "Unimplemented interface.";
   }
 

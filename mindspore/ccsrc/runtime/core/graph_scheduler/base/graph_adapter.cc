@@ -55,8 +55,8 @@ tensor::TensorPtr GetTensorFromValueNode(const AnfNodePtr &node) {
   return tensor;
 }
 
-device::DeviceAddressPtr CreateValueNodeAddress(const ValueNodePtr &value_node,
-                                                const device::DeviceContext *device_context) {
+kernel::KernelTensorPtr CreateValueNodeKernelTensor(const ValueNodePtr &value_node,
+                                                    const device::DeviceContext *device_context) {
   size_t tensor_size = AnfAlgo::GetOutputTensorMemSize(value_node, 0);
   TypeId data_type = AnfAlgo::GetOutputDeviceDataType(value_node, 0);
   if (data_type == kTypeUnknown) {
@@ -70,12 +70,14 @@ device::DeviceAddressPtr CreateValueNodeAddress(const ValueNodePtr &value_node,
     device::GetDeviceNameByType(device_context->device_context_key().device_type_),
     device_context->device_context_key().device_id_);
   AnfAlgo::SetOutputKernelTensor(kernel_tensor, 0, value_node.get());
-  return kernel_tensor->device_address();
+  return kernel_tensor;
 }
 
-bool CopyTensorData(const tensor::TensorPtr &tensor, const device::DeviceAddressPtr &device_address,
+bool CopyTensorData(const tensor::TensorPtr &tensor, const kernel::KernelTensorPtr &kernel_tensor,
                     const AnfNodePtr &node, const device::DeviceContext *device_context) {
   MS_EXCEPTION_IF_NULL(tensor);
+  MS_EXCEPTION_IF_NULL(kernel_tensor);
+  auto device_address = kernel_tensor->device_address();
   MS_EXCEPTION_IF_NULL(device_address);
   MS_EXCEPTION_IF_NULL(node);
   MS_EXCEPTION_IF_NULL(device_context);
@@ -95,7 +97,7 @@ bool CopyTensorData(const tensor::TensorPtr &tensor, const device::DeviceAddress
   // Copy data from host tensor to device.
   auto host_tensor_size = tensor->DataNBytes();
   auto host_tensor_type = tensor->data_type();
-  if (!AsyncCopy(device_address, tensor->device_address(), device_address->stream_id())) {
+  if (!AsyncCopy(kernel_tensor.get(), tensor.get(), device_address->stream_id())) {
     std::string error_info = "SyncHostToDevice failed, node name: " + node->fullname_with_scope() +
                              ", tensor size: " + std::to_string(host_tensor_size) +
                              ", tensor type: " + std::to_string(static_cast<int>(host_tensor_type)) +
@@ -116,12 +118,12 @@ device::DeviceAddressPtr HandleAddressForHeterogeneous(const tensor::TensorPtr &
 
   MS_EXCEPTION_IF_NULL(device_address);
   if (device_address->GetDeviceType() != device_context->GetDeviceType()) {
-    auto new_device_address = CreateValueNodeAddress(value_node, device_context);
-    MS_EXCEPTION_IF_NULL(new_device_address);
-    if (!CopyTensorData(tensor, new_device_address, value_node, device_context)) {
+    auto new_kernel_tensor = CreateValueNodeKernelTensor(value_node, device_context);
+    MS_EXCEPTION_IF_NULL(new_kernel_tensor);
+    if (!CopyTensorData(tensor, new_kernel_tensor, value_node, device_context)) {
       MS_LOG(EXCEPTION) << "CopyTensorData failed, value_node " << value_node->DebugString();
     }
-    return new_device_address;
+    return new_kernel_tensor->device_address();
   }
   return device_address;
 }
@@ -316,11 +318,13 @@ void GraphAdapter::SensTensorToDevice(const KernelGraphPtr &graph, const device:
       MS_EXCEPTION_IF_NULL(device_address);
       if (device_address->GetDeviceType() != device_context->GetDeviceType()) {
         UpdateValueNodeAbstractFromTensor(value_node, tensor);
-        auto node_address = CreateValueNodeAddress(value_node, device_context);
+        auto node_kernel_tensor = CreateValueNodeKernelTensor(value_node, device_context);
+        MS_EXCEPTION_IF_NULL(node_kernel_tensor);
+        auto node_address = node_kernel_tensor->device_address();
         MS_EXCEPTION_IF_NULL(node_address);
         AnfAlgo::SetOutputAddr(node_address, 0, value_node);
         MS_LOG(DEBUG) << "Start to copy sens tensor to device";
-        if (!CopyTensorData(tensor, node_address, value_node, device_context)) {
+        if (!CopyTensorData(tensor, node_kernel_tensor, value_node, device_context)) {
           MS_LOG(EXCEPTION) << "ValueNode host to device copy failed";
         }
         tensor->set_device_address(node_address);

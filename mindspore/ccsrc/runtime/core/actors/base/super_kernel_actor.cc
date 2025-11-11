@@ -719,7 +719,7 @@ bool SuperKernelActor::CopyHeterogeneousOutput(OpContext<KernelTensor> *const co
       return false;
     }
     if (!SyncAllStreamForDeviceAddress(dest_device_address, src_device_address) ||
-        !SyncCopy(dest_device_address, src_device_address, kDefaultStreamIndex)) {
+        !SyncCopy(dest_kernel_tensor.get(), src_kernel_tensor.get(), kDefaultStreamIndex)) {
       MS_LOG(ERROR) << "Copy for heterogeneous output failed, kernel actor: " << kernel_actor->GetAID().Name()
                     << ", output index: " << output_index << ", dest device address: " << dest_device_address
                     << ", src device address: " << src_device_address;
@@ -1446,9 +1446,9 @@ void SuperKernelActor::OnMemoryAllocFinish(OpContext<KernelTensor> *const contex
     for (auto item : ref_node_addr_map_) {
       MS_EXCEPTION_IF_NULL(item.first);
       MS_EXCEPTION_IF_NULL(item.second);
-      MS_LOG(INFO) << "The input ref node copy back from address: " << item.first->GetPtr()
-                   << " to address: " << item.second->GetPtr() << ".";
-      if (!SyncCopy(item.second, item.first, kDefaultStreamIndex)) {
+      MS_LOG(INFO) << "The input ref node copy back from address: " << item.first->device_ptr()
+                   << " to address: " << item.second->device_ptr() << ".";
+      if (!SyncCopy(item.second.get(), item.first.get(), kDefaultStreamIndex)) {
         SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), "Copy data failed.");
       }
     }
@@ -1571,8 +1571,6 @@ bool SuperKernelActor::CopyInputData(const OpContext<KernelTensor> *context, con
       continue;
     }
     MS_EXCEPTION_IF_NULL(input_kernel_tensor);
-    auto input_device_tensor = input_kernel_tensors_[i]->device_address();
-    MS_EXCEPTION_IF_NULL(input_device_tensor);
     UpdateShape(input_nodes[i], node_device_kernel_tensor, input_kernel_tensor, type_);
     node_device_kernel_tensor->set_user_data(input_kernel_tensors_[i]->user_data());
     node_device_kernel_tensor->set_need_sync_user_data(input_kernel_tensors_[i]->need_sync_user_data());
@@ -1581,14 +1579,14 @@ bool SuperKernelActor::CopyInputData(const OpContext<KernelTensor> *context, con
     }
 
     // Copy.
-    DeviceTensorPtr copy_device_tensor = nullptr;
+    KernelTensorPtr copy_kernel_tensor = nullptr;
     // If the input is not a persist device address, in a heterogeneous scenario, a new device address needs to
     // be created. And set ptr to node device address to support the zero copy of graph input nodes.
     if (!node_device_kernel_tensor->is_ptr_persisted()) {
       if (CopyInputDataPersistedHandle(device_context, input_kernel_tensors_[i], node_device_kernel_tensor, i)) {
         continue;
       }
-      copy_device_tensor = copy_input_kernel_tensors_[i]->device_address();
+      copy_kernel_tensor = copy_input_kernel_tensors_[i];
     } else {
       if (node_device_tensor->GetPtr() == nullptr) {
         MS_LOG(INFO) << "The node device tensor:" << node_device_tensor
@@ -1597,22 +1595,20 @@ bool SuperKernelActor::CopyInputData(const OpContext<KernelTensor> *context, con
                      << GetAID();
         continue;
       }
-      copy_device_tensor = node_device_tensor;
+      copy_kernel_tensor = node_device_kernel_tensor;
     }
-    MS_EXCEPTION_IF_NULL(copy_device_tensor);
+    MS_EXCEPTION_IF_NULL(copy_kernel_tensor);
     MS_LOG(INFO) << "The input data of node:" << input_nodes[i]->DebugString()
-                 << " need copy from device address:" << input_device_tensor << " ptr:" << input_device_tensor->GetPtr()
-                 << " size:" << input_device_tensor->GetSize() << ", type:" << input_device_tensor->GetDeviceType()
-                 << " to device address:" << copy_device_tensor << " ptr:" << copy_device_tensor->GetPtr()
-                 << " size:" << copy_device_tensor->GetSize() << ", type:" << copy_device_tensor->GetDeviceType()
+                 << " need copy from kernel tensor:" << input_kernel_tensor->ToString()
+                 << " to kernel tensor:" << copy_kernel_tensor->ToString()
                  << ", is ref node need copy back:" << is_parameters_need_copy_[i] << " for actor:" << GetAID();
-    if (!SyncCopy(copy_device_tensor, input_device_tensor, kDefaultStreamIndex)) {
+    if (!SyncCopy(copy_kernel_tensor.get(), input_kernel_tensor.get(), kDefaultStreamIndex)) {
       MS_LOG(ERROR) << "Copy data failed for actor:" << GetAID() << " input index:" << i;
       continue;
     }
 
     if (is_parameters_need_copy_[i]) {
-      ref_node_addr_map_[copy_device_tensor] = input_device_tensor;
+      ref_node_addr_map_[copy_kernel_tensor] = input_kernel_tensor;
     }
   }
   return true;

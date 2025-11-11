@@ -421,6 +421,51 @@ void CheckOutputIdx(size_t output_position, size_t output_tensors_size) {
                                << output_position;
   }
 }
+
+void SyncTensorData(const tensor::TensorPtr &host_tensor, kernel::KernelTensor *const kernel_tensor,
+                    const AnfNodePtr &node) {
+  MS_EXCEPTION_IF_NULL(host_tensor);
+  MS_EXCEPTION_IF_NULL(kernel_tensor);
+  const auto &device_tensor = kernel_tensor->device_address();
+  MS_EXCEPTION_IF_NULL(device_tensor);
+  MS_EXCEPTION_IF_NULL(node);
+  // memory has been allocate early in AllocGEInputOutputMemory
+  MS_EXCEPTION_IF_NULL(device_tensor->GetPtr());
+  // sync host tensor to device
+  auto get_tensor_by_index = [&host_tensor](size_t index) {
+    if (!host_tensor->isa<tensor::MapTensor>()) {
+      return host_tensor;
+    }
+    const auto &map_tensor = host_tensor->cast<tensor::MapTensorPtr>();
+    MS_EXCEPTION_IF_NULL(map_tensor);
+    switch (index) {
+      case kMapTensorKeyIndex:
+        return map_tensor->key_tensor();
+      case kMapTensorValueIndex:
+        return map_tensor->value_tensor();
+      case kMapTensorStatusIndex:
+        return map_tensor->status_tensor();
+      default:
+        MS_LOG(EXCEPTION) << "Invalid index:" << index << " for map tensor:" << host_tensor->ToString();
+    }
+  };
+
+  auto get_tensor_num = (host_tensor->isa<tensor::MapTensor>() ? kMapTensorNum : kNormalTensorNum);
+  for (size_t i = 0; i < get_tensor_num; ++i) {
+    const auto &real_host_tensor = get_tensor_by_index(i);
+    MS_EXCEPTION_IF_NULL(real_host_tensor);
+    // Copy data from host tensor to device.
+    auto host_tensor_size = LongToSize(real_host_tensor->DataNBytes());
+    auto host_tensor_type = real_host_tensor->data_type();
+    if (!device::ascend::AscendStreamMng::GetInstance().SyncAllStreams() ||
+        !SyncCopy(kernel_tensor, real_host_tensor.get(), kDefaultStreamIndex)) {
+      MS_LOG(EXCEPTION) << "SyncHostToDevice failed, node name: " + node->fullname_with_scope() +
+                             ", host tensor size: " + std::to_string(host_tensor_size) +
+                             ", host tensor type: " + std::to_string(static_cast<int>(host_tensor_type)) +
+                             ", device tensor size: " + std::to_string(device_tensor->GetSize());
+    }
+  }
+}
 }  // namespace
 mindspore::HashSet<const tensor::Tensor *> GEBackend::weights_need_reprepare_ = {};
 BackendGraphId GEBackend::backend_graph_id_ = 0;
@@ -1290,7 +1335,7 @@ void GEBackend::ConstructInputsRefMode(const KernelGraphPtr &func_graph, const V
           is_need_sync = true;
         } else {
           // other not same condition -> device_copy
-          if (!Copy(device_tensor, host_tensor_address)) {
+          if (!Copy(kernel_tensor.get(), flatten_tensors[j])) {
             MS_LOG(EXCEPTION) << "Sync data error.";
           }
           host_tensor_address = device_tensor;
@@ -1317,7 +1362,7 @@ void GEBackend::ConstructInputsRefMode(const KernelGraphPtr &func_graph, const V
             host_tensor_address =
               std::dynamic_pointer_cast<mindspore::device::DeviceAddress>(flatten_tensors[j]->device_address());
             // other not same: device copy
-            if (!Copy(device_tensor, host_tensor_address)) {
+            if (!Copy(kernel_tensor.get(), flatten_tensors[j])) {
               MS_LOG(EXCEPTION) << "Sync data error.";
             }
             is_need_sync = false;
@@ -1327,7 +1372,7 @@ void GEBackend::ConstructInputsRefMode(const KernelGraphPtr &func_graph, const V
         }
       }
       if (is_need_sync) {
-        SyncTensorData(flatten_tensors[j], device_tensor, params[j]);
+        SyncTensorData(flatten_tensors[j], kernel_tensor.get(), params[j]);
       }
     }
   }
@@ -1342,16 +1387,18 @@ void GEBackend::ConstructInputs(const KernelGraphPtr &func_graph, const VectorRe
   ConstructInputsRefMode(func_graph, args, inputs_tensor);
 }
 
-bool GEBackend::Copy(const mindspore::device::DeviceAddressPtr &dst_device_tensor,
-                     const mindspore::device::DeviceAddressPtr &src_device_tensor) const {
-  MS_EXCEPTION_IF_NULL(dst_device_tensor);
+bool GEBackend::Copy(KernelTensor *const dst_kernel_tensor, const tensor::TensorPtr &src_tensor) const {
+  MS_EXCEPTION_IF_NULL(dst_kernel_tensor);
+  MS_EXCEPTION_IF_NULL(src_tensor);
+  const auto &src_device_tensor = src_tensor->device_address();
+  const auto &dst_device_tensor = dst_kernel_tensor->device_address();
   MS_EXCEPTION_IF_NULL(src_device_tensor);
+  MS_EXCEPTION_IF_NULL(dst_device_tensor);
   if (src_device_tensor->GetSize() != dst_device_tensor->GetSize()) {
     MS_LOG(INFO) << "Copy size is not equal, input size:" << src_device_tensor->GetSize()
                  << ", output size:" << dst_device_tensor->GetSize();
-    if (src_device_tensor->format() == dst_device_tensor->format()) {
-      auto new_address_size =
-        GetTypeByte(TypeIdToType(src_device_tensor->type_id())) * SizeOf(src_device_tensor->GetShapeVector());
+    if (kernel::GetFormatFromStrToEnum(src_tensor->format()) == dst_kernel_tensor->format()) {
+      auto new_address_size = GetTypeByte(TypeIdToType(src_tensor->data_type())) * SizeOf(src_tensor->shape());
       src_device_tensor->SetSize(new_address_size);
     }
   }
@@ -1361,50 +1408,32 @@ bool GEBackend::Copy(const mindspore::device::DeviceAddressPtr &dst_device_tenso
   if (!device::ascend::AscendStreamMng::GetInstance().SyncAllStreams()) {
     return false;
   }
-  return SyncCopy(dst_device_tensor, src_device_tensor, target_device_address->stream_id());
+  return SyncCopy(dst_kernel_tensor, src_tensor.get(), target_device_address->stream_id());
 }
 
-void GEBackend::SyncTensorData(const tensor::TensorPtr &host_tensor,
-                               const std::shared_ptr<device::DeviceAddress> &device_tensor, const AnfNodePtr &node) {
-  MS_EXCEPTION_IF_NULL(host_tensor);
-  MS_EXCEPTION_IF_NULL(device_tensor);
-  MS_EXCEPTION_IF_NULL(node);
-  // memory has been allocate early in AllocGEInputOutputMemory
-  MS_EXCEPTION_IF_NULL(device_tensor->GetPtr());
-  // sync host tensor to device
-  auto get_tensor_by_index = [&host_tensor](size_t index) {
-    if (!host_tensor->isa<tensor::MapTensor>()) {
-      return host_tensor;
-    }
-    const auto &map_tensor = host_tensor->cast<tensor::MapTensorPtr>();
-    MS_EXCEPTION_IF_NULL(map_tensor);
-    switch (index) {
-      case kMapTensorKeyIndex:
-        return map_tensor->key_tensor();
-      case kMapTensorValueIndex:
-        return map_tensor->value_tensor();
-      case kMapTensorStatusIndex:
-        return map_tensor->status_tensor();
-      default:
-        MS_LOG(EXCEPTION) << "Invalid index:" << index << " for map tensor:" << host_tensor->ToString();
-    }
-  };
-
-  auto get_tensor_num = (host_tensor->isa<tensor::MapTensor>() ? kMapTensorNum : kNormalTensorNum);
-  for (size_t i = 0; i < get_tensor_num; ++i) {
-    const auto &real_host_tensor = get_tensor_by_index(i);
-    MS_EXCEPTION_IF_NULL(real_host_tensor);
-    // Copy data from host tensor to device.
-    auto host_tensor_size = LongToSize(real_host_tensor->DataNBytes());
-    auto host_tensor_type = real_host_tensor->data_type();
-    if (!device::ascend::AscendStreamMng::GetInstance().SyncAllStreams() ||
-        !SyncCopy(device_tensor, real_host_tensor->device_address(), kDefaultStreamIndex)) {
-      MS_LOG(EXCEPTION) << "SyncHostToDevice failed, node name: " + node->fullname_with_scope() +
-                             ", host tensor size: " + std::to_string(host_tensor_size) +
-                             ", host tensor type: " + std::to_string(static_cast<int>(host_tensor_type)) +
-                             ", device tensor size: " + std::to_string(device_tensor->GetSize());
+bool GEBackend::Copy(KernelTensor *const dst_kernel_tensor, KernelTensor *const src_kernel_tensor) const {
+  MS_EXCEPTION_IF_NULL(dst_kernel_tensor);
+  MS_EXCEPTION_IF_NULL(src_kernel_tensor);
+  const auto &src_device_tensor = src_kernel_tensor->device_address();
+  const auto &dst_device_tensor = dst_kernel_tensor->device_address();
+  MS_EXCEPTION_IF_NULL(src_device_tensor);
+  MS_EXCEPTION_IF_NULL(dst_device_tensor);
+  if (src_device_tensor->GetSize() != dst_device_tensor->GetSize()) {
+    MS_LOG(INFO) << "Copy size is not equal, input size:" << src_device_tensor->GetSize()
+                 << ", output size:" << dst_device_tensor->GetSize();
+    if (src_kernel_tensor->format() == dst_kernel_tensor->format()) {
+      auto new_address_size =
+        GetTypeByte(TypeIdToType(src_kernel_tensor->type_id())) * SizeOf(src_kernel_tensor->GetShapeVector());
+      src_device_tensor->SetSize(new_address_size);
     }
   }
+  // Exist the size alignment in some device, so get the min device size.
+  auto target_device_address =
+    (dst_device_tensor->GetDeviceType() == device::DeviceType::kCPU ? src_device_tensor : dst_device_tensor);
+  if (!device::ascend::AscendStreamMng::GetInstance().SyncAllStreams()) {
+    return false;
+  }
+  return SyncCopy(dst_kernel_tensor, src_kernel_tensor, target_device_address->stream_id());
 }
 
 void GEBackend::ConstructOutputs(const KernelGraphPtr &func_graph, std::vector<tensor::TensorPtr> *outputs,
@@ -1448,7 +1477,7 @@ void GEBackend::ConstructOutputs(const KernelGraphPtr &func_graph, std::vector<t
 
     if (output_kernel_tensor->is_ptr_persisted()) {
       // device_tensor persisted or format not same -> device_copy
-      if (!Copy(tensor_device_address, output_addr)) {
+      if (!Copy(kernel_tensor.get(), output_kernel_tensor.get())) {
         MS_LOG(EXCEPTION) << "Sync data error.";
       }
     } else if (output_node_tensor_map[output_addr->device_pointer()] != nullptr) {

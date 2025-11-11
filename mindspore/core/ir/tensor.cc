@@ -24,6 +24,10 @@
 #include <utility>
 #include <algorithm>
 #include <map>
+#include <vector>
+#include <memory>
+#include <string>
+
 #include "mindapi/base/type_id.h"
 #include "abstract/abstract_value.h"
 #include "base/complex_storage.h"
@@ -38,6 +42,7 @@
 #include "utils/stream_guard.h"
 #include "base/float16.h"
 #include "ir/dtype/type_id.h"
+#include "ir/format_utils.h"
 
 namespace mindspore {
 namespace tensor {
@@ -258,7 +263,12 @@ TypeId Tensor::set_data_type(TypeId data_type) {
     }
     auto new_dtype_address = MakeDeviceAddress(data_type, shape_, true);
     MS_EXCEPTION_IF_NULL(new_dtype_address);
-    if (!SyncCopy(new_dtype_address, device_sync_, device_sync_->stream_id())) {
+    DeviceAddressExtPtr src_ext = std::make_shared<DeviceAddressExt>(
+      kernel::GetFormatFromStrToEnum(device_sync_->format()), device_sync_->type_id(), device_sync_->GetShapeVector());
+    DeviceAddressExtPtr dst_ext =
+      std::make_shared<DeviceAddressExt>(kernel::GetFormatFromStrToEnum(new_dtype_address->format()),
+                                         new_dtype_address->type_id(), new_dtype_address->GetShapeVector());
+    if (!SyncCopy(new_dtype_address, device_sync_, device_sync_->stream_id(), src_ext, dst_ext)) {
       MS_LOG(EXCEPTION) << "Sync copy failed";
     }
     device_sync_ = new_dtype_address;
@@ -447,7 +457,12 @@ TensorPtr Tensor::cpu() const {
   }
   auto dst = MakeDeviceAddress(data_type_, shape_, true);
   MS_EXCEPTION_IF_NULL(dst);
-  if (!SyncCopy(dst, device_address, CurrentStream::id())) {
+  DeviceAddressExtPtr src_ext =
+    std::make_shared<DeviceAddressExt>(kernel::GetFormatFromStrToEnum(device_address->format()),
+                                       device_address->type_id(), device_address->GetShapeVector());
+  DeviceAddressExtPtr dst_ext = std::make_shared<DeviceAddressExt>(kernel::GetFormatFromStrToEnum(dst->format()),
+                                                                   dst->type_id(), dst->GetShapeVector());
+  if (!SyncCopy(dst, device_address, CurrentStream::id(), src_ext, dst_ext)) {
     MS_LOG(EXCEPTION) << "SyncCopy failed for " << ToString();
   }
   auto ret = std::make_shared<Tensor>(data_type_, shape_, dst);
@@ -550,6 +565,20 @@ void Tensor::UnPinMemory() {
 }
 
 const ShapeVector &Tensor::shape_c() const { return shape(); }
+
+std::string Tensor::format() const {
+  if (device_sync_ == nullptr) {
+    MS_LOG(EXCEPTION) << "Cannot access format of uninitialized tensor";
+  }
+  return device_sync_->format();
+}
+
+void Tensor::set_format(const std::string &format) {
+  if (device_sync_ == nullptr) {
+    MS_LOG(EXCEPTION) << "Cannot set format for uninitialized tensor";
+  }
+  device_sync_->set_format(format);
+}
 
 ssize_t Tensor::DataItemSize() const {
   if (device_sync_ != nullptr && device_sync_->has_data()) {
@@ -786,4 +815,22 @@ std::string ShapeToString(const ShapeVector &shape) {
   return str.append("]");
 }
 }  // namespace tensor
+namespace {
+DeviceAddressExtPtr MakeDeviceAddressExt(const tensor::TensorPtr &tensor) {
+  return std::make_shared<DeviceAddressExt>(kernel::GetFormatFromStrToEnum(tensor->format()), tensor->data_type(),
+                                            tensor->shape());
+}
+}  // namespace
+
+bool SyncCopy(const tensor::TensorPtr &dst, const tensor::TensorPtr &src, size_t stream_id) {
+  auto dst_ext = MakeDeviceAddressExt(dst);
+  auto src_ext = MakeDeviceAddressExt(src);
+  return SyncCopy(dst->device_address(), src->device_address(), stream_id, src_ext, dst_ext);
+}
+
+bool AsyncCopy(const tensor::TensorPtr &dst, const tensor::TensorPtr &src, size_t stream_id, bool keep_src) {
+  auto dst_ext = MakeDeviceAddressExt(dst);
+  auto src_ext = MakeDeviceAddressExt(src);
+  return AsyncCopy(dst->device_address(), src->device_address(), stream_id, keep_src, src_ext, dst_ext);
+}
 }  // namespace mindspore

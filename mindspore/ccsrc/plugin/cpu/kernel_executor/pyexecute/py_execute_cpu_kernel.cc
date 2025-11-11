@@ -117,8 +117,7 @@ bool PyExecuteCpuKernelMod::Launch(const std::vector<KernelTensor *> &inputs, co
     if (outputs[0]->size() != LongToSize(tensor->DataNBytes())) {
       MS_LOG(EXCEPTION) << "Invalid output size:" << outputs[0]->size() << " and tensor size:" << tensor->DataNBytes();
     }
-    const auto &res =
-      SyncCopy(outputs[0]->device_address(), tensor->device_address(), tensor->device_address()->stream_id());
+    const auto &res = SyncCopy(outputs[0], tensor.get(), tensor->device_address()->stream_id());
     if (!res) {
       MS_LOG(EXCEPTION) << "memcpy failed. res: " << res << ", for tensor:" << tensor->ToString()
                         << " size:" << outputs[0]->size();
