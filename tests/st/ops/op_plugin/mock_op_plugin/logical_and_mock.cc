@@ -25,7 +25,9 @@ using mindspore::kernel::op_plugin::KernelInputInfo;
 
 extern "C" {
 // Mock implementation of the logical_and operator.
-// Not fully implemented, only for certain test cases.
+// Test cases:
+// 1. when there's a existing cpu kernelmod for logical_and.
+// 2. non-contiguous input
 int LogicalAnd(int nparam, void **params, int *ndims, int64_t **shapes, const char **dtypes, void *stream,
                void *extra) {
   std::cout << "op_plugin mock: LogicalAnd called" << std::endl;

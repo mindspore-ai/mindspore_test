@@ -46,6 +46,7 @@
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/utils/callback.h"
 #include "kernel/cpu/custom/kernel_mod_impl/op_plugin_utils.h"
+#include "ops/op_def.h"
 
 namespace mindspore {
 namespace device {
@@ -541,9 +542,23 @@ void UpdateCustomKernelBuildInfo(const CNodePtr &kernel_node, bool is_akg_op) {
     MS_LOG(EXCEPTION) << op_name << "doesn't support the dynamic tuple.";
   }
   auto input_object_types = kernel::TypeIdToKernelObjectTypeForTupleUnfold(AnfAlgo::GetAllInputObjectType(kernel_node));
+  const auto &op_def = ops::GetOpDef(op_name);
+  if (op_def != nullptr) {
+    for (size_t i = 0; i < op_def->args_.size(); ++i) {
+      const auto &input_dtype = op_def->args_[i].arg_dtype_;
+      if (input_dtype > ops::DT_ANY && input_dtype < ops::DT_TYPE && input_dtype != ops::DT_TUPLE_TENSOR) {
+        if (i >= input_object_types.size()) {
+          MS_LOG(EXCEPTION) << "The input object types size is less than the op definition size.";
+        }
+        input_object_types[i] = kernel::KernelObjectType::TUPLE;
+      }
+    }
+  }
+
   auto output_object_types =
     kernel::TypeIdToKernelObjectTypeForTupleUnfold(AnfAlgo::GetAllOutputObjectType(kernel_node));
   AnfAlgo::SetKernelObjectTypeBuildInfo(kernel_node, input_object_types, output_object_types);
+  AnfAlgo::UnfoldKernelBuildInfo(kernel_node);
 
   // check reg info if kernel_attr is not null
   if (kernel_attr != nullptr) {
