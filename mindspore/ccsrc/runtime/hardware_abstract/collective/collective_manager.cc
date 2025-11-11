@@ -83,7 +83,6 @@ CollectiveManager::~CollectiveManager() {
   device_comm_lib_instance_ = nullptr;
   comm_lib_instance_ = nullptr;
   group_infos_.clear();
-  inited_groups_.clear();
 }
 
 std::shared_ptr<CollectiveManager> CollectiveManager::instance() {
@@ -197,9 +196,6 @@ bool CollectiveManager::Initialize() {
     PROF_START(CreateGlobalCommunicationGroup);
     RETURN_IF_FALSE_WITH_LOG(CreateCommunicationGroup(group_name, global_group_ranks_, config),
                              "Failed to create group " + group_name);
-    if (async) {
-      SubmitCreateDeviceCommTask(group_name);
-    }
     PROF_END(CreateGlobalCommunicationGroup);
   }
 
@@ -351,6 +347,7 @@ bool CollectiveManager::CreateCommunicationGroup(const std::string &group_name,
                            "Failed to create device communication group" + group_name);
   PROF_END(CreateCommunicationGroupOnDeviceSide);
 
+  SubmitCreateDeviceCommTask(group_name);
   if (config.async) {
     // If this is in async manner, it's user's duty to call SubmitCreateDeviceCommTask and join the result.
     MS_LOG(WARNING) << "This group's communicator is async created " << group_name;
@@ -358,7 +355,6 @@ bool CollectiveManager::CreateCommunicationGroup(const std::string &group_name,
   } else {
     // To ensure the initialization order of async and sync created communicators, we invoke submit and wait methods
     // for sync ones.
-    SubmitCreateDeviceCommTask(group_name);
     if (!WaitCommInitDone(group_name)) {
       MS_LOG(EXCEPTION) << "Failed to wait for communicator of " << group_name
                         << " init done. Please check ERROR log above.";
@@ -470,6 +466,12 @@ std::vector<uint32_t> CollectiveManager::GetGroupRanks(const std::string &group_
   return group->group_ranks();
 }
 
+void CollectiveManager::ClearInitResult() {
+  std::unique_lock<std::mutex> result_lock(init_result_mutex_);
+  MS_LOG(WARNING) << "Clean init result.";
+  group_name_to_result_.clear();
+}
+
 bool CollectiveManager::Finalize() {
   if (!inited_.load() || finalized_.load()) {
     return true;
@@ -518,7 +520,6 @@ bool CollectiveManager::Finalize() {
     local_rank_id_ = 0;
     local_rank_size_ = 1;
     group_infos_.clear();
-    inited_groups_.clear();
     group_map_.clear();
     while (!init_comm_task_queue_.empty()) {
       init_comm_task_queue_.pop();
@@ -1003,6 +1004,10 @@ bool CollectiveManager::WaitAllCommInitDone() {
     MS_LOG(INFO) << "This is dry run, no need to wait for communciators init done";
     return true;
   }
+  static auto skip_wait = callback::CommonCallback::GetInstance().GetCallback<bool>("SkipHcomInitWait");
+  if (skip_wait && skip_wait()) {
+    return true;
+  }
   // This is a shared lock so the cost is little, but we need to guarantee there's no thread-safe issue.
   // Because WaitCommInitDone also acquires this lock, we just copy this task_list_ and release the lock immediately to
   // avoid dead lock.
@@ -1022,6 +1027,10 @@ bool CollectiveManager::WaitAllCommInitDone() {
 bool CollectiveManager::WaitCommInitDone(const std::string &group_name) {
   if (!common::GetEnv(kSimulationLevel).empty()) {
     MS_LOG(INFO) << "This is dry run, no need to wait for communciator init done for " << group_name;
+    return true;
+  }
+  static auto skip_wait = callback::CommonCallback::GetInstance().GetCallback<bool>("SkipHcomInitWait");
+  if (skip_wait && skip_wait()) {
     return true;
   }
 
@@ -1063,6 +1072,10 @@ void CollectiveManager::SubmitCreateDeviceCommTask(const std::string &group_name
   if (!run_init_comm_task_thread_.joinable()) {
     run_init_comm_task_thread_ = std::thread(&CollectiveManager::RunInitCommTasks, this);
     MS_LOG(INFO) << "Launch init comm thread.";
+  }
+  static auto skip_submit = callback::CommonCallback::GetInstance().GetCallback<bool>("SkipSubmitTask");
+  if (skip_submit && skip_submit()) {
+    return;
   }
   std::unique_lock<std::mutex> lock(task_queue_mutex_);
   init_comm_task_queue_.push(std::make_pair(group_name, buffsize));
@@ -1131,20 +1144,6 @@ void CollectiveManager::SetDistributedMeta() {
   DistributedMeta::GetInstance()->set_global_rank_size(global_rank_size_);
   DistributedMeta::GetInstance()->set_local_rank_id(local_rank_id_);
   DistributedMeta::GetInstance()->set_local_rank_size(local_rank_size_);
-}
-
-void CollectiveManager::CacheInitedGroups(const std::string &name) {
-  MS_LOG(INFO) << "Cache inited group: " << name;
-  std::unique_lock<std::mutex> result_lock(cache_mutes_);
-  (void)inited_groups_.emplace_back(name);
-  MS_LOG(INFO) << "Cache inited group: " << name << " end.";
-}
-
-void CollectiveManager::ClearCacheInitedGroups() { inited_groups_.clear(); }
-
-size_t CollectiveManager::InitedGroupSize() {
-  std::unique_lock<std::mutex> result_lock(cache_mutes_);
-  return inited_groups_.size();
 }
 }  // namespace collective
 }  // namespace distributed

@@ -1089,7 +1089,6 @@ void GraphScheduler::ProcessUceError(ActorSet *const actor_set, OpContext<Kernel
   } else if (UCEException::GetInstance().is_reboot_node()) {
     MS_LOG(WARNING) << "Try to raise arf finish !";
     actor_set->is_execution_failed_ = false;
-    UCEException::GetInstance().set_reboot_node(false);
     MS_LOG(EXCEPTION) << "ARF FINISH !";
   }
 }

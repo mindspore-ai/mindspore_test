@@ -80,6 +80,9 @@ class RUNTIME_HARDWARE_EXPORT CollectiveManager {
   // Finalize the collective communication.
   bool Finalize();
 
+  // clean init result after create communication
+  void ClearInitResult();
+
   // Create communication group.
   bool CreateCommunicationGroup(const std::string &group_name, const std::vector<uint32_t> &group_ranks,
                                 const GroupOptions &config = {});
@@ -138,10 +141,6 @@ class RUNTIME_HARDWARE_EXPORT CollectiveManager {
   CollectiveCommunicationLib *device_comm_lib() { return device_comm_lib_instance_; }
 
   CollectiveCommunicationLib *host_comm_lib() { return host_comm_lib_instance_; }
-
-  void CacheInitedGroups(const std::string &name);
-  void ClearCacheInitedGroups();
-  size_t InitedGroupSize();
 
   // Initialize and finalize Dummy communication lib.
   bool InitializeDummyCommLib();
@@ -283,8 +282,6 @@ class RUNTIME_HARDWARE_EXPORT CollectiveManager {
   // In the recovery scenario, the creation order of communication groups must be recorded to ensure they are recreated
   // sequentially when rebuilding.
   std::vector<std::pair<std::string, std::vector<uint32_t>>> group_infos_;
-  mutable std::mutex cache_mutes_;
-  std::vector<std::string> inited_groups_;
 };
 
 // For scheduler node, CollectiveManager is not initialized. Return 0 as rank id.
