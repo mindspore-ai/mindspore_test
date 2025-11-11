@@ -205,8 +205,11 @@ def test_with_stream_multi_events():
                 event1.record()
                 event1.wait()
                 output = y + x
+                event2 = self.depend(event2, output)
                 event2.record()
+            event2 = self.depend(event2, y)
             event2.wait()
+            output = self.depend(output, event2)
             output = x - y * (output / 2)
             return output
 
@@ -226,8 +229,8 @@ def test_with_stream_multi_events():
     except FileNotFoundError:
         pass
     assert (out.asnumpy() == (-2 * x).asnumpy()).all()
-    assert len(event_id_num) == 4
-    assert len(stream_id_num) == 6
+    assert len(event_id_num) == 6
+    assert len(stream_id_num) == 8
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')

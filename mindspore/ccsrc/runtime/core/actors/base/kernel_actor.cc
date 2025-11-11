@@ -104,14 +104,21 @@ void AddNodeMemTrackerInfo(const CNodePtr cnode, const std::string &actor_name, 
   }
 }
 
-void AddEventNodeToGraphTracker(const CNodePtr &cnode, const std::string &type, const std::string &stream_id) {
-  auto node_name = type == kStreamSendOpName ? "RecordEvent" : "WaitEvent";
+void AddEventNodeToGraphTracker(const CNodePtr &cnode, const std::string &actor_name, const std::string &type,
+                                const std::string &stream_id) {
   if (!common::AnfAlgo::HasNodeAttr(kAttrEventId, cnode)) {
     MS_LOG(EXCEPTION) << "StreamSend or StreamRecv ops does not have attribute kAttrEventId.";
   }
-  std::string event_id = std::to_string(common::AnfAlgo::GetNodeAttr<uint32_t>(cnode, kAttrEventId));
-  device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, node_name, node_name, "", true);
-  device::tracker::CALL_MEMORY_TRACKER(UpdateTask, node_name,
+  const std::string event_id = std::to_string(common::AnfAlgo::GetNodeAttr<uint32_t>(cnode, kAttrEventId));
+  const bool is_user_event = cnode->HasAttr(kAttrEventId);
+
+  const std::string node_name =
+    is_user_event ? cnode->fullname_with_scope() : (type == kStreamSendOpName ? "RecordEvent" : "WaitEvent");
+  const std::string func_graph_str = is_user_event ? cnode->func_graph()->ToString() : "";
+  const std::string task_owner = is_user_event ? actor_name : node_name;
+
+  device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, task_owner, node_name, func_graph_str, true);
+  device::tracker::CALL_MEMORY_TRACKER(UpdateTask, task_owner,
                                        {{device::tracker::kStreamId, stream_id}, {device::tracker::kEvent, event_id}});
 }
 
@@ -119,7 +126,7 @@ void AddNodeToGraphTracker(const CNodePtr cnode, const std::string &actor_name) 
   auto type = common::AnfAlgo::GetCNodeName(cnode);
   auto stream_id = std::to_string(AnfAlgo::GetStreamId(cnode));
   if (type == kStreamSendOpName || type == kStreamRecvOpName) {
-    AddEventNodeToGraphTracker(cnode, type, stream_id);
+    AddEventNodeToGraphTracker(cnode, actor_name, type, stream_id);
     return;
   }
   device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, actor_name, cnode->fullname_with_scope(),

@@ -107,78 +107,86 @@ void AddNodeMemTrackerInfo(const CNodePtr cnode, const std::string &actor_name, 
   }
 }
 
+void AddEventNodeToGraphTracker(const CNodePtr &cnode, const std::string &actor_name, const std::string &type,
+                                const std::string &stream_id) {
+  if (!common::AnfAlgo::HasNodeAttr(kAttrEventId, cnode)) {
+    MS_LOG(EXCEPTION) << "StreamSend or StreamRecv ops does not have attribute kAttrEventId.";
+  }
+  const std::string event_id = std::to_string(common::AnfAlgo::GetNodeAttr<uint32_t>(cnode, kAttrEventId));
+  const bool is_user_event = cnode->HasAttr(kAttrEventId);
+
+  const std::string node_name =
+    is_user_event ? cnode->fullname_with_scope() : (type == kStreamSendOpName ? "RecordEvent" : "WaitEvent");
+  const std::string func_graph_str = is_user_event ? cnode->func_graph()->ToString() : "";
+  const std::string task_owner = is_user_event ? actor_name : node_name;
+
+  device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, task_owner, node_name, func_graph_str, true);
+  device::tracker::CALL_MEMORY_TRACKER(UpdateTask, task_owner,
+                                       {{device::tracker::kStreamId, stream_id}, {device::tracker::kEvent, event_id}});
+}
+
 void AddNodeToGraphTracker(const CNodePtr cnode, const std::string &actor_name) {
   auto type = common::AnfAlgo::GetCNodeName(cnode);
   auto stream_id = std::to_string(AnfAlgo::GetStreamId(cnode));
   if (type == kStreamSendOpName || type == kStreamRecvOpName) {
-    auto node_name = type == kStreamSendOpName ? "RecordEvent" : "WaitEvent";
-    std::string event_id;
-    if (common::AnfAlgo::HasNodeAttr(kAttrEventId, cnode)) {
-      event_id = std::to_string(common::AnfAlgo::GetNodeAttr<uint32_t>(cnode, kAttrEventId));
-    } else {
-      MS_LOG(EXCEPTION) << "StreamSend or StreamRecv ops does not have attribute kAttrEventId.";
-    }
-    device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, node_name, node_name, "", true);
-    device::tracker::CALL_MEMORY_TRACKER(
-      UpdateTask, node_name, {{device::tracker::kStreamId, stream_id}, {device::tracker::kEvent, event_id}});
-  } else {
-    device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, actor_name, cnode->fullname_with_scope(),
-                                                   cnode->func_graph()->ToString(), true);
-    device::tracker::CALL_MEMORY_TRACKER(UpdateTask, actor_name, {{device::tracker::kStreamId, stream_id}});
-
-    if (!(common::AnfAlgo::IsCommunicationOp(cnode) && common::AnfAlgo::HasNodeAttr(kAttrGroup, cnode))) {
-      return;
-    }
-
-    auto group_name = common::AnfAlgo::GetNodeAttr<std::string>(cnode, kAttrGroup);
-    std::vector<uint32_t> comm_ranks;
-    if (group_name == "hccl_world_group") {
-      uint32_t rank_size = 1;
-      rank_size = distributed::collective::CollectiveManager::instance()->global_rank_size();
-      comm_ranks.resize(rank_size);
-      std::iota(comm_ranks.begin(), comm_ranks.end(), 0);
-    } else {
-      comm_ranks = distributed::collective::CollectiveManager::instance()->GetGroupRanks(group_name);
-    }
-    std::string comm_ranks_str = std::accumulate(
-      comm_ranks.begin(), comm_ranks.end(), std::string(),
-      [](const std::string &a, uint32_t b) { return a.empty() ? std::to_string(b) : a + " " + std::to_string(b); });
-    std::unordered_map<std::string, std::string> attrs = {{device::tracker::kGroup, group_name},
-                                                          {device::tracker::kCommRank, comm_ranks_str}};
-
-    auto get_rank = [&](const std::string &attr_name) -> uint32_t {
-      uint32_t rank_value = std::numeric_limits<uint32_t>::max();
-      if (common::AnfAlgo::HasNodeAttr(attr_name, cnode)) {
-        int64_t rank_attr = common::AnfAlgo::GetNodeAttr<int64_t>(cnode, attr_name);
-        if (rank_attr >= 0 && static_cast<size_t>(rank_attr) < comm_ranks.size()) {
-          rank_value = comm_ranks[static_cast<size_t>(rank_attr)];
-        } else {
-          MS_LOG(EXCEPTION) << "Invalid rank_attr value: " << rank_attr << ", or out of range for comm_ranks with size "
-                            << comm_ranks.size() << ".";
-        }
-      }
-      return rank_value;
-    };
-    auto src_rank = get_rank(device::tracker::kSrcRank);
-    if (src_rank != std::numeric_limits<uint32_t>::max()) {
-      attrs[device::tracker::kSrcRank] = std::to_string(src_rank);
-    }
-    uint32_t dst_rank;
-    if (common::AnfAlgo::GetCNodeName(cnode) != device::tracker::kSend) {
-      dst_rank = get_rank(device::tracker::kDstRank);
-    } else {
-      dst_rank = get_rank(device::tracker::kSendDstRank);
-    }
-    if (dst_rank != std::numeric_limits<uint32_t>::max()) {
-      attrs[device::tracker::kDstRank] = std::to_string(dst_rank);
-    }
-    auto root_rank = get_rank(device::tracker::kRootRank);
-    if (root_rank != std::numeric_limits<uint32_t>::max()) {
-      attrs[device::tracker::kRootRank] = std::to_string(root_rank);
-    }
-    device::tracker::CALL_MEMORY_TRACKER(UpdateTask, actor_name, attrs);
+    AddEventNodeToGraphTracker(cnode, actor_name, type, stream_id);
+    return;
   }
-  return;
+  device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, actor_name, cnode->fullname_with_scope(),
+                                                 cnode->func_graph()->ToString(), true);
+  device::tracker::CALL_MEMORY_TRACKER(UpdateTask, actor_name, {{device::tracker::kStreamId, stream_id}});
+
+  if (!(common::AnfAlgo::IsCommunicationOp(cnode) && common::AnfAlgo::HasNodeAttr(kAttrGroup, cnode))) {
+    return;
+  }
+
+  auto group_name = common::AnfAlgo::GetNodeAttr<std::string>(cnode, kAttrGroup);
+  std::vector<uint32_t> comm_ranks;
+  if (group_name == "hccl_world_group") {
+    uint32_t rank_size = 1;
+    rank_size = distributed::collective::CollectiveManager::instance()->global_rank_size();
+    comm_ranks.resize(rank_size);
+    std::iota(comm_ranks.begin(), comm_ranks.end(), 0);
+  } else {
+    comm_ranks = distributed::collective::CollectiveManager::instance()->GetGroupRanks(group_name);
+  }
+  std::string comm_ranks_str = std::accumulate(
+    comm_ranks.begin(), comm_ranks.end(), std::string(),
+    [](const std::string &a, uint32_t b) { return a.empty() ? std::to_string(b) : a + " " + std::to_string(b); });
+  std::unordered_map<std::string, std::string> attrs = {{device::tracker::kGroup, group_name},
+                                                        {device::tracker::kCommRank, comm_ranks_str}};
+
+  auto get_rank = [&](const std::string &attr_name) -> uint32_t {
+    uint32_t rank_value = std::numeric_limits<uint32_t>::max();
+    if (common::AnfAlgo::HasNodeAttr(attr_name, cnode)) {
+      int64_t rank_attr = common::AnfAlgo::GetNodeAttr<int64_t>(cnode, attr_name);
+      if (rank_attr >= 0 && static_cast<size_t>(rank_attr) < comm_ranks.size()) {
+        rank_value = comm_ranks[static_cast<size_t>(rank_attr)];
+      } else {
+        MS_LOG(EXCEPTION) << "Invalid rank_attr value: " << rank_attr << ", or out of range for comm_ranks with size "
+                          << comm_ranks.size() << ".";
+      }
+    }
+    return rank_value;
+  };
+  auto src_rank = get_rank(device::tracker::kSrcRank);
+  if (src_rank != std::numeric_limits<uint32_t>::max()) {
+    attrs[device::tracker::kSrcRank] = std::to_string(src_rank);
+  }
+  uint32_t dst_rank;
+  if (common::AnfAlgo::GetCNodeName(cnode) != device::tracker::kSend) {
+    dst_rank = get_rank(device::tracker::kDstRank);
+  } else {
+    dst_rank = get_rank(device::tracker::kSendDstRank);
+  }
+  if (dst_rank != std::numeric_limits<uint32_t>::max()) {
+    attrs[device::tracker::kDstRank] = std::to_string(dst_rank);
+  }
+  auto root_rank = get_rank(device::tracker::kRootRank);
+  if (root_rank != std::numeric_limits<uint32_t>::max()) {
+    attrs[device::tracker::kRootRank] = std::to_string(root_rank);
+  }
+  device::tracker::CALL_MEMORY_TRACKER(UpdateTask, actor_name, attrs);
 }
 
 void ResetNewRefCountForRefOutputInSomas(const CNodePtr &node, size_t index) {

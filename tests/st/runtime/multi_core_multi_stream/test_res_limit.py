@@ -12,8 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+"""Test with res_limit API"""
 import os
-import mindspore.context as context
+from mindspore import context
 from mindspore import Tensor, ops
 import mindspore as ms
 from tests.mark_utils import arg_mark

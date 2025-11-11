@@ -22,6 +22,8 @@
 #include <mutex>
 #include <numeric>
 #include <string>
+#include <vector>
+#include <map>
 #include <unordered_map>
 #include <map>
 #include <vector>

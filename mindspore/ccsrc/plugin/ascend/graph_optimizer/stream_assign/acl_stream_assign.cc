@@ -296,8 +296,8 @@ void AddEventForUsersSetEvent(const AnfNodePtr &node, std::map<uint32_t, uint32_
                                          node);
       common::AnfAlgo::SetNodeAttrSafely(kAttrWaitEvent, MakeValue(reinterpret_cast<uintptr_t>(event)), node);
     } else {
-      MS_LOG(INFO) << "No paired StreamSend with event_id: " << new_event_id
-                   << " found, the launch of this node: " << node->fullname_with_scope() << " will be skipped.";
+      MS_LOG(WARNING) << "No paired StreamSend with event_id: " << new_event_id
+                      << " found, the launch of this node: " << node->fullname_with_scope() << " will be skipped.";
     }
   }
 }

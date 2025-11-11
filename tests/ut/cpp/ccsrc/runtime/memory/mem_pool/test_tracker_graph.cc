@@ -85,6 +85,92 @@ TEST_F(TestTrackerGraph, test_need_skip) {
     "attention-LLamaAttention/Add-op0";
   EXPECT_FALSE(NeedSkipRaceCheck(task_info));
 }
+
+/// Feature: tracker graph unit tests.
+/// Description: test is event.
+/// Expectation: all interface work normally and can not throw exception.
+TEST_F(TestTrackerGraph, test_is_event) {
+  // Positive cases.
+  TaskInfoPtr task_info = std::make_shared<TaskInfo>();
+  task_info->node_name = "RecordEvent";
+  EXPECT_TRUE(IsEvent(task_info, "RecordEvent"));
+  task_info->node_name = "WaitEvent";
+  EXPECT_TRUE(IsEvent(task_info, "WaitEvent"));
+
+  task_info->node_name = "Default/StreamSend-op0";
+  EXPECT_TRUE(IsEvent(task_info, "RecordEvent"));
+  task_info->node_name = "Default/StreamRecv-op0";
+  EXPECT_TRUE(IsEvent(task_info, "WaitEvent"));
+
+  task_info->node_name = "Default/StreamSendCell/StreamSend-op0";
+  EXPECT_TRUE(IsEvent(task_info, "RecordEvent"));
+  task_info->node_name = "Default/StreamRecvCell/StreamRecv-op0";
+  EXPECT_TRUE(IsEvent(task_info, "WaitEvent"));
+
+  task_info->node_name =
+    "Default/network-MFPipelineWithLossScaleCell/newwork-_VirtualDatasetCell/_backbone-PipelineCell/"
+    "network-DataOrderWrapperCell/network-LlamaForCausalLM/model-LlamaModel/casual_mask-LowerTriangularMaskWithDynamic/"
+    "StreamSend-op0";
+  EXPECT_TRUE(IsEvent(task_info, "RecordEvent"));
+  task_info->node_name =
+    "Default/network-MFPipelineWithLossScaleCell/newwork-_VirtualDatasetCell/_backbone-PipelineCell/"
+    "network-DataOrderWrapperCell/network-LlamaForCausalLM/model-LlamaModel/casual_mask-LowerTriangularMaskWithDynamic/"
+    "StreamRecv-op0";
+  EXPECT_TRUE(IsEvent(task_info, "WaitEvent"));
+
+  // Negative cases.
+  task_info->node_name = "";
+  EXPECT_FALSE(IsEvent(task_info, "RecordEvent"));
+  EXPECT_FALSE(IsEvent(task_info, "WaitEvent"));
+
+  task_info->node_name = "RecordEvent";
+  EXPECT_FALSE(IsEvent(task_info, "WaitEvent"));
+  task_info->node_name = "WaitEvent";
+  EXPECT_FALSE(IsEvent(task_info, "RecordEvent"));
+
+  task_info->node_name = "Default/StreamSend-op0";
+  EXPECT_FALSE(IsEvent(task_info, "WaitEvent"));
+  task_info->node_name = "Default/StreamRecv-op0";
+  EXPECT_FALSE(IsEvent(task_info, "RecordEvent"));
+
+  task_info->node_name = "Default/StreamSend-op";
+  EXPECT_FALSE(IsEvent(task_info, "RecordEvent"));
+  task_info->node_name = "Default/StreamRecv-op";
+  EXPECT_FALSE(IsEvent(task_info, "WaitEvent"));
+
+  task_info->node_name = "Default/StreamSend-opa";
+  EXPECT_FALSE(IsEvent(task_info, "RecordEvent"));
+  task_info->node_name = "Default/StreamRecv-opa";
+  EXPECT_FALSE(IsEvent(task_info, "WaitEvent"));
+
+  task_info->node_name = "MatMul";
+  EXPECT_FALSE(IsEvent(task_info, "RecordEvent"));
+  EXPECT_FALSE(IsEvent(task_info, "WaitEvent"));
+
+  task_info->node_name =
+    "StreamSend/Default/network-MFPipelineWithLossScaleCell/newwork-_VirtualDatasetCell/_backbone-PipelineCell/"
+    "network-DataOrderWrapperCell/network-LlamaForCausalLM/model-LlamaModel/casual_mask-LowerTriangularMaskWithDynamic/"
+    "Add-op0";
+  EXPECT_FALSE(IsEvent(task_info, "RecordEvent"));
+  
+  task_info->node_name =
+    "Default/network-MFPipelineWithLossScaleCell/newwork-_VirtualDatasetCell/_backbone-PipelineCell/"
+    "network-DataOrderWrapperCell/network-LlamaForCausalLM/model-LlamaModel/layers-CellList/0-LlamaDecodeLayer/"
+    "attention-LLamaAttention/wv-Liner/Add-StreamSendop0";
+  EXPECT_FALSE(IsEvent(task_info, "RecordEvent"));
+
+  task_info->node_name =
+    "Default/network-MFPipelineWithLossScaleCell/newwork-_VirtualDatasetCell/_backbone-PipelineCell/"
+    "network-DataOrderWrapperCell/network-LlamaForCausalLM/model-LlamaModel/layers-CellList/0-LlamaDecodeLayer/"
+    "attention-LLamaAttention/wv-Liner/Add-StreamSend-op0";
+  EXPECT_FALSE(IsEvent(task_info, "RecordEvent"));
+
+  task_info->node_name =
+    "Default/StreamSend-op0/network-MFPipelineWithLossScaleCell/newwork-_VirtualDatasetCell/_backbone-PipelineCell/"
+    "network-DataOrderWrapperCell/network-LlamaForCausalLM/model-LlamaModel/layers-CellList/0-LlamaDecodeLayer/"
+    "attention-LLamaAttention/Add-op0";
+  EXPECT_FALSE(IsEvent(task_info, "RecordEvent"));
+}
 }  // namespace graph
 }  // namespace tracker
 }  // namespace device

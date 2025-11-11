@@ -12,10 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+"""Test with StreamCtx and res_limit"""
 import numpy as np
 import mindspore as ms
-import mindspore.nn as nn
-from mindspore import Tensor
+from mindspore import Tensor, nn
 from tests.mark_utils import arg_mark
 
 ms.set_context(mode=ms.context.GRAPH_MODE, jit_config={'jit_level': 'O0'})
