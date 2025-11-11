@@ -18,7 +18,7 @@ Testing FilterWikipediaXML op
 import numpy as np
 
 import mindspore.dataset as ds
-import mindspore.dataset.text.transforms as a_c_trans
+from mindspore.dataset import text
 from mindspore import log as logger
 
 
@@ -39,7 +39,7 @@ def test_filter_wikipedia_xml_eager():
     input01 = np.array(["Welcome to China"], dtype=np.unicode_)
     # Expect text
     expected = np.array(["welcome to china"], dtype=np.unicode_)
-    filter_wikipedia_xml_op = a_c_trans.FilterWikipediaXML()
+    filter_wikipedia_xml_op = text.FilterWikipediaXML()
     output = filter_wikipedia_xml_op(input01)
     count_unequal_element(expected, output)
 
@@ -57,7 +57,7 @@ def test_filter_wikipedia_xml_pipeline():
     # Expect text
     expected = np.array(["welcome to china", "", "abc"])
     dataset = ds.NumpySlicesDataset(input02, ["text"], shuffle=False)
-    filter_wikipedia_xml_op = a_c_trans.FilterWikipediaXML()
+    filter_wikipedia_xml_op = text.FilterWikipediaXML()
     # Filtered waveform by filter_wikipedia_xml
     dataset = dataset.map(input_columns=["text"], operations=filter_wikipedia_xml_op, num_parallel_workers=8)
     i = 0

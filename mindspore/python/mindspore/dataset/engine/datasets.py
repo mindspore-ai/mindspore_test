@@ -53,8 +53,6 @@ from mindspore import log as logger
 from mindspore.parallel._ps_context import _is_role_sched
 from mindspore.dataset.engine.offload import GetOffloadModel
 from mindspore.communication.management import get_group_size
-from mindspore.dataset.transforms import c_transforms
-from mindspore.dataset.transforms import py_transforms
 from mindspore.dataset import transforms
 from mindspore.dataset.text.utils import SentencePieceModel, DE_C_INTER_SENTENCEPIECE_MODE
 from mindspore.dataset.debug import DebugHook
@@ -3714,13 +3712,12 @@ class MapDataset(UnionBaseDataset):
         super().__init__(children=input_dataset, num_parallel_workers=num_parallel_workers, cache=cache)
         self.operations = to_list(operations)
         for op in self.operations:
-            # user define c_vision.HWC2CHW without parentheses is error
+            # user define vision.HWC2CHW without parentheses is error
             if type(op) == type:  # pylint: disable=unidiomatic-typecheck
                 raise ValueError("Parameter operations's element of method map should be a dataset processing " +
                                  f"operation instance, but got: {op}. It may be missing parentheses for " +
                                  "instantiation.")
-            if not isinstance(op, (c_transforms.TensorOperation, py_transforms.PyTensorOperation)) \
-                    and not callable(op):
+            if not callable(op):
                 raise ValueError("Parameter operations's element of method map should be a python function or " +
                                  f"class method which should be callable, but got: {op}. It doesn't need parentheses " +
                                  "for python function or class method.")
@@ -3746,8 +3743,7 @@ class MapDataset(UnionBaseDataset):
     def parse(self, children=None):
         operations = self.__decompose_callable_operations()
 
-        count_old_transforms, count_new_transforms, count_non_data_vision_transforms = \
-            self.__count_transforms(operations)
+        count_new_transforms, count_non_data_vision_transforms = self.__count_transforms(operations)
         count_py_ops = self.__count_py_ops(operations)
         count_pyfunc = self.__count_pyfuncs(operations)
 
@@ -3782,11 +3778,11 @@ class MapDataset(UnionBaseDataset):
                 prev_op = op
             operations = self.__insert_debug_wrapper(operations)
             if run_in_thread:
-                operations = transforms.transforms.Compose.reduce(operations)
-        elif count_old_transforms + count_pyfunc + count_non_data_vision_transforms == len(operations):
+                operations = transforms.Compose.reduce(operations)
+        elif count_pyfunc + count_non_data_vision_transforms == len(operations):
             operations = self.__insert_debug_wrapper(operations)
             if run_in_thread:
-                operations = transforms.py_transforms.Compose.reduce(operations)
+                operations = transforms.Compose.reduce(operations)
         else:
             raise RuntimeError("Mixing old legacy c/py_transforms and new unified transforms is not allowed.")
 
@@ -3891,23 +3887,18 @@ class MapDataset(UnionBaseDataset):
         """
         Count the various flavors of transforms operations
         """
-        # Count the number of old legacy data and vision c_transforms and py_transforms
-        count_old_transforms = sum(
-            1 if "c_transforms" in str(op)
-            or isinstance(op, (c_transforms.TensorOperation, py_transforms.PyTensorOperation))
-            or ("py_transforms" in str(op) and not isinstance(op, FuncWrapper))
-            else 0 for op in operations)
+        # Count the number of old legacy data and vision c_layer_transforms and py_layer_transforms
         # Count the number of new unified data and vision transforms
         count_new_transforms = sum(1 if hasattr(op, "implementation") and not isinstance(op, FuncWrapper)
                                    else 0 for op in operations)
         # Count the number of non-data transforms and non-vision transforms
         count_non_data_vision_transforms = sum(
             1 if "text.transforms" in str(op) or "audio.transforms" in str(op) else 0 for op in operations)
-        return count_old_transforms, count_new_transforms, count_non_data_vision_transforms
+        return count_new_transforms, count_non_data_vision_transforms
 
     @staticmethod
     def __operation_valid_for_multiprocessing(op):
-        if callable(op) and str(op).find("c_transform") < 0:
+        if callable(op):
             return True
         return False
 
@@ -3957,7 +3948,6 @@ class MapDataset(UnionBaseDataset):
 
             # Pass #1, look for Python callables and build list
             for op in self.operations:
-                # our c transforms is now callable and should not be run in Python multithreading
                 if MapDataset.__operation_valid_for_multiprocessing(op):
                     callable_list.append(op)
 
@@ -3984,12 +3974,10 @@ class MapDataset(UnionBaseDataset):
         """
         Decompose operations and build list of old legacy ops which are callable
         """
-        decomposed_operations = transforms.transforms.Compose.decompose(self.operations)
+        decomposed_operations = transforms.Compose.decompose(self.operations)
         operations = []
         for op in decomposed_operations:
-            if callable(op) and not hasattr(op, "implementation") and str(op).find(
-                    "c_transform") < 0 and not isinstance(op, c_transforms.TensorOperation) and \
-                    not isinstance(op, py_transforms.PyTensorOperation):
+            if callable(op) and not hasattr(op, "implementation"):
                 op = transforms.py_transforms_util.FuncWrapper(op)
             operations.append(op)
         return operations
