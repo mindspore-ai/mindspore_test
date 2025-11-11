@@ -720,7 +720,7 @@ void HandleKernelSelectFailure(const KernelGraphPtr &graph, const CNodePtr &node
                                const std::pair<std::string, ExceptionType> &failure_info) {
   auto msg = TryBackoffCpu(graph, node, failure_info);
   if (!msg.empty()) {
-    MS_EXCEPTION(failure_info.second) << msg;
+    MS_EXCEPTION_WITH_NODE(failure_info.second, node) << msg;
   }
 }
 
