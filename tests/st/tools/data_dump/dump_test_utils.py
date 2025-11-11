@@ -338,6 +338,8 @@ def generate_statistic_dump_json(dump_path, json_file_name, test_key, saved_data
         data = sync_kbyk_dump_dict
     elif test_key == "test_async_kbyk_dump":
         data = async_kbyk_dump_dict
+    elif test_key == "test_sync_kbyk_dump_resnet":
+        data = e2e_dump_dict
     else:
         raise ValueError(
             "Failed to generate statistic dump json file. The test name value " + test_key + " is invalid.")

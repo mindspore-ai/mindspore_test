@@ -12,30 +12,49 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-
+"""multi stream sync and async dump statistic test case."""
 import tempfile
-import os
 import json
-
+import concurrent.futures
+import subprocess
+from typing import List, Dict, Union
 from tests.mark_utils import arg_mark
 from tests.security_utils import security_off_wrap
 from cmp_dump_statistic import compare_csv_files
 from pathlib import Path
 
+def run_script_with_args(script_path: str, args: List[str]) -> Dict[str, Union[str, int]]:
+    """
+    Non-blocking execution of a Shell script with command-line arguments
+    :param script_path: Path to the Shell script
+    :param args: List of command-line arguments for the script
+    :return: Dictionary of execution results
+    """
+    cmd = ["bash", script_path] + args
+    subprocess.run(
+        cmd,
+        shell=False,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        timeout=240,
+        check=True
+    )
+
 
 def generate_dump_json(dump_path, json_file_name, enable_sync):
     current_dir = Path(__file__).parent.parent
     json_path = current_dir / "test_e2e_statistic_config.json"
-    with open(json_path, 'r') as file:
+    with open(json_path, 'r', encoding="utf-8") as file:
         data = json.load(file)
         data["common_dump_settings"]["path"] = dump_path
         data["e2e_dump_settings"]["enable"] = enable_sync
         data["e2e_dump_settings"]["stat_calc_mode"] = "device"
-    with open(json_file_name, 'w') as f:
+    with open(json_file_name, 'w', encoding="utf-8") as f:
         json.dump(data, f)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='allcards', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='allcards', essential_mark='essential')
 @security_off_wrap
 def test_multi_stream_async_statistic_dump():
     """
@@ -48,21 +67,29 @@ def test_multi_stream_async_statistic_dump():
         3. Compare the results of sync and async dumps.
     """
     sh_path = str(Path(__file__).parent.absolute())
-    data_path = "/home/workspace/mindspore_dataset/mnist/train/"
-
     with tempfile.TemporaryDirectory() as test_dir:
-        path = Path(test_dir).absolute()
-        def exec_dump_and_get_dump_path(base_path, name, enable_sync):
-            """Execute dump and return the path."""
-            dump_path = str(base_path / f"{name}_data")
-            dump_config_path = str(base_path / f"{name}_config.json")
-            generate_dump_json(dump_path, dump_config_path, enable_sync)
-            ret = os.system(f"bash {sh_path}/msrun_single.sh {data_path} {dump_config_path}")
-            assert ret == 0, f"{name} exec failed"
-            return dump_path
-
-        sync_dump_path = exec_dump_and_get_dump_path(path, "sync_dump", True)
-        async_dump_path = exec_dump_and_get_dump_path(path, "async_dump", False)
-
-        # compare result
-        compare_csv_files(sync_dump_path, async_dump_path)
+        base_path = Path(test_dir).absolute()
+        # 1. Set paths and generate JSON configuration files
+        enable_sync_list = [True, False]
+        dump_path = [str(base_path / "sync_dump_data"), str(base_path / "async_dump_data")]
+        dump_config_path = [str(base_path / "sync_dump_config.json"), str(base_path / "async_dump_config.json")]
+        for dp, dc, enable_sync in zip(dump_path, dump_config_path, enable_sync_list):
+            generate_dump_json(dump_path=dp, json_file_name=dc, enable_sync=enable_sync)
+        scripts = [
+            f"{sh_path}/msrun_sync.sh",
+            f"{sh_path}/msrun_async.sh"
+        ]
+        scripts_args = [
+            [dump_config_path[0]],
+            [dump_config_path[1]]
+        ]
+        # 2. Execute the two Shell scripts concurrently
+        with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
+            futures = [
+                executor.submit(run_script_with_args, script, args)
+                for script, args in zip(scripts, scripts_args)
+            ]
+        # 3. Wait for all concurrent tasks to complete and collect execution results
+        concurrent.futures.wait(futures, return_when=concurrent.futures.ALL_COMPLETED)
+        # 4. Result verification: Compare CSV files of sync and async data (validate data consistency)
+        compare_csv_files(dump_path[0], dump_path[1])
