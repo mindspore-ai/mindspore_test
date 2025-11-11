@@ -3,7 +3,7 @@ import numpy as np
 import os
 from mindspore import jit, context, Tensor, Parameter, ops, ParameterTuple, JitConfig
 from mindspore.common import dtype as mstype
-from mindspore.nn import Cell
+from mindspore.nn import Cell, SequentialCell
 from mindspore._c_expression import get_code_extra
 from .share.utils import match_array
 from tests.mark_utils import arg_mark
@@ -246,6 +246,14 @@ def test_run_grad_first_input_break(func, net, x, y, x_hook, y_hook):
 
 def double_fn(grad):
     return grad * 2
+
+
+def triple_fn(grad):
+    return grad * 3
+
+
+def half_fn(grad):
+    return grad * 0.5
 
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
@@ -538,3 +546,306 @@ def test_hook_register_grad_not_all_inputs_and_weights():
 
     match_array(grad_y_pn, grad_y_jit)
     match_array(grad_b_pn, grad_b_jit)
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+def test_hook_register_sequential_layers_parameters():
+    """
+    Feature: Parameter.register_hook in stacked Cells.
+    Description: Register hook on parameters of each layer in SequentialCell; compare gradients between PyNative and JIT.
+    Expectation: Parameter gradients match between PyNative and JIT.
+    Migrated from: test_parse_pijit_hook_register_remove.py::test_parse_pijit_hook_cell_layers
+    """
+
+    class Block(Cell):
+        def __init__(self):
+            super().__init__()
+            self.a = Parameter(Tensor(np.ones([2, 3], np.float32), mstype.float32), name='a')
+            self.a.register_hook(double_fn)
+
+        def construct(self, x):
+            return x * self.a
+
+    class Net(Cell):
+        def __init__(self):
+            super().__init__()
+            self.layers = SequentialCell()
+            for _ in range(3):
+                self.layers.append(Block())
+
+        def construct(self, x):
+            out = x
+            for layer in self.layers:
+                out = out + layer(x)
+            return out
+
+    x_np = np.ones([2, 3], np.float32)
+
+    # PyNative
+    net_pn = Net()
+    grad_fn_pn = ops.grad(net_pn, grad_position=None, weights=net_pn.trainable_params())
+    grads_pn = grad_fn_pn(Tensor(x_np, mstype.float32))
+
+    # JIT
+    net_jit = Net()
+    net_jit.construct = jit(net_jit.construct, capture_mode='bytecode')
+    grad_fn_jit = ops.grad(net_jit, grad_position=None, weights=net_jit.trainable_params())
+    grads_jit = grad_fn_jit(Tensor(x_np, mstype.float32))
+
+    for grad_pn, grad_jit in zip(grads_pn, grads_jit):
+        match_array(grad_pn, grad_jit)
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+def test_hook_register_remove_before_backward():
+    """
+    Feature: Tensor.register_hook remove handle before backward.
+    Description: Register hook on input tensor, run forward, remove handle, then compare gradients with and without JIT.
+    Expectation: Gradients after removal match baseline without hook for both modes.
+    Migrated from: test_parse_pijit_hook_register_remove.py::test_parse_pijit_hook_register_forward_remove
+    """
+
+    class Net(Cell):
+        def __init__(self):
+            super().__init__()
+            self.a = Parameter(Tensor(np.ones([2, 3], np.float32), mstype.float32), name='a')
+
+        def construct(self, x):
+            return x * x * self.a
+
+    x_np = np.ones([2, 3], np.float32)
+
+    def run(mode):
+        x = Tensor(x_np, mstype.float32)
+        handle = x.register_hook(double_fn)
+        net = Net()
+        if mode == "jit":
+            net.construct = jit(net.construct, capture_mode='bytecode')
+        net(x)
+        handle.remove()
+        grad_fn = ops.grad(net, grad_position=0, weights=net.a)
+        return grad_fn(x)
+
+    grad_input_pn, grad_weight_pn = run("pynative")
+    grad_input_jit, grad_weight_jit = run("jit")
+
+    match_array(grad_input_pn, grad_input_jit)
+    match_array(grad_weight_pn, grad_weight_jit)
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+def test_hook_register_remove_after_first_backward():
+    """
+    Feature: Tensor.register_hook removal after first backward.
+    Description: Register hook, execute backward to trigger hook, remove handle, then ensure subsequent gradients match baseline.
+    Expectation: After removal, gradients match baseline; first backward doubles gradient in both modes.
+    Migrated from: test_parse_pijit_hook_register_remove.py::test_parse_pijit_hook_register_backward_remove
+    """
+
+    class Net(Cell):
+        def __init__(self):
+            super().__init__()
+            self.a = Parameter(Tensor(np.ones([2, 3], np.float32), mstype.float32), name='a')
+
+        def construct(self, x):
+            return x * x * self.a
+
+    x_np = np.ones([2, 3], np.float32)
+
+    def run(mode):
+        x = Tensor(x_np, mstype.float32)
+        handle = x.register_hook(double_fn)
+        net = Net()
+        if mode == "jit":
+            net.construct = jit(net.construct, capture_mode='bytecode')
+        net(x)
+        grad_fn = ops.grad(net, grad_position=0)
+        grad_with_hook = grad_fn(x)
+        handle.remove()
+        net(x)
+        grad_after_remove = grad_fn(x)
+        return grad_with_hook, grad_after_remove
+
+    grad_with_hook_pn, grad_after_remove_pn = run("pynative")
+    grad_with_hook_jit, grad_after_remove_jit = run("jit")
+
+    match_array(grad_with_hook_pn, grad_with_hook_jit)
+    match_array(grad_after_remove_pn, grad_after_remove_jit)
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+def test_hook_register_after_initial_run():
+    """
+    Feature: Tensor.register_hook after initial execution.
+    Description: Run network once without hook, then register hook and ensure gradients double in both PyNative and JIT.
+    Expectation: Gradients after hook registration double baseline and match between modes.
+    Migrated from: test_parse_pijit_hook_register_remove.py::test_parse_pijit_hook_register_after_run
+    """
+
+    class Net(Cell):
+        def __init__(self):
+            super().__init__()
+            self.a = Parameter(Tensor(np.ones([2, 3], np.float32), mstype.float32), name='a')
+
+        def construct(self, x):
+            return x * x * self.a
+
+    x_np = np.ones([2, 3], np.float32)
+
+    def run(mode):
+        net = Net()
+        if mode == "jit":
+            net.construct = jit(net.construct, capture_mode='bytecode')
+        x = Tensor(x_np, mstype.float32)
+        net(x)
+        grad_fn = ops.grad(net, grad_position=0)
+        grad_before_hook = grad_fn(x)
+        x.register_hook(double_fn)
+        net(x)
+        grad_after_hook = grad_fn(x)
+        return grad_before_hook, grad_after_hook
+
+    grad_before_hook_pn, grad_after_hook_pn = run("pynative")
+    grad_before_hook_jit, grad_after_hook_jit = run("jit")
+
+    match_array(grad_before_hook_pn, grad_before_hook_jit)
+    match_array(grad_after_hook_pn, grad_after_hook_jit)
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+def test_hook_register_run_twice():
+    """
+    Feature: Tensor.register_hook reused across multiple runs.
+    Description: Register hook once and execute gradients twice; verify hook effect persists in PyNative and JIT.
+    Expectation: Gradients from both runs match and equal doubled baseline in both modes.
+    Migrated from: test_parse_pijit_hook_register_remove.py::test_parse_pijit_hook_register_run_twice
+    """
+
+    class Net(Cell):
+        def __init__(self):
+            super().__init__()
+            self.a = Parameter(Tensor(np.ones([2, 3], np.float32), mstype.float32), name='a')
+
+        def construct(self, x):
+            return x * x * self.a
+
+    x_np = np.ones([2, 3], np.float32)
+
+    def run(mode):
+        net = Net()
+        if mode == "jit":
+            net.construct = jit(net.construct, capture_mode='bytecode')
+        x = Tensor(x_np, mstype.float32)
+        x.register_hook(double_fn)
+        grad_fn = ops.grad(net, grad_position=0)
+        net(x)
+        grad_first = grad_fn(x)
+        net(x)
+        grad_second = grad_fn(x)
+        return grad_first, grad_second
+
+    grad_first_pn, grad_second_pn = run("pynative")
+    grad_first_jit, grad_second_jit = run("jit")
+
+    match_array(grad_first_pn, grad_first_jit)
+    match_array(grad_second_pn, grad_second_jit)
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+def test_hook_register_three_remove_one():
+    """
+    Feature: Tensor.register_hook remove one handle among multiple.
+    Description: Register three hooks, remove the middle one, and ensure remaining hooks keep gradient unchanged overall.
+    Expectation: Final gradients match baseline and are consistent between PyNative and JIT.
+    Migrated from: test_parse_pijit_hook_register_remove.py::test_parse_pijit_hook_register_three_remove_one
+    """
+
+    class Net(Cell):
+        def __init__(self):
+            super().__init__()
+
+        def construct(self, x):
+            return x * x
+
+    x_np = np.ones([2, 3], np.float32)
+
+    def run(mode):
+        net = Net()
+        if mode == "jit":
+            net.construct = jit(net.construct, capture_mode='bytecode')
+        x = Tensor(x_np, mstype.float32)
+        x.register_hook(double_fn)
+        handle_mid = x.register_hook(triple_fn)
+        x.register_hook(half_fn)
+        handle_mid.remove()
+        grad_fn = ops.grad(net, grad_position=0)
+        return grad_fn(x)
+
+    grad_pn = run("pynative")
+    grad_jit = run("jit")
+
+    match_array(grad_pn, grad_jit)
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+def test_hook_register_remove_inside_construct():
+    """
+    Feature: Parameter.register_hook with input hook removed inside construct.
+    Description: Remove input hook inside construct while keeping parameter hook; compare gradients between modes.
+    Expectation: Input gradients match baseline; parameter gradients remain doubled in both modes.
+    Migrated from: test_parse_pijit_hook_register_remove.py::test_parse_pijit_hook_register_out_remove_in
+    """
+
+    class Net(Cell):
+        def __init__(self, handle):
+            super().__init__()
+            self.a = Parameter(Tensor(np.ones([2, 3], np.float32), mstype.float32), name='a')
+            self.a.register_hook(double_fn)
+            self.handle_x = handle
+
+        def construct(self, x):
+            self.handle_x.remove()
+            return x * x * self.a
+
+    x_np = np.ones([2, 3], np.float32)
+
+    def run(mode):
+        x = Tensor(x_np, mstype.float32)
+        handle = x.register_hook(double_fn)
+        net = Net(handle)
+        if mode == "jit":
+            net.construct = jit(net.construct, capture_mode='bytecode')
+        grad_fn = ops.grad(net, grad_position=0, weights=net.a)
+        return grad_fn(x)
+
+    grad_input_pn, grad_weight_pn = run("pynative")
+    grad_input_jit, grad_weight_jit = run("jit")
+
+    match_array(grad_input_pn, grad_input_jit)
+    match_array(grad_weight_pn, grad_weight_jit)
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+def test_hook_register_on_jit_function():
+    """
+    Feature: Tensor.register_hook applied before calling JIT function.
+    Description: Register hook on input tensor and compare gradients between PyNative function and its JIT compiled counterpart.
+    Expectation: JIT gradient matches PyNative and equals doubled baseline.
+    Migrated from: test_parse_pijit_hook_register_remove.py::test_parse_pijit_hook_register_jit_func
+    """
+
+    def xsquare3(x):
+        return x * x * 3
+
+    x_np = np.ones([2, 3], np.float32)
+
+    x1 = Tensor(x_np, mstype.float32)
+    x1.register_hook(double_fn)
+    grad_pn = ops.grad(xsquare3)(x1)
+
+    x2 = Tensor(x_np, mstype.float32)
+    x2.register_hook(double_fn)
+    jit_fn = jit(xsquare3, capture_mode='bytecode')
+    grad_jit = ops.grad(jit_fn)(x2)
+
+    match_array(grad_pn, grad_jit)
