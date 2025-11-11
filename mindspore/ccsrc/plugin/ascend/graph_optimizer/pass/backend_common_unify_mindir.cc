@@ -52,7 +52,6 @@
 #include "backend/common/pass/other/adjust_print_for_ge.h"
 #include "backend/common/pass/other/add_attr_to_dump.h"
 #include "backend/common/pass/other/getnext_for_ge.h"
-#include "backend/common/pass/ir_fusion/adaptive_max_pool2d_fusion.h"
 #include "backend/common/pass/ir_fusion/flash_attention_fusion.h"
 #include "plugin/ascend/graph_optimizer/pass/ir_fusion/grouped_matmul_assignadd_fusion.h"
 #include "plugin/ascend/graph_optimizer/pass/ir_fusion/matmul_assignadd_fusion.h"
@@ -157,7 +156,6 @@ PassManagerPtr GetBackendFusionGroupPassManager() {
   pm->AddFusionPass(std::make_shared<opt::BatchMatMulReduceScatterAllToAllFusion>());
   pm->AddFusionPass(std::make_shared<opt::AllToAllAllGatherBatchMatMulFusion>());
   pm->AddFusionPass(std::make_shared<opt::LambFissionGe>());
-  pm->AddFusionPass(std::make_shared<opt::AdaptiveMaxPool2DGeFusion>());
   pm->AddFusionPass(std::make_shared<opt::MatmulReduceScatterFusion>());
   pm->AddFusionPass(std::make_shared<opt::AllGatherMatmulFusion>());
   pm->AddFusionPass(std::make_shared<opt::FlashAttentionFusionV1>());

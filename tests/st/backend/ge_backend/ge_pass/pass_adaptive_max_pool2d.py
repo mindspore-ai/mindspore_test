@@ -12,10 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-""" test ge backend pass `AdaptiveMaxPool2DGeFusion` """
+""" test ge backend pass `AdaptiveMaxPool2DGeCheck` """
 import numpy as np
 
-import mindspore.context as context
+from mindspore import context
 from mindspore.nn.layer.pooling import AdaptiveMaxPool2d as AdaptiveMaxPool2DNet
 from mindspore.common.tensor import Tensor
 
@@ -29,7 +29,7 @@ def adaptive_max_pool2d_forward(input_x, output_size, return_indices):
 
 def test_adaptive_max_pool2d_forward():
     """
-    Feature: test AdaptiveMaxPool2DGeFusion in ge
+    Feature: test AdaptiveMaxPool2DGeCheck in ge
     Description: run the whole graph sink in ascend in ge backend
     Expectation: success
     """

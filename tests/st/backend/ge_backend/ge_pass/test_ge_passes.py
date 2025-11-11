@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+""" test ge passes """
 import tests.st.backend.ge_backend.ge_test_utils as utils
 from tests.mark_utils import arg_mark
 from mindspore import context
@@ -59,7 +60,7 @@ def test_convert_attr_to_input():
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_convert_resize_nearest_neighbor_x_dtype():
     """
-    Description: test convert ReszieNearestNeighborX dytpe
+    Description: test convert ReszieNearestNeighborX dtype
     Expectation: success
     """
     utils.run_testcase('pass_convert_resize_nearest_neighbor_x_dtype')
@@ -67,7 +68,7 @@ def test_convert_resize_nearest_neighbor_x_dtype():
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_adaptive_max_pool2d_x_dtype():
     """
-    Description: test AdaptiveMaxPool2DGeFusion dytpe
+    Description: test AdaptiveMaxPool2DGeCheck dtype
     Expectation: success
     """
     utils.run_testcase('pass_adaptive_max_pool2d')

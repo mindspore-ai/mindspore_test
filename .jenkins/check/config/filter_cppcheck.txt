@@ -8,7 +8,6 @@
 "mindspore/mindspore/ccsrc/frontend/operator/ops_front_infer_function.cc"                             "zerodivcond"
 "mindspore/mindspore/ccsrc/frontend/jit/ps/pipeline_split.cc"                                         "zerodivcond"
 "mindspore/mindspore/ops/kernel/ascend/aicpu/aicpu_ops/drop_out_gen_mask_kernels.cc"  "uninitMemberVar"
-"mindspore/mindspore/ccsrc/plugin/ascend/graph_optimizer/pass/ir_fusion/adaptive_max_pool2d_fusion.cc"    "zerodivcond"
 "mindspore/mindspore/ccsrc/plugin/device/ascend/hal/device/ascend_stream_assign.cc"                   "useStlAlgorithm"
 "mindspore/mindspore/ccsrc/frontend/operator/ops_front_infer_function.cc"                             "uninitvar"
 "mindspore/mindspore/ccsrc/frontend/jit/ps/action.cc"                                                 "constVariable"
