@@ -12,21 +12,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+"""test kernel select in ascend"""
 import os
+import pytest
 import numpy as np
 from tests.mark_utils import arg_mark
 import mindspore as ms
-from mindspore import Tensor, context
+from mindspore import Tensor, jit
 from mindspore import ops, mint
 from mindspore.nn import Cell
 
 class Net(Cell):
     def __init__(self):
-        super(Net, self).__init__()
+        super().__init__()
         self.op1 = mint.sin
         self.op2 = mint.cos
         self.op3 = ops.auto_generate.matmul_add_
-
+    @jit
     def construct(self, x, weight, c):
         x = self.op1(x)
         x = self.op2(x)
@@ -54,7 +56,6 @@ def test_kernel_select_num():
     Description: test select kernel
     Expectation: expect correct result.
     """
-    context.set_context(mode=context.GRAPH_MODE, jit_config={"jit_level": "O0"})
     x, weight, c = generate_inputs(10, 20, 8)
     net = Net()
     net(x, weight, c)
@@ -75,3 +76,19 @@ def test_kernel_select():
     assert int(res_atb) == 1
     os.system("rm -rf log_kernel_select.txt")
     del os.environ["VLOG_v"]
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+def test_kernel_select_failed():
+    """
+    Feature: kernel select
+    Description: test select kernel
+    Expectation: expect correct result
+    """
+    @jit
+    def kernel_select_failed(images, size):
+        resize_op = ops.ResizeBicubic(False, False)
+        return resize_op(images, size)
+    images = Tensor(shape=[1, 1, 2, 2], dtype=ms.int32)
+    size = Tensor([1, 4], ms.int32)
+    with pytest.raises(TypeError):
+        kernel_select_failed(images, size)
