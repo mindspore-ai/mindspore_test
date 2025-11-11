@@ -177,6 +177,17 @@ BaseShapePtr DvmKernelMod::InferShape(const AbstractBasePtrList &inputs_abs) {
 
 void DvmKernelMod::UpdateInputShapeRef(size_t input_idx, dvm::ShapeRef *ref) { inputs_shape_ref_[input_idx] = ref; }
 
+void DvmKernelMod::DumpRefPair() {
+  dump_buf_ << "ref pair: (";
+  for (auto it = ref_map_.begin(); it != ref_map_.end(); ++it) {
+    if (it != ref_map_.begin()) {
+      dump_buf_ << ", ";
+    }
+    dump_buf_ << "(" << it->first << ", " << it->second << ")";
+  }
+  dump_buf_ << ")\n";
+}
+
 void DvmKernelMod::DumpToFile() {
   std::lock_guard<std::mutex> lock(lock_);
   const std::string dump_dir = "./graph_kernel_dump";
@@ -233,6 +244,9 @@ bool SingleDvmKernelMod::Launch(const std::vector<KernelTensor *> &inputs, const
   if (skip_launch_) {
     MS_LOG(DEBUG) << "Skip launch node: " << op_fullname_ << ", because size of some input is zero.";
     return true;
+  }
+  if (!ref_map_.empty()) {
+    CheckRefPair(inputs, outputs);
   }
   for (size_t i = 0; i < inputs_addr_.size(); ++i) {
     inputs_addr_[i] = inputs[inputs_idx_[i]]->device_ptr();
@@ -309,6 +323,9 @@ bool ParallelDvmKernelMod::Launch(const std::vector<KernelTensor *> &inputs,
   if (skip_launch_) {
     MS_LOG(EXCEPTION) << "Unexpected behavior in parallel fusion: for node: " << op_fullname_
                       << ", size of some input is zero.";
+  }
+  if (!ref_map_.empty()) {
+    CheckRefPair(inputs, outputs);
   }
   for (size_t i = 0; i < inputs_map_.size(); i++) {
     inputs_addr_[i] = inputs[inputs_map_[i]]->device_ptr();
