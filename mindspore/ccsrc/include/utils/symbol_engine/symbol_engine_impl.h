@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef MINDSPORE_CCSRC_INCLUDE_COMMON_SYMBOL_ENGINE_SYMBOL_ENGINE_IMPL_H_
-#define MINDSPORE_CCSRC_INCLUDE_COMMON_SYMBOL_ENGINE_SYMBOL_ENGINE_IMPL_H_
+#ifndef MINDSPORE_CCSRC_INCLUDE_UTILS_SYMBOL_ENGINE_SYMBOL_ENGINE_IMPL_H_
+#define MINDSPORE_CCSRC_INCLUDE_UTILS_SYMBOL_ENGINE_SYMBOL_ENGINE_IMPL_H_
 #include <vector>
 #include <utility>
 #include <unordered_map>
@@ -39,8 +39,13 @@ class SymbolEngineImpl;
 class Symbol;
 using SymbolPtr = std::shared_ptr<Symbol>;
 
+struct DependStatus {
+  bool shape{false};
+  bool value{false};
+};
+
 /// \brief When a CNode's input[0] is also a CNode, it's a SpecialCNode.
-class COMMON_EXPORT SpecialCNodeHelper {
+class SpecialCNodeHelper {
  public:
   explicit SpecialCNodeHelper(const CNodePtr &cnode) : cnode_(cnode) {}
   virtual ~SpecialCNodeHelper() = default;
@@ -124,6 +129,15 @@ class COMMON_EXPORT SymbolEngineImpl : public SymbolEngine {
 };
 
 using SymbolEngineImplPtr = std::shared_ptr<symshape::SymbolEngineImpl>;
+
+// Nodes have same digital shape may use same abstract object, but their symbolic shape may not same,
+// clone a new abstract for symbolic info.
+COMMON_EXPORT AbstractBasePtr CloneAbstractIfSymbolExists(const AbstractBasePtr &abs);
+
+COMMON_EXPORT inline AbstractBasePtr CloneAbstractIfSymbolExists(const AnfNodePtr &node) {
+  node->set_abstract(CloneAbstractIfSymbolExists(node->abstract()));
+  return node->abstract();
+}
 }  // namespace symshape
 }  // namespace mindspore
-#endif  // MINDSPORE_CCSRC_INCLUDE_COMMON_SYMBOL_ENGINE_SYMBOL_ENGINE_IMPL_H_
+#endif  // MINDSPORE_CCSRC_INCLUDE_UTILS_SYMBOL_ENGINE_SYMBOL_ENGINE_IMPL_H_
