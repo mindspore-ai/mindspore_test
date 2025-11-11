@@ -313,6 +313,7 @@
 "mindspore/tests/st/amp/test_amp.py"                                                                    "missing-module-docstring"
 "mindspore/tests/st/common/test_dtype.py"                                                               "missing-module-docstring"
 "mindspore/tests/st/ops/test_ops_concat.py"                                                             "missing-function-docstring"
+"mindspore/tests/st/pynative/ops/test_ops.py"                                                           "missing-module-docstring"
 
 #MindSpore Lite
 "mindspore/mindspore/ops/kernel/cpu/nnacl/experimental/HPC-generator/generator.py"                                         "redefined-builtin"

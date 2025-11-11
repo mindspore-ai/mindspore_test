@@ -21,12 +21,12 @@
 namespace mindspore::expander::bprop {
 REG_BPROP_BUILDERS_BEGIN(GradScipyOps)
 REG_BPROP_BUILDER("SolveTriangular").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
-  auto a = ib->GetInput(i0);
-  auto out = ib->GetInput(i5);
-  auto dout = ib->GetInput(i6);
-  auto trans = ib->GetInput(i2);
-  auto lower = ib->GetInput(i3);
-  auto unit_diagonal = ib->GetInput(i4);
+  const auto &a = ib->GetInput(i0);
+  const auto &out = ib->GetInput(i5);
+  const auto &dout = ib->GetInput(i6);
+  const auto &trans = ib->GetInput(i2);
+  const auto &lower = ib->GetInput(i3);
+  const auto &unit_diagonal = ib->GetInput(i4);
   auto target = ib->GetTargetFromContext();
   if (target == "GPU") {
     constexpr int64_t KTransN = 0;
@@ -82,9 +82,9 @@ REG_BPROP_BUILDER("Eigh").SetBody(BODYFUNC(ib) {
   auto is_compute_v = GetValue<bool>(ib->GetAttr("compute_eigenvectors"));
   auto is_lower = GetValue<bool>(ib->GetAttr("lower"));
   auto lower = static_cast<int64_t>(is_lower);
-  auto a = ib->GetInput(i0);
-  auto out = ib->GetInput(i1);
-  auto dout = ib->GetInput(i2);
+  const auto &a = ib->GetInput(i0);
+  const auto &out = ib->GetInput(i1);
+  const auto &dout = ib->GetInput(i2);
 
   // helper functions
   auto Adjoint = [](BpropBuilder *ib, const NodePtr &x) -> NodePtr {
@@ -126,7 +126,7 @@ REG_BPROP_BUILDER("Eigh").SetBody(BODYFUNC(ib) {
     auto v = ib->TupleGetItem(
       ib->Emit("Eigh", {a}, {{"compute_eigenvectors", MakeValue(true)}, {"lower", MakeValue(true)}}), 1);
     // grad_a is _matmul(v * F.expand_dims(dout, -2), _adjoint(v))
-    grad_a = ib->MatMul(ib->Mul(v, ib->Emit("ExpandDims", {dout, kValueNeg2})), Adjoint(ib, v), false, false);
+    grad_a = ib->MatMul(ib->Mul(v, ib->ExpandDims(dout, kValueNeg2)), Adjoint(ib, v), false, false);
 
   } else {
     //  vh equal _adjoint(out[1])
@@ -138,7 +138,7 @@ REG_BPROP_BUILDER("Eigh").SetBody(BODYFUNC(ib) {
     auto out_0 = ib->TupleGetItem(out, 0);
     // diff_inv equal diff / (diff * diff + epsilon)
     // f equal matrix_set_diag(diff_inv, F.zeros_like(w))
-    auto diff = ib->Sub(ib->Emit("ExpandDims", {out_0, kValueNeg2}), ib->Emit("ExpandDims", {out_0, kValueNeg1}));
+    auto diff = ib->Sub(ib->ExpandDims(out_0, kValueNeg2), ib->ExpandDims(out_0, kValueNeg1));
     auto diff_inv = ib->RealDiv(diff, ib->Add(ib->Mul(diff, diff), ib->Tensor(1e-20, ib->GetDtype(diff))));
 
     auto f = ib->MatrixSetDiagV3(diff_inv, ib->ZerosLike(out_0), zero_tensor, MakeValue("RIGHT_LEFT"));
@@ -151,8 +151,7 @@ REG_BPROP_BUILDER("Eigh").SetBody(BODYFUNC(ib) {
     auto eye_tensor_node = EyeTensor(ib, dout_0_size, dout_0_size);
 
     // compute the product
-    auto diag_dout_0 =
-      ib->Mul(ib->Emit("ExpandDims", {dout_0, kValueNeg2}), ib->Cast(eye_tensor_node, ib->GetDtype(dout_0)));
+    auto diag_dout_0 = ib->Mul(ib->ExpandDims(dout_0, kValueNeg2), ib->Cast(eye_tensor_node, ib->GetDtype(dout_0)));
 
     //  mid_part equal _diag(dout[0]) + f * vh_gv
     auto mid_part = ib->Add(diag_dout_0, ib->Mul(f, vh_gv));

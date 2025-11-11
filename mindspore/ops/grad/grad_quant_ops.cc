@@ -26,9 +26,9 @@ REG_BPROP_BUILDER("MinMaxUpdatePerLayer").SetUnusedInputs({i0, i1, i2, i3, i4}).
 REG_BPROP_BUILDER("MinMaxUpdatePerChannel").SetUnusedInputs({i0, i1, i2, i3, i4}).SetBody(ReturnZeros);
 
 REG_BPROP_BUILDER("WtsARQ").SetUnusedInputs({i0, i1, i2, i3}).SetBody(BODYFUNC(ib) {
-  auto w_min = ib->GetInput(i1);
-  auto w_max = ib->GetInput(i2);
-  auto dout = ib->GetInput(i4);
+  const auto &w_min = ib->GetInput(i1);
+  const auto &w_max = ib->GetInput(i2);
+  const auto &dout = ib->GetInput(i4);
   return {dout, ib->OutZeros(w_min), ib->OutZeros(w_max)};
 });
 REG_BPROP_BUILDERS_END

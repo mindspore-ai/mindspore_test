@@ -20,16 +20,16 @@
 namespace mindspore::expander::bprop {
 REG_BPROP_BUILDERS_BEGIN(GradOtherOps)
 REG_BPROP_BUILDER("Assign").SetUnusedInputs({i0, i1, i2}).SetBody(BODYFUNC(ib) {
-  auto y = ib->GetInput(i1);
-  auto dout = ib->GetInput(i3);
+  const auto &y = ib->GetInput(i1);
+  const auto &dout = ib->GetInput(i3);
   return {dout, ib->OutZeros(y)};
 });
 
 REG_BPROP_BUILDER("InplaceCopy").FreeUselessValues_IO({i0, i1, i2}, {}).SetBody(BODYFUNC(ib) {
-  auto dst = ib->GetInput(i0);
-  auto src = ib->GetInput(i1);
-  auto non_blocking = ib->GetInput(i2);
-  auto dout = ib->GetInput(i4);
+  const auto &dst = ib->GetInput(i0);
+  const auto &src = ib->GetInput(i1);
+  const auto &non_blocking = ib->GetInput(i2);
+  const auto &dout = ib->GetInput(i4);
   NodePtr ds = nullptr;
   if (src->need_compute_grad_out()) {
     auto res = BinopGradCommon(ib, dst, src, nullptr, dout);
@@ -41,7 +41,7 @@ REG_BPROP_BUILDER("InplaceCopy").FreeUselessValues_IO({i0, i1, i2}, {}).SetBody(
 });
 
 REG_BPROP_BUILDER("InplaceZero").SetUnusedInputs({i0, i1, i2}).SetBody(BODYFUNC(ib) {
-  auto input = ib->GetInput(i0);
+  const auto &input = ib->GetInput(i0);
   auto res = ib->ZerosLikeExt(input, ib->Value(static_cast<int64_t>(ib->GetDtypeId(input))));
   return {res};
 });
@@ -60,12 +60,12 @@ REG_BPROP_BUILDER("InplaceRandom").SetUnusedInputs({i0, i1, i2, i3, i4, i5}).Set
 REG_BPROP_BUILDER("IOU").SetUnusedInputs({i0, i1, i2, i3}).SetBody(ReturnZeros);
 
 REG_BPROP_BUILDER("SyncBatchNorm").FreeUselessValues_IO({i2, i3, i4}, {i0, i1, i2}).SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(i0);
-  auto scale = ib->GetInput(i1);
-  auto mean = ib->GetInput(i3);
-  auto variance = ib->GetInput(i4);
+  const auto &x = ib->GetInput(i0);
+  const auto &scale = ib->GetInput(i1);
+  const auto &mean = ib->GetInput(i3);
+  const auto &variance = ib->GetInput(i4);
   auto out = ib->GetInput(i5);
-  auto dout = ib->GetInput(i6);
+  const auto &dout = ib->GetInput(i6);
   auto saved_mean = ib->TupleGetItem(out, 3);
   auto saved_variance = ib->TupleGetItem(out, 4);
   out = ib->Emit(
@@ -78,30 +78,30 @@ REG_BPROP_BUILDER("SyncBatchNorm").FreeUselessValues_IO({i2, i3, i4}, {i0, i1, i
 });
 
 REG_BPROP_BUILDER("GpuConvertToDynamicShape").SetUnusedInputs({i0, i1}).SetBody(BODYFUNC(ib) {
-  auto dout = ib->GetInput(i2);
+  const auto &dout = ib->GetInput(i2);
   return {dout};
 });
 
 REG_BPROP_BUILDER("RotaryPositionEmbedding").SetUnusedInputs({i0, i4}).SetBody(BODYFUNC(ib) {
-  auto cos = ib->GetInput(i1);
-  auto sin = ib->GetInput(i2);
-  auto mode = ib->GetInput(i3);
-  auto dout = ib->GetInput(i5);
-  auto grad_out = ib->Emit("RotaryPositionEmbeddingGrad", {dout, cos, sin, ib->EmitValue(kNone), mode});
+  const auto &cos = ib->GetInput(i1);
+  const auto &sin = ib->GetInput(i2);
+  const auto &mode = ib->GetInput(i3);
+  const auto &dout = ib->GetInput(i5);
+  auto grad_out = ib->RotaryPositionEmbeddingGrad(dout, cos, sin, ib->EmitValue(kNone), mode);
   auto dx = ib->TupleGetItem(grad_out, 0);
   return {dx, ib->OutZeros(cos), ib->OutZeros(sin), ib->OutZeros(mode)};
 });
 
 REG_BPROP_BUILDER("_DynamicLossScale").SetUnusedInputs({i0, i2}).SetBody(BODYFUNC(ib) {
-  auto loss_scale = ib->GetInput(i1);
-  auto dout = ib->GetInput(i3);
+  const auto &loss_scale = ib->GetInput(i1);
+  const auto &dout = ib->GetInput(i3);
   auto res = ib->Emit("Mul", {dout, loss_scale},
                       {{"split_overflow", MakeValue(true)}, {"layer_overflow", ib->GetAttr("layer")}});
   return {res, ib->OutZeros(loss_scale)};
 });
 
 REG_BPROP_BUILDER("MoveTo").SetUnusedInputs({i0, i1, i2, i3}).SetBody(BODYFUNC(ib) {
-  auto dout = ib->GetInput(i4);
+  const auto &dout = ib->GetInput(i4);
   return {dout};
 });
 

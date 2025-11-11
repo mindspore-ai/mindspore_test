@@ -46,11 +46,11 @@ NodePtr GetMatrixDiagAssit(BpropBuilder *ib, const ShapeVector &x_shape, const T
 
 REG_BPROP_BUILDERS_BEGIN(GradInnerOps)
 REG_BPROP_BUILDER("DSDMatmul.NotReady").SetBody(BODYFUNC(ib) {
-  auto w1_gm = ib->GetInput(i0);
-  auto w2_gm = ib->GetInput(i1);
-  auto v_gm = ib->GetInput(i2);
-  auto out = ib->GetInput(i3);
-  auto dout = ib->GetInput(i4);
+  const auto &w1_gm = ib->GetInput(i0);
+  const auto &w2_gm = ib->GetInput(i1);
+  const auto &v_gm = ib->GetInput(i2);
+  const auto &out = ib->GetInput(i3);
+  const auto &dout = ib->GetInput(i4);
   auto tmp = ib->Emit("DSDGrad", {w1_gm, w2_gm, v_gm, out, dout});
   auto d_w1_gm = ib->TupleGetItem(tmp, i0);
   auto d_w2_gm = ib->TupleGetItem(tmp, i1);
@@ -59,11 +59,11 @@ REG_BPROP_BUILDER("DSDMatmul.NotReady").SetBody(BODYFUNC(ib) {
 });
 
 REG_BPROP_BUILDER("MatmulDDS.NotReady").SetUnusedInputs({i2, i3, i5}).SetBody(BODYFUNC(ib) {
-  auto q = ib->GetInput(i0);
-  auto k = ib->GetInput(i1);
-  auto local_mask = ib->GetInput(i2);
-  auto global_mask = ib->GetInput(i3);
-  auto out = ib->GetInput(i4);
+  const auto &q = ib->GetInput(i0);
+  const auto &k = ib->GetInput(i1);
+  const auto &local_mask = ib->GetInput(i2);
+  const auto &global_mask = ib->GetInput(i3);
+  const auto &out = ib->GetInput(i4);
   auto lc = ib->TupleGetItem(out, i0);
   auto gc = ib->TupleGetItem(out, i1);
   auto d_lc = ib->TupleGetItem(out, i0);
@@ -77,22 +77,22 @@ REG_BPROP_BUILDER("MatmulDDS.NotReady").SetUnusedInputs({i2, i3, i5}).SetBody(BO
 });
 
 REG_BPROP_BUILDER("ResizeBilinearV2").SetUnusedInputs({i1, i4}).SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(i0);
-  auto size = ib->GetInput(i1);
-  auto align_corners = ib->GetInput(i2);
-  auto half_pixel_centers = ib->GetInput(i3);
-  auto dout = ib->GetInput(i5);
+  const auto &x = ib->GetInput(i0);
+  const auto &size = ib->GetInput(i1);
+  const auto &align_corners = ib->GetInput(i2);
+  const auto &half_pixel_centers = ib->GetInput(i3);
+  const auto &dout = ib->GetInput(i5);
   auto dx = ib->Emit("ResizeBilinearGrad", {dout, x, align_corners, half_pixel_centers});
   return {dx, ib->OutZeros(size), ib->OutZeros(align_corners), ib->OutZeros(half_pixel_centers)};
 });
 
 REG_BPROP_BUILDER("ConvertToDynamic").SetUnusedInputs({i0, i1}).SetBody(BODYFUNC(ib) {
-  auto dout = ib->GetInput(i2);
+  const auto &dout = ib->GetInput(i2);
   return {dout};
 });
 
 REG_BPROP_BUILDER("FillV2").SetUnusedInputs({i0, i1, i2}).SetBody(BODYFUNC(ib) {
-  auto shape = ib->GetInput(i0);
+  const auto &shape = ib->GetInput(i0);
   auto dout = ib->GetInput(i3);
   auto dout_typeptr = ib->GetDtype(dout);
   auto dout_type = dout_typeptr->type_id();
@@ -113,18 +113,18 @@ REG_BPROP_BUILDER("FillV2").SetUnusedInputs({i0, i1, i2}).SetBody(BODYFUNC(ib) {
 });
 
 REG_BPROP_BUILDER("FillScalar").SetUnusedInputs({i0, i1, i2, i3}).SetBody(BODYFUNC(ib) {
-  auto size = ib->GetInput(i0);
-  auto type = ib->GetInput(i2);
-  auto dout = ib->GetInput(i4);
+  const auto &size = ib->GetInput(i0);
+  const auto &type = ib->GetInput(i2);
+  const auto &dout = ib->GetInput(i4);
   auto dvalue = ib->SumExt(dout, ib->EmitValue(kNone), ib->Value(false));
   return {ib->OutZeros(size), dvalue, ib->OutZeros(type)};
 });
 
 REG_BPROP_BUILDER("FillTensor").SetUnusedInputs({i0, i1, i2, i3}).SetBody(BODYFUNC(ib) {
-  auto size = ib->GetInput(i0);
-  auto value = ib->GetInput(i1);
-  auto type = ib->GetInput(i2);
-  auto dout = ib->GetInput(i4);
+  const auto &size = ib->GetInput(i0);
+  const auto &value = ib->GetInput(i1);
+  const auto &type = ib->GetInput(i2);
+  const auto &dout = ib->GetInput(i4);
   auto value_shape = value->shape();
   auto dvalue = ib->SumExt(dout, ib->EmitValue(kNone), ib->Value(false));
   if (IsDynamicRank(value_shape)) {
@@ -132,7 +132,7 @@ REG_BPROP_BUILDER("FillTensor").SetUnusedInputs({i0, i1, i2, i3}).SetBody(BODYFU
     auto input_dtype = ib->GetDtype(value)->type_id();
     auto value_dtype = ib->Value(static_cast<int64_t>(input_dtype));
     auto real_dvalue = ib->Reshape(dvalue, v_shape);
-    auto dvalue_out = ib->Emit("FillTensor", {v_shape, real_dvalue, value_dtype});
+    auto dvalue_out = ib->FillTensor(v_shape, real_dvalue, value_dtype);
     return {ib->OutZeros(size), dvalue_out, ib->OutZeros(type)};
   }
   if (!value->shape().empty()) {
@@ -142,12 +142,12 @@ REG_BPROP_BUILDER("FillTensor").SetUnusedInputs({i0, i1, i2, i3}).SetBody(BODYFU
 });
 
 REG_BPROP_BUILDER("TensorCopySlices").SetUnusedInputs({i0, i5}).SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(i0);
-  auto update = ib->GetInput(i1);
-  auto begin = ib->GetInput(i2);
-  auto end = ib->GetInput(i3);
-  auto stride = ib->GetInput(i4);
-  auto dout = ib->GetInput(i6);
+  const auto &x = ib->GetInput(i0);
+  const auto &update = ib->GetInput(i1);
+  const auto &begin = ib->GetInput(i2);
+  const auto &end = ib->GetInput(i3);
+  const auto &stride = ib->GetInput(i4);
+  const auto &dout = ib->GetInput(i6);
   auto x_grad = x->need_compute_grad_out()
                   ? ib->Emit(kTensorCopySlicesOpName, {dout, ib->ZerosLike(update), begin, end, stride})
                   : ib->OutZeros(x);
@@ -157,9 +157,9 @@ REG_BPROP_BUILDER("TensorCopySlices").SetUnusedInputs({i0, i5}).SetBody(BODYFUNC
 });
 
 REG_BPROP_BUILDER("Roll").SetUnusedInputs({i0, i3}).SetBody(BODYFUNC(ib) {
-  auto shifts = ib->GetInput(i1);
-  auto dims = ib->GetInput(i2);
-  auto dout = ib->GetInput(i4);
+  const auto &shifts = ib->GetInput(i1);
+  const auto &dims = ib->GetInput(i2);
+  const auto &dout = ib->GetInput(i4);
   auto is_dynamic_shifts = false;
   auto shift_value = shifts->BuildValue();
   MS_EXCEPTION_IF_NULL(shift_value);
@@ -169,16 +169,16 @@ REG_BPROP_BUILDER("Roll").SetUnusedInputs({i0, i3}).SetBody(BODYFUNC(ib) {
   }
   if (is_dynamic_shifts) {
     auto shifts_tensor = ib->Emit("TupleToTensor", {shifts, ib->Value<int64_t>(kInt64->type_id())});
-    auto neg_shifts = ib->Emit("Neg", {shifts_tensor});
+    auto neg_shifts = ib->Neg(shifts_tensor);
     auto neg_shifts_tuple = ib->TensorToTuple(neg_shifts);
-    return {ib->Emit("Roll", {dout, neg_shifts_tuple, dims}), ib->OutZeros(shifts), ib->OutZeros(dims)};
+    return {ib->Roll(dout, neg_shifts_tuple, dims), ib->OutZeros(shifts), ib->OutZeros(dims)};
   }
   auto shift_array = shift_array_opt.value();
   std::vector<int64_t> shift_vec = shift_array.ToVector();
   std::vector<int64_t> neg_shift(shift_vec.size());
   (void)std::transform(shift_vec.begin(), shift_vec.end(), neg_shift.begin(),
                        [](const int64_t &shift) { return shift * -1; });
-  return {ib->Emit("Roll", {dout, ib->Value(neg_shift), dims}), ib->OutZeros(shifts), ib->OutZeros(dims)};
+  return {ib->Roll(dout, ib->Value(neg_shift), dims), ib->OutZeros(shifts), ib->OutZeros(dims)};
 });
 
 DEF_PURE_SHAPE_CALC(g_dynamic_resize_nearest_neighbor)
@@ -194,18 +194,18 @@ DEF_PURE_SHAPE_CALC(g_dynamic_resize_nearest_neighbor)
   });
 
 REG_BPROP_BUILDER("DynamicResizeNearestNeighbor").SetUnusedInputs({i0, i1, i2}).SetBody(BODYFUNC(ib) {
-  auto inputs = ib->GetInput(i0);
-  auto size = ib->GetInput(i1);
-  auto dout = ib->GetInput(i3);
+  const auto &inputs = ib->GetInput(i0);
+  const auto &size = ib->GetInput(i1);
+  const auto &dout = ib->GetInput(i3);
   auto res = ib->ShapeCalc(g_dynamic_resize_nearest_neighbor, {inputs})[0];
   return {ib->Emit("ResizeNearestNeighborGrad", {dout, res}, {{"align_corners", ib->GetAttr("align_corners")}}),
           ib->OutZeros(size)};
 });
 
 REG_BPROP_BUILDER("ParallelResizeBilinear").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(i0);
-  auto size = ib->GetInput(i1);
-  auto dout = ib->GetInput(i3);
+  const auto &x = ib->GetInput(i0);
+  const auto &size = ib->GetInput(i1);
+  const auto &dout = ib->GetInput(i3);
   auto dx = ib->Emit("ParallelResizeBilinearGrad", {dout, x, size},
                      {{"ori_image_size", ib->GetAttr("ori_image_size")},
                       {"src_start_w", ib->GetAttr("src_start_w")},
@@ -216,10 +216,10 @@ REG_BPROP_BUILDER("ParallelResizeBilinear").SetUnusedInputs({i2}).SetBody(BODYFU
 });
 
 REG_BPROP_BUILDER("DynamicBroadcastTo").SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(i0);
-  auto shp = ib->GetInput(i1);
-  auto out = ib->GetInput(i2);
-  auto dout = ib->GetInput(i3);
+  const auto &x = ib->GetInput(i0);
+  const auto &shp = ib->GetInput(i1);
+  const auto &out = ib->GetInput(i2);
+  const auto &dout = ib->GetInput(i3);
   auto broadcast_axes = ib->BroadcastGradientArgs(out, x);
   auto reduction_axes = broadcast_axes[i1];
   auto reduced_grad = ib->ReduceSum(dout, reduction_axes, true, true);
@@ -228,16 +228,16 @@ REG_BPROP_BUILDER("DynamicBroadcastTo").SetBody(BODYFUNC(ib) {
 });
 
 REG_BPROP_BUILDER("SiLU").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(i0);
-  auto dout = ib->GetInput(i2);
+  const auto &x = ib->GetInput(i0);
+  const auto &dout = ib->GetInput(i2);
   auto dx = ib->SiLUGrad(dout, x);
   return {dx};
 });
 
 REG_BPROP_BUILDER("SiLUGrad").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
-  auto grad = ib->GetInput(i0);
-  auto y = ib->GetInput(i1);
-  auto dout = ib->GetInput(i3);
+  const auto &grad = ib->GetInput(i0);
+  const auto &y = ib->GetInput(i1);
+  const auto &dout = ib->GetInput(i3);
   auto sig = ib->Sigmoid(y);
   auto mul0 = ib->Mul(grad, y);
   auto sig_grad1 = ib->SigmoidGrad(sig, dout);
@@ -268,17 +268,17 @@ REG_BPROP_BUILDER("SiLUGrad").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
 });
 
 REG_BPROP_BUILDER("_VirtualPipelineEnd").SetUnusedInputs({i0, i1}).SetBody(BODYFUNC(ib) {
-  auto dout = ib->GetInput(i2);
+  const auto &dout = ib->GetInput(i2);
   auto dx = ib->Emit("_VirtualPipelineEnd", {dout});
   return {dx};
 });
 
 REG_BPROP_BUILDER("DSDMatmul").SetBody(BODYFUNC(ib) {
-  auto w1_gm = ib->GetInput(i0);
-  auto w2_gm = ib->GetInput(i1);
-  auto v_gm = ib->GetInput(i2);
-  auto out = ib->GetInput(i3);
-  auto dout = ib->GetInput(i4);
+  const auto &w1_gm = ib->GetInput(i0);
+  const auto &w2_gm = ib->GetInput(i1);
+  const auto &v_gm = ib->GetInput(i2);
+  const auto &out = ib->GetInput(i3);
+  const auto &dout = ib->GetInput(i4);
   auto tmp = ib->Emit("DSDGrad", {w1_gm, w2_gm, v_gm, out, dout});
   auto d_w1_gm = ib->TupleGetItem(tmp, i0);
   auto d_w2_gm = ib->TupleGetItem(tmp, i1);
@@ -287,12 +287,12 @@ REG_BPROP_BUILDER("DSDMatmul").SetBody(BODYFUNC(ib) {
 });
 
 REG_BPROP_BUILDER("MatmulDDS").SetUnusedInputs({i2, i3}).SetBody(BODYFUNC(ib) {
-  auto q = ib->GetInput(i0);
-  auto k = ib->GetInput(i1);
-  auto local_mask = ib->GetInput(i2);
-  auto global_mask = ib->GetInput(i3);
-  auto out = ib->GetInput(i4);
-  auto d_out = ib->GetInput(i5);
+  const auto &q = ib->GetInput(i0);
+  const auto &k = ib->GetInput(i1);
+  const auto &local_mask = ib->GetInput(i2);
+  const auto &global_mask = ib->GetInput(i3);
+  const auto &out = ib->GetInput(i4);
+  const auto &d_out = ib->GetInput(i5);
   auto lc = ib->TupleGetItem(out, 0);
   auto gc = ib->TupleGetItem(out, 1);
   auto d_lc = ib->TupleGetItem(d_out, 0);
@@ -305,8 +305,8 @@ REG_BPROP_BUILDER("MatmulDDS").SetUnusedInputs({i2, i3}).SetBody(BODYFUNC(ib) {
 });
 
 REG_BPROP_BUILDER("MatrixDiag").SetUnusedInputs({i0, i1, i2}).SetBody(BODYFUNC(ib) {
-  auto y = ib->GetInput(i1);
-  auto dout = ib->GetInput(i3);
+  const auto &y = ib->GetInput(i1);
+  const auto &dout = ib->GetInput(i3);
   auto shape = ib->GetShape(dout);
   if (IsDynamicRank(shape) || IsDynamicShape(shape)) {
     MS_LOG(EXCEPTION) << "MatrxiDiag bprop don't support dynamic rank or dynamic shape, because operation Eye need "
@@ -319,10 +319,10 @@ REG_BPROP_BUILDER("MatrixDiag").SetUnusedInputs({i0, i1, i2}).SetBody(BODYFUNC(i
 });
 
 REG_BPROP_BUILDER("MatrixSetDiag").SetUnusedInputs({i0, i1, i2, i3}).SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(i0);
-  auto y = ib->GetInput(i1);
-  auto z = ib->GetInput(i2);
-  auto dout = ib->GetInput(i4);
+  const auto &x = ib->GetInput(i0);
+  const auto &y = ib->GetInput(i1);
+  const auto &z = ib->GetInput(i2);
+  const auto &dout = ib->GetInput(i4);
   auto input_shape = ib->GetShape(x);
   auto grad_shape = GetValue<ShapeVector>(ib->Shape(dout)->BuildValue());
   if (IsDynamicRank(input_shape) || IsDynamicShape(input_shape) || IsDynamicRank(grad_shape) ||
@@ -344,9 +344,9 @@ REG_BPROP_BUILDER("MatrixSetDiag").SetUnusedInputs({i0, i1, i2, i3}).SetBody(BOD
 });
 
 REG_BPROP_BUILDER("MatrixDiagPart").SetUnusedInputs({i0, i1, i2}).SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(i0);
-  auto y = ib->GetInput(i1);
-  auto dout = ib->GetInput(i3);
+  const auto &x = ib->GetInput(i0);
+  const auto &y = ib->GetInput(i1);
+  const auto &dout = ib->GetInput(i3);
   auto shape = ib->GetShape(x);
   if (IsDynamicRank(shape) || IsDynamicShape(shape)) {
     MS_LOG(EXCEPTION) << "MatrxiDiagPart bprop don't support dynamic rank or dynamic shape, because operation Eye need "
@@ -365,8 +365,8 @@ REG_BPROP_BUILDER("MatrixDiagPart").SetUnusedInputs({i0, i1, i2}).SetBody(BODYFU
 });
 
 REG_BPROP_BUILDER("FormatCast").SetUnusedInputs({i0, i1, i2}).SetBody(BODYFUNC(ib) {
-  auto acl_format = ib->GetInput(kIndex1);
-  auto dout = ib->GetInput(kIndex3);
+  const auto &acl_format = ib->GetInput(kIndex1);
+  const auto &dout = ib->GetInput(kIndex3);
   return {dout, ib->OutZeros(acl_format)};
 });
 REG_BPROP_BUILDERS_END

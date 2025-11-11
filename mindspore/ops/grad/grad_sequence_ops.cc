@@ -72,9 +72,9 @@ REG_BPROP_BUILDER("SequenceCount").SetBody(ReturnZeros);
 REG_BPROP_BUILDER("sequence_len").SetBody(ReturnZeros);
 
 REG_BPROP_BUILDER("SequenceAdd").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(i0);
-  auto y = ib->GetInput(i1);
-  auto dout = ib->GetInput(i3);
+  const auto &x = ib->GetInput(i0);
+  const auto &y = ib->GetInput(i1);
+  const auto &dout = ib->GetInput(i3);
   auto out_offset = ib->Emit("SequenceAddOffset", {x, y});
   auto dx = x->need_compute_grad_out()
               ? ib->SequenceSlice(dout, ib->TupleGetItem(out_offset, 0), ib->Len(x), ib->Value<int64_t>(1))
@@ -86,17 +86,17 @@ REG_BPROP_BUILDER("SequenceAdd").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
 });
 
 REG_BPROP_BUILDER("SequenceUnstack").SetUnusedInputs({i0, i1}).SetBody(BODYFUNC(ib) {
-  auto dout = ib->GetInput(i2);
+  const auto &dout = ib->GetInput(i2);
   auto dx = ib->Emit("SequenceStack", {dout}, {{"axis", ib->GetAttr("axis")}});
   return {dx};
 });
 
 REG_BPROP_BUILDER("SequenceSlice").SetUnusedInputs({i4}).SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(i0);
-  auto start = ib->GetInput(i1);
-  auto stop = ib->GetInput(i2);
-  auto step = ib->GetInput(i3);
-  auto dout = ib->GetInput(i5);
+  const auto &x = ib->GetInput(i0);
+  const auto &start = ib->GetInput(i1);
+  const auto &stop = ib->GetInput(i2);
+  const auto &step = ib->GetInput(i3);
+  const auto &dout = ib->GetInput(i5);
   auto dx = ib->Emit("SequenceSliceGrad", {dout, x, start, stop, step});
   return {dx, ib->OutZeros(start), ib->OutZeros(stop), ib->OutZeros(step)};
 });
@@ -106,8 +106,8 @@ REG_BPROP_BUILDER("InSequence").SetBody(ReturnZeros);
 REG_BPROP_BUILDER("tuple_equal").SetBody(ReturnZeros);
 REG_BPROP_BUILDER("list_equal").SetBody(ReturnZeros);
 REG_BPROP_BUILDER("shape_mul").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(i0);
-  auto dout = ib->GetInput(i2);
+  const auto &x = ib->GetInput(i0);
+  const auto &dout = ib->GetInput(i2);
   auto dx = ib->Emit("ShapeMulGrad", {x, dout});
   return {dx};
 });
@@ -120,16 +120,16 @@ REG_BPROP_BUILDER("ListInplaceInsert").SetBody(ReturnZeros);
 REG_BPROP_BUILDER("ListInplacePop").SetBody(ReturnZeros);
 
 REG_BPROP_BUILDER("ListAppend").SetUnusedInputs({i0, i2}).SetBody(BODYFUNC(ib) {
-  auto value = ib->GetInput(i1);
-  auto dout = ib->GetInput(i3);
+  const auto &value = ib->GetInput(i1);
+  const auto &dout = ib->GetInput(i3);
   auto dx = ib->Emit("ListAppendAndInsertGrad", {dout, ib->Value<int64_t>(-1)});
   return {dx, ib->OutZeros(value)};
 });
 
 REG_BPROP_BUILDER("ListInsert").SetUnusedInputs({i0, i3}).SetBody(BODYFUNC(ib) {
-  auto idx = ib->GetInput(i1);
-  auto value = ib->GetInput(i2);
-  auto dout = ib->GetInput(i4);
+  const auto &idx = ib->GetInput(i1);
+  const auto &value = ib->GetInput(i2);
+  const auto &dout = ib->GetInput(i4);
   auto dx = ib->Emit("ListAppendAndInsertGrad", {dout, idx});
   return {dx, ib->OutZeros(idx), ib->OutZeros(value)};
 });
@@ -140,19 +140,19 @@ REG_BPROP_BUILDER("TensorToTuple").SetUnusedInputs({i0, i1}).SetBody(TensorToSeq
 REG_BPROP_BUILDER("TensorToList").SetUnusedInputs({i0, i1}).SetBody(TensorToSequenceGrad);
 
 REG_BPROP_BUILDER("ListToTuple").SetUnusedInputs({i0, i1, i2}).SetBody(BODYFUNC(ib) {
-  auto dout = ib->GetInput(i2);
+  const auto &dout = ib->GetInput(i2);
   auto dx = ib->Emit("TupleToList", {dout});
   return {dx};
 });
 
 REG_BPROP_BUILDER("TupleToList").SetUnusedInputs({i0, i1, i2}).SetBody(BODYFUNC(ib) {
-  auto dout = ib->GetInput(i2);
+  const auto &dout = ib->GetInput(i2);
   auto dx = ib->Emit("ListToTuple", {dout});
   return {dx};
 });
 
 REG_BPROP_BUILDER("ScalarToTensor").SetUnusedInputs({i0, i1, i2}).SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(i0);
+  const auto &x = ib->GetInput(i0);
   auto dout = ib->GetInput(i3);
   dout = ib->Cast(dout, ib->GetDtype(x));
   auto dx = ib->Emit("TensorToScalar", {dout});
@@ -160,16 +160,16 @@ REG_BPROP_BUILDER("ScalarToTensor").SetUnusedInputs({i0, i1, i2}).SetBody(BODYFU
 });
 
 REG_BPROP_BUILDER("TensorToScalar").SetUnusedInputs({i0, i1}).SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(i0);
-  auto dout = ib->GetInput(i2);
+  const auto &x = ib->GetInput(i0);
+  const auto &dout = ib->GetInput(i2);
   auto dx = ib->Emit("ScalarToTensor", {dout, ib->Value<int64_t>(ib->GetDtype(x)->type_id())});
   return {dx};
 });
 
 REG_BPROP_BUILDER("SequenceMul").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(i0);
-  auto y = ib->GetInput(i1);
-  auto dout = ib->GetInput(i3);
+  const auto &x = ib->GetInput(i0);
+  const auto &y = ib->GetInput(i1);
+  const auto &dout = ib->GetInput(i3);
   auto dx = ib->SequenceSlice(dout, ib->Value<int64_t>(0LL), ib->Len(x), ib->Value<int64_t>(1));
   return {dx, ib->OutZeros(y)};
 });

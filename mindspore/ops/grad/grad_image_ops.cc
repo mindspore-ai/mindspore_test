@@ -22,9 +22,9 @@ namespace mindspore::expander::bprop {
 REG_BPROP_BUILDERS_BEGIN(GradImageOps)
 REG_BPROP_BUILDER("ResizeBicubic").SetUnusedInputs({i1, i4}).SetBody(BODYFUNC(ib) {
   auto images = ib->GetInput(i0);
-  auto size = ib->GetInput(i1);
-  auto align_corners = ib->GetInput(i2);
-  auto half_pixel_centers = ib->GetInput(i3);
+  const auto &size = ib->GetInput(i1);
+  const auto &align_corners = ib->GetInput(i2);
+  const auto &half_pixel_centers = ib->GetInput(i3);
   auto dout = ib->GetInput(i5);
   // ResizeBicubicGrad do not support fp16 on ascend platform
   auto type_id = ib->GetDtypeId(dout);
@@ -47,10 +47,10 @@ REG_BPROP_BUILDER("CropAndResize").SetUnusedInputs({i3, i4}).SetBody(BODYFUNC(ib
   auto target = ib->GetTargetFromContext();
   auto is_ascend_cpu = (target == kAscendDevice || target == kCPUDevice);
   auto x = ib->GetInput(i0);
-  auto boxes = ib->GetInput(i1);
-  auto box_index = ib->GetInput(i2);
-  auto crop_size = ib->GetInput(i3);
-  auto dout = ib->GetInput(i5);
+  const auto &boxes = ib->GetInput(i1);
+  const auto &box_index = ib->GetInput(i2);
+  const auto &crop_size = ib->GetInput(i3);
+  const auto &dout = ib->GetInput(i5);
   if (method != "bilinear") {
     if (!is_ascend_cpu) {
       return {ib->OutZeros(x), ib->OutZeros(boxes), ib->OutZeros(box_index), ib->OutZeros(crop_size)};
@@ -79,11 +79,11 @@ REG_BPROP_BUILDER("CropAndResize").SetUnusedInputs({i3, i4}).SetBody(BODYFUNC(ib
 });
 
 REG_BPROP_BUILDER("ScaleAndTranslate").SetUnusedInputs({i1, i4}).SetBody(BODYFUNC(ib) {
-  auto images = ib->GetInput(i0);
-  auto size = ib->GetInput(i1);
-  auto scale = ib->GetInput(i2);
-  auto translation = ib->GetInput(i3);
-  auto dout = ib->GetInput(i5);
+  const auto &images = ib->GetInput(i0);
+  const auto &size = ib->GetInput(i1);
+  const auto &scale = ib->GetInput(i2);
+  const auto &translation = ib->GetInput(i3);
+  const auto &dout = ib->GetInput(i5);
   auto images_dtype = ib->GetDtype(images);
   auto images_fp32 = (images_dtype->type_id() != kNumberTypeFloat32) ? ib->Cast(images, kFloat32) : images;
   auto grad0_fp32 = ib->Emit("ScaleAndTranslateGrad", {dout, images_fp32, scale, translation},
@@ -186,11 +186,11 @@ REG_BPROP_BUILDER("RGBToHSV").SetBody(BODYFUNC(ib) {
 });
 
 REG_BPROP_BUILDER("ResizeV2").SetUnusedInputs({i3, i4}).SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(i0);
-  auto roi = ib->GetInput(i1);
-  auto scales = ib->GetInput(i2);
-  auto sizes = ib->GetInput(i3);
-  auto dout = ib->GetInput(i5);
+  const auto &x = ib->GetInput(i0);
+  const auto &roi = ib->GetInput(i1);
+  const auto &scales = ib->GetInput(i2);
+  const auto &sizes = ib->GetInput(i3);
+  const auto &dout = ib->GetInput(i5);
   auto input_size = ib->Shape(x, true);
   auto dx = ib->Emit(
     "ResizeV2Grad", {dout, roi, scales, input_size},

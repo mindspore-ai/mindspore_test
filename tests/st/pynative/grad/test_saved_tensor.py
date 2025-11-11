@@ -298,12 +298,14 @@ def test_autograd_saved_tensor_view_inplace_no_cycle():
 
     input_x = ops.rand(10, 10, dtype=ms.float32)
     ms.value_and_grad(forward_view_inplace_fn, grad_position=0)(input_x, False)
+    _pynative_executor.sync()
     assert DelRecordHook.record_list == [0, 0]
 
     DelRecordHook.record_list.clear()
 
     input_x = ops.rand(10, 10, dtype=ms.float32)
     ms.value_and_grad(forward_view_inplace_fn, grad_position=0)(input_x, True)
+    _pynative_executor.sync()
     assert DelRecordHook.record_list == [0, 0]
 
 

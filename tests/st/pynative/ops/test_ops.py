@@ -14,10 +14,10 @@
 # ============================================================================
 import pytest
 import numpy as np
-import mindspore.nn as nn
+from mindspore import nn
 
 import mindspore as ms
-from mindspore import context
+from mindspore import context, mint
 from mindspore import ops, Tensor, dtype, jit
 from mindspore.common.api import _pynative_executor
 from tests.st.pynative.utils import GradOfFirstInput, GradOfAllInputs, allclose_nparray
@@ -107,7 +107,7 @@ def test_primitive_user_data():
 
 class Abs(nn.Cell):
     def __init__(self):
-        super(Abs, self).__init__()
+        super().__init__()
         self.abs = ops.Abs()
 
     def construct(self, inputs):
@@ -134,7 +134,7 @@ def test_primitive_abs():
 class Net1(nn.Cell):
     def __init__(self, ksize=2, strides=1, pad_mode="same", data_format='NCHW', int_type=2, bool_type=True,
                  none_type=None):
-        super(Net1, self).__init__()
+        super().__init__()
         self.avgpool = ops.AvgPool(kernel_size=ksize, strides=strides, pad_mode=pad_mode, data_format=data_format)
         self.int_type = int_type
         self.bool_type = bool_type
@@ -148,7 +148,7 @@ class Net1(nn.Cell):
 
 class Net2(nn.Cell):
     def __init__(self):
-        super(Net2, self).__init__()
+        super().__init__()
         self.abs = ops.Abs()
 
     def construct(self, input_x, kernel_size, strides, int_type, bool_type, none_type):
@@ -326,7 +326,7 @@ def test_jit_graph_has_no_parameter():
 
     class GradNetWrtX(nn.Cell):
         def __init__(self, net):
-            super(GradNetWrtX, self).__init__()
+            super().__init__()
             self.net = net
             self.grad_op = ops.GradOperation(sens_param=True)
 
@@ -378,3 +378,28 @@ def test_dropout():
     _, mask = net(Tensor(np.ones([1, 2, 3, 4, 5]), ms.float32))
     assert mask.shape == (16,)
     assert mask.dtype == ms.uint8
+
+
+class MinimumNet(nn.Cell):
+    def construct(self, x, y):
+        m = mint.minimum(x, y)
+        n = mint.maximum(x, y)
+        return m + n
+
+
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
+def test_min_max_direct_call():
+    """
+    Feature: expander direct call
+    Description: Test Dropout need refresh output.
+    Expectation: No exception.
+    """
+    net = MinimumNet()
+    grad_net2 = GradOfAllInputs(net)
+    grads = grad_net2(Tensor([1, 2, 3, 4, 5], ms.float32), Tensor([0, 1, 3, 6, 7], ms.float32),
+                      Tensor([1, 1, 1, 1, 1], ms.float32))
+    assert np.allclose(grads[0].asnumpy(), np.array([1, 1, 1, 1, 1]))
+    assert np.allclose(grads[1].asnumpy(), np.array([1, 1, 1, 1, 1]))
