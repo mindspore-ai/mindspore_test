@@ -110,11 +110,13 @@ def get_convert_type_str(dtype: str, optional, use_basic_type=False):
         'tuple[int]': "ToBasicIntVectorOptional<CPythonTuple>",
         'list[int]': "ToBasicIntVectorOptional<CPythonList>",
         'int': "ToBasicIntOptional",
+        'type': 'ToBasicIntOptional'
     }
     basic_type_convert = {
         'tuple[int]': "ToBasicIntVector<CPythonTuple>",
         'list[int]': "ToBasicIntVector<CPythonList>",
         'int': "ToBasicInt",
+        'type': 'ToBasicInt'
     }
     if optional:
         if use_basic_type and dtype in basic_optional_type_convert:
@@ -171,11 +173,13 @@ def get_input_args_type_str(dtype: str, optional, use_basic_type=False):
         'tuple[int]': "std::optional<std::vector<int64_t>>",
         'list[int]': "std::optional<std::vector<int64_t>>",
         'int': "std::optional<int64_t>",
+        'type': "std::optional<int64_t>"
     }
     basic_type_convert = {
         'tuple[int]': "std::vector<int64_t>",
         'list[int]': "std::vector<int64_t>",
         'int': "int64_t",
+        'type': "int64_t"
     }
     if optional:
         if use_basic_type and dtype in basic_optional_type_convert:
@@ -198,11 +202,13 @@ def basic_type_convert_str(dtype: str, optional):
         'tuple[int]': "ToBasicIntVectorOptional",
         'list[int]': "ToBasicIntVectorOptional",
         'int': "ToBasicIntOptional",
+        'type': "ToBasicIntOptional"
     }
     native_type = {
         'tuple[int]': "ToBasicIntVector",
         'list[int]': "ToBasicIntVector",
         'int': "ToBasicInt",
+        'type': "ToBasicInt"
     }
     if optional:
         if dtype in optional_type:
@@ -254,11 +260,13 @@ def get_value_convert_type_str(dtype: str, optional, use_basic_type=False):
         'tuple[int]': "ToBasicIntVectorOptional",
         'list[int]': "ToBasicIntVectorOptional",
         'int': "ToBasicIntOptional",
+        'type': "ToBasicIntOptional"
     }
     basic_type_convert = {
         'tuple[int]': "ToBasicIntVector",
         'list[int]': "ToBasicIntVector",
         'int': "ToBasicInt",
+        'type': "ToBasicInt"
     }
     if optional:
         if use_basic_type and dtype in basic_optional_type_convert:

@@ -518,7 +518,7 @@ class OpTemplateParser:
                     continue
             is_optional = is_optional_param(op_arg)
             if op_proto.op_view:
-                convert_func = basic_type_convert_str(op_arg.arg_dtype, False)
+                convert_func = basic_type_convert_str(op_arg.arg_dtype, is_optional)
                 if convert_func != "":
                     arg_convert_str = arg_basic_convert_template.replace(convert_func=convert_func,
                                                                          index=idx)

@@ -1465,6 +1465,13 @@ std::vector<int64_t> ParserArgs::ToBasicIntVector(size_t index) {
   return {};
 }
 
+std::optional<std::vector<int64_t>> ParserArgs::ToBasicIntVectorOptional(size_t index) {
+  if (arg_list_[index] == Py_None) {
+    return std::nullopt;
+  }
+  return std::make_optional(ToBasicIntVector(index));
+}
+
 int64_t ParserArgs::ToBasicInt(size_t index) {
   auto src = src_types_[index];
   auto dst = dst_types_[index];
@@ -1480,6 +1487,13 @@ int64_t ParserArgs::ToBasicInt(size_t index) {
   }
   PrintConvertError(index);
   return 0;
+}
+
+std::optional<int64_t> ParserArgs::ToBasicIntOptional(size_t index) {
+  if (arg_list_[index] == Py_None) {
+    return std::nullopt;
+  }
+  return std::make_optional(ToBasicInt(index));
 }
 
 void ParserArgs::InsertInputTensor(size_t index, PyObject *input) {

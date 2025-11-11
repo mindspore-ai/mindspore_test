@@ -521,5 +521,102 @@ TEST_F(PyBoostConverterTest, ToBasicIntVectorTest1) {
   ASSERT_EQ(split_sizes[1], 8);
   ASSERT_EQ(split_sizes[2], 7);
 }
+
+/// Feature: Test Pyboost PythonArgParser.
+/// Description: Test ToBasicIntOptional for pyboost input converter.
+/// Expectation: ToBasicIntOptional success.
+TEST_F(PyBoostConverterTest, ToBasicIntOptional0) {
+  py::gil_scoped_acquire gil;
+
+  auto self = NewPyTensor(tensor::from_scalar(1));
+
+  py::tuple py_args = py::make_tuple(py::int_(1), py::none());
+
+  PythonArgParser parser({"TransposeExtView(int dim0, int dim1=None)"}, "transpose");
+  auto parse_args = parser.Parse(py_args.ptr(), nullptr, true);
+  parse_args.InsertInputTensor(0, self.ptr());
+
+  ASSERT_EQ(parse_args.arg_list_.size(), 3);
+  ASSERT_EQ(parse_args.src_types_.size(), 3);
+  ASSERT_EQ(parse_args.dst_types_.size(), 3);
+
+  auto dim1_opt = parse_args.ToBasicIntOptional(2);
+  ASSERT_EQ(dim1_opt.has_value(), false);
+}
+
+/// Feature: Test Pyboost PythonArgParser.
+/// Description: Test ToBasicIntOptional for pyboost input converter.
+/// Expectation: ToBasicIntOptional success.
+TEST_F(PyBoostConverterTest, ToBasicIntOptional1) {
+  py::gil_scoped_acquire gil;
+
+  auto self = NewPyTensor(tensor::from_scalar(1));
+
+  py::tuple py_args = py::make_tuple(py::int_(1), py::int_(2));
+
+  PythonArgParser parser({"TransposeExtView(int dim0, int dim1=None)"}, "transpose");
+  auto parse_args = parser.Parse(py_args.ptr(), nullptr, true);
+  parse_args.InsertInputTensor(0, self.ptr());
+
+  ASSERT_EQ(parse_args.arg_list_.size(), 3);
+  ASSERT_EQ(parse_args.src_types_.size(), 3);
+  ASSERT_EQ(parse_args.dst_types_.size(), 3);
+
+  auto dim1_opt = parse_args.ToBasicIntOptional(2);
+  ASSERT_EQ(dim1_opt.has_value(), true);
+  ASSERT_EQ(dim1_opt.value(), 2);
+}
+
+/// Feature: Test Pyboost PythonArgParser.
+/// Description: Test ToBasicIntVectorOptional for pyboost input converter.
+/// Expectation: ToBasicIntVectorOptional success.
+TEST_F(PyBoostConverterTest, ToBasicIntVectorOptional0) {
+  py::gil_scoped_acquire gil;
+
+  auto self = NewPyTensor(tensor::from_scalar(1));
+
+  py::list dims_list;
+  dims_list.append(py::int_(1));
+  dims_list.append(py::int_(2));
+  py::tuple py_args = py::make_tuple(dims_list);
+
+  PythonArgParser parser({"Transpose(list[int] dims=None)"}, "permute");
+  auto parse_args = parser.Parse(py_args.ptr(), nullptr, true);
+  parse_args.InsertInputTensor(0, self.ptr());
+
+  ASSERT_EQ(parse_args.arg_list_.size(), 2);
+  ASSERT_EQ(parse_args.src_types_.size(), 2);
+  ASSERT_EQ(parse_args.dst_types_.size(), 2);
+
+  auto dims_opt = parse_args.ToBasicIntVectorOptional(1);
+  ASSERT_EQ(dims_opt.has_value(), true);
+
+  auto dims = dims_opt.value();
+  ASSERT_EQ(dims.size(), 2);
+  ASSERT_EQ(dims[0], 1);
+  ASSERT_EQ(dims[1], 2);
+}
+
+/// Feature: Test Pyboost PythonArgParser.
+/// Description: Test ToBasicIntVectorOptional for pyboost input converter.
+/// Expectation: ToBasicIntVectorOptional success.
+TEST_F(PyBoostConverterTest, ToBasicIntVectorOptional1) {
+  py::gil_scoped_acquire gil;
+
+  auto self = NewPyTensor(tensor::from_scalar(1));
+
+  py::tuple py_args = py::make_tuple(py::none());
+
+  PythonArgParser parser({"Transpose(list[int] dims=None)"}, "permute");
+  auto parse_args = parser.Parse(py_args.ptr(), nullptr, true);
+  parse_args.InsertInputTensor(0, self.ptr());
+
+  ASSERT_EQ(parse_args.arg_list_.size(), 2);
+  ASSERT_EQ(parse_args.src_types_.size(), 2);
+  ASSERT_EQ(parse_args.dst_types_.size(), 2);
+
+  auto dims_opt = parse_args.ToBasicIntVectorOptional(1);
+  ASSERT_EQ(dims_opt.has_value(), false);
+}
 }  // namespace pynative
 }  // namespace mindspore
