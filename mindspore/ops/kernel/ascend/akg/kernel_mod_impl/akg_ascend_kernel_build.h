@@ -18,7 +18,7 @@
 #define MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_AKG_ASCEND_AKG_ASCEND_KERNEL_BUILD_H_
 
 #include <string>
-#include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/akg/akg_kernel_build.h"
+#include "include/runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/akg/akg_kernel_build.h"
 #include "include/runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/graph_kernel_builder_manager.h"
 
 namespace mindspore {

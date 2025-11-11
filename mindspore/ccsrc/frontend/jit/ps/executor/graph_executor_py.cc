@@ -26,8 +26,8 @@
 #include <unordered_map>
 #include <functional>
 
-#include "backend/backend_manager/backend_base.h"
-#include "backend/backend_manager/backend_manager.h"
+#include "include/backend/backend_manager/backend_base.h"
+#include "include/backend/backend_manager/backend_manager.h"
 
 #include "tools/profiler/profiling.h"
 

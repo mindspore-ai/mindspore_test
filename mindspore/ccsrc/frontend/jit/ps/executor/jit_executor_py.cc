@@ -29,7 +29,7 @@
 #include "utils/phase.h"
 #include "include/utils/fallback.h"
 #include "include/utils/compile_cache_context.h"
-#include "backend/backend_manager/backend_manager.h"
+#include "include/backend/backend_manager/backend_manager.h"
 #include "include/utils/pynative/grad_state.h"
 
 namespace mindspore {

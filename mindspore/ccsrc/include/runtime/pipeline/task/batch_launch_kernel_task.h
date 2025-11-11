@@ -14,14 +14,15 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_MINDSPORE_CCSRC_RUNTIME_PIPELINE_TASK_BATCH_LAUNCH_KERNEL_TASK_H_
-#define MINDSPORE_MINDSPORE_CCSRC_RUNTIME_PIPELINE_TASK_BATCH_LAUNCH_KERNEL_TASK_H_
+#ifndef MINDSPORE_CCSRC_INCLUDE_RUNTIME_PIPELINE_TASK_BATCH_LAUNCH_KERNEL_TASK_H_
+#define MINDSPORE_CCSRC_INCLUDE_RUNTIME_PIPELINE_TASK_BATCH_LAUNCH_KERNEL_TASK_H_
 
 #include <functional>
 #include <memory>
 #include <utility>
 
 #include "runtime/pipeline/task/task.h"
+#include "runtime/pipeline/visible.h"
 
 namespace mindspore {
 namespace runtime {
@@ -37,4 +38,4 @@ class RUNTIME_PIPELINE_EXPORT BatchLaunchKernelTask : public AsyncTask {
 using BatchLaunchKernelTaskPtr = std::shared_ptr<BatchLaunchKernelTask>;
 }  // namespace runtime
 }  // namespace mindspore
-#endif  // MINDSPORE_MINDSPORE_CCSRC_RUNTIME_PIPELINE_TASK_BATCH_LAUNCH_KERNEL_TASK_H_
+#endif  // MINDSPORE_CCSRC_INCLUDE_RUNTIME_PIPELINE_TASK_BATCH_LAUNCH_KERNEL_TASK_H_

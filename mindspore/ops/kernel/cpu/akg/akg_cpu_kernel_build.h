@@ -18,7 +18,7 @@
 #define MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_AKG_CPU_AKG_CPU_KERNEL_BUILD_H_
 #include <string>
 #include "include/runtime/hardware_abstract/kernel_base/graph_fusion/kash/kernel_pack.h"
-#include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/akg/akg_kernel_build.h"
+#include "include/runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/akg/akg_kernel_build.h"
 #include "include/runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/graph_kernel_builder_manager.h"
 #include "base/base.h"
 #include "kernel/cpu/utils/visible.h"

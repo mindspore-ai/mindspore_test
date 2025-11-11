@@ -47,7 +47,7 @@
 #include "frontend/jit/ps/debug/trace.h"
 #include "frontend/jit/ps/pipeline.h"
 #include "backend/common/kernel_graph/session_factory.h"
-#include "backend/backend_manager/backend_manager.h"
+#include "include/backend/backend_manager/backend_manager.h"
 #include "include/runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "include/backend/debug/execute_order_tracker/kernel_cache.h"
 #include "pynative/utils/runtime/op_executor.h"

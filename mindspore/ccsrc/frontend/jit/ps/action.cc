@@ -84,7 +84,7 @@
 #endif
 #include "tools/profiler/profiling_framework_data.h"
 #include "tools/profiler/profiler.h"
-#include "backend/backend_manager/backend_manager.h"
+#include "include/backend/backend_manager/backend_manager.h"
 #include "include/utils/pynative/adapter.h"
 #include "backend/backend_manager/backend_jit_config.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"

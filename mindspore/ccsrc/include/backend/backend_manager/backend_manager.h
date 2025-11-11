@@ -13,15 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef MINDSPORE_CCSRC_BACKEND_BACKENDMANAGER_BACKENDMANAGER_H_
-#define MINDSPORE_CCSRC_BACKEND_BACKENDMANAGER_BACKENDMANAGER_H_
+#ifndef MINDSPORE_CCSRC_INCLUDE_BACKEND_BACKEND_MANAGER_BACKEND_MANAGER_H_
+#define MINDSPORE_CCSRC_INCLUDE_BACKEND_BACKEND_MANAGER_BACKEND_MANAGER_H_
 
 #include <memory>
 #include <string>
 #include <utility>
 #include <map>
 #include <vector>
-#include "backend/backend_manager/backend_base.h"
+#include "include/backend/backend_manager/backend_base.h"
 
 namespace mindspore {
 namespace backend {
@@ -109,4 +109,4 @@ class BackendRegister {
 };
 }  // namespace backend
 }  // namespace mindspore
-#endif  // MINDSPORE_CCSRC_BACKEND_BACKENDMANAGER_BACKENDMANAGER_H_
+#endif  // MINDSPORE_CCSRC_INCLUDE_BACKEND_BACKEND_MANAGER_BACKEND_MANAGER_H_

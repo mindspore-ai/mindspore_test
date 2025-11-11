@@ -22,7 +22,7 @@
 #include <string>
 #include <set>
 #include <unordered_set>
-#include "backend/backend_manager/backend_manager.h"
+#include "include/backend/backend_manager/backend_manager.h"
 #include "backend/backend_manager/backend_jit_config.h"
 #include "ir/tensor.h"
 #include "backend/common/kernel_graph/kernel_graph_mgr.h"
