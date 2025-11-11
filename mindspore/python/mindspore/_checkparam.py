@@ -1406,5 +1406,9 @@ def check_hook_fn(hook_fn):
     if not callable(hook_fn):
         raise TypeError(f"Expected a callable hook function, but got {type(hook_fn).__name__}.")
 
+    code = getattr(hook_fn, "__code__", None)
+    if code and code.co_name == "staging_specialize":
+        raise TypeError(f"Decorating hook function {hook_fn.__name__} with '@jit' is not supported.")
+
 
 _set_record = {}

@@ -109,13 +109,13 @@ mindspore
     :toctree: mindspore
 
     mindspore.grad
-    mindspore.value_and_grad
     mindspore.get_grad
     mindspore.jacfwd
     mindspore.jacrev
     mindspore.jvp
-    mindspore.vjp
     mindspore.saved_tensors_hooks
+    mindspore.value_and_grad
+    mindspore.vjp
 
 并行优化
 ---------

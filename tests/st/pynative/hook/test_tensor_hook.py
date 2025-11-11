@@ -12,12 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+""" test_tensor_hook """
 import os
 import numpy as np
 import pytest
 import mindspore as ms
-import mindspore.nn as nn
-from mindspore import Tensor, Parameter, ops
+from mindspore import Tensor, Parameter, ops, nn
 from tests.st.pynative.utils import GradOfAllParams, GradOfFirstInput
 from tests.mark_utils import arg_mark
 
@@ -144,7 +144,7 @@ def test_tensor_backward_hook_with_net_input_register_multi():
 
 class Net(nn.Cell):
     def __init__(self):
-        super(Net, self).__init__()
+        super().__init__()
         self.weight1 = Parameter(Tensor(np.array([1.0, 2.0, 3.0]), ms.float32), name="weight1")
         self.weight2 = Parameter(Tensor(np.array([1.0, 2.0, 3.0]), ms.float32), name="weight2")
         self.handle1 = self.weight1.register_hook(hook_fn)
@@ -221,7 +221,7 @@ def test_tensor_backward_hook_with_weight_register_multi():
 
 class NetRemove(nn.Cell):
     def __init__(self):
-        super(NetRemove, self).__init__()
+        super().__init__()
         self.weight1 = Parameter(Tensor(np.array([1.0, 2.0, 3.0]), ms.float32), name="weight1")
         self.handle = self.weight1.register_hook(hook_fn)
 
@@ -280,7 +280,7 @@ def tensor_hook_fn2(grad):
 
 class NetWithParameterNotInGrad(nn.Cell):
     def __init__(self):
-        super(NetWithParameterNotInGrad, self).__init__()
+        super().__init__()
         self.weight1 = Parameter(Tensor(np.array([1.0, 2.0, 3.0]), ms.float32), name="weight1")
         self.weight2 = Parameter(Tensor(np.array([1.0, 2.0, 3.0]), ms.float32), name="weight2")
         self.handle1 = self.weight1.register_hook(tensor_hook_fn2)
@@ -419,3 +419,23 @@ def test_tensor_backward_hook_leaf_error():
     param_x = Parameter(Tensor(np.array([2.0, 3.0]), ms.float32), requires_grad=False)
     with pytest.raises(RuntimeError, match="The tensor requires grad is false, which can not register tensor hook"):
         param_x.register_hook(hook_fn)
+
+
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
+def test_tensor_backward_hook_with_jit():
+    """
+    Feature: Tensor hook
+    Description: register a tensor hook decorated with jit.
+    Expectation: Raise TypeError.
+    """
+
+    @ms.jit
+    def hook_fn_with_jit(grad):
+        return grad * 2.0
+
+    x = ms.Tensor(1.0)
+    with pytest.raises(TypeError):
+        x.register_hook(hook_fn_with_jit)

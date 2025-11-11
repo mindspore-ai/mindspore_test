@@ -376,7 +376,7 @@ bool PyNativeExecutor::DisableFrontendAndBpropPipeline() {
 
 void PyNativeExecutor::EnableFrontendAndBpropPipeline() {
   runtime::Pipeline::Get().frontend_stage()->SetMultiThreadDisabled(false);
-  runtime::Pipeline::Get().backend_stage()->SetMultiThreadDisabled(false);
+  runtime::Pipeline::Get().bprop_stage()->SetMultiThreadDisabled(false);
 }
 
 void RegPyNativeExecutor(const py::module *m) {

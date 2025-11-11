@@ -19,6 +19,7 @@
 #include <memory>
 #include "include/common/utils/tensor_py.h"
 #include "include/common/pynative/grad_state.h"
+#include "runtime/pipeline/pipeline.h"
 
 namespace mindspore::pynative::autograd {
 std::stack<std::pair<py::function, py::function>> DefaultSavedTensorHookUtil::hook_stack_ = {};
@@ -44,6 +45,7 @@ tensor::TensorPtr PySavedTensorHook::RunUnpackHook() {
   py::gil_scoped_acquire gil;
   const auto ret = unpack_hook_(data_);
   const auto ret_tensor = tensor::ConvertToTensor(ret);
+  runtime::Pipeline::Get().WaitFrontend();
   MS_EXCEPTION_IF_NULL(ret_tensor);
   return ret_tensor;
 }
