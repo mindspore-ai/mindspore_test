@@ -34,7 +34,7 @@ from mindspore.ops.auto_generate.gen_ops_prim import expand_dims_view_op
 def _configure_and_build_mock_plugin() -> str:
     """Configure and build the mock op plugin and return the built library path."""
     system = platform.system().lower()
-    if system == "windows": # windows is not supported for now
+    if system == "windows" or system == "darwin": # windows and macos is not supported for now
         return ""
     this_dir = Path(__file__).resolve().parent
     plugin_src_dir = this_dir / "mock_op_plugin"
@@ -117,7 +117,7 @@ def view_func(x):
     return out
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard',
           essential_mark='essential')
 @pytest.mark.parametrize('mode', ['kbk', 'pynative'])
 def test_normal_op(mode):
@@ -134,7 +134,7 @@ def test_normal_op(mode):
     assert np.allclose(output.asnumpy(), expect)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard',
           essential_mark='essential')
 @pytest.mark.parametrize('mode', ['kbk', 'pynative'])
 def test_op_with_existing_cpu_kernelmod(mode):
@@ -154,7 +154,7 @@ def test_op_with_existing_cpu_kernelmod(mode):
     assert np.allclose(output.asnumpy(), expect)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard',
           essential_mark='essential')
 @pytest.mark.parametrize('mode', ['kbk', 'pynative'])
 def test_inplace_op(mode):
@@ -169,7 +169,7 @@ def test_inplace_op(mode):
     inplace_relu_forward_func(x)
     assert np.allclose(x.asnumpy(), expect)
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard',
           essential_mark='essential')
 @pytest.mark.parametrize('mode', ['pynative'])
 def test_view_op(mode):
@@ -187,7 +187,7 @@ def test_view_op(mode):
     assert np.allclose(view.asnumpy(), expect_view)
     assert expect_view.shape == view.shape
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard',
           essential_mark='essential')
 @pytest.mark.parametrize('mode', ['pynative', 'kbk'])
 def test_noncontiguous_input_op(mode):
