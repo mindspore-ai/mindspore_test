@@ -19,7 +19,7 @@ Generates C++ functional map header files for graph mode.
 import os
 
 import common.gen_constants as K
-import common.template as template
+from common import template
 from common.gen_utils import save_file, OrderedSet
 from common.base_generator import BaseGenerator
 from pyboost import pyboost_utils

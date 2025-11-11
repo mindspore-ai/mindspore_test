@@ -20,7 +20,7 @@ from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.st.utils import test_utils
 
 import mindspore as ms
-import mindspore.nn as nn
+from mindspore import nn
 from mindspore.common.api import _pynative_executor
 
 

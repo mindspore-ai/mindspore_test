@@ -242,7 +242,7 @@ PyObject *NormalizeIntSequence(const std::string &op_name, const std::string &ar
   auto items = py::cast<std::vector<py::object>>(arg_handle);
   py::tuple int_tuple(items.size());
   auto convert_type = py_parse::CombineTypesForTypeCast(ops::DT_TENSOR, ops::DT_INT);
-  auto convert_func = parse::GetConverterByType(convert_type);
+  auto convert_func = py_parse::GetConverterByType(convert_type);
   MS_EXCEPTION_IF_NULL(convert_func);
   size_t i = 0;
   for (const auto &item : items) {
@@ -275,7 +275,7 @@ PyObject *ScalarTensorToScalar(const std::string &op_name, const std::string &ar
                                << py::str(arg_handle).cast<std::string>() << "'.";
     }
     auto convert_type = py_parse::CombineTypesForTypeCast(ops::DT_TENSOR, ops::DT_NUMBER);
-    auto convert_func = parse::GetConverterByType(convert_type);
+    auto convert_func = py_parse::GetConverterByType(convert_type);
     ValuePtr value = convert_func(py::reinterpret_borrow<py::object>(arg_handle));
     if (!value) {
       MS_EXCEPTION(TypeError) << "For '" << op_name << "', '" << arg_name << "' is not a scalar: '"

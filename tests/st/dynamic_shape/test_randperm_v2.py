@@ -13,6 +13,8 @@
 # limitations under the License.
 # ============================================================================
 # pylint: disable=unused-variable
+
+"""test randperm_v2"""
 import pytest
 import numpy as np
 import mindspore as ms

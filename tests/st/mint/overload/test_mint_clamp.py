@@ -13,12 +13,14 @@
 # limitations under the License.
 # ============================================================================
 
+"""test mint.clamp"""
+
 import numpy as np
 import pytest
 from tests.mark_utils import arg_mark
 
 import mindspore as ms
-import mindspore.nn as nn
+from mindspore import nn
 from mindspore import Tensor, mint
 from mindspore.common.api import _pynative_executor
 

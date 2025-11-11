@@ -1,4 +1,4 @@
-# Copyright 2024 Huawei Technologies Co., Ltd
+# Copyright 2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
 # ============================================================================
 """Test graph_utils.cc model"""
 import numpy as np
-import mindspore.nn as nn
+from mindspore import nn
 import mindspore.common.dtype as mstype
 from mindspore import Symbol
 from mindspore.ops import operations as P

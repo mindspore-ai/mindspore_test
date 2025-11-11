@@ -13,12 +13,13 @@
 # limitations under the License.
 # ============================================================================
 
+"""test Tensor.clamp"""
 import numpy as np
 import pytest
 from tests.mark_utils import arg_mark
 
 import mindspore as ms
-import mindspore.nn as nn
+from mindspore import nn
 from mindspore import Tensor
 from mindspore.common.api import _pynative_executor
 
