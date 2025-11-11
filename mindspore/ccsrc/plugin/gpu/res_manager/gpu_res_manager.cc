@@ -30,7 +30,7 @@
 #include "include/runtime/memory/mem_pool/mem_tracker.h"
 #include "ir/tensor_new.h"
 #include "include/runtime/hardware_abstract/device_context/device_context.h"
-#include "runtime/hardware_abstract/device_context/device_context_manager.h"
+#include "include/runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "runtime/hardware_abstract/utils.h"
 #include "utils/dlopen_macro.h"
 #include "include/runtime/hardware_abstract/collective/collective_comm_lib_loader.h"

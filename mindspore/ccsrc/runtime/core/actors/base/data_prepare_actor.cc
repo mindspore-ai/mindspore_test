@@ -26,7 +26,7 @@
 #include "runtime/core/actors/base/loop_count_actor.h"
 #include "runtime/core/actors/base/debug_actor.h"
 #include "runtime/core/actors/base/profiler_actor.h"
-#include "runtime/hardware_abstract/device_context/device_context_manager.h"
+#include "include/runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "backend/common/device_address_utils.h"
 #include "runtime/core/graph_scheduler/base/scheduler_helper.h"
 #include "include/runtime/core/graph_executor/pipeline/runtime_pipeline.h"

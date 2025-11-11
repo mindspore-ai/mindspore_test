@@ -22,7 +22,7 @@
 #include "ir/tensor.h"
 #include "kernel/cpu/cpu_kernel.h"
 #include "mindspore/ccsrc/pynative/utils/pyboost/pyboost_utils.h"
-#include "runtime/hardware_abstract/device_context/device_context_manager.h"
+#include "include/runtime/hardware_abstract/device_context/device_context_manager.h"
 
 namespace mindspore {
 namespace kernel {

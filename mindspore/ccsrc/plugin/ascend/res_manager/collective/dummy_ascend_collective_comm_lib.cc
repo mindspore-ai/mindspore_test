@@ -20,7 +20,7 @@
 #include "include/utils/utils.h"
 #include "utils/ms_context.h"
 #include "utils/ms_utils.h"
-#include "runtime/hardware_abstract/device_context/device_context_manager.h"
+#include "include/runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "plugin/ascend/res_manager/hccl_adapter/hccl_adapter.h"
 #include "plugin/ascend/res_manager/collective/ascend_communication_group.h"
 

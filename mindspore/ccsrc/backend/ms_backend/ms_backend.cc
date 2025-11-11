@@ -37,7 +37,7 @@
 #include "include/utils/convert_utils_py.h"
 #include "utils/log_adapter.h"
 #include "utils/ms_utils.h"
-#include "runtime/hardware_abstract/device_context/device_context_manager.h"
+#include "include/runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "runtime/core/graph_scheduler/base/graph_compiler.h"
 #include "runtime/core/graph_scheduler/base/graph_adapter.h"
 #include "runtime/core/actors/base/actor_common.h"

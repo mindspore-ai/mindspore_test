@@ -51,7 +51,7 @@
 #include "backend/ge_backend/pass/ge_backend_optimization.h"
 #include "mindspore/core/include/ir/tensor_new.h"
 #include "include/runtime/hardware_abstract/device_context/device_context.h"
-#include "runtime/hardware_abstract/device_context/device_context_manager.h"
+#include "include/runtime/hardware_abstract/device_context/device_context_manager.h"
 
 namespace mindspore {
 namespace backend {

@@ -25,7 +25,7 @@
 
 #include "mindspore/core/include/device_address/convert_tensor_utils.h"
 #include "include/runtime/hardware_abstract/device_context/device_context.h"
-#include "runtime/hardware_abstract/device_context/device_context_manager.h"
+#include "include/runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "runtime/hardware_abstract/utils.h"
 #include "include/runtime/hardware_abstract/collective/collective_comm_lib_loader.h"
 #if defined(__linux__) && defined(WITH_BACKEND)

@@ -17,7 +17,7 @@
 #include "utils/ms_context.h"
 #include "include/utils/tensor_py.h"
 #include "include/runtime/hardware_abstract/device_context/device_context.h"
-#include "runtime/hardware_abstract/device_context/device_context_manager.h"
+#include "include/runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "utils/log_adapter.h"
 #include "mindapi/base/format.h"
 #include "include/utils/pybind_api/api_register.h"

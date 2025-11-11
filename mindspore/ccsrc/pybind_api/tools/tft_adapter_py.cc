@@ -24,7 +24,7 @@
 #include "tools/error_handler/exit_handler.h"
 #include "include/utils/tensor_py.h"
 #include "include/runtime/hardware_abstract/device_context/device_context.h"
-#include "runtime/hardware_abstract/device_context/device_context_manager.h"
+#include "include/runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "include/runtime/core/graph_scheduler/base/parameter_store.h"
 #include "include/runtime/core/graph_executor/pre_launch/pre_launch_comm.h"
 #include "include/runtime/core/graph_scheduler/base/graph_scheduler.h"

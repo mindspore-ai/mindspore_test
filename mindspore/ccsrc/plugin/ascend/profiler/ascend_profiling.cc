@@ -27,7 +27,7 @@
 #include "plugin/ascend/profiler/mstx/mstx_dispatcher.h"
 #include "plugin/ascend/res_manager/mem_manager/ascend_memory_pool.h"
 #include "plugin/ascend/profiler/parallel_strategy_profiling.h"
-#include "runtime/hardware_abstract/device_context/device_context_manager.h"
+#include "include/runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "plugin/ascend/res_manager/symbol_interface/acl_prof_symbol.h"
 #include "plugin/ascend/res_manager/symbol_interface/acl_rt_symbol.h"
 #include "plugin/ascend/res_manager/symbol_interface/symbol_utils.h"

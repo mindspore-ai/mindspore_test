@@ -66,7 +66,7 @@
 
 #include "mindspore/ops/kernel/ascend/aclnn/pyboost_impl/aclnn_utils.h"
 #include "include/runtime/pipeline/pipeline.h"
-#include "runtime/hardware_abstract/device_context/device_context_manager.h"
+#include "include/runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "pynative/utils/pyboost/pyboost_utils.h"
 #include "pynative/utils/pyboost/op_runner.h"
 #include "include/backend/optimizer/helper.h"

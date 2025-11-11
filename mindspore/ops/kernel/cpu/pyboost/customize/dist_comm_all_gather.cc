@@ -20,7 +20,7 @@
 #include <string>
 #include "mindspore/ccsrc/pynative/utils/pyboost/customize/op_common.h"
 #include "mindspore/ccsrc/pynative/utils/pyboost/pyboost_utils.h"
-#include "runtime/hardware_abstract/device_context/device_context_manager.h"
+#include "include/runtime/hardware_abstract/device_context/device_context_manager.h"
 
 #if defined(__linux__) && defined(WITH_BACKEND)
 #include "include/cluster/topology/collective_manager.h"

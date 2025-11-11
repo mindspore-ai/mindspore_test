@@ -43,7 +43,7 @@
 #include "include/cluster/topology/collective_manager.h"
 #include "include/cluster/rpc/tcp_store.h"
 #include "backend/backend_manager/backend_manager.h"
-#include "runtime/hardware_abstract/device_context/device_context_manager.h"
+#include "include/runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "include/runtime/hardware_abstract/collective/collective_communication_lib.h"
 #include "include/runtime/memory/mem_pool/mem_dynamic_allocator.h"
 #include "frontend/parallel/tensor_layout/tensor_transform.h"

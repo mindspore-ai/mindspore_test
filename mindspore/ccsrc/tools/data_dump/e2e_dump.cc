@@ -37,7 +37,7 @@
 #include "utils/file_utils.h"
 #include "tools/data_dump/tensor_stat_dump.h"
 #include "tools/data_dump/common/csv_writer.h"
-#include "runtime/hardware_abstract/device_context/device_context_manager.h"
+#include "include/runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "tools/data_dump/debugger/debugger_utils.h"
 #ifdef ENABLE_DEBUGGER
 #include "ops/op_def.h"

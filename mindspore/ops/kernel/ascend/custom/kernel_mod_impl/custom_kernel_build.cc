@@ -16,7 +16,7 @@
 
 #include "kernel/ascend/custom/kernel_mod_impl/custom_kernel_build.h"
 #include "kernel/ascend/kernel_plugin.h"
-#include "runtime/hardware_abstract/device_context/device_context_manager.h"
+#include "include/runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "kernel/ascend/custom/kernel_mod_impl/custom_kernel_factory.h"
 #include "include/utils/anfalgo.h"
 #include "utils/ms_context.h"
