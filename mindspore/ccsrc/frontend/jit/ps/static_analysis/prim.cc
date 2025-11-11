@@ -3522,7 +3522,12 @@ class GetAttrEvaluator final : public TransitionPrimEvaluator {
       MS_EXCEPTION(TypeError) << "getattr(): attribute name must be string but got: " << TypeIdToString(type_id);
     }
     EvalResultPtr res = nullptr;
-    res = ProcessRecordWaitMothed(engine, args_abs_list, out_conf);
+    if (bound_node() != nullptr) {
+      TraceGuard trace_guard(MakeTraceInfo<TraceResolve>(bound_node()->debug_info()));
+      res = ProcessRecordWaitMothed(engine, args_abs_list, out_conf);
+    } else {
+      res = ProcessRecordWaitMothed(engine, args_abs_list, out_conf);
+    }
     if (res != nullptr) {
       return res;
     }

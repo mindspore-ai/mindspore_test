@@ -326,7 +326,7 @@ def test_with_stream_event_list():
     x = Tensor(np.ones([3, 3]), ms.float32)
     net = WithEventNet2()
     out = net(x, 2)
-    print("out:", out)
+
     assert (out.asnumpy() == (5 * x).asnumpy()).all()
     os.unsetenv('MS_DEV_DUMP_IR_PASSES')
     ms.set_context(save_graphs=False)
@@ -376,7 +376,6 @@ def test_cust_class_record_wait():
     net = GetattrClassNet()
     out = net()
     assert out == 10
-    print("out:", out)
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')

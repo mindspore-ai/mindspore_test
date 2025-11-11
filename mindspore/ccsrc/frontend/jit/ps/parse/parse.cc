@@ -4795,7 +4795,7 @@ FunctionBlockPtr Parser::ParseWith(const FunctionBlockPtr &block, const py::obje
       auto after_func = after_block->func_graph();
       MS_EXCEPTION_IF_NULL(after_func);
       after_func->set_flag(FUNC_GRAPH_FLAG_NO_INLINE, true);
-      after_func->set_flag(kFuncGraphFlagStreamCtxAfter, true);
+      after_func->set_attr(kFuncGraphFlagStreamCtxAfter, MakeValue(static_cast<size_t>(id)));
       auto body_func = body_block->func_graph();
       MS_EXCEPTION_IF_NULL(body_func);
       if (body_func->get_return() == nullptr) {
@@ -4822,7 +4822,8 @@ FunctionBlockPtr Parser::ParseWith(const FunctionBlockPtr &block, const py::obje
       auto after_func = after_block->func_graph();
       MS_EXCEPTION_IF_NULL(after_func);
       after_func->set_flag(FUNC_GRAPH_FLAG_NO_INLINE, true);
-      after_func->set_flag(kFuncGraphFlagStreamLimitCtxAfter, true);
+      after_func->set_attr(kFuncGraphFlagStreamLimitCtxAfter,
+                           MakeValue(static_cast<int64_t>(stream_limit_ctx_args[0])));
       auto body_func = body_block->func_graph();
       MS_EXCEPTION_IF_NULL(body_func);
       if (body_func->get_return() == nullptr) {

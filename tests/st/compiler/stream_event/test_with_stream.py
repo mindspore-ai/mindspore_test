@@ -431,7 +431,6 @@ def test_multiple_independent_streams():
     net = MutliStreamsNet()
     result = net(x, y)
     os.unsetenv('MS_DEV_DUMP_IR_PASSES')
-    assert np.allclose(result, Tensor(np.ones([2, 2], dtype=np.float32)) * 6)
     content = read_file(save_path)
     stream_id_num = re.findall('stream_id', content)
     no_inline_num = re.findall('no_inline', content)
@@ -439,6 +438,7 @@ def test_multiple_independent_streams():
         shutil.rmtree(save_path)
     except FileNotFoundError:
         pass
+    assert np.allclose(result, Tensor(np.ones([2, 2], dtype=np.float32)) * 6)
     assert len(stream_id_num) == 4
     assert len(no_inline_num) == 0
     ms.set_context(save_graphs=False)
