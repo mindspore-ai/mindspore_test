@@ -20,10 +20,11 @@ from mindspore.common import dtype as mstype
 from mindspore import nn
 from mindspore import Tensor
 from mindspore.ops import composite as C
-from mindspore import context
-context.set_context(jit_config={"jit_level": "O0"})
+from mindspore import context, jit
+import mindspore as ms
 
 
+@ms.jit
 class ForwardNet(nn.Cell):
     """
     ForForWhileForwardNet
@@ -86,6 +87,7 @@ class BackwardNet(nn.Cell):
         self.forward_net = net
         self.grad = C.GradOperation()
 
+    @jit
     def construct(self, *inputs):
         grads = self.grad(self.forward_net)(*inputs)
         return grads
@@ -103,6 +105,7 @@ def run_net_backward():
     3. Compare backward results between both mode
     4. Print results for verification
     """
+    context.set_context(jit_config={"jit_level": "O1"})
     context.set_context(mode=context.GRAPH_MODE)
     x = Tensor(np.array(1), mstype.int32)
     y = Tensor(np.array(3), mstype.int32)

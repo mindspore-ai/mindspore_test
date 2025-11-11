@@ -20,6 +20,9 @@
 #include <map>
 #include <memory>
 #include <utility>
+#include <set>
+#include <vector>
+#include <string>
 
 #include "ir/map_tensor.h"
 #include "ir/dtype/ref.h"
@@ -1723,7 +1726,7 @@ bool IrExportBuilder::SetScalarToAttributeProtoForInt_irs(const ValuePtr &value,
     attr_proto->add_ints(value->cast<UInt32ImmPtr>()->value());
   } else if (value->isa<UInt64Imm>()) {
     attr_proto->set_type(mind_ir::AttributeProto_AttributeType_UINT64);
-    attr_proto->add_ints(SizeToInt(value->cast<UInt64ImmPtr>()->value()));
+    attr_proto->add_ints(UlongToLong(value->cast<UInt64ImmPtr>()->value()));
   } else {
     return false;
   }

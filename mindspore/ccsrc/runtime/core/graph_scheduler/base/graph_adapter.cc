@@ -192,7 +192,7 @@ void GraphAdapter::UpdateForwardOutputInBpropGraph(const KernelGraphPtr &graph,
                                                    const device::DeviceContext *device_context, bool no_control_flow) {
   MS_EXCEPTION_IF_NULL(graph);
   MS_LOG(DEBUG) << "Update start";
-  auto value_node_ref_counts = GetValue<std::vector<size_t>>(graph->get_attr(kAttrBpropValueNodeRefCount));
+  auto value_node_ref_counts = GetValue<std::vector<uint32_t>>(graph->get_attr(kAttrBpropValueNodeRefCount));
   auto value_node_forward_output_flags = GetValue<std::vector<bool>>(graph->get_attr(kAttrValueNodeForwardOuputFlags));
   size_t value_node_size = graph->graph_value_nodes().size();
   if (value_node_ref_counts.size() != value_node_size || value_node_forward_output_flags.size() != value_node_size) {
@@ -210,7 +210,7 @@ void GraphAdapter::UpdateForwardOutputInBpropGraph(const KernelGraphPtr &graph,
       value_node_index++;
       continue;
     }
-    size_t value_node_ref_count = value_node_ref_counts[value_node_index++];
+    uint32_t value_node_ref_count = value_node_ref_counts[value_node_index++];
     auto tensor = GetTensorFromValueNode(value_node);
     MS_EXCEPTION_IF_NULL(tensor);
 

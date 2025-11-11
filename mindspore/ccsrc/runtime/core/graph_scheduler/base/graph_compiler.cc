@@ -23,6 +23,9 @@
 #include <numeric>
 #include <regex>
 #include <utility>
+#include <set>
+#include <vector>
+#include <string>
 #include "include/runtime/core/graph_scheduler/base/graph_scheduler.h"
 #include "backend/common/device_address_utils.h"
 #include "device_address/device_address.h"
@@ -336,7 +339,7 @@ void GenerateRefCountForBpropValueNode(const KernelGraphPtr &graph) {
   std::vector<bool> value_node_forward_output_flags;
   for (auto &value_node : graph->graph_value_nodes()) {
     MS_EXCEPTION_IF_NULL(value_node);
-    (void)value_node_ref_count_list.emplace_back(SIZE_MAX);
+    (void)value_node_ref_count_list.emplace_back(UINT32_MAX);
     (void)value_node_forward_output_flags.emplace_back(false);
   }
   graph->set_attr(kAttrBpropValueNodeRefCount, MakeValue(value_node_ref_count_list));
@@ -578,7 +581,12 @@ void BuildStreamForCompileCache(const KernelGraphPtr &kernel_graph, const Device
   }
 }
 
-void GraphCompiler::CacheGraphKbk(const std::vector<KernelGraphPtr> &graphs) { session_->CacheKernelGraph(graphs); }
+bool GraphCompiler::CacheGraphKbk(const std::vector<KernelGraphPtr> &graphs) {
+  MS_LOG(INFO) << "Start to cache kernel graph.";
+  bool cache_kernel_graph = session_->CacheKernelGraph(graphs);
+  MS_LOG(INFO) << "Cache Kernel Graph " << (cache_kernel_graph == true ? "success" : "failed.");
+  return cache_kernel_graph;
+}
 namespace {
 void UpdateAbstractForAkgParameter(const KernelGraphPtr &graph) {
   MS_EXCEPTION_IF_NULL(graph);
@@ -786,7 +794,9 @@ GraphId GraphCompiler::CompileGraphImpl(const KernelGraphPtr &graph, const Devic
   }
 
   if (export_compile_cache_) {
-    session_->CacheKernelGraph({graph});
+    MS_LOG(INFO) << "Start to cache kernel graph.";
+    auto cache_kernel_graph = session_->CacheKernelGraph({graph});
+    MS_LOG(INFO) << "Cache Kernel Graph " << (cache_kernel_graph == true ? "success" : "failed.");
   }
   // Adjust kernel graph before run graph.
   PROF_START(PreprocessBeforeRun);

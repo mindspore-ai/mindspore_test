@@ -463,10 +463,13 @@ VectorRef ExecuteForward(const pynative::GradParamPtr &grad_param, const FuncGra
   return arg_list;
 }
 
-void CacheFuncGraph(const pipeline::CompileCacheManagerPtr &compile_cache_manager, const FuncGraphPtr &fg) {
-  {
-    MsProfileStatGuard stat_guard("SaveCacheFuncGraph", "compile_cache", true);
-    compile_cache_manager->CacheFuncGraph(fg, nullptr, false, true);
+void CacheFuncGraph(const pipeline::CompileCacheManagerPtr &compile_cache_manager, const FuncGraphPtr &fg,
+                    const bool loaded, const bool cache_hit) {
+  if (CompileCacheEnable() && !loaded && !cache_hit) {
+    {
+      MsProfileStatGuard stat_guard("SaveCacheFuncGraph", "compile_cache", true);
+      compile_cache_manager->CacheFuncGraph(fg, nullptr, false, true);
+    }
   }
 }
 
@@ -493,16 +496,10 @@ std::pair<bool, FuncGraphPtr> GetBpropGraph(const pynative::GradParamPtr &grad_p
   pipeline::CompileCacheManagerPtr compile_cache_manager = nullptr;
   pipeline::CompileCacheManagerPtr compile_cache_manager_forward = nullptr;
   bool loaded = false;
+  py::dict weights;
   if (CompileCacheEnable() && !cache_hit) {
     auto graph_executor = pipeline::GraphExecutorPy::GetInstance();
-    const auto &weights = graph_executor->weights();
-    {
-      MsProfileStatGuard stat_guard("LoadCachedFuncGraph");
-      static size_t idx = 0;
-      auto pair = GetCompileCacheResource(weights, "grad", idx++, true);
-      after_opt_fg = pair.first;
-      compile_cache_manager = pair.second;
-    }
+    weights = graph_executor->weights();
     {
       MsProfileStatGuard stat_guard("LoadCachedFuncGraph");
       static size_t idx_forward = 0;
@@ -510,7 +507,7 @@ std::pair<bool, FuncGraphPtr> GetBpropGraph(const pynative::GradParamPtr &grad_p
       forward_fg = pair_forward.first;
       compile_cache_manager_forward = pair_forward.second;
     }
-    loaded = after_opt_fg != nullptr && forward_fg != nullptr;
+    loaded = forward_fg != nullptr;
   }
   if (cache_hit) {
     MS_LOG(DEBUG) << "Get ad grad graph by cache, cache key: " << grad_param->graph_cache_key;
@@ -537,10 +534,21 @@ std::pair<bool, FuncGraphPtr> GetBpropGraph(const pynative::GradParamPtr &grad_p
     MS_LOG(INFO) << "Forward graph generated successfully.";
     pynative::CommonUtils::DumpGraphIR("opt_forward.ir", forward_fg);
   }
+  CacheFuncGraph(compile_cache_manager_forward, forward_fg, loaded, cache_hit);
 
   VectorRef arg_list = ExecuteForward(grad_param, forward_fg, need_forward_result, need_reuse_forward_node, cache_hit);
   ValuePtr forward_output_value = grad_param->op_grad_info->out_value;
   AbstractBasePtr origin_forward_output_abs = grad_param->op_grad_info->out_abs;
+
+  if (CompileCacheEnable() && !cache_hit) {
+    {
+      MsProfileStatGuard stat_guard("LoadCachedFuncGraph");
+      static size_t idx = 0;
+      auto pair = GetCompileCacheResource(weights, "grad", idx++, true);
+      after_opt_fg = loaded ? pair.first : after_opt_fg;
+      compile_cache_manager = pair.second;
+    }
+  }
 
   // 3. Update grad_param info about forward output value
   grad_param->args = arg_list;
@@ -564,10 +572,7 @@ std::pair<bool, FuncGraphPtr> GetBpropGraph(const pynative::GradParamPtr &grad_p
       jit_adgrad_processer->SetForwardOutputAbs(grad_param->op_grad_info->out_abs, after_opt_fg);
       pynative::CommonUtils::DumpGraphIR("opt_backward.ir", after_opt_fg);
     }
-    if (CompileCacheEnable() && !loaded) {
-      CacheFuncGraph(compile_cache_manager, after_opt_fg);
-      CacheFuncGraph(compile_cache_manager_forward, forward_fg);
-    }
+    CacheFuncGraph(compile_cache_manager, after_opt_fg, loaded, cache_hit);
     if (grad_param->is_jit_graph) {
       pass_grad_graph_[grad_param->graph_cache_key] = {forward_fg, after_opt_fg};
     }
@@ -601,15 +606,12 @@ std::pair<FuncGraphPtr, FuncGraphPtr> CacheFuncGraphBeforeOpt(const FuncGraphPtr
     }
     loaded = grad_graph_before_opt != nullptr && forward_graph_before_opt != nullptr;
   }
-
   if (!loaded) {
     grad_graph_before_opt = jit_grad_graph;
     forward_graph_before_opt = jit_primal_graph;
-    if (CompileCacheEnable()) {
-      CacheFuncGraph(compile_cache_manager, jit_grad_graph);
-      CacheFuncGraph(compile_cache_manager_forward, jit_primal_graph);
-    }
   }
+  CacheFuncGraph(compile_cache_manager, jit_grad_graph, loaded, false);
+  CacheFuncGraph(compile_cache_manager_forward, jit_primal_graph, loaded, false);
   return std::pair(grad_graph_before_opt, forward_graph_before_opt);
 }
 

@@ -15,9 +15,10 @@
 """
 test compile cache with control flow.
 """
-from mindspore import context, Tensor, nn
+from mindspore import context, Tensor, nn, jit
 
 
+@jit
 class Net(nn.Cell):
     def __init__(self, input1, input2):
         super().__init__()
@@ -31,8 +32,6 @@ class Net(nn.Cell):
 
 
 if __name__ == "__main__":
-    # graph mode
-    context.set_context(mode=context.GRAPH_MODE)
     context.set_context(jit_config={"jit_level": "O1"})
     x = Tensor([True, True, False])
     y = Tensor([False])

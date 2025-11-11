@@ -15,7 +15,7 @@
 """
 test compile cache with control flow.
 """
-from mindspore import context, Tensor, nn
+from mindspore import context, Tensor, nn, jit
 from mindspore.ops import composite as C
 from mindspore.common import dtype as mstype
 from mindspore.common.parameter import Parameter
@@ -23,6 +23,7 @@ from mindspore.common.parameter import Parameter
 grad_all = C.GradOperation(get_all=True)
 
 
+@jit
 class ForAfterForInIfNet(nn.Cell):
     """
     ForAfterForInIfNet
@@ -63,6 +64,7 @@ class GradNet(nn.Cell):
         super().__init__()
         self.net = net
 
+    @jit
     def construct(self, *inputs):
         return grad_all(self.net)(*inputs)
 
@@ -91,8 +93,8 @@ def run_for_after_for_in_if():
     graph_forward_res = forward_net(x)
     graph_backward_res = net(x)
 
-    # graph mode O1
-    context.set_context(mode=context.GRAPH_MODE)
+    # jit mode O1
+    context.set_context(mode=context.PYNATIVE_MODE)
     context.set_context(jit_config={"jit_level": "O1"})
     for_after_for_in_if_net = ForAfterForInIfNet()
     net = GradNet(for_after_for_in_if_net)

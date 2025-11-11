@@ -22,6 +22,10 @@
 #include <queue>
 #include <regex>
 #include <unordered_map>
+#include <set>
+#include <utility>
+#include <memory>
+#include <string>
 
 #if defined(_WIN32) || defined(_WIN64)
 #include <windows.h>
@@ -116,8 +120,8 @@ bool EnableKBKCompileCache(const FuncGraphPtr &func_graph, const device::DeviceT
   auto &context = CompileCacheContext::GetInstance();
   if (context.FrontGraph() != func_graph) {
     MS_LOG(INFO) << "Disable backend compile cache by invalid funcgraph:"
-                 << (func_graph == nullptr ? " null" : func_graph->ToString())
-                 << "and context graph:" << (context.FrontGraph() == nullptr ? " null" : func_graph->ToString()) << ".";
+                 << (func_graph == nullptr ? " null" : func_graph->ToString()) << ", and context graph:"
+                 << (context.FrontGraph() == nullptr ? " null" : context.FrontGraph()->ToString()) << ".";
     return false;
   }
   if (device_type != device::DeviceType::kAscend) {
@@ -1141,15 +1145,15 @@ bool MSBackendBase::CacheCompileGraphs() {
       (void)graphs.emplace_back(graph_compiler_->Fetch(pair.first));
     }
     MS_LOG(INFO) << "Status record: Start cache backend kernel graph.";
-    graph_compiler_->CacheGraphKbk(graphs);
+    bool is_dump_kernel_graph = graph_compiler_->CacheGraphKbk(graphs);
     bool is_dump_control_node_cache = DumpBackendInfo();
-    if (is_dump_control_node_cache) {
-      MS_LOG(INFO) << "Dump control node cache success.";
-    } else {
-      MS_LOG(INFO) << "Dump control node cache failed.";
+    if (!is_dump_kernel_graph || !is_dump_control_node_cache) {
+      MS_LOG(INFO) << "Status record: Cache backend kernel graph "
+                   << (is_dump_kernel_graph == true ? "success" : "failed") << ", dump control node cache"
+                   << (is_dump_control_node_cache == true ? "success." : "failed.");
       return false;
     }
-    MS_LOG(INFO) << "Status record: End cache backend kernel graph.";
+    MS_LOG(INFO) << "Status record: End cache backend kernel graph and control node info.";
     return true;
   } catch (std::exception &e) {
     MS_LOG(WARNING) << "Fail to dump backend compile cache, error info:" << e.what();
@@ -1997,7 +2001,7 @@ BackendGraphId MSBackendBase::Build(const FuncGraphPtr &func_graph, const Backen
   if (!load_compile_cache) {
     PROF_START(CompileSubGraph);
     bool is_dynamic_graph = common::AnfAlgo::IsDynamicShapeFuncGraph(func_graph);
-    MS_LOG(INFO) << func_graph->ToString() << ", is_dynamic_graph: " << is_dynamic_graph;
+    MS_LOG(INFO) << "Start to compile graph: " << func_graph->ToString() << ", is_dynamic_graph: " << is_dynamic_graph;
     ProcessNotSupportCnode(func_graph, device_context->GetDeviceType(), mindspore::device::DeviceType::kCPU);
     BuildSymbolEngine(func_graph);
     CompileSubGraph(func_graph, backend_jit_config);
