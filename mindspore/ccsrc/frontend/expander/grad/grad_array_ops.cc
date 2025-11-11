@@ -30,7 +30,7 @@
 #include "mindspore/ops/op_def/array_op_name.h"
 #include "mindspore/ops/op_def/array_ops.h"
 #include "frontend/expander/bprop/bprop_irbuilder.h"
-#include "grad/grad_utils.h"
+#include "frontend/expander/grad/grad_utils.h"
 #include "ir/functor.h"
 #include "utils/check_convert_utils.h"
 #include "utils/ms_context.h"

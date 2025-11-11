@@ -101,7 +101,7 @@ bool CanExpand(const std::string &name) {
 
 FuncGraphPtr GetBpropMetaFuncGraph(const PrimitivePtr &primal, const CNodePtr &cnode) {
   auto prim_name = primal->name();
-  const BpropHandle *handle = BpropIRBuilderFactory::Instance().GetBuilder(prim_name);
+  const BpropHandle *handle = GetBpropIRBuilder(prim_name);
   if (!CanExpand(prim_name) || handle == nullptr) {
     return nullptr;
   }

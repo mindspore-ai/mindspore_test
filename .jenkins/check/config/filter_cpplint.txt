@@ -111,7 +111,7 @@
 "mindspore/mindspore/ccsrc/plugin/device/ascend/kernel/aicore/op_proto"                          "build/include"
 "mindspore/mindspore/ccsrc/plugin/gpu/gpu_register_callback.cc"                                  "build/include_order"
 "mindspore/mindspore/ccsrc/frontend/jit/ps/parse/data_converter.cc"                              "runtime/int"
-"mindspore/mindspore/ops/grad/grad_array_ops.cc"        "whitespace/indent_namespace"
+"mindspore/mindspore/ccsrc/frontend/expander/grad/grad_array_ops.cc"        "whitespace/indent_namespace"
 "mindspore/mindspore/core/ir/tensor.cc"                                                          "whitespace/indent"
 "mindspore/mindspore/ops/kernel/cpu/eigen/random_poisson_cpu_kernel.cc"                          "whitespace/indent"
 "mindspore/mindspore/ops/kernel/cpu/native/random_categorical_cpu_kernel.cc"                     "whitespace/indent"

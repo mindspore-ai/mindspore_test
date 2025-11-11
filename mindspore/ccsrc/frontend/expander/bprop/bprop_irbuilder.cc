@@ -327,6 +327,10 @@ NodePtr IrBuilder::EmitValue(const ValuePtr &value) {
   infer_->Infer(node);
   return node;
 }
+
+const BpropHandle *GetBpropIRBuilder(const std::string &name) {
+  return BpropIRBuilderFactory::Instance().GetBuilder(name);
+}
 }  // namespace bprop
 }  // namespace expander
 }  // namespace mindspore

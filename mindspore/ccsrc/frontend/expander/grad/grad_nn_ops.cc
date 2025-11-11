@@ -16,7 +16,7 @@
 #include <cstdint>
 #include <memory>
 #include "frontend/expander/bprop/bprop_irbuilder.h"
-#include "grad/grad_utils.h"
+#include "frontend/expander/grad/grad_utils.h"
 #include "mindspore/ccsrc/include/utils/expander/node.h"
 #include "ir/value.h"
 #include "infer/conv2d.h"

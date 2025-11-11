@@ -15,7 +15,7 @@
  */
 #include <set>
 #include "frontend/expander/bprop/bprop_irbuilder.h"
-#include "grad/grad_utils.h"
+#include "frontend/expander/grad/grad_utils.h"
 #include "utils/ms_context.h"
 
 namespace mindspore::expander::bprop {

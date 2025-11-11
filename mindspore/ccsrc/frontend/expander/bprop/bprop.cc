@@ -31,13 +31,8 @@ namespace expander {
 namespace bprop {
 using KernelGraph = session::KernelGraph;
 
-bool HasBpropExpander(const std::string &prim_name) {
-  const BpropHandle *handle = BpropIRBuilderFactory::Instance().GetBuilder(prim_name);
-  return (handle != nullptr);
-}
-
 void BpropExpander::FreeUselessValues(const PynativeCallback &cb) {
-  auto handle = BpropIRBuilderFactory::Instance().GetBuilder(cb.opname());
+  auto handle = GetBpropIRBuilder(cb.opname());
   if (handle == nullptr) {
     MS_LOG(DEBUG) << "Bprop IRBuilder [" << cb.opname() << "] is not registered in bprop expander.";
     return;
@@ -51,7 +46,7 @@ void BpropExpander::FreeUselessValues(const PynativeCallback &cb) {
 }
 
 bool BpropExpander::IsCloneInplaceInput(const PynativeCallback &cb) {
-  auto handle = BpropIRBuilderFactory::Instance().GetBuilder(cb.opname());
+  auto handle = GetBpropIRBuilder(cb.opname());
   if (handle == nullptr) {
     MS_LOG(DEBUG) << "Bprop IRBuilder [" << cb.opname() << "] is not registered in bprop expander.";
     return false;

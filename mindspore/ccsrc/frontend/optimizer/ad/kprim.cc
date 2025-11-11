@@ -126,7 +126,7 @@ std::vector<size_t> GetNeedCloneInputIndex(const PrimitivePtr &prim) {
   if (!prim->inplace_prim()) {
     return {};
   }
-  auto handle = mindspore::expander::bprop::BpropIRBuilderFactory::Instance().GetBuilder(prim->name());
+  auto handle = mindspore::expander::bprop::GetBpropIRBuilder(prim->name());
   if (handle != nullptr && handle->clone_inplace_input_func != nullptr) {
     return prim->rw_write_input_indexes();
   }

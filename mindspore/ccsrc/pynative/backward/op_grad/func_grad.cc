@@ -692,7 +692,7 @@ void KPynativeOp(const GradParamPtr &grad_param) {
   bool is_custom_prim =
     IsPrimitiveEquals(prim, prim::kPrimHookBackward) || IsPrimitiveEquals(prim, prim::kPrimCellBackwardHook);
   if (!is_custom_prim) {
-    auto handle = expander::bprop::BpropIRBuilderFactory::Instance().GetBuilder(prim->name());
+    auto handle = expander::bprop::GetBpropIRBuilder(prim->name());
     if (handle != nullptr) {
       ProcessFuncBackwardNode(prim, handle->func, flatten_inputs, grad_param->op_grad_info, flatten_outputs);
     } else {
@@ -777,7 +777,7 @@ BackwardNodePtr SafeGetGradNodeImpl(const tensor::TensorPtr &tensor) {
   if (view_meta->creation_type() != CreationType::kDefault) {
     ProcessNoDefaultViewRebase(view_meta, false);
   }
-  auto handle = expander::bprop::BpropIRBuilderFactory::Instance().GetBuilder("AsStrided");
+  auto handle = expander::bprop::GetBpropIRBuilder("AsStrided");
   auto device_target = kernel::pyboost::OpRunStatus::Get().device_target();
   auto emitter = std::make_shared<FuncBuilder>("AsStrided", device_target, nullptr);
   MS_EXCEPTION_IF_NULL(tensor->storage_info());

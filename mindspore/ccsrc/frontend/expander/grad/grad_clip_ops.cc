@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 #include "frontend/expander/bprop/bprop_irbuilder.h"
-#include "grad/grad_utils.h"
+#include "frontend/expander/grad/grad_utils.h"
 #include "mindspore/ops/op_def/array_op_name.h"
 #include "mindspore/ops/op_def/array_ops.h"
 
