@@ -17,7 +17,7 @@
 #include <memory>
 #include <vector>
 #include "mindspore/core/include/utils/log_adapter.h"
-#include "mindspore/ccsrc/backend/common/custom_pass/custom_pass_plugin.h"
+#include "mindspore/ccsrc/include/backend/common/custom_pass/custom_pass_plugin.h"
 #include "replace_addn_fusion/replace_addn_fusion_pass.h"
 #include "add_neg_fusion/add_neg_fusion_pass.h"
 

@@ -69,7 +69,7 @@ if(MINDSPORE_INCLUDE_DIRS)
         # Add MindSpore ccsrc path, contains backend/optimizer/pass.h
         include_directories(${include_dir}/mindspore/ccsrc/)
         # Add MindSpore custom_pass path, contains custom_pass_plugin.h
-        include_directories(${include_dir}/mindspore/ccsrc/backend/common/custom_pass/)
+        include_directories(${include_dir}/mindspore/ccsrc/include/backend/common/custom_pass/)
         # Add MindSpore ops path, contains common/device_type.h
         include_directories(${include_dir}/mindspore/ops)
         include_directories(${include_dir}/mindspore/ops/kernel/include)

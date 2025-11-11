@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "backend/common/custom_pass/custom_pass_plugin.h"
+#include "backend/common/custom_pass/custom_pass_plugin_manager.h"
 
 #include <algorithm>
 #include <string>

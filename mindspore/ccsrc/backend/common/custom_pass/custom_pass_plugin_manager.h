@@ -22,29 +22,13 @@
 #include <vector>
 #include <map>
 #include <utility>
-#include "include/backend/optimizer/pass.h"
+#include "include/backend/common/custom_pass/custom_pass_plugin.h"
 #include "include/backend/common/pass_manager/pass_manager.h"
 #include "include/backend/common/pass_manager/graph_optimizer.h"
 #include "include/backend/visible.h"
 
 namespace mindspore {
 namespace opt {
-
-class BACKEND_COMMON_EXPORT CustomPassPlugin {
- public:
-  virtual ~CustomPassPlugin() = default;
-
-  virtual std::string GetPluginName() const = 0;
-
-  // Get available pass names
-  virtual std::vector<std::string> GetAvailablePassNames() const = 0;
-
-  // Create pass by name
-  virtual std::shared_ptr<Pass> CreatePass(const std::string &pass_name) const = 0;
-
-  // Default implementation: always enabled, override if needed
-  virtual bool IsEnabled() const { return true; }
-};
 
 class BACKEND_COMMON_EXPORT CustomPassPluginManager {
  public:
@@ -188,12 +172,5 @@ class BACKEND_COMMON_EXPORT CustomPassPluginManager {
 };
 }  // namespace opt
 }  // namespace mindspore
-
-#define EXPORT_CUSTOM_PASS_PLUGIN(PluginClass)                                                          \
-  extern "C" {                                                                                          \
-  BACKEND_COMMON_EXPORT mindspore::opt::CustomPassPlugin *CreatePlugin() { return new PluginClass(); }  \
-  BACKEND_COMMON_EXPORT void DestroyPlugin(mindspore::opt::CustomPassPlugin *plugin) { delete plugin; } \
-  BACKEND_COMMON_EXPORT const char *GetPluginName() { return #PluginClass; }                            \
-  }
 
 #endif  // MINDSPORE_CCSRC_BACKEND_COMMON_CUSTOM_PASS_CUSTOM_PASS_PLUGIN_H_

@@ -16,9 +16,7 @@
 #ifndef MINDSPORE_CUSTOM_PASS_ADD_NEG_FUSION_PASS_H_
 #define MINDSPORE_CUSTOM_PASS_ADD_NEG_FUSION_PASS_H_
 
-#include "mindspore/ccsrc/include/backend/optimizer/pass.h"
-#include "include/backend/common/pass_manager/pattern_to_pattern.h"
-#include "mindspore/core/include/utils/log_adapter.h"
+#include "mindspore/include/custom_pass_api.h"
 
 namespace mindspore {
 namespace opt {

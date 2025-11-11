@@ -12,4 +12,4 @@ mindspore.graph
     :template: classtemplate.rst
 
     mindspore.graph.register_custom_backend
-
+    mindspore.graph.register_custom_pass

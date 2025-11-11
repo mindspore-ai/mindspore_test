@@ -14,17 +14,9 @@
  * limitations under the License.
  */
 #include "replace_addn_fusion_pass.h"
-#include "mindspore/ccsrc/include/backend/optimizer/pass.h"
-#include "include/backend/common/pass_manager/pattern_to_pattern.h"
-#include "include/utils/anfalgo.h"
-#include "mindspore/core/include/utils/log_adapter.h"
-#include "mindspore/core/include/ir/primitive.h"
-#include "mindspore/core/include/ir/anf.h"
-#include "mindspore/core/include/ir/dtype/type_id.h"
 
 namespace mindspore {
 namespace opt {
-
 void ReplaceAddNFusionPass::DefineSrcPattern(SrcPattern *src_pattern) {
   MS_LOG(INFO) << "Defining source pattern for ReplaceAddNFusionPass";
   MS_EXCEPTION_IF_NULL(src_pattern);
@@ -71,6 +63,5 @@ bool ReplaceAddNFusionPass::CheckMatchedDAG(const PatternMap &pattern_map, const
   MS_LOG(INFO) << "CheckMatchedDAG called - returning true";
   return true;
 }
-
 }  // namespace opt
 }  // namespace mindspore
