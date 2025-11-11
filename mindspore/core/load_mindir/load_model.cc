@@ -380,6 +380,7 @@ class MSANFModelParser {
 
  private:
   void TrytoBuildCNodeAbstract();
+  void BuildCNodeAbstract(const AnfNodePtr &node, const mind_ir::AttributeProto *proto);
   bool BuildPrimitiveNode(const mind_ir::PrimitiveProto &primitive_proto);
   bool BuildPrimitiveNodeFromProto(const mind_ir::ModelProto &model_proto);
   bool BuildValueNodes(const mind_ir::ModelProto &model_proto);
@@ -2204,31 +2205,36 @@ bool MSANFModelParser::SetValueForTopGraphParameter(const FuncGraphPtr &topGraph
   return true;
 }
 
+void MSANFModelParser::BuildCNodeAbstract(const AnfNodePtr &node, const mind_ir::AttributeProto *proto) {
+  if (node->isa<CNode>()) {
+    const auto &cnode = node->cast<CNodePtr>();
+    SetCNodeAbstract(*(proto), cnode);
+  } else if (node->isa<Parameter>()) {
+    auto abs = GetNodeAbstractFromAttrProtoWithType(*(proto));
+    if (abs == nullptr) {
+      node_abstract_protos_.push_back(std::pair(node, proto));
+      MS_LOG(ERROR) << "Failed to get abstract for input node " << node->DebugString()
+                    << " from attr_proto:" << proto->DebugString();
+    }
+    node->set_abstract(abs);
+  } else {
+    MS_LOG(ERROR) << "Trying to rebuild unexpected node: " << node->DebugString();
+  }
+}
+
 void MSANFModelParser::TrytoBuildCNodeAbstract() {
   std::map<AnfNodePtr, int> visited_times;
   constexpr int kMaxCount = 3;
   while (!node_abstract_protos_.empty()) {
     auto &item = node_abstract_protos_.front();
     const auto &node = item.first;
+    const mind_ir::AttributeProto *proto = item.second;
     auto &count = visited_times[node];
     if (count++ > kMaxCount) {
       abstract_valid_ = false;
       MS_LOG(ERROR) << "Parse CNode: " << node->ToString() << " abstract error: " << item.second->DebugString();
     } else {
-      if (node->isa<CNode>()) {
-        const auto &cnode = node->cast<CNodePtr>();
-        SetCNodeAbstract(*(item.second), cnode);
-      } else if (node->isa<Parameter>()) {
-        auto abs = GetNodeAbstractFromAttrProtoWithType(*(item.second));
-        if (abs == nullptr) {
-          node_abstract_protos_.push_back(std::pair(node, item.second));
-          MS_LOG(ERROR) << "Failed to get abstract for input node " << node->DebugString()
-                        << " from attr_proto:" << item.second->DebugString();
-        }
-        node->set_abstract(abs);
-      } else {
-        MS_LOG(ERROR) << "Trying to rebuild unexpected node: " << node->DebugString();
-      }
+      BuildCNodeAbstract(node, proto);
     }
     node_abstract_protos_.pop_front();
   }

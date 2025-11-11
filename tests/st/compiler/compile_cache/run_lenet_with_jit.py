@@ -38,7 +38,7 @@ class LeNet(nn.Cell):
         self.fc2 = nn.Dense(120, 84, weight_init="normal", bias_init="zeros")
         self.fc3 = nn.Dense(84, 10, weight_init="normal", bias_init="zeros")
 
-    @jit
+    @jit(backend="ms_backend")
     def construct(self, input_x):
         output = self.conv1(input_x)
         output = self.relu(output)

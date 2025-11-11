@@ -463,8 +463,8 @@ VectorRef ExecuteForward(const pynative::GradParamPtr &grad_param, const FuncGra
   return arg_list;
 }
 
-void CacheFuncGraph(const pipeline::CompileCacheManagerPtr &compile_cache_manager, const FuncGraphPtr &fg,
-                    const bool loaded, const bool cache_hit) {
+void CacheFuncGraph(const pipeline::CompileCacheManagerPtr &compile_cache_manager, const FuncGraphPtr &fg, bool loaded,
+                    bool cache_hit) {
   if (CompileCacheEnable() && !loaded && !cache_hit) {
     {
       MsProfileStatGuard stat_guard("SaveCacheFuncGraph", "compile_cache", true);
