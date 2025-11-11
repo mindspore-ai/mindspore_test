@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CCSRC_RUNTIME_DEVICE_CPU_KERNEL_SELECT_CPU_H_
-#define MINDSPORE_CCSRC_RUNTIME_DEVICE_CPU_KERNEL_SELECT_CPU_H_
+#ifndef MINDSPORE_CCSRC_PLUGIN_CPU_KERNEL_EXECUTOR_KERNEL_SELECT_KERNEL_SELECT_CPU_H_
+#define MINDSPORE_CCSRC_PLUGIN_CPU_KERNEL_EXECUTOR_KERNEL_SELECT_KERNEL_SELECT_CPU_H_
 
 #include <utility>
 #include <string>
@@ -36,17 +36,8 @@ namespace cpu {
 using kernel::DataType;
 bool IsVmapNotSupported(const CNodePtr &node);
 CPU_EXPORT std::pair<std::string, ExceptionType> SetKernelInfoWithMsg(const CNodePtr &apply_kernel_ptr);
-
-class CPU_EXPORT CPUGraphKernelInfo : public GraphKernelInfo {
- public:
-  CPUGraphKernelInfo() = default;
-  virtual ~CPUGraphKernelInfo() = default;
-  void SetKernelInfo(const CNodePtr &kernel_node, KernelType kernel_type) override;
-};
-
-REG_GRAPH_KERNEL_INFO(kCPUDevice, CPUGraphKernelInfo);
 }  // namespace cpu
 }  // namespace device
 }  // namespace mindspore
 
-#endif  // MINDSPORE_CCSRC_RUNTIME_DEVICE_CPU_KERNEL_SELECT_CPU_H_
+#endif  // MINDSPORE_CCSRC_PLUGIN_CPU_KERNEL_EXECUTOR_KERNEL_SELECT_KERNEL_SELECT_CPU_H_

@@ -52,7 +52,7 @@ const std::map<CollectiveOpReduceType, ncclRedOp_t> kNCCLReduceTypeMap = {
 
 constexpr char kNCCLGlobalGroupName[] = "nccl_world_group";
 
-class EXPORT_NCCL_WRAPPER NvidiaCollectiveCommLib : public CollectiveCommunicationLib {
+class NvidiaCollectiveCommLib : public CollectiveCommunicationLib {
  public:
   static NvidiaCollectiveCommLib &GetInstance() {
     static NvidiaCollectiveCommLib instance;

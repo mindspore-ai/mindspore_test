@@ -14,18 +14,17 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CCSRC_RUNTIME_DEVICE_GPU_GPU_MEMORY_MANAGER_H_
-#define MINDSPORE_CCSRC_RUNTIME_DEVICE_GPU_GPU_MEMORY_MANAGER_H_
+#ifndef MINDSPORE_CCSRC_PLUGIN_GPU_RES_MANAGER_MEM_MANAGER_GPU_MEMORY_MANAGER_H_
+#define MINDSPORE_CCSRC_PLUGIN_GPU_RES_MANAGER_MEM_MANAGER_GPU_MEMORY_MANAGER_H_
 #include <vector>
 #include <string>
 #include <unordered_map>
 #include "include/runtime/hardware_abstract/memory_manager/memory_manager.h"
-#include "include/backend/visible.h"
 
 namespace mindspore {
 namespace device {
 namespace gpu {
-class GPU_EXPORT GPUMemoryManager : public MemoryManager {
+class GPUMemoryManager : public MemoryManager {
  public:
   GPUMemoryManager() = default;
   virtual ~GPUMemoryManager() = default;
@@ -66,4 +65,4 @@ class GPU_EXPORT GPUMemoryManager : public MemoryManager {
 }  // namespace gpu
 }  // namespace device
 }  // namespace mindspore
-#endif  // MINDSPORE_CCSRC_RUNTIME_DEVICE_GPU_GPU_MEMORY_MANAGER_H_
+#endif  // MINDSPORE_CCSRC_PLUGIN_GPU_RES_MANAGER_MEM_MANAGER_GPU_MEMORY_MANAGER_H_

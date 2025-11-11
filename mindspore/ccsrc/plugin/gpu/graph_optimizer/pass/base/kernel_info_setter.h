@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CCSRC_RUNTIME_DEVICE_GPU_KERNEL_INFO_SETTER_H_
-#define MINDSPORE_CCSRC_RUNTIME_DEVICE_GPU_KERNEL_INFO_SETTER_H_
+#ifndef MINDSPORE_CCSRC_PLUGIN_GPU_GRAPH_OPTIMIZER_PASS_BASE_KERNEL_INFO_SETTER_H_
+#define MINDSPORE_CCSRC_PLUGIN_GPU_GRAPH_OPTIMIZER_PASS_BASE_KERNEL_INFO_SETTER_H_
 
 #include <utility>
 #include <string>
@@ -30,7 +30,6 @@
 #include "include/backend/kernel_graph.h"
 #include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
 #include "utils/ms_context.h"
-#include "include/backend/visible.h"
 #include "mindspore/ops/op_def/conv_pool_op_name.h"
 #include "mindspore/ops/op_def/conv_pool_ops.h"
 #include "mindspore/ops/op_def/nn_op_name.h"
@@ -104,7 +103,7 @@ class FormatTransformChecker {
   bool format_transform_{true};
 };
 
-class GPU_EXPORT GPUGraphKernelInfo : public GraphKernelInfo {
+class GPUGraphKernelInfo : public GraphKernelInfo {
  public:
   GPUGraphKernelInfo() = default;
   virtual ~GPUGraphKernelInfo() = default;
@@ -116,4 +115,4 @@ REG_GRAPH_KERNEL_INFO(kGPUDevice, GPUGraphKernelInfo);
 }  // namespace device
 }  // namespace mindspore
 
-#endif  // MINDSPORE_CCSRC_RUNTIME_DEVICE_GPU_KERNEL_INFO_SETTER_H_
+#endif  // MINDSPORE_CCSRC_PLUGIN_GPU_GRAPH_OPTIMIZER_PASS_BASE_KERNEL_INFO_SETTER_H_
