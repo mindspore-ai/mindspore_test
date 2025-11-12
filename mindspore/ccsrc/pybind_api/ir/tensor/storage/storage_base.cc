@@ -18,7 +18,7 @@
 #include <string>
 #include "runtime/hardware_abstract/utils.h"
 #include "include/runtime/hardware_abstract/device_context/device_context.h"
-#include "runtime/hardware_abstract/device_context/device_context_manager.h"
+#include "include/runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "include/runtime/pipeline/pipeline.h"
 #include "include/runtime/hardware_abstract/stream/multi_stream_controller.h"
 #include "mindspore/ccsrc/pynative/utils/pyboost/pyboost_utils.h"

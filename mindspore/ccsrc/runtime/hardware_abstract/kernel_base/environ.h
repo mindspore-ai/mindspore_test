@@ -24,7 +24,7 @@
 #include "include/runtime/hardware_abstract/kernel_base/kernel.h"
 #include "ir/dtype/type_id.h"
 #include "utils/ms_context.h"
-#include "runtime/hardware_abstract/device_context/device_context_manager.h"
+#include "include/runtime/hardware_abstract/device_context/device_context_manager.h"
 
 namespace mindspore {
 namespace kernel {

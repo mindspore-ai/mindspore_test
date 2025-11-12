@@ -36,7 +36,7 @@
 #endif
 #include "include/runtime/hardware_abstract/collective/collective_communication_lib.h"
 #include "include/runtime/hardware_abstract/collective/communication_group.h"
-#include "runtime/hardware_abstract/device_context/device_context_manager.h"
+#include "include/runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "runtime/hardware_abstract/visible.h"
 
 namespace mindspore {

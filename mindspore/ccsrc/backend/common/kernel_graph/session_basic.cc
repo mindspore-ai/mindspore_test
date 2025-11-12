@@ -54,7 +54,7 @@
 #include "include/runtime/hardware_abstract/kernel_base/oplib/oplib.h"
 #include "backend/common/kernel_graph/session_factory.h"
 #ifdef ENABLE_DUMP_IR
-#include "runtime/hardware_abstract/device_context/device_context_manager.h"
+#include "include/runtime/hardware_abstract/device_context/device_context_manager.h"
 #endif
 #include "include/utils/callback.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"

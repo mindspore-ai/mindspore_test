@@ -25,7 +25,7 @@
 #include "include/utils/utils.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/runtime/hardware_abstract/memory_manager/swap_manager.h"
-#include "runtime/hardware_abstract/device_context/device_context_manager.h"
+#include "include/runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "utils/log_adapter.h"
 #include "plugin/ascend/res_manager/symbol_interface/acl_rt_symbol.h"
 #include "plugin/ascend/res_manager/symbol_interface/symbol_utils.h"

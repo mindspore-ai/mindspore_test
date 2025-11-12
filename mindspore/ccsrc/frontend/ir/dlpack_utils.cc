@@ -30,7 +30,7 @@
 #include "backend/common/device_address_utils.h"
 #include "include/runtime/pipeline/pipeline.h"
 #include "mindspore/ccsrc/pynative/utils/pyboost/functions/auto_generate/functions.h"
-#include "runtime/hardware_abstract/device_context/device_context_manager.h"
+#include "include/runtime/hardware_abstract/device_context/device_context_manager.h"
 
 namespace mindspore {
 namespace tensor {

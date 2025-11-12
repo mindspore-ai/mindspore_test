@@ -35,7 +35,7 @@
 #include "utils/log_adapter.h"
 #include "ir/tensor.h"
 #include "include/runtime/utils/runtime_conf/runtime_env.h"
-#include "runtime/hardware_abstract/device_context/device_context_manager.h"
+#include "include/runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "include/runtime/memory/mem_pool/mem_dynamic_allocator.h"
 #include "include/runtime/memory/mem_pool/mem_tracker.h"
 #include "tools/profiler/profiler.h"

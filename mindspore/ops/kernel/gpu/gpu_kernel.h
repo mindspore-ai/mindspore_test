@@ -42,7 +42,7 @@
 #include "kernel/gpu/cuda_impl/cuda_ops/cuda_common.h"
 #include "utils/ms_context.h"
 #include "include/runtime/hardware_abstract/device_context/device_context.h"
-#include "runtime/hardware_abstract/device_context/device_context_manager.h"
+#include "include/runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "runtime/hardware_abstract/utils.h"
 
 // The max_limit of tensor shape size: 2 Giga-elements(2^31, the largest number in 32 bits).

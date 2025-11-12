@@ -36,7 +36,7 @@
 #include "utils/ms_utils.h"
 #include "plugin/ascend/res_manager/mem_manager/ascend_memory_manager.h"
 #include "plugin/ascend/res_manager/stream_manager/ascend_stream_manager.h"
-#include "runtime/hardware_abstract/device_context/device_context_manager.h"
+#include "include/runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "kernel/ascend/aclnn/kernel_mod_impl/aclnn_kernel_utils.h"
 #include "kernel/ascend/visible.h"
 

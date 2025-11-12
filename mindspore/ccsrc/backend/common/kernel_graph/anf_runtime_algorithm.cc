@@ -49,7 +49,7 @@
 #include "include/backend/common/ms_device_shape_transfer.h"
 #include "frontend/jit/ps/static_analysis/static_analysis.h"
 #include "abstract/ops/primitive_infer_map.h"
-#include "runtime/hardware_abstract/device_context/device_context_manager.h"
+#include "include/runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "runtime/hardware_abstract/utils.h"
 #include "utils/trace_base.h"
 #include "utils/anf_utils.h"

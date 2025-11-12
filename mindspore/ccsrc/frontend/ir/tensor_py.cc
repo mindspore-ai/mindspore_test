@@ -31,7 +31,7 @@
 #include "include/utils/python_adapter.h"
 #include "tools/profiler/profiler.h"
 #include "include/utils/pynative/adapter.h"
-#include "runtime/hardware_abstract/device_context/device_context_manager.h"
+#include "include/runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "include/runtime/pipeline/pipeline.h"
 #include "frontend/ir/mbuf_device_address.h"
 #include "include/runtime/core/graph_scheduler/base/move_to.h"

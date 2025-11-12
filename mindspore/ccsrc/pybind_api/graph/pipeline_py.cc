@@ -42,7 +42,7 @@
 #include "backend/backend_manager/backend_manager.h"
 #include "runtime/hardware_abstract/utils.h"
 #include "include/runtime/hardware_abstract/device_context/device_context.h"
-#include "runtime/hardware_abstract/device_context/device_context_manager.h"
+#include "include/runtime/hardware_abstract/device_context/device_context_manager.h"
 
 namespace mindspore {
 namespace pipeline {

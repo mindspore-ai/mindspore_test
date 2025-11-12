@@ -28,7 +28,7 @@
 #include "include/dataset/transforms.h"
 #if defined(ENABLE_D)
 #include "include/runtime/hardware_abstract/device_context/device_context.h"
-#include "runtime/hardware_abstract/device_context/device_context_manager.h"
+#include "include/runtime/hardware_abstract/device_context/device_context_manager.h"
 #endif
 
 namespace mindspore {

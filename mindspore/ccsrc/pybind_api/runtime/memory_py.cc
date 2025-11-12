@@ -20,7 +20,7 @@
 #include "include/runtime/pipeline/pipeline.h"
 #include "device_address/device_address.h"
 #include "include/runtime/hardware_abstract/device_context/device_context.h"
-#include "runtime/hardware_abstract/device_context/device_context_manager.h"
+#include "include/runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "include/runtime/hardware_abstract/memory_manager/memory_manager.h"
 
 namespace mindspore {

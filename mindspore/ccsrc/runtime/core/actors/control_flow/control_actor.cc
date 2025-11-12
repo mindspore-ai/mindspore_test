@@ -15,7 +15,7 @@
  */
 
 #include "runtime/core/actors/control_flow/control_actor.h"
-#include "runtime/hardware_abstract/device_context/device_context_manager.h"
+#include "include/runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "include/runtime/memory/mem_pool/mem_tracker.h"
 #include "include/runtime/core/graph_scheduler/base/parameter_store.h"
 #include "mindspore/ops/op_def/framework_ops.h"

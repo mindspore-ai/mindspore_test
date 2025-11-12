@@ -43,7 +43,7 @@
 #include "include/runtime/core/graph_scheduler/base/parameter_store.h"
 #include "include/runtime/core/graph_scheduler/base/graph_parameter_store.h"
 #include "runtime/core/graph_executor/kernel_capture/graph_capture_manager.h"
-#include "runtime/hardware_abstract/device_context/device_context_manager.h"
+#include "include/runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "include/runtime/utils/runtime_conf/runtime_conf.h"
 #include "include/runtime/utils/runtime_conf/thread_bind_core.h"
 #include "include/runtime/pipeline/pipeline.h"

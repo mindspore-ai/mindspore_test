@@ -22,7 +22,7 @@
 #include "frontend/jit/pi/python_adapter/pydef.h"
 #include "pybind11/pybind11.h"
 #include "frontend/jit/pi/utils/opcode_util.h"
-#include "runtime/hardware_abstract/device_context/device_context_manager.h"
+#include "include/runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "frontend/jit/pi/utils/opcode_declare.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_info.h"
 #include "include/utils/tensor_py.h"

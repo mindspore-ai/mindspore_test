@@ -21,7 +21,7 @@
 #include <vector>
 #include "ir/tensor.h"
 #include "ir/value.h"
-#include "runtime/hardware_abstract/device_context/device_context_manager.h"
+#include "include/runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "mindspore/ccsrc/pynative/utils/pyboost/op_runner.h"
 
 namespace mindspore {

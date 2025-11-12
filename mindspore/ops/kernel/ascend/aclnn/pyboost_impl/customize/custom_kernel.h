@@ -25,7 +25,7 @@
 #include <unordered_map>
 #include "ir/tensor.h"
 #include "ir/value.h"
-#include "runtime/hardware_abstract/device_context/device_context_manager.h"
+#include "include/runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "mindspore/ccsrc/pynative/utils/pyboost/op_runner.h"
 #include "kernel/ascend/aclnn/kernel_mod_impl/aclnn_kernel_utils.h"
 #include "kernel/ascend/aclnn/pyboost_impl/aclnn_utils.h"

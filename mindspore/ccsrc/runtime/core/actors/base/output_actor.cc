@@ -17,7 +17,7 @@
 #include "runtime/core/actors/base/output_actor.h"
 #include "runtime/core/actors/base/memory_manager_actor.h"
 #include "runtime/core/graph_executor/kernel_capture/graph_capture_manager.h"
-#include "runtime/hardware_abstract/device_context/device_context_manager.h"
+#include "include/runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "backend/common/device_address_utils.h"
 #include "utils/log_adapter.h"
 #include "utils/ms_utils.h"
