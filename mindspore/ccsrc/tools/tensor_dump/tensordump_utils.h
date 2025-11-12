@@ -17,10 +17,11 @@
 #ifndef MINDSPORE_CCSRC_TOOLS_TENSOR_DUMP_TENSORDUMP_UTILS_H_
 #define MINDSPORE_CCSRC_TOOLS_TENSOR_DUMP_TENSORDUMP_UTILS_H_
 
-#include <string>
-#include <vector>
 #include <memory>
+#include <string>
 #include <variant>
+#include <vector>
+
 #include "ir/tensor_new.h"
 
 namespace mindspore::datadump {

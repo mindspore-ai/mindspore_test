@@ -15,26 +15,28 @@
  */
 #include "tools/data_dump/debugger/debugger_proto_exporter.h"
 
+#include <algorithm>
 #include <fstream>
 #include <map>
 #include <memory>
+#include <string>
 #include <utility>
-#include <algorithm>
+#include <vector>
 
-#include "mindspore/ccsrc/utils/ir_dump/anf_dump_utils.h"
 #include "include/utils/common.h"
-#include "tools/data_dump/dump_utils.h"
-#include "tools/data_dump/debugger/debugger.h"
-#include "ir/graph_utils.h"
-#include "ir/scope.h"
 #include "ir/dtype/ref.h"
 #include "ir/dtype/tensor_type.h"
+#include "ir/graph_utils.h"
+#include "ir/scope.h"
+#include "mindspore/ccsrc/utils/ir_dump/anf_dump_utils.h"
+#include "tools/data_dump/debugger/debugger.h"
+#include "tools/data_dump/debugger/debugger_utils.h"
+#include "tools/data_dump/dump_utils.h"
+#include "tools/data_dump/e2e_dump.h"
+#include "utils/anf_utils.h"
+#include "utils/file_utils.h"
 #include "utils/symbolic.h"
 #include "utils/trace_base.h"
-#include "tools/data_dump/e2e_dump.h"
-#include "utils/file_utils.h"
-#include "utils/anf_utils.h"
-#include "tools/data_dump/debugger/debugger_utils.h"
 
 namespace mindspore {
 

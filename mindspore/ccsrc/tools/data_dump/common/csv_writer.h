@@ -17,12 +17,13 @@
 #ifndef MINDSPORE_CCSRC_TOOLS_DATA_DUMP_COMMON_CSV_WRITER_H_
 #define MINDSPORE_CCSRC_TOOLS_DATA_DUMP_COMMON_CSV_WRITER_H_
 
-#include <memory>
-#include <string>
-#include <unordered_map>
 #include <fstream>
+#include <memory>
 #include <mutex>
 #include <shared_mutex>
+#include <string>
+#include <unordered_map>
+
 #include "utils/ms_utils.h"
 
 namespace mindspore {

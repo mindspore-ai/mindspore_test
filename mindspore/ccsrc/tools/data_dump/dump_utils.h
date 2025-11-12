@@ -18,14 +18,14 @@
 #define MINDSPORE_MINDSPORE_CCSRC_TOOLS_DATA_DUMP_DUMP_UTILS_H_
 
 #include <map>
-#include <vector>
-#include <string>
 #include <memory>
+#include <string>
+#include <vector>
 
-#include "include/runtime/hardware_abstract/kernel_base/kernel_tensor.h"
-#include "include/backend/kernel_graph.h"
-#include "include/utils/contract.h"
 #include "device_address/device_address.h"
+#include "include/backend/kernel_graph.h"
+#include "include/runtime/hardware_abstract/kernel_base/kernel_tensor.h"
+#include "include/utils/contract.h"
 #include "tools/visible.h"
 
 using DeviceTensor = mindspore::device::DeviceAddress;

@@ -19,9 +19,10 @@
 #include <iostream>
 #include <string>
 #include <vector>
-#include "tools/data_dump/debugger/debugger.h"
-#include "include/runtime/hardware_abstract/kernel_base/kernel.h"
+
 #include "include/runtime/hardware_abstract/device_context/device_context.h"
+#include "include/runtime/hardware_abstract/kernel_base/kernel.h"
+#include "tools/data_dump/debugger/debugger.h"
 #include "tools/visible.h"
 
 using mindspore::device::DeviceContext;

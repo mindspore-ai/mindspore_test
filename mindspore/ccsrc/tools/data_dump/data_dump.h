@@ -13,13 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <vector>
 #include <memory>
 #include <string>
-#include "utils/ms_context.h"
-#include "tools/visible.h"
-#include "ir/anf.h"
+#include <vector>
+
 #include "include/runtime/hardware_abstract/device_context/device_context.h"
+#include "ir/anf.h"
+#include "tools/visible.h"
+#include "utils/ms_context.h"
 
 #ifndef MINDSPORE_CCSRC_TOOLS_DATA_DUMP_DATA_DUMP_H_
 #define MINDSPORE_CCSRC_TOOLS_DATA_DUMP_DATA_DUMP_H_
@@ -41,4 +42,4 @@ BACKEND_COMMON_EXPORT void DataDump(const CNodePtr &cnode,
                                     const device::DeviceContext *device_context);
 }  // namespace mindspore::datadump
 
-#endif
+#endif  // MINDSPORE_CCSRC_TOOLS_DATA_DUMP_DATA_DUMP_H_

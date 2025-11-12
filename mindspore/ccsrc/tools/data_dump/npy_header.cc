@@ -14,15 +14,16 @@
  * limitations under the License.
  */
 
-#include "tools/dump/npy_header.h"
+#include "tools/data_dump/npy_header.h"
 
-#include <utility>
 #include <sstream>
+#include <string>
+#include <utility>
 
-#include "utils/hash_map.h"
 #include "ir/dtype.h"
-#include "utils/log_adapter.h"
 #include "utils/convert_utils_base.h"
+#include "utils/hash_map.h"
+#include "utils/log_adapter.h"
 
 namespace mindspore {
 namespace {

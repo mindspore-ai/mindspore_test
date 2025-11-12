@@ -15,25 +15,27 @@
  */
 
 #include "tools/data_dump/data_dump.h"
-#include <mutex>
-#include <vector>
-#include <memory>
-#include <string>
+
 #include <algorithm>
-#include "utils/log_adapter.h"
+#include <memory>
+#include <mutex>
+#include <string>
+#include <vector>
+
 #include "tools/data_dump/cpu_e2e_dump.h"
 #include "tools/data_dump/e2e_dump.h"
+#include "utils/log_adapter.h"
 #include "utils/ms_context.h"
 #ifdef ENABLE_DEBUGGER
 #include "tools/data_dump/debugger/debugger.h"
 #include "tools/data_dump/debugger/debugger_utils.h"
 #include "tools/data_dump/device_statistic/mem_manager.h"
 #endif
+#include "include/utils/anfalgo.h"
 #include "include/utils/callback.h"
 #include "include/utils/common.h"
 #include "tools/data_dump/dump_json_parser.h"
 #include "tools/silent_detect/checksum/checksum.h"
-#include "include/utils/anfalgo.h"
 #include "tools/tensor_dump/tensordump_utils.h"
 
 namespace {

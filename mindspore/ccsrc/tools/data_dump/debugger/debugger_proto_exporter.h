@@ -21,12 +21,11 @@
 #include <vector>
 
 #include "include/utils/common.h"
-
-#include "tools/data_dump/dump_json_parser.h"
+#include "proto/debug_graph.pb.h"
 #include "tools/data_dump/debugger/proto_exporter.h"
+#include "tools/data_dump/dump_json_parser.h"
 #include "utils/symbolic.h"
 #include "utils/trace_base.h"
-#include "proto/debug_graph.pb.h"
 
 namespace mindspore {
 class DebuggerProtoExporter {

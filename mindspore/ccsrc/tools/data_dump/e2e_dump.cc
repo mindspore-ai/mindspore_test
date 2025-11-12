@@ -17,33 +17,35 @@
 #include "tools/data_dump/e2e_dump.h"
 
 #include <unistd.h>
-#include <sstream>
+
 #include <algorithm>
 #include <map>
 #include <memory>
 #include <set>
+#include <sstream>
+#include <string>
 #include <utility>
 #include <vector>
-#include <string>
-#include "ir/tensor_new.h"
-#include "tools/data_dump/dump_json_parser.h"
-#include "mindspore/ccsrc/utils/ir_dump/anf_dump_utils.h"
-#include "include/utils/common.h"
-#include "include/utils/convert_utils.h"
+
 #include "include/backend/anf_runtime_algorithm.h"
-#include "include/utils/anfalgo.h"
-#include "utils/ms_context.h"
-#include "include/utils/config_manager.h"
-#include "utils/file_utils.h"
-#include "tools/data_dump/tensor_stat_dump.h"
-#include "tools/data_dump/common/csv_writer.h"
 #include "include/runtime/hardware_abstract/device_context/device_context_manager.h"
+#include "include/utils/anfalgo.h"
+#include "include/utils/common.h"
+#include "include/utils/config_manager.h"
+#include "include/utils/convert_utils.h"
+#include "ir/tensor_new.h"
+#include "mindspore/ccsrc/utils/ir_dump/anf_dump_utils.h"
+#include "tools/data_dump/common/csv_writer.h"
 #include "tools/data_dump/debugger/debugger_utils.h"
+#include "tools/data_dump/dump_json_parser.h"
+#include "tools/data_dump/tensor_stat_dump.h"
+#include "utils/file_utils.h"
+#include "utils/ms_context.h"
 #ifdef ENABLE_DEBUGGER
 #include "ops/op_def.h"
 #include "tools/data_dump/debug_services.h"
-#include "tools/data_dump/tensor_load.h"
 #include "tools/data_dump/debugger/debugger.h"
+#include "tools/data_dump/tensor_load.h"
 #endif
 
 namespace mindspore {

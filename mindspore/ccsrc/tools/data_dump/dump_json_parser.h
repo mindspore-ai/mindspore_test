@@ -17,17 +17,18 @@
 #ifndef MINDSPORE_MINDSPORE_CCSRC_TOOLS_DATA_DUMP_DUMP_JSON_PARSER_H_
 #define MINDSPORE_MINDSPORE_CCSRC_TOOLS_DATA_DUMP_DUMP_JSON_PARSER_H_
 
-#include <string>
 #include <map>
-#include <set>
-#include <mutex>
-#include <vector>
 #include <memory>
+#include <mutex>
 #include <regex>
-#include "nlohmann/json.hpp"
-#include "utils/ms_utils.h"
+#include <set>
+#include <string>
+#include <vector>
+
 #include "include/backend/kernel_graph.h"
+#include "nlohmann/json.hpp"
 #include "tools/visible.h"
+#include "utils/ms_utils.h"
 
 namespace mindspore {
 void CheckJsonUnsignedType(const nlohmann::json &content, const std::string &key);

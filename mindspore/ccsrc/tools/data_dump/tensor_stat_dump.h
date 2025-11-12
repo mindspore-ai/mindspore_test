@@ -17,13 +17,14 @@
 #ifndef MINDSPORE_MINDSPORE_CCSRC_TOOLS_DATA_DUMP_TENSOR_STAT_DUMP_H_
 #define MINDSPORE_MINDSPORE_CCSRC_TOOLS_DATA_DUMP_TENSOR_STAT_DUMP_H_
 
-#include <memory>
-#include <string>
 #include <fstream>
+#include <memory>
 #include <mutex>
-#include "utils/ms_utils.h"
-#include "tools/visible.h"
+#include <string>
+
 #include "ir/dtype/type_id.h"
+#include "tools/visible.h"
+#include "utils/ms_utils.h"
 
 namespace mindspore {
 class Debugger;

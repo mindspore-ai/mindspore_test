@@ -1,5 +1,5 @@
 /**
- * Copyright 2025 Huawei Technologies Co., Ltd
+ * Copyright 2021-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,23 +14,16 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CCSRC_DEBUG_DUMP_UTILS_H_
-#define MINDSPORE_CCSRC_DEBUG_DUMP_UTILS_H_
+#ifndef MINDSPORE_CCSRC_TOOLS_DATA_DUMP_NPY_HEADER_H_
+#define MINDSPORE_CCSRC_TOOLS_DATA_DUMP_NPY_HEADER_H_
 
 #include <string>
 
-#include "utils/ms_utils.h"
+#include "ir/dtype/type_id.h"
 #include "tools/visible.h"
-#include "ir/tensor.h"
+#include "utils/shape_utils.h"
 
 namespace mindspore {
-namespace datadump {
-
-DUMP_EXPORT std::uint32_t GetRankID();
-DUMP_EXPORT bool StartsWith(const std::string &, const std::string &);
-DUMP_EXPORT bool EndsWith(const std::string &, const std::string &);
-DUMP_EXPORT void SaveTensor2NPY(std::string file_name, mindspore::tensor::TensorPtr tensor_ptr);
-
-}  // namespace datadump
+std::string GenerateNpyHeader(const ShapeVector &shape, TypeId type_id, bool fortran_order = false);
 }  // namespace mindspore
-#endif  // MINDSPORE_CCSRC_DEBUG_DUMP_UTILS_H_
+#endif  // MINDSPORE_CCSRC_TOOLS_DATA_DUMP_NPY_HEADER_H_

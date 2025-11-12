@@ -17,19 +17,20 @@
 #define MINDSPORE_CCSRC_TOOLS_DATA_DUMP_DEBUGGER_DEBUGGER_H_
 
 #include <list>
+#include <map>
 #include <memory>
+#include <set>
 #include <string>
 #include <utility>
 #include <vector>
-#include <map>
-#include <set>
+
+#include "device_address/device_address.h"
 #include "google/protobuf/repeated_field.h"
 #include "include/backend/kernel_graph.h"
-#include "device_address/device_address.h"
 #include "include/runtime/hardware_abstract/device_context/device_context.h"
-#include "tools/visible.h"
-#include "tools/tensor_data.h"
 #include "tools/data_dump/debug_services.h"
+#include "tools/tensor_data.h"
+#include "tools/visible.h"
 
 namespace debugger {
 class Chunk;

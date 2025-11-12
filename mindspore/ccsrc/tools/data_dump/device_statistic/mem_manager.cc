@@ -14,14 +14,16 @@
  * limitations under the License.
  */
 #include "tools/data_dump/device_statistic/mem_manager.h"
+
 #include <memory>
 #include <string>
 #include <utility>
 #include <vector>
-#include "ir/dtype/tensor_type.h"
-#include "include/utils/common.h"
+
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/runtime/memory/mem_pool/mem_tracker.h"
+#include "include/utils/common.h"
+#include "ir/dtype/tensor_type.h"
 
 namespace mindspore {
 

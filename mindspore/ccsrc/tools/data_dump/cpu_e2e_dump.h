@@ -56,4 +56,4 @@ class TOOLS_EXPORT CPUE2eDump {
   inline static unsigned int prev_run_iter_ = UINT32_MAX;
 };
 }  // namespace mindspore
-#endif  // MINDSPORE_MINDSPORE_CCSRC_DEBUG_DATA_DUMP_CPU_E_2_E_DUMP_H_
+#endif  // MINDSPORE_MINDSPORE_CCSRC_TOOLS_DATA_DUMP_CPU_E_2_E_DUMP_H_

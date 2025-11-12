@@ -14,35 +14,36 @@
  * limitations under the License.
  */
 #include "tools/data_dump/dump_utils.h"
+
 #include <dirent.h>
 #ifdef ENABLE_DEBUGGER
 #include <sys/stat.h>
 #endif
-#include <map>
-#include <vector>
-#include <string>
-#include <stack>
-#include <queue>
-#include <memory>
 #include <algorithm>
 #include <functional>
+#include <map>
+#include <memory>
+#include <queue>
+#include <stack>
+#include <string>
+#include <vector>
 
 #include "mindspore/core/include/ir/tensor_new.h"
-#include "utils/ms_context.h"
 #include "tools/data_dump/dump_json_parser.h"
+#include "utils/ms_context.h"
 #ifdef ENABLE_DEBUGGER
 #include "tools/data_dump/debugger/debugger.h"
 #include "tools/tensor_data.h"
 #endif
 #include "include/backend/anf_runtime_algorithm.h"
-#include "include/utils/anfalgo.h"
-#include "include/utils/utils.h"
-#include "include/utils/common.h"
-#include "include/runtime/hardware_abstract/kernel_base/device_tensor_store.h"
 #include "include/runtime/hardware_abstract/device_context/device_context.h"
 #include "include/runtime/hardware_abstract/device_context/device_context_manager.h"
-#include "utils/file_utils.h"
+#include "include/runtime/hardware_abstract/kernel_base/device_tensor_store.h"
+#include "include/utils/anfalgo.h"
+#include "include/utils/common.h"
+#include "include/utils/utils.h"
 #include "runtime/hardware_abstract/utils.h"
+#include "utils/file_utils.h"
 
 using mindspore::runtime::DeviceTensorStore;
 

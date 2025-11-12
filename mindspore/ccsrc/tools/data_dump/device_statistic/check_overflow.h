@@ -16,14 +16,15 @@
 
 #ifndef MINDSPORE_CCSRC_TOOLS_DATA_DUMP_DEVICE_STATISTIC_CHECK_OVERFLOW_H_
 #define MINDSPORE_CCSRC_TOOLS_DATA_DUMP_DEVICE_STATISTIC_CHECK_OVERFLOW_H_
+#include <map>
 #include <set>
 #include <string>
 #include <vector>
-#include <map>
-#include "tools/data_dump/device_statistic/statistic_kernel.h"
-#include "op_def/nn_op_name.h"
-#include "tools/visible.h"
+
 #include "include/runtime/memory/mem_pool/mem_tracker.h"
+#include "op_def/nn_op_name.h"
+#include "tools/data_dump/device_statistic/statistic_kernel.h"
+#include "tools/visible.h"
 
 namespace mindspore {
 

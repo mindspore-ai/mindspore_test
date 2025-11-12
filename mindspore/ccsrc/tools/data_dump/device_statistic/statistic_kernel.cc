@@ -14,18 +14,20 @@
  * limitations under the License.
  */
 #include "tools/data_dump/device_statistic/statistic_kernel.h"
+
 #include <algorithm>
 #include <memory>
 #include <string>
 #include <utility>
 #include <vector>
-#include "tools/data_dump/debugger/debugger_utils.h"
-#include "tools/data_dump/device_statistic/mem_manager.h"
-#include "include/utils/common.h"
-#include "include/runtime/memory/mem_pool/mem_tracker.h"
+
 #include "include/runtime/hardware_abstract/device_context/device_context.h"
 #include "include/runtime/hardware_abstract/device_context/device_context_manager.h"
+#include "include/runtime/memory/mem_pool/mem_tracker.h"
+#include "include/utils/common.h"
 #include "ir/tensor_new.h"
+#include "tools/data_dump/debugger/debugger_utils.h"
+#include "tools/data_dump/device_statistic/mem_manager.h"
 
 namespace mindspore {
 

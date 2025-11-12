@@ -15,32 +15,37 @@
  */
 
 #include "tools/data_dump/debugger/debugger.h"
+
 #include <dirent.h>
-#include <tuple>
-#include <vector>
+
 #include <algorithm>
 #include <iostream>
 #include <map>
+#include <memory>
 #include <regex>
-#include "tools/data_dump/dump_json_parser.h"
+#include <string>
+#include <tuple>
+#include <vector>
+
 #include "backend/common/kernel_graph/session_basic.h"
 #include "include/backend/anf_runtime_algorithm.h"
+#include "include/runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "include/utils/anfalgo.h"
-#include "tools/data_dump/e2e_dump.h"
+#include "include/utils/comm_manager.h"
 #include "include/utils/config_manager.h"
 #include "include/utils/env_config_parser.h"
-#include "include/utils/comm_manager.h"
-#include "include/runtime/hardware_abstract/device_context/device_context_manager.h"
-#include "mindspore/ccsrc/utils/ir_dump/anf_ir_dump.h"
 #include "mindspore/ccsrc/utils/ir_dump/anf_dump_utils.h"
+#include "mindspore/ccsrc/utils/ir_dump/anf_ir_dump.h"
+#include "tools/data_dump/dump_json_parser.h"
+#include "tools/data_dump/e2e_dump.h"
 #ifdef ENABLE_DEBUGGER
 #include "tools/data_dump/debugger/debugger_proto_exporter.h"
 #endif
-#include "tools/data_dump/debugger/proto_exporter.h"
-#include "tools/data_dump/debugger/debugger_utils.h"
-#include "tools/data_dump/debug_services.h"
-#include "tools/dump/utils.h"
 #include "proto/debug_graph.pb.h"
+#include "tools/data_dump/debug_services.h"
+#include "tools/data_dump/debugger/debugger_utils.h"
+#include "tools/data_dump/debugger/proto_exporter.h"
+#include "tools/data_dump/utils.h"
 
 using debugger::GraphProto;
 using debugger::ModelProto;

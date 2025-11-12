@@ -56,7 +56,7 @@ install(
 install(
   TARGETS mindspore_core mindspore_ops mindspore_common mindspore_ms_backend mindspore_pyboost mindspore_pynative
         mindspore_backend_manager mindspore_hardware_abstract mindspore_frontend mindspore_profiler
-        mindspore_memory_pool mindspore_runtime_pipeline mindspore_dump mindspore_backend_common
+        mindspore_memory_pool mindspore_runtime_pipeline mindspore_backend_common
         mindspore_runtime_utils mindspore_cluster mindspore_tools mindspore_pynative_utils
   DESTINATION ${INSTALL_LIB_DIR}
   COMPONENT mindspore

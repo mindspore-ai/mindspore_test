@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 #include <string>
+
 #include "tools/data_dump/debugger/proto_exporter.h"
 #include "utils/log_adapter.h"
 namespace mindspore {

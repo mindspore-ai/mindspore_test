@@ -17,9 +17,9 @@
 #ifndef MINDSPORE_CCSRC_TOOLS_DATA_DUMP_TENSOR_INFO_COLLECT_H_
 #define MINDSPORE_CCSRC_TOOLS_DATA_DUMP_TENSOR_INFO_COLLECT_H_
 
-#include <vector>
-#include <string>
 #include <map>
+#include <string>
+#include <vector>
 
 #include "include/runtime/hardware_abstract/kernel_base/kernel.h"
 
@@ -90,4 +90,4 @@ class TensorInfoCommForDump {
 };
 
 }  // namespace mindspore
-#endif  // MINDSPORE_CCSRC_DEBUG_TENSOR_INFO_COLLECT_H_
+#endif  // MINDSPORE_CCSRC_TOOLS_DATA_DUMP_TENSOR_INFO_COLLECT_H_

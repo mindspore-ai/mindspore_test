@@ -18,8 +18,9 @@
 
 #include <string>
 #include <vector>
-#include "utils/ms_utils.h"
+
 #include "tools/visible.h"
+#include "utils/ms_utils.h"
 
 namespace mindspore {
 
@@ -48,4 +49,4 @@ class TOOLS_EXPORT DumpControl {
 
 }  // namespace mindspore
 
-#endif
+#endif  // MINDSPORE_MINDSPORE_CCSRC_TOOLS_DATA_DUMP_DUMP_CONTROL_H_
