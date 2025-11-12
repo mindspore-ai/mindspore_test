@@ -30,6 +30,7 @@
 #include "ir/func_graph.h"
 #include "frontend/operator/ops.h"
 #include "ir/func_graph_flag.h"
+#include "utils/convert_utils_base.h"
 
 namespace mindspore {
 namespace opt {
@@ -218,7 +219,7 @@ static inline void UpdateAbstractFunctions(const CNodePtr &caller, const CNodePt
     return;
   }
   auto &all_users = iter->second;
-  constexpr size_t switch_branch_pos = 2;
+  constexpr int switch_branch_pos = 2;
   for (auto &user : all_users) {
     auto node = user.first;
     auto index = user.second;
@@ -227,7 +228,7 @@ static inline void UpdateAbstractFunctions(const CNodePtr &caller, const CNodePt
     if (IsPrimitiveCNode(node, prim::kPrimSwitch) && union_abs->isa<abstract::AbstractFuncUnion>()) {
       auto func_union_abstract = dyn_cast<abstract::AbstractFuncUnion>(union_abs);
       const auto &func_list = func_union_abstract->func_list();
-      if (func_list.size() <= index - switch_branch_pos) {
+      if (SizeToInt(func_list.size()) <= index - switch_branch_pos) {
         MS_LOG(EXCEPTION) << "Func list size: " << func_list.size()
                           << " is not compatible with function position: " << index - switch_branch_pos;
       }
