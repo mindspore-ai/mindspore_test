@@ -63,24 +63,25 @@ def test_binary_op_reference_backward(mode, op_info):
     fact.test_op_reference(grad_cmp=True)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'],
+@arg_mark(plat_marks=['platform_ascend', 'platform_ascend910b'],
           level_mark='level0',
           card_mark='onecard',
           essential_mark='essential')
 @pytest.mark.parametrize("mode", ['pynative', 'kbk'])
 @pytest.mark.parametrize("op_info", binary_op_db)
-def test_binary_op_extremal_values_reference(mode, op_info):
+def test_binary_op_type_promotion(mode, op_info):
+
     '''
     Feature: Binary operations
-    Description: Compare extremal values, such as inf, -inf, nan.
+    Description: Compare tensor type promotion.
     Expectation: MindSpore matches Benchmark for outputs.
     '''
     fact = BinaryOpsFactory(
         op_info=get_op_info(op_info),
     )
     fact.set_context_mode(mode=mode)
-    fact.test_binary_op_extremal_values_reference()
-    fact.test_binary_op_extremal_values_reference(grad_cmp=True)
+    fact.test_binary_op_tensor_type_promotion()
+    fact.test_binary_op_scalar_type_promotion()
 
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_ascend910b',

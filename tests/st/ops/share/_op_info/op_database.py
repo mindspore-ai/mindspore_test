@@ -190,7 +190,7 @@ def error_inputs_add_sub_ext_func(op_info: OpInfo, dtype=None, device=None, **kw
 def add_ext_func_grad_without_kwargs(x, y, alpha=1):
     return mint.add(x, y, alpha=alpha)
 
-def sub_ext_func_grad_without_kwargs_without_kwargs(x, y, alpha=1):
+def sub_ext_func_grad_without_kwargs(x, y, alpha=1):
     return mint.sub(x, y, alpha=alpha)
 
 # wrap tensor method for tanh
@@ -543,7 +543,7 @@ op_db: Dict[str, OpInfo] = {
     'mint.sub': BinaryOpInfo(
         name='mint.sub',
         op=mint.sub,
-        op_func_without_kwargs=sub_ext_func_grad_without_kwargs_without_kwargs,
+        op_func_without_kwargs=sub_ext_func_grad_without_kwargs,
         ref=torch.sub,
         # tensor_variant is now a unused parameter, may be removed in the future
         tensor_variant=lambda op_input, *op_args, **op_kwargs: op_input.sub(op_args[0], alpha=op_kwargs.get('alpha', 1)),
@@ -565,6 +565,7 @@ op_db: Dict[str, OpInfo] = {
         #dtypes_gpu=tuple(d for d in dtypes_as_torch if (d.is_floating_point or d.is_complex) and d != ms.bfloat16),
         dtypes_cpu=(),
         dtypes_gpu=(),
+        default_loss_override={ms.float16: 1e-3, ms.float32: 1e-4},
     ),
     'Tensor.tanh': UnaryOpInfo(
         name='Tensor.tanh',

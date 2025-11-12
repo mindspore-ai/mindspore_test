@@ -62,6 +62,7 @@ class OpInfo:
         op_dynamic_inputs_func: Function that generates dynamic-shape samples.
         op_error_inputs_func: Function that generates error/negative samples.
 
+        domain: The [low, high) domain of the operator.
         is_differentiable: Whether gradients are expected/computed for the op.
         is_inplace_op: Whether the op mutates its input (in-place semantics).
         convert_extra_uint: Whether to convert extra uint dtypes for references
@@ -73,6 +74,8 @@ class OpInfo:
             'single_golden', or 'double_golden'.
         default_golden_loss_func: Callable returning default numeric tolerance
             (rtol/atol) based on dtype.
+        default_loss_override: A dictionary of overridden loss for specific dtype. The key is the dtype,
+            the value is the loss. Only works for compare_method 'default_golden'.
     """
     # name of primitive, defined in xxx_op.yaml file.
     name: str
@@ -90,7 +93,7 @@ class OpInfo:
 
     # function to generate basic reference inputs (basic shape/broadcasting cases) for the op.
     op_basic_reference_inputs_func: Optional[Callable] = None
-    # function to generate extra reference inputs (discontinuous/special values/large or small values cases) for the op.
+    # function to generate extra reference inputs (discontiguous/special values/large or small values cases) for the op.
     op_extra_reference_inputs_func: Optional[Callable] = None
     # function to generate dynamic inputs for the op.
     op_dynamic_inputs_func: Optional[Callable] = None
@@ -98,6 +101,7 @@ class OpInfo:
     op_error_inputs_func: Optional[Callable] = None
 
     # extra options for the op.
+    domain: Optional[tuple] = None
     is_differentiable: Optional[bool] = True
     is_inplace_op: Optional[bool] = False
     convert_extra_uint: Optional[bool] = True
@@ -106,6 +110,7 @@ class OpInfo:
     # comparison params
     compare_method: Optional[str] = 'default_golden'
     default_golden_loss_func: Optional[Callable] = get_default_loss
+    default_loss_override: Optional[dict] = None
 
     def __post_init__(self):
         if not self.dtypes_intersection:
@@ -157,11 +162,11 @@ def basic_reference_inputs_binary_op_common_func(
     )
 
     for input_shape, other_shape in shapes:
-        _input = make_func(input_shape)
-        _other = make_func(other_shape)
+        _input = make_func(input_shape, low=op_info.input_low, high=op_info.input_high)
+        _other = make_func(other_shape, low=op_info.other_low, high=op_info.other_high)
 
         yield OpSampleInput(
-            _input,
+            op_input=_input,
             op_args=(_other,),
             op_name=op_info.name,
         )
@@ -195,8 +200,22 @@ def _generate_binary_op_tensors_sample_inputs_func(
 
     for shape in shapes:
         yield OpSampleInput(
-            op_input=make_tensor(shape, dtype, device=device),
-            op_args=(make_tensor(shape, dtype, device=device),),
+            op_input=make_tensor(
+                shape,
+                dtype,
+                device=device,
+                low=op_info.input_low,
+                high=op_info.input_high
+            ),
+            op_args=(
+                make_tensor(
+                    shape,
+                    dtype,
+                    device=device,
+                    low=op_info.other_low,
+                    high=op_info.other_high
+                ),
+            ),
             op_kwargs={},
             op_name=f"{op_info.name}_tensor_inputs",
         )
@@ -353,8 +372,24 @@ def _generate_binary_op_broadcasting_and_discontiguous_tensor_inputs_func(
         _input_shape, _other_shape = shape_pair
 
         yield OpSampleInput(
-            op_input=make_tensor(_input_shape, dtype=dtype, device=device, discontiguous=discontiguous),
-            op_args=(make_tensor(_other_shape, dtype=dtype, device=device, discontiguous=discontiguous),),
+            op_input=make_tensor(
+                _input_shape,
+                dtype=dtype,
+                device=device,
+                discontiguous=discontiguous,
+                low=op_info.input_low,
+                high=op_info.input_high,
+            ),
+            op_args=(
+                make_tensor(
+                    _other_shape,
+                    dtype=dtype,
+                    device=device,
+                    discontiguous=discontiguous,
+                    low=op_info.other_low,
+                    high=op_info.other_high,
+                ),
+            ),
             op_kwargs={},
             op_name=f"{op_info.name}_broadcasting_and_discontiguous_tensor_inputs",
         )
@@ -390,7 +425,7 @@ def _generate_binary_op_scalar_inputs_func(
     if op_info.supports_left_python_scalar:
         for shape in shapes:
             yield OpSampleInput(
-                op_input=make_func(shape),
+                op_input=make_func(shape, low=op_info.input_low, high=op_info.input_high),
                 op_args=(_scalar,),
                 op_kwargs={},
                 op_name=f"{op_info.name}_scalarxtensor_inputs",
@@ -400,7 +435,7 @@ def _generate_binary_op_scalar_inputs_func(
         for shape in shapes:
             yield OpSampleInput(
                 op_input=_scalar,
-                op_args=(make_func(shape),),
+                op_args=(make_func(shape, low=op_info.other_low, high=op_info.other_high),),
                 op_kwargs={},
                 op_name=f"{op_info.name}_tensorxscalar_inputs",
             )
@@ -412,6 +447,50 @@ def _generate_binary_op_scalar_inputs_func(
             op_kwargs={},
             op_name=f"{op_info.name}_scalarxscalar_inputs",
         )
+
+def _generate_binary_op_extremal_value_tensor_inputs_func(
+    op_info: OpInfo,
+    dtype,
+    device=None,
+    **kwargs
+):
+    """Generate tensor-tensor inputs with extremal value for stress testing.
+
+    Args:
+        op_info: Operator metadata (includes Python scalar support flags).
+        dtype: Data type for generated tensors.
+        device: Target device.
+        kwargs: Additional options (unused).
+
+    Returns:
+        Generator[OpSampleInput]: Inputs covering extremal value.
+    """
+    # inf and nan is unsupported on Ascend910 devices.
+    if device == 'ascend':
+        ascend_name = MSContext.get_instance().get_ascend_soc_version()
+        if ascend_name == 'ascend910':
+            warnings.warn("Inf and NaN are unsupported on current Ascend devices.")
+            return
+
+    S = SMALL_DIM_SIZE
+    yield OpSampleInput(
+        op_input=make_tensor_with_np_array(np.full((S, S), np.inf), dtype=dtype, device=device),
+        op_args=(make_tensor_with_np_array(np.full((S, S), np.inf), dtype=dtype, device=device),),
+        op_kwargs={},
+        op_name=op_info.name,
+    )
+    yield OpSampleInput(
+        op_input=make_tensor_with_np_array(np.full((S, S), -np.inf), dtype=dtype, device=device),
+        op_args=(make_tensor_with_np_array(np.full((S, S), -np.inf), dtype=dtype, device=device),),
+        op_kwargs={},
+        op_name=op_info.name,
+    )
+    yield OpSampleInput(
+        op_input=make_tensor_with_np_array(np.full((S, S), np.nan), dtype=dtype, device=device),
+        op_args=(make_tensor_with_np_array(np.full((S, S), np.nan), dtype=dtype, device=device),),
+        op_kwargs={},
+        op_name=op_info.name,
+    )
 
 
 def extra_reference_inputs_binary_op_common_func(
@@ -436,15 +515,21 @@ def extra_reference_inputs_binary_op_common_func(
     # tensors with many kinds of shapes
     yield from _generate_binary_op_tensors_sample_inputs_func(op_info, dtype, device, **kwargs)
     # tensors with small value
-    if dtype != ms.bool_:
+    if not op_info.disable_small_value_tensor_inputs and dtype != ms.bool_:
         yield from _generate_binary_op_small_value_tensor_inputs_func(op_info, dtype, device, **kwargs)
     # tensors with large value
-    if dtype not in (ms.bool_, ms.uint8, ms.int8):
+    if not op_info.disable_large_value_tensor_inputs and dtype not in (ms.bool_, ms.uint8, ms.int8):
         yield from _generate_binary_op_large_value_tensor_inputs_func(op_info, dtype, device, **kwargs)
     # broadcasting tensors and contiguous or discontiguous tensors
-    yield from _generate_binary_op_broadcasting_and_discontiguous_tensor_inputs_func(op_info, dtype, device, **kwargs)
+    if not op_info.disable_broadcasting_and_discontiguous_tensor_inputs:
+        yield from _generate_binary_op_broadcasting_and_discontiguous_tensor_inputs_func(
+            op_info, dtype, device, **kwargs)
     # scalarxtensor, tensorxscalar and scalarxscalar
-    yield from _generate_binary_op_scalar_inputs_func(op_info, dtype, device, **kwargs)
+    if not op_info.disable_scalar_inputs:
+        yield from _generate_binary_op_scalar_inputs_func(op_info, dtype, device, **kwargs)
+    # tensor with extremal value
+    if not op_info.disable_extremal_value_tensor_inputs and (dtype.is_floating_point or dtype.is_complex):
+        yield from _generate_binary_op_extremal_value_tensor_inputs_func(op_info, dtype, device, **kwargs)
 
 
 # op_dynamic_inputs_func for ops
@@ -477,14 +562,14 @@ def dynamic_inputs_binary_op_common_func(
             ),
             op_running_inputs=(
                 OpSampleInput(
-                    op_input=make_func(shape=(2, 3)),
-                    op_args=(make_func(shape=(2, 3)),),
+                    op_input=make_func(shape=(2, 3), low=op_info.input_low, high=op_info.input_high),
+                    op_args=(make_func(shape=(2, 3), low=op_info.other_low, high=op_info.other_high),),
                     op_kwargs={},
                     op_name=f"{op_info.name}_dynamic_shape_running_input",
                 ),
                 OpSampleInput(
-                    op_input=make_func(shape=(4, 5)),
-                    op_args=(make_func(shape=(4, 5)),),
+                    op_input=make_func(shape=(4, 5), low=op_info.input_low, high=op_info.input_high),
+                    op_args=(make_func(shape=(4, 5), low=op_info.other_low, high=op_info.other_high),),
                     op_kwargs={},
                     op_name=f"{op_info.name}_dynamic_shape_running_input",
                 ),
@@ -501,14 +586,14 @@ def dynamic_inputs_binary_op_common_func(
             ),
             op_running_inputs=(
                 OpSampleInput(
-                    op_input=make_func(shape=(2, 3)),
-                    op_args=(make_func(shape=(2, 3)),),
+                    op_input=make_func(shape=(2, 3), low=op_info.input_low, high=op_info.input_high),
+                    op_args=(make_func(shape=(2, 3), low=op_info.other_low, high=op_info.other_high),),
                     op_kwargs={},
                     op_name=f"{op_info.name}_dynamic_rank_running_input",
                 ),
                 OpSampleInput(
-                    op_input=make_func(shape=(2, 3, 4)),
-                    op_args=(make_func(shape=(2, 3, 4)),),
+                    op_input=make_func(shape=(2, 3, 4), low=op_info.input_low, high=op_info.input_high),
+                    op_args=(make_func(shape=(2, 3, 4), low=op_info.other_low, high=op_info.other_high),),
                     op_kwargs={},
                     op_name=f"{op_info.name}_dynamic_rank_running_input",
                 ),
@@ -583,6 +668,13 @@ class BinaryOpInfo(OpInfo):
       - supports_left_python_scalar: Whether to support left python scalar.
       - supports_right_python_scalar: Whether to support right python scalar.
       - supports_both_python_scalar: Whether to support both python scalar.
+      - op_error_inputs_func: Function that generates error inputs for the op.
+      - disable_small_value_tensor_inputs: Whether to disable small value tensor inputs.
+      - disable_large_value_tensor_inputs: Whether to disable large value tensor inputs.
+      - disable_broadcasting_and_discontiguous_tensor_inputs: Whether to disable broadcasting and
+        discontiguous tensor inputs.
+      - disable_scalar_inputs: Whether to disable scalar inputs.
+      - disable_extremal_value_tensor_inputs: Whether to disable extremal value tensor inputs.
     """
     def __init__(
             self,
@@ -596,6 +688,11 @@ class BinaryOpInfo(OpInfo):
             supports_left_python_scalar: Optional[bool] = True,
             supports_right_python_scalar: Optional[bool] = True,
             supports_both_python_scalar: Optional[bool] = True,
+            disable_small_value_tensor_inputs: Optional[bool] = False,
+            disable_large_value_tensor_inputs: Optional[bool] = False,
+            disable_broadcasting_and_discontiguous_tensor_inputs: Optional[bool] = False,
+            disable_scalar_inputs: Optional[bool] = False,
+            disable_extremal_value_tensor_inputs: Optional[bool] = False,
             **kwargs,
     ):
         super().__init__(
@@ -610,6 +707,15 @@ class BinaryOpInfo(OpInfo):
         self.supports_right_python_scalar = supports_right_python_scalar
         self.supports_both_python_scalar = supports_both_python_scalar
         self.op_error_inputs_func = error_inputs_binary_op_common_func(op_error_inputs_func)
+        self.disable_small_value_tensor_inputs = disable_small_value_tensor_inputs
+        self.disable_large_value_tensor_inputs = disable_large_value_tensor_inputs
+        self.disable_broadcasting_and_discontiguous_tensor_inputs = disable_broadcasting_and_discontiguous_tensor_inputs
+        self.disable_scalar_inputs = disable_scalar_inputs
+        self.disable_extremal_value_tensor_inputs = disable_extremal_value_tensor_inputs
+        self.input_low = None if not self.domain else self.domain[0][0]
+        self.input_high = None if not self.domain else self.domain[0][1]
+        self.other_low = None if not self.domain else self.domain[1][0]
+        self.other_high = None if not self.domain else self.domain[1][1]
 
 
 # basic op_basic_reference_inputs_func for unary ops
@@ -655,7 +761,7 @@ def basic_reference_inputs_unary_op_common_func(
     )
 
     for input_shape in shapes:
-        _input = make_func(input_shape)
+        _input = make_func(input_shape, low=op_info.input_low, high=op_info.input_high)
 
         yield OpSampleInput(
             _input,
@@ -693,7 +799,13 @@ def _generate_unary_op_tensors_sample_inputs_func(
 
     for shape in shapes:
         yield OpSampleInput(
-            op_input=make_tensor(shape, dtype, device=device),
+            op_input=make_tensor(
+                shape,
+                dtype,
+                device=device,
+                low=op_info.input_low,
+                high=op_info.input_high,
+            ),
             op_args=(),
             op_kwargs={},
             op_name=f"{op_info.name}_tensor_inputs",
@@ -821,7 +933,14 @@ def _generate_unary_op_discontiguous_tensor_inputs_func(
 
     for shape, discontiguous in itertools.product(shapes, [False, True]):
         yield OpSampleInput(
-            op_input=make_tensor(shape, dtype=dtype, device=device, discontiguous=discontiguous),
+            op_input=make_tensor(
+                shape,
+                dtype=dtype,
+                device=device,
+                discontiguous=discontiguous,
+                low=op_info.input_low,
+                high=op_info.input_high
+            ),
             op_args=(),
             op_kwargs={},
             op_name=f"{op_info.name}_discontiguous_tensor_inputs",
@@ -895,15 +1014,16 @@ def extra_reference_inputs_unary_op_common_func(
     # tensors with many kinds of shapes
     yield from _generate_unary_op_tensors_sample_inputs_func(op_info, dtype, device, **kwargs)
     # tensors with small value
-    if dtype != ms.bool_:
+    if not op_info.disable_small_value_tensor_inputs and dtype != ms.bool_:
         yield from _generate_unary_op_small_value_tensor_inputs_func(op_info, dtype, device, **kwargs)
     # tensors with large value
-    if dtype not in (ms.bool_, ms.uint8, ms.int8):
+    if not op_info.disable_large_value_tensor_inputs and dtype not in (ms.bool_, ms.uint8, ms.int8):
         yield from _generate_unary_op_large_value_tensor_inputs_func(op_info, dtype, device, **kwargs)
     # contiguous or discontiguous tensors
-    yield from _generate_unary_op_discontiguous_tensor_inputs_func(op_info, dtype, device, **kwargs)
+    if not op_info.disable_discontiguous_tensor_inputs:
+        yield from _generate_unary_op_discontiguous_tensor_inputs_func(op_info, dtype, device, **kwargs)
     # tensor with extremal value
-    if dtype.is_floating_point or dtype.is_complex:
+    if not op_info.disable_extremal_value_tensor_inputs and (dtype.is_floating_point or dtype.is_complex):
         yield from _generate_unary_op_extremal_value_tensor_inputs_func(op_info, dtype, device, **kwargs)
 
 
@@ -937,13 +1057,13 @@ def dynamic_inputs_unary_op_common_func(
             ),
             op_running_inputs=(
                 OpSampleInput(
-                    op_input=make_func(shape=(2, 3)),
+                    op_input=make_func(shape=(2, 3), low=op_info.input_low, high=op_info.input_high),
                     op_args=(),
                     op_kwargs={},
                     op_name=f"{op_info.name}_dynamic_shape_running_input",
                 ),
                 OpSampleInput(
-                    op_input=make_func(shape=(4, 5)),
+                    op_input=make_func(shape=(4, 5), low=op_info.input_low, high=op_info.input_high),
                     op_args=(),
                     op_kwargs={},
                     op_name=f"{op_info.name}_dynamic_shape_running_input",
@@ -961,13 +1081,13 @@ def dynamic_inputs_unary_op_common_func(
             ),
             op_running_inputs=(
                 OpSampleInput(
-                    op_input=make_func(shape=(2, 3)),
+                    op_input=make_func(shape=(2, 3), low=op_info.input_low, high=op_info.input_high),
                     op_args=(),
                     op_kwargs={},
                     op_name=f"{op_info.name}_dynamic_rank_running_input",
                 ),
                 OpSampleInput(
-                    op_input=make_func(shape=(2, 3, 4)),
+                    op_input=make_func(shape=(2, 3, 4), low=op_info.input_low, high=op_info.input_high),
                     op_args=(),
                     op_kwargs={},
                     op_name=f"{op_info.name}_dynamic_rank_running_input",
@@ -977,7 +1097,19 @@ def dynamic_inputs_unary_op_common_func(
 
 
 class UnaryOpInfo(OpInfo):
+    """Operator meta information for unary operations.
+    These operations have one tensor as input and one tensor as output usually.
+    And they may have the following characteristics:
+      - they are elementwise operations
+      - the output shape is determined by the input shape usually.
+      - they may have keyword arguments.
 
+    Extra attributes:
+      - disable_small_value_tensor_inputs: Whether to disable small value tensor inputs.
+      - disable_large_value_tensor_inputs: Whether to disable large value tensor inputs.
+      - disable_discontiguous_tensor_inputs: Whether to disable discontiguous tensor inputs.
+      - disable_extremal_value_tensor_inputs: Whether to disable extremal value tensor inputs.
+    """
     def __init__(
             self,
             name: str,
@@ -986,6 +1118,10 @@ class UnaryOpInfo(OpInfo):
             op_extra_reference_inputs_func: Optional[Callable] = extra_reference_inputs_unary_op_common_func,
             op_dynamic_inputs_func: Optional[Callable] = dynamic_inputs_unary_op_common_func,
             op_error_inputs_func: Optional[Callable] = None,
+            disable_small_value_tensor_inputs: Optional[bool] = False,
+            disable_large_value_tensor_inputs: Optional[bool] = False,
+            disable_discontiguous_tensor_inputs: Optional[bool] = False,
+            disable_extremal_value_tensor_inputs: Optional[bool] = False,
             **kwargs,
     ):
         super().__init__(
@@ -995,3 +1131,9 @@ class UnaryOpInfo(OpInfo):
             op_dynamic_inputs_func=op_dynamic_inputs_func,
             **kwargs,
         )
+        self.disable_small_value_tensor_inputs = disable_small_value_tensor_inputs
+        self.disable_large_value_tensor_inputs = disable_large_value_tensor_inputs
+        self.disable_discontiguous_tensor_inputs = disable_discontiguous_tensor_inputs
+        self.disable_extremal_value_tensor_inputs = disable_extremal_value_tensor_inputs
+        self.input_low = None if not self.domain else self.domain[0]
+        self.input_high = None if not self.domain else self.domain[1]

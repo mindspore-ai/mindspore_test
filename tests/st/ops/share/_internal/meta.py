@@ -163,6 +163,7 @@ class OpsFactory():
 
         self._compare_method = op_info.compare_method
         self._default_golden_loss_func = op_info.default_golden_loss_func
+        self._default_loss_override = op_info.default_loss_override
 
     @final
     def _generate_random_dout(self, return_torch_douts=False):
@@ -749,6 +750,7 @@ class OpsFactory():
             ksize: Optional kernel size hint for comparison helpers.
         """
         self._sample_inputs = sample_inputs if isinstance(sample_inputs, list) else [sample_inputs]
+        loss = 0.
 
         if grad_cmp and self.op_info.is_differentiable:
             ms_out = self.grad_mindspore_impl()
@@ -761,7 +763,10 @@ class OpsFactory():
             if isinstance(ms_outi, (tuple, list)) and isinstance(pt_outi, (tuple, list)):
                 # The output of the op maybe a tuple or list for some multi-output ops.
                 for ms_outi_tensor, pt_outi_tensor in zip(ms_outi, pt_outi):
-                    loss = self._default_golden_loss_func(ms_outi_tensor.dtype)
+                    if self._default_loss_override and ms_outi_tensor.dtype in self._default_loss_override:
+                        loss = self._default_loss_override[ms_outi_tensor.dtype]
+                    else:
+                        loss = self._default_golden_loss_func(ms_outi_tensor.dtype)
                     self.assert_equal(
                         ms_outi_tensor,
                         pt_outi_tensor,
@@ -772,7 +777,10 @@ class OpsFactory():
                         op_type=OpTypes.COMPUTE_FLOAT
                     )
             else:
-                loss = self._default_golden_loss_func(ms_outi.dtype)
+                if self._default_loss_override and ms_outi.dtype in self._default_loss_override:
+                    loss = self._default_loss_override[ms_outi.dtype]
+                else:
+                    loss = self._default_golden_loss_func(ms_outi.dtype)
                 self.assert_equal(
                     ms_outi,
                     pt_outi,

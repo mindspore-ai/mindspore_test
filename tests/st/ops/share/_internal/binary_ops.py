@@ -21,11 +21,10 @@ This module provides:
 """
 import functools
 import pytest
-import numpy as np
 import mindspore as ms
 from mindspore.common.api import _pynative_executor
 from tests.st.ops.share._internal.meta import OpsFactory, OpCommonGradNetAllInput
-from tests.st.ops.share._internal.utils import OpSampleInput, make_tensor, make_tensor_with_np_array
+from tests.st.ops.share._internal.utils import OpSampleInput, make_tensor
 from tests.st.ops.share._op_info.op_info import OpInfo
 from tests.st.ops.share._op_info.op_common import dtypes_as_torch, SMALL_DIM_SIZE
 
@@ -293,53 +292,6 @@ class BinaryOpsFactory(OpsFactory):
             test_complexxcomplex_scalar_type_promotion(right_python_scalar=False)
         if self.op_info.supports_both_python_scalar:
             test_all_scalar_type_promotion()
-
-    def test_binary_op_extremal_values_reference(
-        self,
-        *,
-        grad_cmp=False,
-    ):
-        """Run reference parity tests against Benchmark with extremal value inputs.
-
-        Args:
-            grad_cmp: When True, restrict to floating dtypes and compare
-                first-order gradients in addition to forward results.
-        """
-        def sample_inputs_binary_op_extra_value_func(op_info: OpInfo, dtype, device=None):
-            S = SMALL_DIM_SIZE
-            yield OpSampleInput(
-                op_input=make_tensor_with_np_array(np.full((S, S), np.inf), dtype=dtype, device=device),
-                op_args=(make_tensor_with_np_array(np.full((S, S), np.inf), dtype=dtype, device=device),),
-                op_kwargs={},
-                op_name=op_info.name,
-            )
-            yield OpSampleInput(
-                op_input=make_tensor_with_np_array(np.full((S, S), -np.inf), dtype=dtype, device=device),
-                op_args=(make_tensor_with_np_array(np.full((S, S), -np.inf), dtype=dtype, device=device),),
-                op_kwargs={},
-                op_name=op_info.name,
-            )
-            yield OpSampleInput(
-                op_input=make_tensor_with_np_array(np.full((S, S), np.nan), dtype=dtype, device=device),
-                op_args=(make_tensor_with_np_array(np.full((S, S), np.nan), dtype=dtype, device=device),),
-                op_kwargs={},
-                op_name=op_info.name,
-            )
-
-        try:
-            print(f"\nop_name: {self.op_name}, mode:{self._context_mode}, test_binary_op_extremal_values_reference...")
-            for dtype in self.supported_dtypes:
-                if not dtype.is_floating_point:
-                    continue
-                for sample_input in sample_inputs_binary_op_extra_value_func(self.op_info, dtype, device=self._device):
-                    self.compare_with_torch(sample_inputs=sample_input, grad_cmp=grad_cmp)
-        except Exception as e:
-            print(f"\ntest_binary_op_extremal_values_reference failed:"
-                  f"\nop_name: {self.op_name}"
-                  f"\nmode: {self._context_mode}"
-                  f"\ndtype: {dtype}"
-                  f"\n{sample_input.summary()}")
-            raise e
 
     def test_binary_op_error(self):
         '''
