@@ -1,6 +1,13 @@
 #!/usr/bin/env bash
 set -e
 
+unset LD_LIBRARY_PATH
+export LD_LIBRARY_PATH=/usr/lib64
+
+echo "[INFO] Using C++ compiler:"
+which c++
+c++ --version
+
 BUILD_DIR="build"
 LIB_NAME="ms_debug_stub"
 
