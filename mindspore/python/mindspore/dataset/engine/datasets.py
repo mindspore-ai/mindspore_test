@@ -44,7 +44,6 @@ from types import GeneratorType
 import copy
 import weakref
 import platform
-import psutil
 
 import mindspore._c_dataengine as cde
 from mindspore._c_expression import typing
@@ -52,7 +51,6 @@ from mindspore._c_expression import typing
 from mindspore import log as logger
 from mindspore.parallel._ps_context import _is_role_sched
 from mindspore.dataset.engine.offload import GetOffloadModel
-from mindspore.communication.management import get_group_size
 from mindspore.dataset import transforms
 from mindspore.dataset.text.utils import SentencePieceModel, DE_C_INTER_SENTENCEPIECE_MODE
 from mindspore.dataset.debug import DebugHook
@@ -66,7 +64,7 @@ from .validators import check_batch, check_shuffle, check_map, check_filter, che
     check_sync_wait, check_zip_dataset, check_add_column, check_concat, check_split, check_bucket_batch_by_length, \
     check_save, check_tuple_iterator, check_dict_iterator, check_schema, check_to_device_send, check_padded_batch, \
     check_total_batch, check_sync_update
-from ..core.config import get_callback_timeout, _init_device_info, get_enable_shared_mem, get_num_parallel_workers, \
+from ..core.config import get_callback_timeout, _init_device_info, get_num_parallel_workers, \
     get_enable_watchdog, get_seed, set_seed, get_debug_mode, get_multiprocessing_timeout_interval, \
     _get_debug_hook_list, get_multiprocessing_start_method, get_video_backend, set_video_backend, \
     get_error_samples_mode, ErrorSamplesMode
@@ -521,6 +519,7 @@ class Dataset:
             - When using Data Sinking in Graph mode, the input shape of the network should keep consistent.
               You should set `drop_remainder` to "True" to discard the last incomplete batch of data,
               or supplement/remove samples to ensure the dataset size is divisible by `batch_size`.
+            - The parameter `max_rowsize` will be deprecated in a future version.
 
         Args:
             batch_size (Union[int, Callable]): The number of rows each batch is created with. An
@@ -897,6 +896,7 @@ class Dataset:
             or has been tampered with.
 
         Note:
+            - The parameter `max_rowsize` will be deprecated in a future version.
             - Input `operations` accepts TensorOperations defined in mindspore.dataset part, plus user-defined
               Python functions (PyFuncs).
             - Setting the start method of multiprocessing to `spawn` mode by
@@ -2575,35 +2575,6 @@ class BucketBatchByLengthDataset(UnionBaseDataset):
                                            self.pad_to_bucket_boundary, self.drop_remainder)
 
 
-def _check_shm_usage(num_worker, queue_size, in_rowsize, out_rowsize):
-    """
-    Check sufficient shared memory is available for shared memory queues
-    when training in parallel mode.
-    """
-    threshold_ratio = 0.8
-    # Verify available size only when using static shared memory on Linux
-    if platform.system().lower() not in {"windows", "darwin"} and in_rowsize != -1 and out_rowsize != -1:
-        device_num = get_group_size()
-        # In the cluster, _get_device_num indicates the number of the entire cluster. The maximum number of cards
-        # on the ascend server is 8.
-        if device_num > 1:
-            device_num = min(device_num, 8)
-        shm_estimate_usage = device_num * num_worker * \
-                             (queue_size + 2) * (in_rowsize + out_rowsize) * 1024 * 1024
-        try:
-            shm_available = psutil.disk_usage('/dev/shm').free
-            if shm_estimate_usage >= threshold_ratio * shm_available:
-                raise RuntimeError(
-                    f"Insufficient shared memory available. Required: {shm_estimate_usage}, " +
-                    f"Available: {shm_available}. The required memory can't exceed 80% of the available " +
-                    "shared memory, it's recommended to reduce memory usage by following methods:\n" +
-                    "1. reduce value of parameter max_rowsize or num_parallel_workers.\n" +
-                    "2. reduce prefetch size by set_prefetch_size().\n" +
-                    "3. disable shared memory by set_enable_shared_mem().")
-        except FileNotFoundError as exc:
-            raise RuntimeError("Expected /dev/shm to exist.") from exc
-
-
 class BatchDataset(UnionBaseDataset):
     """
     The result of applying Batch operation to the input dataset.
@@ -3481,9 +3452,6 @@ class _PythonMultiprocessing(cde.PythonMultiprocessingRuntime):
         Returns:
 
         """
-        if get_enable_shared_mem():
-            _check_shm_usage(self.num_parallel_workers, 1, self.max_rowsize[0], self.max_rowsize[1])
-
         if self.workers is not None:
             raise Exception("Pool was already created, close it first.")
 

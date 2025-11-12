@@ -43,8 +43,9 @@ import psutil
 import mindspore._c_dataengine as cde
 from mindspore import log as logger
 from mindspore.common import Tensor
+from mindspore.communication.management import get_group_size
 from . import samplers
-from .datasets import UnionBaseDataset, MappableDataset, Schema, to_list, _PythonMultiprocessing, _check_shm_usage
+from .datasets import UnionBaseDataset, MappableDataset, Schema, to_list, _PythonMultiprocessing
 from .queue import _SharedQueue
 from .validators import check_generator_dataset, check_numpy_slices_dataset, check_padded_dataset
 from ..core.config import get_enable_shared_mem, get_prefetch_size, get_multiprocessing_timeout_interval, \
@@ -54,6 +55,35 @@ from ..core.datatypes import mstypelist_to_detypelist
 from ..core.py_util_helpers import ExceptionHandler
 from ..core.validator_helpers import type_check
 from ..transforms import transforms
+
+
+def _check_shm_usage(num_worker, queue_size, in_rowsize, out_rowsize):
+    """
+    Check sufficient shared memory is available for shared memory queues
+    when training in parallel mode.
+    """
+    threshold_ratio = 0.8
+    # Verify available size only when using static shared memory on Linux
+    if platform.system().lower() not in {"windows", "darwin"} and in_rowsize != -1 and out_rowsize != -1:
+        device_num = get_group_size()
+        # In the cluster, _get_device_num indicates the number of the entire cluster. The maximum number of cards
+        # on the ascend server is 8.
+        if device_num > 1:
+            device_num = min(device_num, 8)
+        shm_estimate_usage = device_num * num_worker * \
+                             (queue_size + 2) * (in_rowsize + out_rowsize) * 1024 * 1024
+        try:
+            shm_available = psutil.disk_usage('/dev/shm').free
+            if shm_estimate_usage >= threshold_ratio * shm_available:
+                raise RuntimeError(
+                    f"Insufficient shared memory available. Required: {shm_estimate_usage}, " +
+                    f"Available: {shm_available}. The required memory can't exceed 80% of the available " +
+                    "shared memory, it's recommended to reduce memory usage by following methods:\n" +
+                    "1. reduce value of parameter max_rowsize or num_parallel_workers.\n" +
+                    "2. reduce prefetch size by set_prefetch_size().\n" +
+                    "3. disable shared memory by set_enable_shared_mem().")
+        except FileNotFoundError as exc:
+            raise RuntimeError("Expected /dev/shm to exist.") from exc
 
 
 def _iter_fn(dataset, num_samples):
@@ -823,6 +853,7 @@ class GeneratorDataset(MappableDataset, UnionBaseDataset):
         or has been tampered with.
 
     Note:
+        - The parameter `column_types` , `schema` and `max_rowsize` will be deprecated in a future version.
         - If you configure `python_multiprocessing=True` (Default: ``True`` ) and `num_parallel_workers>1`
           (default: ``1`` ) indicates that the multiprocessing mode is started for data load acceleration.
           At this time, as the datasetiterates, the memory consumption of the subprocess will gradually increase,
