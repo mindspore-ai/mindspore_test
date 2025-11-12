@@ -30,42 +30,6 @@ namespace mindspore::graphkernel::test {
 class TestConvertBFloat16 : public GraphKernelCommonTestSuite {};
 
 namespace {
-void CheckType(const AnfNodePtr &node, const std::vector<TypeId> &target_inputs_type, TypeId target_output_type) {
-  // check abstract
-  auto abstract = node->abstract();
-  MS_EXCEPTION_IF_NULL(abstract);
-  auto tensor = abstract->cast<abstract::AbstractTensorPtr>();
-  MS_EXCEPTION_IF_NULL(tensor);
-  MS_EXCEPTION_IF_NULL(tensor->element());
-  auto type_ptr = tensor->element()->GetType();
-  MS_EXCEPTION_IF_NULL(type_ptr);
-  auto type = type_ptr->type_id();
-  if (type != target_output_type) {
-    MS_LOG(ERROR) << "abstract expect data type: " << TypeIdToString(target_output_type);
-    MS_LOG(ERROR) << "abstract output data type: " << TypeIdToString(type);
-    ASSERT_TRUE(false);
-  }
-  // check build info
-  MS_EXCEPTION_IF_NULL(node->kernel_info());
-  auto build_info = AnfAlgo::GetSelectKernelBuildInfo(node);
-  MS_EXCEPTION_IF_NULL(build_info);
-  auto inputs_type = build_info->GetAllInputDeviceTypes();
-  for (size_t i = 0; i < target_inputs_type.size(); ++i) {
-    if (inputs_type[i] != target_inputs_type[i]) {
-      MS_LOG(ERROR) << "build_info expect input[" << i << "] data type: " << TypeIdToString(target_inputs_type[i]);
-      MS_LOG(ERROR) << "build_info output input[" << i << "] data type: " << TypeIdToString(inputs_type[i]);
-      ASSERT_TRUE(false);
-    }
-  }
-  auto outputs_type = build_info->GetAllOutputDeviceTypes();
-  ASSERT_TRUE(!outputs_type.empty());
-  if (outputs_type[0] != target_output_type) {
-    MS_LOG(ERROR) << "build_info expect data type: " << TypeIdToString(target_output_type);
-    MS_LOG(ERROR) << "build_info output data type: " << TypeIdToString(outputs_type[0]);
-    ASSERT_TRUE(false);
-  }
-}
-
 /**
  *  sub_graph(p0: bf16, p1: bf16, p2: bf16) {
  *    %0(bf16) = Add(p0, p1)
@@ -83,6 +47,7 @@ void CheckType(const AnfNodePtr &node, const std::vector<TypeId> &target_inputs_
  *  }
  */
 void Run1(GraphKernelCommonTestSuite *t) {
+  t->SetDeviceTarget(kAscendDevice);
   ConstructGraph c;
   auto x0 = c.NewTensorInput("x0", kBFloat16, {32, 32});
   auto x1 = c.NewTensorInput("x1", kBFloat16, {32, 32});
@@ -105,9 +70,9 @@ void Run1(GraphKernelCommonTestSuite *t) {
           continue;
         }
         if (IsPrimitiveCNode(sub_node, prim::kPrimAdd)) {
-          CheckType(sub_node, {kNumberTypeFloat32, kNumberTypeFloat32}, kNumberTypeFloat32);
+          t->CheckInputOutputType(sub_node, {kNumberTypeFloat32, kNumberTypeFloat32}, kNumberTypeFloat32);
         } else if (IsPrimitiveCNode(sub_node, prim::kPrimLess)) {
-          CheckType(sub_node, {kNumberTypeFloat32, kNumberTypeFloat32}, kNumberTypeBool);
+          t->CheckInputOutputType(sub_node, {kNumberTypeFloat32, kNumberTypeFloat32}, kNumberTypeBool);
           check1 = true;
         }
       }
@@ -137,6 +102,7 @@ void Run1(GraphKernelCommonTestSuite *t) {
  *  }
  */
 void Run2(GraphKernelCommonTestSuite *t) {
+  t->SetDeviceTarget(kAscendDevice);
   std::map<std::string, std::string> jit_config;
   jit_config["graph_kernel_flags"] = "--enable_cluster_ops=MatMul";
   graphkernel::GraphKernelFlags::SaveJitConfig(jit_config);
@@ -165,11 +131,11 @@ void Run2(GraphKernelCommonTestSuite *t) {
           continue;
         }
         if (IsPrimitiveCNode(sub_node, prim::kPrimAdd)) {
-          CheckType(sub_node, {kNumberTypeFloat32, kNumberTypeFloat32}, kNumberTypeFloat32);
+          t->CheckInputOutputType(sub_node, {kNumberTypeFloat32, kNumberTypeFloat32}, kNumberTypeFloat32);
         } else if (IsPrimitiveCNode(sub_node, prim::kPrimAbs)) {
-          CheckType(sub_node, {kNumberTypeFloat32}, kNumberTypeFloat32);
+          t->CheckInputOutputType(sub_node, {kNumberTypeFloat32}, kNumberTypeFloat32);
         } else if (IsPrimitiveCNode(sub_node, prim::kPrimMatMul)) {
-          CheckType(sub_node, {kNumberTypeBFloat16, kNumberTypeBFloat16}, kNumberTypeBFloat16);
+          t->CheckInputOutputType(sub_node, {kNumberTypeBFloat16, kNumberTypeBFloat16}, kNumberTypeBFloat16);
           check2 = true;
         }
       }
@@ -195,6 +161,7 @@ void Run2(GraphKernelCommonTestSuite *t) {
  *  }
  */
 void Run3(GraphKernelCommonTestSuite *t) {
+  t->SetDeviceTarget(kAscendDevice);
   ConstructGraph c;
   auto x0 = c.NewTensorInput("x0", kBFloat16, {32, 32});
   auto x1 = c.NewTensorInput("x1", kBFloat16, {32, 32});
@@ -217,7 +184,7 @@ void Run3(GraphKernelCommonTestSuite *t) {
           continue;
         }
         if (IsPrimitiveCNode(sub_node, prim::kPrimAdd)) {
-          CheckType(sub_node, {kNumberTypeFloat32, kNumberTypeFloat32}, kNumberTypeFloat32);
+          t->CheckInputOutputType(sub_node, {kNumberTypeFloat32, kNumberTypeFloat32}, kNumberTypeFloat32);
         } else if (IsPrimitiveCNode(sub_node, prim::kPrimMakeTuple)) {
           auto cnode = sub_node->cast<CNodePtr>();
           MS_EXCEPTION_IF_NULL(cnode);
@@ -256,6 +223,7 @@ void Run3(GraphKernelCommonTestSuite *t) {
  *  }
  */
 void Run4(GraphKernelCommonTestSuite *t) {
+  t->SetDeviceTarget(kCPUDevice);
   std::map<std::string, std::string> jit_config;
   jit_config["graph_kernel_flags"] = "--enable_cluster_ops=Reshape";
   graphkernel::GraphKernelFlags::SaveJitConfig(jit_config);
@@ -286,10 +254,10 @@ void Run4(GraphKernelCommonTestSuite *t) {
           MS_EXCEPTION_IF_NULL(input);
           if (!input->isa<CNode>()) {
             // The first Reshape keeps bf16
-            CheckType(sub_node, {kNumberTypeBFloat16}, kNumberTypeBFloat16);
+            t->CheckInputOutputType(sub_node, {kNumberTypeBFloat16}, kNumberTypeBFloat16);
           } else {
             // The second Reshape uses fp32
-            CheckType(sub_node, {kNumberTypeFloat32}, kNumberTypeFloat32);
+            t->CheckInputOutputType(sub_node, {kNumberTypeFloat32}, kNumberTypeFloat32);
           }
           check4 = true;
         }
@@ -304,10 +272,9 @@ void Run4(GraphKernelCommonTestSuite *t) {
 /// Description: Run ConvertBFloat16 with different fuse ops
 /// Expectation: The Cast op inserted by ConvertBFloat16 should match with expect
 TEST_F(TestConvertBFloat16, convert_bfloat16) {
-  SetDeviceTarget(kAscendDevice);
   Run1(this);
   Run2(this);
   Run3(this);
-  // Run4(this);
+  Run4(this);
 }
 }  // namespace mindspore::graphkernel::test

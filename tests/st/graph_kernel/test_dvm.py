@@ -13,15 +13,19 @@
 # limitations under the License.
 # ============================================================================
 
+"""
+dvm test case
+"""
+
 import numpy as np
 import os
 import shutil
 import pytest
-import mindspore.context as context
+from mindspore import context
 from mindspore import Tensor, nn, JitConfig
 from mindspore import Parameter
 import mindspore as ms
-import mindspore.ops as ops
+from mindspore import ops
 import mindspore.ops.operations as P
 from tests.st.graph_kernel.gk_utils import AssertGKEnable
 from tests.mark_utils import arg_mark
@@ -39,7 +43,7 @@ def tensor_ascend_grad_overflow(grad):
 
 class ComplexNet(nn.Cell):
     def __init__(self):
-        super(ComplexNet, self).__init__()
+        super().__init__()
         self.greater = P.Greater()
         self.select = P.Select()
         self.gelu = P.GeLU()
@@ -106,7 +110,7 @@ def test_easy_fuse_dvm(shape1, shape2, dtype):
 
 class Net(nn.Cell):
     def __init__(self):
-        super(Net, self).__init__()
+        super().__init__()
         self.add = ops.Add()
         self.mul = ops.Mul()
 
@@ -123,7 +127,6 @@ def test_dvm_dynamic_shape():
     Description: test dvm dynamic shape
     Expectation: the result match with expect
     """
-    os.environ["GLOG_v"] = "1"
     np.random.seed(1)
     context.set_context(mode=context.GRAPH_MODE)
     x0 = np.random.normal(0, 1, (8, 32)).astype(np.float16)
@@ -134,14 +137,17 @@ def test_dvm_dynamic_shape():
                 Tensor(shape=(None, 1), dtype=ms.float16),
                 Tensor(shape=(1, None), dtype=ms.float16)]
     expect = get_output(Net, args, args_dyn, enable_graph_kernel=False)
+    context.set_context(graph_kernel_flags="--dump_as_text")
     output = get_output(Net, args, args_dyn, enable_graph_kernel=True)
+    dump_dir = "./graph_kernel_dump"
+    if os.path.isdir(dump_dir):
+        shutil.rmtree(dump_dir)
     assert np.allclose(expect[0].asnumpy(), output[0].asnumpy(), 1e-3, 1e-3)
-    del os.environ["GLOG_v"]
 
 
 class NetD(nn.Cell):
     def __init__(self):
-        super(NetD, self).__init__()
+        super().__init__()
         self.reshape = ops.Reshape()
         self.add = ops.Add()
 
@@ -183,7 +189,7 @@ def test_dvm_multiple_run():
 
 class NetT(nn.Cell):
     def __init__(self, trans):
-        super(NetT, self).__init__()
+        super().__init__()
         self.trans = trans
 
     def construct(self, x0):
@@ -217,7 +223,7 @@ def test_dvm_transpose():
 
 class NetBool(nn.Cell):
     def __init__(self):
-        super(NetBool, self).__init__()
+        super().__init__()
         self.cond = Tensor(np.array(False))
 
     def construct(self, x0, x1, x2, x3, x4):
@@ -230,7 +236,7 @@ class NetBool(nn.Cell):
 
 class SelectNet(nn.Cell):
     def __init__(self, shape):
-        super(SelectNet, self).__init__()
+        super().__init__()
         self.param = Parameter(Tensor(np.ones(shape), dtype=ms.float16), "param")
 
     def construct(self, x0, x1, x2, x3):
@@ -285,7 +291,7 @@ def test_dvm_bool():
 
 class NetPow(nn.Cell):
     def __init__(self):
-        super(NetPow, self).__init__()
+        super().__init__()
         self.const0 = Tensor(2, dtype=ms.float32)
         self.const1 = Tensor(10000, dtype=ms.float32)
         self.const2 = Tensor(1, dtype=ms.float32)

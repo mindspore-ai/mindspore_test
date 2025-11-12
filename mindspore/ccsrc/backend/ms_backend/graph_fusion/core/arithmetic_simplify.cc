@@ -667,38 +667,6 @@ class CastPatternTree : public PatternTree {
   }
 };
 
-// "LayoutTransform(LayoutTransform(A))=A"
-class LayoutTransform1PatternTree : public PatternTree {
- public:
-  explicit LayoutTransform1PatternTree(const std::string &pattern_str) : PatternTree(pattern_str) {}
-  ~LayoutTransform1PatternTree() override = default;
-
- protected:
-  bool CheckInputsAndAttrs(const inner::NodePtr &origin_root) const override {
-    return (GetValue<string>((origin_root->inputs()[0])->attrs().find("src_format")->second) ==
-            GetValue<string>(origin_root->attrs().find("dst_format")->second));
-  }
-};
-
-// "LayoutTransform(LayoutTransform(A))=LayoutTransform(A)"
-class LayoutTransform2PatternTree : public PatternTree {
- public:
-  explicit LayoutTransform2PatternTree(const std::string &pattern_str) : PatternTree(pattern_str) {}
-  ~LayoutTransform2PatternTree() override = default;
-
- protected:
-  bool CheckInputsAndAttrs(const inner::NodePtr &origin_root) const override {
-    return (GetValue<string>((origin_root->inputs()[0])->attrs().find("src_format")->second) !=
-            GetValue<string>(origin_root->attrs().find("dst_format")->second));
-  }
-  mindspore::HashMap<PatternNodePtr, inner::DAttrs> SetAttributes(const inner::NodePtr &origin_root) override {
-    auto attrs_map = PatternTree::SetAttributes(origin_root);
-    attrs_map[this->rhs_root()] = {{"src_format", origin_root->inputs()[0]->attrs().find("src_format")->second},
-                                   {"dst_format", origin_root->attrs().find("dst_format")->second}};
-    return attrs_map;
-  }
-};
-
 bool IsRedundantTransposePair(const ShapeVector &perm1, const ShapeVector &perm2) {
   auto dim = perm2.size();
   for (size_t i = 0; i < dim; i++) {
@@ -783,57 +751,6 @@ class ReshapePatternTree : public PatternTree {
   }
 };
 
-// Transpose(A,B)=Reshape(A,C)
-class Transpose2PatternTree : public ReshapePatternTree {
- public:
-  explicit Transpose2PatternTree(const std::string &pattern_str) : ReshapePatternTree(pattern_str) {}
-  ~Transpose2PatternTree() override = default;
-
- protected:
-  bool CheckInputsAndAttrs(const inner::NodePtr &origin_root) const override {
-    auto input_shape = origin_root->input(0)->shape;
-    if (IsDynamicRank(input_shape)) {
-      MS_LOG(DEBUG) << "Skip dynamic rank case";
-      return false;
-    }
-    auto perm_tensornode = origin_root->input(1)->As<inner::ConstTensorNode>();
-    MS_EXCEPTION_IF_NULL(perm_tensornode);
-    auto perm = CheckAndConvertUtils::CheckTensorIntValue("permutation", perm_tensornode->data(), "Transpose");
-    if (perm.size() != input_shape.size()) {
-      MS_LOG(DEBUG) << "The length of input shape " << input_shape << " and perm " << perm << " is not same";
-      return false;
-    }
-    auto rank = SizeToLong(input_shape.size());
-    // If the axes which have dimension size greater than 1 keep ascending order in permutation, then this transpose can
-    // be replaced by reshape
-    ShapeValueDType prev_non_one_axis = -1;
-    for (size_t i = 0; i < input_shape.size(); ++i) {
-      if (perm[i] < -rank || perm[i] >= rank) {
-        MS_LOG(DEBUG) << "perm[" << i << "] is " << perm[i] << ", which is out of range[-" << rank << ", " << rank
-                      << ")";
-        return false;
-      }
-      perm[i] = perm[i] < 0 ? (perm[i] + rank) : perm[i];
-      if (input_shape[perm[i]] != 1) {
-        if (perm[i] < prev_non_one_axis) {
-          MS_LOG(DEBUG) << "perm[" << i << "] is axis " << perm[i]
-                        << ", which is greater than the previous non-one axis " << prev_non_one_axis
-                        << ", replace failed";
-          return false;
-        }
-        prev_non_one_axis = perm[i];
-      }
-    }
-    return true;
-  }
-
-  mindspore::HashMap<PatternNodePtr, inner::DAttrs> SetAttributes(const inner::NodePtr &origin_root) override {
-    auto attrs_map = PatternTree::SetAttributes(origin_root);
-    attrs_map[this->rhs_root()] = {{"format", MakeValue(origin_root->format)}};
-    return attrs_map;
-  }
-};
-
 // Transpose(Transpose(Reshape(A,B),C),D)=Reshape(A,E), RTT is the abbreviation for Reshape + Transpose + Transpose
 class RTTPatternTree : public PatternTree {
  public:
@@ -907,6 +824,10 @@ class StridedSlicePatternTree : public PatternTree {
   }
 
   bool CheckInputsAndAttrs(const inner::NodePtr &origin_root) const override {
+    auto output_shape = origin_root->shape;
+    if (IsDynamic(output_shape)) {
+      return false;
+    }
     auto input_node = origin_root->input(0);
     MS_EXCEPTION_IF_NULL(input_node);
     auto input_shape = input_node->shape;
@@ -927,7 +848,8 @@ class StridedSlicePatternTree : public PatternTree {
     auto begin_mask = GetValue<int64_t>(origin_root->attrs().find("begin_mask")->second);
     auto end_mask = GetValue<int64_t>(origin_root->attrs().find("end_mask")->second);
     auto ellipsis_mask = GetValue<int64_t>(origin_root->attrs().find("ellipsis_mask")->second);
-    if (begin_mask != 0 || end_mask != 0 || ellipsis_mask != 0) {
+    auto new_axis_mask = GetValue<int64_t>(origin_root->attrs().find("new_axis_mask")->second);
+    if (begin_mask != 0 || end_mask != 0 || ellipsis_mask != 0 || new_axis_mask != 0) {
       return false;
     }
     auto shrink_axis_mask = LongToSize(GetValue<int64_t>(origin_root->attrs().find("shrink_axis_mask")->second));
@@ -1104,12 +1026,8 @@ static std::vector<Expression> expressions_optlevel_1 = {
   // complex
   {"CReal(Complex(A,B))=A", EXPR_PATTERN(PatternTree)},
   {"CImag(Complex(A,B))=B", EXPR_PATTERN(PatternTree)},
-  // lite only
-  {"LayoutTransform(LayoutTransform(A))=A", EXPR_PATTERN(LayoutTransform1PatternTree)},
-  {"LayoutTransform(LayoutTransform(A))=LayoutTransform(A)", EXPR_PATTERN(LayoutTransform2PatternTree)},
   // patterns that can be transformed to reshape
   {"Transpose(Transpose(A,B),C)=A", EXPR_PATTERN(Transpose1PatternTree)},
-  {"Transpose(A,B)=Reshape(A,C)", EXPR_PATTERN(Transpose2PatternTree)},
   {"Reshape(Reshape(A,B),C)=Reshape(A,C)", EXPR_PATTERN(ReshapePatternTree)},
   {"Transpose(Transpose(Reshape(A,B),C),D)=Reshape(A,E)", EXPR_PATTERN(RTTPatternTree)},
   {"StridedSlice(A,B,C,D)=Reshape(A,E)", EXPR_PATTERN(StridedSlicePatternTree)},

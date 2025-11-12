@@ -13,10 +13,14 @@
 # limitations under the License.
 # ============================================================================
 
+"""
+dvm fuse op test cases in pynative mode
+"""
+
 import numpy as np
-import mindspore.ops as ops
-import mindspore.context as context
-from tests.st.graph_kernel.gk_utils import gen_input, compare_outputs
+from mindspore import ops
+from mindspore import context
+from tests.st.graph_kernel.gk_utils import gen_flag, gen_input, compare_outputs
 
 np.random.seed(1)
 context.set_context(mode=context.PYNATIVE_MODE)
@@ -34,6 +38,20 @@ def test_elemwise():
     y0 = ops.mul(x0, x1)
     y1 = ops.auto_generate.InplaceAddExt()(x2, ops.mul(y0, 5.0))
     compare_outputs("test_elemwise", [y0, y1])
+
+
+def test_elemwise_scalar():
+    """
+    Feature: elemwise scalar
+    Description: pynative mode
+    Expectation: the result match with the expected result
+    """
+    for t in ["int32", "float32"]:
+        flag = gen_flag("test_elemwise_scalar", t)
+        x0 = gen_input((4, 32), t)
+        y0 = ops.add(x0, 4)
+        y1 = ops.mul(2, y0)
+        compare_outputs(flag, [y1])
 
 
 def test_elemwise_reduce():

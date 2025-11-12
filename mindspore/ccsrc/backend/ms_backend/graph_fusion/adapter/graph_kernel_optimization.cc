@@ -34,7 +34,6 @@
 #include "backend/ms_backend/graph_fusion/adapter/graph_kernel_splitter_with_py.h"
 #include "backend/ms_backend/graph_fusion/adapter/graph_kernel_expander_cloud.h"
 #include "backend/ms_backend/graph_fusion/adapter/callback_impl.h"
-#include "backend/ms_backend/graph_fusion/cast_matmul_fusion.h"
 #include "backend/ms_backend/graph_fusion/raise_reduction_precision.h"
 #include "backend/ms_backend/graph_fusion/graph_kernel_cse.h"
 #include "backend/ms_backend/graph_fusion/core/shape_ops_splitter.h"
@@ -157,9 +156,6 @@ PassManagerPtr GraphKernelOptimizer::Cluster() const {
 
 PassManagerPtr GraphKernelOptimizer::HighLevelOpt1() const {
   auto pm = std::make_shared<GraphKernelPassManager>(2, "highlevelopt1");
-
-  // Remove redundant Cast(bias, fp16) for Matmul input
-  pm->Add(std::make_shared<CastMatmulFusion>(), OptLevel_2, (is_ascend && !is_dvm));
 
   // Reorder Cast and Type-insensitive node
   pm->Add(std::make_shared<ReorderOps>(), OptLevel_2);
