@@ -113,6 +113,51 @@ class _MixedDecoratorTrigNet(_PlainTwoStageTrigNet):
         return ops.sin(x) * self.scale
 
 
+class _PlainShapeAwareProductNet(ms.nn.Cell):
+    def __init__(self):
+        super().__init__()
+        self.rank = 2
+
+    def construct(self, x, y):
+        if len(x.shape) == self.rank:
+            x = x + y
+        return x * y
+
+
+class _PsJitShapeAwareProductNet(_PlainShapeAwareProductNet):
+    @ms.jit
+    def construct(self, x, y):
+        if len(x.shape) == self.rank:
+            x = x + y
+        return x * y
+
+
+@ms.jit(capture_mode="bytecode")
+def _bytecode_calls_psjit_cell(a, b):
+    net = _PsJitShapeAwareProductNet()
+    return net(a, b)
+
+
+def _plain_branching_function(a, b):
+    product = a * b
+    if len(product.shape) == 2:
+        return product
+    return product * 2
+
+
+@ms.jit
+def _psjit_branching_helper(a, b):
+    return a * b
+
+
+@ms.jit(capture_mode="bytecode")
+def _bytecode_branching_with_psjit(a, b):
+    product = _psjit_branching_helper(a, b)
+    if len(product.shape) == 2:
+        return product
+    return product * 2
+
+
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_jit_nested_psjit_method():
     """
@@ -185,5 +230,42 @@ def test_jit_before_psjit_pipeline():
 
     jit_net = _MixedDecoratorTrigNet()
     jit_result = jit_net(Tensor(input_np))
+
+    match_array(pynative_result, jit_result, error=5)
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+def test_bytecode_function_calls_psjit_cell():
+    """
+    Feature: Combine bytecode and default jit capture modes.
+    Description: Call a bytecode-compiled function that instantiates a psjit-compiled cell handling rank-based branching.
+    Expectation: JIT mixed-mode result matches pynative result.
+    Migrated from: test_pijit_ai4sci.py::test_pijit_ai4sci_nest_psjit_net
+    """
+    input_np = np.array([[1, 2], [3, 4]], np.float32)
+    other_np = np.array([[1, 2], [3, 4]], np.float32)
+
+    pynative_net = _PlainShapeAwareProductNet()
+    pynative_result = pynative_net(Tensor(input_np), Tensor(other_np))
+
+    jit_result = _bytecode_calls_psjit_cell(Tensor(input_np), Tensor(other_np))
+
+    match_array(pynative_result, jit_result, error=5)
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+def test_bytecode_function_calls_psjit_function():
+    """
+    Feature: Combine bytecode and default jit capture modes.
+    Description: Call a bytecode-compiled function that invokes a psjit helper and applies branching based on tensor rank.
+    Expectation: JIT mixed-mode result matches pynative result.
+    Migrated from: test_pijit_ai4sci.py::test_pijit_ai4sci_in_pijit_func
+    """
+    input_np = np.array([[1, 2], [3, 4]], np.float32)
+    other_np = np.array([[1, 2], [3, 4]], np.float32)
+
+    pynative_result = _plain_branching_function(Tensor(input_np), Tensor(other_np))
+
+    jit_result = _bytecode_branching_with_psjit(Tensor(input_np), Tensor(other_np))
 
     match_array(pynative_result, jit_result, error=5)

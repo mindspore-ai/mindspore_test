@@ -1817,3 +1817,36 @@ def test_jit_return_none():
     match_array(pynative_result, jit_result, error=5)
     # TODO: fix this test, pijit does not support Parameter inplace add
     # match_array(pynative_net.p, jit_net.p)
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+def test_bytecode_to_float_preserves_dtype():
+    """
+    Feature: Bytecode JIT with to_float conversion.
+    Description: Compile a cell with bytecode JIT after converting it to float16 and ensure dtype is preserved.
+    Expectation: JIT result matches pynative result and keeps float16 dtype.
+    Migrated from: test_pijit_ai4sci.py::test_pijit_ai4sci_net_to_float32
+    """
+    class ScaleAddNet(nn.Cell):
+        def __init__(self):
+            super().__init__()
+            self.scale = Tensor([1, 1, 1], dtype.float32)
+
+        def construct(self, x, y):
+            product = self.scale * x
+            return product + y
+
+    input_np = np.ones((1, 2, 3), np.float16)
+    other_np = np.ones((1, 2, 3), np.float16)
+
+    pynative_net = ScaleAddNet().to_float(dtype.float16)
+    pynative_result = pynative_net(Tensor(input_np), Tensor(other_np))
+
+    @jit(capture_mode="bytecode")
+    def run(a, b):
+        net = ScaleAddNet().to_float(dtype.float16)
+        return net(Tensor(a), Tensor(b))
+
+    jit_result = run(input_np, other_np)
+    assert jit_result.dtype == dtype.float16
+    match_array(pynative_result, jit_result)
