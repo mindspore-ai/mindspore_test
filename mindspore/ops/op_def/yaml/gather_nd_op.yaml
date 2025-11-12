@@ -8,6 +8,3 @@ gather_nd:
   returns:
     y:
       dtype: tensor
-  dispatch:
-      enable: True
-      Ascend: GatherNdAscend

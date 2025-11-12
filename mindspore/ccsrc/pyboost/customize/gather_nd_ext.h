@@ -14,22 +14,23 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_KERNEL_PYBOOST_CUSTOMIZE_GATHER_ND_H_
-#define MINDSPORE_MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_KERNEL_PYBOOST_CUSTOMIZE_GATHER_ND_H_
+#ifndef MINDSPORE_MINDSPORE_CCSRC_KERNEL_PYBOOST_CUSTOMIZE_GATHER_ND_EXT_H_
+#define MINDSPORE_MINDSPORE_CCSRC_KERNEL_PYBOOST_CUSTOMIZE_GATHER_ND_EXT_H_
 
-#include <vector>
 #include <memory>
+#include <optional>
+
 #include "ir/tensor.h"
-#include "ir/value.h"
-#include "runtime/hardware_abstract/device_context/device_context_manager.h"
-#include "mindspore/ccsrc/pyboost/op_runner.h"
+
+#include "include/runtime/hardware_abstract/device_context/device_context_manager.h"
+#include "mindspore/ccsrc/pynative/utils/pyboost/op_runner.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::TensorPtr GatherNdAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_x,
-                                          const TensorPtr &indices);
+tensor::TensorPtr PYBOOST_API GatherNdExtCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
+                                                   const TensorPtr &indices_tensor);
 }  // namespace pyboost
 }  // namespace kernel
 }  // namespace mindspore
-#endif  // MINDSPORE_MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_KERNEL_PYBOOST_CUSTOMIZE_GATHER_ND_H_
+#endif  // MINDSPORE_MINDSPORE_CCSRC_KERNEL_PYBOOST_CUSTOMIZE_GATHER_ND_EXT_H_

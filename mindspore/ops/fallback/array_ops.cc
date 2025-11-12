@@ -485,5 +485,12 @@ REG_FALLBACK_BUILDER("TransposeView").SetBody(BODYFUNC(ib) {
   auto perm = ib->GetInput(kIndex1);
   return {ib->Transpose(input, perm)};
 });
+
+REG_FALLBACK_BUILDER("GatherNdExt").SetBody(BODYFUNC(ib) {
+  auto input = ib->GetInput(kIndex0);
+  auto indices = ib->GetInput(kIndex1);
+  auto out = ib->GatherNd(input, indices);
+  return {out};
+});
 }  // namespace expander
 }  // namespace mindspore

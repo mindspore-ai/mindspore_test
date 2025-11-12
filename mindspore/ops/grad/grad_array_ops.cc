@@ -1541,7 +1541,7 @@ REG_BPROP_BUILDER("TensorScatterAdd").SetUnusedInputs({i0, i2, i3}).SetBody(BODY
   auto update = ib->GetInput(i2);
   auto dout = ib->GetInput(i4);
   auto dx = x->need_compute_grad_out() ? dout : ib->OutZeros(x);
-  auto update_grad = update->need_compute_grad_out() ? ib->GatherNd(dout, indices) : ib->OutZeros(update);
+  auto update_grad = update->need_compute_grad_out() ? ib->Emit("GatherNdExt", {dout, indices}) : ib->OutZeros(update);
   return {dx, ib->OutZeros(indices), update_grad};
 });
 

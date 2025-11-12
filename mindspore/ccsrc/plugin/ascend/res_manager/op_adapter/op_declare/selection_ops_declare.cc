@@ -136,6 +136,7 @@ INPUT_MAP(GatherNd) = {{1, INPUT_DESC(x)}, {2, INPUT_DESC(indices)}};
 ATTR_MAP(GatherNd) = EMPTY_ATTR_MAP;
 OUTPUT_MAP(GatherNd) = {{0, OUTPUT_DESC(y)}};
 REG_ADPT_DESC(GatherNd, kNameGatherNd, ADPT_DESC(GatherNd))
+REG_ADPT_DESC(GatherNdExt, kNameGatherNdExt, ADPT_DESC(GatherNd))
 
 // GatherD
 INPUT_MAP(GatherElements) = {{1, INPUT_DESC(x)}, {3, INPUT_DESC(index)}};
