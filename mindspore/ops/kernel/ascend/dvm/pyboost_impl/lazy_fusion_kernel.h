@@ -232,12 +232,9 @@ class LazyFusionKernelAscend : public dvm::Kernel {
   struct Store {
     Store() = default;
     Store(dvm::NDObject *p, const TensorPtr &t, bool is_skip, bool is_inplace)
-        : op(p), skip(is_skip), inplace(is_inplace) {
-      dev_addr = std::static_pointer_cast<device::DeviceAddress>(t->device_address());
-      MS_EXCEPTION_IF_NULL(dev_addr);
-    }
+        : op(p), tensor(t), skip(is_skip), inplace(is_inplace) {}
     dvm::NDObject *op;
-    device::DeviceAddressPtr dev_addr;
+    TensorPtr tensor;
     bool skip{false};
     bool inplace{false};
   };

@@ -827,7 +827,7 @@ std::vector<tensor::TensorPtr> OpRunner::GetTensorWithoutValueMask(const session
   for (size_t index = 0; index < input_masks.size(); ++index) {
     if (input_masks.at(index) != InputType::kConstant) {
       if (!input_values[index]->isa<tensor::Tensor>()) {
-        MS_LOG(EXCEPTION) << "The " << index << "' input shoulde be a Tensor, but got "
+        MS_LOG(EXCEPTION) << "The " << index << "' input should be a Tensor, but got "
                           << input_values[index]->ToString();
       }
       auto tensor = input_values.at(index)->cast<tensor::TensorPtr>();
@@ -859,13 +859,13 @@ void OpRunner::RunSingleOpGraph(const session::BackendOpRunInfoPtr &op_run_info,
 }
 
 void OpRunner::LaunchKernelTask(const runtime::KernelTaskType &task_type, DeviceContext *device_context,
-                                const device::DeviceAddressPtrList &input_addr_list,
-                                const device::DeviceAddressPtrList &output_addr_list, size_t stream_id) {
+                                const tensor::TensorPtrList &input_tensors, const tensor::TensorPtrList &output_tensors,
+                                size_t stream_id) {
   MS_EXCEPTION_IF_NULL(device_context);
   MS_LOG(DEBUG) << "Start, task_type:" << task_type;
   static auto no_simu = !common::IsCompileSimulation();
-  if (no_simu && !device_context->GetKernelExecutor()->ExecuteKernelTask(task_type, input_addr_list, output_addr_list,
-                                                                         stream_id)) {
+  if (no_simu &&
+      !device_context->GetKernelExecutor()->ExecuteKernelTask(task_type, input_tensors, output_tensors, stream_id)) {
     MS_LOG(EXCEPTION) << "ExecuteKernelTask failed, task_type:" << task_type;
   }
   MS_LOG(DEBUG) << "End";

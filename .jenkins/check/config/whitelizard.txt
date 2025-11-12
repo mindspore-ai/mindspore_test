@@ -212,6 +212,9 @@ mindspore/mindspore/ccsrc/pybind_api/ir/tensor/tensor_py.cc:mindspore::tensor::G
 mindspore/mindspore/python/mindspore/nn/cell.py:_load_from_state_dict
 mindspore/mindspore/ccsrc/runtime/core/graph_scheduler/base/graph_compiler.cc:mindspore::runtime::GraphCompiler::CompileGraphImpl
 mindspore/mindspore/ccsrc/runtime/core/graph_scheduler/base/graph_scheduler.cc:mindspore::runtime::GraphScheduler::LinkControlArrowByAutoMonad
+mindspore/mindspore/ccsrc/runtime/core/actors/base/kernel_runner.cc:mindspore::runtime::KernelRunner::CopyInputDeviceTensor
+mindspore/mindspore/ccsrc/runtime/core/actors/base/kernel_actor.cc:mindspore::runtime::KernelActor::CopyInputDeviceTensor
+mindspore/mindspore/ccsrc/runtime/core/actors/base/output_actor.cc:mindspore::runtime::OutputActor::CreateOutputTensor
 
 # AICPU migration
 mindspore/mindspore/ops/kernel/ascend/aicpu/aicpu_ops/cpu_kernel/ms_kernel/bias_add_grad.cc:aicpu::BiasAddGradCpuKernel::BiasAddGradCompute

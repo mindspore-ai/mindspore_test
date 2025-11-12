@@ -15,6 +15,7 @@
  */
 
 #include "plugin/cpu/kernel_executor/kernel_select/cpu_kernel_task.h"
+#include <memory>
 #include "kernel/cpu/contiguous_cpu_kernel.h"
 #include "kernel/cpu/copy_with_slice_cpu_kernel.h"
 #include "include/runtime/memory/mem_pool/mem_tracker.h"
@@ -38,9 +39,15 @@ bool CpuContiguousKernelTask::RunWithRet() {
   auto device_context = context_->device_context();
   MS_EXCEPTION_IF_NULL(device_context);
 
-  const auto &input_address = context_->GetInputAddr(0);
-  const auto &output_address = context_->GetOutputAddr(0);
-  const auto &input_storage_info = context_->GetInputAddr(0)->GetTensorStorageInfo();
+  const auto &input = context_->GetInput(0);
+  const auto &input_address = std::static_pointer_cast<DeviceAddress>(input->device_address());
+  MS_EXCEPTION_IF_NULL(input_address);
+  const auto &input_storage_info = input->storage_info();
+
+  const auto &output = context_->GetOutput(0);
+  const auto &output_address = std::static_pointer_cast<DeviceAddress>(output->device_address());
+  MS_EXCEPTION_IF_NULL(output_address);
+
   MS_LOG(DEBUG) << "Input_storage_info:" << (input_storage_info == nullptr ? "" : input_storage_info->ToString())
                 << ", input_address size:" << input_address->GetSize()
                 << ", output_address size:" << output_address->GetSize();
@@ -64,12 +71,16 @@ bool CpuCopyWithSliceKernelTask::RunWithRet() {
   auto device_context = context_->device_context();
   MS_EXCEPTION_IF_NULL(device_context);
 
-  const auto &dst_device_address = context_->GetInputAddr(0);
-  const auto &src_device_address = context_->GetInputAddr(1);
+  const auto &dst_tensor = context_->GetInput(0);
+  const auto &dst_device_address = std::static_pointer_cast<DeviceAddress>(dst_tensor->device_address());
   MS_EXCEPTION_IF_NULL(dst_device_address);
+  const auto &dst_storage_info = dst_tensor->storage_info();
 
-  const auto &dst_storage_info = context_->GetInputAddr(0)->GetTensorStorageInfo();
-  const auto &src_storage_info = context_->GetInputAddr(1)->GetTensorStorageInfo();
+  const auto &src_tensor = context_->GetInput(1);
+  const auto &src_device_address = std::static_pointer_cast<DeviceAddress>(src_tensor->device_address());
+  MS_EXCEPTION_IF_NULL(src_device_address);
+  const auto &src_storage_info = src_tensor->storage_info();
+
   MS_LOG(DEBUG) << "Src_storage_info:" << (src_storage_info == nullptr ? "" : src_storage_info->ToString())
                 << ", dst_storage_info:" << (dst_storage_info == nullptr ? "" : dst_storage_info->ToString())
                 << ", src address size:" << src_device_address->GetSize()

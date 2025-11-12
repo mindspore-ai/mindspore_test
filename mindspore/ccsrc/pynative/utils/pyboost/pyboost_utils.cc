@@ -15,6 +15,9 @@
  */
 
 #include "mindspore/ccsrc/pynative/utils/pyboost/pyboost_utils.h"
+#include <string>
+#include <memory>
+#include <vector>
 #include <algorithm>
 #include <functional>
 #include <utility>
@@ -210,8 +213,9 @@ kernel::KernelModPtr PyBoostUtils::CreateKernelMod(const PrimitivePtr &prim, con
   return kernel_mod;
 }
 
-DeviceAddressPtr PyBoostUtils::ContiguousByDeviceAddress(const DeviceAddressPtr &device_sync) {
-  const auto &storage_info = device_sync->GetTensorStorageInfo();
+DeviceAddressPtr PyBoostUtils::MakeContiguousDeviceAddress(const tensor::TensorPtr &input_tensor) {
+  const auto &storage_info = input_tensor->storage_info();
+  const auto &device_sync = input_tensor->device_address();
   if (storage_info == nullptr) {
     return device_sync;
   }
@@ -227,15 +231,19 @@ DeviceAddressPtr PyBoostUtils::ContiguousByDeviceAddress(const DeviceAddressPtr 
   MS_EXCEPTION_IF_NULL(device_context);
 
   auto stream_id = device_context->device_res_manager_->GetCurrentStreamId();
-  auto address_size = GetTypeByte(TypeIdToType(old_device_address->type_id())) * SizeOf(storage_info->shape);
+  auto address_size = GetTypeByte(TypeIdToType(input_tensor->data_type())) * SizeOf(storage_info->shape);
   auto new_device_address = device_context->device_res_manager_->CreateDeviceAddress(
     nullptr, address_size, storage_info->shape, DEFAULT_FORMAT, old_device_address->type_id(),
     device::GetDeviceNameByType(device_context->device_context_key().device_type_), stream_id);
 
-  if (!device_context->GetKernelExecutor()->ExecuteKernelTask(runtime::KernelTaskType::kCONTIGUOUS_TASK,
-                                                              {old_device_address}, {new_device_address}, stream_id)) {
+  auto output_tensor =
+    std::make_shared<tensor::Tensor>(input_tensor->data_type(), storage_info->shape, new_device_address);
+
+  if (!device_context->GetKernelExecutor()->ExecuteKernelTask(runtime::KernelTaskType::kCONTIGUOUS_TASK, {input_tensor},
+                                                              {output_tensor}, stream_id)) {
     MS_LOG(EXCEPTION) << "ExecuteKernelTask failed, task_type:" << runtime::KernelTaskType::kCONTIGUOUS_TASK;
   }
+
   runtime::Pipeline::Get().WaitForward();
   return new_device_address;
 }
@@ -251,9 +259,8 @@ tensor::TensorPtr PyBoostUtils::CreateOutputTensor(const DeviceContext *device_c
                                      runtime::ProfilerRecorder::kNoName, false);
   auto output_tensor = tensor::from_spec(output_type, storage_info->shape, device::DeviceType::kNone);
   output_tensor->set_need_pipeline_sync(true);
-  output_tensor->set_contiguous_callback([](const DeviceAddressPtr &device_address) -> DeviceAddressPtr {
-    return ContiguousByDeviceAddress(device_address);
-  });
+  output_tensor->set_contiguous_callback(
+    [](const tensor::TensorPtr &self_tensor) -> DeviceAddressPtr { return MakeContiguousDeviceAddress(self_tensor); });
 
   auto input_device_address = input->device_address();
   MS_EXCEPTION_IF_NULL(input_device_address);

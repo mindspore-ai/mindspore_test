@@ -1472,60 +1472,64 @@ bool AscendKernelExecutor::LaunchCallback(CallbackFunc callback_func, size_t str
   return true;
 }
 
-void CustomizeCopyAscendInner(device::DeviceContext *device_context, const device::DeviceAddressPtr &input_addr,
-                              const device::DeviceAddressPtr &output_addr, const size_t &stream_id) {
-  // The input_addr_list address is malloc before
-  // Malloc for output tensors
+void CustomizeCopyAscendInner(device::DeviceContext *device_context, const tensor::TensorPtr &input_tensor,
+                              const tensor::TensorPtr &output_tensor, const size_t &stream_id) {
+  const auto &input_addr = std::static_pointer_cast<device::DeviceAddress>(input_tensor->device_address());
+  MS_EXCEPTION_IF_NULL(input_addr);
+  const auto &input_storage_info = input_tensor->storage_info();
+
+  const auto &output_addr = std::static_pointer_cast<device::DeviceAddress>(output_tensor->device_address());
+  MS_EXCEPTION_IF_NULL(output_addr);
+  const auto &output_storage_info = output_tensor->storage_info();
+
   device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, "PyNative", "Contiguous", "");
   device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, "PyNative", device::tracker::MemType::kPyNativeOutput,
                                                  output_addr->GetSize(), output_addr.get());
   device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(
     MarkTensorAsInput, "PyNative", device::GetDeviceNameByType(input_addr->GetDeviceType()), input_addr->GetPtr(),
-    input_addr->type_id(), input_addr->GetShapeVector(), input_addr->GetTensorStorageInfo());
+    input_addr->type_id(), input_addr->GetShapeVector(), input_storage_info);
   if (output_addr->GetPtr() == nullptr) {
     if (!device_context->device_res_manager_->AllocateMemory(output_addr.get())) {
       MS_LOG(EXCEPTION) << "Allocate memory failed";
     }
   }
-  const auto &input_storage_info = input_addr->GetTensorStorageInfo();
-  const auto &output_storage_info = output_addr->GetTensorStorageInfo();
   MS_LOG(DEBUG) << "Input_storage_info:" << (input_storage_info == nullptr ? "" : input_storage_info->ToString())
                 << ", output_storage_info:" << (output_storage_info == nullptr ? "" : output_storage_info->ToString())
                 << ", input address size:" << input_addr->GetSize()
                 << ", output address size:" << output_addr->GetSize();
 
   // Inplace output need be front
-  LAUNCH_ACLNN(aclnnInplaceCopy, device_context, stream_id, output_addr, input_addr);
+  LAUNCH_ACLNN(aclnnInplaceCopy, device_context, stream_id, output_tensor, input_tensor);
   device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(
     MarkTensorAsOutput, "PyNative", device::GetDeviceNameByType(output_addr->GetDeviceType()), output_addr->GetPtr(),
-    output_addr->type_id(), output_addr->GetShapeVector(), output_addr->GetTensorStorageInfo());
+    output_addr->type_id(), output_addr->GetShapeVector(), output_storage_info);
   MS_LOG(DEBUG) << "Launch end";
 }
 
 // Unconventional pyboost writing. Please do not refer to this to implement other operators!
-void CustomizeCopyAscend(device::DeviceContext *device_context, const device::DeviceAddressPtr &input_addr,
-                         const device::DeviceAddressPtr &output_addr, const size_t &stream_id) {
+void CustomizeCopyAscend(device::DeviceContext *device_context, const tensor::TensorPtr &input_tensor,
+                         const tensor::TensorPtr &output_tensor, const size_t &stream_id) {
   MS_LOG(DEBUG) << "Call start";
-  MS_EXCEPTION_IF_NULL(input_addr);
-  MS_EXCEPTION_IF_NULL(output_addr);
+  MS_EXCEPTION_IF_NULL(input_tensor);
+  MS_EXCEPTION_IF_NULL(output_tensor);
 
   if (runtime::Pipeline::Get().backend_stage()->CanPush()) {
     MS_LOG(DEBUG) << "Dispatch inplacecopy to backend queue";
     kernel::pyboost::PyBoostUtils::DispatchRun(
-      std::make_shared<runtime::PyBoostDeviceTask>([device_context, input_addr, output_addr, stream_id]() {
-        CustomizeCopyAscendInner(device_context, input_addr, output_addr, stream_id);
+      std::make_shared<runtime::PyBoostDeviceTask>([device_context, input_tensor, output_tensor, stream_id]() {
+        CustomizeCopyAscendInner(device_context, input_tensor, output_tensor, stream_id);
       }));
     return;
   }
 
   runtime::Pipeline::Get().WaitForward();
-  CustomizeCopyAscendInner(device_context, input_addr, output_addr, stream_id);
+  CustomizeCopyAscendInner(device_context, input_tensor, output_tensor, stream_id);
   MS_LOG(DEBUG) << "Launch end";
 }
 
 bool AscendKernelExecutor::ExecuteKernelTask(const runtime::KernelTaskType &task_type,
-                                             const device::DeviceAddressPtrList &input_addr_list,
-                                             const device::DeviceAddressPtrList &output_addr_list,
+                                             const tensor::TensorPtrList &input_tensors,
+                                             const tensor::TensorPtrList &output_tensors,
                                              const size_t &stream_id) const {
   MS_LOG(DEBUG) << "task_type:" << task_type;
   if (runtime::KernelTaskType::kCOPY_TASK == task_type) {
@@ -1533,22 +1537,33 @@ bool AscendKernelExecutor::ExecuteKernelTask(const runtime::KernelTaskType &task
     // Copy task is a in-place op, the output is the first input.
     // To reuse the aclnnInplaceCopy, the first input of Copy is used as the operator output,
     // and the second input is used as the operator input.
-    if (input_addr_list.size() != kCopyTaskInputsNum) {
-      MS_LOG(EXCEPTION) << "input_addr_list.size() is invalid, input_addr_list.size():" << input_addr_list.size();
+    if (input_tensors.size() != kCopyTaskInputsNum) {
+      MS_LOG(EXCEPTION) << "input_tensors.size() is invalid, input_tensors.size():" << input_tensors.size();
     }
-    CustomizeCopyAscend(device_context_, input_addr_list[1], input_addr_list[0], stream_id);
+    CustomizeCopyAscend(device_context_, input_tensors[1], input_tensors[0], stream_id);
   } else {
     // For contiguous task, there must be at least one input and one output.
-    if (input_addr_list.empty() || output_addr_list.empty()) {
-      MS_LOG(EXCEPTION) << "input_addr_list.size() or output_addr_list.size() is invalid, input_addr_list.size():"
-                        << input_addr_list.size() << ", output_addr_list.size():" << output_addr_list.size();
+    if (input_tensors.empty() || output_tensors.empty()) {
+      MS_LOG(EXCEPTION) << "input_tensors.size() or output_tensors.size() is invalid, input_tensors.size():"
+                        << input_tensors.size() << ", output_tensors.size():" << output_tensors.size();
     }
-    if (input_addr_list[0] != nullptr && input_addr_list[0]->GetDeviceType() == device::DeviceType::kCPU &&
-        output_addr_list[0] != nullptr && output_addr_list[0]->GetDeviceType() == device::DeviceType::kCPU) {
+
+    const auto &input = input_tensors[0];
+    const auto &input_device_address = std::static_pointer_cast<device::DeviceAddress>((input->device_address()));
+    MS_EXCEPTION_IF_NULL(input_device_address);
+    const auto &input_storage_info = input->storage_info();
+
+    const auto &output = output_tensors[0];
+    const auto &output_device_address = std::static_pointer_cast<device::DeviceAddress>(output->device_address());
+    MS_EXCEPTION_IF_NULL(output_device_address);
+
+    if (input_device_address != nullptr && input_device_address->GetDeviceType() == device::DeviceType::kCPU &&
+        output_device_address != nullptr && output_device_address->GetDeviceType() == device::DeviceType::kCPU) {
       // for unrefmode, the output is on host, just copy the device ptr
-      output_addr_list[0]->set_ptr(input_addr_list[0]->GetMutablePtr());
+      output_device_address->set_ptr(input_device_address->GetMutablePtr());
+
     } else {
-      CustomizeCopyAscend(device_context_, input_addr_list[0], output_addr_list[0], stream_id);
+      CustomizeCopyAscend(device_context_, input_tensors[0], output_tensors[0], stream_id);
     }
   }
 
@@ -1563,31 +1578,38 @@ bool AscendKernelExecutor::ExecuteKernelTask(const runtime::KernelTaskType &task
 
 // Task for graph mode, which receive pointers as input, it is used for convert input contiguous by aclnnInplaceCopy.
 bool AscendKernelExecutor::ExecuteKernelTask(const runtime::KernelTaskType &task_type,
-                                             const std::vector<device::DeviceAddress *> &input_addr_list,
-                                             const std::vector<device::DeviceAddress *> &output_addr_list,
+                                             const std::vector<KernelTensor *> &input_kernel_tensors,
+                                             const std::vector<KernelTensor *> &output_kernel_tensors,
                                              const size_t &stream_id) const {
   MS_LOG(DEBUG) << "task_type:" << task_type;
   MS_LOG(DEBUG) << "Graph call contiguous start";
-  auto input_addr = input_addr_list[0];
-  auto output_addr = output_addr_list[0];
+  const auto &input = input_kernel_tensors[0];
+  auto input_addr = input->device_address();
   MS_EXCEPTION_IF_NULL(input_addr);
+
+  const auto &output = output_kernel_tensors[0];
+  auto output_addr = output->device_address();
   MS_EXCEPTION_IF_NULL(output_addr);
+
   device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, "Graph", "Contiguous", "");
   device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, "Graph", device::tracker::MemType::kPyNativeOutput,
-                                                 output_addr->GetSize(), output_addr);
+                                                 output_addr->GetSize(), output_addr.get());
+
   if (output_addr->GetPtr() == nullptr) {
-    if (!device_context_->device_res_manager_->AllocateMemory(output_addr)) {
+    if (!device_context_->device_res_manager_->AllocateMemory(output_addr.get())) {
       MS_LOG(EXCEPTION) << "Allocate memory failed";
     }
   }
-  const auto &input_storage_info = input_addr->GetTensorStorageInfo();
-  const auto &output_storage_info = output_addr->GetTensorStorageInfo();
+
+  const auto &input_storage_info = input->tensor_storage_info();
+  const auto &output_storage_info = output->tensor_storage_info();
   MS_LOG(DEBUG) << "Input_storage_info:" << (input_storage_info == nullptr ? "" : input_storage_info->ToString())
                 << ", output_storage_info:" << (output_storage_info == nullptr ? "" : output_storage_info->ToString())
                 << ", input address size:" << input_addr->GetSize()
                 << ", output address size:" << output_addr->GetSize();
+
   auto stream_ptr = device_context_->device_res_manager_->GetStream(stream_id);
-  auto res = GEN_EXECUTOR(std::string("aclnnInplaceCopy"), output_addr, input_addr);
+  auto res = GEN_EXECUTOR(std::string("aclnnInplaceCopy"), output, input);
   auto workspace_size = std::get<0>(res);
   auto executor = std::get<1>(res);
   auto release_func = std::get<kIndex3>(res);

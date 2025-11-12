@@ -15,6 +15,10 @@
  */
 
 #include "runtime/core/actors/base/output_actor.h"
+#include <string>
+#include <vector>
+#include <algorithm>
+#include <memory>
 #include "runtime/core/actors/base/memory_manager_actor.h"
 #include "runtime/core/graph_executor/kernel_capture/graph_capture_manager.h"
 #include "include/runtime/hardware_abstract/device_context/device_context_manager.h"
@@ -92,15 +96,14 @@ void UpdateDynamicSequenceType(const AnfNodePtr &output_node, const kernel::Kern
   output_kernel_tensor->SetType(std::make_shared<List>(types));
 }
 
-device::DeviceAddressPtr MakeTensorContiguousCallback(const DeviceAddressPtr &address,
-                                                      const TensorStorageInfoPtr &storage) {
+device::DeviceAddressPtr MakeTensorContiguousCallback(const tensor::TensorPtr &input_tensor) {
+  const auto &address = input_tensor->device_address();
   MS_EXCEPTION_IF_NULL(address);
-  auto dev_address = std::dynamic_pointer_cast<device::DeviceAddress>(address);
-  MS_EXCEPTION_IF_NULL(dev_address);
-  if (storage == nullptr) {
-    return dev_address;
+  const auto &storage_info = input_tensor->storage_info();
+  if (storage_info == nullptr) {
+    return address;
   }
-  return DeviceAddressUtils::ConvertContiguousDeviceAddress(nullptr, dev_address);
+  return DeviceAddressUtils::ConvertContiguousDeviceAddress(nullptr, input_tensor);
 }
 
 void SyncOutputFromTensor(const TensorPtr &dst_tensor, const KernelTensorPtr &src_kernel_tensor,
@@ -279,9 +282,8 @@ void OutputActor::FetchParameterInput(OpContext<KernelTensor> *const context) {
       new_tensor->set_device_address(tensor_device_address);
     }
     if (device_tensor->GetTensorStorageInfo() != nullptr) {
-      new_tensor->set_contiguous_callback([this](const DeviceAddressPtr &address) -> DeviceAddressPtr {
-        return MakeTensorContiguousCallback(address, address->GetTensorStorageInfo());
-      });
+      new_tensor->set_contiguous_callback(
+        [this](const tensor::TensorPtr &self) -> DeviceAddressPtr { return MakeTensorContiguousCallback(self); });
     }
     outputs_[output_position] = new_tensor;
     if (outputs_[output_position] == nullptr) {
@@ -575,9 +577,8 @@ TensorPtr OutputActor::CreateOutputTensor(const AnfNodePtr &output_node, size_t 
   }
 
   if (output_kernel_tensor->tensor_storage_info()) {
-    tensor->set_contiguous_callback([this](const DeviceAddressPtr &address) -> DeviceAddressPtr {
-      return MakeTensorContiguousCallback(address, address->GetTensorStorageInfo());
-    });
+    tensor->set_contiguous_callback(
+      [this](const tensor::TensorPtr &self) -> DeviceAddressPtr { return MakeTensorContiguousCallback(self); });
   }
   return tensor;
 }

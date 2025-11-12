@@ -19,6 +19,9 @@
 #include <dlfcn.h>
 #include <libgen.h>
 #endif
+#include <memory>
+#include <string>
+#include <vector>
 #include <tuple>
 #include <utility>
 #include <unordered_set>
@@ -717,14 +720,13 @@ bool GPUKernelExecutor::DoLaunchKernel(const CNodePtr &kernel, const std::vector
 }
 
 bool GPUKernelExecutor::ExecuteKernelTask(const runtime::KernelTaskType &task_type,
-                                          const device::DeviceAddressPtrList &input_addr_list,
-                                          const device::DeviceAddressPtrList &output_addr_list,
-                                          const size_t &stream_id) const {
+                                          const tensor::TensorPtrList &input_tensors,
+                                          const tensor::TensorPtrList &output_tensors, const size_t &stream_id) const {
   auto stream = GPUDeviceManager::GetInstance().GetStream(stream_id);
   MS_EXCEPTION_IF_NULL(stream);
 
   auto task_context =
-    std::make_shared<runtime::KernelTaskContext>(device_context_, input_addr_list, output_addr_list, stream);
+    std::make_shared<runtime::KernelTaskContext>(device_context_, input_tensors, output_tensors, stream);
 
   auto task = GetTaskByTaskType(task_type, task_context);
   MS_EXCEPTION_IF_NULL(task);
@@ -743,8 +745,8 @@ bool GPUKernelExecutor::ExecuteKernelTask(const runtime::KernelTaskType &task_ty
     return false;
   }
 
-  runtime::DeviceAddressUtils::ProcessCrossStreamAddress("Contiguous", device_context_, stream_id, input_addr_list,
-                                                         output_addr_list);
+  runtime::DeviceAddressUtils::ProcessCrossStreamAddress("Contiguous", device_context_, stream_id, input_tensors,
+                                                         output_tensors);
   PROFILER_END(start_time, runtime::ProfilerModule::kKernel, runtime::ProfilerEvent::kKernelLaunch, "Contiguous",
                false);
 
@@ -802,17 +804,21 @@ void MallocMemoryAndCopyValue(const kernel::KernelTensorPtr &kernel_tensor, cons
 }  // namespace
 
 bool GPUKernelExecutor::ExecuteKernelTask(const runtime::KernelTaskType &task_type,
-                                          const std::vector<device::DeviceAddress *> &input_addr_list,
-                                          const std::vector<device::DeviceAddress *> &output_addr_list,
+                                          const std::vector<KernelTensor *> &input_kernel_tensors,
+                                          const std::vector<KernelTensor *> &output_kernel_tensors,
                                           const size_t &stream_id) const {
   if (task_type != runtime::KernelTaskType::kCONTIGUOUS_TASK) {
     MS_LOG(EXCEPTION) << "KernelTask not supported, task_type:" << task_type;
   }
   MS_LOG(DEBUG) << "Start gpu contiguous task.";
 
-  const auto &input_address = input_addr_list[0];
-  const auto &output_address = output_addr_list[0];
-  const auto &input_storage_info = input_address->GetTensorStorageInfo();
+  const auto &input_kernel_tensor = input_kernel_tensors[0];
+  const auto &input_address = input_kernel_tensor->device_address();
+  const auto &input_storage_info = input_kernel_tensor->tensor_storage_info();
+
+  const auto &output_kernel_tensor = output_kernel_tensors[0];
+  const auto &output_address = output_kernel_tensor->device_address();
+
   auto stream = device_context_->device_res_manager_->GetStream(stream_id);
   auto device_name = device::GetDeviceNameByType(device_context_->device_context_key().device_type_);
   MS_EXCEPTION_IF_NULL(stream);
@@ -820,8 +826,8 @@ bool GPUKernelExecutor::ExecuteKernelTask(const runtime::KernelTaskType &task_ty
   MS_LOG(DEBUG) << "Input_storage_info:" << (input_storage_info == nullptr ? "" : input_storage_info->ToString())
                 << ", input_address size:" << input_address->GetSize()
                 << ", output_address size:" << output_address->GetSize();
-  MallocMemoryForDeviceAddress(input_address, device_context_);
-  MallocMemoryForDeviceAddress(output_address, device_context_);
+  MallocMemoryForDeviceAddress(input_address.get(), device_context_);
+  MallocMemoryForDeviceAddress(output_address.get(), device_context_);
 
   // Ensure address life cycle
   device::DeviceAddressPtr shape_dev_addr = nullptr;

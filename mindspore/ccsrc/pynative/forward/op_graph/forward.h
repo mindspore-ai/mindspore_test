@@ -127,8 +127,7 @@ class PYNATIVE_EXPORT ForwardExecutor {
 
   bool ProcessViewOp(const FrontendOpRunInfoPtr &op_run_info, const ops::StridesCalcFunc &func_info,
                      bool is_tuple_output);
-  device::DeviceAddressPtr TensorContiguousCallback(const device::DeviceAddressPtr &device_address,
-                                                    const TensorStorageInfoPtr &storage_info);
+  device::DeviceAddressPtr TensorContiguousCallback(const tensor::TensorPtr &input_tensor);
 
   void CreateViewOutputTensor(const FrontendOpRunInfoPtr &op_run_info, const tensor::TensorPtr &input_tensor,
                               const TensorStorageInfoPtr &storage_info, runtime::KernelTaskType task_type,

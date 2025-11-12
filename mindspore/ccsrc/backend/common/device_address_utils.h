@@ -146,7 +146,7 @@ class BACKEND_COMMON_EXPORT DeviceAddressUtils {
 
   // Convert old_device_address to contiguous device address.
   static device::DeviceAddressPtr ConvertContiguousDeviceAddress(const DeviceContext *device_context,
-                                                                 const device::DeviceAddressPtr &old_device_address,
+                                                                 const tensor::TensorPtr &input_tensor,
                                                                  size_t stream_id = SIZE_MAX);
 
   // Convert view tensor to contiguous tensor.

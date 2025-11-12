@@ -38,8 +38,8 @@ class PYNATIVE_UTILS_EXPORT OpRunner {
 
   static std::vector<tensor::TensorPtr> GetTensorWithoutValueMask(const session::BackendOpRunInfoPtr &op_run_info);
   static void LaunchKernelTask(const runtime::KernelTaskType &task_type, DeviceContext *device_context,
-                               const device::DeviceAddressPtrList &input_addr_list,
-                               const device::DeviceAddressPtrList &output_addr_list, size_t stream_id);
+                               const tensor::TensorPtrList &input_tensors, const tensor::TensorPtrList &output_tensors,
+                               size_t stream_id);
   static DeviceContext *GetDeviceContext(device::DeviceType device_type);
   static void ChildAfterFork();
 };

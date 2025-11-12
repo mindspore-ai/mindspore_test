@@ -15,6 +15,9 @@
  */
 
 #include "plugin/cpu/cpu_device_context.h"
+
+#include <memory>
+#include <vector>
 #include <map>
 #include <string>
 #include <unordered_set>
@@ -598,11 +601,10 @@ bool CPUKernelExecutor::LaunchKernel(const CNodePtr &kernel, const std::vector<K
 }
 
 bool CPUKernelExecutor::ExecuteKernelTask(const runtime::KernelTaskType &task_type,
-                                          const device::DeviceAddressPtrList &input_addr_list,
-                                          const device::DeviceAddressPtrList &output_addr_list,
-                                          const size_t &stream_id) const {
+                                          const tensor::TensorPtrList &input_tensors,
+                                          const tensor::TensorPtrList &output_tensors, const size_t &stream_id) const {
   auto task_context =
-    std::make_shared<runtime::KernelTaskContext>(device_context_, input_addr_list, output_addr_list, nullptr);
+    std::make_shared<runtime::KernelTaskContext>(device_context_, input_tensors, output_tensors, nullptr);
   auto task = GetTaskByTaskType(task_type, task_context);
   MS_EXCEPTION_IF_NULL(task);
 
@@ -614,23 +616,27 @@ bool CPUKernelExecutor::ExecuteKernelTask(const runtime::KernelTaskType &task_ty
 }
 
 bool CPUKernelExecutor::ExecuteKernelTask(const runtime::KernelTaskType &task_type,
-                                          const std::vector<device::DeviceAddress *> &input_addr_list,
-                                          const std::vector<device::DeviceAddress *> &output_addr_list,
+                                          const std::vector<KernelTensor *> &input_kernel_tensors,
+                                          const std::vector<KernelTensor *> &output_kernel_tensors,
                                           const size_t &stream_id) const {
   if (task_type != runtime::KernelTaskType::kCONTIGUOUS_TASK) {
     MS_LOG(EXCEPTION) << "KernelTaskType not supported, task_type:" << task_type;
   }
   MS_LOG(DEBUG) << "Start Contiguous task";
 
-  const auto &input_address = input_addr_list[0];
-  const auto &output_address = output_addr_list[0];
-  const auto &input_storage_info = input_address->GetTensorStorageInfo();
+  const auto &input = input_kernel_tensors[0];
+  const auto &input_address = input->device_address();
+  const auto &input_storage_info = input->tensor_storage_info();
+
+  const auto &output = output_kernel_tensors[0];
+  const auto &output_address = output->device_address();
+
   MS_LOG(DEBUG) << "Input_storage_info:" << (input_storage_info == nullptr ? "" : input_storage_info->ToString())
                 << ", input_address size:" << input_address->GetSize()
                 << ", output_address size:" << output_address->GetSize();
 
-  MallocMemoryForDeviceAddress(input_address, device_context_);
-  MallocMemoryForDeviceAddress(output_address, device_context_);
+  MallocMemoryForDeviceAddress(input_address.get(), device_context_);
+  MallocMemoryForDeviceAddress(output_address.get(), device_context_);
 
   kernel::ContiguousCpuKernel contiguous_kernel;
   auto ret = contiguous_kernel.LaunchContiguous(input_address->type_id(), input_address, input_storage_info,
