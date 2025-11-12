@@ -96,11 +96,11 @@ def test_with_stream_limit():
     vector_num = re.findall('vector_num', content)
     cube_num = re.findall('cube_num', content)
     os.unsetenv('MS_DEV_DUMP_IR_PASSES')
-    assert np.allclose(out.asnumpy(), Tensor(np.zeros([3, 3]), ms.float32).asnumpy(), 1e-3, 1e-3)
     try:
         shutil.rmtree(save_path)
     except FileNotFoundError:
         pass
+    assert np.allclose(out.asnumpy(), Tensor(np.zeros([3, 3]), ms.float32).asnumpy(), 1e-3, 1e-3)
     assert len(stream_id_num) == 2
     assert len(vector_num) == 1
     assert len(cube_num) == 1
@@ -134,11 +134,11 @@ def test_with_stream_limit_runtime():
     vector_num = re.findall('vector_num', content)
     cube_num = re.findall('cube_num', content)
     os.unsetenv('MS_DEV_DUMP_IR_PASSES')
-    assert np.allclose(out.asnumpy(), x.asnumpy(), 1e-3, 1e-3)
     try:
         shutil.rmtree(save_path)
     except FileNotFoundError:
         pass
+    assert np.allclose(out.asnumpy(), x.asnumpy(), 1e-3, 1e-3)
     assert len(stream_id_num) == 2
     assert len(vector_num) == 1
     assert len(cube_num) == 1
@@ -173,11 +173,11 @@ def test_with_stream_limit_diff_stream():
     vector_num = re.findall('vector_num', content)
     cube_num = re.findall('cube_num', content)
     os.unsetenv('MS_DEV_DUMP_IR_PASSES')
-    assert np.allclose(out.asnumpy(), Tensor(np.zeros([3, 3]), ms.float32).asnumpy(), 1e-3, 1e-3)
     try:
         shutil.rmtree(save_path)
     except FileNotFoundError:
         pass
+    assert np.allclose(out.asnumpy(), Tensor(np.zeros([3, 3]), ms.float32).asnumpy(), 1e-3, 1e-3)
     assert len(stream_id_num) == 2
     assert not vector_num
     assert not cube_num
@@ -249,3 +249,86 @@ def test_with_stream_event_with_morph_multi():
     assert len(event_id_num) == 3
     assert len(vector_num) == 3
     assert len(cube_num) == 3
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_with_stream_limit_runtime_self():
+    """
+    Feature: Support with stream.
+    Description: Support with stream.
+    Expectation: Run success.
+    """
+
+    class MyMsJitStreamCtxNet(nn.Cell):
+        def __init__(self):
+            super().__init__()
+            self.s5 = Stream()
+
+        def construct(self, x):
+            with ms.runtime.StreamCtx(self.s5):
+                y = x * 2
+                with ms.runtime.StreamLimitCtx(self.s5, 8, 8):
+                    z = a + b + x
+            return z - y
+
+
+    os.environ['MS_DEV_DUMP_IR_PASSES'] = 'validate'
+    save_path = "./test_with_stream_limit_runtime_self"
+    context.set_context(save_graphs=True, save_graphs_path=save_path)
+    net = MyMsJitStreamCtxNet()
+    x = Tensor(np.ones([3, 3]), ms.float32)
+    out = net(x)
+    content = read_file(save_path)
+    stream_id_num = re.findall('stream_id', content)
+    vector_num = re.findall('vector_num', content)
+    cube_num = re.findall('cube_num', content)
+    os.unsetenv('MS_DEV_DUMP_IR_PASSES')
+    try:
+        shutil.rmtree(save_path)
+    except FileNotFoundError:
+        pass
+    assert np.allclose(out.asnumpy(), x.asnumpy(), 1e-3, 1e-3)
+    assert len(stream_id_num) == 2
+    assert len(vector_num) == 1
+    assert len(cube_num) == 1
+
+s4 = Stream()
+s6 = Stream()
+stream_list = [s4, s6]
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_with_stream_limit_diff_stream_list():
+    """
+    Feature: Support with stream limit context.
+    Description: Support with stream limit context.
+    Expectation: Run success.
+    """
+
+    class MyMsJitStreamCtxNet(nn.Cell):
+        def construct(self, x):
+            y = x * 2
+            with MyMsJitStreamCtx(stream_list[1]):
+                z = a + b + x
+                with StreamLimitCtx(stream_list[1], 8, 8):
+                    y = y + ops.abs(a)
+            return z - y
+
+    os.environ['MS_DEV_DUMP_IR_PASSES'] = 'validate'
+    save_path = "./test_with_stream_limit_diff_stream"
+    context.set_context(save_graphs=True, save_graphs_path=save_path)
+    net = MyMsJitStreamCtxNet()
+    x = Tensor(np.ones([3, 3]), ms.float32)
+    out = net(x)
+    content = read_file(save_path)
+    stream_id_num = re.findall('stream_id', content)
+    vector_num = re.findall('vector_num', content)
+    cube_num = re.findall('cube_num', content)
+    os.unsetenv('MS_DEV_DUMP_IR_PASSES')
+    try:
+        shutil.rmtree(save_path)
+    except FileNotFoundError:
+        pass
+    assert np.allclose(out.asnumpy(), Tensor(np.zeros([3, 3]), ms.float32).asnumpy(), 1e-3, 1e-3)
+    assert len(stream_id_num) == 2
+    assert len(vector_num) == 1
+    assert len(cube_num) == 1

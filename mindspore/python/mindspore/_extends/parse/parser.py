@@ -1182,7 +1182,7 @@ class Parser:
         if var in self.global_namespace:
             logger.debug(f"Found '{var}' in global_namespace {self.global_namespace.__str__()}.")
             value = self.global_namespace[var]
-            logger.error(f"value: '{value}'.")
+            logger.debug(f"value: '{value}'.")
             if value == StreamLimitCtx or issubclass(value, StreamLimitCtx):
                 logger.debug(f"Found '{value}' is StreamLimitCtx.")
                 return True

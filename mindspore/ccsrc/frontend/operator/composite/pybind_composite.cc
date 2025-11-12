@@ -1,7 +1,7 @@
 /**
  * This is the C++ adaptation and derivative work of Myia (https://github.com/mila-iqia/myia/).
  *
- * Copyright 2019-2023 Huawei Technologies Co., Ltd
+ * Copyright 2019-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@
 #include "frontend/operator/composite/dict_operation.h"
 #include "frontend/operator/composite/map.h"
 #include "frontend/operator/composite/unpack_call.h"
+#include "frontend/operator/composite/with_stream_call.h"
 #include "frontend/operator/composite/vmap.h"
 #include "frontend/operator/composite/multitype_funcgraph.h"
 #include "frontend/operator/composite/zip_operation.h"
@@ -148,6 +149,10 @@ void RegCompositeOpsGroup(const py::module *m) {
 
   // Reg UnpackCall
   (void)py::class_<UnpackCall, MetaFuncGraph, std::shared_ptr<UnpackCall>>(*m, "UnpackCall_")
+    .def(py::init<std::string &>());
+
+  // Reg WithStreamCall
+  (void)py::class_<WithStreamCall, MetaFuncGraph, std::shared_ptr<WithStreamCall>>(*m, "WithStreamCall_")
     .def(py::init<std::string &>());
 
   // Reg ZipOperation

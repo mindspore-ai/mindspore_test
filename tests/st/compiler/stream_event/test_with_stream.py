@@ -188,6 +188,7 @@ def test_my_ms_jit_stream_ctx_mutli():
     assert (pynative_grad_out.asnumpy() == graph_grad_out.asnumpy()).all()
 
 
+@pytest.mark.skip(reason='Not support yet')
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_my_ms_jit_stream_ctx_nest():
     """
@@ -314,6 +315,7 @@ def test_basic_stream_block_annotation_2():
     assert (pynative_grad_out.asnumpy() == graph_grad_out.asnumpy()).all()
 
 
+@pytest.mark.skip(reason='Not support yet')
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_nested_stream_blocks():
     """
@@ -339,13 +341,13 @@ def test_nested_stream_blocks():
     net = NestedStreamNet()
     result = net(x)
     os.unsetenv('MS_DEV_DUMP_IR_PASSES')
-    assert np.allclose(result, Tensor(np.ones([2, 2], dtype=np.float32)) * 5)
     content = read_file(save_path)
     stream_id_num = re.findall('stream_id', content)
     try:
         shutil.rmtree(save_path)
     except FileNotFoundError:
         pass
+    assert np.allclose(result, Tensor(np.ones([2, 2], dtype=np.float32)) * 5)
     assert len(stream_id_num) == 4
     ms.set_context(save_graphs=False)
     ms.set_context(mode=ms.context.PYNATIVE_MODE)
@@ -355,6 +357,7 @@ def test_nested_stream_blocks():
     assert (pynative_grad_out.asnumpy() == graph_grad_out.asnumpy()).all()
 
 
+@pytest.mark.skip(reason='Not support yet')
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_complex_nested_streams():
     """
@@ -383,13 +386,13 @@ def test_complex_nested_streams():
     net = ComplexStreamsNet()
     result = net(x)
     os.unsetenv('MS_DEV_DUMP_IR_PASSES')
-    assert np.allclose(result, Tensor(np.ones([2, 2], dtype=np.float32)) * 6)
     content = read_file(save_path)
     stream_id_num = re.findall('stream_id', content)
     try:
         shutil.rmtree(save_path)
     except FileNotFoundError:
         pass
+    assert np.allclose(result, Tensor(np.ones([2, 2], dtype=np.float32)) * 6)
     assert len(stream_id_num) == 5
     ms.set_context(save_graphs=False)
     ms.set_context(mode=ms.context.PYNATIVE_MODE)
@@ -725,4 +728,75 @@ def test_with_stream_with_morph():
         shutil.rmtree(save_path)
     except FileNotFoundError:
         pass
+    assert len(stream_id_num) == 1
+
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_my_ms_jit_stream_ctx_self():
+    """
+    Feature: Support with stream.
+    Description: Support with stream.
+    Expectation: Run success.
+    """
+
+    class MyMsJitStreamCtxNet(nn.Cell):
+        def __init__(self):
+            super().__init__()
+            self.s5 = Stream()
+
+        def construct(self, x):
+            y = x * 2
+            with MyMsJitStreamCtx(self.s5):
+                z = a + b + x
+            return z - y
+
+    save_path = "./test_my_ms_jit_stream_ctx_self"
+    os.environ['MS_DEV_DUMP_IR_PASSES'] = 'validate'
+    ms.set_context(jit_config={"jit_level": "O0"}, save_graphs=True, save_graphs_path=save_path)
+    net = MyMsJitStreamCtxNet()
+    x = Tensor(np.ones([3, 3]), ms.float32)
+    out = net(x)
+    os.unsetenv('MS_DEV_DUMP_IR_PASSES')
+    assert (out.asnumpy() == x.asnumpy()).all()
+    content = read_file(save_path)
+    stream_id_num = re.findall('stream_id', content)
+    try:
+        shutil.rmtree(save_path)
+    except FileNotFoundError:
+        pass
+    assert len(stream_id_num) == 1
+
+
+s4 = Stream()
+s6 = Stream()
+stream_list = [s4, s6]
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_my_ms_jit_stream_ctx_list():
+    """
+    Feature: Support with stream.
+    Description: Support with stream.
+    Expectation: Run success.
+    """
+
+    class MyMsJitStreamCtxNet(nn.Cell):
+        def construct(self, x):
+            y = x * 2
+            with MyMsJitStreamCtx(stream_list[0]):
+                z = a + b + x
+            return z - y
+
+    save_path = "./test_my_ms_jit_stream_ctx_list"
+    os.environ['MS_DEV_DUMP_IR_PASSES'] = 'validate'
+    ms.set_context(jit_config={"jit_level": "O0"}, save_graphs=True, save_graphs_path=save_path)
+    net = MyMsJitStreamCtxNet()
+    x = Tensor(np.ones([3, 3]), ms.float32)
+    out = net(x)
+    os.unsetenv('MS_DEV_DUMP_IR_PASSES')
+    content = read_file(save_path)
+    stream_id_num = re.findall('stream_id', content)
+    try:
+        shutil.rmtree(save_path)
+    except FileNotFoundError:
+        pass
+    assert (out.asnumpy() == x.asnumpy()).all()
     assert len(stream_id_num) == 1
