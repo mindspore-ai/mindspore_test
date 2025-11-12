@@ -27,7 +27,7 @@ from mindspore.common import mutable
 from mindspore.common.api import jit
 from tests.mark_utils import arg_mark
 from mindspore._c_expression import get_code_extra
-from tests.st.pi_jit.share.utils import pi_jit_with_config, assert_equal
+from tests.st.pi_jit.share.utils import pi_jit_with_config, assert_equal, match_array
 from mindspore._c_expression import TensorPy as CppTensor
 from tests.st.pi_jit.share.utils import assert_graph_compile_status
 
@@ -1697,3 +1697,123 @@ def test_unpack_for_variable_tensor():
     assert jcr['stat'] == 'GRAPH_CALLABLE'
     assert jcr['break_count_'] == 0
     assert len(jcr['code']['phase_']) > 0
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+def test_jit_return_function():
+    """
+    Feature: ms.jit returning function closure.
+    Description: Return a python function from nn.Cell and execute it under jit bytecode mode.
+    Expectation: JIT result matches pynative result.
+    Migrated from: test_pijit_use.py::test_pijit_return_func
+    """
+
+    class PlainNet(nn.Cell):
+        def __init__(self):
+            super().__init__()
+            self.k = 1
+
+        def func(self, a):
+            def increment(x):
+                return (x + a) * self.k
+
+            return increment
+
+        def construct(self, x):
+            inc = self.func(3)
+            return inc(x)
+
+    class JitNet(PlainNet):
+        # TODO: should support fullgraph=True
+        @jit(capture_mode="bytecode")
+        def construct(self, x):
+            inc = self.func(3)  # graph break
+            return inc(x)
+
+    input_tensor = Tensor(np.ones((2, 3), np.float32))
+    pynative_net = PlainNet()
+    jit_net = JitNet()
+
+    pynative_result = pynative_net(input_tensor)
+    jit_result = jit_net(Tensor(np.ones((2, 3), np.float32)))
+
+    match_array(pynative_result, jit_result, error=5)
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+def test_jit_return_bool():
+    """
+    Feature: ms.jit returning boolean branch.
+    Description: Return bool value in helper and use it inside jit bytecode construct.
+    Expectation: JIT result matches pynative result.
+    Migrated from: test_pijit_use.py::test_pijit_return_bool
+    """
+
+    class PlainNet(nn.Cell):
+        def __init__(self):
+            super().__init__()
+            self.k = 3
+
+        def func(self, x):
+            data = x.asnumpy()
+            return bool((data > self.k).all())
+
+        def construct(self, x):
+            if self.func(x):
+                return x + x
+            return x * x
+
+    class JitNet(PlainNet):
+        @jit(capture_mode="bytecode")
+        def construct(self, x):
+            if self.func(x):
+                return x + x
+            return x * x
+
+    input_np = np.ones((2, 3), np.float32)
+    pynative_net = PlainNet()
+    jit_net = JitNet()
+
+    pynative_result = pynative_net(Tensor(input_np))
+    jit_result = jit_net(Tensor(input_np))
+
+    match_array(pynative_result, jit_result, error=5)
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+def test_jit_return_none():
+    """
+    Feature: ms.jit returning None helper.
+    Description: Update Parameter inside helper that returns None and use it under jit bytecode mode.
+    Expectation: JIT result matches pynative result and keeps parameter synchronized.
+    Migrated from: test_pijit_use.py::test_pijit_return_none
+    """
+
+    class PlainNet(nn.Cell):
+        def __init__(self):
+            super().__init__()
+            self.p = Parameter(Tensor([1, 2], dtype.int32))
+
+        def func(self):
+            self.p += 3
+
+        def construct(self, x):
+            self.func()
+            return x * self.p
+
+    class JitNet(PlainNet):
+        @jit(capture_mode="bytecode", fullgraph=True)
+        def construct(self, x):
+            self.func()
+            return x * self.p
+
+    input_tensor = Tensor([2, 3], dtype.float32)
+    pynative_net = PlainNet()
+    jit_net = JitNet()
+
+    pynative_result = pynative_net(input_tensor)
+    jit_result = jit_net(Tensor([2, 3], dtype.float32))
+
+    match_array(pynative_result, jit_result, error=5)
+    # TODO: fix this test, pijit does not support Parameter inplace add
+    # match_array(pynative_net.p, jit_net.p)
