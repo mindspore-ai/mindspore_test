@@ -97,10 +97,8 @@ class BACKEND_COMMON_EXPORT TcpServer {
   void Init();
   void Start();
   void Stop();
-  void SendToAllClients(const char *data, size_t len);
   void AddConnection(const evutil_socket_t &fd, std::shared_ptr<TcpConnection> connection);
   void RemoveConnection(const evutil_socket_t &fd);
-  std::shared_ptr<TcpConnection> &GetConnectionByFd(const evutil_socket_t &fd);
   OnServerReceiveMessage GetServerReceive() const;
   void SetMessageCallback(const OnServerReceiveMessage &cb);
   bool SendMessage(const std::shared_ptr<TcpConnection> &conn, const std::shared_ptr<CommMessage> &message);
@@ -110,7 +108,6 @@ class BACKEND_COMMON_EXPORT TcpServer {
   uint16_t BoundPort() const;
   std::string BoundIp() const;
   int ConnectionNum() const;
-  const std::map<evutil_socket_t, std::shared_ptr<TcpConnection>> &Connections() const;
 
  protected:
   static void ListenerCallback(struct evconnlistener *listener, evutil_socket_t socket, struct sockaddr *saddr,
