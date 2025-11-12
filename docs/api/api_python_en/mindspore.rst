@@ -20,6 +20,7 @@ Tensor
     mindspore.SparseTensor
     mindspore.is_tensor
     mindspore.from_numpy
+    mindspore.frombuffer
 
 Parameter
 ^^^^^^^^^^
@@ -155,7 +156,7 @@ Recompute
     :template: classtemplate.rst
 
     mindspore.recompute
-    
+
 JIT
 ---
 

@@ -48,6 +48,7 @@ from mindspore.ops._utils import arg_handler, arg_dtype_cast
 from mindspore import onnx
 from mindspore import graph
 from mindspore import multiprocessing
+from mindspore._c_expression import frombuffer
 
 __all__ = ["run_check"]
 __all__.extend(__version__)
@@ -62,3 +63,4 @@ __all__.extend(device_manager.__all__)
 __all__.extend(runtime.__all__)
 __all__.extend(graph.__all__)
 __all__.append("Profiler")
+__all__.append("frombuffer")
