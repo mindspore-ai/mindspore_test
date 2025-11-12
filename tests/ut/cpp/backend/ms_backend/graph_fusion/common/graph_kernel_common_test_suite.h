@@ -40,6 +40,9 @@ class GraphKernelCommonTestSuite : public UT::Common {
   AnfNodePtrList GetAllNodes(const FuncGraphPtr &fg);
   CNodePtrList GetAllCNodes(const FuncGraphPtr &fg);
   CNodePtrList GetAllGKNodes(const FuncGraphPtr &fg);
+
+  void CheckInputOutputType(const AnfNodePtr &node, const std::vector<TypeId> &target_inputs_type,
+                            TypeId target_output_type);
 };
 
 template <typename T>

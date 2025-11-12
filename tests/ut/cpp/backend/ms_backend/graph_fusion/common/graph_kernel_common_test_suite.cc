@@ -20,6 +20,7 @@
 #include "backend/ms_backend/graph_fusion/core/graph_kernel_pass_manager.h"
 #include "ir/func_graph_flag.h"
 #include "ir/graph_utils.h"
+#include "include/backend/anf_runtime_algorithm.h"
 
 namespace mindspore::graphkernel::test {
 class EmptyPass : public mindspore::opt::Pass {
@@ -73,5 +74,43 @@ void GraphKernelCommonTestSuite::SetDeviceTarget(const std::string &device) {
   auto context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context);
   context->set_param<std::string>(MS_CTX_DEVICE_TARGET, device);
+}
+
+void GraphKernelCommonTestSuite::CheckInputOutputType(const AnfNodePtr &node,
+                                                      const std::vector<TypeId> &target_inputs_type,
+                                                      TypeId target_output_type) {
+  // check abstract
+  auto abstract = node->abstract();
+  MS_EXCEPTION_IF_NULL(abstract);
+  auto tensor = abstract->cast<abstract::AbstractTensorPtr>();
+  MS_EXCEPTION_IF_NULL(tensor);
+  MS_EXCEPTION_IF_NULL(tensor->element());
+  auto type_ptr = tensor->element()->GetType();
+  MS_EXCEPTION_IF_NULL(type_ptr);
+  auto type = type_ptr->type_id();
+  if (type != target_output_type) {
+    MS_LOG(ERROR) << "abstract expect data type: " << TypeIdToString(target_output_type);
+    MS_LOG(ERROR) << "abstract output data type: " << TypeIdToString(type);
+    ASSERT_TRUE(false);
+  }
+  // check build info
+  MS_EXCEPTION_IF_NULL(node->kernel_info());
+  auto build_info = AnfAlgo::GetSelectKernelBuildInfo(node);
+  MS_EXCEPTION_IF_NULL(build_info);
+  auto inputs_type = build_info->GetAllInputDeviceTypes();
+  for (size_t i = 0; i < target_inputs_type.size(); ++i) {
+    if (inputs_type[i] != target_inputs_type[i]) {
+      MS_LOG(ERROR) << "build_info expect input[" << i << "] data type: " << TypeIdToString(target_inputs_type[i]);
+      MS_LOG(ERROR) << "build_info output input[" << i << "] data type: " << TypeIdToString(inputs_type[i]);
+      ASSERT_TRUE(false);
+    }
+  }
+  auto outputs_type = build_info->GetAllOutputDeviceTypes();
+  ASSERT_TRUE(!outputs_type.empty());
+  if (outputs_type[0] != target_output_type) {
+    MS_LOG(ERROR) << "build_info expect data type: " << TypeIdToString(target_output_type);
+    MS_LOG(ERROR) << "build_info output data type: " << TypeIdToString(outputs_type[0]);
+    ASSERT_TRUE(false);
+  }
 }
 }  // namespace mindspore::graphkernel::test
