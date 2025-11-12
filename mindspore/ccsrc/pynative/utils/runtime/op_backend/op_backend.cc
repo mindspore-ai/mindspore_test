@@ -102,7 +102,8 @@ std::vector<KernelTensorPtr> CreateGraphOutputKernelTensor(const OpCompilerInfoP
     MS_EXCEPTION_IF_NULL(shape_vector);
     const auto &shape = shape_vector->shape();
     MS_EXCEPTION_IF_NULL(cache_output_kernel_tensor->device_address());
-    auto output_type = cache_output_kernel_tensor->device_address()->type_id();
+
+    auto output_type = cache_output_kernel_tensor->dtype_id();
     const auto &output_format = kernel::GetFormatFromEnumToStr(cache_output_kernel_tensor->format());
     auto address_size = runtime::DeviceAddressUtils::GetTensorDeviceSize(device_context, output_node, shape,
                                                                          output_format, output_type, index);
@@ -393,6 +394,7 @@ tensor::TensorPtr PostRunOp::CreateOutputTensor(const AnfNodePtr &output_node, s
 
   // Put device tensor into host tensor.
   tensor->set_device_address(device_tensor);
+  tensor->set_format(kernel_tensor->format());
   tensor->set_sync_status(kNeedSyncDeviceToHost);
   return tensor;
 }
@@ -540,12 +542,15 @@ tensor::TensorPtr PostRunOp::CreateOutputTensorDynamicImpl(const OpCompilerInfoP
   // when infer type is not equal to device type.
   const auto &address = kernel_tensor->device_address();
   MS_EXCEPTION_IF_NULL(address);
-  auto tensor = tensor::from_spec(address->type_id(), kernel_tensor->GetShapeVector(), device::DeviceType::kNone);
+
+  auto tensor =
+    tensor::from_spec(kernel_tensor->dtype_id(), kernel_tensor->GetShapeVector(), device::DeviceType::kNone);
 
   // Put device tensor into host tensor.
   address->SetNodeIndex(output_node, output_index);
   address->set_padding_type(op_compiler_info->graph_outputs_padding_type_[idx_in_graph_outputs]);
   tensor->set_device_address(address);
+  tensor->set_format(kernel_tensor->format());
   return tensor;
 }
 
@@ -583,6 +588,7 @@ void ViewBackend::RunViewKernelTask(const pynative::BaseOpRunInfo &base_op_run_i
       MS_EXCEPTION_IF_NULL(input_addr);
 
       input_tensor->set_device_address(input_addr);
+      input_tensor->set_format(kernel_tensor->format());
       RunAllocMemTask(device_context, input_tensor, enable_async);
       (void)input_tensors.emplace_back(input_tensor);
     } else {
@@ -653,6 +659,6 @@ void ViewBackend::AllocateMemForTensor(const tensor::TensorPtr &tensor, DeviceCo
 
   device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(
     MarkTensorAsOutput, "PyNative", device::GetDeviceNameByType(device_address->GetDeviceType()),
-    device_address->GetPtr(), device_address->type_id(), device_address->GetShapeVector(), tensor->storage_info());
+    device_address->GetPtr(), tensor->data_type(), tensor->shape(), tensor->storage_info());
 }
 }  // namespace mindspore::compile

@@ -258,12 +258,22 @@ class MS_CORE_API Tensor : public MetaTensor {
   /// \brief Get the tensor's format
   ///
   /// \return Get the data format
-  std::string format() const;
+  Format format() const;
 
   /// \brief Set the tensor's format
   ///
   /// \param[in] format The Tensor format to be seted
-  void set_format(const std::string &format);
+  void set_format(const Format &format);
+
+  /// \brief Get the tensor's implicit copy format
+  ///
+  /// \return Get the data format
+  Format implicit_copy_format() const { return implicit_copy_format_; }
+
+  /// \brief Set the tensor's implicit copy format
+  ///
+  /// \param[in] format The Tensor format to be seted
+  void set_implicit_copy_format(const Format &format) { implicit_copy_format_ = format; }
 
   /// \brief Get Tensor data pointer for c++ type
   ///
@@ -742,6 +752,8 @@ class MS_CORE_API Tensor : public MetaTensor {
 
   // shared_ptr size 16
   Version version_{};
+  Format format_{Format::DEFAULT_FORMAT};
+  Format implicit_copy_format_{Format::DEFAULT_FORMAT};
   mutable DeviceAddressPtr device_sync_{nullptr};
   mutable DeviceAddressPtr implicit_copy_address_{nullptr};
   AutoGradMetaInterfacePtr auto_grad_meta_data_{nullptr};

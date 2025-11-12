@@ -13,6 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include <string>
+#include <memory>
 #include "ir/tensor.h"
 #include "utils/ms_context.h"
 #include "include/utils/tensor_py.h"
@@ -68,12 +70,12 @@ void ReuseDataPtr(const py::object &dst_, const py::object &src_, size_t offset)
     if (!host_context->device_res_manager_->SyncAllStreams()) {
       MS_LOG(ERROR) << "Sync stream failed.";
     }
-    DeviceAddressExtPtr src_ext =
-      std::make_shared<DeviceAddressExt>(kernel::GetFormatFromStrToEnum(src->format()), src->data_type(), src->shape());
+    DeviceAddressExtPtr src_ext = std::make_shared<DeviceAddressExt>(src->format(), src->data_type(), src->shape());
     DeviceAddressExtPtr dst_ext =
       std::make_shared<DeviceAddressExt>(Format::DEFAULT_FORMAT, src->data_type(), src->shape());
     SyncCopy(src_device_address, src->device_address(), src_device_address->stream_id(), src_ext, dst_ext);
     src->set_device_address(src_device_address);
+    src->set_format(dst_ext->format_);
   }
 
   // create device address with src ptr
@@ -96,6 +98,7 @@ void ReuseDataPtr(const py::object &dst_, const py::object &src_, size_t offset)
 
   // set device address to dst
   dst->set_device_address(dst_device_address);
+  dst->set_format(Format::DEFAULT_FORMAT);
 }
 
 void RegReuseDataPtr(py::module *m) {

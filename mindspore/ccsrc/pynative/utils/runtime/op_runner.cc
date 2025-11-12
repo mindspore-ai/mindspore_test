@@ -76,8 +76,9 @@ void UpdateInputTensorFromDevice(const std::vector<AnfNodePtr> &input_nodes,
     CheckAutoH2D(device_context, tensor);
 
     if (tensor_address != nullptr) {
+      auto node_kernel_tensor = AnfAlgo::GetOutputKernelTensor(input_node, 0);
       if (tensor_address->GetDeviceType() != device_context->GetDeviceType() ||
-          tensor_address->format() != node_address->format()) {
+          tensor->format() != node_kernel_tensor->format()) {
         runtime::Pipeline::Get().WaitForward();
         // malloc memory in a contiguous block.
         node_address->set_from_persistent_mem(tensor->is_parameter());
@@ -85,8 +86,10 @@ void UpdateInputTensorFromDevice(const std::vector<AnfNodePtr> &input_nodes,
 
         tensor->set_sync_status(kNeedSyncHostToDeviceImmediately);
         tensor->set_need_pipeline_sync(true);
-        tensor->set_device_address(node_address);
         tensor->set_implicit_copy_address(tensor_address);
+        tensor->set_implicit_copy_format(tensor->format());
+        tensor->set_device_address(node_address);
+        tensor->set_format(node_kernel_tensor->format());
         MS_LOG(DEBUG) << "Set to_device callback for tensor " << tensor->ToString() << " id " << tensor->id();
       }
     }
@@ -192,8 +195,7 @@ void CopyTensorDataToDevice(const tensor::TensorPtr &tensor, const AnfNodePtr &n
 
   device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(
     MarkTensorAsOutput, "PyNative", device::GetDeviceNameByType(device_address->GetDeviceType()),
-    device_address->GetPtr(), device_address->type_id(), device_address->GetShapeVector(),
-    device_address->GetTensorStorageInfo());
+    device_address->GetPtr(), tensor->data_type(), tensor->shape(), device_address->GetTensorStorageInfo());
 }
 
 void CopyValueNodeDataToDevice(const KernelGraphPtr &graph, const device::DeviceContext *device_context) {
@@ -340,7 +342,7 @@ bool MallocForKernelOutput(const std::shared_ptr<OpRuntimeInfo> &runtime_info, c
     MS_EXCEPTION_IF_NULL(device_address);
     // For example, we need to call cudnnGetRNNTrainingReserveSize to get real output size in LstmGpuKernelMod!
     if (kernel_out_size_list[i] != device_address->GetSize() &&
-        AnfAlgo::GetOutputFormat(node, i) == device_address->format()) {
+        AnfAlgo::GetOutputFormat(node, i) == kernel_tensor->GetStringFormat()) {
       // If the format of the DeviceAddress is different, then the size is originally different.
       // Such as NCHW(1,1,1,3) and NC1HWC0(1,1,1,1,16). So we don't need to update the size.
       if (device_address->GetPtr() != nullptr) {
@@ -585,17 +587,6 @@ void MallocForConstValue(const pynative::OpCompilerInfoPtr &op_compiler_info) {
   CopyValueNodeDataToDevice(graph, device_context);
 }
 
-void UpdateOutputShape(const std::vector<EdgePtr> &output_edges) {
-  for (const auto &edge : output_edges) {
-    MS_EXCEPTION_IF_NULL(edge);
-    const auto &kernel_tensor = edge->kernel_tensor_;
-    MS_EXCEPTION_IF_NULL(kernel_tensor);
-    auto device_address = kernel_tensor->device_address();
-    MS_EXCEPTION_IF_NULL(device_address);
-    device_address->SetShapeVector(kernel_tensor->GetShapeVector());
-  }
-}
-
 void TrackerACLMemory(const std::vector<kernel::KernelTensor *> &input_tensors,
                       const std::vector<kernel::KernelTensor *> &output_tensors) {
   if (!device::tracker::MemTrackerManager::GetInstance().IsEnabled()) {
@@ -725,7 +716,6 @@ void UpdateOutputDeviceInfo(const std::vector<EdgePtr> &edges, const CNodePtr &k
     MS_EXCEPTION_IF_NULL(kernel_tensor);
     const auto &device_address = kernel_tensor->device_address();
     MS_EXCEPTION_IF_NULL(device_address);
-    device_address->SetShapeVector(kernel_tensor->GetShapeVector());
     device_address->SetSize(output_size_list[i]);
   }
 }
@@ -743,8 +733,8 @@ void UpdateAddressInfoByInputTensor(const OpCompilerInfoPtr &op_compiler_info, c
   auto origin_address = kernel_tensor->device_address();
   MS_EXCEPTION_IF_NULL(origin_address);
 
-  const auto &format = origin_address->format();
-  const auto dtype = origin_address->type_id();
+  const auto &format = kernel_tensor->GetStringFormat();
+  const auto dtype = kernel_tensor->dtype_id();
   const auto &shape = tensor->shape();
   size_t tensor_size = DeviceAddressUtils::GetTensorDeviceSize(device_context, node, shape, format, dtype, 0);
 
@@ -755,7 +745,6 @@ void UpdateAddressInfoByInputTensor(const OpCompilerInfoPtr &op_compiler_info, c
   new_kernel_tensor->set_device_ptr(nullptr);
   auto new_device_address = new_kernel_tensor->device_address();
   MS_EXCEPTION_IF_NULL(new_device_address);
-  new_device_address->SetShapeVector(shape);
   new_device_address->SetSize(tensor_size);
   new_device_address->set_from_persistent_mem(tensor->is_parameter());
 
@@ -1000,7 +989,6 @@ void DynamicOpRunner::RunSingleOpGraph(const session::BackendOpRunInfoPtr &op_ru
                                "memory in dryrun mode.";
         }
         kernel_mod->UpdateOutputShapeAndSize(input_kernel_tensors, output_kernel_tensors);
-        UpdateOutputShape(output_edges);
       }
     }
     runtime::DeviceAddressUtils::ProcessCrossStreamAddress(op_run_info->base_op_run_info.op_name, device_context,
@@ -1042,10 +1030,13 @@ void DynamicOpRunner::UpdateInputDeviceAddress(const OpCompilerInfoPtr &op_compi
                     << device::GetDeviceNameByType(device_address->GetDeviceType()) << " but ir device address type:"
                     << device::GetDeviceNameByType(new_device_address->GetDeviceType());
       input_tensor->set_implicit_copy_address(device_address);
+      input_tensor->set_implicit_copy_format(input_tensor->format());
       input_tensor->set_device_address(new_device_address);
+      input_tensor->set_format(input_edge->kernel_tensor_->format());
     } else {
       MS_LOG(DEBUG) << "Input device type is same, set tensor device address to ir input.";
       input_edge->kernel_tensor_->set_device_address(device_address);
+      input_edge->kernel_tensor_->set_format(input_tensor->format());
     }
 
     if (device_address->GetDeviceType() == device::DeviceType::kCPU && input_edge->ignore_h2d_) {

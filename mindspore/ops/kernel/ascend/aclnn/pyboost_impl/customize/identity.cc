@@ -56,7 +56,8 @@ void IdentityCustomizeCallWithoutContigous(const std::shared_ptr<OpRunner> &op, 
     MS_EXCEPTION_IF_NULL(abs);
     auto input_kernel_tensor = std::make_shared<KernelTensor>(abs->GetShape(), abs->GetType(), nullptr);
     input_kernel_tensor->set_device_address(input_x_address);
-    input_x_address->SetShapeVector(x_tensor->shape());
+    input_kernel_tensor->SetShapeVector(x_tensor->shape());
+    input_kernel_tensor->set_format(x_tensor->format());
     if (!input_kernel_tensor->host_info_exist()) {
       input_kernel_tensor->SetHostInfo(std::make_shared<abstract::TensorShape>(x_tensor->shape()),
                                        std::make_shared<TensorType>(x_tensor->Dtype()), nullptr);
@@ -73,10 +74,11 @@ void IdentityCustomizeCallWithoutContigous(const std::shared_ptr<OpRunner> &op, 
       MS_LOG(EXCEPTION) << "#dmsg#Kernel build failed:#dmsg#Initialize acl kernel op[Identity] failed.";
     }
     identity_kernel->RefreshAclConverter(input_kernel_tensors);
-    identity_kernel->SetDeviceInfo({input_x_address->format()}, {launch_device_address->format()},
-                                   {input_x_address->type_id()}, {launch_device_address->type_id()});
+    identity_kernel->SetDeviceInfo({kernel::GetFormatFromEnumToStr(x_tensor->format())},
+                                   {output_kernel_tensor->GetStringFormat()}, {x_tensor->data_type()},
+                                   {output_kernel_tensor->dtype_id()});
 
-    identity_kernel->PackageInput(kIndex0, input_x_address->format(), &input_shape);
+    identity_kernel->PackageInput(kIndex0, kernel::GetFormatFromEnumToStr(x_tensor->format()), &input_shape);
     identity_kernel->PackageOutput(kIndex0, output_shape);
 
     if (identity_kernel->Resize(input_kernel_tensors, output_kernel_tensors) != KRET_OK) {
@@ -118,7 +120,8 @@ void IdentityCustomizeCall(const std::shared_ptr<OpRunner> &op, const TensorPtr 
     MS_EXCEPTION_IF_NULL(x_abs);
     auto input_kernel_tensor = std::make_shared<KernelTensor>(x_abs->GetShape(), x_abs->GetType(), nullptr);
     input_kernel_tensor->set_device_address(input_x_address);
-    input_x_address->SetShapeVector(x_tensor->shape());
+    input_kernel_tensor->SetShapeVector(x_tensor->shape());
+    input_kernel_tensor->set_format(x_tensor->format());
     if (!input_kernel_tensor->host_info_exist()) {
       input_kernel_tensor->SetHostInfo(std::make_shared<abstract::TensorShape>(x_tensor->shape()),
                                        std::make_shared<TensorType>(x_tensor->Dtype()), nullptr);
@@ -127,7 +130,8 @@ void IdentityCustomizeCall(const std::shared_ptr<OpRunner> &op, const TensorPtr 
     MS_EXCEPTION_IF_NULL(out_abs);
     auto output_kernel_tensor = std::make_shared<KernelTensor>(out_abs->GetShape(), out_abs->GetType(), nullptr);
     output_kernel_tensor->set_device_address(output_address);
-    output_address->SetShapeVector(outputs[0]->shape());
+    output_kernel_tensor->set_format(outputs[0]->format());
+    output_kernel_tensor->SetShapeVector(outputs[0]->shape());
     if (!output_kernel_tensor->host_info_exist()) {
       output_kernel_tensor->SetHostInfo(std::make_shared<abstract::TensorShape>(outputs[0]->shape()),
                                         std::make_shared<TensorType>(outputs[0]->Dtype()), nullptr);
@@ -140,10 +144,11 @@ void IdentityCustomizeCall(const std::shared_ptr<OpRunner> &op, const TensorPtr 
       MS_LOG(EXCEPTION) << "#dmsg#Kernel build failed:#dmsg#Initialize acl kernel op[Identity] failed.";
     }
     identity_kernel->RefreshAclConverter(input_kernel_tensors);
-    identity_kernel->SetDeviceInfo({input_x_address->format()}, {output_address->format()},
-                                   {input_x_address->type_id()}, {output_address->type_id()});
+    identity_kernel->SetDeviceInfo({kernel::GetFormatFromEnumToStr(x_tensor->format())},
+                                   {output_kernel_tensor->GetStringFormat()}, {x_tensor->data_type()},
+                                   {output_kernel_tensor->dtype_id()});
 
-    identity_kernel->PackageInput(kIndex0, input_x_address->format(), &input_shape);
+    identity_kernel->PackageInput(kIndex0, kernel::GetFormatFromEnumToStr(x_tensor->format()), &input_shape);
     identity_kernel->PackageOutput(kIndex0, output_shape);
 
     if (identity_kernel->Resize(input_kernel_tensors, output_kernel_tensors) != KRET_OK) {

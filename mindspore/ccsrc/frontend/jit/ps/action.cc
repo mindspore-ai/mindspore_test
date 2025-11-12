@@ -148,9 +148,9 @@ void SetParamFormatFromTensor(const ParameterPtr &param_node, const ValuePtr &pa
     if (param_tensor->device_address()) {
       auto param_deviceaddress = std::dynamic_pointer_cast<device::DeviceAddress>(param_tensor->device_address());
       MS_EXCEPTION_IF_NULL(param_deviceaddress);
-      MS_LOG(DEBUG) << "Update param format from tensor format: " << param_deviceaddress->format()
+      MS_LOG(DEBUG) << "Update param format from tensor format: " << param_tensor->format()
                     << ", param: " << param_node->DebugString();
-      param_node->set_format(param_deviceaddress->format());
+      param_node->set_format((kernel::GetFormatFromEnumToStr(param_tensor->format())));
     }
   } else if (param_value->isa<ValueSequence>()) {
     // For kv-cache scene, suppose all tensors in kv-cache is same format.

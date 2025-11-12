@@ -21,6 +21,11 @@
 #include <utility>
 #include <queue>
 #include <regex>
+#include <map>
+#include <string>
+#include <memory>
+#include <vector>
+
 #include "backend/ge_backend/pass/ge_backend_optimization.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "ir/manager.h"
@@ -1401,7 +1406,7 @@ bool GEBackend::Copy(KernelTensor *const dst_kernel_tensor, const tensor::Tensor
   if (src_device_tensor->GetSize() != dst_device_tensor->GetSize()) {
     MS_LOG(INFO) << "Copy size is not equal, input size:" << src_device_tensor->GetSize()
                  << ", output size:" << dst_device_tensor->GetSize();
-    if (kernel::GetFormatFromStrToEnum(src_tensor->format()) == dst_kernel_tensor->format()) {
+    if (src_tensor->format() == dst_kernel_tensor->format()) {
       auto new_address_size = GetTypeByte(TypeIdToType(src_tensor->data_type())) * SizeOf(src_tensor->shape());
       src_device_tensor->SetSize(new_address_size);
     }

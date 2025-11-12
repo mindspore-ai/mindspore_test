@@ -43,7 +43,6 @@
 #include "base/float16.h"
 #include "ir/dtype/type_id.h"
 #include "ir/format_utils.h"
-
 namespace mindspore {
 namespace tensor {
 static uint64_t MakeId() {
@@ -62,6 +61,7 @@ Tensor::Tensor(const Tensor &tensor)
       id_(tensor.id_),
       tensor_name_(tensor.tensor_name_),
       version_(tensor.version_),
+      format_(tensor.format_),
       device_sync_(tensor.device_sync_),
       auto_grad_meta_data_(tensor.auto_grad_meta_data_),
       base_shape_ptr_(tensor.base_shape_ptr_),
@@ -84,6 +84,7 @@ Tensor::Tensor(const Tensor &tensor, TypeId data_type)
       id_(tensor.data_type_ != data_type ? MakeId() : tensor.id_),
       tensor_name_(tensor.tensor_name_),
       version_(tensor.version_),
+      format_(tensor.format_),
       device_sync_(MakeDeviceAddress(data_type, tensor.shape_,
                                      MakeTensorData(data_type, tensor.shape_, tensor.data_c(), tensor.data_type_))),
       auto_grad_meta_data_(tensor.auto_grad_meta_data_),
@@ -108,6 +109,7 @@ Tensor &Tensor::operator=(const Tensor &tensor) {
   id_ = tensor.id_;
   sync_status_ = tensor.sync_status_;
   version_ = tensor.version_;
+  format_ = tensor.format_;
   device_sync_ = tensor.device_sync_;
   need_pipeline_sync_ = tensor.need_pipeline_sync_;
   lazy_callback_ = tensor.lazy_callback_;
@@ -261,18 +263,17 @@ TypeId Tensor::set_data_type(TypeId data_type) {
     if (device_sync_->GetDeviceType() != device::DeviceType::kCPU) {
       auto cpu_tensor = cpu();
       device_sync_ = cpu_tensor->device_address();
+      format_ = cpu_tensor->format();
     }
     auto new_dtype_address = MakeDeviceAddress(data_type, shape_, true);
     MS_EXCEPTION_IF_NULL(new_dtype_address);
-    DeviceAddressExtPtr src_ext = std::make_shared<DeviceAddressExt>(
-      kernel::GetFormatFromStrToEnum(device_sync_->format()), device_sync_->type_id(), device_sync_->GetShapeVector());
-    DeviceAddressExtPtr dst_ext =
-      std::make_shared<DeviceAddressExt>(kernel::GetFormatFromStrToEnum(new_dtype_address->format()),
-                                         new_dtype_address->type_id(), new_dtype_address->GetShapeVector());
+    DeviceAddressExtPtr src_ext = std::make_shared<DeviceAddressExt>(this->format(), this->data_type(), shape_);
+    DeviceAddressExtPtr dst_ext = std::make_shared<DeviceAddressExt>(Format::DEFAULT_FORMAT, data_type, shape_);
     if (!SyncCopy(new_dtype_address, device_sync_, device_sync_->stream_id(), src_ext, dst_ext)) {
       MS_LOG(EXCEPTION) << "Sync copy failed";
     }
     device_sync_ = new_dtype_address;
+    format_ = dst_ext->format_;
     id_ = MakeId();
     return MetaTensor::set_data_type(data_type);
   }
@@ -457,18 +458,16 @@ TensorPtr Tensor::cpu() const {
     ret->set_need_pipeline_sync(true);
     return ret;
   }
-  if (device_address->GetDeviceType() == device::DeviceType::kCPU && data_type_ == device_address->type_id()) {
+  if (device_address->GetDeviceType() == device::DeviceType::kCPU) {
     auto ret = std::make_shared<Tensor>(data_type_, shape_, device_address);
+    ret->set_format(format_);
     ret->set_need_pipeline_sync(true);
     return ret;
   }
   auto dst = MakeDeviceAddress(data_type_, shape_, true);
   MS_EXCEPTION_IF_NULL(dst);
-  DeviceAddressExtPtr src_ext =
-    std::make_shared<DeviceAddressExt>(kernel::GetFormatFromStrToEnum(device_address->format()),
-                                       device_address->type_id(), device_address->GetShapeVector());
-  DeviceAddressExtPtr dst_ext = std::make_shared<DeviceAddressExt>(kernel::GetFormatFromStrToEnum(dst->format()),
-                                                                   dst->type_id(), dst->GetShapeVector());
+  DeviceAddressExtPtr src_ext = std::make_shared<DeviceAddressExt>(this->format(), data_type_, shape_);
+  DeviceAddressExtPtr dst_ext = std::make_shared<DeviceAddressExt>(Format::DEFAULT_FORMAT, data_type_, shape_);
   if (!SyncCopy(dst, device_address, CurrentStream::id(), src_ext, dst_ext)) {
     MS_LOG(EXCEPTION) << "SyncCopy failed for " << ToString();
   }
@@ -573,18 +572,19 @@ void Tensor::UnPinMemory() {
 
 const ShapeVector &Tensor::shape_c() const { return shape(); }
 
-std::string Tensor::format() const {
+Format Tensor::format() const {
   if (device_sync_ == nullptr) {
     MS_LOG(EXCEPTION) << "Cannot access format of uninitialized tensor";
   }
-  return device_sync_->format();
+  return kernel::GetFormatFromStrToEnum(device_sync_->format());
 }
 
-void Tensor::set_format(const std::string &format) {
+void Tensor::set_format(const Format &format) {
   if (device_sync_ == nullptr) {
     MS_LOG(EXCEPTION) << "Cannot set format for uninitialized tensor";
   }
-  device_sync_->set_format(format);
+  format_ = format;
+  device_sync_->set_format(kernel::GetFormatFromEnumToStr(format));
 }
 
 ssize_t Tensor::DataItemSize() const {
@@ -824,8 +824,7 @@ std::string ShapeToString(const ShapeVector &shape) {
 }  // namespace tensor
 namespace {
 DeviceAddressExtPtr MakeDeviceAddressExt(const tensor::TensorPtr &tensor) {
-  return std::make_shared<DeviceAddressExt>(kernel::GetFormatFromStrToEnum(tensor->format()), tensor->data_type(),
-                                            tensor->shape());
+  return std::make_shared<DeviceAddressExt>(tensor->format(), tensor->data_type(), tensor->shape());
 }
 }  // namespace
 

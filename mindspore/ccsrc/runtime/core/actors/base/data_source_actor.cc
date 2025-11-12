@@ -15,6 +15,8 @@
  */
 
 #include "runtime/core/actors/base/data_source_actor.h"
+#include <vector>
+#include <string>
 #include "runtime/core/actors/base/kernel_actor.h"
 #include "runtime/core/actors/base/memory_manager_actor.h"
 #include "runtime/core/actors/base/output_actor.h"
@@ -262,7 +264,7 @@ void CopyHostTensorToKernelTensor(const tensor::TensorPtr &host_tensor, const ke
   }
 
   if (IsDynamic(kernel_tensor->GetShapeVector())) {
-    kernel_tensor->device_address()->SetShapeVector(host_tensor->shape());
+    kernel_tensor->SetShapeVector(host_tensor->shape());
   }
 }
 }  // namespace

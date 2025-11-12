@@ -19,6 +19,8 @@
 #include <utility>
 #include <vector>
 #include <string>
+#include <unordered_map>
+#include <memory>
 #include "plugin/gpu/res_manager/gpu_device_manager.h"
 #include "plugin/gpu/res_manager/event_manager/gpu_event.h"
 #include "plugin/gpu/res_manager/mem_manager/gpu_pin_mem_pool.h"
@@ -274,8 +276,8 @@ std::pair<std::vector<size_t>, std::vector<size_t>> GPUResManager::AllocDeviceMe
     MS_EXCEPTION_IF_NULL(host_context);
     MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
     host_context->device_res_manager_->SyncAllStreams();
-    DeviceAddressExtPtr src_ext = std::make_shared<DeviceAddressExt>(kernel::GetFormatFromStrToEnum(tensor->format()),
-                                                                     tensor->data_type(), tensor->shape());
+    DeviceAddressExtPtr src_ext =
+      std::make_shared<DeviceAddressExt>(tensor->format(), tensor->data_type(), tensor->shape());
     DeviceAddressExtPtr dst_ext =
       std::make_shared<DeviceAddressExt>(Format::DEFAULT_FORMAT, tensor->data_type(), tensor->shape());
     SyncCopy(device_address, tensor->device_address(), device_address->stream_id(), src_ext, dst_ext);
@@ -293,7 +295,7 @@ tensor::TensorPtr GPUResManager::GetSliceByTensorListIndexHandle(const std::vect
   }
   size_t size = std::accumulate(after_padding_size.begin() + start, after_padding_size.begin() + end - 1,
                                 before_padding_size[end - 1]);
-  ShapeVector shape = {int64_t(size / UnitSizeInBytes(tensor_list[start]->data_type()))};
+  ShapeVector shape = {static_cast<int64_t>(size / UnitSizeInBytes(tensor_list[start]->data_type()))};
   auto tensor = tensor::from_spec(tensor_list[start]->data_type(), shape, device::DeviceType::kNone);
   MS_EXCEPTION_IF_NULL(tensor_list[start]->device_address());
   auto ptr = tensor_list[start]->device_address()->GetMutablePtr();

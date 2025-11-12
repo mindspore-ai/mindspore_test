@@ -1107,7 +1107,9 @@ def _generate_inplace_process_cpp_code(op_proto):
     for index, return_obj in enumerate(op_proto.op_returns):
         if return_obj.inplace != '':
             inplace_process += f'outputs_[{index}]->set_device_address(' \
-                               f'{return_obj.inplace}_tensor->device_address()); '
+                               f'{return_obj.inplace}_tensor->device_address()); ' \
+                               f'outputs_[{index}]->set_format(' \
+                               f'{return_obj.inplace}_tensor->format()); '
             has_ref = True
             break
     if has_ref:

@@ -220,10 +220,8 @@ DeviceAddressPtr PyBoostUtils::MakeContiguousDeviceAddress(const tensor::TensorP
     return device_sync;
   }
 
-  auto old_device_address = device_sync;
-
+  const auto &old_device_address = device_sync;
   MS_EXCEPTION_IF_NULL(old_device_address);
-  MS_EXCEPTION_IF_NULL(storage_info);
   GilReleaseWithCheck gil_release;
 
   const auto &device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
@@ -468,7 +466,8 @@ void PyBoostUtils::GetKernelTensor(const DeviceContext *device_context, size_t s
   auto value = tmp_abs->GetValue();
   auto kernel_tensor = std::make_shared<KernelTensor>(shape, type, value);
   kernel_tensor->set_device_address(device_address);
-  device_address->SetShapeVector(tensor->shape());
+  kernel_tensor->SetShapeVector(tensor->shape());
+  kernel_tensor->set_format(tensor->format());
   MS_LOG(DEBUG) << "Create input " << tmp_abs->ToString() << " device address for " << index
                 << "th input, Shape: " << shape->ToString() << ", Type: " << type->ToString()
                 << ", Value: " << (value ? value->ToString() : "nullptr") << " device address:" << device_address.get()
@@ -492,7 +491,7 @@ void PyBoostUtils::GetKernelTensor(const DeviceContext *device_context, size_t s
                                    const std::vector<tensor::TensorPtr> &tensors) {
   for (const auto &tensor : tensors) {
     // input_abs is not used in GetKernelTensor when value is TensorPtr.
-    GetKernelTensor(device_context, stream_id, input_abs, index, kernel_tensor_list, kernel_tensor_ptr_list, tensor);
+    GetKernelTensor(device_context, stream_id, nullptr, index, kernel_tensor_list, kernel_tensor_ptr_list, tensor);
   }
 }
 
@@ -509,7 +508,7 @@ void PyBoostUtils::GetKernelTensor(const DeviceContext *device_context, size_t s
   if (tensor_num == values.size() && tensor_num != 0) {
     for (const auto &value : values) {
       const auto &tensor = value->cast<tensor::TensorPtr>();
-      GetKernelTensor(device_context, stream_id, input_abs, index, kernel_tensor_list, kernel_tensor_ptr_list, tensor);
+      GetKernelTensor(device_context, stream_id, nullptr, index, kernel_tensor_list, kernel_tensor_ptr_list, tensor);
     }
   } else {
     auto kernel_tensor =
@@ -879,8 +878,7 @@ void ProfileTracker::TrackerInputTensors(const PrimitivePtr &primitive, const st
       }
       device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(
         MarkTensorAsInput, "PyNative", device::GetDeviceNameByType(device_address->GetDeviceType()),
-        device_address->GetPtr(), device_address->type_id(), device_address->GetShapeVector(),
-        device_address->GetTensorStorageInfo());
+        device_address->GetPtr(), tensor->data_type(), tensor->shape(), device_address->GetTensorStorageInfo());
     }
   }));
 }
@@ -903,8 +901,7 @@ void ProfileTracker::TrackerOutputTensors(const PrimitivePtr &primitive,
       }
       device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(
         MarkTensorAsOutput, "PyNative", device::GetDeviceNameByType(device_address->GetDeviceType()),
-        device_address->GetPtr(), device_address->type_id(), device_address->GetShapeVector(),
-        device_address->GetTensorStorageInfo());
+        device_address->GetPtr(), tensor->data_type(), tensor->shape(), device_address->GetTensorStorageInfo());
     }
     device::tracker::CALL_MEMORY_TRACKER(DelNestedTask);
   }));

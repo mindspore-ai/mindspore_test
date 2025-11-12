@@ -894,10 +894,10 @@ void DeviceAddressUtils::LazyCopy(const tensor::TensorPtr &tensor, size_t stream
   }
   MS_EXCEPTION_IF_NULL(dst);
   MS_LOG(DEBUG) << "Lazy copy for dst " << dst->ToString() << " src " << src->ToString() << " on stream " << stream_id;
-  DeviceAddressExtPtr src_ext = std::make_shared<DeviceAddressExt>(kernel::GetFormatFromStrToEnum(src->format()),
-                                                                   src->type_id(), src->GetShapeVector());
-  DeviceAddressExtPtr dst_ext = std::make_shared<DeviceAddressExt>(kernel::GetFormatFromStrToEnum(tensor->format()),
-                                                                   tensor->data_type(), tensor->shape());
+  DeviceAddressExtPtr src_ext =
+    std::make_shared<DeviceAddressExt>(tensor->implicit_copy_format(), tensor->data_type(), tensor->shape());
+  DeviceAddressExtPtr dst_ext =
+    std::make_shared<DeviceAddressExt>(tensor->format(), tensor->data_type(), tensor->shape());
   if (src->GetDeviceType() != device::DeviceType::kCPU && dst->GetDeviceType() == device::DeviceType::kCPU) {
     if (!SyncCopy(dst, src, stream_id, src_ext, dst_ext)) {
       MS_LOG(EXCEPTION) << "Lazy Sync copy failed. dst " << dst->ToString() << " src " << src->ToString()
@@ -941,6 +941,7 @@ void DeviceAddressUtils::CreateInputTensorAddress(const DeviceContext *device_co
   if (tensor->source_type() == ops::OP_DTYPE::DT_BEGIN) {
     runtime::Pipeline::Get().WaitForward();
   }
+
   MS_LOG(DEBUG) << "Input tensor device type is " << tensor_address->GetDeviceType()
                 << " but current device context is " << device_context->GetDeviceType();
 
@@ -956,8 +957,9 @@ void DeviceAddressUtils::CreateInputTensorAddress(const DeviceContext *device_co
 
   // keep origin device_address and execute in another thread.
   tensor->set_implicit_copy_address(addr);
-
+  tensor->set_implicit_copy_format(tensor->format());
   tensor->set_device_address(device_address);
+  tensor->set_format(format);
   MS_LOG(DEBUG) << "Create input tensor device address " << device_address << " for " << index
                 << "th input, Shape: " << tensor->shape() << ", Type: " << TypeIdToType(tensor->data_type())->ToString()
                 << ", Size:" << tensor_size;
