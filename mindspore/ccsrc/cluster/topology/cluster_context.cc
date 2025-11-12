@@ -24,7 +24,7 @@
 #include "include/cluster/topology/common.h"
 #include "include/cluster/topology/compute_graph_node.h"
 #include "cluster/topology/meta_server_node.h"
-#include "cluster/topology/actor_route_table_proxy.h"
+#include "include/cluster/topology/actor_route_table_proxy.h"
 #include "include/cluster/rpc/tcp_store.h"
 #include "include/cluster/rpc/tcp_node.h"
 #include "cluster/topology/utils.h"

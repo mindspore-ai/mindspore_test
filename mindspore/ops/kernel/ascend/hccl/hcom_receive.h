@@ -24,7 +24,7 @@
 
 #include "kernel/ascend/hccl/hccl_kernel.h"
 #include "include/cluster/rpc/rpc_server_base.h"
-#include "cluster/topology/actor_route_table_proxy.h"
+#include "include/cluster/topology/actor_route_table_proxy.h"
 
 namespace mindspore {
 namespace kernel {

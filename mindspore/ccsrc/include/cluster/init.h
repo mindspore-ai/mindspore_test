@@ -27,7 +27,7 @@
 #else
 #include "include/cluster/topology/dummy_cluster_context.h"
 #endif
-#include "include/backend/visible.h"
+#include "include/cluster/visible.h"
 
 namespace mindspore {
 namespace distributed {
@@ -38,24 +38,24 @@ using TCPStoreClientPtr = std::shared_ptr<TCPStoreClient>;
 // The static methods of MindSpore distributed execution. They can be exported by Pybind.
 
 // Initialize and finalize distributed execution.
-BACKEND_COMMON_EXPORT bool Initialize();
-BACKEND_COMMON_EXPORT bool Initialize(std::optional<std::string> url, int64_t timeout, uint32_t world_size,
-                                      uint32_t node_id, cluster::TCPStoreClientPtr store);
-BACKEND_COMMON_EXPORT bool Finalize();
+CLUSTER_EXPORT bool Initialize();
+CLUSTER_EXPORT bool Initialize(std::optional<std::string> url, int64_t timeout, uint32_t world_size, uint32_t node_id,
+                               cluster::TCPStoreClientPtr store);
+CLUSTER_EXPORT bool Finalize();
 
 // Initialize and finalize the cluster based on MindSpore communication framework.
-BACKEND_COMMON_EXPORT bool InitializeCluster();
-BACKEND_COMMON_EXPORT bool InitializeCluster(std::optional<std::string> url, int64_t timeout, uint32_t world_size,
-                                             uint32_t node_id, cluster::TCPStoreClientPtr store);
-BACKEND_COMMON_EXPORT bool FinalizeCluster();
+CLUSTER_EXPORT bool InitializeCluster();
+CLUSTER_EXPORT bool InitializeCluster(std::optional<std::string> url, int64_t timeout, uint32_t world_size,
+                                      uint32_t node_id, cluster::TCPStoreClientPtr store);
+CLUSTER_EXPORT bool FinalizeCluster();
 
 // Initialize and finalize collective communication for distributed execution.
-BACKEND_COMMON_EXPORT bool InitializeCollective();
-BACKEND_COMMON_EXPORT bool FinalizeCollective();
+CLUSTER_EXPORT bool InitializeCollective();
+CLUSTER_EXPORT bool FinalizeCollective();
 
 // Set and get whether this process in cluster exits with exception.
-BACKEND_COMMON_EXPORT void set_cluster_exit_with_exception();
-BACKEND_COMMON_EXPORT bool cluster_exit_with_exception();
+CLUSTER_EXPORT void set_cluster_exit_with_exception();
+CLUSTER_EXPORT bool cluster_exit_with_exception();
 }  // namespace distributed
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_DISTRIBUTED_INIT_H_

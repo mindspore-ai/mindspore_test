@@ -20,7 +20,7 @@
 #include <string>
 #include <functional>
 #include "include/cluster/rpc/tcp_server.h"
-#include "cluster/topology/actor_route_table_proxy.h"
+#include "include/cluster/topology/actor_route_table_proxy.h"
 #include "include/cluster/topology/cluster_context.h"
 #include "include/utils/parallel_context.h"
 #include "proto/topology.pb.h"

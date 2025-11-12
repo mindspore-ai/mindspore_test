@@ -35,10 +35,10 @@
 #include "cluster/rpc/core/cluster_config.h"
 #include "include/cluster/topology/ps_context.h"
 #include "cluster/rpc/core/node_info.h"
-#include "cluster/rpc/core/communicator/tcp_client.h"
-#include "cluster/rpc/core/communicator/tcp_server.h"
-#include "cluster/rpc/core/file_configuration.h"
-#include "include/backend/visible.h"
+#include "include/cluster/rpc/libevent_tcp_client.h"
+#include "include/cluster/rpc/libevent_tcp_server.h"
+#include "include/cluster/rpc/file_configuration.h"
+#include "include/cluster/visible.h"
 
 namespace mindspore {
 namespace ps {
@@ -46,7 +46,7 @@ namespace core {
 constexpr int kTimeoutInSeconds = 30;
 constexpr int kCommTimeoutInSeconds = 10;
 constexpr int kCommTimeoutInThreeSeconds = 3;
-class BACKEND_COMMON_EXPORT Node {
+class Node {
  public:
   Node()
       : is_ready_(false),

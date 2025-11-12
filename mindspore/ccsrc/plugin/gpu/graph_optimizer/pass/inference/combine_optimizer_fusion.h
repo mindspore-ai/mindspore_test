@@ -32,7 +32,6 @@ class CombineOptimizerFusion : public Pass {
 
  private:
   void InitCombineOptimizer();
-  bool CheckCondition();
   bool CheckFuncGraph(const FuncGraphPtr &graph);
   bool TransformOptimizerList(const std::vector<AnfNodePtr> &node_list,
                               std::vector<std::vector<AnfNodePtr>> *deal_list);

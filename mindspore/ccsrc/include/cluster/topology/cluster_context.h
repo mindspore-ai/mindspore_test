@@ -29,7 +29,7 @@
 #include "utils/log_adapter.h"
 #include "utils/ms_utils.h"
 #include "include/cluster/topology/node_base.h"
-#include "include/backend/visible.h"
+#include "include/cluster/visible.h"
 
 namespace mindspore {
 namespace ps::core {
@@ -45,7 +45,7 @@ class ActorRouteTableProxy;
 class TCPStoreClient;
 using TCPStoreClientPtr = std::shared_ptr<TCPStoreClient>;
 // Node role based cluster built by MindSpore communication framework.
-class BACKEND_COMMON_EXPORT ClusterContext {
+class CLUSTER_EXPORT ClusterContext {
  public:
   ~ClusterContext();
   DISABLE_COPY_AND_ASSIGN(ClusterContext)

@@ -24,14 +24,14 @@
 
 #include "include/cluster/rpc/rpc_client_base.h"
 #include "utils/ms_utils.h"
-#include "include/backend/visible.h"
+#include "include/cluster/visible.h"
 
 namespace mindspore {
 namespace distributed {
 namespace rpc {
 class TCPComm;
 
-class BACKEND_COMMON_EXPORT TCPClient : public RPCClientBase {
+class CLUSTER_EXPORT TCPClient : public RPCClientBase {
  public:
   explicit TCPClient(bool enable_ssl = false);
   ~TCPClient() override;

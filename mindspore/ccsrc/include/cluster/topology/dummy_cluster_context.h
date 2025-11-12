@@ -28,7 +28,7 @@
 #include "include/cluster/topology/constants.h"
 #include "utils/log_adapter.h"
 #include "utils/ms_utils.h"
-#include "include/backend/visible.h"
+#include "include/cluster/visible.h"
 
 namespace mindspore {
 namespace distributed {
@@ -36,7 +36,7 @@ namespace cluster {
 // The dummy cluster context interface. This class is for ut test and windows compiling.
 class TCPStoreClient;
 using TCPStoreClientPtr = std::shared_ptr<TCPStoreClient>;
-class BACKEND_COMMON_EXPORT ClusterContext {
+class CLUSTER_EXPORT ClusterContext {
  public:
   ~ClusterContext() = default;
   DISABLE_COPY_AND_ASSIGN(ClusterContext)

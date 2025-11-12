@@ -32,7 +32,7 @@ namespace mindspore {
 namespace distributed {
 namespace cluster {
 namespace topology {
-class BACKEND_COMMON_EXPORT TcpNodeBase : public NodeBase {
+class CLUSTER_EXPORT TcpNodeBase : public NodeBase {
  public:
   TcpNodeBase(const std::string &node_id, const std::string &role, const std::string &address = "",
               size_t timeout = kDefaultTopoTimeOut)

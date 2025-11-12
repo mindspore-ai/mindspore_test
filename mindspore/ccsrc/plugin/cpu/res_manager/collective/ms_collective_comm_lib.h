@@ -23,7 +23,7 @@
 #include <random>
 #include "include/runtime/hardware_abstract/collective/collective_communication_lib.h"
 #include "include/cluster/topology/cluster_context.h"
-#include "cluster/rpc/core/collective_ops_impl.h"
+#include "include/cluster/rpc/collective_ops_impl.h"
 #include "plugin/cpu/res_manager/collective/ms_communication_group.h"
 #include "plugin/cpu/res_manager/collective/allreduce_impl.h"
 #include "plugin/cpu/res_manager/collective/ms_collective_node.h"

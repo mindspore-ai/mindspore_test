@@ -20,7 +20,7 @@
 #include <utility>
 
 #include "include/cluster/rpc/tcp_client.h"
-#include "cluster/topology/actor_route_table_proxy.h"
+#include "include/cluster/topology/actor_route_table_proxy.h"
 #include "include/cluster/topology/cluster_context.h"
 #include "include/utils/parallel_context.h"
 #include "proto/topology.pb.h"

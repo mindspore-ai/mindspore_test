@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "cluster/rpc/core/file_configuration.h"
+#include "include/cluster/rpc/file_configuration.h"
 
 namespace mindspore {
 namespace ps {

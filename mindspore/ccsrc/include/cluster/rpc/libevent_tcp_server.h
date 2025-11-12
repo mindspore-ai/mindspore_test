@@ -41,7 +41,7 @@
 #include "cluster/rpc/core/comm_util.h"
 #include "include/cluster/rpc/constants.h"
 #include "include/cluster/topology/ps_context.h"
-#include "cluster/rpc/core/file_configuration.h"
+#include "include/cluster/rpc/file_configuration.h"
 
 namespace mindspore {
 namespace ps {
@@ -79,7 +79,7 @@ using OnServerReceiveMessage =
   std::function<void(const std::shared_ptr<TcpConnection> &conn, const std::shared_ptr<MessageMeta> &meta,
                      const Protos &protos, const void *data, size_t size)>;
 
-class BACKEND_COMMON_EXPORT TcpServer {
+class CLUSTER_EXPORT TcpServer {
  public:
   using OnConnected = std::function<void(const TcpServer &, const TcpConnection &)>;
   using OnDisconnected = std::function<void(const TcpServer &, const TcpConnection &)>;

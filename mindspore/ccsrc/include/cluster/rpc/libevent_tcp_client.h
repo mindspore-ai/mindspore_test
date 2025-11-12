@@ -36,12 +36,12 @@
 #include "include/cluster/rpc/constants.h"
 #include "include/cluster/topology/ps_context.h"
 #include "cluster/rpc/core/communicator/tcp_message_handler.h"
-#include "cluster/rpc/core/file_configuration.h"
+#include "include/cluster/rpc/file_configuration.h"
 
 namespace mindspore {
 namespace ps {
 namespace core {
-class BACKEND_COMMON_EXPORT TcpClient {
+class CLUSTER_EXPORT TcpClient {
  public:
   using OnConnected = std::function<void()>;
   using OnDisconnected = std::function<void()>;

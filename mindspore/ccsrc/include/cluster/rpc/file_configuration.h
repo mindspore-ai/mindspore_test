@@ -45,7 +45,7 @@ namespace core {
 //   "server_num": 16,
 //   "total_node_num": 16
 // }
-class BACKEND_COMMON_EXPORT FileConfiguration : public Configuration {
+class CLUSTER_EXPORT FileConfiguration : public Configuration {
  public:
   explicit FileConfiguration(const std::string &path) : file_path_(path), is_initialized_(false) {}
   ~FileConfiguration() = default;

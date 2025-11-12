@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "cluster/rpc/core/collective_ops_impl.h"
+#include "include/cluster/rpc/collective_ops_impl.h"
 #include <complex>
 #include "utils/ms_context.h"
 

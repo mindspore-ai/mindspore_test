@@ -20,10 +20,6 @@
 #include <string>
 #include "utils/log_adapter.h"
 
-#ifndef EXPORT_WRAPPER
-#define EXPORT_WRAPPER __attribute__((visibility("default")))
-#endif
-
 namespace mindspore {
 namespace distributed {
 namespace cluster {
