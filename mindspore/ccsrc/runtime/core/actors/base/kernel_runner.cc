@@ -724,7 +724,9 @@ void KernelRunner::FetchWorkspaceDeviceTensor() {
         AnfAlgo::CreateKernelTensor(nullptr, workspace_sizes[i], Format::DEFAULT_FORMAT, kTypeUnknown, ShapeVector(),
                                     device::GetDeviceNameByType(device_contexts_[0]->device_context_key().device_type_),
                                     device_contexts_[0]->device_context_key().device_id_);
-      kernel_tensor->set_stream_id(kernel_info_->stream_id());
+      auto stream_id = AnfAlgo::GetStreamId(kernel_);
+      kernel_tensor->set_stream_id(stream_id);
+      AnfAlgo::SetAllocStreamId(kernel_tensor, stream_id, kernel_);
       auto device_address = kernel_tensor->device_address();
       MS_EXCEPTION_IF_NULL(device_address);
       MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS) << "Create kernel tensor for node:" << kernel_->fullname_with_scope()
