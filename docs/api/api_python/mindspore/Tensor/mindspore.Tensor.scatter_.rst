@@ -8,7 +8,7 @@ mindspore.Tensor.scatter\_
     对当前张量 `self` 被 `dim` 选中的维度使用 `index` 进行索引，对其他维度按顺序遍历，将 `src` 中的值更新到 `self` 中，并返回 `self` 自身。
     此操作是 :func:`mindspore.Tensor.gather` 的原地更新版本的逆操作。
 
-    此操作提供另外3个重载，提供对 `reduce` 参数和标量值的支持。
+    此操作提供另外3个重载，对 `reduce` 参数和标量值的支持。
 
     下面看一个三维的例子：
 
@@ -160,7 +160,7 @@ mindspore.Tensor.scatter\_
         - **value** (int, float, bool) - 指定对 `self` 进行更新操作的数据。可视为将尝试将其广播为shape及dtype与 `self` 一致的Tensor并视为 `src` 参与运算。
 
     关键字参数：
-        - **reduce** (str) - 进行的规约操作，支持 ``"add"`` ， ``"multiply"`` 。当 `reduce` 设置为 ``"add"`` 时，`src` 将根据 `index` 累加到 `self` 。当 `reduce` 设置为 ``"multiply"`` 时，`src` 将根据 `index` 累乘到 `self` 。
+        - **reduce** (str) - 进行的规约操作，支持 ``"add"`` ， ``"multiply"`` 。当 `reduce` 设置为 ``"add"`` 时， `src` 将根据 `index` 累加到 `self` 。当 `reduce` 设置为 ``"multiply"`` 时， `src` 将根据 `index` 累乘到 `self` 。
 
     返回：
         Tensor，返回被修改后的 `self` 自身。
