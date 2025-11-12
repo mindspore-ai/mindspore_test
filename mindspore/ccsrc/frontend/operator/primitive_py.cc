@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "include/frontend/operator/primitive_py.h"
+#include "frontend/operator/primitive_py.h"
 
 #include <map>
 #include "ir/signature.h"
@@ -33,6 +33,7 @@
 #include "include/utils/tensor_py.h"
 #include "utils/flags.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
+#include "include/frontend/operator/primitive_py.h"
 namespace mindspore {
 namespace {
 
