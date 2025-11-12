@@ -206,3 +206,46 @@ def test_noncontiguous_input_op(mode):
     expect = np.logical_or(x_np, y_np)
     output = logical_and_forward_func(x_noncontiguous, y_noncontiguous)
     assert np.allclose(output.asnumpy(), expect)
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
+@pytest.mark.parametrize('mode', ['pynative', 'kbk'])
+def test_scalar_tuple_input(mode):
+    """
+    Feature: op_plugin kernel
+    Description: Test op_plugin kernel for scalar tuple input
+    Expectation: Correct result.
+    """
+    @test_utils.run_with_cell
+    def randn_forward_func(shape):
+        return mint.randn(shape, dtype=ms.float32)
+    set_mode(mode)
+    shape = (2, 3)
+    expect = np.arange(0, shape[0] * shape[1]).reshape(shape)
+    output = randn_forward_func(shape)
+    assert np.allclose(output.asnumpy(), expect)
+
+    @test_utils.run_with_cell
+    def sum_ext_func(x): # tuple input as the second argument
+        return mint.sum(x, [0, 1])
+    x = Tensor([[1, 2, 3], [4, 5, 6]], dtype=ms.float32)
+    sum_ext_func(x) # should not raise any exception
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
+@pytest.mark.parametrize('mode', ['pynative', 'kbk'])
+def test_tensor_tuple_input(mode):
+    """
+    Feature: op_plugin kernel
+    Description: Test op_plugin kernel for tensor tuple input
+    Expectation: Correct result.
+    """
+    @test_utils.run_with_cell
+    def stack_func(inputs):
+        return mint.stack(inputs, 0)
+
+    set_mode(mode)
+    inputs = (Tensor([1, 2, 3], dtype=ms.float32), Tensor([4, 5, 6], dtype=ms.float32))
+    expect = np.array([[1, 2, 3], [4, 5, 6]], dtype=np.float32)
+    output = stack_func(inputs)
+    assert np.allclose(output.asnumpy(), expect)

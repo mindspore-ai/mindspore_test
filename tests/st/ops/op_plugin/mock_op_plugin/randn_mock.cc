@@ -23,25 +23,24 @@
 
 extern "C" {
 
-// Mock implementation of the inplace_relu operator.
-// Test inplace op.
-int InplaceReLU(int nparam, void **params, int *ndims, int64_t **shapes, const char **dtypes, void *stream,
-                void *extra) {
-  std::cout << "op_plugin mock: InplaceReLU called" << std::endl;
-  constexpr int expected_nparam = 2;
+// Mock implementation of the randn operator.
+// Test the case when the input is tuple scalar
+int Randn(int nparam, void **params, int *ndims, int64_t **shapes, const char **dtypes, void *stream, void *extra) {
+  std::cout << "op_plugin mock: Randn called" << std::endl;
+  constexpr int expected_nparam = 5;
   if (nparam != expected_nparam || params == nullptr || ndims == nullptr || shapes == nullptr) {
-    std::cout << "Invalid parameters for inplace_relu operator" << std::endl;
+    std::cout << "Invalid parameters for randn operator" << std::endl;
     return -1;
   }
 
-  float *x = static_cast<float *>(params[0]);
-  if (ndims[0] > 2 || (ndims[0] == 2 && shapes[0][1] != 1)) {
-    std::cout << "Only support 1d or 2d (1 column) input for mock inplace_relu operator" << std::endl;
-    return -1;
+  float *out = static_cast<float *>(params[nparam - 1]);
+  int out_ndim = ndims[nparam - 1];
+  int64_t numel = 1;
+  for (int i = 0; i < out_ndim; ++i) {
+    numel *= shapes[nparam - 1][i];
   }
-  int x_dim = shapes[0][0];
-  for (int i = 0; i < x_dim; ++i) {
-    x[i] = std::max(0.0f, x[i]);
+  for (size_t i = 0; i < numel; ++i) {
+    out[i] = i;  // implemented as iota for simple validation
   }
 
   return 0;
