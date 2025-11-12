@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "kernel/ascend/aclnn/pyboost_impl/customize/gather_nd.h"
+#include "kernel/ascend/aclnn/pyboost_impl/customize/gather_nd_ext.h"
 #include <memory>
 #include "plugin/ascend/res_manager/stream_manager/ascend_stream_manager.h"
 #include "mindspore/ccsrc/pynative/utils/pyboost/op_register.h"
@@ -24,8 +24,8 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::TensorPtr GatherNdAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_x,
-                                          const TensorPtr &indices) {
+tensor::TensorPtr GatherNdExtAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_x,
+                                             const TensorPtr &indices) {
   OpRunner::InferOpOutput(op, input_x, indices);
   bool negative_index = false;
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), input_x, indices);
