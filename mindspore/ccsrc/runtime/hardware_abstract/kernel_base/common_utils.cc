@@ -469,12 +469,5 @@ KernelAttr GetKernelAttrFromTensors(const std::vector<KernelTensor *> &inputs,
   }
   return kernel_attr;
 }
-
-namespace math {
-void SinCosf(float x, float *sinv, float *cosv) {
-  *sinv = sinf(x);
-  *cosv = cosf(x);
-}
-}  // namespace math
 }  // namespace kernel
 }  // namespace mindspore

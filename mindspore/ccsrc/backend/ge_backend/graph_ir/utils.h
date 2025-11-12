@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CCSRC_INCLUDE_TRANSFORM_GRAPH_IR_UTILS_H_
-#define MINDSPORE_CCSRC_INCLUDE_TRANSFORM_GRAPH_IR_UTILS_H_
+#ifndef MINDSPORE_CCSRC_BACKEND_GE_BACKEND_GRAPH_IR_UTILS_H_
+#define MINDSPORE_CCSRC_BACKEND_GE_BACKEND_GRAPH_IR_UTILS_H_
 #include <string>
 #include <map>
 #include <memory>
@@ -107,4 +107,4 @@ BACKEND_EXPORT Status UnregisterExternalAllocator(const std::shared_ptr<GraphRun
 BACKEND_EXPORT string ExportDFGraph(const std::string &file_name, const std::string &graph_name, bool is_save_to_file);
 }  // namespace backend::ge_backend
 }  // namespace mindspore
-#endif  // MINDSPORE_CCSRC_INCLUDE_TRANSFORM_GRAPH_IR_UTILS_H_
+#endif  // MINDSPORE_CCSRC_BACKEND_GE_BACKEND_GRAPH_IR_UTILS_H_

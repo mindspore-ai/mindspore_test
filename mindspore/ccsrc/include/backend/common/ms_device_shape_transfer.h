@@ -246,20 +246,6 @@ class FormatTransfer {
 };
 
 /**
- * Range trans function
- * */
-class BACKEND_COMMON_EXPORT ShapeRangeTransfer {
- public:
-  ShapeRangeTransfer() = default;
-  ~ShapeRangeTransfer() = default;
-  RangePair GetRealRange(const RangePair &ori_range, const std::string &format, const TypeId &type,
-                         const std::string &padding_str = {""}) const;
-
- private:
-  static RangePair FRAC_ZRange(const RangePair &ori_range, const TypeId &type);
-};
-
-/**
  * Interface of datatype trans
  * */
 BACKEND_COMMON_EXPORT bool TransDataType(const TypeIdArgs &args, void *result);
@@ -423,50 +409,6 @@ std::vector<T> PaddingShape(const std::vector<T> &shape, const std::string &form
     return {-1, -1, -1, -1};
   }
   return PaddingShapeTo4d(shape, pad_index);
-}
-
-/**
- * Interface of transform pad_index string to AxisVector
- * */
-template <typename T>
-std::vector<int> StringToAxisVector(const std::vector<T> &shape, const std::string &format,
-                                    const std::string &pad_index = {""}, const AnfNodePtr &node = nullptr) {
-  if (node != nullptr) {
-    MS_LOG(DEBUG) << "Start transform  pad_index to axis_vecor for node: [" << node->fullname_with_scope()
-                  << "], format: " << format << ", detail info: " << node->DebugString();
-  }
-
-  std::vector<int> padding_axis;
-  if (IsOneOf3DFormat(format)) {
-    if (shape.size() >= kDim5) {
-      return padding_axis;
-    }
-    std::vector<Axis5D> padding_axis_5d;
-    StringToAxisVector5D(pad_index, &padding_axis_5d);
-
-    if (padding_axis_5d.empty() || shape.size() != padding_axis_5d.size()) {
-      for (int index = 0; index < static_cast<int>(shape.size()); ++index) {
-        padding_axis.push_back(index);
-      }
-    } else {
-      (void)std::transform(padding_axis_5d.begin(), padding_axis_5d.end(), std::back_inserter(padding_axis),
-                           [](Axis5D x) { return static_cast<int>(x); });
-    }
-  } else {
-    std::vector<Axis> padding_axis_4d;
-    StringToAxisVector4D(pad_index, &padding_axis_4d);
-
-    if (padding_axis_4d.empty() || shape.size() != padding_axis_4d.size()) {
-      for (int index = 0; index < static_cast<int>(shape.size()); ++index) {
-        padding_axis.push_back(index);
-      }
-    } else {
-      (void)std::transform(padding_axis_4d.begin(), padding_axis_4d.end(), std::back_inserter(padding_axis),
-                           [](Axis x) { return static_cast<int>(x); });
-    }
-  }
-
-  return padding_axis;
 }
 
 /**

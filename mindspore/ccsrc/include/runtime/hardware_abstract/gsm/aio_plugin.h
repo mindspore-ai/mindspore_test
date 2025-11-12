@@ -73,7 +73,7 @@ class IocbHelper {
 
 using AsyncIOToken = size_t;
 
-class AIO_EXPORT AioPlugin : public AsyncIO {
+class AioPlugin : public AsyncIO {
  public:
   AioPlugin() = default;
   ~AioPlugin() override;
@@ -106,7 +106,7 @@ class AIO_EXPORT AioPlugin : public AsyncIO {
   size_t *pending_events_;
 };
 
-extern "C" AIO_EXPORT AsyncIO *get_aio_instance();
+extern "C" AsyncIO *get_aio_instance();
 }  // namespace device
 }  // namespace mindspore
 #undef LinuxAIO

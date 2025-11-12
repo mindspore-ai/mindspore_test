@@ -113,23 +113,6 @@ constexpr size_t kSparseSoftmaxCrossEntropyWithLogitsInputTensorNum = 2;
 constexpr size_t kOneHotOutputNum = 1;
 constexpr size_t kOneHotInputTensorNum = 4;
 
-enum FusedBatchNormInput {
-  kX = 1,
-  kVariance = 5,
-};
-enum FusedBatchNormOutput {
-  kY = 0,
-  kRunningMean,
-  kRunningVariance,
-  kSaveMean,
-  kSaveInvVariance,
-};
-enum ConvBn1Output {
-  kData = 0,
-  kVarPart,
-  kMean,
-};
-
 BACKEND_COMMON_EXPORT bool UnVisited(const BaseRef &n);
 
 BACKEND_COMMON_EXPORT bool Visited(const BaseRef &n);
@@ -142,16 +125,6 @@ BACKEND_COMMON_EXPORT CNodePtr NewCNode(const CNodePtr &cnode, const KernelGraph
                                         const std::vector<AnfNodePtr> &orig_nodes);
 
 BACKEND_COMMON_EXPORT void CheckCNodeInputSize(const CNodePtr &cnode, size_t input_tensor_size);
-
-void CreateOutputsOfConvBn1(const FuncGraphPtr &func_graph, const CNodePtr &conv_cnode, const CNodePtr &bn_cnode,
-                            std::vector<AnfNodePtr> *conv_bn1_outputs);
-
-void CreateOutputsOfFusedBn2(const FuncGraphPtr &graph, const std::vector<AnfNodePtr> &fused_bn1_outputs,
-                             const CNodePtr &bn_node, std::vector<AnfNodePtr> *fused_bn2_outputs);
-void CreateOutputsOfFusedBn3(const FuncGraphPtr &graph, const AnfNodePtr &data_input,
-                             const std::vector<AnfNodePtr> &fused_bn1_outputs,
-                             const std::vector<AnfNodePtr> &fused_bn2_outputs, const CNodePtr &bn_node,
-                             std::vector<AnfNodePtr> *fused_bn3_outputs);
 
 BACKEND_COMMON_EXPORT void CreateMultipleOutputsOfAnfNode(const FuncGraphPtr &func_graph, const AnfNodePtr &node,
                                                           size_t output_num, std::vector<AnfNodePtr> *outputs);

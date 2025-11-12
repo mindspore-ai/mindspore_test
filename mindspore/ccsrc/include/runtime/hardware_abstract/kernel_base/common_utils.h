@@ -50,68 +50,9 @@ namespace MatrixDiag {
 enum Alignment { RIGHT = 0, LEFT = 1 };
 }  // namespace MatrixDiag
 
-struct KernelMetaInfo {
-  uintptr_t func_stub_;
-  uint32_t block_dim_;
-};
-using KernelMetaPtr = std::shared_ptr<KernelMetaInfo>;
-
-class MatrixInfo {
- public:
-  explicit MatrixInfo(size_t max_index, const ShapeVector &matrix_shapes)
-      : max_index_(max_index), shapes_(matrix_shapes) {
-    current_indexes_.resize(shapes_.size(), 0);
-  }
-  ~MatrixInfo() = default;
-  bool SetIndex(size_t start, size_t end) {
-    // Check data from start to end whether valid.
-    if (start < min_index || end > max_index_ || start >= end) {
-      return false;
-    }
-    // Initial current indexes.
-    int last_rank = SizeToInt(current_indexes_.size()) - 1;
-    for (int i = last_rank; i >= 0; --i) {
-      size_t position = IntToSize(i);
-      current_indexes_[position] = start % LongToSize(shapes_.at(position));
-      start = start / LongToSize(shapes_.at(position));
-      if (start == 0) {
-        break;
-      }
-    }
-    return true;
-  }
-  std::vector<size_t> IndexIterator() {
-    if (is_first_iterator_) {
-      is_first_iterator_ = false;
-      return current_indexes_;
-    }
-    size_t last_rank = current_indexes_.size() - 1;
-    current_indexes_[last_rank]++;
-    for (size_t i = last_rank; current_indexes_.at(i) >= LongToSize(shapes_.at(i)) && i > 0; --i) {
-      current_indexes_[i] = 0;
-      current_indexes_[i - 1] += 1;
-    }
-    is_first_iterator_ = false;
-    return current_indexes_;
-  }
-
- private:
-  bool is_first_iterator_{true};
-  size_t min_index{0};
-  size_t max_index_{1};
-  ShapeVector shapes_;
-  std::vector<size_t> current_indexes_;
-};
-using MatrixInfoPtr = std::shared_ptr<MatrixInfo>;
 RUNTIME_HARDWARE_EXPORT TypeId DtypeToTypeId(const std::string &dtypes);
 RUNTIME_HARDWARE_EXPORT bool IsSameShape(const ShapeVector &shape_a, const ShapeVector &shape_b);
 RUNTIME_HARDWARE_EXPORT bool CheckShapesSame(const ShapeArray &shape_array);
-template <typename T>
-struct AsymmetricFunc {
-  T operator()(const T &new_x, const int &old_length, const int &new_length) const {
-    return new_length != 0 ? new_x * old_length / new_length : 0;
-  }
-};
 
 template <template <typename, typename, typename...> typename M, typename T>
 inline std::string Map2Str(const M<std::string, T> value) {
@@ -264,18 +205,6 @@ class MatchKernelHelper {
 
   KernelRunFunc kernel_func_;
 };
-
-namespace math {
-void SinCosf(float x, float *sinv, float *cosv);
-}
-
-inline void GetRawAddress(const std::vector<AddressPtr> &addrs, std::vector<void *> *raw_addrs) {
-  (void)std::transform(std::begin(addrs), std::end(addrs), std::back_inserter(*raw_addrs),
-                       [](const AddressPtr &address) -> void * {
-                         MS_EXCEPTION_IF_NULL(address);
-                         return address->addr;
-                       });
-}
 
 #define CHECK_KERNEL_INPUTS_NUM(actual_inputs_num, expect_inputs_num, kernel_name)                     \
   do {                                                                                                 \

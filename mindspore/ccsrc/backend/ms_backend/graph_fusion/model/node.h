@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef MINDSPORE_CCSRC_BACKEND_GRAPH_FUSION_MODEL_NODE_H_
-#define MINDSPORE_CCSRC_BACKEND_GRAPH_FUSION_MODEL_NODE_H_
+#ifndef MINDSPORE_CCSRC_BACKEND_MS_BACKEND_GRAPH_FUSION_MODEL_NODE_H_
+#define MINDSPORE_CCSRC_BACKEND_MS_BACKEND_GRAPH_FUSION_MODEL_NODE_H_
 
 #include <memory>
 #include <vector>
@@ -24,7 +24,6 @@
 #include "ir/anf.h"
 #include "ir/tensor.h"
 #include "utils/hash_map.h"
-#include "include/backend/visible.h"
 #include "ops_utils/op_constants.h"
 #include "include/runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/graph_kernel_callback.h"
 
@@ -48,10 +47,10 @@ struct ExtraInfo {
   DAttrs cnode_attrs_;
 };
 
-class BACKEND_EXPORT Node;
+class Node;
 using NodePtr = std::shared_ptr<Node>;
 using NodePtrList = std::vector<NodePtr>;
-class BACKEND_EXPORT Node : public NodeBase, public std::enable_shared_from_this<Node> {
+class Node : public NodeBase, public std::enable_shared_from_this<Node> {
  public:
   explicit Node(const NodeBase &baseinfo) : NodeBase(baseinfo) {}
   virtual ~Node() { ClearInputs(); }  // remove this node from the previous nodes' user.
@@ -162,4 +161,4 @@ class OutputNode : public Node {
   NType NodeType() override { return NType::Output; }
 };
 }  // namespace mindspore::graphkernel::inner
-#endif  // MINDSPORE_CCSRC_BACKEND_GRAPH_FUSION_MODEL_NODE_H_
+#endif  // MINDSPORE_CCSRC_BACKEND_MS_BACKEND_GRAPH_FUSION_MODEL_NODE_H_
