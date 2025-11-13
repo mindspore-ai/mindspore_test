@@ -1,7 +1,7 @@
 mindspore.Tensor.sort
 =====================
 
-.. py:method:: mindspore.Tensor.sort(dim=-1, descending=False)
+.. py:method:: mindspore.Tensor.sort(dim=-1, descending=False, stable=False)
 
     按指定顺序对输入Tensor的指定维上的元素进行排序。
 
@@ -11,6 +11,7 @@ mindspore.Tensor.sort
     参数：
         - **dim** (int，可选) - 指定排序的维。默认值： ``-1`` ，表示指定最后一维。
         - **descending** (bool，可选) - 按降序还是升序。如果为 ``True`` ，则元素按降序排列，否则按升序排列。默认值： ``False`` 。
+        - **stable** (bool，可选) - 是否使用稳定排序算法。默认值： ``False`` 。
 
     返回：
         - **y1** (Tensor) - 排序后的值，其shape和数据类型与输入一致。
