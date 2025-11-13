@@ -1,0 +1,48 @@
+# Copyright 2024 Huawei Technologies Co., Ltd
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ============================================================================
+
+"""Test PyNative mutli-stream"""
+
+import numpy as np
+import mindspore as ms
+from mindspore import context
+
+
+def test_pynative_aclop_multi_stream():
+    """
+    Feature: PyNative multi-stream
+    Description: Test PyNative multi-stream with aclop cache hit.
+    Expectation: run success
+    """
+    context.set_context(mode=context.GRAPH_MODE)
+
+    x = np.ones((192,), dtype=np.float32)
+    # data on Device with stream 0
+    a = ms.from_numpy(x).sin()
+
+    # data on Device with stream 3
+    s1 = ms.runtime.Stream()
+    with ms.runtime.StreamCtx(s1):
+        b = ms.from_numpy(x).sin()
+    ms.runtime.synchronize()
+
+    # data on Device with stream 0
+    c = ms.from_numpy(x)
+
+    ms.ops.Identity()(a)
+    ms.ops.Identity()(b)
+    ms.ops.Identity()(c)
+
+    ms.runtime.synchronize()

@@ -341,7 +341,7 @@ void PyBoostUtils::MallocForInput(const DeviceContext *device_context, const ten
     }
   }
 
-  if (!device_context->device_res_manager_->AllocateMemory(device_address.get())) {
+  if (!device_context->device_res_manager_->AllocateMemory(device_address.get(), CurrentStream::id())) {
     MS_LOG(EXCEPTION) << "Allocate memory failed";
   }
 
@@ -539,7 +539,7 @@ std::vector<kernel::KernelTensorPtr> PyBoostUtils::CreateWorkSpaceKernelTensors(
     device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, "PyNative", memory::mem_pool::MemType::kWorkSpace,
                                                    device_address->GetSize(), device_address.get());
     if (device_address->GetPtr() == nullptr &&
-        !device_context->device_res_manager_->AllocateMemory(device_address.get())) {
+        !device_context->device_res_manager_->AllocateMemory(device_address.get(), CurrentStream::id())) {
       MS_LOG(EXCEPTION) << "Allocate workspace memory failed";
     }
     MS_LOG(DEBUG) << "workspace[" << i << "]:" << device_address->GetPtr() << " size:" << device_address->GetSize();

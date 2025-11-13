@@ -18,6 +18,7 @@
 #include <memory>
 #include <utility>
 #include "ir/dtype/tensor_type.h"
+#include "utils/stream_guard.h"
 
 namespace mindspore {
 namespace kernel {
@@ -42,7 +43,7 @@ void IdentityCustomizeCallWithoutContigous(const std::shared_ptr<OpRunner> &op, 
     MS_EXCEPTION_IF_NULL(launch_device_address);
     device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, "PyNative", memory::mem_pool::MemType::kPyNativeOutput,
                                                    launch_device_address->GetSize(), launch_device_address.get());
-    if (!device_context->device_res_manager_->AllocateMemory(launch_device_address.get())) {
+    if (!device_context->device_res_manager_->AllocateMemory(launch_device_address.get(), CurrentStream::id())) {
       MS_LOG(EXCEPTION) << "Allocate memory failed";
     }
 
