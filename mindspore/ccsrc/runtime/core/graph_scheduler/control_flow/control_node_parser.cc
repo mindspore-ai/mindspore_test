@@ -2831,6 +2831,21 @@ void CollectEffectiveInputByGraph(const KernelGraphPtr &graph, const DeviceConte
   const auto &outputs = kernel_graph_group_info->front_output_nodes_;
   const auto &monad_outputs = kernel_graph_group_info->monad_outputs_;
   const auto &real_parameters = graph->input_nodes();
+  auto is_internal_in_graph = [&outputs](const KernelWithIndex &node_with_index) {
+    //
+    if (outputs.find(node_with_index) != outputs.end()) {
+      return true;
+    }
+    for (const auto &pair : outputs) {
+      if (!IsOneOfPrimitiveCNode(pair.first.first, {prim::kPrimDepend, prim::kPrimLoad})) {
+        continue;
+      }
+      if (node_with_index == common::AnfAlgo::VisitKernelWithReturnType(pair.first.first, pair.first.second, false)) {
+        return true;
+      }
+    }
+    return false;
+  };
   for (const auto &parameter : real_parameters) {
     MS_EXCEPTION_IF_NULL(parameter);
     auto front_node_with_index = GetFrontNodeByKernelGraph(parameter, graph.get());
@@ -2838,7 +2853,7 @@ void CollectEffectiveInputByGraph(const KernelGraphPtr &graph, const DeviceConte
     // If input come from the output of kernel graph belong the same group, it should not be collected in
     // the group inputs.
     if (HasAbstractMonad(front_node_with_index.first) || HasAbstractMonad(parameter) ||
-        outputs.find(front_node_with_index) != outputs.end() || front_node_with_index.first->isa<ValueNode>()) {
+        is_internal_in_graph(front_node_with_index) || front_node_with_index.first->isa<ValueNode>()) {
       // The monad input is used to link the control arrow of the graph. If it comes from other graphs in the same
       // group, it is not used as the monad input of the group.
       if ((HasAbstractMonad(front_node_with_index.first) || HasAbstractMonad(parameter)) &&
