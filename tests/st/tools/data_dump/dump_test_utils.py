@@ -21,6 +21,8 @@ import os
 import glob
 import csv
 import numpy as np
+from mindspore import log as logger
+import shutil
 
 async_dump_dict = {
     "common_dump_settings": {
@@ -99,7 +101,7 @@ e2e_async_dump_dict = {
         "input_output": 0,
         "kernels": ["Default/Conv-op12"],
         "support_device": [0, 1, 2, 3, 4, 5, 6, 7],
-        "op_debug_mode": 0
+        "op_debug_mode": 0,
     },
     "e2e_dump_settings": {
         "enable": False,
@@ -202,6 +204,8 @@ async_dump_dict_acl_assign_ops_by_regex = {
     }
 }
 
+ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
 def generate_dump_json(dump_path, json_file_name, test_key, net_name='Net', overflow_number=0):
     """
     Util function to generate dump configuration json file.
@@ -234,12 +238,18 @@ def generate_dump_json(dump_path, json_file_name, test_key, net_name='Net', over
         data = e2e_dump_dict
         data["common_dump_settings"]["path"] = dump_path
         data["e2e_dump_settings"]["trans_flag"] = True
-    elif test_key in ["test_e2e_dump_trans_true_op_debug_mode", "test_e2e_dump_set_overflow_number"]:
+    elif test_key in [
+            "test_e2e_dump_trans_true_op_debug_mode",
+            "test_e2e_dump_set_overflow_number",
+            "test_e2e_dump_with_uncontiguous_tensor",
+            "test_dump_dynamic_net_sync_overflow_dump"
+        ]:
         data = e2e_dump_dict
         data["common_dump_settings"]["path"] = dump_path
         data["e2e_dump_settings"]["trans_flag"] = True
         data["common_dump_settings"]["op_debug_mode"] = 3
         data["common_dump_settings"]["overflow_number"] = overflow_number
+        data["common_dump_settings"]["saved_data"] = "tensor"
     elif test_key == "test_e2e_dump_save_kernel_args_true":
         data = e2e_dump_dict
         data["common_dump_settings"]["path"] = dump_path
@@ -292,11 +302,19 @@ def generate_dump_json(dump_path, json_file_name, test_key, net_name='Net', over
     elif test_key == "test_async_kbyk_dump":
         data = async_kbyk_dump_dict
         data["common_dump_settings"]["path"] = dump_path
+    elif test_key == "test_lenet_sink_false_kbk_dump_sync":
+        data = sync_kbyk_dump_dict
+        data["common_dump_settings"]["path"] = dump_path
+        data["common_dump_settings"]["net_name"] = 'lenet'
+        data["common_dump_settings"]["saved_data"] = "tensor"
+        data["common_dump_settings"]["input_output"] = 1
+        data["common_dump_settings"]["iteration"] = "all"
+        data["common_dump_settings"]["kernels"] = []
     else:
         raise ValueError(
             "Failed to generate dump json file. The test name value " + test_key + " is invalid.")
     data["common_dump_settings"]["net_name"] = net_name
-    with open(json_file_name, 'w') as f:
+    with open(json_file_name, 'w', encoding="utf-8") as f:
         json.dump(data, f)
 
 def generate_statistic_dump_json(dump_path, json_file_name, test_key, saved_data, net_name='Net',
@@ -328,7 +346,7 @@ def generate_statistic_dump_json(dump_path, json_file_name, test_key, saved_data
     data["common_dump_settings"]["net_name"] = net_name
     if statistic_category:
         data["common_dump_settings"]["statistic_category"] = statistic_category
-    with open(json_file_name, 'w') as f:
+    with open(json_file_name, 'w', encoding="utf-8") as f:
         json.dump(data, f)
 
 
@@ -337,14 +355,14 @@ def check_dump_structure(dump_path, json_file_path, num_card, num_graph, num_ite
     """
     Util to check if the dump structure is correct.
     """
-    with open(json_file_path) as f:
+    with open(json_file_path, encoding="utf-8") as f:
         data = json.load(f)
     net_name = data["common_dump_settings"]["net_name"]
     assert os.path.isdir(dump_path)
     if root_graph_id is None:
-        root_graph_id = [i for i in range(num_graph)]
+        root_graph_id = list(range(num_graph))
     if test_iteration_id is None:
-        test_iteration_id = [i for i in range(num_iteration)]
+        test_iteration_id = list(range(num_iteration))
     for rank_id in range(num_card):
         rank_path = os.path.join(dump_path, "rank_" + str(rank_id))
         assert os.path.exists(rank_path)
@@ -377,10 +395,15 @@ def check_dump_structure(dump_path, json_file_path, num_card, num_graph, num_ite
                     assert os.path.isdir(it_id_path)
 
 def check_statistic_dump(dump_file_path):
+    """
+    Args:
+        dump_path (str): dump文件路径。
+        dump_config (dict): dump配置信息。
+    """
     output_name = "statistic.csv"
     output_path = glob.glob(os.path.join(dump_file_path, output_name))[0]
     real_path = os.path.realpath(output_path)
-    with open(real_path) as f:
+    with open(real_path, encoding="utf-8") as f:
         reader = csv.DictReader(f)
         stats = list(reader)
 
@@ -412,3 +435,32 @@ def check_data_dump(dump_file_path):
     output = np.load(real_path)
     expect = np.array([[8, 10, 12], [14, 16, 18]], np.float32)
     assert np.array_equal(output, expect)
+
+
+def migrate_resnet50(case_path):
+    """
+    Args:
+        case_path (str): dump文件路径。
+    """
+    try:
+        shutil.copytree(os.path.join(os.path.dirname(ROOT_DIR), "networks", "models", "resnet50", "src"),
+                        os.path.join(case_path, "src"))
+    except Exception as e:
+        logger.error(f"An error has occurred, the error message is {e}")
+        raise e
+    src_file = os.path.join(case_path, "src", "resnet.py")
+    old_code = "def _weight_variable(shape, factor=0.01):"
+    new_code = "def _weight_variable(shape, factor=26000):"
+    replace_code(src_file, old_code, new_code)
+
+
+def replace_code(source_file, old_str, new_str):
+    """replace_code,适用整行代码替换"""
+    dst_file = f'{source_file}.bak'
+    with open(source_file, 'r', encoding="utf-8") as old_file, open(dst_file, 'w', encoding="utf-8") as new_file:
+        for line in old_file:
+            if old_str in line:
+                line = line.replace(old_str, new_str)
+            new_file.write(line)
+    os.remove(source_file)
+    os.rename('%s.bak' % source_file, source_file)
