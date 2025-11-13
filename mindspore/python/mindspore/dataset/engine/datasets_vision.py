@@ -130,13 +130,13 @@ class Caltech101Dataset(GeneratorDataset):
             return category represents the target class. If `target_type` is ``'annotation'``,
             return annotation. If `target_type` is ``'all'``, return category and annotation.
             Default: ``None`` , means ``'category'``.
-        num_samples (int, optional): The number of images to be included in the dataset.
+        num_samples (int, optional): The number of images to be included in the dataset.f
             Default: ``None`` , all images.
         num_parallel_workers (int, optional): Number of worker subprocesses to read the data.
             Default: ``1``.
-        shuffle (bool, optional): Whether or not to perform shuffle on the dataset.
+        shuffle (bool, optional): Whether to perform shuffle on the dataset.
             Default: ``None`` , expected order behavior shown in the table below.
-        decode (bool, optional): Whether or not to decode the images after reading. Default: ``False``.
+        decode (bool, optional): Whether to decode the images after reading. Default: ``False``.
         sampler (Sampler, optional): Object used to choose samples from the
             dataset. Default: ``None`` , expected order behavior shown in the table below.
         num_shards (int, optional): Number of shards that the dataset will be divided
@@ -279,9 +279,9 @@ class Caltech256Dataset(MappableDataset, VisionBaseDataset):
         num_parallel_workers (int, optional): Number of worker threads to read the data.
             Default: ``None`` , will use global default workers(8), it can be set
             by :func:`mindspore.dataset.config.set_num_parallel_workers` .
-        shuffle (bool, optional): Whether or not to perform shuffle on the dataset.
+        shuffle (bool, optional): Whether to perform shuffle on the dataset.
             Default: ``None`` , expected order behavior shown in the table below.
-        decode (bool, optional): Whether or not to decode the images after reading. Default: ``False``.
+        decode (bool, optional): Whether to decode the images after reading. Default: ``False``.
         sampler (Sampler, optional): Object used to choose samples from the
             dataset. Default: ``None`` , expected order behavior shown in the table below.
         num_shards (int, optional): Number of shards that the dataset will be divided
@@ -302,7 +302,6 @@ class Caltech256Dataset(MappableDataset, VisionBaseDataset):
         RuntimeError: If `num_shards` is specified but `shard_id` is None.
         RuntimeError: If `shard_id` is specified but `num_shards` is None.
         ValueError: If `shard_id` is not in range of [0, `num_shards` ).
-        ValueError: If `target_type` is not ``'category'``, ``'annotation'`` or ``'all'``.
         ValueError: If `num_parallel_workers` exceeds the max thread numbers.
 
     Tutorial Examples:
@@ -653,7 +652,7 @@ class Cifar100Dataset(MappableDataset, VisionBaseDataset):
 
     The generated dataset has three columns :py:obj:`[image, coarse_label, fine_label]` .
     The tensor of column :py:obj:`image` is of the uint8 type.
-    The tensor of column :py:obj:`coarse_label` and :py:obj:`fine_labels` are each a scalar of uint32 type.
+    The tensor of column :py:obj:`coarse_label` and :py:obj:`fine_label` are each a scalar of uint32 type.
 
     Args:
         dataset_dir (str): Path to the root directory that contains the dataset.
@@ -763,14 +762,14 @@ class CityscapesDataset(MappableDataset, VisionBaseDataset):
 
     The generated dataset has two columns :py:obj:`[image, task]` .
     The tensor of column :py:obj:`image` is of the uint8 type.
-    The tensor of column :py:obj:`task` is of the uint8 type if `task` is not ``'polygon'`` otherwise task is
-    a string tensor with serialize json.
+    The tensor of column :py:obj:`task` is of the uint8 type if `task` is not ``'polygon'``, otherwise it is
+    a string tensor with serialized json.
 
     Args:
         dataset_dir (str): Path to the root directory that contains the dataset.
         usage (str, optional): Acceptable usages include ``'train'``, ``'test'``, ``'val'`` or ``'all'``
             if `quality_mode` is ``'fine'`` otherwise ``'train'``, ``'train_extra'``, ``'val'`` or
-            ``'all'``. Default: ``'train'``.
+            ``'all'``. Default: ``'train'``, the training samples will be read.
         quality_mode (str, optional): Acceptable quality_modes include ``'fine'`` or ``'coarse'``.
             Default: ``'fine'``.
         task (str, optional): Acceptable tasks include ``'instance'``,
@@ -804,7 +803,7 @@ class CityscapesDataset(MappableDataset, VisionBaseDataset):
         RuntimeError: If `num_shards` is specified but `shard_id` is None.
         RuntimeError: If `shard_id` is specified but `num_shards` is None.
         ValueError: If `num_parallel_workers` exceeds the max thread numbers.
-        ValueError: If `dataset_dir` is not exist.
+        ValueError: If `dataset_dir` does not exist.
         ValueError: If `task` is not ``'instance'``, ``'semantic'``, ``'polygon'`` or ``'color'``.
         ValueError: If `quality_mode` is not ``'fine'`` or ``'coarse'``.
         ValueError: If `usage` is invalid.
@@ -949,7 +948,7 @@ class CocoDataset(MappableDataset, VisionBaseDataset):
         cache (DatasetCache, optional): Use tensor caching service to speed up dataset processing. More details:
             `Single-Node Data Cache <https://www.mindspore.cn/tutorials/en/master/dataset/cache.html>`_ .
             Default: ``None`` , which means no cache is used.
-        extra_metadata(bool, optional): Flag to add extra meta-data to row. If True, an additional column will be
+        extra_metadata (bool, optional): Flag to add extra meta-data to row. If True, an additional column will be
             output at the end :py:obj:`[_meta-filename, dtype=string]` . Default: ``False``.
         decrypt (callable, optional): Image decryption function, which accepts the path of the encrypted image file
             and returns the decrypted bytes data. Default: ``None`` , no decryption.
@@ -1000,12 +999,12 @@ class CocoDataset(MappableDataset, VisionBaseDataset):
         RuntimeError: If `sampler` and `num_shards`/`shard_id` are specified at the same time.
         RuntimeError: If `num_shards` is specified but `shard_id` is None.
         RuntimeError: If `shard_id` is specified but `num_shards` is None.
-        RuntimeError: If parse JSON file failed.
+        RuntimeError: If parsing the JSON file failed.
         ValueError: If `num_parallel_workers` exceeds the max thread numbers.
         ValueError: If `task` is not ``'Detection'``, ``'Stuff'``, ``'Panoptic'``, ``'Keypoint'``
             or ``'Captioning'``.
-        ValueError: If `annotation_file` is not exist.
-        ValueError: If `dataset_dir` is not exist.
+        ValueError: If `annotation_file` does not exist.
+        ValueError: If `dataset_dir` does not exist.
         ValueError: If `shard_id` is not in range of [0, `num_shards` ).
 
     Tutorial Examples:
@@ -1013,8 +1012,8 @@ class CocoDataset(MappableDataset, VisionBaseDataset):
           <https://www.mindspore.cn/docs/en/master/api_python/samples/dataset/dataset_gallery.html>`_
 
     Note:
-        - Column '[_meta-filename, dtype=string]' won't be output unless an explicit rename dataset op is added
-          to remove the prefix('_meta-').
+        - When the parameter `extra_metadata` is set to ``True``, use the rename operation to remove the prefix
+          `_meta-` from the additional data column `_meta-filename`.
         - Not support :class:`mindspore.dataset.PKSampler` for `sampler` parameter yet.
         - The parameters `num_samples` , `shuffle` , `num_shards` , `shard_id` can be used to control the sampler
           used in the dataset, and their effects when combined with parameter `sampler` are as follows.
