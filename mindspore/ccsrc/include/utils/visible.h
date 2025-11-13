@@ -73,4 +73,14 @@
 #define FRONTEND_EXPORT __attribute__((visibility("default")))
 #endif
 
+#if (defined(_WIN32) || defined(__WIN32__) || defined(WIN32) || defined(__CYGWIN__))
+#ifdef PYBIND_DLL
+#define PYBIND_EXPORT __declspec(dllexport)
+#else
+#define PYBIND_EXPORT __declspec(dllimport)
+#endif
+#else
+#define PYBIND_EXPORT __attribute__((visibility("default")))
+#endif
+
 #endif  // MINDSPORE_CCSRC_INCLUDE_COMMON_VISIBLE_H_

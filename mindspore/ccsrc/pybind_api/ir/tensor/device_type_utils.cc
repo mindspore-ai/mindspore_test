@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "frontend/ir/device_type_utils.h"
+#include "pybind_api/ir/tensor/device_type_utils.h"
 #include "utils/log_adapter.h"
 #include "utils/ms_context.h"
 

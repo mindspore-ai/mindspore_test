@@ -32,11 +32,11 @@
 #include "mindspore/ops/infer/py_execute.h"
 #include "include/utils/convert_utils_py.h"
 #include "include/utils/python_utils.h"
+#include "include/utils/tensor_py.h"
 #include "include/utils/python_adapter.h"
 #include "include/utils/python_fallback_running.h"
 #include "mindspore/ccsrc/include/backend/optimizer/helper.h"
 #include "mindspore/ccsrc/frontend/jit/ps/parse/data_converter.h"
-#include "mindspore/ccsrc/frontend/ir/tensor_py.h"
 #include "mindspore/ccsrc/frontend/jit/ps/parse/resolve.h"
 
 namespace py = pybind11;

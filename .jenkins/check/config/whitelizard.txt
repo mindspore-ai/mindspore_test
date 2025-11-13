@@ -56,7 +56,6 @@ mindspore/mindspore/ccsrc/runtime/core/actors/base/data_prepare_actor.cc:mindspo
 mindspore/mindspore/ccsrc/backend/ge_backend/graph_ir/convert.cc:mindspore::backend::ge_backend::DfGraphConvertor::InitParamWithData
 mindspore/mindspore/ccsrc/runtime/core/actors/base/output_actor.cc:mindspore::runtime::OutputActor::CreateOutputTensor
 mindspore/mindspore/ccsrc/frontend/jit/ps/static_analysis/prim.cc:mindspore::abstract::ConvertAbstractToPython
-mindspore/mindspore/ccsrc/frontend/ir/log_adapter_py.h:mindspore::PyExceptionInitializer::HandleExceptionPy
 mindspore/mindspore/ccsrc/utils/anfalgo.cc:mindspore::common::AnfAlgo::GetTensorValueString
 mindspore/mindspore/ops/kernel/gpu/cuda/math/unary_op_gpu_kernel.h:mindspore::kernel::UnaryOpGpuKernel::Launch
 mindspore/mindspore/ccsrc/plugin/ascend/res_manager/op_adapter/transform_util.cc:mindspore::device::ascend::TransformUtil::ConvertGeDataType
@@ -117,10 +116,10 @@ mindspore/mindspore/python/mindspore/train/serialization.py:_load_into_param_dic
 mindspore/mindspore/python/mindspore/parallel/transform_safetensors.py:_transform_safetensors_single
 mindspore/mindspore/python/mindspore/parallel/transform_safetensors.py:_transform_parallel_safetensor
 mindspore/mindspore/python/mindspore/parallel/transform_safetensors.py:unified_safetensors
-mindspore/mindspore/ccsrc/frontend/ir/tensor_py.cc:mindspore::tensor::GetDataType
+mindspore/mindspore/ccsrc/utils/tensor_py.cc:mindspore::tensor::GetDataType
 mindspore/mindspore/ccsrc/pybind_api/ir/tensor/tensor_index_py.cc:mindspore::tensor::TensorIndex::GetItemByTupleWithView
-mindspore/mindspore/ccsrc/frontend/np_dtypes/np_dtypes.cc:mindspore::np_dtypes::RegisterNpTypeUFuncs
-mindspore/mindspore/ccsrc/frontend/np_dtypes/np_dtypes.cc:mindspore::np_dtypes::NumpyVersionValid
+mindspore/mindspore/ccsrc/utils/np_dtypes.cc:mindspore::np_dtypes::RegisterNpTypeUFuncs
+mindspore/mindspore/ccsrc/utils/np_dtypes.cc:mindspore::np_dtypes::NumpyVersionValid
 mindspore/mindspore/ccsrc/frontend/operator/composite/tensor_index.cc:mindspore::prim::TensorIndexGetitem::GetStrideInfoFromTuple
 mindspore/mindspore/ops/kernel/cpu/native/eltwise_grad_cpu_kernel.cc:mindspore::kernel::eltwise_grad_cpu::EltWiseGradCpuTypeFunc<T>::InitFunc
 mindspore/mindspore/ops/kernel/cpu/nnacl/infer/strided_slice_infer.c:StridedSliceInferShape
@@ -199,7 +198,7 @@ mindspore/mindspore/python/mindspore/ops/function/nn_func.py:conv3d
 mindspore/mindspore/python/mindspore/common/api.py:_convert_python_data
 mindspore/mindspore/ops/kernel/cpu/native/crop_and_resize_cpu_kernel.cc:mindspore::kernel::CropAndResizeCpuKernelMod::LaunchKernel
 mindspore/mindspore/ops/kernel/cpu/native/cast_cpu_kernel.cc:mindspore::kernel::Cast
-mindspore/mindspore/ccsrc/frontend/ir/tensor_py.cc:mindspore::tensor::GetPyTypeFormat
+mindspore/mindspore/ccsrc/utils/tensor_py.cc:mindspore::tensor::GetPyTypeFormat
 mindspore/mindspore/core/ir/dtype/type.cc:mindspore::NormalizeTypeId
 mindspore/mindspore/ops/infer/sparse_to_dense_v2.cc:mindspore::ops::SparseToDenseV2InferShape
 mindspore/mindspore/ops/infer/ops_func_impl/div.cc:mindspore::ops::DivFrontendFuncImpl::InferValue
@@ -207,8 +206,8 @@ mindspore/mindspore/ops/kernel/gpu/cuda/math/cumprod_gpu_kernel.cc:mindspore::ke
 mindspore/mindspore/ops/kernel/cpu/native/cumprod_cpu_kernel.cc:mindspore::kernel::CumProdCpuKernelMod::GetFuncList
 mindspore/mindspore/ops/kernel/cpu/mkldnn/pooling_cpu_kernel.cc:mindspore::kernel::PoolingCpuKernelMod::InitPoolingFields
 mindspore/mindspore/ops/kernel/cpu/mkldnn/pooling_cpu_kernel_nnacl.cc:mindspore::kernel::PoolingCpuKernelNnaclMod::Resize
-mindspore/mindspore/ccsrc/frontend/ir/tensor_py.cc:mindspore::tensor::TensorPybind::Item
-mindspore/mindspore/ccsrc/frontend/ir/tensor_py.cc:mindspore::tensor::GetItemForToList
+mindspore/mindspore/ccsrc/pybind_api/ir/tensor/tensor_py.cc:mindspore::tensor::TensorPybind::Item
+mindspore/mindspore/ccsrc/pybind_api/ir/tensor/tensor_py.cc:mindspore::tensor::GetItemForToList
 mindspore/mindspore/python/mindspore/nn/cell.py:_load_from_state_dict
 mindspore/mindspore/ccsrc/runtime/core/graph_scheduler/base/graph_compiler.cc:mindspore::runtime::GraphCompiler::CompileGraphImpl
 mindspore/mindspore/ccsrc/runtime/core/graph_scheduler/base/graph_scheduler.cc:mindspore::runtime::GraphScheduler::LinkControlArrowByAutoMonad

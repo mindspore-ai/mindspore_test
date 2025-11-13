@@ -34,11 +34,11 @@
 #include "frontend/jit/ps/fallback.h"
 #include "frontend/jit/trace/trace_recorder.h"
 #include "abstract/param_validator.h"
-#include "frontend/ir/tensor_py.h"
 #include "frontend/operator/ops.h"
 #include "infer/deprecated_infer/infer_functions.h"
 #include "include/utils/convert_utils_py.h"
 #include "include/utils/utils.h"
+#include "include/utils/tensor_py.h"
 #include "infer/mod.h"
 #include "abstract/abstract_function.h"
 #include "utils/ms_context.h"
@@ -684,7 +684,7 @@ AbstractBasePtr InferImplTuple2Array(const AnalysisEnginePtr &, const PrimitiveP
   MS_EXCEPTION_IF_NULL(input);
   py::tuple data_tuple = ValueToPyData(input->BuildValue());
   py::array data = py::array(data_tuple);
-  auto tensor = tensor::TensorPybind::MakeTensor(data);
+  auto tensor = tensor::MakeTensor(data);
   auto ret = tensor->ToAbstract();
   ret->set_value(tensor);
   MS_LOG(DEBUG) << "The infer result of Tuple2Array operator is tensor, the infer result is " << ret->ToString() << ".";

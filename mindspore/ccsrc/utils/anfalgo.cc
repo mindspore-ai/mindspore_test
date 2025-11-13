@@ -51,7 +51,6 @@
 #include "include/utils/parallel_context.h"
 #include "utils/ms_context.h"
 #include "frontend/operator/primitive_py.h"
-#include "frontend/ir/tensor_py.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_build_info.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_info.h"
 #include "include/backend/anf_runtime_algorithm.h"

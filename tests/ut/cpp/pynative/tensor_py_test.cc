@@ -24,7 +24,8 @@
 #include "include/securec.h"
 #include "ir/tensor.h"
 #include "ir/tensor_new.h"
-#include "frontend/ir/tensor_py.h"
+#include "pybind_api/ir/tensor/tensor_py.h"
+#include "include/utils/tensor_py.h"
 #include "common/mockcpp.h"
 
 using mindspore::tensor::TensorPybind;
@@ -129,7 +130,7 @@ TEST_F(TestTensorPy, GetConstArgFromPythonTest) {
 /// Expectation: Successfully get item size.
 TEST_F(TestTensorPy, GetPyItemSizeTest) {
     py::tuple tensor_data_tuple = py::make_tuple(1, 2, 3, 4, 5, 6);
-    TensorPtr tensor_int32 = TensorPybind::MakeTensor(py::array(tensor_data_tuple), kInt32);
+    TensorPtr tensor_int32 = tensor::MakeTensor(py::array(tensor_data_tuple), kInt32);
     py::int_ item_size_res = TensorPybind::GetPyItemSize(*tensor_int32);
     ASSERT_EQ(item_size_res, 4);
 }
@@ -139,7 +140,7 @@ TEST_F(TestTensorPy, GetPyItemSizeTest) {
 /// Expectation: Successfully get nbytes.
 TEST_F(TestTensorPy, GetPyNBytesTest) {
     py::tuple tensor_data_tuple = py::make_tuple(1, 2, 3, 4, 5, 6);
-    TensorPtr tensor_int32 = TensorPybind::MakeTensor(py::array(tensor_data_tuple), kInt32);
+    TensorPtr tensor_int32 = tensor::MakeTensor(py::array(tensor_data_tuple), kInt32);
     py::int_ nbytes_res = TensorPybind::GetPyNBytes(*tensor_int32);
     ASSERT_EQ(nbytes_res, 24);
 }
@@ -151,7 +152,7 @@ TEST_F(TestTensorPy, SyncAsNumpyTest) {
     MOCKER(IsCustomNumpyTypeValid).stubs().will(returnValue(false));
     try {
         py::tuple tensor_data_tuple = py::make_tuple(1, 2, 3, 4, 5, 6);
-        TensorPtr tensor_int32 = TensorPybind::MakeTensor(py::array(tensor_data_tuple), kBFloat16);
+        TensorPtr tensor_int32 = tensor::MakeTensor(py::array(tensor_data_tuple), kBFloat16);
         py::array sync_as_numpy_res = TensorPybind::SyncAsNumpy(*tensor_int32);
         ASSERT_FALSE(sync_as_numpy_res.is_none());
     } catch (const std::exception &ex) {

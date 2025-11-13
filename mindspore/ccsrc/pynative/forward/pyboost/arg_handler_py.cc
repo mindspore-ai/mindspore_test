@@ -20,7 +20,7 @@
 #include <string>
 #include "ops/op_def.h"
 #include "mindspore/ops/op_def/op_enum.h"
-#include "frontend/ir/arg_handler_py.h"
+#include "pynative/forward/pyboost/arg_handler_py.h"
 
 namespace mindspore {
 

@@ -1,11 +1,9 @@
 ## make sub objects
 set(SUB_COMP
     expander
-    ir
     jit/ps
     jit/pi
     jit/trace
-    np_dtypes
     operator
     optimizer
     parallel

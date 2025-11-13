@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "frontend/ir/tensor_py.h"
+#include "pybind_api/ir/tensor/tensor_py.h"
 
 #include <utility>
 #include <algorithm>
@@ -33,7 +33,7 @@
 #include "include/utils/pynative/adapter.h"
 #include "include/runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "include/runtime/pipeline/pipeline.h"
-#include "frontend/ir/mbuf_device_address.h"
+#include "pybind_api/ir/tensor/mbuf_device_address.h"
 #include "include/runtime/core/graph_scheduler/base/move_to.h"
 #include "utils/value_utils.h"
 #include "ir/device_address_maker.h"
@@ -47,7 +47,7 @@ namespace mindspore {
 namespace tensor {
 namespace {
 struct TensorToNumpyRegister {
-  TensorToNumpyRegister() { python_adapter::PyAdapterCallback::SetTensorToNumpyHandler(tensor::TensorPybind::AsNumpy); }
+  TensorToNumpyRegister() { python_adapter::PyAdapterCallback::SetTensorToNumpyHandler(tensor::AsNumpy); }
 } callback_register;
 
 TensorPtr MakeCpuTensor(const TensorPtr &tensor) {
@@ -67,288 +67,6 @@ TensorPtr MakeCpuTensor(const TensorPtr &tensor) {
   return cpu_tensor;
 }
 }  // namespace
-constexpr ssize_t kPyBufItemSize1 = 1;
-constexpr ssize_t kPyBufItemSize2 = 2;
-constexpr ssize_t kPyBufItemSize4 = 4;
-constexpr ssize_t kPyBufItemSize8 = 8;
-
-static TypeId GetDataType(const py::buffer_info &buf) {
-  if (buf.format.size() == 1) {
-    switch (buf.format.front()) {
-      case 'e':
-      case 'f':
-      case 'd':
-        switch (buf.itemsize) {
-          case kPyBufItemSize2:
-            return TypeId::kNumberTypeFloat16;
-          case kPyBufItemSize4:
-            return TypeId::kNumberTypeFloat32;
-          case kPyBufItemSize8:
-            return TypeId::kNumberTypeFloat64;
-        }
-        break;
-      case 'b':
-      case 'h':
-      case 'i':
-      case 'l':
-      case 'q':
-        switch (buf.itemsize) {
-          case kPyBufItemSize1:
-            return TypeId::kNumberTypeInt8;
-          case kPyBufItemSize2:
-            return TypeId::kNumberTypeInt16;
-          case kPyBufItemSize4:
-            return TypeId::kNumberTypeInt32;
-          case kPyBufItemSize8:
-            return TypeId::kNumberTypeInt64;
-          default:
-            break;
-        }
-        break;
-      case 'B':
-      case 'H':
-      case 'I':
-      case 'L':
-      case 'Q':
-        switch (buf.itemsize) {
-          case kPyBufItemSize1:
-            return TypeId::kNumberTypeUInt8;
-          case kPyBufItemSize2:
-            return TypeId::kNumberTypeUInt16;
-          case kPyBufItemSize4:
-            return TypeId::kNumberTypeUInt32;
-          case kPyBufItemSize8:
-            return TypeId::kNumberTypeUInt64;
-          default:
-            break;
-        }
-        break;
-      case '?':
-        return TypeId::kNumberTypeBool;
-      case 'E':
-        return TypeId::kNumberTypeBFloat16;
-      default:
-        break;
-    }
-  } else if (buf.format.size() >= 2) {
-    // Support np.str_ dtype, format: {x}w. {x} is a number that means the maximum length of the string items.
-    if (buf.format.back() == 'w' || buf.format.back() == 's') {
-      return TypeId::kObjectTypeString;
-    } else if (buf.format == "Zf") {
-      return TypeId::kNumberTypeComplex64;
-    } else if (buf.format == "Zd") {
-      return TypeId::kNumberTypeComplex128;
-    }
-  }
-  MS_LOG(WARNING) << "Unsupported DataType format " << buf.format << ", item size " << buf.itemsize;
-  return TypeId::kTypeUnknown;
-}
-
-static std::string GetPyTypeFormat(TypeId data_type) {
-  switch (data_type) {
-    case TypeId::kNumberTypeFloat16:
-      return "e";
-    case TypeId::kNumberTypeBFloat16:
-      return "E";
-    case TypeId::kNumberTypeFloat32:
-      return py::format_descriptor<float>::format();
-    case TypeId::kNumberTypeFloat64:
-      return py::format_descriptor<double>::format();
-    case TypeId::kNumberTypeUInt8:
-      return py::format_descriptor<uint8_t>::format();
-    case TypeId::kNumberTypeUInt16:
-      return py::format_descriptor<uint16_t>::format();
-    case TypeId::kNumberTypeUInt32:
-      return py::format_descriptor<uint32_t>::format();
-    case TypeId::kNumberTypeUInt64:
-      return py::format_descriptor<uint64_t>::format();
-    case TypeId::kNumberTypeInt4:
-    case TypeId::kNumberTypeInt8:
-      return py::format_descriptor<int8_t>::format();
-    case TypeId::kNumberTypeInt16:
-      return py::format_descriptor<int16_t>::format();
-    case TypeId::kNumberTypeInt:
-    case TypeId::kNumberTypeInt32:
-      return py::format_descriptor<int32_t>::format();
-    case TypeId::kNumberTypeInt64:
-      return py::format_descriptor<int64_t>::format();
-    case TypeId::kNumberTypeBool:
-      return py::format_descriptor<bool>::format();
-    case TypeId::kObjectTypeString:
-      return py::format_descriptor<uint8_t>::format();
-    case TypeId::kNumberTypeComplex64:
-      return py::format_descriptor<std::complex<float>>::format();
-    case TypeId::kNumberTypeComplex128:
-      return py::format_descriptor<std::complex<double>>::format();
-    case TypeId::kMetaTypeType:
-    case TypeId::kMetaTypeEllipsis:
-    default:
-      MS_LOG(WARNING) << "Unsupported DataType " << data_type << ".";
-      return "";
-  }
-}
-
-static bool IsCContiguous(const py::array &input) {
-  auto flags = static_cast<unsigned int>(input.flags());
-  return (flags & static_cast<unsigned int>(pybind11::detail::npy_api::NPY_ARRAY_C_CONTIGUOUS_)) != 0;
-}
-
-// TensorDataNumpy implements TensorData using numpy array.
-class TensorDataNumpy : public TensorData {
- public:
-  explicit TensorDataNumpy(py::buffer_info &&buffer) : buffer_(std::make_unique<py::buffer_info>(std::move(buffer))) {}
-
-  ~TensorDataNumpy() override {
-    py::gil_scoped_acquire acquire;
-    buffer_.reset();
-  }
-
-  /// Total number of elements.
-  ssize_t size() const override { return buffer()->size; }
-
-  /// Byte size of a single element.
-  ssize_t itemsize() const override { return buffer()->itemsize; }
-
-  /// Total number of bytes.
-  ssize_t nbytes() const override { return buffer()->itemsize * buffer()->size; }
-
-  /// Number of dimensions.
-  ssize_t ndim() const override { return buffer()->ndim; }
-
-  /// Data pointer.
-  void *data() override { return buffer_data(); }
-
-  void *const_data() const override { return buffer()->ptr; }
-
-  bool is_from_numpy() const override { return true; }
-
-  const std::vector<ssize_t> &shape() const { return buffer()->shape; }
-
-  /// To string.
-  std::string ToString(const TypeId, const ShapeVector &, bool use_comma) const override {
-    py::gil_scoped_acquire gil_acquire;
-    if (use_comma) {
-      // Call python np.array2string(data_, separator=', ') to convert string with comma.
-      py::dict kwargs;
-      kwargs["separator"] = ", ";
-      auto np = py::module::import("numpy");
-      auto array2string = np.attr("array2string");
-      return py::str(array2string(py_array(), **kwargs));
-    }
-    // without comma.
-    return py::str(py_array());
-  }
-
-  /// py::array object. by default, use py::str() as the dummy owner to prevent data copy.
-  py::array py_array(const py::handle &owner = py::str()) const {
-    py::gil_scoped_acquire acquire;
-    py::dtype np_dtype =
-      (buffer()->format == "E") ? py::detail::npy_format_descriptor<bfloat16>::dtype() : py::dtype(*buffer());
-    return py::array(np_dtype, buffer()->shape, buffer()->strides, buffer()->ptr, owner);
-  }
-
- private:
-  void *buffer_data() const { return buffer_->ptr; }
-  std::unique_ptr<py::buffer_info> const &buffer() const {
-    MS_EXCEPTION_IF_NULL(buffer_);
-    return buffer_;
-  }
-
-  // The internal buffer.
-  std::unique_ptr<py::buffer_info> buffer_;
-};
-
-py::buffer_info TensorPybind::GetPyBufferFromPyArray(const py::array &input) {
-  py::buffer_info buf;
-  auto descr = py::detail::array_descriptor_proxy(py::detail::array_proxy(input.ptr())->descr);
-  // For bfloat16, modify descr->type_num to support acquiring buffer_info from numpy.
-  if (descr->type == 'E') {
-    // convert descr->type_num from E(NPY_BFLOAT16) to H(NPY_USHORT)
-    const int NPY_USHORT = 4;
-    int orig_type_num = descr->type_num;
-    descr->type_num = NPY_USHORT;
-    // acquire buffer_info with type of NPY_USHORT
-    buf = input.request();
-    // convert buffer_info.format from H(NPY_USHORT) to E(NPY_BFLOAT16)
-    buf.format = "E";
-    // change back descr->type_num
-    descr->type_num = orig_type_num;
-  } else {
-    buf = input.request();
-  }
-  return buf;
-}
-
-TensorPtr TensorPybind::MakeTensor(const py::array &input, const TypePtr &type_ptr) {
-  py::gil_scoped_acquire acquire;
-  // Get input buffer info.
-  py::buffer_info buf = TensorPybind::GetPyBufferFromPyArray(input);
-  // Check data types.
-  auto data_type = type_ptr ? type_ptr->type_id() : TypeId::kTypeUnknown;
-  auto buf_type = GetDataType(buf);
-  if (buf_type == TypeId::kTypeUnknown && data_type == TypeId::kTypeUnknown) {
-    MS_LOG(EXCEPTION) << "Unsupported tensor type!";
-  }
-  MS_LOG(DEBUG) << "data_type: " << data_type << ", buf_type: " << buf_type;
-  if (data_type == TypeId::kObjectTypeString || buf_type == TypeId::kObjectTypeString) {
-    return TensorPybind::MakeTensorOfNumpy(input);
-  }
-  // Use buf type as data type if type_ptr not set.
-  if (data_type == TypeId::kTypeUnknown) {
-    data_type = buf_type;
-  }
-  // Convert input array to C contiguous if need.
-  std::unique_ptr<char[]> tmp_buf;
-  if (!IsCContiguous(input)) {
-    Py_buffer pybuf;
-    if (PyObject_GetBuffer(input.ptr(), &pybuf, PyBUF_ANY_CONTIGUOUS) != 0) {
-      MS_LOG(EXCEPTION) << "Failed to get buffer from the input!";
-    }
-    tmp_buf = std::make_unique<char[]>(pybuf.len);
-    if (PyBuffer_ToContiguous(tmp_buf.get(), &pybuf, pybuf.len, 'C') != 0) {
-      MS_LOG(EXCEPTION) << "Can't copy numpy.ndarray to a contiguous buffer.";
-    }
-    PyBuffer_Release(&pybuf);
-    buf.ptr = tmp_buf.get();
-  }
-  // Get tensor shape.
-  ShapeVector shape(buf.shape.begin(), buf.shape.end());
-  if (data_type == buf_type) {
-    // Use memory copy if input data type is the same as the required type.
-    return tensor::from_buffer(data_type, shape, buf.ptr, buf.size * buf.itemsize);
-  }
-  // Create tensor with data type converted.
-  return tensor::from_buffer(data_type, shape, buf.ptr, buf_type);
-}
-
-/// Creates a Tensor from a numpy array without copy
-TensorPtr TensorPybind::MakeTensorOfNumpy(const py::array &input) {
-  py::gil_scoped_acquire acquire;
-  // Check format.
-  if (!IsCContiguous(input)) {
-    MS_LOG(EXCEPTION) << "Array should be C contiguous.";
-  }
-  // Get input buffer info.
-  py::buffer_info buf = TensorPybind::GetPyBufferFromPyArray(input);
-  // Get tensor dtype and check it.
-  auto dtype = GetDataType(buf);
-  if (dtype == TypeId::kTypeUnknown) {
-    MS_LOG(EXCEPTION) << "Unsupported data type!";
-  }
-  // Get tensor shape.
-  ShapeVector shape(buf.shape.begin(), buf.shape.end());
-
-  // Make a tensor with shared data with numpy array.
-  auto tensor_data = std::make_shared<TensorDataNumpy>(std::move(buf));
-
-  auto device_address = DeviceAddressMaker(tensor_data->data(), dtype, shape)
-                          .set_deleter([tensor_data](void *, bool) {})
-                          .set_maker(GetDeviceAddressMaker(device::DeviceType::kCPU))
-                          .make_device_address();
-  device_address->set_data(std::move(tensor_data));
-
-  return std::make_shared<Tensor>(dtype, shape, device_address);
-}
 
 bool TensorPybind::IsPinned(const tensor::TensorPy &tensor) {
   const auto &base_tensor = tensor.GetTensor();
@@ -436,20 +154,6 @@ static std::vector<ssize_t> GetStrides(const std::vector<ssize_t> &shape, ssize_
     strides.push_back(stride);
   }
   return strides;
-}
-
-static py::buffer_info GetPyBufferInfo(const TensorPtr &tensor) {
-  std::vector<ssize_t> shape(tensor->shape().begin(), tensor->shape().end());
-  std::vector<ssize_t> strides = GetStrides(shape, tensor->DataItemSize());
-  return py::buffer_info{
-    tensor->data_c(), tensor->DataItemSize(), GetPyTypeFormat(tensor->data_type()), tensor->DataDim(), shape, strides};
-}
-
-static py::buffer_info GetPyBufferInfo(const Tensor &tensor) {
-  std::vector<ssize_t> shape(tensor.shape().begin(), tensor.shape().end());
-  std::vector<ssize_t> strides = GetStrides(shape, tensor.DataItemSize());
-  return py::buffer_info{
-    tensor.data_c(), tensor.DataItemSize(), GetPyTypeFormat(tensor.data_type()), tensor.DataDim(), shape, strides};
 }
 
 py::tuple TensorPybind::GetPyTupleShape(const Tensor &tensor) {
@@ -730,55 +434,6 @@ py::array TensorPybind::SyncAsNumpy(const Tensor &tensor) {
     const_cast<Tensor &>(tensor).set_copy_done_flag(false);
   }
   return AsNumpy(*tensor_for_copy);
-}
-
-py::array TensorPybind::NumpyNonBlocking(const Tensor &tensor) {
-  runtime::Pipeline::Get().WaitForward();
-  const auto &device_address = tensor.device_address();
-  if (device_address == nullptr) {
-    MS_LOG(EXCEPTION) << "Tensor " << tensor.ToString() << " is uninitialized. "
-                      << "Maybe you need to call Tensor.init_data first.";
-  }
-  if (device_address->GetDeviceType() != device::DeviceType::kCPU) {
-    MS_LOG(EXCEPTION) << "Only support convert CPU Tensor to Numpy array, but got Tensor on "
-                      << device::GetDeviceNameByType(device_address->GetDeviceType());
-  }
-  py::object owner = py::cast(device_address);
-  if (device_address->has_data()) {
-    const auto &data = device_address->data();
-    auto raw_data = dynamic_cast<TensorDataNumpy *>(data.get());
-    if (raw_data != nullptr) {
-      return raw_data->py_array(owner);
-    }
-  }
-  // Create numpy array by buffer protocol.
-  auto info = GetPyBufferInfo(tensor);
-  py::dtype np_dtype = (tensor.data_type() == kNumberTypeBFloat16)
-                         ? py::detail::npy_format_descriptor<bfloat16>::dtype()
-                         : py::dtype(info);
-  return py::array(np_dtype, info.shape, info.strides, info.ptr, owner);
-}
-
-py::array TensorPybind::AsNumpy(const Tensor &tensor) {
-  // Use TensorData as the owner to prevent use-after-free problem.
-  // We can NOT use Tensor as the owner since its TensorData may change
-  // by other operations such as AssignValue().
-  py::gil_scoped_acquire acquire;
-  auto tensor_cpu = tensor.cpu();
-  py::object owner = py::cast(tensor_cpu->device_address());
-  if (tensor_cpu->device_address() != nullptr && tensor_cpu->device_address()->has_data()) {
-    const auto &data = tensor_cpu->device_address()->data();
-    auto raw_data = dynamic_cast<TensorDataNumpy *>(data.get());
-    if (raw_data != nullptr) {
-      return raw_data->py_array(owner);
-    }
-  }
-  // Create numpy array by buffer protocol.
-  auto info = GetPyBufferInfo(tensor_cpu);
-  py::dtype np_dtype = (tensor_cpu->data_type() == kNumberTypeBFloat16)
-                         ? py::detail::npy_format_descriptor<bfloat16>::dtype()
-                         : py::dtype(info);
-  return py::array(np_dtype, info.shape, info.strides, info.ptr, owner);
 }
 
 TensorPtr TensorPybind::FromDLPack(const py::object &dlpack_capsule) {
@@ -1112,11 +767,11 @@ TensorPtr TensorPyImpl::InitTensorByInputDta(const py::dict &input, const TypePt
   if (py::isinstance<py::float_>(input_obj) || py::isinstance<py::int_>(input_obj) ||
       py::isinstance<py::list>(input_obj) || py::isinstance<py::tuple>(input_obj) ||
       PyComplex_CheckExact(input_obj.ptr()) || py::isinstance<py::bytes>(input_obj)) {
-    return TensorPybind::MakeTensor(py::array(input_obj), dtype);
+    return tensor::MakeTensor(py::array(input_obj), dtype);
   }
 
   if (py::isinstance<py::array>(input_obj)) {
-    return TensorPybind::MakeTensor(input_obj, dtype);
+    return tensor::MakeTensor(input_obj, dtype);
   }
 
   return nullptr;
