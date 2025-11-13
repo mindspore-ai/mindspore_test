@@ -12,23 +12,48 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+"""
+script of binding core: msrun --bind_core and mindspore.runtime.set_cpu_affinity
+"""
+import os
+import json
 import numpy as np
 import mindspore as ms
-import mindspore.nn as nn
 import mindspore.ops as P
+from mindspore import nn
 from mindspore import Tensor, jit
+from mindspore import dtype as mstype
 from mindspore.common import Parameter
 
-steps = 30
+steps = 10
 
 ms.set_context(mode=ms.PYNATIVE_MODE)
 
-affinity_cpu_list = ["0-10", "21-30"]
-module_to_cpu_dict = {"main": [0, 1, 2, 3], "minddata": [4, 5], "other": [6, 7],
-                      "runtime": [8, 9], "pynative": [10, 11, 21, 100]}
-ms.runtime.set_cpu_affinity(True, affinity_cpu_list, module_to_cpu_dict)
+def _get_env_with_json(env_name, default):
+    value = os.environ.get(env_name, default)
+    if value:
+        try:
+            return json.loads(value)
+        except json.JSONDecodeError:
+            return value
+    return default
+
+
+#  Env 'DISTRIBUTED' is set to 1 while launching with msrun.
+if os.getenv("DISTRIBUTED") == "1":
+    ms.communication.init()
+
+if os.getenv("RANK_ID") == "0" or os.getenv("RANK_ID") is None:
+    affinity_cpu_list = _get_env_with_json('AFFINITY_CPU_LIST', None)
+else:
+    affinity_cpu_list = _get_env_with_json('AFFINITY_CPU_LIST_2', None)
+module_to_cpu_dict = _get_env_with_json('MODULE_TO_CPU_DICT', None)
+#  Env 'THREAD_BIND' is set to 1 while enabling 'mindspore.runtime.set_cpu_affinity'.
+if os.getenv("THREAD_BIND") == "1":
+    ms.runtime.set_cpu_affinity(True, affinity_cpu_list, module_to_cpu_dict)
 
 class Net(nn.Cell):
+    """Network with jit and dynamic shape."""
     def __init__(self):
         super().__init__()
         self.param = Parameter(Tensor(2, ms.float32))
@@ -47,6 +72,8 @@ class Net(nn.Cell):
 
 base_shape = (2, 3)
 net = Net()
+dyn_input_data = Tensor(shape=[2, None], dtype=mstype.float32)
+net.set_inputs(dyn_input_data)
 
 for i in range(steps):
     input_data = Tensor(np.full(base_shape, i).astype(np.float32))
