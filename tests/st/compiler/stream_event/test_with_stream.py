@@ -800,3 +800,81 @@ def test_my_ms_jit_stream_ctx_list():
         pass
     assert (out.asnumpy() == x.asnumpy()).all()
     assert len(stream_id_num) == 1
+
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_with_stream_event_with_morph_cse():
+    """
+    Feature: Support with stream event in morph.
+    Description: Support with stream event in morph.
+    Expectation: Run success.
+    """
+
+    def infer_dtype(args):
+        return args
+
+    def infer_shape(args):
+        return args
+
+    def mul_by(*args):
+        def inner(input_x):
+            event = ms.runtime.Event()
+            event = ops.Depend()(event, input_x)
+            event = event.record()
+            output = []
+            with ms.runtime.StreamCtx(s1):
+                event_end_recv = event.wait()
+                x = ops.Depend()(input_x, event_end_recv)
+                x = ops.matmul(x, x)
+                output.append(x)
+                event1 = ms.runtime.Event()
+                event1 = ops.Depend()(event1, x)
+                event1 = event1.record()
+
+            with ms.runtime.StreamCtx(s2):
+                event_end_recv = event.wait()
+                x = ops.Depend()(input_x, event_end_recv)
+                x = ops.matmul(x, x+1)
+                output.append(x)
+                event2 = ms.runtime.Event()
+                event2 = ops.Depend()(event2, x)
+                event2 = event2.record()
+
+            event_end_recv = event1.wait()
+            output = ops.Depend()(output, event_end_recv)
+            event_end_recv = event2.wait()
+            output = ops.Depend()(output, event_end_recv)
+            output = output[0] + output[1]
+            return output * 0.0000000001
+        return inner
+
+    class MorphNet(nn.Cell):
+        def __init__(self):
+            super().__init__()
+            self.weight0 = Parameter(ops.ones((8192, 8192), dtype=ms.float32), name="weight0")
+            self.weight1 = Parameter(ops.ones((8192, 8192), dtype=ms.float32), name="weight1")
+            self.mul_by_100 = ops.Morph(mul_by(100), infer_shape, infer_dtype)
+
+        def construct(self, x):
+            input_a = ops.matmul(x, self.weight0)
+            input_a = input_a * 0.0
+            input_a = ops.matmul(input_a, self.weight0)
+            out = self.mul_by_100(input_a)
+            out = out * self.weight1
+            return out
+
+    save_path = "./test_with_stream_event_with_morph_cse"
+    os.environ['MS_DEV_DUMP_IR_PASSES'] = 'validate'
+    ms.set_context(jit_config={"jit_level": "O0"}, save_graphs=True, save_graphs_path=save_path)
+
+    input_x = ops.ones((8192, 8192), dtype=ms.float32)
+    net = MorphNet()
+    net(input_x)
+    os.unsetenv('MS_DEV_DUMP_IR_PASSES')
+    content = read_file(save_path)
+    stream_recv_num = re.findall('= StreamRecv', content)
+    try:
+        shutil.rmtree(save_path)
+    except FileNotFoundError:
+        pass
+    assert len(stream_recv_num) == 4

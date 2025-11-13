@@ -245,10 +245,10 @@ def test_with_stream_event_with_morph_multi():
         shutil.rmtree(save_path)
     except FileNotFoundError:
         pass
-    assert len(stream_id_num) == 4
-    assert len(event_id_num) == 3
-    assert len(vector_num) == 3
-    assert len(cube_num) == 3
+    assert len(stream_id_num) == 6
+    assert len(event_id_num) == 4
+    assert len(vector_num) == 5
+    assert len(cube_num) == 5
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')

@@ -335,7 +335,7 @@ def test_with_stream_event_list():
         pass
     assert (out.asnumpy() == (x * 5).asnumpy()).all()
     assert len(stream_id_num) == 9
-    assert len(event_id_num) == 6
+    assert len(event_id_num) == 8
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
