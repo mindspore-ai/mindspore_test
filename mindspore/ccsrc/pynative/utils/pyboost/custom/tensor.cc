@@ -37,6 +37,18 @@ inline std::vector<Tensor> ToTensorList(const std::vector<mindspore::tensor::Ten
   (void)std::transform(tensors.begin(), tensors.end(), std::back_inserter(outs), [](auto &t) { return Tensor(t); });
   return outs;
 }
+
+mindspore::tensor::TensorPtr StubNodeToTensor(const mindspore::ValuePtr &v) {
+  MS_EXCEPTION_IF_NULL(v);
+  if (mindspore::utils::isa<mindspore::stub::StubNode>(v)) {
+    auto stub = mindspore::utils::cast<mindspore::stub::StubNodePtr>(v);
+    return stub->WaitValue()->cast<mindspore::tensor::TensorPtr>();
+  }
+  if (v->isa<mindspore::tensor::Tensor>()) {
+    return v->cast<mindspore::tensor::TensorPtr>();
+  }
+  MS_LOG(EXCEPTION) << "It should be stub tensor, but got " << v->ToString();
+}
 }  // namespace
 
 Tensor::RealTensorHolder::RealTensorHolder(const mindspore::ValuePtr &value)
@@ -137,8 +149,7 @@ const mindspore::tensor::TensorPtr &Tensor::tensor() const {
 
 void Tensor::ConvertStubNodeToTensor() const {
   if (stub_node() != nullptr) {
-    _tensor_holder_->tensor_ =
-      mindspore::pynative::PyNativeAlgo::Common::ConvertStubNodeToTensor(stub_node(), need_contiguous(), false);
+    _tensor_holder_->tensor_ = StubNodeToTensor(stub_node());
     // release the stub node object.
     _tensor_holder_->value_ = nullptr;
   }
