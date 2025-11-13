@@ -786,6 +786,13 @@ std::pair<std::string, ExceptionType> SetKernelInfoWithMsg(const CNodePtr &kerne
   return {};
 }
 
+class CPUGraphKernelInfo : public GraphKernelInfo {
+ public:
+  CPUGraphKernelInfo() = default;
+  virtual ~CPUGraphKernelInfo() = default;
+  void SetKernelInfo(const CNodePtr &kernel_node, KernelType kernel_type) override;
+};
+
 void CPUGraphKernelInfo::SetKernelInfo(const CNodePtr &kernel_node, KernelType) {
   MS_EXCEPTION_IF_NULL(kernel_node);
   auto [msg, etype] = SetKernelInfoWithMsg(kernel_node);
@@ -794,6 +801,8 @@ void CPUGraphKernelInfo::SetKernelInfo(const CNodePtr &kernel_node, KernelType) 
   }
   MS_EXCEPTION(etype) << "#umsg#Kernel select failed:#umsg#" << msg;
 }
+
+REG_GRAPH_KERNEL_INFO(kCPUDevice, CPUGraphKernelInfo);
 }  // namespace cpu
 }  // namespace device
 }  // namespace mindspore
