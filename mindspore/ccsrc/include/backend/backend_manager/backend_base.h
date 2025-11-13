@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef MINDSPORE_CCSRC_BACKEND_BACKENDMANAGER_BACKENDBASE_H_
-#define MINDSPORE_CCSRC_BACKEND_BACKENDMANAGER_BACKENDBASE_H_
+#ifndef MINDSPORE_CCSRC_INCLUDE_BACKEND_BACKEND_MANAGER_BACKEND_BASE_H_
+#define MINDSPORE_CCSRC_INCLUDE_BACKEND_BACKEND_MANAGER_BACKEND_BASE_H_
 
 #include <memory>
 #include <string>
@@ -158,4 +158,4 @@ class BACKEND_MANAGER_EXPORT BackendBase {
 using BackendBasePtr = std::shared_ptr<BackendBase>;
 }  // namespace backend
 }  // namespace mindspore
-#endif  // MINDSPORE_CCSRC_BACKEND_BACKENDMANAGER_BACKENDBASE_H_
+#endif  // MINDSPORE_CCSRC_INCLUDE_BACKEND_BACKEND_MANAGER_BACKEND_BASE_H_

@@ -20,7 +20,6 @@
 #include <cstdint>
 #include <exception>
 #include <atomic>
-#include "runtime/pipeline/visible.h"
 
 namespace mindspore {
 namespace runtime {

@@ -158,7 +158,7 @@ inline T DataIndexInit(const T *offset) {
 }
 
 template <typename T, typename... Args>
-inline T DataIndexInit(T *offset, T *x, const T *X, Args &&... args) {
+inline T DataIndexInit(T *offset, T *x, const T *X, Args &&...args) {
   auto off = DataIndexInit(offset, std::forward<Args>(args)...);
   *x = off % *X;
   return off / *X;
@@ -167,7 +167,7 @@ inline T DataIndexInit(T *offset, T *x, const T *X, Args &&... args) {
 inline bool DataIndexStep() { return true; }
 
 template <typename T, typename... Args>
-inline bool DataIndexStep(T *x, const T *X, Args &&... args) {
+inline bool DataIndexStep(T *x, const T *X, Args &&...args) {
   if (DataIndexStep(std::forward<Args>(args)...)) {
     *x = ((*x + 1) == *X) ? 0 : (*x + 1);
     return *x == 0;

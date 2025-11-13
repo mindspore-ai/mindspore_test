@@ -52,7 +52,7 @@
 #include "mindspore/ccsrc/utils/ir_dump/dump_proto.h"
 #include "frontend/jit/ps/fallback.h"
 #include "mindspore/ccsrc/utils/ir_dump/draw.h"
-#include "backend/backend_manager/backend_manager.h"
+#include "include/backend/backend_manager/backend_manager.h"
 #include "runtime/hardware_abstract/utils.h"
 #include "include/runtime/hardware_abstract/device_context/device_context.h"
 #include "include/runtime/hardware_abstract/device_context/device_context_manager.h"

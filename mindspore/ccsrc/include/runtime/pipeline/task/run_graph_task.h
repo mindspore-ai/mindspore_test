@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_MINDSPORE_CCSRC_RUNTIME_PIPELINE_TASK_RUN_GRAPH_TASK_H_
-#define MINDSPORE_MINDSPORE_CCSRC_RUNTIME_PIPELINE_TASK_RUN_GRAPH_TASK_H_
+#ifndef MINDSPORE_CCSRC_INCLUDE_RUNTIME_PIPELINE_TASK_RUN_GRAPH_TASK_H_
+#define MINDSPORE_CCSRC_INCLUDE_RUNTIME_PIPELINE_TASK_RUN_GRAPH_TASK_H_
 
 #include <functional>
 #include <memory>
@@ -42,4 +42,4 @@ class RUNTIME_PIPELINE_EXPORT RunGraphTask : public AsyncTask {
 using RunGraphTaskPtr = std::shared_ptr<RunGraphTask>;
 }  // namespace runtime
 }  // namespace mindspore
-#endif  // MINDSPORE_MINDSPORE_CCSRC_RUNTIME_PIPELINE_TASK_RUN_GRAPH_TASK_H_
+#endif  // MINDSPORE_CCSRC_INCLUDE_RUNTIME_PIPELINE_TASK_RUN_GRAPH_TASK_H_

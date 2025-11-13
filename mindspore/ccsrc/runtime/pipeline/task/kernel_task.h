@@ -23,7 +23,6 @@
 #include <future>
 
 #include "runtime/pipeline/task/task.h"
-#include "runtime/pipeline/visible.h"
 
 namespace mindspore {
 namespace runtime {
