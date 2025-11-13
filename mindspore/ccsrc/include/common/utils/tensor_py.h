@@ -419,10 +419,10 @@ COMMON_EXPORT void SetTensorPyType(PyTypeObject *TensorPyType);
 /// \brief alloc Python Tensor from C++ Tensor.
 /// \param[in] tensor [TensorPtr] C++ Tensor.
 /// \return A PyObject address of Python Tensor.
-COMMON_EXPORT PyObject *TensorPythonInit(TensorPtr tensor);
+COMMON_EXPORT PyObject *TensorPythonInit(const TensorPtr &tensor);
 COMMON_EXPORT PyObject *TensorPythonInitFromTensor(TensorPtr tensor);
 
-COMMON_EXPORT py::object PackTensorToPyObject(TensorPtr tensor);
+COMMON_EXPORT py::object PackTensorToPyObject(const TensorPtr &tensor);
 
 /// \brief Get the Python Tensor Object.
 /// \return The python Tensor.
@@ -438,7 +438,7 @@ PyObject *Wrap(const std::tuple<Args...> &tuple) {
   constexpr size_t size = std::tuple_size<std::tuple<Args...>>::value;
   PyObject *output = PyTuple_New(size);
   std::apply(
-    [&output](const auto &... args) {
+    [&output](const auto &...args) {
       size_t index = 0;
       ((PyTuple_SET_ITEM(output, index++, Wrap(args))), ...);
     },

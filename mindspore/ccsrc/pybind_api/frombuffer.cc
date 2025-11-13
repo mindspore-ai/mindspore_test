@@ -59,12 +59,13 @@ void ValidateBufferInput(Py_ssize_t buf_len, int64_t &count, int64_t offset, siz
 
 py::object TensorFrombuffer(const py::object &buffer, const py::object &dtype, int64_t count, int64_t offset) {
   mindspore::TypeId type_id = mindspore::kTypeUnknown;
+  TypePtr type_ptr = nullptr;
 
   if (py::isinstance<mindspore::Type>(dtype)) {
-    auto t = py::cast<mindspore::TypePtr>(dtype);
-    type_id = t->type_id();
+    type_ptr = py::cast<mindspore::TypePtr>(dtype);
+    type_id = type_ptr->type_id();
   } else {
-    MS_LOG(EXCEPTION) << "dtype must be mindspore dtype object.";
+    MS_LOG(EXCEPTION) << "dtype must be mindspore dtype object, but got" << py::str(dtype).cast<std::string>();
   }
 
   if (!PyObject_CheckBuffer(buffer.ptr())) {
@@ -87,7 +88,7 @@ py::object TensorFrombuffer(const py::object &buffer, const py::object &dtype, i
 
   PyObject *python_buffer_obj = buffer.ptr();
 
-  size_t elsize = GetTypeByte(TypeIdToType(type_id));
+  size_t elsize = GetTypeByte(type_ptr);
   ValidateBufferInput(buf_len, count, offset, elsize);
 
   // Increase reference count to keep the buffer object alive

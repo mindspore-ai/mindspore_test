@@ -25,6 +25,7 @@ PyObjManager &PyObjManager::Get() {
 void PyObjManager::Clear() {
   Py_XDECREF(tensor_module_);
   Py_XDECREF(abc_module_);
+  Py_XDECREF(tensor_python_class_);
 }
 
 PyObject *PyObjManager::GetTensorModule() {
@@ -47,5 +48,20 @@ PyObject *PyObjManager::GetHookUtilsClass() {
     hook_utils_class_ = PyObject_GetAttrString(hook_handle_module, "_HookUtils");
   }
   return hook_utils_class_;
+}
+
+PyObject *PyObjManager::GetTensorPythonClass() {
+  if (tensor_python_class_ == nullptr) {
+    PyObject *tensor_module = GetTensorModule();
+    if (tensor_module == nullptr) {
+      return nullptr;
+    }
+
+    tensor_python_class_ = PyObject_GetAttrString(tensor_module, "Tensor");
+    if (tensor_python_class_ == nullptr) {
+      return nullptr;
+    }
+  }
+  return tensor_python_class_;
 }
 }  // namespace mindspore
