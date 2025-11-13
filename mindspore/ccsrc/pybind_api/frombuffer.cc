@@ -42,18 +42,22 @@ void ValidateBufferInput(Py_ssize_t buf_len, int64_t &count, int64_t offset, siz
     MS_LOG(EXCEPTION) << "offset (" << offset << " bytes) must be non-negative and no greater than "
                       << "buffer length (" << buf_len << " bytes) minus 1.";
   }
-  if (!(count > 0 || (buf_len - offset) % elsize == 0)) {
+  size_t u_offset = static_cast<size_t>(offset);
+  size_t u_buf_len = static_cast<size_t>(buf_len);
+  size_t remaining_buffer_size = u_buf_len - u_offset;
+  if (!(count > 0 || remaining_buffer_size % elsize == 0)) {
     MS_LOG(EXCEPTION) << "buffer length (" << buf_len - offset << " bytes) after offset (" << offset
                       << " bytes) must be a multiple of element size (" << elsize << ").";
   }
-  size_t remaining_buffer_size = buf_len - offset;
   if (count == -1) {
-    count = remaining_buffer_size / elsize;
+    count = static_cast<int64_t>(remaining_buffer_size / elsize);
   }
-  if (remaining_buffer_size < static_cast<size_t>(count * elsize)) {
+  size_t u_count = static_cast<size_t>(count);
+  size_t required_size = u_count * elsize;
+  if (remaining_buffer_size < required_size) {
     MS_LOG(EXCEPTION) << "buffer length (" << remaining_buffer_size << " bytes) after offset (" << offset
                       << " bytes) is not enough for the requested count of elements (" << count << " elements of size "
-                      << elsize << " bytes each, total " << (count * elsize) << " bytes).";
+                      << elsize << " bytes each, total " << required_size << " bytes).";
   }
 }
 
