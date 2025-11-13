@@ -22,7 +22,7 @@
 #include <limits>
 
 #include "ir/dtype/tensor_type.h"
-#include "include/runtime/core/graph_executor/pipeline/runtime_pipeline.h"
+#include "runtime/core/graph_executor/pipeline/runtime_pipeline.h"
 #include "runtime/core/actors/base/memory_manager_actor.h"
 #include "runtime/core/actors/base/output_actor.h"
 #include "runtime/core/actors/base/recorder_actor.h"

@@ -26,7 +26,7 @@
 #include "include/utils/comm_manager.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_i.h"
-#include "include/runtime/core/graph_executor/pre_launch/comm_execution_order_check.h"
+#include "runtime/core/graph_executor/pre_launch/comm_execution_order_check.h"
 
 namespace mindspore {
 namespace runtime {

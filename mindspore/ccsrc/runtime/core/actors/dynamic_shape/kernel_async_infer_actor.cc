@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "include/runtime/core/actors/dynamic_shape/kernel_async_infer_actor.h"
+#include "runtime/core/actors/dynamic_shape/kernel_async_infer_actor.h"
 #include "runtime/core/actors/base/kernel_actor.h"
 #include "runtime/core/actors/base/kernel_runner.h"
 #include "frontend/jit/ps/debug/trace.h"

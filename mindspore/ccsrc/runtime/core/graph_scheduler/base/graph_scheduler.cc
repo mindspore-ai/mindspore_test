@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "include/runtime/core/graph_scheduler/base/graph_scheduler.h"
+#include "runtime/core/graph_scheduler/base/graph_scheduler.h"
 #include <algorithm>
 #include <queue>
 #include <vector>
@@ -29,9 +29,9 @@
 #include "mindspore/core/mindrt/include/thread/threadpool.h"
 #include "runtime/core/graph_scheduler/base/scheduler_helper.h"
 #include "runtime/core/actors/base/memory_manager_actor.h"
-#include "include/runtime/core/actors/base/kernel_async_launch_actor.h"
-#include "include/runtime/core/actors/dynamic_shape/kernel_async_infer_actor.h"
-#include "include/runtime/core/actors/dynamic_shape/kernel_async_resize_actor.h"
+#include "runtime/core/actors/base/kernel_async_launch_actor.h"
+#include "runtime/core/actors/dynamic_shape/kernel_async_infer_actor.h"
+#include "runtime/core/actors/dynamic_shape/kernel_async_resize_actor.h"
 #include "runtime/core/actors/base/debug_actor.h"
 #include "runtime/core/actors/base/profiler_actor.h"
 #include "runtime/core/actors/base/recorder_actor.h"
@@ -40,14 +40,14 @@
 #include "runtime/core/graph_scheduler/optimizer/invalid_data_arrow_elimination.h"
 #include "runtime/core/graph_scheduler/optimizer/batch_data_arrow_fusion.h"
 #include "runtime/core/graph_scheduler/optimizer/multi_actor_fusion.h"
-#include "include/runtime/core/graph_scheduler/base/parameter_store.h"
-#include "include/runtime/core/graph_scheduler/base/graph_parameter_store.h"
+#include "runtime/core/graph_scheduler/base/parameter_store.h"
+#include "runtime/core/graph_scheduler/base/graph_parameter_store.h"
 #include "runtime/core/graph_executor/kernel_capture/graph_capture_manager.h"
 #include "include/runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "include/runtime/utils/runtime_conf/runtime_conf.h"
 #include "include/runtime/utils/runtime_conf/thread_bind_core.h"
 #include "include/runtime/pipeline/pipeline.h"
-#include "include/runtime/core/graph_executor/pipeline/runtime_pipeline.h"
+#include "runtime/core/graph_executor/pipeline/runtime_pipeline.h"
 #include "tools/error_handler/error_handler.h"
 #include "tools/profiler/profiler.h"
 #include "actor/actormgr.h"

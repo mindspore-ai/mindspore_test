@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "include/runtime/core/actors/base/kernel_async_launch_actor.h"
+#include "runtime/core/actors/base/kernel_async_launch_actor.h"
 #include "runtime/core/actors/base/kernel_actor.h"
 #include "runtime/core/actors/base/kernel_runner.h"
 #include "frontend/jit/ps/debug/trace.h"

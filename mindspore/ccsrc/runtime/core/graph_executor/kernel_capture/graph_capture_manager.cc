@@ -18,7 +18,7 @@
 #include <string>
 #include <algorithm>
 #include "include/runtime/utils/runtime_conf/runtime_conf.h"
-#include "include/runtime/core/graph_scheduler/base/parameter_store.h"
+#include "runtime/core/graph_scheduler/base/parameter_store.h"
 #include "include/runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "utils/llm_manager.h"
 

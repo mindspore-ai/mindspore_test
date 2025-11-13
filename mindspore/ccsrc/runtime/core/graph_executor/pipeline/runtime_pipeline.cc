@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "include/runtime/core/graph_executor/pipeline/runtime_pipeline.h"
+#include "runtime/core/graph_executor/pipeline/runtime_pipeline.h"
 #include <memory>
 
 namespace mindspore {
