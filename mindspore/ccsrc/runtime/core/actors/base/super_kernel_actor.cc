@@ -1325,6 +1325,11 @@ void SuperKernelActor::RunGraphKernelByKernel(OpContext<KernelTensor> *const con
   if (ActorDispatcher::enable_parallel_dispatch_kernel_for_cur_actor_set()) {
     ParallelDispatchKernels(context);
   } else {
+    if (!GraphCaptureManager::GetInstance().IsInit() && GraphCaptureManager::GetInstance().GetEnableGraphCapture()) {
+      MS_INTERNAL_EXCEPTION(RuntimeError)
+        << "It seems that you did not set up the ACL graph before the first step. You need to "
+           "adjust the timing of enabling the ACL graph at the first step.";
+    }
     bool need_capture_graph = enable_capture_graph_ && !GraphCaptureManager::GetInstance().HasCapturedGraph() &&
                               ActorDispatcher::enable_static_shape() &&
                               !GraphCaptureManager::GetInstance().IsExceedMaxCaptureCount();
