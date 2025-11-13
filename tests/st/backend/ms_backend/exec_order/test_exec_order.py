@@ -12,6 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+"""
+Test module for execution order.
+"""
 from tests.mark_utils import arg_mark
 import os
 
@@ -19,7 +22,7 @@ import os
 @arg_mark(
     plat_marks=["platform_ascend910b"],
     level_mark="level1",
-    card_mark="onecard",
+    card_mark="allcards",
     essential_mark="unessential",
 )
 def test_gpto_exec_order():
@@ -40,7 +43,7 @@ def test_gpto_exec_order():
 @arg_mark(
     plat_marks=["platform_ascend910b"],
     level_mark="level1",
-    card_mark="onecard",
+    card_mark="allcards",
     essential_mark="unessential",
 )
 def test_dfs_exec_order():
