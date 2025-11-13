@@ -16,7 +16,9 @@
 # ============================================================================
 """test builtin dict"""
 import pytest
+import numpy as np
 from mindspore import context, jit, Tensor, ops
+from mindspore.nn import Cell
 
 from tests.mark_utils import arg_mark
 from tests.st.pi_jit.share.utils import (
@@ -24,8 +26,10 @@ from tests.st.pi_jit.share.utils import (
     assert_no_graph_break,
     assert_executed_by_graph_mode,
     assert_has_graph_break,
+    match_array,
 )
 from tests.st.pi_jit.share.utils import pi_jit_with_config
+from tests.st.pi_jit.share.grad import GradOfFirstInput
 
 context.set_context(mode=context.PYNATIVE_MODE)
 
@@ -224,3 +228,122 @@ def test_dict_getitem_by_user_defined_class_object():
 
     assert_equal(o1, o2)
     assert_executed_by_graph_mode(compiled_fn)
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+def test_dict_getitem_in_cell_attribute_branch():
+    """
+    Feature: dict getitem.
+    Description: Access dictionary stored in Cell attribute to control ReLU branch.
+    Expectation: JIT result and gradient match pynative result.
+    Migrated from: test_pijit_dict.py::test_pijit_dict_getitem
+    """
+
+    class DictBranchNet(Cell):
+        def __init__(self, data):
+            super().__init__()
+            self.data = data
+
+        def construct(self, x: Tensor):
+            if self.data['Name'] == 'b':
+                x = ops.relu(x)
+            return x
+
+    input_tensor = Tensor(np.random.randn(2).astype(np.float32))
+    data = {'Age': 7, 'Name': 'b'}
+
+    pynative_net = DictBranchNet(data.copy())
+    pynative_result = pynative_net(input_tensor)
+    output_grad = Tensor(np.random.randn(*pynative_result.shape).astype(np.float32))
+
+    pynative_grad_net = GradOfFirstInput(pynative_net, sens_param=True)
+    pynative_grad_net.set_train()
+    pynative_grad = pynative_grad_net(input_tensor, output_grad)
+
+    jit_net = DictBranchNet(data.copy())
+    jit_net.construct = jit(jit_net.construct, capture_mode='bytecode')
+    jit_result = jit_net(input_tensor)
+
+    jit_grad_net = GradOfFirstInput(jit_net, sens_param=True)
+    jit_grad_net.set_train()
+    jit_grad = jit_grad_net(input_tensor, output_grad)
+
+    match_array(pynative_result, jit_result)
+    match_array(pynative_grad, jit_grad, error=5)
+    assert_executed_by_graph_mode(jit_net.construct)
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+def test_dict_setitem_on_cell_attribute():
+    """
+    Feature: dict setitem.
+    Description: Update dictionary stored in Cell attribute with Tensor value and reuse constant entry.
+    Expectation: JIT result and gradient match pynative result.
+    Migrated from: test_pijit_dict.py::test_pijit_dict_0003
+    """
+
+    class DictAttributeUpdateNet(Cell):
+        def __init__(self):
+            super().__init__()
+            self.data = {'value': 3, 'Age': 7}
+
+        def construct(self, x: Tensor):
+            self.data['Age'] = x
+            x = ops.relu(x)
+            return x + self.data.get('value')
+
+    input_tensor = Tensor(np.random.randn(2, 3, 4, 5).astype(np.float32))
+
+    pynative_net = DictAttributeUpdateNet()
+    pynative_result = pynative_net(input_tensor)
+    output_grad = Tensor(np.random.randn(*pynative_result.shape).astype(np.float32))
+
+    pynative_grad_net = GradOfFirstInput(pynative_net, sens_param=True)
+    pynative_grad_net.set_train()
+    pynative_grad = pynative_grad_net(input_tensor, output_grad)
+
+    jit_net = DictAttributeUpdateNet()
+    jit_net.construct = jit(jit_net.construct, capture_mode='bytecode')
+    jit_result = jit_net(input_tensor)
+
+    jit_grad_net = GradOfFirstInput(jit_net, sens_param=True)
+    jit_grad_net.set_train()
+    jit_grad = jit_grad_net(input_tensor, output_grad)
+
+    match_array(pynative_result, jit_result)
+    match_array(pynative_grad, jit_grad, error=5)
+    assert_executed_by_graph_mode(jit_net.construct)
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+def test_dict_setitem_with_dict_argument():
+    """
+    Feature: dict setitem.
+    Description: Update dictionary argument inside Cell using key stored in attribute.
+    Expectation: JIT result matches pynative result.
+    Migrated from: test_pijit_dict.py::test_pijit_dict_setitem
+    """
+
+    class DictSetItemNet(Cell):
+        def __init__(self):
+            super().__init__()
+            self.key = 'age'
+
+        def construct(self, x: Tensor, data: dict):
+            data[self.key] = x
+            x = ops.relu(x)
+            return x, data
+
+    input_tensor = Tensor(np.random.randn(2, 3, 4, 5).astype(np.float32))
+    data_pynative = {'value': 3, 'Age': 7}
+    data_jit = {'value': 3, 'Age': 7}
+
+    pynative_net = DictSetItemNet()
+    pynative_result = pynative_net(input_tensor, data_pynative)
+
+    jit_net = DictSetItemNet()
+    jit_net.construct = jit(jit_net.construct, capture_mode='bytecode')
+    jit_result = jit_net(input_tensor, data_jit)
+
+    assert_equal(pynative_result, jit_result)
+    assert_no_graph_break(jit_net.construct)

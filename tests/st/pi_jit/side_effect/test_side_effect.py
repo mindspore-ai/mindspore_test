@@ -21,10 +21,12 @@ import dis
 import mindspore
 import types
 import numpy
+import numpy as np
 from tests.mark_utils import arg_mark
 from tests.st.pi_jit.share.utils import match_array, match_value, assert_executed_by_graph_mode
 from tests.st.pi_jit.share.utils import pi_jit_with_config
 from tests.st.pi_jit.conftest import run_in_subprocess
+from tests.st.pi_jit.share.grad import compute_grad_of_net_inputs
 
 jit_cfg = {"compile_with_try":False}
 
@@ -237,6 +239,63 @@ def test_del_global_side_effect_7():
         pi_jit_with_config(func, jit_config=jit_cfg)()
 
     context.set_context(mode=context.PYNATIVE_MODE)
+
+
+VALUE = 3
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+def test_store_global_side_effect_8():
+    """
+    Feature: global variable.
+    Description: Update python global variable inside Cell and use it in computation.
+    Expectation: JIT result and gradient match pynative result and global value is consistent.
+    Migrated from: test_pijit_dict.py::test_pijit_global_var
+    """
+
+    class GlobalValueNet(Cell):
+        def __init__(self):
+            super().__init__()
+            self.threshold = 0
+
+        def construct(self, x: Tensor):
+            global VALUE
+            if x > self.threshold:
+                VALUE = 3
+            return VALUE * x
+
+    global VALUE
+    VALUE = 3
+    input_tensor = Tensor(np.array([2.0], dtype=np.float32))
+
+    pynative_net = GlobalValueNet()
+    pynative_result = pynative_net(input_tensor)
+    pynative_value = VALUE
+    output_grad = Tensor(np.array([1.0], dtype=np.float32))
+
+    VALUE = 3
+    pynative_grad_net = GlobalValueNet()
+    pynative_grad_net.set_grad()
+    pynative_grad_result = compute_grad_of_net_inputs(pynative_grad_net, input_tensor, sens=output_grad)
+    pynative_grad_value = VALUE
+
+    VALUE = 3
+    jit_net = GlobalValueNet()
+    jit_net.construct = jit(jit_net.construct, capture_mode='bytecode')
+    jit_result = jit_net(input_tensor)
+    jit_value = VALUE
+
+    VALUE = 3
+    jit_grad_net = GlobalValueNet()
+    jit_grad_net.construct = jit(jit_grad_net.construct, capture_mode='bytecode')
+    jit_grad_net.set_grad()
+    jit_grad_result = compute_grad_of_net_inputs(jit_grad_net, input_tensor, sens=output_grad)
+    jit_grad_value = VALUE
+
+    match_array(pynative_result, jit_result)
+    match_array(pynative_grad_result, jit_grad_result, error=5)
+    assert pynative_value == jit_value == 3
+    assert pynative_grad_value == jit_grad_value == 3
 
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
