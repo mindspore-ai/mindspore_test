@@ -1,4 +1,4 @@
-# Copyright 2021-2022 Huawei Technologies Co., Ltd
+# Copyright 2021-2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,8 +15,8 @@
 """test function grad in graph mode"""
 import numpy as np
 import pytest
-import mindspore.nn as nn
-import mindspore.context as context
+from mindspore import nn
+from mindspore import context
 from mindspore import Tensor
 from mindspore import jit, ops
 from mindspore.ops.functional import grad, value_and_grad, get_grad
@@ -52,7 +52,7 @@ class MultipleInputsMultipleOutputsNet(nn.Cell):
 
 class ParamNet(nn.Cell):
     def __init__(self):
-        super(ParamNet, self).__init__()
+        super().__init__()
         self.w = Parameter(Tensor([2., 2.]), name="w")
         self.z = Parameter(Tensor([3., 3.]), name="z")
 
@@ -232,7 +232,7 @@ def test_grad_with_weights_has_aux_graph():
 
     class ParamNetAux(nn.Cell):
         def __init__(self):
-            super(ParamNetAux, self).__init__()
+            super().__init__()
             self.w = Parameter(Tensor([2., 2.], mstype.float32), name="w")
             self.z = Parameter(Tensor([3., 3.], mstype.float32), name="z")
 
@@ -266,7 +266,7 @@ def test_jit_function_grad_with_weights_has_aux_graph():
 
     class ParamMultipleInputNet(nn.Cell):
         def __init__(self):
-            super(ParamMultipleInputNet, self).__init__()
+            super().__init__()
             self.w = Parameter(Tensor([2., 2.], mstype.float32), name="w")
 
         def construct(self, x, y):
@@ -304,7 +304,7 @@ def test_construct_grad_with_weights_has_aux_graph():
 
     class ParamMultipleInputNet(nn.Cell):
         def __init__(self):
-            super(ParamMultipleInputNet, self).__init__()
+            super().__init__()
             self.w = Parameter(Tensor([2., 2.], mstype.float32), name="w")
 
         def construct(self, x, y):
@@ -313,7 +313,7 @@ def test_construct_grad_with_weights_has_aux_graph():
 
     class GradNet(nn.Cell):
         def __init__(self, net):
-            super(GradNet, self).__init__()
+            super().__init__()
             self.net = net
             self.weights = net.trainable_params()
 
@@ -346,7 +346,7 @@ def test_grad_if_with_weights_has_aux_graph():
 
     class Net(nn.Cell):
         def __init__(self):
-            super(Net, self).__init__()
+            super().__init__()
             self.w = Parameter(Tensor([2., 2.], mstype.float32), name="w")
             self.z = Parameter(Tensor([3., 3.], mstype.float32), name="z")
 
@@ -388,7 +388,7 @@ def test_grad_nest_with_weights_has_aux_graph():
 
     class Net(nn.Cell):
         def __init__(self, net):
-            super(Net, self).__init__()
+            super().__init__()
             self.w = Parameter(Tensor([2., 2.], mstype.float32), name="w")
             self.z = Parameter(Tensor([3., 3.], mstype.float32), name="z")
             self.net = net
@@ -575,7 +575,7 @@ def test_value_and_grad_with_weights_has_aux_graph():
 
     class ParamNetMultipleOutputs(nn.Cell):
         def __init__(self):
-            super(ParamNetMultipleOutputs, self).__init__()
+            super().__init__()
             self.w1 = Parameter(Tensor([2., 2.], mstype.float32), name="w1")
             self.w2 = Parameter(Tensor([3., 3.], mstype.float32), name="w2")
 
@@ -611,7 +611,7 @@ def test_construct_value_and_grad_with_weights_has_aux_graph():
 
     class ParamNetMultipleInputsOutputs(nn.Cell):
         def __init__(self):
-            super(ParamNetMultipleInputsOutputs, self).__init__()
+            super().__init__()
             self.w = Parameter(Tensor([2., 2.], mstype.float32), name="w")
 
         def construct(self, x, y):
@@ -620,7 +620,7 @@ def test_construct_value_and_grad_with_weights_has_aux_graph():
 
     class GradNet2(nn.Cell):
         def __init__(self, net):
-            super(GradNet2, self).__init__()
+            super().__init__()
             self.net = net
             self.weights = net.trainable_params()
 
@@ -660,7 +660,7 @@ def test_value_and_grad_nest_with_weights_graph():
 
     class Net(nn.Cell):
         def __init__(self, net):
-            super(Net, self).__init__()
+            super().__init__()
             self.w = Parameter(Tensor([2., 2.], mstype.float32), name="w")
             self.z = Parameter(Tensor([3., 3.], mstype.float32), name="z")
             self.net = net
@@ -702,7 +702,7 @@ def test_value_and_grad_nest_with_weights_has_aux_graph():
 
     class Net(nn.Cell):
         def __init__(self, net):
-            super(Net, self).__init__()
+            super().__init__()
             self.w = Parameter(Tensor([2., 2.], mstype.float32), name="w")
             self.z = Parameter(Tensor([3., 3.], mstype.float32), name="z")
             self.net = net
@@ -739,7 +739,7 @@ def test_construct_grad_single_position_with_return_ids():
 
     class ParamMultipleInputNet(nn.Cell):
         def __init__(self):
-            super(ParamMultipleInputNet, self).__init__()
+            super().__init__()
             self.w = Parameter(Tensor([2., 2.], mstype.float32), name="w")
 
         def construct(self, x, y):
@@ -748,7 +748,7 @@ def test_construct_grad_single_position_with_return_ids():
 
     class GradNet(nn.Cell):
         def __init__(self, net):
-            super(GradNet, self).__init__()
+            super().__init__()
             self.net = net
             self.weights = net.trainable_params()
 
@@ -776,7 +776,7 @@ def test_construct_grad_multiplt_positions_with_return_ids():
 
     class ParamMultipleInputNet(nn.Cell):
         def __init__(self):
-            super(ParamMultipleInputNet, self).__init__()
+            super().__init__()
             self.w = Parameter(Tensor([2., 2.], mstype.float32), name="w")
 
         def construct(self, x, y):
@@ -785,7 +785,7 @@ def test_construct_grad_multiplt_positions_with_return_ids():
 
     class GradNet(nn.Cell):
         def __init__(self, net):
-            super(GradNet, self).__init__()
+            super().__init__()
             self.net = net
             self.weights = net.trainable_params()
 
@@ -816,7 +816,7 @@ def test_construct_grad_with_weights_with_return_ids():
 
     class ParamMultipleInputNet(nn.Cell):
         def __init__(self):
-            super(ParamMultipleInputNet, self).__init__()
+            super().__init__()
             self.w = Parameter(Tensor([2., 2.], mstype.float32), name="w")
 
         def construct(self, x, y):
@@ -825,7 +825,7 @@ def test_construct_grad_with_weights_with_return_ids():
 
     class GradNet(nn.Cell):
         def __init__(self, net):
-            super(GradNet, self).__init__()
+            super().__init__()
             self.net = net
             self.weights = net.trainable_params()
 
@@ -856,7 +856,7 @@ def test_construct_get_grad_by_position():
 
     class ParamMultipleInputNet(nn.Cell):
         def __init__(self):
-            super(ParamMultipleInputNet, self).__init__()
+            super().__init__()
             self.w = Parameter(Tensor([2., 2.], mstype.float32), name="w")
 
         def construct(self, x, y):
@@ -865,7 +865,7 @@ def test_construct_get_grad_by_position():
 
     class GradNet(nn.Cell):
         def __init__(self, net):
-            super(GradNet, self).__init__()
+            super().__init__()
             self.net = net
             self.weights = net.trainable_params()
 
@@ -893,7 +893,7 @@ def test_construct_get_grad_by_weight():
 
     class ParamMultipleInputNet(nn.Cell):
         def __init__(self):
-            super(ParamMultipleInputNet, self).__init__()
+            super().__init__()
             self.w = Parameter(Tensor([2., 2.], mstype.float32), name="w")
 
         def construct(self, x, y):
@@ -902,7 +902,7 @@ def test_construct_get_grad_by_weight():
 
     class GradNet(nn.Cell):
         def __init__(self, net):
-            super(GradNet, self).__init__()
+            super().__init__()
             self.net = net
             self.weights = net.trainable_params()
 
@@ -930,7 +930,7 @@ def test_construct_get_grad_not_found():
 
     class ParamMultipleInputNet(nn.Cell):
         def __init__(self):
-            super(ParamMultipleInputNet, self).__init__()
+            super().__init__()
             self.w = Parameter(Tensor([2., 2.], mstype.float32), name="w")
 
         def construct(self, x, y):
@@ -939,7 +939,7 @@ def test_construct_get_grad_not_found():
 
     class GradNet(nn.Cell):
         def __init__(self, net):
-            super(GradNet, self).__init__()
+            super().__init__()
             self.net = net
             self.weights = net.trainable_params()
 
@@ -967,7 +967,7 @@ def test_construct_get_grad_not_found_from_empty_tuple():
 
     class ParamMultipleInputNet(nn.Cell):
         def __init__(self):
-            super(ParamMultipleInputNet, self).__init__()
+            super().__init__()
             self.w = Parameter(Tensor([2., 2.], mstype.float32), name="w")
 
         def construct(self, x, y):
@@ -976,7 +976,7 @@ def test_construct_get_grad_not_found_from_empty_tuple():
 
     class GradNet(nn.Cell):
         def __init__(self, net):
-            super(GradNet, self).__init__()
+            super().__init__()
             self.net = net
             self.weights = net.trainable_params()
 
@@ -1126,7 +1126,7 @@ def test_value_and_grad_nest_with_weights_graph_return_ids():
 
     class Net(nn.Cell):
         def __init__(self, net):
-            super(Net, self).__init__()
+            super().__init__()
             self.w = Parameter(Tensor([2., 2.], mstype.float32), name="w")
             self.z = Parameter(Tensor([3., 3.], mstype.float32), name="z")
             self.net = net
@@ -1138,7 +1138,7 @@ def test_value_and_grad_nest_with_weights_graph_return_ids():
 
     class GradNet(nn.Cell):
         def __init__(self, net):
-            super(GradNet, self).__init__()
+            super().__init__()
             self.net = net
             self.weights = net.trainable_params()
 
@@ -1180,7 +1180,7 @@ def test_value_and_grad_nest_with_weights_graph_get_grad():
 
     class Net(nn.Cell):
         def __init__(self, net):
-            super(Net, self).__init__()
+            super().__init__()
             self.w = Parameter(Tensor([2., 2.], mstype.float32), name="w")
             self.z = Parameter(Tensor([3., 3.], mstype.float32), name="z")
             self.net = net
@@ -1192,7 +1192,7 @@ def test_value_and_grad_nest_with_weights_graph_get_grad():
 
     class GradNet(nn.Cell):
         def __init__(self, net):
-            super(GradNet, self).__init__()
+            super().__init__()
             self.net = net
             self.weights = net.trainable_params()
 
@@ -1221,9 +1221,78 @@ def test_value_and_grad_nest_with_weights_graph_get_grad():
     assert np.allclose(res3.asnumpy(), expect_grad_weight2)
 
 
+class ComputeNet(nn.Cell):
+    def __init__(self, w, b):
+        super().__init__()
+        mw = Tensor(w, mstype.float32)
+        mb = Tensor(b, mstype.float32)
+        self.w = Parameter(mw, name='w')
+        self.b = Parameter(mb, name='b')
+
+    def construct(self, x, y):
+        out = self.w * x + self.b + y
+        return out
+
+
+class GetGradNet(nn.Cell):
+    def __init__(self, net, pos, param, get):
+        super().__init__()
+        self.net = net
+        self.pos = pos
+        self.param = param
+        self.get = get
+
+    def construct(self, x, y):
+        grad_net = ops.value_and_grad(self.net, self.pos, self.param, return_ids=True)
+        value, grads = grad_net(x, y)
+        out = []
+        for i in self.get:
+            grad_result = ops.get_grad(grads, i)
+            out.append(grad_result)
+        return out, value
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level2', card_mark='onecard', essential_mark='unessential')
+def test_value_and_grad_return_ids_pos2():
+    """
+    Features: Function value_and_grad.
+    Description: Test F.value_and_grad and getgrad out of range from the result in graph mode.
+    Expectation: No exception.
+    """
+    w = np.array([1, 2])
+    b = np.array([1, 2])
+    net = ComputeNet(w, b)
+    grad_net = GetGradNet(net, 0, None, (2,))
+    x = Tensor([1, 2], mstype.float32)
+    y = Tensor([1, 2], mstype.float32)
+    with pytest.raises((ValueError, RuntimeError)) as er:
+        grad_net(x, y)
+        _pynative_executor.sync()
+    assert "Can not find the gradient" in str(er)
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level2', card_mark='onecard', essential_mark='unessential')
+def test_value_and_grad_return_ids_weight_b():
+    """
+    Features: Function value_and_grad.
+    Description: Test F.value_and_grad and getgrad out of range from the result in graph mode.
+    Expectation: No exception.
+    """
+    w = np.array([1, 2])
+    b = np.array([1, 2])
+    net = ComputeNet(w, b)
+    grad_net = GetGradNet(net, None, net.w, (net.b,))
+    x = Tensor([1, 2], mstype.float32)
+    y = Tensor([1, 2], mstype.float32)
+    with pytest.raises(RuntimeError) as er:
+        grad_net(x, y)
+        _pynative_executor.sync()
+    assert "Can not find the gradient" in str(er)
+
+
 class MatMulNet(nn.Cell):
     def __init__(self):
-        super(MatMulNet, self).__init__()
+        super().__init__()
         self.matmul = ops.MatMul()
         self.z = Parameter(Tensor(np.array([1.0], np.float32)), name='z')
 
@@ -1245,7 +1314,7 @@ def test_grad_varargs_single_call():
 
     class GradNetWrtX(nn.Cell):
         def __init__(self, net):
-            super(GradNetWrtX, self).__init__()
+            super().__init__()
             self.net = net
             self.grad_op = ops.GradOperation()
 
@@ -1270,7 +1339,7 @@ def test_grad_varargs_single_call_need_unpack():
 
     class GradNetWrtX(nn.Cell):
         def __init__(self, net):
-            super(GradNetWrtX, self).__init__()
+            super().__init__()
             self.net = net
             self.grad_op = ops.GradOperation()
 
@@ -1295,7 +1364,7 @@ def test_grad_varargs_grad_inited():
 
     class GradNetWrtX(nn.Cell):
         def __init__(self, net):
-            super(GradNetWrtX, self).__init__()
+            super().__init__()
             self.grad = ops.GradOperation()(net)
 
         def construct(self, *inputs):
@@ -1318,7 +1387,7 @@ def test_grad_varargs_double_call():
 
     class GradNetWrtX(nn.Cell):
         def __init__(self, net):
-            super(GradNetWrtX, self).__init__()
+            super().__init__()
             self.net = net
             self.grad_op = ops.GradOperation()
 
@@ -1347,7 +1416,7 @@ def test_func_grad_varargs_single_call():
 
     class GradNetWrtX(nn.Cell):
         def __init__(self, net):
-            super(GradNetWrtX, self).__init__()
+            super().__init__()
             self.net = net
 
         def construct(self, *inputs):
@@ -1371,7 +1440,7 @@ def test_grad_real_inputs_complex_outputs():
 
     class ImagNet(nn.Cell):
         def __init__(self):
-            super(ImagNet, self).__init__()
+            super().__init__()
             self.imag = ops.Imag()
 
         def construct(self, x):
@@ -1379,7 +1448,7 @@ def test_grad_real_inputs_complex_outputs():
 
     class GradNetWrtX(nn.Cell):
         def __init__(self, net):
-            super(GradNetWrtX, self).__init__()
+            super().__init__()
             self.net = net
             self.grad_op = ops.GradOperation()
 
@@ -1403,7 +1472,7 @@ def test_grad_complex_inputs_complex_outputs():
 
     class ImagNet(nn.Cell):
         def __init__(self):
-            super(ImagNet, self).__init__()
+            super().__init__()
             self.imag = ops.Imag()
 
         def construct(self, x):
@@ -1411,7 +1480,7 @@ def test_grad_complex_inputs_complex_outputs():
 
     class GradNetWrtX(nn.Cell):
         def __init__(self, net):
-            super(GradNetWrtX, self).__init__()
+            super().__init__()
             self.net = net
             self.grad_op = ops.GradOperation()
 
