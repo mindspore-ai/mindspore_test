@@ -20,7 +20,8 @@ import mindspore as ms
 from mindspore import Tensor
 
 from tests.mark_utils import arg_mark
-from tests.st.pi_jit.share.utils import assert_equal
+from tests.st.pi_jit.one_stage.test_utils import save_graph_ir, check_ir_num
+from tests.st.pi_jit.share.utils import assert_equal, match_array
 
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
@@ -160,3 +161,161 @@ def test_jit_with_custom_config():
     jit_result = jit_net(tensor_input)
 
     assert_equal(pynative_result, jit_result)
+
+
+@save_graph_ir(ir_name='graph_before_compile')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+def test_jit_capture_function_matches_pynative():
+    """
+    Feature: ms.jit function capture.
+    Description: Wrap a standalone function with ms.jit capture_mode='bytecode' and compare with pynative execution.
+    Expectation: JIT result matches pynative result and generates one graph.
+    Migrated from: test_pijit_catch.py::test_pijit_catch_pfunc
+    """
+
+    def func(x):
+        return x + x
+
+    input_np = np.random.rand(2, 3).astype(np.float32)
+    tensor = Tensor(input_np)
+
+    pynative_result = func(tensor)
+
+    jit_func = ms.jit(func, capture_mode="bytecode")
+    jit_result = jit_func(tensor)
+
+    match_array(pynative_result, jit_result)
+    check_ir_num('graph_before_compile', 1)
+
+
+@save_graph_ir(ir_name='graph_before_compile')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+def test_jit_capture_cell_instance_with_wrapper():
+    """
+    Feature: ms.jit(Cell instance) with shared context.
+    Description: Wrap an nn.Cell instance with ms.jit while another Cell keeps using the original instance in pynative mode.
+    Expectation: JIT result matches pynative result and generates one graph.
+    Migrated from: test_pijit_catch.py::test_pijit_catch_decorate_cell
+    """
+
+    class SquareNet(ms.nn.Cell):
+        def construct(self, x):
+            return x * x
+
+    class ForwardWrapper(ms.nn.Cell):
+        def __init__(self, net):
+            super().__init__()
+            self.net = net
+
+        def construct(self, x):
+            return self.net(x)
+
+    input_main = np.random.rand(2, 3).astype(np.float32)
+    tensor_main = Tensor(input_main)
+    input_aux = np.random.rand(3, 2).astype(np.float32)
+    tensor_aux = Tensor(input_aux)
+
+    pynative_net = SquareNet()
+    pynative_result = pynative_net(tensor_main)
+
+    jit_net = ms.jit(SquareNet(), capture_mode="bytecode")
+    jit_result = jit_net(tensor_main)
+
+    match_array(pynative_result, jit_result)
+
+    wrapper = ForwardWrapper(SquareNet())
+    wrapper_result = wrapper(tensor_aux)
+    expected_wrapper = Tensor(input_aux * input_aux)
+    match_array(wrapper_result, expected_wrapper)
+
+    check_ir_num('graph_before_compile', 1)
+
+
+@save_graph_ir(ir_name='graph_before_compile')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+def test_jit_capture_bound_method_from_custom_class():
+    """
+    Feature: ms.jit bound method capture.
+    Description: Capture a class bound method with ms.jit capture_mode='bytecode'.
+    Expectation: JIT result matches pynative result and generates one graph.
+    Migrated from: test_pijit_catch.py::test_pijit_catch_decorate_custom_class
+    """
+
+    class MyClass:
+        def func(self, x):
+            return x + x
+
+    instance = MyClass()
+
+    input_np = np.random.rand(2, 3).astype(np.float32)
+    tensor = Tensor(input_np)
+
+    pynative_result = instance.func(tensor)
+
+    jit_func = ms.jit(instance.func, capture_mode="bytecode")
+    jit_result = jit_func(tensor)
+
+    match_array(pynative_result, jit_result)
+    check_ir_num('graph_before_compile', 1)
+
+
+@save_graph_ir(ir_name='graph_before_compile')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+def test_jit_capture_function_with_graph_break():
+    """
+    Feature: ms.jit function containing graph break.
+    Description: Use ms.jit capture_mode='bytecode' on a function calling Tensor.asnumpy within its body.
+    Expectation: JIT result matches pynative result and generates one graph.
+    Migrated from: test_pijit_catch.py::test_pijit_catch_multi_func
+    """
+
+    def func1(x: Tensor):
+        a = x.asnumpy() * 2
+        y = Tensor(a)
+        return x + y
+
+    def func(x):
+        return func1(x)
+
+    input_np = np.random.rand(2, 3).astype(np.float32)
+    tensor = Tensor(input_np)
+
+    pynative_result = func(tensor)
+
+    jit_func = ms.jit(func, capture_mode="bytecode")
+    jit_result = jit_func(tensor)
+
+    match_array(pynative_result, jit_result)
+    check_ir_num('graph_before_compile', 1)
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+def test_jit_nested_function_call_chains():
+    """
+    Feature: ms.jit nested function usage.
+    Description: Call a jitted function through multiple Python call layers and support different tensor dtypes.
+    Expectation: Nested calls return expected tensor values.
+    Migrated from: test_pijit_catch.py::test_pijit_catch_func_nested
+    """
+
+    @ms.jit(capture_mode="bytecode")
+    def func1(x: Tensor):
+        return x * 2
+
+    def func2(x: Tensor):
+        return func1(x)
+
+    def func3(x: Tensor):
+        return func2(x)
+
+    input_fp32 = np.random.rand(2, 3).astype(np.float32)
+    tensor_fp32 = Tensor(input_fp32)
+    out_fp32 = func2(tensor_fp32)
+    expected_fp32 = Tensor(2 * input_fp32)
+    match_array(out_fp32, expected_fp32)
+
+    input_fp64 = np.random.rand(3, 2).astype(np.float64)
+    tensor_fp64 = Tensor(input_fp64)
+    out_fp64 = func3(tensor_fp64)
+    expected_fp64 = Tensor(2 * input_fp64)
+    match_array(out_fp64, expected_fp64)

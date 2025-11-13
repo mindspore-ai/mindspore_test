@@ -14,6 +14,8 @@
 # ============================================================================
 """Test builtin function constant fold"""
 
+import numpy as np
+
 from mindspore import Tensor, ops, jit, context
 from mindspore.nn import Cell
 
@@ -202,5 +204,35 @@ def test_builtin_pow_round_sum():
     jit_net = Net()
     jit_net.construct = jit(jit_net.construct, capture_mode='bytecode', fullgraph=True)
     jit_out = jit_net(x, y)
+
+    match_array(pynative_out, jit_out)
+
+
+def func1(x):
+    return x + x
+
+
+def func2(x):
+    return x * x
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+def test_builtin_eval_dispatch_function():
+    """
+    Feature: Python eval inside JIT compiled function.
+    Description: Use eval to dispatch between different functions inside a jit(capture_mode='bytecode') function.
+    Expectation: JIT result matches pynative result.
+    Migrated from: test_pijit_catch.py::test_pijit_catch_func_eval
+    """
+
+    def call_with_eval(x):
+        return eval(f"func{len(x)}(x)")
+
+    input_np = np.random.rand(2, 3).astype(np.float32)
+    tensor = Tensor(input_np)
+
+    pynative_out = call_with_eval(tensor)
+    jit_call = jit(call_with_eval, capture_mode='bytecode')
+    jit_out = jit_call(tensor)
 
     match_array(pynative_out, jit_out)
