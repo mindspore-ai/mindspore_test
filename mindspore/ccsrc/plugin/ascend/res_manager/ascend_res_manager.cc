@@ -106,37 +106,6 @@ std::string GetAscendPath() {
   return path_tmp.substr(0, pos) + kLatest + "/";
 }
 
-std::string GetCurrentDir() {
-#ifndef _WIN32
-  Dl_info dl_info;
-  if (dladdr(reinterpret_cast<void *>(GetCurrentDir), &dl_info) == 0) {
-    MS_LOG(WARNING) << "Get dladdr error";
-    return "";
-  }
-  std::string curr_so_path = dl_info.dli_fname;
-  return dirname(curr_so_path.data());
-#else
-  HMODULE hModule = nullptr;
-  if (GetModuleHandleEx(GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT | GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS,
-                        (LPCSTR)GetCurrentDir, &hModule) == 0) {
-    MS_LOG(WARNING) << "Get GetModuleHandleEx failed.";
-    return "";
-  }
-  char szPath[MAX_PATH];
-  if (GetModuleFileName(hModule, szPath, sizeof(szPath)) == 0) {
-    MS_LOG(WARNING) << "Get GetModuleFileName failed.";
-    return "";
-  }
-  std::string cur_so_path = std::string(szPath);
-  auto pos = cur_so_path.find_last_of("\\");
-  if (cur_so_path.empty() || pos == std::string::npos) {
-    MS_LOG(ERROR) << "Current so path empty or the path [" << cur_so_path << "] is invalid.";
-    return "";
-  }
-  return cur_so_path.substr(0, pos);
-#endif
-}
-
 void *GetAclFunc(const std::string &lib_path, const std::string &func_name) {
   static auto ascend_path = GetAscendPath();
   auto load_path = ascend_path + "/lib64/" + lib_path;

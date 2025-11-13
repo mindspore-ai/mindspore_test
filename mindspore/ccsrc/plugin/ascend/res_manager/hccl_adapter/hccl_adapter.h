@@ -36,12 +36,6 @@ class OpsKernelvBuilder;
 }  // namespace ge
 
 namespace mindspore::hccl {
-struct HcclTaskInfo {
-  std::string private_def;
-  int64_t workspace_size;
-  int64_t stream_num;
-};
-
 struct HcclAllToAllVParams {
   std::vector<uint64_t> sendcounts;
   std::vector<uint64_t> sdispls;

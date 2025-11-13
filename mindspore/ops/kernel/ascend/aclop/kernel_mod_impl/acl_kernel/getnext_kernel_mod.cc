@@ -15,6 +15,8 @@
  */
 #include "kernel/ascend/aclop/kernel_mod_impl/acl_kernel/getnext_kernel_mod.h"
 #include <memory>
+#include <vector>
+#include <string>
 #include "plugin/ascend/res_manager/data_queue/ascend_data_queue.h"
 #include "include/runtime/hardware_abstract/data_queue/data_queue_mgr.h"
 #include "kernel/ascend/acl_ir/acl_helper.h"
@@ -42,7 +44,7 @@ int GetNextAclKernelMod::Resize(const std::vector<KernelTensor *> &inputs, const
 
   std::vector<std::vector<int64_t>> new_output_shapes;
   if (is_dynamic_) {
-    auto wingman_queue = device::GetTdtWingManQueue(primitive_);
+    auto wingman_queue = GetTdtWingManQueue(primitive_);
     MS_EXCEPTION_IF_NULL(wingman_queue);
     std::vector<device::DataQueueItem> data;
     RetryPeakItemFromDataQueue(nullptr, wingman_queue, &data);
@@ -93,7 +95,7 @@ int GetNextAclKernelMod::Resize(const std::vector<KernelTensor *> &inputs, const
 bool GetNextAclKernelMod::Launch(const std::vector<KernelTensor *> &inputs,
                                  const std::vector<KernelTensor *> &workspace,
                                  const std::vector<KernelTensor *> &outputs, void *stream_ptr) {
-  auto wingman_queue = device::GetTdtWingManQueue(primitive_);
+  auto wingman_queue = GetTdtWingManQueue(primitive_);
   MS_EXCEPTION_IF_NULL(wingman_queue);
   if (wingman_queue->Size() > 0) {
     (void)wingman_queue->Pop();
@@ -106,5 +108,35 @@ bool GetNextAclKernelMod::Launch(const std::vector<KernelTensor *> &inputs,
   return ret;
 }
 MS_KERNEL_FACTORY_REG(AclKernelMod, GetNext, GetNextAclKernelMod);
+
+bool IsGetNextOp(const std::string &op_name) { return op_name == kGetNextOpName || op_name == kDynamicGetNextV2OpName; }
+
+std::shared_ptr<device::BlockingQueue> GetTdtWingManQueue(const PrimitivePtr &prim) {
+  MS_EXCEPTION_IF_NULL(prim);
+  if (!IsGetNextOp(prim->name())) return nullptr;
+  auto queue_name = GetValue<std::string>(prim->GetAttr("shared_name"));
+  if (!device::DataQueueMgr::GetInstance().IsCreated(queue_name)) {
+    return nullptr;
+  }
+  return device::DataQueueMgr::GetInstance().GetDataQueue(queue_name);
+}
+
+std::shared_ptr<device::BlockingQueue> GetTdtWingManQueue(const std::shared_ptr<AnfNode> &node) {
+  if (!common::AnfAlgo::IsGetNextNode(node)) return nullptr;
+  return GetTdtWingManQueue(common::AnfAlgo::GetCNodePrimitive(node));
+}
+
+void CloseTdtWingManQueue(const PrimitivePtr &prim) {
+  if (!IsGetNextOp(prim->name())) return;
+  auto wingman = GetTdtWingManQueue(prim);
+  if (wingman && wingman->IsOpen()) {
+    wingman->Close();
+  }
+}
+
+void CloseTdtWingManQueue(const std::shared_ptr<AnfNode> &node) {
+  if (!common::AnfAlgo::IsGetNextNode(node)) return;
+  return CloseTdtWingManQueue(common::AnfAlgo::GetCNodePrimitive(node));
+}
 }  // namespace kernel
 }  // namespace mindspore

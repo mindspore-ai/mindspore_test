@@ -32,6 +32,12 @@ std::string voidPtrToString(void *ptr) {
 }
 }  // namespace
 
+class AscendTimeEvent : public AscendEvent {
+ public:
+  AscendTimeEvent();
+  ~AscendTimeEvent() override = default;
+};
+
 AscendEvent::AscendEvent(uint32_t flag, bool use_extensional_api) {
   aclError ret;
   if (use_extensional_api) {
