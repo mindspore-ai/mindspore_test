@@ -37,6 +37,12 @@ if [ "$CELL_REUSE" = "no_pp" ]; then
   echo "enable lazy inline in no pp"
   export ENABLE_LAZY_INLINE_NO_PIPELINE=1
 fi
+if [ "$GPT_DATASET" = "gpt" ]; then
+  echo "using gpt dataset."
+  cd $MF_PATH/mindformers/dataset/blended_datasets/
+  make
+  cd ${BASE_PATH}
+fi
 
 source /usr/local/Ascend/nnal/atb/set_env.sh
 
