@@ -278,3 +278,65 @@ def test_pijit_log_all_graph_split_case():
     assert "[graph_break]" in data
 
     os.remove(f"{test_case_name}_log.txt")
+
+
+def run_pytest(test_file_name, test_case_name, log_config):
+    cmd = f"export MS_JIT_BYTECODE_LOGS={log_config}; export GLOG_v=2; export GLOG_logtostderr=1;" \
+          + f"python -m pytest -vs {test_file_name}::{test_case_name} > {test_case_name}_log.txt 2>&1"
+    subprocess.check_output(cmd, shell=True)
+    with open(f"{test_case_name}_log.txt", "r") as f:
+        data = f.read()
+    return data
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+def test_pijit_log_print_after_all_graph_split_for():
+    """
+    Feature: print_after_all logging for graph break in loop.
+    Description: Enable print_after_all and execute the graph split helper to trigger traceback bytecode dump.
+    Expectation: Log output contains traceback bytecode dump information.
+    Migrated from: test_pijit_print_after_all.py::test_pijit_print_after_all_graph_split_for
+    """
+    test_case_name = "test_print_after_all_graph_split_for"
+    data = run_pytest("print_after_all_case.py", test_case_name, "")
+
+    assert "*** Dump ByteCode After Traceback on [construct] ***" in data
+    assert "1 passed" in data
+
+    os.remove(f"{test_case_name}_log.txt")
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+def test_pijit_log_print_after_all_try_finally():
+    """
+    Feature: print_after_all logging for try/finally graph break.
+    Description: Enable print_after_all and execute the try/finally helper to dump codegen bytecode.
+    Expectation: Log output contains one-stage bytecode collection and final bytecode dump.
+    Migrated from: test_pijit_print_after_all.py::test_pijit_print_after_all_try_finally_break
+    """
+    test_case_name = "test_print_after_all_try_finally_break"
+    data = run_pytest("print_after_all_case.py", test_case_name, "")
+
+    assert "*** Dump One Stage ByteCode Collection After CodeGen ***" in data
+    assert "MODIFIED BYTECODE of" in data
+    assert "1 passed" in data
+
+    os.remove(f"{test_case_name}_log.txt")
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+def test_pijit_log_print_after_all_before_psjit():
+    """
+    Feature: print_after_all logging before psjit execution.
+    Description: Enable print_after_all with a mixed bytecode/ast pipeline to verify codegen bytecode dumps.
+    Expectation: Log output contains one-stage bytecode collection and final bytecode dump.
+    Migrated from: test_pijit_print_after_all.py::test_pijit_print_after_all_before_psjit
+    """
+    test_case_name = "test_print_after_all_before_psjit"
+    data = run_pytest("print_after_all_case.py", test_case_name, "")
+
+    assert "*** Dump One Stage ByteCode Collection After CodeGen ***" in data
+    assert "MODIFIED BYTECODE of" in data
+    assert "1 passed" in data
+
+    os.remove(f"{test_case_name}_log.txt")

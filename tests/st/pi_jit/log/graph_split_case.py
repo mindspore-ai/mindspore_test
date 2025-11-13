@@ -8,6 +8,12 @@ from mindspore.common import Tensor
 
 
 def test_pijit():
+    """
+    Feature: Test pijit log (bytecode only).
+    Description: Enable bytecode log and run a graph-split helper script.
+    Expectation: Expect to see bytecode log content.
+    Migrated from: test_parse_pijit_improve_debug_ability.py::test_parse_pijit_improve_debug_ability_001
+    """
     def fn(x):
         # graph break by converting Tensor to numpy
         x_np = x.asnumpy()
