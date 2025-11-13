@@ -355,3 +355,33 @@ def test_aclgraph_group():
     with pytest.raises(RuntimeError):
         rt.set_kernel_launch_capture(True)
         rt.set_kernel_launch_group(thread_num=2, kernel_group_num=8)
+
+
+@arg_mark(
+    plat_marks=['platform_ascend910b'],
+    level_mark='level0',
+    card_mark='onecard',
+    essential_mark='essential'
+)
+def test_set_enable_capture_graph_in_wrong_time():
+    """
+    Feature: test aclgraph
+    Description: Test set aclgraph not the first time
+    Expectation: No exception and result is correct
+    """
+    new_input1 = Tensor(np.ones((2, 5)).astype(np.float32))
+    dyn_input_data = Tensor(shape=[2, None], dtype=mstype.float32)
+    base_shape = (2, 3)
+
+    net = SeqNet()
+    net.set_inputs(dyn_input_data)
+    net.phase = "increment"
+
+    input_data1 = Tensor(np.full(base_shape, 1).astype(np.float32))
+    net(input_data1)
+    rt.set_kernel_launch_capture(True)
+
+    with pytest.raises(RuntimeError) as e:
+        net(new_input1)
+        net(new_input1)
+    assert "set up the ACL graph before the first step" in str(e.value)

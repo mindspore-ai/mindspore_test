@@ -123,6 +123,8 @@ class GraphCaptureManager {
 
   const std::string &ShapeKey() const { return shape_key_; }
 
+  bool IsInit() const { return init_; }
+
   bool HasCapturedGraph();
 
   // During the capture mode, before launch single op, record the state of its input, output, and workspace infos for
