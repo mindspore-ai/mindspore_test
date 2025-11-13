@@ -12,6 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
+"""
+Test backend compile.
+"""
 import numpy as np
 import mindspore as ms
 from mindspore import Tensor, Parameter
@@ -231,3 +234,43 @@ def test_internal_valuetuple():
     x = Tensor(np.ones(shape).astype(np.float32))
     out = a(x)
     assert out.shape == (2,)
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_internal_parameter_in_same_group():
+    """
+    Feature: Test internal parameter in same graph group.
+    Description: internal parameter is load.
+    Expectation: Run success.
+    """
+    shape = (3, 4)
+
+    a = BackendGraph()
+    sub_para_1 = a.add_parameter(ms.float32, shape)
+    a.add_return(sub_para_1)
+
+    root_graph = BackendGraph()
+    root_para_1 = root_graph.add_parameter(ms.float32, shape)
+    root_para_2 = root_graph.add_parameter(ms.float32, shape)
+
+    sub_graph_value_node = root_graph.add_valuenode(a)
+    call = root_graph.add_cnode(sub_graph_value_node, root_para_1)
+
+    # kernel graph0
+    add1 = root_graph.add_cnode("Add", call, root_para_2)
+    add2 = root_graph.add_cnode("Add", add1, root_para_1)
+    load = root_graph.add_cnode("Load", add2, add1)
+    mul = root_graph.add_cnode("Mul", load, root_para_2)
+    # kernel graph1
+    div = root_graph.add_cnode("RealDiv", mul, root_para_2)
+    root_graph.set_target(div, "CPU")
+    # kernel graph2
+    add3 = root_graph.add_cnode("Add", load, div)
+    root_graph.add_return(add3)
+    root_graph.infer()
+    root_graph.compile()
+    x = Tensor(np.ones(shape).astype(np.float32))
+    y = Tensor(np.ones(shape).astype(np.float32))
+    out = root_graph(x, y)
+    print(out)
+    assert np.allclose(out.asnumpy(), np.ones(shape).astype(np.float32) * 6)
