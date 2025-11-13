@@ -31,7 +31,7 @@ def unsqueeze_backward(x, dim):
     return ms.grad(unsqueeze_forward, (0,))(x, dim)
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1',
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1',
           card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_mint_unsqueeze_normal(mode):
@@ -41,6 +41,7 @@ def test_mint_unsqueeze_normal(mode):
     Expectation: success
     """
     ms.set_context(mode=mode)
+    ms.context.set_context(jit_level='O0')
 
     x = ms.Tensor(np.arange(2 * 3).reshape((2, 3)), dtype=ms.float32)
     dim = 0

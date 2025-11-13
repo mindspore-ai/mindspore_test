@@ -65,9 +65,7 @@ void DoViewGrad(const TensorPtr &input_tensor, const std::vector<TensorPtr> &out
       UpdateNextEdges(view_grad_node, {input_tensor});
       for (size_t i = 0; i < output_tensors.size(); ++i) {
         const auto &output_tensor = output_tensors[i];
-        auto output_meta_data = output_tensor->auto_grad_meta_data();
-        output_meta_data->set_grad_node(view_grad_node);
-        output_meta_data->set_output_index(i);
+        autograd::impl::SetTensorGradMetaData(output_tensor, view_grad_node, i);
       }
     }
     (void)std::for_each(output_tensors.begin(), output_tensors.end(),

@@ -887,3 +887,28 @@ def test_view_inplace_base_tensor_is_no_requires_grad_and_view_tensor_is_non_lea
         ms.runtime.synchronize()
     assert "A view of base is being rebase" in str(err.value)
     assert "This view is one of output for multi output operator" in str(err.value)
+
+
+@arg_mark(plat_marks=['platform_ascend'],
+          level_mark='level1',
+          card_mark='onecard',
+          essential_mark='essential')
+def test_view_grad_node_record_ouptuts_tensor_meta_data():
+    """
+    Feature: Test view grad valid.
+    Description: Verify if the view grad node records the tensor meta data of outputs.
+    Expectation: The calculation result is correct.
+    """
+    def fn(input_tensor):
+        y = input_tensor.split((2, 3), -1)
+        z = input_tensor.transpose(-1, -2)
+        return y[0], y[1], z
+
+    input_tensor = Tensor(np.random.randn(2, 5).astype(np.float32))
+    grad_op = GradOfFirstInput(fn)
+    grads = (Tensor(np.ones((2, 2)).astype(np.float32)),
+             Tensor(np.ones((2, 3)).astype(np.float32)),
+             Tensor(np.ones((5, 2)).astype(np.float32)))
+    grad = grad_op(input_tensor, grads)
+    expect_grad = np.broadcast_to(np.array(2.).astype(np.float32), (2, 5))
+    assert np.allclose(grad.asnumpy(), expect_grad)
