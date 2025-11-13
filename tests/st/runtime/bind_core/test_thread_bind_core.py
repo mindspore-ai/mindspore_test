@@ -13,7 +13,7 @@
 # limitations under the License.
 # ============================================================================
 """
-test feature of binding core: msrun --bind_core and mindspore.runtime.set_cpu_affinity
+test feature of binding core: mindspore.runtime.set_cpu_affinity with msrun --bind_core
 """
 import re
 import os
@@ -53,14 +53,15 @@ def test_bind_core_auto():
         print("Skip this ST, as the environment is not suitable for thread bind core.")
         return
 
-    env = "export GLOG_v=1"
+    env = "export THREAD_BIND=1;"
+    env += "export GLOG_v=1;"
 
     real_path = os.path.realpath(os.getcwd())
-    script = real_path + "/run_thread_bind_core.py"
+    script = real_path + "/run_bind_core.py"
     output = real_path + "/thread_bind_core_auto.log"
     assert os.path.exists(script)
 
-    cmd = f"{env}; python {script} > {output} 2>&1"
+    cmd = f"{env} python {script} > {output} 2>&1"
     os.system(cmd)
 
     assert os.path.exists(output)
@@ -89,12 +90,13 @@ def test_bind_core_manual():
     module_to_cpu_dict = '{"main": [0, 1, 2, 3], "minddata": [4, 5], "other": [6, 7], \
                          "runtime": [8, 9], "pynative": [10, 11, 21, 100]}'
 
-    env = "export GLOG_v=1;"
+    env = "export THREAD_BIND=1;"
+    env += "export GLOG_v=1;"
     env += f"export AFFINITY_CPU_LIST='{affinity_cpu_list}';"
     env += f"export MODULE_TO_CPU_DICT='{module_to_cpu_dict}';"
 
     real_path = os.path.realpath(os.getcwd())
-    script = real_path + "/run_thread_bind_core.py"
+    script = real_path + "/run_bind_core.py"
     assert os.path.exists(script)
     output = real_path + "/thread_bind_core_manual.log"
 
@@ -126,11 +128,12 @@ def test_bind_core_empty_module_assigned():
         print("Skip this ST, as the environment is not suitable for thread bind core.")
         return
 
-    env = "export GLOG_v=2;"
+    env = "export THREAD_BIND=1;"
+    env += "export GLOG_v=2;"
     env += "export MODULE_TO_CPU_DICT='{}';"
 
     real_path = os.path.realpath(os.getcwd())
-    script = real_path + "/run_thread_bind_core.py"
+    script = real_path + "/run_bind_core.py"
     assert os.path.exists(script)
     output = real_path + "/thread_bind_core_empty_module.log"
 
@@ -181,10 +184,11 @@ def test_msrun_bind_true_thread_bind_auto():
     Expectation: Expected log in stdout.
     """
     env = "export DISTRIBUTED=1;"
+    env += "export THREAD_BIND=1;"
     env += "export GLOG_v=1;"
 
     real_path = os.path.realpath(os.getcwd())
-    script = real_path + "/run_thread_bind_core.py"
+    script = real_path + "/run_bind_core.py"
     assert os.path.exists(script)
     output = real_path + "/msrun_bind_true_thread_bind_auto.log"
     msrun_path = real_path + "/msrun_bind_true_thread_bind_auto"
@@ -202,7 +206,7 @@ def test_msrun_bind_true_thread_bind_auto():
         output_log = f.read()
         print(output_log, flush=True)
     assert return_code == 0
-    assert re.search(r"Launch process with command: taskset -c (\d+)-(\d+) .*", output_log)
+    assert re.search(r"Execute command: taskset -c (\d+)-(\d+) .*", output_log)
 
     # check results of mindspore.runtime.set_cpu_affinity API.
     with open(worker_0, "r", encoding="utf-8") as f:
@@ -220,20 +224,21 @@ def test_msrun_bind_manual_thread_bind_manual():
     Description: Test runtime.set_cpu_affinity and msrun --bind_core with customized bind core policy.
     Expectation: Expected log in stdout.
     """
-    bind_core_arg = '{"device0":["11-15"], "device1":["31-35"]}'
+    bind_core_arg = '{"scheduler":["16-19"], "device0":["11-15"], "device1":["31-35"]}'
     affinity_cpu_list = '["0-10"]'
     affinity_cpu_list_2 = '["20-30"]'
     module_to_cpu_dict = '{"main": [0, 1, 2, 3], "minddata": [4, 5], "other": [6], \
                          "runtime": [7, 8], "pynative": [9, 10, 11, 21, 100]}'
 
     env = "export DISTRIBUTED=1;"
+    env += "export THREAD_BIND=1;"
     env += "export GLOG_v=1;"
     env += f"export AFFINITY_CPU_LIST='{affinity_cpu_list}';"
     env += f"export AFFINITY_CPU_LIST_2='{affinity_cpu_list_2}';"
     env += f"export MODULE_TO_CPU_DICT='{module_to_cpu_dict}';"
 
     real_path = os.path.realpath(os.getcwd())
-    script = real_path + "/run_thread_bind_core.py"
+    script = real_path + "/run_bind_core.py"
     assert os.path.exists(script)
     output = real_path + "/msrun_bind_manual_thread_bind_manual.log"
     msrun_path = real_path + "/msrun_bind_manual_thread_bind_manual"
@@ -252,8 +257,9 @@ def test_msrun_bind_manual_thread_bind_manual():
         output_log = f.read()
         print(output_log, flush=True)
     assert return_code == 0
-    assert "Launch process with command: taskset -c 11-15" in output_log
-    assert "Launch process with command: taskset -c 31-35" in output_log
+    assert re.search(r"Start scheduler process.*? Execute command: taskset -c 16-19 .*?", output_log)
+    assert re.search(r"Start worker process with rank id:0.*? Execute command: taskset -c 11-15 .*?", output_log)
+    assert re.search(r"Start worker process with rank id:1.*? Execute command: taskset -c 31-35 .*?", output_log)
 
     # check results of mindspore.runtime.set_cpu_affinity API.
     with open(worker_0, "r", encoding="utf-8") as f:

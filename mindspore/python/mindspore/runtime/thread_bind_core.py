@@ -23,23 +23,36 @@ from mindspore import context
 from mindspore.communication import get_local_rank_size
 
 
-def execute_command(cmd_list):
+def execute_command(cmd_list, timeout=1000.0):
     """
     Execute a system command and return its output.
 
     Args:
         cmd_list (list): A list of strings representing the command and its arguments.
+        timeout (second): Timeout for executing command.
 
     Returns:
         str: The decoded standard output from the command execution.
     """
-    try:
-        with subprocess.Popen(cmd_list, shell=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE) as p:
-            out, _ = p.communicate(timeout=1000)
-        res = out.decode()
-        return res
-    except OSError  as e:
-        raise RuntimeError("Failed to execute command") from e
+    cmd_str = " ".join(cmd_list)
+    with subprocess.Popen(
+        cmd_list,
+        shell=False,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        encoding="utf-8",
+        errors="strict"
+    ) as p:
+        try:
+            out, err = p.communicate(timeout=timeout)
+        except subprocess.TimeoutExpired as e:
+            p.kill()
+            raise RuntimeError(f"Command '{cmd_str}' timed out after {timeout}s!") from e
+
+        if p.returncode != 0:
+            raise RuntimeError(f"Command '{cmd_str}' failed (return code {p.returncode})! Stderr: {err.strip()}")
+    return out
 
 
 def _adapt_to_dict(affinity_cpu_list):
@@ -116,8 +129,10 @@ def _get_cpu_available():
     available_cpus = []
 
     available_cpu_str = execute_command(["cat", "/sys/fs/cgroup/cpuset/cpuset.cpus"]).strip().split(",")
+    if not available_cpu_str or (len(available_cpu_str) == 1 and not available_cpu_str[0]):
+        raise RuntimeError("Empty available CPU range in '/sys/fs/cgroup/cpuset/cpuset.cpus'.")
     for range_str in available_cpu_str:
-        endpoints = range_str.split("-")
+        endpoints = range_str.strip().split("-")
         if len(endpoints) == 1:
             available_cpus.append(int(endpoints[0]))
         elif len(endpoints) == 2:
@@ -129,7 +144,7 @@ def _get_cpu_available():
         else:
             raise RuntimeError("Failed to parse the result of executing 'cat /sys/fs/cgroup/cpuset/cpuset.cpus'.")
 
-    return available_cpus
+    return sorted(available_cpus)
 
 
 class DeviceInfo:
