@@ -1228,7 +1228,7 @@ class CosineEmbeddingLoss(Cell):
         ValueError: If `reduction` is not ``"none"``, ``"mean"`` or ``"sum"``.
         ValueError: If `margin` is not in the range [-1.0, 1.0].
         ValueError: If the shapes of `input1` and `input2` do not match.
-        ValueError: If the shape of `target` does not match `input1` and `input2`.
+        ValueError: If the shape of `target` does not match the shapes of `input1` and `input2`.
 
     Supported Platforms:
         ``Ascend``
