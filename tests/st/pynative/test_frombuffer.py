@@ -71,6 +71,10 @@ def dtypes(*dtype_list):
         return wrapper
     return decorator
 
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
 class TestBufferProtocol:
     """
     Test buffer protocol support in frombuffer function
@@ -160,7 +164,7 @@ class TestBufferProtocol:
         for case_name, test_func in test_cases:
             try:
                 test_func()
-                assert False, f"{case_name} should have raised an exception"
+                assert False, f"Test case '{case_name}' should have raised an exception"
             except RuntimeError:
                 pass
 
@@ -249,34 +253,3 @@ class TestBufferProtocol:
         del tensor
         gc.collect()
         assert TrackedBuffer.destroyed or buffer_ref() is None, "buffer should be destroyed after tensor deletion"
-
-
-@arg_mark(plat_marks=['cpu_linux'],
-          level_mark='level0',
-          card_mark='onecard',
-          essential_mark='essential')
-def run_all_tests():
-    """
-    Run all frombuffer tests
-    """
-    tester = TestBufferProtocol()
-    test_methods = [
-        ('test_same_type', []),
-        ('test_with_offset', []),
-        ('test_with_count', []),
-        ('test_with_count_and_offset', []),
-        ('test_invalid_arguments', []),
-        ('test_shared_buffer', []),
-        ('test_not_a_buffer', []),
-        ('test_non_writable_buffer', []),
-        ('test_byte_to_int', []),
-        ('test_destruction', [])
-    ]
-
-    for method_name, args in test_methods:
-        try:
-            method = getattr(tester, method_name)
-            method(*args)
-        except RuntimeError:
-            import traceback
-            traceback.print_exc()
