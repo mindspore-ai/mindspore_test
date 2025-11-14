@@ -3,8 +3,7 @@ mindspore.Tensor.new_empty
 
 .. py:method:: mindspore.Tensor.new_empty(size, *, dtype=None, device=None) -> Tensor
 
-    创建一个数据没有初始化的Tensor。参数 `size` 指定Tensor的shape，参数 `dtype` 指定填充值的数据类型，参数 `device` 指\
-    定Tensor使用的内存来源。
+    创建一个数据没有初始化的Tensor。参数 `size` 指定Tensor的shape，参数 `dtype` 指定填充值的数据类型，参数 `device` 指定Tensor使用的内存来源。
 
     参数：
         - **size** (Union[tuple[int], list[int], int]) - 指定输出Tensor的shape，只允许正整数或者包含正整数\
