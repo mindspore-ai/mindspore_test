@@ -46,6 +46,7 @@ class FRONTEND_EXPORT ExecutorPy : public std::enable_shared_from_this<ExecutorP
                                   bool enable_tuple_broaden = false);
   void ClearCompileArgumentsResource();
   void SetJitConfig(const py::dict &jit_config);
+  std::map<std::string, std::string> GetJitConfig();
   virtual void CleanCompileRes(const ResourcePtr &resource) = 0;
   FuncGraphPtr GetFuncGraph(const std::string &phase);
   std::vector<bool> CheckFuncGraphSequenceParamAbstract(const std::string &phase);
