@@ -180,6 +180,50 @@ NodePtr MaybeMultiply(BpropBuilder *ib, const TypePtr &input_type, const NodePtr
   return out;
 }
 
+static bool IsColMajor2DTensor(const NodePtr &node, const std::string &op_name) {
+  auto val = node->BuildValue();
+  if (val == nullptr) {
+    return false;
+  }
+  auto tensor = val->cast<tensor::TensorPtr>();
+  // can not cast to tensor in graph mode
+  if (tensor == nullptr) {
+    return false;
+  }
+  auto info = tensor->storage_info();
+  // can not obtain storage_info if current tensor is not view operator's output
+  if (info == nullptr) {
+    return false;
+  }
+  const auto &shape = info->shape;
+  const auto &strides = info->strides;
+  if (shape.size() != 2 || strides.size() != 2) {
+    MS_EXCEPTION(ValueError) << "For " << op_name << " grad, got an invalid shape or strides of input tensor: " << shape
+                             << " or " << strides;
+  }
+  return (strides[0] == 1 && strides[1] == shape[0]);
+}
+
+static NodePtr MmMat1Backward(BpropBuilder *ib, const TypePtr &input_type, const NodePtr &dout, const NodePtr &mat1,
+                              const NodePtr &mat2, const NodePtr &alpha) {
+  // Mat1 Column-major optimization
+  if (IsColMajor2DTensor(mat1, ib->name())) {
+    auto alt = ib->Transpose(ib->MatMul(mat2, dout, false, true), {1, 0});
+    return MaybeMultiply(ib, input_type, alt, alpha, "alpha");
+  }
+  return MaybeMultiply(ib, input_type, ib->MatMul(dout, mat2, false, true), alpha, "alpha");
+}
+
+static NodePtr MmMat2Backward(BpropBuilder *ib, const TypePtr &input_type, const NodePtr &dout, const NodePtr &mat1,
+                              const NodePtr &mat2, const NodePtr &alpha) {
+  // Mat2 Column-major optimization
+  if (IsColMajor2DTensor(mat2, ib->name())) {
+    auto alt = ib->Transpose(ib->MatMul(dout, mat1, true, false), {1, 0});
+    return MaybeMultiply(ib, input_type, alt, alpha, "alpha");
+  }
+  return MaybeMultiply(ib, input_type, ib->MatMul(mat1, dout, true, false), alpha, "alpha");
+}
+
 // Encapsulate inverse-broadcast reduction and reshape for input gradient.
 inline NodePtr BroadcastReduceToInputShape(BpropBuilder *ib, const NodePtr &input, const NodePtr &dout,
                                            const NodePtr &input_grad_in) {
@@ -4967,12 +5011,10 @@ REG_BPROP_BUILDER("Addmm").SetUnusedInputs({i5}).SetBody(BODYFUNC(ib) {
   } else {
     input_grad = ib->OutZeros(input);
   }
-  auto mat1_grad = mat1->need_compute_grad_out()
-                     ? MaybeMultiply(ib, input_type, ib->BatchMatMul(dout, mat2, false, true), alpha, "alpha")
-                     : ib->OutZeros(mat1);
-  auto mat2_grad = mat2->need_compute_grad_out()
-                     ? MaybeMultiply(ib, input_type, ib->BatchMatMul(mat1, dout, true, false), alpha, "alpha")
-                     : ib->OutZeros(mat2);
+  auto mat1_grad =
+    mat1->need_compute_grad_out() ? MmMat1Backward(ib, input_type, dout, mat1, mat2, alpha) : ib->OutZeros(mat1);
+  NodePtr mat2_grad =
+    mat2->need_compute_grad_out() ? MmMat2Backward(ib, input_type, dout, mat1, mat2, alpha) : ib->OutZeros(mat2);
   return {input_grad, mat1_grad, mat2_grad, ib->OutZeros(beta), ib->OutZeros(alpha)};
 });
 

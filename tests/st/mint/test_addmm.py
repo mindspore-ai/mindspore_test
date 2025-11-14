@@ -13,7 +13,10 @@
 # limitations under the License.
 # ============================================================================
 
+"""Tests for mint.addmm forward/backward, including column-major transpose views."""
+
 import pytest
+import torch
 import numpy as np
 import mindspore as ms
 from mindspore import mint, jit
@@ -29,25 +32,20 @@ def generate_random_input(shape, shape1, shape2):
 
 
 def generate_expect_forward_output(input1, batch1, batch2, beta=1, alpha=1):
-    return beta * input1 + alpha * (batch1 @ batch2)
+    input1 = torch.tensor(input1)
+    batch1 = torch.tensor(batch1)
+    batch2 = torch.tensor(batch2)
+    return torch.addmm(input1, batch1, batch2, beta=beta, alpha=alpha).numpy()
 
 
 def generate_expect_backward_output(input1, batch1, batch2, beta=1, alpha=1):
-    out_grad = np.ones((batch1 @ batch2).shape, dtype=np.float32)
-    input_grad_full = beta * out_grad
-    in_shape = tuple(input1.shape)
-    out_shape = input_grad_full.shape
-    if len(in_shape) < len(out_shape):
-        in_shape_aligned = (1,) * (len(out_shape) - len(in_shape)) + in_shape
-    else:
-        in_shape_aligned = in_shape
-    axes = tuple(i for i, (din, dout) in enumerate(zip(in_shape_aligned, out_shape)) if din == 1 and dout > 1)
-    if axes:
-        input_grad_full = input_grad_full.sum(axis=axes, keepdims=True)
-    input_grad = input_grad_full.reshape(in_shape)
-    b1_grad = alpha * (out_grad @ batch2.transpose((1, 0)))
-    b2_grad = alpha * (batch1.transpose((1, 0)) @ out_grad)
-    return input_grad, b1_grad, b2_grad
+    # Use PyTorch autograd as the benchmark for backward results
+    t_input = torch.tensor(input1, dtype=torch.float32, requires_grad=True)
+    t_b1 = torch.tensor(batch1, dtype=torch.float32, requires_grad=True)
+    t_b2 = torch.tensor(batch2, dtype=torch.float32, requires_grad=True)
+    out = torch.addmm(t_input, t_b1, t_b2, beta=beta, alpha=alpha)
+    out.backward(torch.ones_like(out))
+    return t_input.grad.detach().numpy(), t_b1.grad.detach().numpy(), t_b2.grad.detach().numpy()
 
 
 def addmm_forward_func(input1, batch1, batch2, beta=1, alpha=1):
@@ -70,7 +68,7 @@ def addmm_backward_func_tensor(input1, batch1, batch2, beta=1, alpha=1):
     return output_grad, b1_grad, b2_grad
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', ['pynative', 'KBK'])
 def test_addmm_tensor(mode):
     """
@@ -116,19 +114,19 @@ def test_addmm_tensor(mode):
         output_grad2, b1_grad2, b2_grad2 = (jit(addmm_backward_func_tensor, jit_level="O0"))(
             ms.Tensor(input2), ms.Tensor(batch3), ms.Tensor(batch4), beta, alpha)
     np.testing.assert_allclose(
-        output_forward.asnumpy(), expect_forward, 4e-2, 4e-2)
-    np.testing.assert_allclose(output_grad.asnumpy(), expect_grad, 4e-2, 4e-2)
-    np.testing.assert_allclose(b1_grad.asnumpy(), expect_b1_grad, 4e-2, 4e-2)
-    np.testing.assert_allclose(b2_grad.asnumpy(), expect_b2_grad, 4e-2, 4e-2)
+        output_forward.asnumpy(), expect_forward, 1e-4, 1e-4)
+    np.testing.assert_allclose(output_grad.asnumpy(), expect_grad, 1e-4, 1e-4)
+    np.testing.assert_allclose(b1_grad.asnumpy(), expect_b1_grad, 1e-4, 1e-4)
+    np.testing.assert_allclose(b2_grad.asnumpy(), expect_b2_grad, 1e-4, 1e-4)
     np.testing.assert_allclose(
-        output_forward2.asnumpy(), expect_forward2, 4e-2, 4e-2)
+        output_forward2.asnumpy(), expect_forward2, 1e-4, 1e-4)
     np.testing.assert_allclose(
-        output_grad2.asnumpy(), expect_grad2, 4e-2, 4e-2)
-    np.testing.assert_allclose(b1_grad2.asnumpy(), expect_b1_grad2, 4e-2, 4e-2)
-    np.testing.assert_allclose(b2_grad2.asnumpy(), expect_b2_grad2, 4e-2, 4e-2)
+        output_grad2.asnumpy(), expect_grad2, 1e-4, 1e-4)
+    np.testing.assert_allclose(b1_grad2.asnumpy(), expect_b1_grad2, 1e-4, 1e-4)
+    np.testing.assert_allclose(b2_grad2.asnumpy(), expect_b2_grad2, 1e-4, 1e-4)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', ['pynative', 'KBK'])
 def test_addmm_normal(mode):
     """
@@ -174,19 +172,71 @@ def test_addmm_normal(mode):
         output_grad2, b1_grad2, b2_grad2 = (jit(addmm_backward_func, backend="ms_backend", jit_level="O0"))(
             ms.Tensor(input2), ms.Tensor(batch3), ms.Tensor(batch4), beta, alpha)
     np.testing.assert_allclose(
-        output_forward.asnumpy(), expect_forward, 4e-2, 4e-2)
-    np.testing.assert_allclose(output_grad.asnumpy(), expect_grad, 4e-2, 4e-2)
-    np.testing.assert_allclose(b1_grad.asnumpy(), expect_b1_grad, 4e-2, 4e-2)
-    np.testing.assert_allclose(b2_grad.asnumpy(), expect_b2_grad, 4e-2, 4e-2)
+        output_forward.asnumpy(), expect_forward, 1e-4, 1e-4)
+    np.testing.assert_allclose(output_grad.asnumpy(), expect_grad, 1e-4, 1e-4)
+    np.testing.assert_allclose(b1_grad.asnumpy(), expect_b1_grad, 1e-4, 1e-4)
+    np.testing.assert_allclose(b2_grad.asnumpy(), expect_b2_grad, 1e-4, 1e-4)
     np.testing.assert_allclose(
-        output_forward2.asnumpy(), expect_forward2, 4e-2, 4e-2)
+        output_forward2.asnumpy(), expect_forward2, 1e-4, 1e-4)
     np.testing.assert_allclose(
-        output_grad2.asnumpy(), expect_grad2, 4e-2, 4e-2)
-    np.testing.assert_allclose(b1_grad2.asnumpy(), expect_b1_grad2, 4e-2, 4e-2)
-    np.testing.assert_allclose(b2_grad2.asnumpy(), expect_b2_grad2, 4e-2, 4e-2)
+        output_grad2.asnumpy(), expect_grad2, 1e-4, 1e-4)
+    np.testing.assert_allclose(b1_grad2.asnumpy(), expect_b1_grad2, 1e-4, 1e-4)
+    np.testing.assert_allclose(b2_grad2.asnumpy(), expect_b2_grad2, 1e-4, 1e-4)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@pytest.mark.parametrize('mode', ['pynative', 'KBK'])
+def test_addmm_column_major_views(mode):
+    """
+    Feature: Ops.
+    Description: test addmm with column-major like views (created by transpose) for mat1 and mat2.
+    Expectation: expect correct forward and backward results.
+    """
+    M, K, N = 5, 7, 6
+    input_shape = (M, N)
+    mat1_base_shape = (K, M)
+    mat2_base_shape = (N, K)
+
+    beta = 1.0
+    alpha = 2.0
+
+    # numpy inputs
+    input_np = np.random.randn(*input_shape).astype(np.float32)
+    mat1_base_np = np.random.randn(*mat1_base_shape).astype(np.float32)
+    mat2_base_np = np.random.randn(*mat2_base_shape).astype(np.float32)
+
+    # column-major-like views by transpose
+    mat1_cm_np = mat1_base_np.transpose((1, 0))  # shape [M, K]
+    mat2_cm_np = mat2_base_np.transpose((1, 0))  # shape [K, N]
+
+    # expected with actual numeric values
+    expect_forward = generate_expect_forward_output(input_np, mat1_cm_np, mat2_cm_np, beta, alpha)
+    expect_grad, expect_mat1_grad, expect_mat2_grad = generate_expect_backward_output(
+        input_np, mat1_cm_np, mat2_cm_np, beta, alpha
+    )
+
+    input_ms = ms.Tensor(input_np)
+    # create views via mint.transpose to simulate column-major stride
+    mat1_ms = mint.transpose(ms.Tensor(mat1_base_np), 0, 1)  # [M, K]
+    mat2_ms = mint.transpose(ms.Tensor(mat2_base_np), 0, 1)  # [K, N]
+
+    if mode == 'pynative':
+        ms.set_context(mode=ms.PYNATIVE_MODE)
+        out = addmm_forward_func(input_ms, mat1_ms, mat2_ms, beta, alpha)
+        in_grad, m1_grad, m2_grad = addmm_backward_func(input_ms, mat1_ms, mat2_ms, beta, alpha)
+    else:
+        out = (jit(addmm_forward_func, backend="ms_backend", jit_level="O0"))(input_ms, mat1_ms, mat2_ms, beta, alpha)
+        in_grad, m1_grad, m2_grad = (jit(addmm_backward_func, backend="ms_backend", jit_level="O0"))(
+            input_ms, mat1_ms, mat2_ms, beta, alpha
+        )
+
+    np.testing.assert_allclose(out.asnumpy(), expect_forward, 1e-4, 1e-4)
+    np.testing.assert_allclose(in_grad.asnumpy(), expect_grad, 1e-4, 1e-4)
+    np.testing.assert_allclose(m1_grad.asnumpy(), expect_mat1_grad, 1e-4, 1e-4)
+    np.testing.assert_allclose(m2_grad.asnumpy(), expect_mat2_grad, 1e-4, 1e-4)
+
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', ['pynative', 'KBK'])
 def test_addmm_input_with_first_dim_1(mode):
     """
@@ -216,10 +266,10 @@ def test_addmm_input_with_first_dim_1(mode):
         input_grad, mat1_grad, mat2_grad = (jit(addmm_backward_func, backend="ms_backend", jit_level="O0"))(
             ms.Tensor(input1), ms.Tensor(mat1), ms.Tensor(mat2), beta, alpha)
     np.testing.assert_allclose(
-        output_forward.asnumpy(), expect_forward, 4e-2, 4e-2)
-    np.testing.assert_allclose(input_grad.asnumpy(), expect_grad, 4e-2, 4e-2)
-    np.testing.assert_allclose(mat1_grad.asnumpy(), expect_mat1_grad, 4e-2, 4e-2)
-    np.testing.assert_allclose(mat2_grad.asnumpy(), expect_mat2_grad, 4e-2, 4e-2)
+        output_forward.asnumpy(), expect_forward, 1e-4, 1e-4)
+    np.testing.assert_allclose(input_grad.asnumpy(), expect_grad, 1e-4, 1e-4)
+    np.testing.assert_allclose(mat1_grad.asnumpy(), expect_mat1_grad, 1e-4, 1e-4)
+    np.testing.assert_allclose(mat2_grad.asnumpy(), expect_mat2_grad, 1e-4, 1e-4)
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
