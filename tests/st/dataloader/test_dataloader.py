@@ -17,8 +17,10 @@
 import multiprocessing
 import os
 import random
+import re
 import signal
 import time
+import traceback
 
 import numpy as np
 import psutil
@@ -56,7 +58,7 @@ class MyDataset(Dataset):
         return self.num_samples
 
 
-class MyIterDataset(IterableDataset):
+class MyIterDataset(IterableDataset):  # pylint: disable=abstract-method
     """
     An iterable style dataset that yields as many samples as requested.
     """
@@ -948,9 +950,10 @@ class TestMultiProcessDataLoader:
             time.sleep(5)
             return np.array(self.data[index], dtype=np.uint8)
 
+        timeout = 3
         monkeypatch.setattr(MyDataset, "__getitem__", mock_getitem)
-        monkeypatch.setattr(self.data_loader, "timeout", 3)
-        with pytest.raises(RuntimeError, match="DataLoader get data timeout after 3 seconds"):
+        monkeypatch.setattr(self.data_loader, "timeout", timeout)
+        with pytest.raises(RuntimeError, match=f"DataLoader timed out waiting for data after {timeout} seconds"):
             for _ in self.data_loader:
                 pass
 
@@ -986,19 +989,28 @@ class TestMultiProcessDataLoader:
 
         data_loader_iter = iter(self.data_loader)
         pin_memory_done = data_loader_iter.pin_memory_done
-        with pytest.raises(RuntimeError, match="DataLoader pin memory thread is not alive"):
+        with pytest.raises(RuntimeError, match="DataLoader pin memory thread exited unexpectedly"):
             for _ in data_loader_iter:
                 if not pin_memory_done.is_set():
                     pin_memory_done.set()
 
     @arg_mark(plat_marks=["cpu_linux"], level_mark="level0", card_mark="onecard", essential_mark="essential")
-    @pytest.mark.parametrize("sig", (signal.SIGKILL, signal.SIGTERM, signal.SIGINT))
-    def test_kill_worker_process(self, monkeypatch, sig):
+    @pytest.mark.parametrize(
+        "sig_case",
+        (
+            (signal.SIGKILL, r"DataLoader worker \(pid: .*\) was killed by signal: Killed"),
+            (signal.SIGTERM, r"DataLoader worker \(pid\(s\): .*\) exited unexpectedly"),
+            (signal.SIGINT, r"DataLoader worker \(pid: .*\) was killed by signal"),
+        ),
+    )
+    def test_kill_worker_process(self, monkeypatch, sig_case):
         """
         Feature: Test DataLoader with kill worker process.
         Description: Test the error message when the worker process is killed.
         Expectation: Raise RuntimeError.
         """
+
+        sig, msg = sig_case
 
         def mock_getitem(self, index):
             time.sleep(1)
@@ -1010,9 +1022,12 @@ class TestMultiProcessDataLoader:
         data_loader_iter = iter(self.data_loader)
         worker_group = data_loader_iter.data_workers
         assert len(worker_group) == 4
-        with pytest.raises(RuntimeError, match=r"DataLoader worker .* exited unexpectedly"):
+        try:
             for _ in data_loader_iter:
                 os.kill(worker_group[0].pid, sig)
+        except RuntimeError:
+            tb_info = traceback.format_exc()
+            assert re.search(msg, tb_info)
 
     @staticmethod
     def run_data_loader(num_workers, dataloader_ready, worker_ready):

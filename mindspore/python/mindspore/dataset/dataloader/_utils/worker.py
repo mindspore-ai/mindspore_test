@@ -260,7 +260,10 @@ def data_worker_fn(
                 continue
             if index_item is None:
                 if not worker_done.is_set():
-                    raise RuntimeError("Got None from index.")
+                    raise RuntimeError(
+                        f"DataLoader worker {worker_id} (pid: {os.getpid()}) got None from index queue "
+                        f"before quit flag is set."
+                    )
                 break  # we got the last data of index queue, now can safely quit
             if worker_done.is_set() or iteration_finished:
                 # main process send quit flag, but we still need to empty the index queue, skip get data from dataset

@@ -23,6 +23,7 @@
 
 #include <csignal>
 #include <map>
+#include <sstream>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -151,7 +152,7 @@ const char info4[] =
 const char info5[] = "Parent process is not alive. Need to release the shm & msg by current process.\n";
 
 bool PIDToString(pid_t pid, char *buffer, size_t buffer_size) {
-  int num = (int)pid;
+  int num = static_cast<int>(pid);
   char temp[g_pid_len] = {0};
   int i = 0;
   int j = 0;
@@ -167,13 +168,13 @@ bool PIDToString(pid_t pid, char *buffer, size_t buffer_size) {
   }
 
   // extract number in reverse
-  while (num > 0 && i < (int)sizeof(temp) - 1) {
+  while (num > 0 && i < static_cast<int>(sizeof(temp)) - 1) {
     temp[i++] = '0' + (num % 10);
     num /= 10;
   }
 
   // reverse the char
-  while (--i >= 0 && j < (int)buffer_size - 1) {
+  while (--i >= 0 && j < static_cast<int>(buffer_size) - 1) {
     buffer[j++] = temp[i];
   }
   buffer[j] = '\0';
@@ -397,14 +398,14 @@ void SIGSEGVHandler(int signal, siginfo_t *info, void *context) {
   }
 
   // reset the handler to the default
-  struct sigaction bus_action {};
-  bus_action.sa_handler = SIG_DFL;
-  bus_action.sa_flags = 0;
-  if (sigemptyset(&bus_action.sa_mask) != 0) {
+  struct sigaction segv_action {};
+  segv_action.sa_handler = SIG_DFL;
+  segv_action.sa_flags = 0;
+  if (sigemptyset(&segv_action.sa_mask) != 0) {
     MS_LOG(ERROR) << "Failed to initialise the signal set, " << strerror(errno);
     _exit(EXIT_FAILURE);
   }
-  if (sigaction(signal, &bus_action, nullptr) != 0) {
+  if (sigaction(signal, &segv_action, nullptr) != 0) {
     MS_LOG(ERROR) << "Failed to set handler for " << strsignal(signal) << ", " << strerror(errno);
     _exit(EXIT_FAILURE);
   }
@@ -417,7 +418,7 @@ void SIGSEGVHandler(int signal, siginfo_t *info, void *context) {
 /// \param[in] context The context info.
 void SIGFPEHandler(int signal, siginfo_t *info, void *context) {
   if (signal != SIGBUS) {
-    MS_LOG(ERROR) << "SIGBUSHandler expects SIGBUS signal, but got: " << strsignal(signal);
+    MS_LOG(ERROR) << "SIGFPEHandler expects SIGFPE signal, but got: " << strsignal(signal);
     _exit(EXIT_FAILURE);
   }
 
@@ -443,14 +444,14 @@ void SIGFPEHandler(int signal, siginfo_t *info, void *context) {
   }
 
   // reset the handler to the default
-  struct sigaction bus_action {};
-  bus_action.sa_handler = SIG_DFL;
-  bus_action.sa_flags = 0;
-  if (sigemptyset(&bus_action.sa_mask) != 0) {
+  struct sigaction fpe_action {};
+  fpe_action.sa_handler = SIG_DFL;
+  fpe_action.sa_flags = 0;
+  if (sigemptyset(&fpe_action.sa_mask) != 0) {
     MS_LOG(ERROR) << "Failed to initialise the signal set, " << strerror(errno);
     _exit(EXIT_FAILURE);
   }
-  if (sigaction(signal, &bus_action, nullptr) != 0) {
+  if (sigaction(signal, &fpe_action, nullptr) != 0) {
     MS_LOG(ERROR) << "Failed to set handler for " << strsignal(signal) << ", " << strerror(errno);
     _exit(EXIT_FAILURE);
   }
@@ -545,7 +546,7 @@ std::string CheckIfWorkerExit() {
       siginfo_t sig_info{};
       sig_info.si_pid = 0;
       auto error = waitid(P_PID, pid, &sig_info, WEXITED | WNOHANG | WNOWAIT);
-      std::string msg;
+      std::ostringstream out_stream;
       if (error < 0) {
         continue;
       } else {
@@ -554,23 +555,25 @@ std::string CheckIfWorkerExit() {
         }
         if (sig_info.si_code == CLD_EXITED && sig_info.si_status != EXIT_SUCCESS) {
           // exited unexpected
-          msg = "Dataset worker process " + std::to_string(sig_info.si_pid) + " exited unexpected with exit code " +
-                std::to_string(sig_info.si_status) + ".";
+          out_stream << "DataLoader worker (pid: " << sig_info.si_pid << ") exited unexpected with exit code "
+                     << sig_info.si_status << ".";
         } else if (sig_info.si_code == CLD_KILLED) {
           // killed by signal
-          msg = "Dataset worker process " + std::to_string(sig_info.si_pid) +
-                " was killed by signal: " + std::string(strsignal(sig_info.si_status)) + ".";
+          out_stream << "DataLoader worker (pid: " << sig_info.si_pid
+                     << ") was killed by signal: " << strsignal(sig_info.si_status) << ".";
         } else if (sig_info.si_code == CLD_DUMPED) {
           // core dumped
-          msg = "Dataset worker process " + std::to_string(sig_info.si_pid) +
-                " core dumped: " + std::string(strsignal(sig_info.si_status)) + ".";
-        } else {
-          MS_LOG(INFO) << "Ignore dataset worker process " << pid << " with signal code " << sig_info.si_code;
-          continue;
+          out_stream << "DataLoader worker (pid: " << sig_info.si_pid
+                     << ") core dumped: " << strsignal(sig_info.si_status) << ".";
+          if (sig_info.si_status == SIGBUS) {
+            out_stream
+              << " This might be caused by insufficient shared memory. Please check if '/dev/shm' has enough available "
+                 "space via 'df -h'.";
+          }
         }
       }
       pids.clear();  // Clear the monitoring status of the process group to avoid triggering this again.
-      return msg;
+      return out_stream.str();
     }
   }
 #endif
