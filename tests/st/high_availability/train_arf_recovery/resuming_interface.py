@@ -20,7 +20,8 @@ import mindspore as ms
 from mindspore import ops, nn, context, Tensor
 from mindspore.communication.management import init
 from mindspore.communication._comm_helper import _get_group_map
-from mindspore._c_expression import _rebuild_group, _finalize_comm
+from mindspore._c_expression import _rebuild_group, _finalize_comm, is_reboot_node, set_is_reboot_node, \
+    get_reboot_type, set_reboot_type, check_is_arf, set_is_arf
 
 
 class AllReduceNet(nn.Cell):
@@ -59,6 +60,27 @@ def rebuild_hccl_interface():
     _rebuild_group()
     output2 = net(t1)
     assert output2.asnumpy() == base_value.asnumpy()
+
+    # test basic interface
+    # test reboot node read/write interface
+    is_reboot = is_reboot_node()
+    assert is_reboot is False
+    set_is_reboot_node(True)
+    is_reboot = is_reboot_node()
+    assert is_reboot is True
+    # test reboot type read/write interface
+    reboot_type = get_reboot_type()
+    assert reboot_type == ""
+    set_reboot_type("arf")
+    reboot_type = get_reboot_type()
+    assert reboot_type == "arf"
+
+    # test is_arf read/write interface
+    is_arf = check_is_arf()
+    assert is_arf is False
+    set_is_arf(True)
+    is_arf = check_is_arf()
+    assert is_arf is True
 
 
 rebuild_hccl_interface()
