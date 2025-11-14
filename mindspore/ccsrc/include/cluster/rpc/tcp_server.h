@@ -23,14 +23,14 @@
 #include "include/cluster/rpc/rpc_server_base.h"
 #include "cluster/rpc/tcp/tcp_comm.h"
 #include "utils/ms_utils.h"
-#include "include/backend/visible.h"
+#include "include/cluster/visible.h"
 
 namespace mindspore {
 namespace distributed {
 namespace rpc {
 class TCPComm;
 
-class BACKEND_COMMON_EXPORT TCPServer : public RPCServerBase {
+class CLUSTER_EXPORT TCPServer : public RPCServerBase {
  public:
   explicit TCPServer(bool enable_ssl = false, const ServerPortRange &port_range = {})
       : RPCServerBase(enable_ssl, port_range), tcp_comm_(nullptr) {}

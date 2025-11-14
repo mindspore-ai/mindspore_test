@@ -36,7 +36,7 @@ namespace mindspore {
 namespace distributed {
 namespace cluster {
 constexpr size_t kTcpStoreDefaultTime = 300 * 1000;  // 300 Secends
-class BACKEND_EXPORT TCPStoreClient {
+class CLUSTER_EXPORT TCPStoreClient {
  public:
   explicit TCPStoreClient(const std::string &ip, int64_t port, bool is_master, int64_t timeout = kTcpStoreDefaultTime,
                           int64_t world_size = 1, bool wait_for_workers = true);

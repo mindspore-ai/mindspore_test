@@ -18,7 +18,7 @@
 #define MINDSPORE_CCSRC_RUNTIME_HARDWARE_CPU_MS_COLLECTIVE_NODE_H_
 
 #include <memory>
-#include "cluster/rpc/core/abstract_node.h"
+#include "include/cluster/rpc/abstract_node.h"
 #include "include/cluster/topology/compute_graph_node.h"
 
 namespace mindspore {

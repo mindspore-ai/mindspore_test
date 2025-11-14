@@ -24,7 +24,7 @@
 #include <functional>
 #include "proto/ps.pb.h"
 #include "include/cluster/topology/ps_context.h"
-#include "cluster/rpc/core/abstract_node.h"
+#include "include/cluster/rpc/abstract_node.h"
 
 namespace mindspore {
 namespace fl {
@@ -65,7 +65,7 @@ struct CommunicationGroupInfo {
 // CollectiveOpsImpl is the collective communication API of the server.
 // For now, it implements two AllReduce algorithms: RingAllReduce and BroadcastAllReduce. Elastic AllReduce is also
 // supported for the elastic scaling feature of the server.
-class BACKEND_COMMON_EXPORT CollectiveOpsImpl {
+class CLUSTER_EXPORT CollectiveOpsImpl {
  public:
   static CollectiveOpsImpl &GetInstance() {
     static CollectiveOpsImpl instance;

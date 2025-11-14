@@ -33,7 +33,7 @@
 #include <atomic>
 #include "utils/log_adapter.h"
 #include "cluster/rpc/core/comm_util.h"
-#include "cluster/rpc/core/file_configuration.h"
+#include "include/cluster/rpc/file_configuration.h"
 #include "include/cluster/rpc/constants.h"
 
 namespace mindspore {

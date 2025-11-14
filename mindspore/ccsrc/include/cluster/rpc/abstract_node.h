@@ -35,7 +35,7 @@
 namespace mindspore {
 namespace ps {
 namespace core {
-class BACKEND_COMMON_EXPORT AbstractNode : public Node {
+class CLUSTER_EXPORT AbstractNode : public Node {
  public:
   AbstractNode()
       : heart_beat_thread_(nullptr),

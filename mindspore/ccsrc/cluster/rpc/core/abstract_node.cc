@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "cluster/rpc/core/abstract_node.h"
+#include "include/cluster/rpc/abstract_node.h"
 
 #include "include/utils/common.h"
 

@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-#include "cluster/rpc/core/communicator/tcp_client.h"
-
 #include <arpa/inet.h>
 #include <event2/buffer.h>
 #include <event2/buffer_compat.h>
@@ -31,6 +29,7 @@
 #include <string>
 #include <utility>
 #include "utils/convert_utils_base.h"
+#include "include/cluster/rpc/libevent_tcp_client.h"
 
 namespace mindspore {
 namespace ps {

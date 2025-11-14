@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "cluster/topology/actor_route_table_proxy.h"
+#include "include/cluster/topology/actor_route_table_proxy.h"
 #include <string>
 #include <vector>
 #include "utils/convert_utils_base.h"

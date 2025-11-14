@@ -50,18 +50,13 @@ target_link_options(mindspore_gpu PRIVATE /FORCE:UNRESOLVED)
 endif()
 target_link_libraries(mindspore_gpu PRIVATE mindspore_ms_backend mindspore_core mindspore_ops mindspore_common
     mindspore_hardware_abstract mindspore_profiler mindspore_backend_common mindspore_runtime_utils
-    mindspore_ops_cpu mindspore_cluster)
+    mindspore_ops_cpu)
 target_link_libraries(mindspore_gpu PRIVATE -Wl,--no-as-needed mindspore_pyboost -Wl,--as-needed)
 target_link_libraries(mindspore_gpu PRIVATE -Wl,--whole-archive mindspore_ops_gpu -Wl,--no-whole-archive)
 set_target_properties(mindspore_gpu PROPERTIES INSTALL_RPATH
     ${ORIGIN_PATH}:${ORIGIN_PATH}/gpu:${ORIGIN_PATH}/gpu${CUDA_VERSION}:${ORIGIN_PATH}/../:${CUDA_PATH}/lib64)
 if(ENABLE_CPU)
     target_link_libraries(mindspore_gpu PRIVATE mindspore::dnnl mindspore::mkldnn nnacl)
-    if(NOT WIN32)
-        target_link_libraries(mindspore_gpu PRIVATE mindspore::ssl mindspore::crypto)
-        target_link_libraries(mindspore_gpu PRIVATE mindspore::event mindspore::event_pthreads
-            mindspore::event_openssl -Wl,--no-as-needed mindspore::event_core)
-    endif()
 endif()
 if(ENABLE_GPU)
     message("add gpu lib to mindspore_gpu")

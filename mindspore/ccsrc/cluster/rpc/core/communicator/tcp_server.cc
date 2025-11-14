@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-#include "cluster/rpc/core/communicator/tcp_server.h"
-
 #include <arpa/inet.h>
 #include <event2/buffer.h>
 #include <event2/buffer_compat.h>
@@ -31,6 +29,7 @@
 #include <csignal>
 #include <utility>
 #include "utils/convert_utils_base.h"
+#include "include/cluster/rpc/libevent_tcp_server.h"
 
 namespace mindspore {
 namespace ps {

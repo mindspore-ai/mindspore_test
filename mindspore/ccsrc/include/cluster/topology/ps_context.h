@@ -21,7 +21,7 @@
 #include <string>
 #include <memory>
 #include "include/cluster/rpc/constants.h"
-#include "include/backend/visible.h"
+#include "include/cluster/visible.h"
 #include "ir/tensor.h"
 #include "include/utils/tensor_py.h"
 
@@ -40,7 +40,7 @@ namespace core {
 struct ClusterConfig;
 }  // namespace core
 
-class BACKEND_COMMON_EXPORT PSContext {
+class CLUSTER_EXPORT PSContext {
  public:
   ~PSContext();
   PSContext(PSContext const &) = delete;
