@@ -47,18 +47,18 @@ class AGNewsDataset(SourceDataset, TextBaseDataset):
     Args:
         dataset_dir (str): Path to the root directory that contains the dataset.
         usage (str, optional): Acceptable usages include ``'train'`` , ``'test'`` and ``'all'`` .
-            Default: ``None`` , all samples.
+            Default: ``None`` , all samples will be read.
         num_samples (int, optional): Number of samples (rows) to read. Default: ``None`` ,
             reads the full dataset.
         num_parallel_workers (int, optional): Number of worker threads to read the data.
             Default: ``None`` , will use global default workers(8), it can be set
             by :func:`mindspore.dataset.config.set_num_parallel_workers` .
-        shuffle (Union[bool, Shuffle], optional): Perform reshuffling of the data every epoch.
-            Bool type and Shuffle enum are both supported to pass in.
+        shuffle (Union[bool, Shuffle], optional): Data shuffling mode in each epoch.
+            The bool type or enumeration type can be transferred for specifying.
             Default: ``Shuffle.GLOBAL`` .
             If `shuffle` is ``False``, no shuffling will be performed.
             If `shuffle` is ``True``, it is equivalent to setting `shuffle` to
-            ``mindspore.dataset.Shuffle.GLOBAL`` .
+            ``Shuffle.GLOBAL`` .
             Set the mode of data shuffling by passing in enumeration variables:
 
             - ``Shuffle.GLOBAL``: Shuffle both the files and samples.
@@ -157,18 +157,18 @@ class AmazonReviewDataset(SourceDataset, TextBaseDataset):
             ``'all'`` will read from all 4,000,000 samples.
             For Full dataset, ``'train'`` will read from 3,000,000 train samples,
             ``'test'`` will read from 650,000 test samples,
-            ``'all'`` will read from all 3,650,000 samples. Default: ``None``, all samples.
+            ``'all'`` will read from all 3,650,000 samples. Default: ``None``, all samples will be read.
         num_samples (int, optional): Number of samples (rows) to be read. Default: ``None``,
             reads the full dataset.
         num_parallel_workers (int, optional): Number of worker threads to read the data.
             Default: ``None`` , will use global default workers(8), it can be set
             by :func:`mindspore.dataset.config.set_num_parallel_workers` .
-        shuffle (Union[bool, Shuffle], optional): Perform reshuffling of the data every epoch.
-            Bool type and Shuffle enum are both supported to pass in.
+        shuffle (Union[bool, Shuffle], optional): Data shuffling mode in each epoch.
+            The bool type or enumeration type can be transferred for specifying.
             Default: ``Shuffle.GLOBAL`` .
             If `shuffle` is ``False``, no shuffling will be performed.
             If `shuffle` is ``True``, it is equivalent to setting `shuffle` to
-            ``mindspore.dataset.Shuffle.GLOBAL``.
+            ``Shuffle.GLOBAL``.
             Set the mode of data shuffling by passing in enumeration variables:
 
             - ``Shuffle.GLOBAL`` : Shuffle both the files and samples.
@@ -264,10 +264,10 @@ class CLUEDataset(SourceDataset, TextBaseDataset):
         num_parallel_workers (int, optional): Number of worker threads to read the data.
             Default: ``None`` , will use global default workers(8), it can be set
             by :func:`mindspore.dataset.config.set_num_parallel_workers` .
-        shuffle (Union[bool, Shuffle], optional): Perform reshuffling of the data every epoch.
-            Default: ``Shuffle.GLOBAL`` . Bool type and Shuffle enum are both supported to pass in.
+        shuffle (Union[bool, Shuffle], optional): Data shuffling mode in each epoch.
+            The bool type or enumeration type can be transferred for specifying. Default: ``Shuffle.GLOBAL`` .
             If `shuffle` is ``False``, no shuffling will be performed.
-            If `shuffle` is ``True``, performs global shuffle.
+            If `shuffle` is ``True``, it is equivalent to setting `shuffle` to ``Shuffle.GLOBAL`` .
             There are three levels of shuffling, desired shuffle enum defined by :class:`mindspore.dataset.Shuffle` .
 
             - ``Shuffle.GLOBAL`` : Shuffle both the files and samples, same as setting `shuffle` to ``True``.
