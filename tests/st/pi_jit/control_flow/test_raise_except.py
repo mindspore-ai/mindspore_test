@@ -6,7 +6,7 @@ from mindspore import ops
 import numpy as np
 from tests.mark_utils import arg_mark
 from tests.st.pi_jit.share.utils import match_array
-from tests.st.pi_jit.share.grad import GradOfFirstInput
+from tests.st.pi_jit.share.grad import GradOfFirstInput, compute_grad_of_net_inputs
 import pytest
 
 
@@ -1124,20 +1124,17 @@ def test_with_graph_break_in_block():
 
     # Pynative mode: forward + gradient
     net_pynative = Net12()
+    net_pynative.set_grad()
     pynative_result = net_pynative(x)
-    grad_net = GradOfFirstInput(net_pynative, sens_param=True)
-    grad_net.set_train()
-    output_shape = pynative_result.shape
-    output_grad = Tensor(np.random.randn(*output_shape).astype(np.float32))
-    pynative_grad = grad_net(x, output_grad)
+    output_grad = Tensor(np.random.randn(*pynative_result.shape).astype(np.float32))
+    pynative_grad = compute_grad_of_net_inputs(net_pynative, x, sens=output_grad)
 
     # JIT mode: forward + gradient
     net_jit = Net12()
+    net_jit.set_grad()
     net_jit.construct = jit(net_jit.construct, capture_mode='bytecode')
     jit_result = net_jit(x)
-    jit_grad_net = GradOfFirstInput(net_jit, sens_param=True)
-    jit_grad_net.set_train()
-    jit_grad = jit_grad_net(x, output_grad)
+    jit_grad = compute_grad_of_net_inputs(net_jit, x, sens=output_grad)
 
     # Compare forward results and gradients
     match_array(pynative_result, jit_result)
@@ -1183,20 +1180,17 @@ def test_with_graph_break_in_exit():
 
     # Pynative mode: forward + gradient
     net_pynative = Net13()
+    net_pynative.set_grad()
     pynative_result = net_pynative(x)
-    grad_net = GradOfFirstInput(net_pynative, sens_param=True)
-    grad_net.set_train()
-    output_shape = pynative_result.shape
-    output_grad = Tensor(np.random.randn(*output_shape).astype(np.float32))
-    pynative_grad = grad_net(x, output_grad)
+    output_grad = Tensor(np.random.randn(*pynative_result.shape).astype(np.float32))
+    pynative_grad = compute_grad_of_net_inputs(net_pynative, x, sens=output_grad)
 
     # JIT mode: forward + gradient
     net_jit = Net13()
+    net_jit.set_grad()
     net_jit.construct = jit(net_jit.construct, capture_mode='bytecode')
     jit_result = net_jit(x)
-    jit_grad_net = GradOfFirstInput(net_jit, sens_param=True)
-    jit_grad_net.set_train()
-    jit_grad = jit_grad_net(x, output_grad)
+    jit_grad = compute_grad_of_net_inputs(net_jit, x, sens=output_grad)
 
     # Compare forward results and gradients
     match_array(pynative_result, jit_result)
@@ -1245,20 +1239,17 @@ def test_with_exception_in_block():
 
     # Pynative mode: forward + gradient
     net_pynative = Net14()
+    net_pynative.set_grad()
     pynative_result = net_pynative(x)
-    grad_net = GradOfFirstInput(net_pynative, sens_param=True)
-    grad_net.set_train()
-    output_shape = pynative_result.shape
-    output_grad = Tensor(np.random.randn(*output_shape).astype(np.float32))
-    pynative_grad = grad_net(x, output_grad)
+    output_grad = Tensor(np.random.randn(*pynative_result.shape).astype(np.float32))
+    pynative_grad = compute_grad_of_net_inputs(net_pynative, x, sens=output_grad)
 
     # JIT mode: forward + gradient
     net_jit = Net14()
+    net_jit.set_grad()
     net_jit.construct = jit(net_jit.construct, capture_mode='bytecode')
     jit_result = net_jit(x)
-    jit_grad_net = GradOfFirstInput(net_jit, sens_param=True)
-    jit_grad_net.set_train()
-    jit_grad = jit_grad_net(x, output_grad)
+    jit_grad = compute_grad_of_net_inputs(net_jit, x, sens=output_grad)
 
     # Compare forward results and gradients
     match_array(pynative_result, jit_result)
