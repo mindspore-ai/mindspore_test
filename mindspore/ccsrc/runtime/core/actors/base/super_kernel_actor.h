@@ -115,8 +115,8 @@ class SuperKernelActor : public DebugAwareActor {
     const {
     return kernel_input_to_graph_input_indices_;
   }
-  const mindspore::HashMap<AnfNode *, std::vector<std::pair<size_t, std::vector<size_t>>>>
-    &kernel_input_to_actor_output_indices() const {
+  const mindspore::HashMap<AnfNode *, std::vector<std::pair<size_t, std::vector<size_t>>>> &
+  kernel_input_to_actor_output_indices() const {
     return kernel_input_to_actor_output_indices_;
   }
   const std::set<std::pair<size_t, ParameterInfo>> &input_params_no_user() const { return input_params_no_user_; }
@@ -308,6 +308,7 @@ class SuperKernelActor : public DebugAwareActor {
 
   static std::vector<std::pair<size_t, void *>> streams_;
   static std::vector<DeviceEventPtr> events_;
+  static std::vector<DeviceEventPtr> events_to_default_stream_;
   static std::vector<AsyncRQueuePtr> queues_;
 
   bool enable_infer_boost_{false};
