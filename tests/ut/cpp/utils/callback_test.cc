@@ -18,7 +18,7 @@
 #include "pybind11/pybind11.h"
 #include "include/utils/callbacks.h"
 #include "common/common_test.h"
-#include "frontend/jit/ps/executor/graph_executor_py.h"
+#include "include/frontend/jit/ps/executor/graph_executor_py.h"
 #include "frontend/jit/ps/pipeline.h"
 #include "include/utils/python_adapter.h"
 #include "mindspore/ccsrc/backend/ge_backend/graph_ir/df_graph_manager.h"

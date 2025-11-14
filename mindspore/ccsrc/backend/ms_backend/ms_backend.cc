@@ -26,7 +26,7 @@
 #include "include/utils/parallel_context.h"
 #include "backend/common/kernel_graph/session_factory.h"
 #include "include/backend/optimizer/helper.h"
-#include "frontend/jit/ps/action.h"
+#include "include/frontend/jit/ps/action_interface.h"
 #include "frontend/jit/ps/parse/data_converter.h"
 #include "backend/common/kernel_graph/jit_call_graph.h"
 #include "ir/anf.h"

@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CCSRC_FRONTEND_JIT_PS_EXECUTOR_JIT_EXECUTOR_PY_H_
-#define MINDSPORE_CCSRC_FRONTEND_JIT_PS_EXECUTOR_JIT_EXECUTOR_PY_H_
+#ifndef MINDSPORE_CCSRC_INCLUDE_FRONTEND_JIT_PS_EXECUTOR_JIT_EXECUTOR_PY_H_
+#define MINDSPORE_CCSRC_INCLUDE_FRONTEND_JIT_PS_EXECUTOR_JIT_EXECUTOR_PY_H_
 
 #include <string>
 #include <memory>
 
-#include "frontend/jit/ps/executor/executor_py.h"
+#include "include/frontend/jit/ps/executor/executor_py.h"
 #include "include/utils/visible.h"
 
 namespace mindspore {
@@ -62,8 +62,6 @@ class FRONTEND_EXPORT JitExecutorPy : public ExecutorPy {
   static std::mutex instance_lock_;
 };
 using JitExecutorPyPtr = std::shared_ptr<JitExecutorPy>;
-
-FRONTEND_EXPORT pipeline::ExecutorPyPtr GetExecutor(const std::string &phase = "");
 }  // namespace pipeline
 }  // namespace mindspore
-#endif  // MINDSPORE_CCSRC_FRONTEND_JIT_PS_EXECUTOR_JIT_EXECUTOR_PY_H_
+#endif  // MINDSPORE_CCSRC_INCLUDE_FRONTEND_JIT_PS_EXECUTOR_JIT_EXECUTOR_PY_H_

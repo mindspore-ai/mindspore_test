@@ -26,13 +26,14 @@
 #include "frontend/optimizer/ad/grad.h"
 #include "frontend/optimizer/environ_conversion.h"
 #include "frontend/optimizer/fallback_rewriter.h"
+#include "include/frontend/jit/ps/pass_interface.h"
+#include "include/frontend/jit/ps/resource_interface.h"
+#include "include/frontend/jit/ps/executor/jit_executor_py.h"
 #include "include/backend/optimizer/helper.h"
 #include "include/utils/convert_utils_py.h"
 #include "include/utils/tensor_py.h"
 #include "include/utils/pynative/common_utils.h"
-#include "frontend/jit/ps/action.h"
 #include "frontend/jit/ps/debug/trace.h"
-#include "frontend/jit/ps/executor/jit_executor_py.h"
 #include "frontend/jit/ps/parse/data_converter.h"
 #include "frontend/jit/ps/pass.h"
 #include "frontend/jit/ps/pipeline.h"
@@ -780,7 +781,7 @@ py::object GradExecutor::RunGradFunc(const autograd::GradAttr &grad_attr, const 
 void GradExecutor::ClearGlobalRes() const {
   abstract::AnalysisContext::ClearContext();
   parse::data_converter::ClearObjectCache();
-  parse::Parser::CleanParserResource();
+  pipeline::CleanParserResource();
   trace::ClearTraceStack();
   ad::CleanRes();
   pipeline::ReclaimOptimizer();

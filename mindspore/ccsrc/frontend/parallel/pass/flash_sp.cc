@@ -32,7 +32,7 @@
 #include "frontend/parallel/pass/flash_sp.h"
 #include "frontend/parallel/step_parallel_utils.h"
 #include "frontend/parallel/tensor_layout/tensor_info.h"
-#include "frontend/optimizer/optimizer.h"
+#include "include/frontend/optimizer/optimizer.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/backend/optimizer/helper.h"
 #include "mindspore/ccsrc/utils/ir_dump/anf_ir_dump.h"

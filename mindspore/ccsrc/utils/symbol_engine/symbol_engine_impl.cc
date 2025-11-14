@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "mindspore/ccsrc/utils/symbol_engine/symbol_engine_impl.h"
+#include "mindspore/ccsrc/include/utils/symbol_engine/symbol_engine_impl.h"
 #include <algorithm>
 #include <ostream>
 #include "ir/anf.h"
@@ -677,6 +677,35 @@ void SymbolEngineImpl::GetAllNodes(const FuncGraphPtr &func_graph) {
       (void)fg_cnodes_[node->func_graph().get()].emplace_back(node);
     }
   }
+}
+
+AbstractBasePtr CloneAbstractIfSymbolExists(const AbstractBasePtr &abs) {
+  if (abs == nullptr) {
+    return nullptr;
+  }
+  if (abs->GetSymbolicShape() == nullptr && abs->GetSymbolicValue() == nullptr) {
+    return abs;
+  }
+  // some abstract does not support clone
+  if (abs->isa<abstract::AbstractFuncUnion>()) {
+    return abs;
+  }
+  try {
+    MS_LOG_TRY_CATCH_SCOPE;
+    auto new_abs = abs->Clone();
+    MS_EXCEPTION_IF_NULL(new_abs);
+    new_abs->SetSymbolicShape(nullptr);
+    new_abs->SetSymbolicValue(nullptr);
+    return new_abs;
+  } catch (std::exception &e) {
+    if (IS_OUTPUT_ON(MsLogLevel::kDebug)) {
+      std::string sym_shape = abs->GetSymbolicShape() == nullptr ? "" : abs->GetSymbolicShape()->ToString();
+      std::string sym_value = abs->GetSymbolicValue() == nullptr ? "" : abs->GetSymbolicValue()->ToString();
+      MS_LOG(DEBUG) << "The abstract has symbol (S:" << sym_shape << ", V:" << sym_value
+                    << ") but cannot be cloned. abstract: " << abs->ToString() << ", msg:" << e.what();
+    }
+  }
+  return abs;
 }
 }  // namespace symshape
 }  // namespace mindspore

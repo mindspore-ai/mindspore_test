@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "frontend/optimizer/optimizer.h"
+#include "include/frontend/optimizer/optimizer.h"
 
 #include <algorithm>
 #include <functional>
@@ -33,6 +33,7 @@
 #include "frontend/jit/ps/pass_config.h"
 #include "utils/ms_context.h"
 #include "ir/graph_utils.h"
+#include "include/frontend/jit/ps/action_interface.h"
 
 namespace mindspore {
 namespace opt {

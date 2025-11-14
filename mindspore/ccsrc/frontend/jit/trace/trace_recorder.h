@@ -26,7 +26,7 @@
 #include <utility>
 
 #include "pybind11/pybind11.h"
-#include "frontend/operator/primitive_py.h"
+#include "include/frontend/operator/primitive_py.h"
 #include "include/utils/visible.h"
 #include "ir/func_graph.h"
 #include "ir/anf.h"
@@ -34,17 +34,7 @@
 
 namespace mindspore {
 namespace trace {
-FRONTEND_EXPORT void Capture(const py::args &args, py::object *res);
-FRONTEND_EXPORT void Capture(const py::list &args, const PrimitivePtr &prim, py::object *res);
-FRONTEND_EXPORT void Capture(const std::vector<py::object> &args_vec, const PrimitivePtr &prim, py::object *res);
-FRONTEND_EXPORT void CapturePy(PyObject *args, PyObject **res);
-FRONTEND_EXPORT void CapturePy(PyObject *args, const PrimitivePtr &prim, PyObject **res);
-FRONTEND_EXPORT void CapturePy(const std::vector<PyObject *> &args_vec, const PrimitivePtr &prim, PyObject **res);
-
-FRONTEND_EXPORT void CaptureResolveOperation(const py::tuple &args, const std::string &named_primitive,
-                                             py::object *res);
 py::object CaptureRun(const py::args &args, const py::object &res, const py::object &prim_py);
-FRONTEND_EXPORT bool IsTracing();
 py::object DefaultOutput();
 bool Compiled();
 
@@ -110,8 +100,6 @@ class TraceRecorder {
   std::stack<FuncGraphPtr> graph_stack_;
   std::unordered_map<std::string, AnfNodePtr> py_obj_node_map_;  // The map from py::object id() to AnfNode.
 };
-
-FRONTEND_EXPORT void RegTraceRecorderPy(const py::module *m);
 }  // namespace trace
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_FRONTEND_JIT_TRACE_RECORDER_H_

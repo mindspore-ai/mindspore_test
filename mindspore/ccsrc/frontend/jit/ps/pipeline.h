@@ -93,7 +93,6 @@ FRONTEND_EXPORT void CheckArgsValid(const py::object &source, const py::tuple &a
 FRONTEND_EXPORT void FinalizeCluster();
 
 bool IsPhaseExport(const std::string &phase);
-FRONTEND_EXPORT py::object BaseRefToPyDataWithUserData(const BaseRef &value, const AbstractBasePtr &abs);
 void SetLoopCount(const ResourcePtr &resource);
 void ResetId(const ResourcePtr &resource);
 #ifdef ENABLE_DUMP_IR

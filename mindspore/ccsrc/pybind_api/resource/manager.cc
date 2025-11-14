@@ -19,10 +19,12 @@
 #include <memory>
 #include <map>
 
-#include "frontend/jit/ps/executor/executor_py.h"
-#include "frontend/jit/ps/executor/graph_executor_py.h"
+#include "include/frontend/jit/ps/pass_interface.h"
+#include "include/frontend/jit/ps/resource_interface.h"
+#include "include/frontend/jit/ps/executor/executor_py.h"
+#include "include/frontend/jit/ps/executor/graph_executor_py.h"
 #include "frontend/jit/ps/pass.h"
-#include "frontend/jit/ps/executor/jit_executor_py.h"
+#include "include/frontend/jit/ps/executor/jit_executor_py.h"
 #include "frontend/jit/ps/parse/data_converter.h"
 #include "frontend/optimizer/ad/dfunctor.h"
 #include "frontend/optimizer/ad/prim_bprop_optimizer.h"
@@ -60,7 +62,6 @@
 #include "include/runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/graph_kernel_builder_manager.h"
 #include "include/runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel_info.h"
 #include "include/runtime/hardware_abstract/data_queue/data_queue_mgr.h"
-#include "frontend/jit/ps/pass_config.h"
 
 #if defined(__linux__) && defined(WITH_BACKEND)
 #include "include/cluster/topology/cluster_context.h"
@@ -81,13 +82,13 @@ void MemoryRecycle() {
   pipeline::ReclaimOptimizer();
   ad::g_k_prims.clear();
   ad::PrimBpropOptimizer::GetPrimBpropOptimizerInst().Clear();
-  abstract::AnalysisResultCacheMgr::GetInstance().Clear();
+  pipeline::ClearAnalysisResultCacheMgr();
   abstract::AnalysisContext::ClearContext();
   pipeline::CleanCache();
   // clean static variable to prevent from crash. As static variable is released after
   // Python threads is released.
   parse::data_converter::ClearObjectCache();
-  parse::Parser::CleanParserResource();
+  pipeline::CleanParserResource();
   trace::ClearTraceStack();
   pynative::PyNativeExecutor::GetInstance()->ClearRes();
   ConfigManager::GetInstance().ResetConfig();
@@ -115,15 +116,14 @@ void ClearResPart1() {
   runtime::GraphScheduler::GetInstance().Clear();
   MemTrackerInstanceClear();
   runtime::ProfilerAnalyzer::GetInstance().Clear();
-  opt::PassConfigure::Instance().Clear();
+  pipeline::ClearPassConfigure();
 
   PrimitivePy::ClearHookRes();
   ad::g_k_prims.clear();
   ad::PrimBpropOptimizer::GetPrimBpropOptimizerInst().Clear();
 
   abstract::ClearPrimEvaluatorMap();
-  pipeline::GetMethodMap().clear();
-  pipeline::GetAttrMap().clear();
+  pipeline::ClearAttrAndMethodMap();
   pipeline::GraphExecutorPy::ClearRes();
   pipeline::JitExecutorPy::ClearRes();
   pipeline::ReclaimOptimizer();
@@ -156,7 +156,7 @@ void ClearResPart2() {
   MS_LOG(INFO) << "End clear device context.";
 
   MS_LOG(INFO) << "Start clear AnalysisResultCacheMgr...";
-  abstract::AnalysisResultCacheMgr::GetInstance().Clear();
+  pipeline::ClearAnalysisResultCacheMgr();
   MS_LOG(INFO) << "End clear AnalysisResultCacheMgr.";
 
   MS_LOG(INFO) << "Start clear AnalysisContext...";
@@ -164,7 +164,7 @@ void ClearResPart2() {
   MS_LOG(INFO) << "End clear AnalysisContext...";
 
   MS_LOG(INFO) << "Start clear AnalysisSchedule...";
-  abstract::AnalysisSchedule::GetInstance().Stop();
+  pipeline::ClearAnalysisSchedule();
   MS_LOG(INFO) << "End clear AnalysisSchedule...";
 #ifdef ENABLE_DEBUGGER
   constexpr char kReset[] = "DebuggerReset";
@@ -186,7 +186,7 @@ void ClearResPart3() {
   MS_LOG(INFO) << "End clear ClearObjectCache...";
 
   MS_LOG(INFO) << "Start clear Parser...";
-  parse::Parser::CleanParserResource();
+  pipeline::CleanParserResource();
   MS_LOG(INFO) << "End clear Parser...";
 
   MS_LOG(INFO) << "Start ClearTraceStack...";
@@ -226,7 +226,7 @@ void ClearSingleton() {
   device::DataQueueMgr::GetInstance().Clear();
   session::SessionFactory::Get().Clear();
   ExecuteOrderTracker::GetInstance().Clear();
-  OpPrimPyRegister::GetInstance().Clear();
+  pipeline::ClearOpPrimPyRegister();
   constexpr char kFinalize[] = "DumpJsonParserFinalize";
   static auto finalize_callback = callback::CommonCallback::GetInstance().GetCallback<void>(kFinalize);
   if (finalize_callback) {

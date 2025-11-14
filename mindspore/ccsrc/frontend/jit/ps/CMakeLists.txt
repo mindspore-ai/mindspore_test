@@ -3,6 +3,7 @@ file(GLOB_RECURSE _PIPELINE_SRC_FILES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
     "pipeline_interface.cc"
     "executor/*.cc"
     "resource.cc"
+    "resource_interface.cc"
     "pass_config.cc"
     "pass.cc"
     "action.cc"

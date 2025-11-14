@@ -35,7 +35,7 @@
 #include "include/utils/pyobj_manager.h"
 #include "include/runtime/pipeline/pipeline.h"
 #include "pynative/utils/runtime/op_executor.h"
-#include "frontend/jit/trace/trace_recorder.h"
+#include "include/frontend/jit/trace/trace_recorder_interface.h"
 #include "pybind_api/ir/tensor/storage/storage_py.h"
 #include "pybind_api/pynative/backward_node_py.h"
 

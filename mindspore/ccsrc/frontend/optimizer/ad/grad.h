@@ -20,7 +20,7 @@
 #include <vector>
 #include "ir/anf.h"
 #include "ir/meta_func_graph.h"
-#include "frontend/optimizer/optimizer.h"
+#include "include/frontend/optimizer/optimizer.h"
 
 namespace mindspore {
 namespace ad {

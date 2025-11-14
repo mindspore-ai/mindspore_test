@@ -33,6 +33,7 @@
 #include "include/utils/tensor_py.h"
 #include "utils/flags.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
+#include "include/frontend/operator/primitive_py.h"
 namespace mindspore {
 namespace {
 

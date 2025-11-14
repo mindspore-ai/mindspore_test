@@ -23,7 +23,7 @@
 #include "ir/anf.h"
 #include "frontend/operator/ops.h"
 #include "frontend/optimizer/cse_pass.h"
-#include "frontend/optimizer/optimizer.h"
+#include "include/frontend/optimizer/optimizer.h"
 #include "frontend/optimizer/irpass.h"
 #include "frontend/optimizer/irpass/gradient_eliminate.h"
 #include "frontend/optimizer/py_interpret_to_execute.h"

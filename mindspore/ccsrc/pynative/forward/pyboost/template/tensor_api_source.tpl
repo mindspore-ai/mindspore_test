@@ -23,7 +23,7 @@
 #include "pynative/forward/pyboost/auto_generate/pyboost_api.h"
 #include "pynative/forward/pyboost/auto_generate/pyboost_core.h"
 #include "pynative/utils/pynative_utils.h"
-#include "frontend/jit/trace/trace_recorder.h"
+#include "include/frontend/jit/trace/trace_recorder_interface.h"
 ${ops_inc}
 
 namespace mindspore {

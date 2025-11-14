@@ -33,7 +33,7 @@
 #include "utils/trace_info.h"
 #include "frontend/jit/ps/static_analysis/stack_frame.h"
 #include "frontend/jit/ps/static_analysis/async_eval_result.h"
-#include "frontend/jit/ps/executor/graph_executor_py.h"
+#include "include/frontend/jit/ps/executor/graph_executor_py.h"
 #include "frontend/jit/ps/pipeline.h"
 #include "frontend/expander/bprop/bprop_meta_func_graph.h"
 #include "frontend/operator/composite/unpack_call.h"

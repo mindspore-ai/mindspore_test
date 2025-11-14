@@ -39,8 +39,6 @@ bool VmOptimizeAction(const ResourcePtr &resource);
 bool OrderEnforceAction(const ResourcePtr &resource);
 bool GetJitBpropGraph(const ResourcePtr &resource);
 bool OptAfterJitGrad(const ResourcePtr &resource);
-FRONTEND_EXPORT bool TaskEmitAction(const ResourcePtr &resource);
-FRONTEND_EXPORT bool ExecuteAction(const ResourcePtr &resource);
 bool OptimizeAction(const ResourcePtr &resource, const std::vector<PassItem> &passes);
 bool RewriterAfterOptAPassAfterJitBprop(const ResourcePtr &resource);
 
@@ -60,8 +58,6 @@ abstract::AnalysisResult AbstractAnalyzeWithResourceClean(const ValuePtr &value,
 
 FuncGraphPtr ProgramSpecialize(const abstract::AnalysisEnginePtr &engine, const FuncGraphPtr &func_graph,
                                const abstract::AnalysisContextPtr &context);
-FRONTEND_EXPORT FuncGraphPtr Renormalize(const ResourcePtr &resource, const FuncGraphPtr &func_graph,
-                                         const abstract::AbstractBasePtrList &args_abs);
 void SetRunMode(const FuncGraphPtr &func_graph, std::string *kbk_reason = nullptr);
 bool IsDynamicShapeGraph(const FuncGraphPtr &func_graph);
 AbstractBasePtr GetDefaultValueAbstract(const ParameterPtr &param);

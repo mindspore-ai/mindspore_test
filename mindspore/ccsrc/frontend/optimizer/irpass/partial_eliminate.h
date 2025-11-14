@@ -28,7 +28,7 @@
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "ir/func_graph_cloner.h"
 #include "frontend/optimizer/irpass.h"
-#include "frontend/optimizer/optimizer.h"
+#include "include/frontend/optimizer/optimizer.h"
 #include "frontend/optimizer/anf_visitor.h"
 #include "frontend/operator/ops.h"
 

@@ -22,7 +22,7 @@
 #include <utility>
 #include "include/utils/utils.h"
 #include "include/utils/anfalgo.h"
-#include "frontend/optimizer/optimizer.h"
+#include "include/frontend/optimizer/optimizer.h"
 #include "frontend/parallel/step_parallel.h"
 #include "frontend/parallel/step_parallel_utils.h"
 #include "frontend/parallel/graph_util/generate_graph.h"

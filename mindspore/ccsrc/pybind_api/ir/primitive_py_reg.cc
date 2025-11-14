@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "frontend/operator/primitive_py.h"
+#include "include/frontend/operator/primitive_py.h"
 #include "frontend/jit/ps/parse/parse_flags.h"
 #include "pybind11/stl.h"
 

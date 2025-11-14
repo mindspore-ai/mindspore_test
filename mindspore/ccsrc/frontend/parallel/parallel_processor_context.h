@@ -24,7 +24,7 @@
 
 #include "include/utils/parallel_context.h"
 #include "frontend/operator/ops.h"
-#include "frontend/optimizer/optimizer.h"
+#include "include/frontend/optimizer/optimizer.h"
 #include "frontend/parallel/parallel_processor_context.h"
 #include "frontend/parallel/device_manager.h"
 #include "frontend/parallel/pipeline_transformer/pipeline_interleave.h"

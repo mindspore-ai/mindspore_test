@@ -28,7 +28,7 @@
 
 #include "base/base.h"
 #include "abstract/ops/primitive_infer_map.h"
-#include "frontend/operator/primitive_py.h"
+#include "include/frontend/operator/primitive_py.h"
 #include "include/utils/convert_utils_py.h"
 #include "ir/anf.h"
 #include "ir/tensor_new.h"

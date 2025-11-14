@@ -24,7 +24,7 @@
 #include "mindspore/ccsrc/utils/ir_dump/draw.h"
 #include "include/utils/convert_utils.h"
 
-#include "frontend/optimizer/optimizer.h"
+#include "include/frontend/optimizer/optimizer.h"
 #include "frontend/optimizer/opt.h"
 #include "frontend/optimizer/irpass.h"
 #include "frontend/jit/ps/action.h"

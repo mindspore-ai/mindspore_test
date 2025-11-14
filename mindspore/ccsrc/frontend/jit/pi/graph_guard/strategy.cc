@@ -21,9 +21,9 @@
 #include <map>
 #include <set>
 #include "pybind11/pybind11.h"
-#include "frontend/operator/primitive_py.h"
+#include "include/frontend/operator/primitive_py.h"
 #include "include/utils/convert_utils_py.h"
-#include "frontend/jit/ps/executor/jit_executor_py.h"
+#include "include/frontend/jit/ps/executor/jit_executor_py.h"
 #include "frontend/jit/pi/utils/utils.h"
 #include "frontend/jit/pi/python_adapter/pydef.h"
 #include "frontend/jit/pi/utils/opcode_declare.h"

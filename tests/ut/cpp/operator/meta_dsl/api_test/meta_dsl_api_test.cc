@@ -24,7 +24,7 @@
 #include "frontend/jit/ps/static_analysis/prim.h"
 #include "frontend/jit/ps/static_analysis/static_analysis.h"
 #include "frontend/optimizer/ad/grad.h"
-#include "frontend/optimizer/optimizer.h"
+#include "include/frontend/optimizer/optimizer.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "tests/ut/cpp/operator/meta_dsl/api_test/api_define.h"

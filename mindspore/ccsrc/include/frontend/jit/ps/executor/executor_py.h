@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CCSRC_FRONTEND_JIT_PS_EXECUTOR_EXECUTOR_PY_H_
-#define MINDSPORE_CCSRC_FRONTEND_JIT_PS_EXECUTOR_EXECUTOR_PY_H_
+#ifndef MINDSPORE_CCSRC_INCLUDE_FRONTEND_JIT_PS_EXECUTOR_EXECUTOR_PY_H_
+#define MINDSPORE_CCSRC_INCLUDE_FRONTEND_JIT_PS_EXECUTOR_EXECUTOR_PY_H_
 
 #include <vector>
 #include <utility>
@@ -122,8 +122,10 @@ class FRONTEND_EXPORT ExecutorPy : public std::enable_shared_from_this<ExecutorP
 };
 using ExecutorPyPtr = std::shared_ptr<ExecutorPy>;
 
+FRONTEND_EXPORT ExecutorPyPtr GetExecutor(const std::string &phase = "");
+
 FRONTEND_EXPORT void CleanCache();
 
 }  // namespace pipeline
 }  // namespace mindspore
-#endif  // MINDSPORE_CCSRC_FRONTEND_JIT_PS_EXECUTOR_EXECUTOR_PY_H_
+#endif  // MINDSPORE_CCSRC_INCLUDE_FRONTEND_JIT_PS_EXECUTOR_EXECUTOR_PY_H_

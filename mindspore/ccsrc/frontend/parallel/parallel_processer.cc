@@ -33,7 +33,7 @@
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "mindspore/ops/op_def/arithmetic_ops.h"
 #include "frontend/operator/ops.h"
-#include "frontend/optimizer/optimizer.h"
+#include "include/frontend/optimizer/optimizer.h"
 #include "frontend/parallel/auto_parallel/graph_costmodel.h"
 #include "frontend/parallel/parallel_processor_context.h"
 #include "frontend/parallel/device_manager.h"

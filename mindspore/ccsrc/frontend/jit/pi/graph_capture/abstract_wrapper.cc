@@ -29,7 +29,7 @@
 #include "frontend/jit/pi/pi_jit_config.h"
 #include "frontend/jit/pi/external.h"
 #include "include/utils/tensor_py.h"
-#include "frontend/operator/primitive_py.h"
+#include "include/frontend/operator/primitive_py.h"
 #include "frontend/operator/composite/composite.h"
 #include "frontend/jit/pi/graph_build/parameter_manager.h"
 

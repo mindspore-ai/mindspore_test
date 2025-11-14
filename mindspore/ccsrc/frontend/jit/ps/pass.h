@@ -52,7 +52,6 @@ bool ParallelVirtualDatasetPass(const ResourcePtr &resource);
 bool EliminateUnusedParamsPass(const ResourcePtr &resource);
 bool ValidatePass(const ResourcePtr &resource);
 bool GradPartialTransformPass(const ResourcePtr &resource);
-FRONTEND_EXPORT void ReclaimOptimizer();
 bool PynativeOptPass(const ResourcePtr &resource);
 bool OptAfterJitGradPass(const ResourcePtr &resource);
 bool FRONTEND_EXPORT AutoMonadElimOptPass(const FuncGraphPtr &func_graph);
@@ -60,7 +59,6 @@ FuncGraphPtr PrimBpOptPassStep1(const opt::irpass::OptimizeIRPassLib &irpass, co
 FuncGraphPtr PrimBpOptPassStep2(const opt::irpass::OptimizeIRPassLib &irpass, const ResourcePtr &resource,
                                 const std::vector<bool> &need_grad_flags);
 FuncGraphPtr JitBpropGraphPass(const ResourcePtr &resource, bool need_renormalize);
-FRONTEND_EXPORT FuncGraphPtr HighGradBpropGraphPass(const ResourcePtr &resource);
 FuncGraphPtr FinalBpropGraphPass(const ResourcePtr &resource, bool has_control_flow);
 void UpdateArgsSpec(const FuncGraphPtr &func_graph, const ResourcePtr &resource);
 bool RewriterBeforeOptAPass(const ResourcePtr &resource);

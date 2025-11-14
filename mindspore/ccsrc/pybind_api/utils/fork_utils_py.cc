@@ -26,7 +26,7 @@
 #include "pynative/utils/runtime/op_executor.h"
 #include "include/runtime/core/graph_executor/pipeline/runtime_pipeline.h"
 #include "include/runtime/core/graph_scheduler/base/graph_scheduler.h"
-#include "frontend/jit/ps/executor/graph_executor_py.h"
+#include "include/frontend/jit/ps/executor/graph_executor_py.h"
 #include "frontend/jit/ps/pipeline.h"
 #include "pynative/utils/pynative_execute.h"
 #include "include/utils/thread_pool.h"

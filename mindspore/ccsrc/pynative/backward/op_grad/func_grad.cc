@@ -35,7 +35,7 @@
 #include "include/runtime/pipeline/pipeline.h"
 #include "pynative/backward/hook/custom_function.h"
 #include "pynative/backward/grad_utils.h"
-#include "frontend/operator/primitive_py.h"
+#include "include/frontend/operator/primitive_py.h"
 #include "frontend/optimizer/ad/pynative_jit_grad.h"
 #include "pynative/backward/hook/primitive_hook.h"
 #include "pynative/backward/hook/function_py.h"

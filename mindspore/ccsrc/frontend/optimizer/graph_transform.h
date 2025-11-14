@@ -24,7 +24,7 @@
 
 #include "utils/hash_map.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
-#include "frontend/optimizer/optimizer.h"
+#include "include/frontend/optimizer/optimizer.h"
 #include "ir/func_graph_cloner.h"
 
 namespace mindspore {

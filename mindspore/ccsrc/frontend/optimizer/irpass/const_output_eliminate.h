@@ -21,7 +21,7 @@
 #include <vector>
 #include "ir/anf.h"
 #include "ir/tensor_new.h"
-#include "frontend/optimizer/optimizer.h"
+#include "include/frontend/optimizer/optimizer.h"
 #include "frontend/optimizer/anf_visitor.h"
 #include "frontend/optimizer/irpass.h"
 #include "mindspore/ops/op_def/array_ops.h"

@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CCSRC_FRONTEND_JIT_PS_EXECUTOR_GRAPH_EXECUTOR_PY_H_
-#define MINDSPORE_CCSRC_FRONTEND_JIT_PS_EXECUTOR_GRAPH_EXECUTOR_PY_H_
+#ifndef MINDSPORE_CCSRC_INCLUDE_FRONTEND_JIT_PS_EXECUTOR_GRAPH_EXECUTOR_PY_H_
+#define MINDSPORE_CCSRC_INCLUDE_FRONTEND_JIT_PS_EXECUTOR_GRAPH_EXECUTOR_PY_H_
 
 #include <vector>
 #include <utility>
@@ -28,7 +28,7 @@
 
 #include "pybind11/pybind11.h"
 
-#include "frontend/jit/ps/executor/executor_py.h"
+#include "include/frontend/jit/ps/executor/executor_py.h"
 
 #include "base/base.h"
 #include "ir/tensor.h"
@@ -111,4 +111,4 @@ class FRONTEND_EXPORT GraphExecutorPy : public ExecutorPy {
 using GraphExecutorPyPtr = std::shared_ptr<GraphExecutorPy>;
 }  // namespace pipeline
 }  // namespace mindspore
-#endif  // MINDSPORE_CCSRC_FRONTEND_JIT_PS_EXECUTOR_GRAPH_EXECUTOR_PY_H_
+#endif  // MINDSPORE_CCSRC_INCLUDE_FRONTEND_JIT_PS_EXECUTOR_GRAPH_EXECUTOR_PY_H_

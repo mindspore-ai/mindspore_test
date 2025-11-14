@@ -27,22 +27,28 @@
 #include "pybind11/pybind11.h"
 #include "ir/func_graph_cloner.h"
 #include "utils/ms_context.h"
+#include "tools/profiler/profiling.h"
+#include "tools/profiler/profiler.h"
 #include "frontend/jit/ps/action.h"
 #include "frontend/jit/ps/pass.h"
 #include "frontend/jit/ps/fallback.h"
 #include "frontend/optimizer/irpass.h"
-#include "frontend/optimizer/optimizer.h"
+#include "include/frontend/optimizer/optimizer.h"
 #include "frontend/parallel/step_parallel_utils.h"
 #include "frontend/parallel/step_auto_parallel.h"
 #include "frontend/parallel/step_parallel.h"
 #include "frontend/parallel/allreduce_fusion/step_allreduce_fusion.h"
 #include "frontend/parallel/pass/handle_group_info.h"
 #include "frontend/parallel/step_assigned_parallel.h"
+#include "include/utils/fallback.h"
 #include "include/utils/tensor_py.h"
 #include "include/utils/parallel_context.h"
 #include "include/utils/config_manager.h"
+#include "include/frontend/jit/ps/action_interface.h"
 #include "mindspore/ccsrc/utils/ir_dump/anf_ir_dump.h"
 #include "mindspore/ccsrc/utils/ir_dump/dump_proto.h"
+
+#include "frontend/operator/py_execute_py.h"  // Only include one-time in the whole project.
 
 namespace mindspore {
 namespace pipeline {
@@ -68,6 +74,63 @@ py::object GetSelfFromArgs(const py::object &args) {
     return py::object();
   }
   return first_arg;
+}
+
+kernel::PyExecuteOutputUserDataPtr GetUserDataFromAddress(const py::object &res) {
+  const auto allow_fallback_runtime = (fallback::GetJitSyntaxLevel() >= kCompatible);
+  if (!allow_fallback_runtime) {
+    return nullptr;
+  }
+
+  if (tensor::IsTensorPy(res)) {
+    auto res_tensor = tensor::ConvertToTensor(res);
+    MS_EXCEPTION_IF_NULL(res_tensor);
+    if (res_tensor->has_user_data(kernel::PyExecuteOutputUserData::key)) {
+      return res_tensor->GetUserData().get<kernel::PyExecuteOutputUserData>(kernel::PyExecuteOutputUserData::key);
+    }
+  }
+  return nullptr;
+}
+
+template <typename T>
+py::object GetVectorRefPyDataWithAbstract(const VectorRef &value_list, const abstract::AbstractSequencePtr &seq_abs) {
+  auto value_size = value_list.size();
+  auto ret = T(value_size);
+
+  const auto allow_fallback_runtime = (fallback::GetJitSyntaxLevel() >= kCompatible);
+  size_t ref_idx = 0;
+  for (size_t i = 0; i < seq_abs->size(); ++i) {
+    auto elem_abs = seq_abs->elements()[i];
+    if (elem_abs->isa<abstract::AbstractNone>() && !allow_fallback_runtime) {
+      continue;
+    }
+    ret[ref_idx] = BaseRefToPyDataWithUserData(value_list[ref_idx], elem_abs);
+    ref_idx++;
+  }
+  if (ref_idx != value_size) {
+    MS_LOG(EXCEPTION) << "The size of elements (excluding None) should be equal to " << value_size << ", but got "
+                      << ref_idx;
+  }
+  return ret;
+}
+
+py::object GetVectorRefPyData(const VectorRef &value_list, const AbstractBasePtr &abs) {
+  if (abs == nullptr || abs->isa<abstract::AbstractCSRTensor>() || abs->isa<abstract::AbstractCOOTensor>() ||
+      abs->isa<abstract::AbstractAny>()) {
+    return BaseRefToPyData(value_list, abs);
+  }
+  // Need to consider AbstractAny with vector ref scene later.
+  if (!abs->isa<abstract::AbstractSequence>()) {
+    MS_LOG(EXCEPTION) << "Can not convert vector ref with abstract " << abs->ToString();
+  }
+  auto seq_abs = abs->cast<abstract::AbstractSequencePtr>();
+  if (seq_abs->dynamic_len()) {
+    return BaseRefToPyData(value_list, abs);
+  }
+  if (seq_abs->isa<abstract::AbstractTuple>()) {
+    return GetVectorRefPyDataWithAbstract<py::tuple>(value_list, seq_abs);
+  }
+  return GetVectorRefPyDataWithAbstract<py::list>(value_list, seq_abs);
 }
 }  // namespace
 
@@ -330,6 +393,29 @@ std::string DumpFuncGraph(const py::object &obj) {
 void PreJit(const py::object &args, const py::object &kwargs) {
   const auto &self = GetSelfFromArgs(args);
   parse::Parser::InitParserEnvironment(self);
+}
+
+py::object BaseRefToPyDataWithUserData(const BaseRef &value, const abstract::AbstractBasePtr &abs) {
+  runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kGraphExecutorPy, runtime::ProfilerEvent::kOutputProcess,
+                                     "BaseRefToPyData");
+  const auto allow_fallback_runtime = (fallback::GetJitSyntaxLevel() >= kCompatible);
+  if (!allow_fallback_runtime) {
+    return BaseRefToPyData(value, abs);
+  }
+  if (utils::isa<ValuePtr>(value)) {
+    // Do not use abs as input to BaseRefToPyData, since the res need to be a tensor to get user data.
+    auto res = BaseRefToPyData(value);
+    const auto user_data = GetUserDataFromAddress(res);
+    if (user_data != nullptr) {
+      return user_data->obj;
+    } else {
+      MS_LOG(DEBUG) << "user data is empty";
+    }
+  } else if (utils::isa<VectorRef>(value)) {
+    auto vec_ref = utils::cast<VectorRef>(value);
+    return GetVectorRefPyData(vec_ref, abs);
+  }
+  return BaseRefToPyData(value, abs);
 }
 }  // namespace pipeline
 }  // namespace mindspore

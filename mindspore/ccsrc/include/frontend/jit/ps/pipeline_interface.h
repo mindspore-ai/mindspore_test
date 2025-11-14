@@ -24,6 +24,7 @@
 #include "pybind11/pybind11.h"
 
 #include "base/base.h"
+#include "base/base_ref.h"
 #include "include/utils/visible.h"
 #include "utils/ms_exception.h"
 
@@ -43,6 +44,8 @@ FRONTEND_EXPORT void InitPipeline();
 FRONTEND_EXPORT bool RunJitPipeline();
 FRONTEND_EXPORT std::string DumpFuncGraph(const py::object &obj);
 FRONTEND_EXPORT void PreJit(const py::object &args, const py::object &kwargs);
+
+FRONTEND_EXPORT py::object BaseRefToPyDataWithUserData(const BaseRef &value, const abstract::AbstractBasePtr &abs);
 }  // namespace pipeline
 }  // namespace mindspore
 

@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CCSRC_FRONTEND_OPTIMIZER_OPTIMIZER_H_
-#define MINDSPORE_CCSRC_FRONTEND_OPTIMIZER_OPTIMIZER_H_
+#ifndef MINDSPORE_CCSRC_INCLUDE_FRONTEND_OPTIMIZER_OPTIMIZER_H_
+#define MINDSPORE_CCSRC_INCLUDE_FRONTEND_OPTIMIZER_OPTIMIZER_H_
 
 #include <functional>
 #include <initializer_list>
@@ -161,4 +161,4 @@ class FRONTEND_EXPORT Optimizer : public std::enable_shared_from_this<Optimizer>
 };
 }  // namespace opt
 }  // namespace mindspore
-#endif  // MINDSPORE_CCSRC_FRONTEND_OPTIMIZER_OPTIMIZER_H_
+#endif  // MINDSPORE_CCSRC_INCLUDE_FRONTEND_OPTIMIZER_OPTIMIZER_H_

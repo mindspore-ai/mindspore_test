@@ -37,7 +37,7 @@
 #include "utils/trace_base.h"
 #include "ir/anf.h"
 #include "ir/dtype/amp.h"
-#include "frontend/operator/primitive_py.h"
+#include "include/frontend/operator/primitive_py.h"
 #include "abstract/abstract_value.h"
 #include "abstract/analysis_context.h"
 #include "abstract/abstract_function.h"

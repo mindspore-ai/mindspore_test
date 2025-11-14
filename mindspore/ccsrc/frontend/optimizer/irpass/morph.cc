@@ -21,7 +21,7 @@
 #include <string>
 
 #include "frontend/jit/ps/static_analysis/auto_monad.h"
-#include "frontend/operator/primitive_py.h"
+#include "include/frontend/operator/primitive_py.h"
 #include "frontend/optimizer/optimizer_caller.h"
 #include "frontend/optimizer/irpass.h"
 #include "frontend/optimizer/anf_visitor.h"
