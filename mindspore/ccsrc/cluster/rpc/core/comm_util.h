@@ -142,8 +142,6 @@ class CommUtil {
   static bool IsFileExists(const std::string &file);
   // Check whether the file is empty or not.
   static bool IsFileEmpty(const std::string &file);
-  // Convert cluster state to string when response the http request.
-  static std::string ClusterStateToString(const ClusterState &state);
 
   // Parse the configuration file according to the key.
   static std::string ParseConfig(const Configuration &config, const std::string &key);

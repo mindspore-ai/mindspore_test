@@ -54,13 +54,7 @@ class BACKEND_COMMON_EXPORT TcpClient {
   explicit TcpClient(const std::string &address, std::uint16_t port, NodeRole peer_role);
   virtual ~TcpClient();
 
-  std::string GetServerAddress() const;
-  void set_disconnected_callback(const OnDisconnected &disconnected);
-  void set_connected_callback(const OnConnected &connected);
-  bool WaitConnected(
-    const uint32_t &connected_timeout = PSContext::instance()->cluster_config().cluster_available_timeout);
   void Init();
-  void StartWithDelay(int seconds);
   void Stop();
   void Start();
   void SetMessageCallback(const OnMessage &cb);
@@ -73,13 +67,11 @@ class BACKEND_COMMON_EXPORT TcpClient {
 
  protected:
   static void SetTcpNoDelay(const evutil_socket_t &fd);
-  static void TimeoutCallback(evutil_socket_t fd, std::int16_t what, void *arg);
   static void ReadCallback(struct bufferevent *bev, void *ctx);
   void ReadCallbackInner(struct bufferevent *bev);
   static void EventCallback(struct bufferevent *bev, std::int16_t events, void *ptr);
   void EventCallbackInner(struct bufferevent *bev, std::int16_t events);
   virtual void OnReadHandler(const void *buf, size_t num);
-  static void TimerCallback(evutil_socket_t fd, int16_t event, void *arg);
   void NotifyConnected();
   bool EstablishSSL();
 

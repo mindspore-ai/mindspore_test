@@ -26,6 +26,8 @@
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 #include <sys/socket.h>
+#include <memory>
+#include <string>
 #include <csignal>
 #include <utility>
 #include "utils/convert_utils_base.h"
@@ -245,14 +247,6 @@ void TcpServer::Stop() {
   }
 }
 
-void TcpServer::SendToAllClients(const char *data, size_t len) {
-  MS_EXCEPTION_IF_NULL(data);
-  std::lock_guard<std::mutex> lock(connection_mutex_);
-  for (auto it = connections_.begin(); it != connections_.end(); ++it) {
-    it->second->SendMessage(data, len);
-  }
-}
-
 void TcpServer::AddConnection(const evutil_socket_t &fd, std::shared_ptr<TcpConnection> connection) {
   MS_EXCEPTION_IF_NULL(connection);
   std::lock_guard<std::mutex> lock(connection_mutex_);
@@ -264,8 +258,6 @@ void TcpServer::RemoveConnection(const evutil_socket_t &fd) {
   MS_LOG(INFO) << "Remove connection fd: " << fd;
   (void)connections_.erase(fd);
 }
-
-std::shared_ptr<TcpConnection> &TcpServer::GetConnectionByFd(const evutil_socket_t &fd) { return connections_[fd]; }
 
 void TcpServer::ListenerCallback(struct evconnlistener *, evutil_socket_t fd, struct sockaddr *sockaddr, int,
                                  void *const data) {
@@ -471,8 +463,6 @@ uint16_t TcpServer::BoundPort() const { return server_port_; }
 std::string TcpServer::BoundIp() const { return server_address_; }
 
 int TcpServer::ConnectionNum() const { return SizeToInt(connections_.size()); }
-
-const std::map<evutil_socket_t, std::shared_ptr<TcpConnection>> &TcpServer::Connections() const { return connections_; }
 
 void TcpServer::SetMessageCallback(const OnServerReceiveMessage &cb) { message_callback_ = cb; }
 }  // namespace core

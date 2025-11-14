@@ -24,6 +24,7 @@
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 #include <sys/socket.h>
+#include <memory>
 #include <cstdlib>
 #include <cstring>
 #include <iostream>
@@ -64,12 +65,6 @@ TcpClient::~TcpClient() {
   }
 }
 
-std::string TcpClient::GetServerAddress() const { return server_address_; }
-
-void TcpClient::set_disconnected_callback(const OnDisconnected &disconnected) { disconnected_callback_ = disconnected; }
-
-void TcpClient::set_connected_callback(const OnConnected &connected) { connected_callback_ = connected; }
-
 std::string TcpClient::PeerRoleName() const {
   switch (peer_role_) {
     case SERVER:
@@ -81,13 +76,6 @@ std::string TcpClient::PeerRoleName() const {
     default:
       return "RoleUndefined";
   }
-}
-
-bool TcpClient::WaitConnected(const uint32_t &connected_timeout) {
-  std::unique_lock<std::mutex> lock(connection_mutex_);
-  bool res = connection_cond_.wait_for(lock, std::chrono::seconds(connected_timeout),
-                                       [this] { return this->connection_status_ == 1; });
-  return res;
 }
 
 void TcpClient::Init() {
@@ -146,26 +134,6 @@ void TcpClient::Init() {
   }
 }
 
-void TcpClient::StartWithDelay(int seconds) {
-  std::lock_guard<std::mutex> lock(connection_mutex_);
-  if (buffer_event_) {
-    return;
-  }
-
-  event_base_ = event_base_new();
-  MS_EXCEPTION_IF_NULL(event_base_);
-
-  timeval timeout_value{};
-  timeout_value.tv_sec = seconds;
-  timeout_value.tv_usec = 0;
-
-  event_timeout_ = evtimer_new(event_base_, TimeoutCallback, this);
-  MS_EXCEPTION_IF_NULL(event_timeout_);
-  if (evtimer_add(event_timeout_, &timeout_value) == -1) {
-    MS_LOG(EXCEPTION) << "Event timeout failed!";
-  }
-}
-
 void TcpClient::Stop() {
   MS_EXCEPTION_IF_NULL(event_base_);
   std::lock_guard<std::mutex> lock(connection_mutex_);
@@ -186,16 +154,6 @@ void TcpClient::SetTcpNoDelay(const evutil_socket_t &fd) {
   int ret = setsockopt(fd, static_cast<int>(IPPROTO_TCP), static_cast<int>(TCP_NODELAY), &one, sizeof(int));
   if (ret < 0) {
     MS_LOG(EXCEPTION) << "Set socket no delay failed!";
-  }
-}
-
-void TcpClient::TimeoutCallback(evutil_socket_t, std::int16_t, void *const arg) {
-  try {
-    MS_EXCEPTION_IF_NULL(arg);
-    auto tcp_client = reinterpret_cast<TcpClient *>(arg);
-    tcp_client->Init();
-  } catch (const std::exception &e) {
-    MS_LOG(ERROR) << "Catch exception: " << e.what();
   }
 }
 
@@ -226,14 +184,6 @@ void TcpClient::OnReadHandler(const void *buf, size_t num) {
     read_callback_(buf, num);
   }
   message_handler_.ReceiveMessage(buf, num);
-}
-
-void TcpClient::TimerCallback(evutil_socket_t, int16_t, void *arg) {
-  MS_EXCEPTION_IF_NULL(arg);
-  auto tcp_client = reinterpret_cast<TcpClient *>(arg);
-  if (tcp_client->on_timer_callback_) {
-    tcp_client->on_timer_callback_();
-  }
 }
 
 void TcpClient::NotifyConnected() {

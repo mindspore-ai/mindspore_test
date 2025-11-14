@@ -57,12 +57,6 @@ class BACKEND_COMMON_EXPORT ComputeGraphNode : public TcpNodeBase {
   // Stop the heart beat thread. This method will be invoked when exception happens.
   void StopHeartBeatThread();
 
-  // Exchange metadata(name:value) between all the compute graph nodes.
-  // The transaction of the exchange process is guaranteed.
-  bool ExchangeMetadata(const std::string &biz, const size_t &rank_size, const std::vector<std::string> &names_prefix,
-                        const std::vector<std::string> &values, std::map<std::string, std::string> *results,
-                        uint32_t timeout = 90);
-
   void set_abnormal_callback(std::shared_ptr<std::function<void(void)>> abnormal_callback) override;
 
   // Return client ip of this cgn which is used for cluster building.

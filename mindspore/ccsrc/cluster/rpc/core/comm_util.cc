@@ -20,6 +20,8 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
+#include <string>
+#include <vector>
 #include <algorithm>
 #include <cstdio>
 #include <cstdlib>
@@ -229,14 +231,6 @@ bool CommUtil::CreateDirectory(const std::string &directoryPath) {
   return true;
 }
 
-std::string CommUtil::ClusterStateToString(const ClusterState &state) {
-  if (state < SizeToInt(kClusterState.size())) {
-    return kClusterState.at(state);
-  } else {
-    return std::to_string(state);
-  }
-}
-
 std::string CommUtil::ParseConfig(const Configuration &config, const std::string &key) {
   if (!config.IsInitialized()) {
     MS_LOG(INFO) << "The config is not initialized.";
@@ -405,7 +399,7 @@ bool CommUtil::verifyCertKeyID(const X509 *caCert, const X509 *subCert) {
   for (int i = 0; i < skid->length; i++) {
     char keyid[8] = {0};
     size_t base = keyidLen;
-    if (sprintf_s(keyid, sizeof(keyid), "%x ", (uint32_t)skid->data[i]) == -1) {
+    if (sprintf_s(keyid, sizeof(keyid), "%x ", static_cast<uint32_t>(skid->data[i])) == -1) {
       return false;
     }
     errno_t ret = strcat_s(subject_keyid, base, keyid);
@@ -422,7 +416,7 @@ bool CommUtil::verifyCertKeyID(const X509 *caCert, const X509 *subCert) {
   for (int i = 0; i < akeyid->keyid->length; i++) {
     char keyid[8] = {0};
     size_t base = keyidLen;
-    if (sprintf_s(keyid, sizeof(keyid), "%x ", (uint32_t)(akeyid->keyid->data[i])) == -1) {
+    if (sprintf_s(keyid, sizeof(keyid), "%x ", static_cast<uint32_t>(akeyid->keyid->data[i])) == -1) {
       return false;
     }
     int ret = strcat_s(issuer_keyid, base, keyid);
