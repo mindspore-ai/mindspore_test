@@ -24,12 +24,22 @@ def init_parameters(cell):
             ValueError: If the `cell` is not a cell.
     """
     from mindspore.nn.cell import Cell
+    from mindspore.parallel._tensor import _get_slice_index
     if not isinstance(cell, Cell):
         raise ValueError("cell's type must be Cell but got {}.".format(type(cell)))
     for param in cell.get_parameters(expand=True):
         if not param.has_init:
             continue
-        init_data = param.init_mode.init_data()
+        data_slice_index = None
+        if hasattr(param, "hsdp_init_index"):
+            data_slice_index = param.hsdp_init_index
+        elif param.layout is not None:
+            data_slice_index = _get_slice_index(param.layout.device_matrix, param.layout.tensor_map, None)
+
+        if data_slice_index is not None:
+            init_data = param.init_mode.init_data(slice_index=data_slice_index)
+        else:
+            init_data = param.init_mode.init_data()
         param.init_mode = None
         param.init = None
         param.set_data(init_data)

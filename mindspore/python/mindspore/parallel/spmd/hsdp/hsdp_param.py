@@ -243,7 +243,7 @@ class HSDPParam:
                 self.param.to_local()
                 param_slice = ops.split(self.param, self.param.local_shape[0] // self.shard_size)[slice_index]
                 self.param.local_to_global(layout)
-            self.sharded_param = Parameter(Tensor(param_slice, self.param.dtype),
+            self.sharded_param = Parameter(param_slice,
                                            name="sharded_"+self.param.name,
                                            requires_grad=False)
         else:
@@ -251,11 +251,10 @@ class HSDPParam:
             data_slice_index = self.tp_rank * self.shard_size + dp_slice_index
             init_shape = list(self.param.init_mode.local_shape)
             init_shape[0] = init_shape[0] // self.shard_size
-            init_data = self.param.init_mode.init_data(slice_index=data_slice_index, shape=init_shape)
-            self.param.init_mode = None
-            self.param.init = None
-            self.param.set_data(init_data)
-            self.sharded_param = Parameter(Tensor(self.param.numpy(), self.param.dtype),
+            self.param.init_mode.shape = init_shape
+            self.param.shape = init_shape
+            self.param.hsdp_init_index = data_slice_index
+            self.sharded_param = Parameter(initializer("zeros", init_shape, self.param.dtype),
                                            name="sharded_"+self.param.name,
                                            requires_grad=False)
 
@@ -264,7 +263,7 @@ class HSDPParam:
         if self.config.use_pynative_hook:
             return
 
-        self.unsharded_param = Parameter(Tensor(self.param, self.param.dtype),
+        self.unsharded_param = Parameter(initializer("zeros", self.param.local_shape, self.param.dtype),
                                          name="unsharded_"+self.param.name,
                                          requires_grad=False)
         self.unsharded_param_available = Parameter(Tensor(False),
@@ -278,7 +277,6 @@ class HSDPParam:
         if self.shard_size == 1 or param_size < self.config.threshold:
             self.sharded = False
             self.fully_sharded = False
-            self.param.init_data()
             if self.config.requires_acc_grad and self.param.requires_grad:
                 acc_grad_type = self.param.dtype
                 if self.config.reduce_dtype is not None:
@@ -313,7 +311,7 @@ class HSDPParam:
     @_no_grad()
     def to_sharded(self):
         """change parameter to sharded state"""
-        self.param.set_data(self.sharded_param)
+        self.param.assign_value(self.sharded_param)
 
     @_no_grad()
     def prefetch_unsharded(self):
@@ -330,16 +328,16 @@ class HSDPParam:
         """change parameter to unsharded state"""
         if self.prefetch_handle is not None:
             self.prefetch_handle.wait()
-            self.sharded_param.set_data(self.param)
-            self.param.set_data(self.prefetch_data)
+            self.sharded_param.assign_value(self.param)
+            self.param.assign_value(self.prefetch_data)
             self.prefetch_handle = None
             self.prefetch_data = None
             return
 
         unsharded_param_data, _ = comm.all_gather_into_tensor(self.param, group=self.sharded_group_name,
                                                               async_op=False)
-        self.sharded_param.set_data(self.param)
-        self.param.set_data(unsharded_param_data)
+        self.sharded_param.assign_value(self.param)
+        self.param.assign_value(unsharded_param_data)
 
     @_no_grad()
     def zero_acc_grad(self):
