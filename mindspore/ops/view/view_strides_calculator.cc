@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 #include "view/view_strides_calculator.h"
+#include <vector>
+#include <memory>
 #include <functional>
 #include <numeric>
 
@@ -65,7 +67,7 @@ bool IsContiguous(const ShapeVector &shape, const std::vector<int64_t> &strides)
     MS_LOG(EXCEPTION) << "shape.size() != strides.size()";
   }
 
-  auto numel = std::accumulate(shape.begin(), shape.end(), (int64_t)1, std::multiplies<int64_t>());
+  auto numel = std::accumulate(shape.begin(), shape.end(), static_cast<int64_t>(1), std::multiplies<int64_t>());
   if (numel == 0) {
     return true;
   }
