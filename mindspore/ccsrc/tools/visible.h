@@ -29,16 +29,4 @@
 #define TOOLS_LOCAL __attribute__((visibility("hidden")))
 #endif
 
-#if (defined(_WIN32) || defined(__WIN32__) || defined(WIN32) || defined(__CYGWIN__))
-#ifdef DUMP_DLL
-#define DUMP_EXPORT __declspec(dllexport)
-#else
-#define DUMP_EXPORT __declspec(dllimport)
-#endif
-#define DUMP_LOCAL
-#else
-#define DUMP_EXPORT __attribute__((visibility("default")))
-#define DUMP_LOCAL __attribute__((visibility("hidden")))
-#endif
-
 #endif  // MINDSPORE_CCSRC_TOOLS_VISIBLE_H_

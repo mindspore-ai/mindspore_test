@@ -16,18 +16,17 @@
 #ifndef MINDSPORE_CCSRC_TOOLS_DATA_DUMP_DEBUGGER_TENSOR_SUMMARY_H_
 #define MINDSPORE_CCSRC_TOOLS_DATA_DUMP_DEBUGGER_TENSOR_SUMMARY_H_
 
-#include <vector>
-#include <tuple>
-#include <memory>
-#include <string>
-
-#include <queue>
-#include <thread>
-#include <mutex>
+#include <atomic>
 #include <condition_variable>
 #include <functional>
-#include <atomic>
 #include <future>
+#include <memory>
+#include <mutex>
+#include <queue>
+#include <string>
+#include <thread>
+#include <tuple>
+#include <vector>
 
 #include "tools/data_dump/debug_services.h"
 

@@ -37,6 +37,7 @@ list(APPEND _DATADUMP_SRC_LIST
     "${CMAKE_CURRENT_SOURCE_DIR}/data_dump/dump_json_parser.cc"
     "${CMAKE_CURRENT_SOURCE_DIR}/data_dump/dump_utils.cc"
     "${CMAKE_CURRENT_SOURCE_DIR}/data_dump/utils.cc"
+    "${CMAKE_CURRENT_SOURCE_DIR}/data_dump/npy_header.cc"
     "${CMAKE_CURRENT_SOURCE_DIR}/data_dump/data_dump.cc"
     "${CMAKE_CURRENT_SOURCE_DIR}/data_dump/common/csv_writer.cc"
     "${CMAKE_CURRENT_SOURCE_DIR}/data_dump/dump_control.cc"
@@ -60,27 +61,6 @@ if(${debug_files_size} GREATER 0)
   add_dependencies(_mindspore_tools_obj proto_input)
 endif()
 
-
-set(DEBUG_SUB_COMP
-    dump
-)
-
-foreach(_comp ${DEBUG_SUB_COMP})
-    add_subdirectory(${_comp})
-    string(REPLACE "/" "_" sub ${_comp})
-    if(TARGET _mindspore_${sub}_obj)
-        list(APPEND DEBUG_SUB_OBJECTS_SRC $<TARGET_OBJECTS:_mindspore_${sub}_obj>)
-        add_dependencies(_mindspore_${sub}_obj proto_input mindspore_core)
-        if(CMAKE_SYSTEM_NAME MATCHES "Windows")
-            target_compile_definitions(_mindspore_${sub}_obj PRIVATE DUMP_DLL)
-        endif()
-    endif()
-endforeach()
-
-add_library(mindspore_dump SHARED ${DEBUG_SUB_OBJECTS_SRC})
-target_link_libraries(mindspore_dump PRIVATE mindspore_core proto_input)
-set_target_properties(mindspore_dump PROPERTIES INSTALL_RPATH $ORIGIN)
-
 file(GLOB_RECURSE _TOOLS_SRC_INDEPENDENT_LIST "${CMAKE_CURRENT_SOURCE_DIR}/summary/*.cc")
 list(APPEND _TOOLS_SRC_INDEPENDENT_LIST "${CMAKE_CURRENT_SOURCE_DIR}/callback.cc"
                                         "${CMAKE_CURRENT_SOURCE_DIR}/debug_func.cc"
@@ -98,7 +78,7 @@ list(APPEND _TOOLS_SRC_INDEPENDENT_LIST ${_SILENTDETECT_LIST})
 add_library(mindspore_tools SHARED ${_TOOLS_SRC_INDEPENDENT_LIST})
 
 target_link_libraries(mindspore_tools PRIVATE mindspore_core mindspore_common proto_input
-        mindspore_backend_common mindspore_dump mindspore_hardware_abstract mindspore_memory_pool)
+        mindspore_backend_common mindspore_hardware_abstract mindspore_memory_pool)
 set_target_properties(mindspore_tools PROPERTIES INSTALL_RPATH $ORIGIN)
 
 if(CMAKE_SYSTEM_NAME MATCHES "Windows" OR CMAKE_SYSTEM_NAME MATCHES "Darwin")

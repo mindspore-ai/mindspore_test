@@ -14,17 +14,19 @@
  * limitations under the License.
  */
 #include "tools/data_dump/device_statistic/check_overflow.h"
+
+#include <map>
 #include <memory>
+#include <set>
 #include <string>
 #include <utility>
 #include <vector>
-#include <map>
-#include <set>
-#include "tools/data_dump/debugger/debugger_utils.h"
-#include "include/utils/common.h"
-#include "include/runtime/hardware_abstract/stream/multi_stream_controller.h"
+
 #include "include/runtime/hardware_abstract/device_context/device_context.h"
 #include "include/runtime/hardware_abstract/device_context/device_context_manager.h"
+#include "include/runtime/hardware_abstract/stream/multi_stream_controller.h"
+#include "include/utils/common.h"
+#include "tools/data_dump/debugger/debugger_utils.h"
 #include "tools/data_dump/device_statistic/kernel_factory.h"
 #include "tools/data_dump/device_statistic/mem_manager.h"
 

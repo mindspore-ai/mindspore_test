@@ -15,36 +15,37 @@
  */
 
 #include "tools/data_dump/debugger/debugger_utils.h"
+
 #include <algorithm>
 #include <memory>
 #include <set>
 #include <string>
 #include <vector>
-#include "ir/tensor_new.h"
-#include "tools/data_dump/device_statistic/kernel_launcher.h"
-#include "tools/data_dump/tensor_info_collect.h"
-#include "tools/data_dump/tensor_statistic.h"
-#include "tools/data_dump/overflow_counter.h"
-#include "tools/dump/utils.h"
-#include "tools/data_dump/utils.h"
-#include "tools/data_dump/dump_utils.h"
+
+#include "backend/common/device_address_utils.h"
 #include "include/backend/anf_runtime_algorithm.h"
-#include "tools/data_dump/common/csv_writer.h"
-#include "tools/data_dump/dump_json_parser.h"
-#include "tools/data_dump/e2e_dump.h"
-#include "tools/data_dump/tensor_stat_dump.h"
-#include "tools/data_dump/debugger/debugger.h"
-#include "mindspore/ccsrc/utils/ir_dump/anf_dump_utils.h"
-#include "include/utils/common.h"
-#include "include/utils/anfalgo.h"
-#include "include/utils/config_manager.h"
-#include "include/runtime/hardware_abstract/kernel_base/kernel.h"
-#include "proto/debug_graph.pb.h"
 #include "include/runtime/hardware_abstract/device_context/device_context.h"
 #include "include/runtime/hardware_abstract/device_context/device_context_manager.h"
-#include "runtime/hardware_abstract/utils.h"
+#include "include/runtime/hardware_abstract/kernel_base/kernel.h"
 #include "include/runtime/hardware_abstract/stream/multi_stream_controller.h"
-#include "backend/common/device_address_utils.h"
+#include "include/utils/anfalgo.h"
+#include "include/utils/common.h"
+#include "include/utils/config_manager.h"
+#include "ir/tensor_new.h"
+#include "mindspore/ccsrc/utils/ir_dump/anf_dump_utils.h"
+#include "proto/debug_graph.pb.h"
+#include "runtime/hardware_abstract/utils.h"
+#include "tools/data_dump/common/csv_writer.h"
+#include "tools/data_dump/debugger/debugger.h"
+#include "tools/data_dump/device_statistic/kernel_launcher.h"
+#include "tools/data_dump/dump_json_parser.h"
+#include "tools/data_dump/dump_utils.h"
+#include "tools/data_dump/e2e_dump.h"
+#include "tools/data_dump/overflow_counter.h"
+#include "tools/data_dump/tensor_info_collect.h"
+#include "tools/data_dump/tensor_stat_dump.h"
+#include "tools/data_dump/tensor_statistic.h"
+#include "tools/data_dump/utils.h"
 
 constexpr int kFailure = 1;
 constexpr int kQint4ShapeModify = 2;

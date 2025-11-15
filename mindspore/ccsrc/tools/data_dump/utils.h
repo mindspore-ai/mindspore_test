@@ -16,9 +16,10 @@
 #ifndef MINDSPORE_CCSRC_TOOLS_DATA_DUMP_UTILS_H
 #define MINDSPORE_CCSRC_TOOLS_DATA_DUMP_UTILS_H
 
-#include <vector>
 #include <string>
 #include <unordered_map>
+#include <vector>
+
 #include "ir/tensor.h"
 namespace mindspore {
 
@@ -61,6 +62,13 @@ class CsvHeaderUtil {
 bool CheckStoul(size_t *const output_digit, const std::string &input_str);
 
 string ShapeToString(const ShapeVector &shape);
+namespace datadump {
+std::uint32_t GetRankID();
+bool StartsWith(const std::string &, const std::string &);
+bool EndsWith(const std::string &, const std::string &);
+void SaveTensor2NPY(std::string file_name, mindspore::tensor::TensorPtr tensor_ptr);
+}  // namespace datadump
+
 }  // namespace mindspore
 
-#endif  // MINDSPORE_UTILS_H
+#endif  // MINDSPORE_CCSRC_TOOLS_DATA_DUMP_UTILS_H

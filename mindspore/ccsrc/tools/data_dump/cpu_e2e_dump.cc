@@ -15,13 +15,16 @@
  */
 
 #include "tools/data_dump/cpu_e2e_dump.h"
+
 #include <map>
+#include <string>
 #include <vector>
-#include "tools/dump/utils.h"
+
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/utils/anfalgo.h"
-#include "mindspore/ccsrc/utils/ir_dump/anf_dump_utils.h"
 #include "include/utils/common.h"
+#include "mindspore/ccsrc/utils/ir_dump/anf_dump_utils.h"
+#include "tools/data_dump/utils.h"
 #include "utils/file_utils.h"
 
 namespace mindspore {

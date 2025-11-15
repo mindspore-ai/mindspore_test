@@ -16,17 +16,17 @@
 #ifndef MINDSPORE_CCSRC_TOOLS_TENSOR_DUMP_TENSORDUMP_H_
 #define MINDSPORE_CCSRC_TOOLS_TENSOR_DUMP_TENSORDUMP_H_
 
+#include <array>
+#include <mutex>
 #include <set>
 #include <string>
 #include <vector>
-#include <array>
-#include <mutex>
 
-#include "utils/ms_utils.h"
-#include "utils/ms_context.h"
 #include "ir/tensor.h"
 #include "ir/tensor_new.h"
 #include "tools/visible.h"
+#include "utils/ms_context.h"
+#include "utils/ms_utils.h"
 
 namespace mindspore {
 namespace datadump {

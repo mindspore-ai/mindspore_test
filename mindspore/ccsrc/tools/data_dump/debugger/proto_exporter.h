@@ -17,9 +17,10 @@
 #define MINDSPORE_CCSRC_TOOLS_DATA_DUMP_DEBUGGER_PROTO_EXPORTER_H_
 
 #include <string>
-#include "utils/symbolic.h"
+
 #include "include/backend/kernel_graph.h"
 #include "tools/visible.h"
+#include "utils/symbolic.h"
 
 namespace mindspore {
 enum LocDebugDumpMode { kDebugOff = 0, kDebugTopStack = 1, kDebugWholeStack = 2 };

@@ -18,13 +18,14 @@
 #define MINDSPORE_MINDSPORE_CCSRC_TOOLS_DATA_DUMP_E_2_E_DUMP_H_
 
 #include <dirent.h>
+
 #include <map>
 #include <memory>
 #include <string>
 #include <vector>
 
-#include "include/backend/kernel_graph.h"
 #include "device_address/device_address.h"
+#include "include/backend/kernel_graph.h"
 #include "tools/data_dump/dump_json_parser.h"
 #include "tools/data_dump/dump_utils.h"
 #ifdef ENABLE_DEBUGGER

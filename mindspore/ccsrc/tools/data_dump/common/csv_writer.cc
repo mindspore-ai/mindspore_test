@@ -15,13 +15,15 @@
  */
 
 #include "tools/data_dump/common/csv_writer.h"
-#include <string>
-#include <memory>
+
 #include <map>
+#include <memory>
+#include <string>
+
+#include "include/utils/common.h"
+#include "utils/file_utils.h"
 #include "utils/system/env.h"
 #include "utils/system/file_system.h"
-#include "utils/file_utils.h"
-#include "include/utils/common.h"
 
 namespace mindspore {
 

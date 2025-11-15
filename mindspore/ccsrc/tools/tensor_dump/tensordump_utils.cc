@@ -15,13 +15,15 @@
  */
 
 #include "tools/tensor_dump/tensordump_utils.h"
-#include <string>
+
 #include <memory>
+#include <string>
 #include <vector>
-#include "tools/tensor_dump/tensordump.h"
-#include "tools/dump/utils.h"
+
 #include "ir/tensor.h"
 #include "ir/tensor_new.h"
+#include "tools/data_dump/utils.h"
+#include "tools/tensor_dump/tensordump.h"
 #include "utils/log_adapter.h"
 
 namespace mindspore {
