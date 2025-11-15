@@ -14,18 +14,21 @@
  * limitations under the License.
  */
 
-#include "mindspore/ops/kernel/ascend/aclnn/pyboost_impl/customize/to_other.h"
-#include "pynative/utils/pyboost/customize/to.h"
-#include "ir/tensor_new.h"
+#include "include/runtime/utils/dispatch/dispatch_env.h"
+#include "utils/ms_utils.h"
 
 namespace mindspore {
-namespace kernel {
-namespace pyboost {
-tensor::TensorPtr ToOtherAscendCustomize(const std::shared_ptr<OpRunner> &op, const mindspore::tensor::TensorPtr &self,
-                                         const mindspore::tensor::TensorPtr &other,
-                                         const mindspore::BoolImmPtr &non_blocking, const mindspore::BoolImmPtr &copy) {
-  return ToOtherCustomize(op, self, other, non_blocking, copy);
-}
-}  // namespace pyboost
-}  // namespace kernel
+static auto dispatch_env = common::GetEnv("MS_DEV_DISABLE_AUTO_H2D");
+static auto enable_with_check = dispatch_env == "1";
+static auto enable_with_stack = dispatch_env == "2";
+static auto enable_without_check = dispatch_env == "3";
+static auto enable = enable_with_check || enable_with_stack || enable_without_check;
+
+bool EnableDispatch() { return enable; }
+
+bool EnableDispatchWithStack() { return enable_with_stack; }
+
+bool EnableDispatchWithCheck() { return enable_with_check; }
+
+bool EnableDispatchWithoutCheck() { return enable_without_check; }
 }  // namespace mindspore

@@ -63,6 +63,8 @@
 #include "mindspore/ccsrc/pynative/utils/pyboost/grad_functions/pyboost_grad_functions.h"
 #include "utils/device_manager_conf.h"
 #include "ir/func_graph_flag.h"
+#include "pynative/backward/op_grad/auto_generate/pyboost_native_grad_functions.h"
+#include "include/runtime/utils/dispatch/dispatch_env.h"
 
 namespace mindspore {
 namespace pynative {
@@ -483,6 +485,10 @@ ValuePtr AutoGradUtil::BuildSpecialValueGrad(const ValuePtr &value, const tensor
   }
   if (value->isa<tensor::Tensor>()) {
     const auto tensor = value->cast<tensor::TensorPtr>();
+    if (EnableDispatch()) {
+      NativeFunc::set_device_target(tensor->device_type());
+      MS_LOG(DEBUG) << "[Dispatch]Change device target to " << device::GetDeviceNameByType(tensor->device_type());
+    }
     return (type == SpecialType::kZerosLikeType ? func_builder->Zeros(tensor) : func_builder->Ones(tensor));
   }
   if (value->isa<ValueSequence>()) {

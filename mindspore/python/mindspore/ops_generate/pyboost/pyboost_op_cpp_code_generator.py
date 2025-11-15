@@ -21,7 +21,7 @@ for different devices (Ascend, CPU, GPU) and manages residual files associated w
 import os
 import re
 
-import common.template as template
+from common import template
 import common.gen_constants as K
 from common.template import Template
 from common.gen_utils import save_file
@@ -308,6 +308,8 @@ class PyboostOpCppGenerator:
         for op_proto in op_protos:
             if op_proto.op_dispatch is None:
                 continue
+            if op_proto.composite:
+                continue
             if getattr(op_proto.op_dispatch, self.device) == 'default':
                 continue
             if getattr(op_proto.op_dispatch, self.device) == 'None':
@@ -525,6 +527,8 @@ class AclnnOpCppCodeGenerator:
         for op_proto in op_protos:
             if op_proto.op_dispatch is None:
                 continue
+            if op_proto.composite:
+                continue
             if getattr(op_proto.op_dispatch, self.device) != 'default':
                 continue
             if getattr(op_proto.op_dispatch, self.device) == 'None':
@@ -545,7 +549,7 @@ class AclnnOpCppCodeGenerator:
 
             cube_math_type, get_cube_math_type = '', ''
             if self.device == 'ascend' and is_cube(op_proto.op_class.name):
-                get_cube_math_type = f'// cubeMathType: 0 - KEEP_DTYPE, 1 - ALLOW_FP32_DOWN_PRECISION\n'
+                get_cube_math_type = '// cubeMathType: 0 - KEEP_DTYPE, 1 - ALLOW_FP32_DOWN_PRECISION\n'
                 get_cube_math_type += "auto cube_math_type = GetCubeMathType();"
                 cube_math_type = ', cube_math_type'
 
@@ -951,7 +955,7 @@ class PyboostOpFunctionGenerator(BaseGenerator):
         hccl_pyboost_op_source = self.PYBOOST_ASCEND_OP_SOURCE_TEMPLATE.replace(
             merge_op_header='\n'.join(hccl_merge_op_header), merge_op_function='\n'.join(hccl_merge_op_function),
             ops_inc=list(sorted(ops_hccl_inc_head_set)))
-        save_file(os.path.join(work_path, self.hccl_gen_path), f"pyboost_hccl_ops.cc", \
+        save_file(os.path.join(work_path, self.hccl_gen_path), "pyboost_hccl_ops.cc", \
                   hccl_pyboost_op_source)
 
     def _generate_pyboost_cpu_ops(self, work_path, op_protos):
@@ -1098,7 +1102,7 @@ def _generate_inplace_process_cpp_code(op_proto):
     Returns:
         str: The C++ code for inplace processing, or an empty string if no inplace processing is needed.
     """
-    inplace_process = f'// RefOps update output by input tensor\n'
+    inplace_process = '// RefOps update output by input tensor\n'
     has_ref = False
     for index, return_obj in enumerate(op_proto.op_returns):
         if return_obj.inplace != '':

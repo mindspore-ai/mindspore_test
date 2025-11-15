@@ -241,7 +241,6 @@ class BACKEND_COMMON_EXPORT DeviceAddressUtils {
     }
   }
 };
-
 BACKEND_COMMON_EXPORT void CheckAutoH2D(const DeviceContext *device_context, const tensor::TensorPtr &tensor);
 }  // namespace runtime
 }  // namespace mindspore

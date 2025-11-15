@@ -22,7 +22,7 @@ the necessary header files for the generated functions.
 
 import os
 
-import common.template as template
+from common import template
 import common.gen_constants as K
 from common.template import Template
 from common.gen_utils import save_file
@@ -48,6 +48,8 @@ class PyboostFunctionsImplGenerator(BaseGenerator):
         self.pyboost_func_include_header_template = Template(
             f'#include "{K.MS_PYBOOST_BASE_PATH}/auto_generate/${{operator_name}}.h"\n'
         )
+        self.composite_include_header_template = template.COMPOSITE_INCLUDE_HEADER_TEMPLATE
+
         self.convert_optional_to_value_template = Template(
             "auto ${output} = PyNativeAlgo::PyBoost::OptionalToValue(${input});\n"
         )
@@ -109,6 +111,11 @@ class PyboostFunctionsImplGenerator(BaseGenerator):
             if op_proto.op_dispatch.is_comm_op:
                 pyboost_func_include_headers_str += self.pyboost_func_include_header_template.replace(
                     operator_name=op_proto.op_name)
+
+            if op_proto.composite:
+                pyboost_func_include_headers_str += self.composite_include_header_template.replace(
+                    operator_name=op_proto.op_name
+                )
 
         # generate pyboost core cc
         pyboost_core_body_str = self._get_pyboost_core_body_all_str(op_protos)

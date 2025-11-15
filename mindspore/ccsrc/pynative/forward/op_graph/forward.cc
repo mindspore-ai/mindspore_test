@@ -47,6 +47,7 @@ using mindspore::profiler::ProfilerManager;
 #include "mindspore/ccsrc/frontend/expander/bprop/bprop.h"
 #include "utils/stream_guard.h"
 #include "pynative/utils/pyboost/functions/auto_grad_guard.h"
+#include "include/runtime/utils/dispatch/dispatch_env.h"
 
 namespace mindspore {
 namespace pynative {
@@ -596,9 +597,45 @@ ValuePtr ForwardExecutor::RunSliceOpFrontend(const std::vector<ValuePtr> &input_
   return last_tensor;
 }
 
+void ValueCheck(const ValuePtr &value, device::DeviceType *device) {
+  if (value->isa<tensor::Tensor>()) {
+    auto tensor = value->cast<tensor::TensorPtr>();
+    auto incoming_device = tensor->device_type();
+    MS_LOG(DEBUG) << "[Dispatch]Check input " << tensor->ToString() << " device "
+                  << device::GetDeviceNameByType(incoming_device);
+    if (incoming_device > *device) {
+      *device = incoming_device;
+    }
+  } else if (value->isa<ValueSequence>()) {
+    auto seq = value->cast<ValueSequencePtr>();
+    const auto &values = seq->value();
+    for (const auto &v : values) {
+      ValueCheck(v, device);
+    }
+  }
+}
+
+void SetDeviceByInput(const FrontendOpRunInfoPtr &op_run_info) {
+  if (EnableDispatch()) {
+    device::DeviceType device = device::DeviceType::kUnknown;
+    const auto &input_values = op_run_info->op_grad_info->input_value;
+    for (const auto &input : input_values) {
+      ValueCheck(input, &device);
+    }
+    if (device == device::DeviceType::kUnknown) {
+      device = device::DeviceType::kCPU;
+      MS_LOG(WARNING) << "No tensor found in inputs. Use CPU as default device target.";
+    }
+    op_run_info->base_op_run_info.device_target = device;
+  }
+}
+
 void ForwardExecutor::RunOpFrontend(const FrontendOpRunInfoPtr &op_run_info) {
   MS_EXCEPTION_IF_NULL(op_run_info);
   MS_LOG(DEBUG) << "RunOp name: " << op_run_info->base_op_run_info.op_name;
+  // Convert StubNode to Tensor and no need to concern about input StubNode anymore in this thread.
+  PyNativeAlgo::Common::StubNodeToValue(op_run_info);
+  SetDeviceByInput(op_run_info);
   kernel::pyboost::OpRunStatus::Get().HeterBarrier(op_run_info->base_op_run_info.device_target);
 #ifndef ENABLE_TEST
   auto strides_calc_info =
@@ -606,9 +643,6 @@ void ForwardExecutor::RunOpFrontend(const FrontendOpRunInfoPtr &op_run_info) {
   op_run_info->op_grad_info->operator_type =
     strides_calc_info.first.has_value() ? OperatorType::kViewOp : OperatorType::kDefault;
 #endif
-
-  // Convert StubNode to Tensor and no need to concern about input StubNode anymore in this thread.
-  PyNativeAlgo::Common::StubNodeToValue(op_run_info);
   // 1.Set cast for inputs
   SetCastForInputs(op_run_info);
 

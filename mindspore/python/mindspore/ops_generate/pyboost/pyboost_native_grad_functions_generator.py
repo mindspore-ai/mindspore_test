@@ -54,6 +54,7 @@ class PyboostGradFunctionsCppGenerator(BaseGenerator):
         self.PYBOOST_NATIVE_GRAD_FUNCTIONS_TEMPLATE = template.PYBOOST_NATIVE_GRAD_FUNCTIONS_TEMPLATE
         self.native_function_multi_output_template = template.MULTI_OUTPUT_TEMPLATE
         self.PYBOOST_NATIVE_COMM_GRAD_FUNCTION_TEMPLATE = template.PYBOOST_NATIVE_COMM_GRAD_FUNCTION_TEMPLATE
+        self.composite_include_header_template = template.COMPOSITE_INCLUDE_HEADER_TEMPLATE
         self.native_view_function_output_template =\
             "const auto &output_value = runtime::ValueConverter::ToValue(outputs);\n"
         self.native_function_single_output_template = "const auto &output_value = op->outputs()[0];\n"
@@ -105,6 +106,10 @@ class PyboostGradFunctionsCppGenerator(BaseGenerator):
             pyboost_func_str = pyboost_func_str + template.NEW_LINE
             ops_inc_head_set.add(
                 template.OP_DEF_INC_HEAD_TEMPLATE.replace(prefix_char=op_proto.op_class.name[0].lower()))
+            if op_proto.composite:
+                ops_inc_head_set.add(self.composite_include_header_template.replace(
+                    operator_name=op_proto.op_name
+                ))
         native_grad_func_file = \
             self.PYBOOST_NATIVE_GRAD_FUNCTIONS_TEMPLATE.replace(function_body=pyboost_func_str,
                                                                 ops_inc=list(sorted(ops_inc_head_set)))

@@ -14,18 +14,17 @@
  * limitations under the License.
  */
 
-#include "mindspore/ops/kernel/cpu/pyboost/customize/to_other.h"
-#include "pynative/utils/pyboost/customize/to.h"
-#include "ir/tensor_new.h"
+#ifndef MINDSPORE_MINDSPORE_CCSRC_INCLUDE_RUNTIME_UTILS_RUNTIME_CONF_DISPATCH_H_
+#define MINDSPORE_MINDSPORE_CCSRC_INCLUDE_RUNTIME_UTILS_RUNTIME_CONF_DISPATCH_H_
+
+#include "runtime/utils/visible.h"
+#include "ir/tensor.h"
+#include "ir/anf.h"
 
 namespace mindspore {
-namespace kernel {
-namespace pyboost {
-tensor::TensorPtr ToOtherCPUCustomize(const std::shared_ptr<OpRunner> &op, const mindspore::tensor::TensorPtr &self,
-                                      const mindspore::tensor::TensorPtr &other,
-                                      const mindspore::BoolImmPtr &non_blocking, const mindspore::BoolImmPtr &copy) {
-  return ToOtherCustomize(op, self, other, non_blocking, copy);
-}
-}  // namespace pyboost
-}  // namespace kernel
+RUNTIME_UTILS_EXPORT bool EnableDispatch();
+RUNTIME_UTILS_EXPORT bool EnableDispatchWithCheck();
+RUNTIME_UTILS_EXPORT bool EnableDispatchWithStack();
+RUNTIME_UTILS_EXPORT bool EnableDispatchWithoutCheck();
 }  // namespace mindspore
+#endif  // MINDSPORE_MINDSPORE_CCSRC_INCLUDE_RUNTIME_UTILS_RUNTIME_CONF_DISPATCH_H_

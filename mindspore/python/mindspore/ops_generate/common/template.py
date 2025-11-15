@@ -323,6 +323,10 @@ PYBOOST_PY_FUNC_IMPORT_HEADEAR = Template(
     """from mindspore._c_expression import ${class_name}Prim_\n"""
 )
 
+COMPOSITE_INCLUDE_HEADER_TEMPLATE = Template(
+    """#include "pynative/utils/pyboost/functions/composite/${operator_name}.h"\n"""
+)
+
 PYBOOST_PY_FUNC_TEMPLATE = Template("""
 def ${func_name}(${func_args}):
     r\"\"\"
@@ -418,6 +422,9 @@ FUNCTIONS_CC_TEMPLATE = Template.load_from_file(
 
 FUNCTION_BODY_TEMPLATE = Template.load_from_file(
     os.path.join(K.WORK_DIR, './mindspore/ccsrc/pynative/forward/pyboost/template/function_body.tpl'))
+
+FUNCTION_BODY_WRAPPER_TEMPLATE = Template.load_from_file(
+    os.path.join(K.WORK_DIR, './mindspore/ccsrc/pynative/forward/pyboost/template/function_body_wrapper.tpl'))
 
 FUNCTION_VIEW_BODY_TEMPLATE = Template.load_from_file(
     os.path.join(K.WORK_DIR, './mindspore/ccsrc/pynative/forward/pyboost/template/function_view_body.tpl'))

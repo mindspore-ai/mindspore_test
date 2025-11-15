@@ -1,7 +1,13 @@
-${return_type} ${op_name}(${input_args_with_type}) {
+${return_type} ${op_name}_with_grad(${input_args_with_type}) {
   MS_LOG(DEBUG) << "In ${op_name} function";
 
-  const auto &device_target = GetDeviceTarget();
+  device::DeviceType device_target;
+  if (EnableDispatch()) {
+    device_target = get_device(${input_args});
+  } else {
+    device_target = GetDeviceTarget();
+  }
+
   OpRunStatus::Get().HeterBarrier(device_target);
   ${create_op}
   ${clone_func}
