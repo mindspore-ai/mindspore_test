@@ -132,9 +132,8 @@ std::string GenerateIDForGraph(const std::vector<KernelTensorPtr> &kernel_tensor
     if (kernel_tensor == nullptr || kernel_tensor->device_address() == nullptr) {
       MS_LOG(EXCEPTION) << "Empty device tensor index:" << index;
     }
-    auto device_tensor = kernel_tensor->device_address().get();
     if (kernel_tensor->user_data() == nullptr) {
-      get_shape_and_type_string(device_tensor->GetShapeVector(), device_tensor->type_id());
+      get_shape_and_type_string(kernel_tensor->GetShapeVector(), kernel_tensor->dtype_id());
       continue;
     }
 
@@ -158,7 +157,7 @@ std::string GenerateIDForGraph(const std::vector<KernelTensorPtr> &kernel_tensor
     } else if (abstract->isa<abstract::AbstractTensor>()) {
       id = id + "Tensor_";
     }
-    get_shape_and_type_string(device_tensor->GetShapeVector(), device_tensor->type_id());
+    get_shape_and_type_string(kernel_tensor->GetShapeVector(), kernel_tensor->dtype_id());
   }
   return id;
 }
@@ -213,8 +212,7 @@ void InferParameterAbstractForModelGraph(const KernelGraphPtr &graph,
       MS_EXCEPTION_IF_NULL(kernel_tensor->device_address());
       MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
         << "Set abstract:" << abstract->ToString() << " for input node:" << input_node->DebugString()
-        << " device tensor:" << kernel_tensor->device_address()
-        << " type id:" << kernel_tensor->device_address()->type_id();
+        << " kernel tensor:" << kernel_tensor->ToString();
       input_node->set_abstract(abstract);
       continue;
     }
@@ -231,7 +229,7 @@ void InferParameterAbstractForModelGraph(const KernelGraphPtr &graph,
     MS_EXCEPTION_IF_NULL(kernel_tensor->device_address());
     MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
       << "Set abstract:" << seq_abstract->ToString() << " for input node:" << input_node->DebugString()
-      << kernel_tensor->device_address() << " type id:" << kernel_tensor->device_address()->type_id();
+      << " kernel tensor:" << kernel_tensor->ToString();
     input_node->set_abstract(seq_abstract);
   }
 }
@@ -323,20 +321,20 @@ void PersisitValueNode(const KernelGraphPtr &graph, const DeviceContext *device_
     // If the device tensor store of this device type is not exist, then create the new device tensor of this type.
     if (DeviceTensorStore::GetInstance().Fetch(front_node.get(), device_context->GetDeviceType()) == nullptr) {
       MS_LOG(INFO) << "Fetch no device tensor store by:" << front_node->fullname_with_scope()
-                   << ", type:" << device_context->GetDeviceType() << " dtype:" << device_tensor->type_id()
+                   << ", type:" << device_context->GetDeviceType() << " dtype:" << old_kernel_tensor->dtype_id()
                    << " current device address:" << device_tensor << " in value node:" << value_node->DebugString();
 
       const auto &kernel_tensor = AnfAlgo::CreateOutputKernelTensorWithDeviceInfo(
-        {value_node, 0}, nullptr, device_tensor->GetSize(), device_tensor->format(), device_tensor->type_id(),
-        device_tensor->GetShapeVector(), device::GetDeviceNameByType(device_context->device_context_key().device_type_),
+        {value_node, 0}, nullptr, device_tensor->GetSize(), kernel::GetFormatFromEnumToStr(old_kernel_tensor->format()),
+        old_kernel_tensor->dtype_id(), old_kernel_tensor->GetShapeVector(),
+        device::GetDeviceNameByType(device_context->device_context_key().device_type_),
         device_context->device_context_key().device_id_);
       kernel_tensor->set_stream_id(device_tensor->stream_id());
       auto other_type_device_tensor = kernel_tensor->device_address();
       MS_EXCEPTION_IF_NULL(other_type_device_tensor);
       other_type_device_tensor->SetNodeIndex(value_node, 0);
       other_type_device_tensor->set_from_persistent_mem(true);
-      MS_LOG(DEBUG) << "Create device tensor:" << other_type_device_tensor
-                    << " type:" << other_type_device_tensor->type_id();
+      MS_LOG(DEBUG) << "Create kernel tensor:" << kernel_tensor->ToString();
       DeviceTensorStore::GetInstance().Insert(const_cast<AnfNode *>(front_node.get()), kernel_tensor);
       MS_LOG(DEBUG) << "Add device tensor store:" << other_type_device_tensor << " node:" << front_node->DebugString()
                     << " graph:" << graph->ToString();
@@ -367,14 +365,17 @@ void PersisitValueNode(const KernelGraphPtr &graph, const DeviceContext *device_
                       << DeviceTensorStore::GetInstance().Fetch(front_node.get(), real_device_context->GetDeviceType());
         continue;
       }
-      auto device_tensor = AnfAlgo::GetMutableOutputAddr(input_node, 0, false);
+      auto node_kernel_tensor = AnfAlgo::GetOutputKernelTensor(input_node, 0, false);
+      MS_EXCEPTION_IF_NULL(node_kernel_tensor);
+      auto device_tensor = node_kernel_tensor->device_address();
       MS_EXCEPTION_IF_NULL(device_tensor);
       MS_LOG(INFO) << "Fetch no device tensor store by:" << front_node->DebugString()
                    << ", type:" << real_device_context->GetDeviceType()
                    << " node device tensor:" << device_tensor->ToString();
       const auto &kernel_tensor = AnfAlgo::CreateOutputKernelTensorWithDeviceInfo(
-        {input_node, 0}, nullptr, device_tensor->GetSize(), device_tensor->format(), device_tensor->type_id(),
-        device_tensor->GetShapeVector(),
+        {input_node, 0}, nullptr, device_tensor->GetSize(),
+        kernel::GetFormatFromEnumToStr(node_kernel_tensor->format()), node_kernel_tensor->dtype_id(),
+        node_kernel_tensor->GetShapeVector(),
         device::GetDeviceNameByType(real_device_context->device_context_key().device_type_),
         real_device_context->device_context_key().device_id_);
       kernel_tensor->set_stream_id(device_tensor->stream_id());

@@ -96,8 +96,7 @@ class GEBackend : public BackendBase {
                        std::vector<tensor::TensorPtr> *inputs_tensor);
   void ConstructInputsRefMode(const KernelGraphPtr &func_graph, const VectorRef &args,
                               std::vector<tensor::TensorPtr> *inputs_tensor);
-  void UpdateInputsShapeAndSize(const ParameterPtr &input_node,
-                                const mindspore::device::DeviceAddressPtr &device_tensor,
+  void UpdateInputsShapeAndSize(const ParameterPtr &input_node, const mindspore::kernel::KernelTensorPtr &kernel_tensor,
                                 const tensor::TensorPtr &input_tensor);
   void SetTensorUpdateCallback(const tensor::TensorPtr &update_tensor);
   bool Copy(KernelTensor *const dst_kernel_tensor, const tensor::TensorPtr &src_tensor) const;

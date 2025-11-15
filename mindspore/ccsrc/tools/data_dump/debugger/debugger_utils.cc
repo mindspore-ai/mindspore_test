@@ -636,7 +636,7 @@ void PrepareInputDataViaCallback(const CNodePtr &cnode, const DeviceContext *dev
 
     auto dump_shape = GetInputKernelShapeVec(input_kernel, input_kernel_tensors[index], index, trans_flag);
     auto host_format = kOpFormat_DEFAULT;
-    auto format = trans_flag ? host_format : device_tensor->format();
+    auto format = trans_flag ? host_format : kernel::GetFormatFromEnumToStr(input_kernel_tensors[index]->format());
 
     tensor_info_list->emplace_back(TensorInfoForDump(kInput, index, format, type, dump_shape, device_tensor->GetSize(),
                                                      input_kernel_tensors[index]));
@@ -668,7 +668,7 @@ void PrepareOutputDataViaCallback(const CNodePtr &cnode, const DeviceContext *de
     auto dump_shape = GetOutputKernelShapeVec(cnode, output_kernel_tensors[index], index, trans_flag);
 
     auto host_format = kOpFormat_DEFAULT;
-    auto format = trans_flag ? host_format : device_tensor->format();
+    auto format = trans_flag ? host_format : kernel::GetFormatFromEnumToStr(output_kernel_tensors[index]->format());
     tensor_info_list->emplace_back(TensorInfoForDump(kOutput, index, format, type, dump_shape, device_tensor->GetSize(),
                                                      output_kernel_tensors[index]));
   }

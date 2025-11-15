@@ -68,9 +68,7 @@ void SwitchActor::FetchInput(OpContext<KernelTensor> *const context) {
 size_t SwitchActor::GetIndex(const OpContext<KernelTensor> *const context) const {
   MS_EXCEPTION_IF_NULL(context);
   MS_EXCEPTION_IF_NULL(input_kernel_tensors_[0]);
-
-  auto device_tensor = input_kernel_tensors_[0]->device_address();
-  TypeId type_id = device_tensor->type_id();
+  TypeId type_id = input_kernel_tensors_[0]->dtype_id();
   size_t size = abstract::TypeIdSize(type_id);
   if (size > sizeof(int64_t)) {
     MS_LOG(ERROR) << "Index must be Int type.";

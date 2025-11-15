@@ -393,7 +393,7 @@ inline aclTensor *ConvertType(const tensor::TensorPtr &tensor) {
       format = ACL_FORMAT_ND;
   }
   auto acl_data_type = AclConverter::ConvertType(tensor->data_type());
-  auto device_address = std::dynamic_pointer_cast<device::DeviceAddress>(tensor->device_address());
+  auto device_address = tensor->device_address();
   if (device_address->size() != 0 && device_address->GetMutablePtr() == nullptr) {
     MS_LOG(EXCEPTION) << "The device memory is null, please allocate the device memory for tensor "
                       << tensor->ToString();

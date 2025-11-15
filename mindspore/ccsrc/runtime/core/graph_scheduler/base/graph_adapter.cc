@@ -170,7 +170,7 @@ void GraphAdapter::HandleBackoffValueNode(const ValueNodePtr &value_node, const 
 
     auto kernel_tensor =
       AnfAlgo::CreateKernelTensor(nullptr, device_tensor->GetSize(), old_kernel_tensor->format(),
-                                  device_tensor->type_id(), old_kernel_tensor->GetShapeVector(),
+                                  old_kernel_tensor->dtype_id(), old_kernel_tensor->GetShapeVector(),
                                   device::GetDeviceNameByType(real_device_context->device_context_key().device_type_),
                                   real_device_context->device_context_key().device_id_);
 

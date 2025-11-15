@@ -190,11 +190,13 @@ void ConditionGatherRunner::Init() {
   }
 
   for (size_t i = 0; i < input_num; ++i) {
-    const auto &input_device_tensor = AnfAlgo::GetPrevNodeMutableOutputAddr(kernel_, i, false);
+    const auto &input_kernel_tensor = AnfAlgo::GetPrevNodeOutputKernelTensor(kernel_, i, false);
+    MS_EXCEPTION_IF_NULL(input_kernel_tensor);
+    const auto &input_device_tensor = input_kernel_tensor->device_address();
     MS_EXCEPTION_IF_NULL(input_device_tensor);
-    (void)real_input_data_infos_.emplace_back(std::make_shared<InputDataInfo>(
-      kernel::GetFormatFromStrToEnum(input_device_tensor->format()), input_device_tensor->GetShapeVector(),
-      input_device_tensor->GetSize(), input_device_tensor->type_id()));
+    (void)real_input_data_infos_.emplace_back(
+      std::make_shared<InputDataInfo>(input_kernel_tensor->format(), input_kernel_tensor->GetShapeVector(),
+                                      input_device_tensor->GetSize(), input_kernel_tensor->dtype_id()));
   }
 
   for (size_t index : input_free_index_) {

@@ -75,7 +75,8 @@ void TrackInputOutputMemory(const std::vector<KernelTensor *> &input_launch_tens
     }
     device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(
       MarkTensorAsInput, actor_name, device::GetDeviceNameByType(device_addr->GetDeviceType()), device_addr->GetPtr(),
-      device_addr->type_id(), device_addr->GetShapeVector(), device_addr->GetTensorStorageInfo());
+      input_launch_tensors[i]->dtype_id(), input_launch_tensors[i]->GetShapeVector(),
+      device_addr->GetTensorStorageInfo());
   }
   for (size_t i = 0, end = output_launch_tensors.size(); i < end; i++) {
     auto device_addr = output_launch_tensors[i]->device_address().get();
@@ -84,7 +85,8 @@ void TrackInputOutputMemory(const std::vector<KernelTensor *> &input_launch_tens
     }
     device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(
       MarkTensorAsOutput, actor_name, device::GetDeviceNameByType(device_addr->GetDeviceType()), device_addr->GetPtr(),
-      device_addr->type_id(), device_addr->GetShapeVector(), device_addr->GetTensorStorageInfo());
+      output_launch_tensors[i]->dtype_id(), output_launch_tensors[i]->GetShapeVector(),
+      device_addr->GetTensorStorageInfo());
   }
 }
 
@@ -366,7 +368,7 @@ void KernelActor::InitInputInfo() {
     MS_EXCEPTION_IF_NULL(input_device_tensor);
     (void)real_input_data_infos_.emplace_back(std::make_shared<InputDataInfo>(
       kernel::GetFormatFromStrToEnum(input_device_tensor->format()), input_kernel_tensor->GetShapeVector(),
-      input_device_tensor->GetSize(), input_device_tensor->type_id()));
+      input_device_tensor->GetSize(), input_kernel_tensor->dtype_id()));
   }
 
   copy_input_kernel_tensors_.resize(real_input_num_);
@@ -446,8 +448,7 @@ void KernelActor::InitOutputInfo() {
     (void)output_kernel_tensors_.emplace_back(output_kernel_tensor);
     (void)output_launch_tensors_.emplace_back(output_kernel_tensor.get());
     MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
-      << "Init output[" << i << "] info for node:" << kernel_->fullname_with_scope() << " addr:" << output_address
-      << " type:" << output_address->type_id() << ", kernel tensor addr:" << output_kernel_tensor.get()
+      << "Init output[" << i << "] info for node:" << kernel_->fullname_with_scope()
       << ", kernel tensor: " << output_kernel_tensor->ToString();
     if (recorder_aid_ != nullptr) {
       (void)mem_info_.outputs_.emplace_back(std::make_shared<Address>());
@@ -455,8 +456,7 @@ void KernelActor::InitOutputInfo() {
     // The output taken over by soma does not need to allocate memory.
     if (kernel_info_->IsTensorEnableSomas(somas_outputs, i)) {
       output_kernel_tensor->set_managed_by_somas(true);
-      MS_LOG(INFO) << "Device address : " << output_address << ", kernel tensor : " << output_kernel_tensor
-                   << " is managed by somas.";
+      MS_LOG(INFO) << "Device address : " << output_address->ToString() << " is managed by somas.";
       // Somas outputs use the info of kernelMod, and output address use the info of device address.
       if (somas_outputs[i].second < output_address->GetSize()) {
         MS_LOG(INFO) << GetAID().Name() << " check somas size warning, output index:" << i
@@ -624,12 +624,13 @@ void KernelActor::ConvertInputContiguous(OpContext<KernelTensor> *const context)
       if (contiguous_tensors_[i] == nullptr) {
         // Make new device tensor and run InplaceCopy to make contiguous.
         MS_EXCEPTION_IF_NULL(old_storage_info);
-        auto address_size = GetTypeByte(TypeIdToType(input_device_tensor->type_id())) * SizeOf(old_storage_info->shape);
+        auto address_size =
+          GetTypeByte(TypeIdToType(input_kernel_tensors_[i]->dtype_id())) * SizeOf(old_storage_info->shape);
         auto kernel_tensor = AnfAlgo::CreateKernelTensor(
-          nullptr, address_size, Format::DEFAULT_FORMAT, input_device_tensor->type_id(), old_storage_info->shape,
+          nullptr, address_size, Format::DEFAULT_FORMAT, input_kernel_tensors_[i]->dtype_id(), old_storage_info->shape,
           device::GetDeviceNameByType(device_contexts_[0]->device_context_key().device_type_),
           device_contexts_[0]->device_context_key().device_id_);
-        kernel_tensor->SetType(std::make_shared<TensorType>(TypeIdToType(input_device_tensor->type_id())));
+        kernel_tensor->SetType(std::make_shared<TensorType>(TypeIdToType(input_kernel_tensors_[i]->dtype_id())));
         kernel_tensor->SetShape(std::make_shared<abstract::TensorShape>(old_storage_info->shape));
         kernel_tensor->set_stream_id(stream_id);
 
@@ -649,8 +650,7 @@ void KernelActor::ConvertInputContiguous(OpContext<KernelTensor> *const context)
         MS_EXCEPTION_IF_NULL(input_tensor->GetShape());
         new_kernel_tensor->SetShape(input_tensor->GetShape()->Clone());
         MS_EXCEPTION_IF_NULL(input_tensor->device_address());
-        auto address_size =
-          GetTypeByte(TypeIdToType(input_tensor->device_address()->type_id())) * SizeOf(old_storage_info->shape);
+        auto address_size = GetTypeByte(TypeIdToType(input_tensor->dtype_id())) * SizeOf(old_storage_info->shape);
         new_kernel_tensor->set_size(address_size);
       }
       new_device_address->set_tensor_storage_info(nullptr);
@@ -1031,7 +1031,7 @@ void KernelActor::CopyInputDeviceTensor(KernelTensorPtr kernel_tensor, size_t in
   auto &real_input_info = real_input_data_infos_[input_index];
   if ((device_tensor->GetDeviceType() == device_contexts_[0]->GetDeviceType()) &&
       AnfAlgo::IsEquivalentFormat(kernel_tensor->format(), real_input_info->format_) &&
-      device_tensor->type_id() == real_input_info->type_id_) {
+      kernel_tensor->dtype_id() == real_input_info->type_id_) {
     return;
   }
   if (in_increment) {

@@ -1444,7 +1444,7 @@ void MSBackendBase::ConstructOutputByTupleTensor(tensor::TensorPtr output_tensor
   }
 
   auto tensor_type_id = output_tensor->data_type();
-  auto device_tensor = std::dynamic_pointer_cast<device::DeviceAddress>(output_tensor->device_address());
+  auto device_tensor = output_tensor->device_address();
   MS_EXCEPTION_IF_NULL(device_tensor);
   auto tensor_device_ptr = device_tensor->GetMutablePtr();
   auto tensor_device_size = device_tensor->GetSize();

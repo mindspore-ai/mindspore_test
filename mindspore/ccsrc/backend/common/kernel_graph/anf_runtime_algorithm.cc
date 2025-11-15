@@ -2257,16 +2257,20 @@ void AnfRuntimeAlgorithm::PrintKernelTensor(const std::vector<KernelTensor *> &k
     std::ostringstream ofs;
     ofs << info << " index " << i << " kernel tensor:" << kernel_tensor->ToString();
     if (kernel_tensor->device_address() != nullptr && kernel_tensor->device_address()->GetPtr() != nullptr) {
-      ofs << " value:" << GetValueByDeviceAddress(kernel_tensor->device_address().get(), element_num);
+      ofs << " value:" << GetValueByDeviceAddress(kernel_tensor, element_num);
     }
     MS_LOG(WARNING) << ofs.str();
   }
 }
 
-std::string AnfRuntimeAlgorithm::GetValueByDeviceAddress(DeviceAddress *const device_address, size_t element_num) {
-  MS_EXCEPTION_IF_NULL(device_address);
+std::string AnfRuntimeAlgorithm::GetValueByDeviceAddress(KernelTensor *const kernel_tensor, size_t element_num) {
+  MS_EXCEPTION_IF_NULL(kernel_tensor);
+  if (kernel_tensor->device_address() == nullptr) {
+    return " null device address";
+  }
+  const auto &device_address = kernel_tensor->device_address();
   if (device_address->GetPtr() == nullptr) {
-    return "";
+    return " null ptr";
   }
   size_t size = device_address->GetSize();
   std::string value;
@@ -2286,37 +2290,37 @@ std::string AnfRuntimeAlgorithm::GetValueByDeviceAddress(DeviceAddress *const de
   }
   auto is_vaild_index = [element_num](size_t index, size_t total) { return index < total && index < element_num; };
   std::string result;
-  if (device_address->type_id() == TypeId::kNumberTypeInt32) {
+  if (kernel_tensor->dtype_id() == TypeId::kNumberTypeInt32) {
     for (size_t i = 0; is_vaild_index(i, size / sizeof(int)); ++i) {
       value += std::to_string((reinterpret_cast<int *>(buf))[i]);
       value += ", ";
     }
     result = " type int, value:" + value;
-  } else if (device_address->type_id() == TypeId::kNumberTypeInt64) {
+  } else if (kernel_tensor->dtype_id() == TypeId::kNumberTypeInt64) {
     for (size_t i = 0; is_vaild_index(i, size / sizeof(int64_t)); ++i) {
       value += std::to_string((reinterpret_cast<int64_t *>(buf))[i]);
       value += ", ";
     }
     result = " type int64, value:" + value;
-  } else if (device_address->type_id() == TypeId::kNumberTypeFloat32) {
+  } else if (kernel_tensor->dtype_id() == TypeId::kNumberTypeFloat32) {
     for (size_t i = 0; is_vaild_index(i, size / sizeof(float)); ++i) {
       value += std::to_string(reinterpret_cast<float *>((reinterpret_cast<void *>(buf)))[i]);
       value += ", ";
     }
     result = " type float32, value:" + value;
-  } else if (device_address->type_id() == TypeId::kNumberTypeFloat64) {
+  } else if (kernel_tensor->dtype_id() == TypeId::kNumberTypeFloat64) {
     for (size_t i = 0; is_vaild_index(i, size / sizeof(double)); ++i) {
       value += std::to_string((reinterpret_cast<double *>(reinterpret_cast<void *>(buf)))[i]);
       value += ", ";
     }
     result = " type floa64, value:" + value;
-  } else if (device_address->type_id() == TypeId::kNumberTypeBool) {
+  } else if (kernel_tensor->dtype_id() == TypeId::kNumberTypeBool) {
     for (size_t i = 0; is_vaild_index(i, size); ++i) {
       value += std::to_string((reinterpret_cast<bool *>(buf))[i]);
       value += ", ";
     }
     result = " type bool, value:" + value;
-  } else if (device_address->type_id() == TypeId::kNumberTypeFloat16) {
+  } else if (kernel_tensor->dtype_id() == TypeId::kNumberTypeFloat16) {
     constexpr size_t kFloat16TypeSize = 2;
     for (size_t i = 0; is_vaild_index(i, size / kFloat16TypeSize); ++i) {
       float fp32 = 0;
@@ -2325,7 +2329,7 @@ std::string AnfRuntimeAlgorithm::GetValueByDeviceAddress(DeviceAddress *const de
       value += ", ";
     }
     result = " type float16, value:" + value;
-  } else if (device_address->type_id() == TypeId::kNumberTypeBFloat16) {
+  } else if (kernel_tensor->dtype_id() == TypeId::kNumberTypeBFloat16) {
     constexpr size_t kFloat16TypeSize = 2;
     for (size_t i = 0; is_vaild_index(i, size / kFloat16TypeSize); ++i) {
       float fp32 = 0;

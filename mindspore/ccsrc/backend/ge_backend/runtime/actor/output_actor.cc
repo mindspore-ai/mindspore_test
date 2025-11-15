@@ -362,7 +362,7 @@ TensorPtr OutputActor::CreateOutputTensor(const AnfNodePtr &output_node, size_t 
   MS_EXCEPTION_IF_NULL(host_context);
   MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
 
-  const auto &device_tensor = AnfAlgo::GetMutableOutputAddr(output_node, output_index, false);
+  const auto &device_tensor = output_kernel_tensor->device_address();
   MS_EXCEPTION_IF_NULL(device_tensor);
   device_tensor->set_padding_type(AnfAlgo::GetOutputReshapeType(output_node, output_index));
   if (device::GetDeviceTypeByName(device_name) != device_tensor->GetDeviceType()) {
@@ -374,9 +374,9 @@ TensorPtr OutputActor::CreateOutputTensor(const AnfNodePtr &output_node, size_t 
   if (output_node_to_tensor_device_address_.count({output_node, output_index}) > 0) {
     tensor->set_device_address(output_node_to_tensor_device_address_[{output_node, output_index}]);
   } else {
-    auto kernel_tensor = AnfAlgo::CreateKernelTensor(
-      nullptr, device_tensor->GetSize(), kernel::GetFormatFromStrToEnum(device_tensor->format()),
-      device_tensor->type_id(), device_tensor->GetShapeVector(), device_name, device_id);
+    auto kernel_tensor = AnfAlgo::CreateKernelTensor(nullptr, device_tensor->GetSize(), output_kernel_tensor->format(),
+                                                     output_kernel_tensor->dtype_id(),
+                                                     output_kernel_tensor->GetShapeVector(), device_name, device_id);
     kernel_tensor->SetType(output_kernel_tensor->GetType());
     kernel_tensor->SetShape(output_kernel_tensor->GetShape());
     kernel_tensor->set_stream_id(device_tensor->stream_id());
@@ -384,10 +384,10 @@ TensorPtr OutputActor::CreateOutputTensor(const AnfNodePtr &output_node, size_t 
     kernel_tensor->set_size(device_tensor->GetSize());
     auto tensor_device_address = kernel_tensor->device_address();
     MS_EXCEPTION_IF_NULL(tensor_device_address);
-    MS_LOG(DEBUG) << "Create device tensor:" << tensor_device_address << ", size: " << kernel_tensor->size()
-                  << " type:" << tensor_device_address->type_id()
+    MS_LOG(DEBUG) << "Create device tensor:" << tensor_device_address->ToString()
                   << " output node:" << output_node->fullname_with_scope() << " output index:" << output_index
-                  << " output position:" << output_position << ", origin output device tensor: " << device_tensor;
+                  << " output position:" << output_position
+                  << ", origin output kernel tensor: " << output_kernel_tensor->ToString();
     tensor->set_device_address(tensor_device_address);
     output_node_to_tensor_device_address_[{output_node, output_index}] = tensor_device_address;
   }
@@ -505,7 +505,7 @@ void OutputActor::UpdateOutputDeviceAddress() {
     }
     device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(
       MarkTensorAsOutput, GetAID().Name(), device::GetDeviceNameByType(device_tensor->GetDeviceType()),
-      device_tensor->GetPtr(), device_tensor->type_id(), device_tensor->GetShapeVector(),
+      device_tensor->GetPtr(), output_kernel_tensors_[i]->dtype_id(), output_kernel_tensors_[i]->GetShapeVector(),
       device_tensor->GetTensorStorageInfo());
   }
 

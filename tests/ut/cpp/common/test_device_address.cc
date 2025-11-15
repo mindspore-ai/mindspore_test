@@ -130,12 +130,10 @@ static const std::unordered_map<TypeId, SrcCopyFunc> g_src_copy_map = {
 #undef REGISTER_SIZE
 // clang-format on
 
-void CopyData(const DeviceAddress *src_device_address, const DeviceAddress *dst_device_address) {
+void CopyData(const DeviceAddress *src_device_address, const DeviceAddress *dst_device_address, TypeId src_type_id,
+              TypeId dst_type_id) {
   MS_EXCEPTION_IF_NULL(src_device_address);
   MS_EXCEPTION_IF_NULL(dst_device_address);
-
-  TypeId src_type_id = src_device_address->type_id();
-  TypeId dst_type_id = dst_device_address->type_id();
   auto src_size = src_device_address->GetSize() / GetTypeSize(src_type_id);
   auto dst_size = dst_device_address->GetSize() / GetTypeSize(dst_type_id);
   if (src_size != dst_size) {
@@ -175,11 +173,6 @@ bool TestResManager::AsyncCopy(const DeviceAddressPtr &dst_device_sync, const De
     return true;
   }
 
-  if (dst_device_address->format() != src_device_address->format()) {
-    MS_LOG(ERROR) << "Format is different, src(format:" << src_device_address->format()
-                  << "), dst(format:" << dst_device_address->format() << ") for device address:" << dst_device_address;
-    return false;
-  }
   auto dst_ptr = dst_device_address->GetMutablePtr();
   auto src_ptr = src_device_address->GetMutablePtr();
   MS_EXCEPTION_IF_NULL(src_device_address->GetMutablePtr());
@@ -188,10 +181,8 @@ bool TestResManager::AsyncCopy(const DeviceAddressPtr &dst_device_sync, const De
     MS_LOG(DEBUG) << "host_ptr is equal to device ptr, request ignored.";
     return true;
   }
-  auto dst_type_id = dst_device_address->type_id();
-  auto src_type_id = src_device_address->type_id();
 
-  if (src_type_id == dst_type_id) {
+  if (src_ext == nullptr || dst_ext == nullptr || src_ext->dtype_id_ == dst_ext->dtype_id_) {
     if (src_device_address->GetSize() > dst_device_address->GetSize()) {
       MS_LOG(WARNING) << "Please check whether need sync data, src size: " << src_device_address->GetSize()
                       << ", dst size: " << dst_device_address->GetSize();
@@ -200,8 +191,9 @@ bool TestResManager::AsyncCopy(const DeviceAddressPtr &dst_device_sync, const De
     auto ret_code = memcpy_s(dst_ptr, src_device_address->GetSize(), src_ptr, src_device_address->GetSize());
     // Return ERANGE when the copy size is larger than SECUREC_MEM_MAX_LEN.
     if (ret_code == ERANGE) {
+      MS_EXCEPTION_IF_NULL(src_ext);
       device::ConvertSameType(dst_device_address->GetMutablePtr(), src_device_address->GetMutablePtr(),
-                              dst_device_address->GetSize(), src_type_id);
+                              dst_device_address->GetSize(), src_ext->dtype_id_);
     } else if (ret_code != EOK) {
       MS_LOG(ERROR) << "Failed to copy tensor from device address:" << src_device_address->ToString()
                     << " to :" << dst_device_address->ToString();
@@ -211,9 +203,9 @@ bool TestResManager::AsyncCopy(const DeviceAddressPtr &dst_device_sync, const De
     }
   }
 
-  MS_LOG(INFO) << "Types not match. src type: " << TypeIdLabel(src_type_id)
-               << ", dst type: " << TypeIdLabel(dst_type_id) << " device_address:" << dst_device_address << " !";
-  CopyData(src_device_address, dst_device_address);
+  MS_LOG(INFO) << "Types not match. src type: " << TypeIdLabel(src_ext->dtype_id_)
+               << ", dst type: " << TypeIdLabel(dst_ext->dtype_id_) << " device_address:" << dst_device_address << " !";
+  CopyData(src_device_address, dst_device_address, src_ext->dtype_id_, dst_ext->dtype_id_);
   return true;
 }
 

@@ -168,7 +168,7 @@ void DeviceAddressUtils::CopyNoneTensorDataToDevice(const device::DeviceContext 
   }
   const void *node_value = kernel_tensor->GetValuePtr();
   MS_EXCEPTION_IF_NULL(node_value);
-  if (device_address->type_id() == TypeId::kObjectTypeString && kernel_tensor->IsConstValue()) {
+  if (kernel_tensor->dtype_id() == TypeId::kObjectTypeString && kernel_tensor->IsConstValue()) {
     auto value = GetValue<std::string>(kernel_tensor->GetValueTrack());
     size_t tensor_size = value.size();
     ShapeVector tensor_shape{SizeToLong(tensor_size)};
@@ -279,7 +279,7 @@ void DeviceAddressUtils::CreateParameterDeviceAddress(const DeviceContext *devic
       device_address->SetNodeIndex(item, index);
       device_address->set_from_persistent_mem(item->isa<Parameter>());
       MS_LOG(DEBUG) << "Create addr for node:" << common::AnfAlgo::GetNodeDebugString(item)
-                    << " addr:" << device_address << " type:" << device_address->type_id();
+                    << " addr:" << device_address->ToString();
       AnfAlgo::SetOutputAddr(device_address, index, item);
     }
   }
@@ -555,8 +555,6 @@ void DeviceAddressUtils::CreateKernelOutputDeviceAddress(const DeviceContext *de
         device_address->set_from_persistent_mem(true);
       }
       MS_LOG(DEBUG) << "Create addr for node:" << kernel->fullname_with_scope() << " index:" << i
-                    << " addr:" << device_address << " type:" << device_address->type_id()
-                    << ", kernel tensor addr:" << kernel_tensor.get()
                     << ", kernel tensor: " << kernel_tensor->ToString() << " addr size:" << address_size
                     << " real size:" << device_address->GetSize();
       device_address->set_stream_id(AnfAlgo::GetStreamId(kernel));
@@ -595,9 +593,7 @@ void DeviceAddressUtils::CreateGraphOutputDeviceAddress(const DeviceContext *dev
         device::GetDeviceNameByType(real_device_context->device_context_key().device_type_),
         real_device_context->device_context_key().device_id_);
       kernel_tensor->set_stream_id(AnfAlgo::GetStreamId(output));
-      auto device_address = kernel_tensor->device_address();
-      MS_LOG(DEBUG) << "Create addr for node:" << output->DebugString() << " addr:" << device_address
-                    << " type:" << device_address->type_id();
+      MS_LOG(DEBUG) << "Create kernel tensor:" << kernel_tensor->ToString() << " for node:" << output->DebugString();
       AnfAlgo::SetOutputKernelTensor(kernel_tensor, i, output.get());
     }
   }
@@ -845,8 +841,8 @@ KernelTensorPtr DeviceAddressUtils::CloneEmptyKernelTensor(const KernelTensorPtr
   auto device_address = old_kernel_tensor->device_address();
   MS_EXCEPTION_IF_NULL(device_address);
   auto new_device_address = device_context->device_res_manager_->CreateDeviceAddress(
-    device_address->device_pointer()->ptr(), device_address->size(), device_address->GetShapeVector(),
-    old_kernel_tensor->format(), device_address->type_id(),
+    device_address->device_pointer()->ptr(), device_address->size(), old_kernel_tensor->GetShapeVector(),
+    old_kernel_tensor->format(), old_kernel_tensor->dtype_id(),
     device::GetDeviceNameByType(device_context->device_context_key().device_type_), device_address->stream_id());
   new_device_address->SetShapeVector(old_kernel_tensor->GetShapeVector());
   auto new_kernel_tensor = old_kernel_tensor->CloneKernelTensor();
@@ -859,9 +855,7 @@ KernelTensorPtr DeviceAddressUtils::CloneEmptyKernelTensor(const KernelTensorPtr
   MS_EXCEPTION_IF_NULL(old_device_address);
 
   new_kernel_tensor->set_device_ptr(nullptr);
-  MS_LOG(DEBUG) << "Create device tensor:" << new_device_address << ", kernel tensor: " << new_kernel_tensor
-                << ", type:" << new_device_address->type_id();
-
+  MS_LOG(DEBUG) << "Create kernel tensor: " << new_kernel_tensor->ToString() << " by:" << old_kernel_tensor->ToString();
   auto node = old_device_address->GetNodeIndex();
   new_device_address->SetNodeIndex(node.first, node.second);
   new_device_address->set_padding_type(old_device_address->padding_type());

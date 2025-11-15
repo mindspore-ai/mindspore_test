@@ -1440,19 +1440,20 @@ void GraphScheduler::PersistDeviceTensorForValueNode(const AnfNodePtr &value_nod
   // If the device tensor store of this device type is not exist, then create the new device tensor of this type.
   if (DeviceTensorStore::GetInstance().Fetch(front_node.get(), device::GetDeviceTypeByName(device_name)) == nullptr) {
     MS_LOG(INFO) << "Fetch no device tensor store by:" << front_node->fullname_with_scope() << ", type:" << device_name
-                 << " dtype:" << device_tensor->type_id() << " current device address:" << device_tensor
+                 << " dtype:" << old_kernel_tensor->dtype_id()
+                 << " current kernel tensor:" << old_kernel_tensor->ToString()
                  << " in value node:" << value_node->DebugString();
 
     const auto &kernel_tensor = AnfAlgo::CreateOutputKernelTensorWithDeviceInfo(
-      {value_node, 0}, nullptr, device_tensor->GetSize(), device_tensor->format(), device_tensor->type_id(),
-      device_tensor->GetShapeVector(), device_name, device_id);
+      {value_node, 0}, nullptr, device_tensor->GetSize(), kernel::GetFormatFromEnumToStr(old_kernel_tensor->format()),
+      old_kernel_tensor->dtype_id(), old_kernel_tensor->GetShapeVector(), device_name, device_id);
     kernel_tensor->set_stream_id(device_tensor->stream_id());
     auto other_type_device_tensor = kernel_tensor->device_address().get();
     MS_EXCEPTION_IF_NULL(other_type_device_tensor);
     other_type_device_tensor->SetNodeIndex(value_node, 0);
     other_type_device_tensor->set_from_persistent_mem(true);
-    MS_LOG(DEBUG) << "Create device tensor:" << other_type_device_tensor
-                  << " type:" << other_type_device_tensor->type_id() << ", kernel tensor: " << kernel_tensor;
+    MS_LOG(DEBUG) << "Create device tensor:" << kernel_tensor->ToString()
+                  << " by kernel tensor: " << kernel_tensor->ToString();
     SchedulerHelper::AddDeviceTensorStore(front_node, kernel_tensor);
   }
 }
@@ -1496,8 +1497,8 @@ void GraphScheduler::PersistDeviceTensorForParameter(const AnfNodePtr &parameter
     MS_LOG(INFO) << "Fetch no device tensor store by:" << front_node->fullname_with_scope() << ", type:" << device_name;
 
     const auto &kernel_tensor = AnfAlgo::CreateOutputKernelTensorWithDeviceInfo(
-      {parameter, 0}, nullptr, device_tensor->GetSize(), device_tensor->format(), device_tensor->type_id(),
-      device_tensor->GetShapeVector(), device_name, device_id);
+      {parameter, 0}, nullptr, device_tensor->GetSize(), kernel::GetFormatFromEnumToStr(old_kernel_tensor->format()),
+      old_kernel_tensor->dtype_id(), old_kernel_tensor->GetShapeVector(), device_name, device_id);
     kernel_tensor->set_stream_id(device_tensor->stream_id());
     auto other_type_device_tensor = kernel_tensor->device_address().get();
     if (front_node->isa<ValueNode>()) {
@@ -1509,8 +1510,8 @@ void GraphScheduler::PersistDeviceTensorForParameter(const AnfNodePtr &parameter
     }
     other_type_device_tensor->SetNodeIndex(parameter, 0);
     other_type_device_tensor->set_from_persistent_mem(true);
-    MS_LOG(DEBUG) << "Create device tensor:" << other_type_device_tensor
-                  << " type:" << other_type_device_tensor->type_id() << ", kernel tensor: " << kernel_tensor;
+    MS_LOG(DEBUG) << "Create kernel tensor:" << kernel_tensor->ToString()
+                  << " by kernel tensor: " << old_kernel_tensor->ToString();
     SchedulerHelper::AddDeviceTensorStore(front_node, kernel_tensor);
   }
 }
@@ -1561,8 +1562,9 @@ void GraphScheduler::PersistDeviceTensorForRootGraphControlNode(const GraphCompi
     MS_EXCEPTION_IF_NULL(sub_device_tensor);
 
     const auto &kernel_tensor = AnfAlgo::CreateOutputKernelTensorWithDeviceInfo(
-      {backend_node, index}, nullptr, sub_device_tensor->GetSize(), sub_device_tensor->format(),
-      sub_device_tensor->type_id(), sub_device_tensor->GetShapeVector(), device_name, device_id);
+      {backend_node, index}, nullptr, sub_device_tensor->GetSize(),
+      kernel::GetFormatFromEnumToStr(sub_kernel_tensor->format()), sub_kernel_tensor->dtype_id(),
+      sub_kernel_tensor->GetShapeVector(), device_name, device_id);
     kernel_tensor->set_stream_id(AnfAlgo::GetStreamId(backend_node));
     auto new_device_tensor = kernel_tensor->device_address().get();
     MS_EXCEPTION_IF_NULL(new_device_tensor);

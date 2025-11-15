@@ -338,7 +338,7 @@ void GraphCaptureManager::FetchAllInputsBeforeCaptureGraph(
       auto &real_input_info = real_input_data_infos[kernel_input_index];
       if ((device_tensor->GetDeviceType() != cur_device_context->GetDeviceType()) ||
           !AnfAlgo::IsEquivalentFormat(kernel_tensor->format(), real_input_info->format_) ||
-          device_tensor->type_id() != real_input_info->type_id_) {
+          kernel_tensor->dtype_id() != real_input_info->type_id_) {
         MS_EXCEPTION(RuntimeError) << "Does not support heterogeneous scenarios";
       }
       // deal weight/KV Cache
@@ -547,7 +547,7 @@ void GraphCaptureManager::UpdateFixAddressBeforeReplayGraph(
       << " super kernel actor context:" << cur_device_context->device_context_key().ToString();
     if ((device_tensor->GetDeviceType() != cur_device_context->GetDeviceType()) ||
         !AnfAlgo::IsEquivalentFormat(kernel_tensor->format(), real_input_info->format_) ||
-        device_tensor->type_id() != real_input_info->type_id_) {
+        kernel_tensor->dtype_id() != real_input_info->type_id_) {
       MS_EXCEPTION(RuntimeError) << "Does not support heterogeneous scenarios";
     }
     if (!AsyncCopy(fix_kernel_tensor.get(), kernel_tensor.get(), 0)) {

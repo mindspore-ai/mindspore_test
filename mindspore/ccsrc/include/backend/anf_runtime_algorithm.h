@@ -307,7 +307,7 @@ class BACKEND_COMMON_EXPORT AnfRuntimeAlgorithm {
 
   // Only used for ascend ops.
   static bool IsLaunchIgnoredInputAddressIdx(const AnfNodePtr &node, size_t input_idx);
-  static std::string GetValueByDeviceAddress(DeviceAddress *const device_address, size_t element_num);
+  static std::string GetValueByDeviceAddress(KernelTensor *const device_address, size_t element_num);
   static void PrintKernelTensor(const std::vector<KernelTensor *> &kernel_tensors, const std::string &info,
                                 size_t element_num);
   static KernelTensorPtr CreateKernelTensor(const abstract::BaseShapePtr &shape, const TypePtr &type,

@@ -363,8 +363,7 @@ void HostQueueDataSourceActor::ReleaseData() {
       MS_EXCEPTION_IF_NULL(new_kernel_tensor);
       auto new_address = new_kernel_tensor->device_address();
       MS_EXCEPTION_IF_NULL(new_address);
-      MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
-        << "Create device tensor:" << new_address << " type:" << new_address->type_id();
+      MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS) << "Create kernel tensor:" << new_kernel_tensor->ToString();
       new_kernel_tensor->set_new_ref_count(old_kernel_tensor->new_ref_count());
       new_address->set_ptr(nullptr);
       auto [node, index] = old_address->GetNodeIndex();
