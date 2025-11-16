@@ -23,6 +23,7 @@ This module provides:
   against reference backends.
 """
 # pylint: disable=R1705
+import warnings
 import torch
 import numpy as np
 import mindspore as ms
@@ -880,6 +881,21 @@ class OpsFactory():
         """
         if self.op_info.op_dynamic_inputs_func is None:
             print(f"\nop_name: {self.op_name} has no op_dynamic_inputs_func, skip test_op_dynamic.")
+            return
+
+        if self._device == 'ascend':
+            ascend_name = MSContext.get_instance().get_ascend_soc_version()
+            if ascend_name == 'ascend910' and not self.op_info.dtypes_ascend:
+                warnings.warn(f"op_name: {self.op_name} has no dtypes_ascend, skip test_op_dynamic.")
+                return
+            if ascend_name == 'ascend910b' and not self.op_info.dtypes_ascend910b:
+                warnings.warn(f"op_name: {self.op_name} has no dtypes_ascend910b, skip test_op_dynamic.")
+                return
+        if self._device == 'cpu' and not self.op_info.dtypes_cpu:
+            warnings.warn(f"op_name: {self.op_name} has no dtypes_cpu, skip test_op_dynamic.")
+            return
+        if self._device == 'gpu' and not self.op_info.dtypes_gpu:
+            warnings.warn(f"op_name: {self.op_name} has no dtypes_gpu, skip test_op_dynamic.")
             return
 
         try:

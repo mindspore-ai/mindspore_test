@@ -51,12 +51,11 @@ tensor::TensorPtr UpsampleBicubic2DGradAscendCustomize(const std::shared_ptr<OpR
   auto input_size_vector = ConvertValueTupleToVector<int64_t>(input_size);
 
   std::vector<int64_t> output_size_vector{};
-  constexpr pyfloat DEFAULT_SCALE_VALUE = -1.;
+  constexpr pyfloat DEFAULT_SCALE_VALUE = 0.;
   std::vector<pyfloat> scales(kDim2, DEFAULT_SCALE_VALUE);
   if (output_size.has_value()) {
     output_size_vector = ConvertValueTupleToVector<int64_t>(output_size.value());
   } else if (scale_factors.has_value()) {
-    MS_EXCEPTION(RuntimeError) << "For UpsampleBicubic2DGrad, scale_factors is not supported now.";
     scales = ConvertValueTupleToVector<pyfloat>(scale_factors.value());
     for (size_t i = 0; i < scales.size(); ++i) {
       output_size_vector.push_back(static_cast<int64_t>(input_size_vector[i + kDim2]) * scales[i]);

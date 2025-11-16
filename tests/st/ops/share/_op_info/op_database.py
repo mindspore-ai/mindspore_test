@@ -314,7 +314,6 @@ def dynamic_sample_inputs_mint_chunk(op_info: OpInfo, dtype=None, device=None, *
         )
 
 # sample inputs functions for gather
-
 def basic_sample_inputs_mint_gather(op_info: OpInfo, dtype=None, device=None, **kwargs):
     '''
     Generate basic sample inputs for mint.gather op.
@@ -524,6 +523,259 @@ def dynamic_sample_inputs_mint_gather(op_info: OpInfo, dtype=None, device=None, 
             ),
         )
 
+# sample inputs functions for mint.nn.functional.interpolate
+def _normalize_mode_and_ranks(mode: str):
+    # Map the op_db mode to runtime interpolate mode and supported ranks
+    if mode in ("nearest1d", "nearest2d", "nearest3d"):
+        internal_mode = "nearest"
+        ranks = {"nearest1d": [1], "nearest2d": [2], "nearest3d": [3]}[mode]
+    else:
+        internal_mode = mode
+        ranks = {
+            "nearest": [1, 2, 3],
+            "linear": [1],
+            "bilinear": [2],
+            "bicubic": [2],
+            "trilinear": [3],
+        }[mode]
+    return internal_mode, ranks
+
+
+def basic_sample_inputs_mint_interpolate(op_info: OpInfo, dtype=None, device=None, **kwargs):
+    '''
+    Generate basic sample inputs for mint.nn.functional.interpolate.
+    Reference torch's sample_inputs_interpolate:
+      - cover size and scale_factor usages
+      - align_corners for linear-family: True/False/None; for nearest: None only
+    '''
+    mode = kwargs.get("mode")
+    internal_mode, ranks = _normalize_mode_and_ranks(mode)
+
+    if internal_mode in ("linear", "bilinear", "bicubic", "trilinear"):
+        align_corners_options = (True, False, None)
+    else:
+        align_corners_options = (None,)
+
+    N, C = 1, 1
+    D = 2
+    S_small = 2
+    S_large = 3
+
+    def shape_with_nc(side: int, rank: int):
+        return tuple([N, C] + [side] * rank)
+
+    make_arg = functools.partial(make_tensor, device=device, dtype=dtype, low=-1, high=1)
+
+    for align_corners in align_corners_options:
+        for rank in ranks:
+            # Using size
+            size_small = tuple([S_small] * rank)
+            size_large = tuple([S_large] * rank)
+            yield OpSampleInput(
+                op_input=make_arg(shape_with_nc(D, rank)),
+                op_args=(),
+                op_kwargs={
+                    "size": size_small,
+                    "scale_factor": None,
+                    "mode": internal_mode,
+                    "align_corners": align_corners,
+                    "recompute_scale_factor": None,
+                },
+                op_name=op_info.name,
+            )
+            yield OpSampleInput(
+                op_input=make_arg(shape_with_nc(D, rank)),
+                op_args=(),
+                op_kwargs={
+                    "size": size_large,
+                    "scale_factor": None,
+                    "mode": internal_mode,
+                    "align_corners": align_corners,
+                    "recompute_scale_factor": None,
+                },
+                op_name=op_info.name,
+            )
+
+            # Using scale_factor and varying recompute_scale_factor
+            for recompute in (False, True):
+                for scale in (1.7, 0.6):
+                    yield OpSampleInput(
+                        op_input=make_arg(shape_with_nc(D, rank)),
+                        op_args=(),
+                        op_kwargs={
+                            "size": None,
+                            "scale_factor": scale,
+                            "mode": internal_mode,
+                            "align_corners": align_corners,
+                            "recompute_scale_factor": recompute,
+                        },
+                        op_name=op_info.name,
+                    )
+
+
+def dynamic_sample_inputs_mint_interpolate(op_info: OpInfo, dtype=None, device=None, **kwargs):
+    '''
+    Generate dynamic sample inputs for mint.nn.functional.interpolate.
+    Guideline based on upsample_forward_base inference:
+      - exactly one of size or scale_factor must be provided
+      - dynamic shape: spatial dims can be None at compile time
+      - dynamic rank: compile with shape=None and run with specific ranks
+    '''
+    mode = kwargs.get("mode")
+    internal_mode, ranks = _normalize_mode_and_ranks(mode)
+
+    if internal_mode in ("linear", "bilinear", "bicubic", "trilinear"):
+        dyn_align_corners = (True, False)
+    else:
+        dyn_align_corners = (None,)
+
+    N, C = 1, 1
+    D1 = 2
+    D2 = 3
+    S_target = 2
+
+    make_func = functools.partial(make_tensor, dtype=dtype, device=device, low=-1, high=1)
+
+    def nc_shape(rank: int, side: int):
+        return tuple([N, C] + [side] * rank)
+
+    if not kwargs.get("only_dynamic_rank", False):
+        # Dynamic shape with size fixed at compile time
+        for rank in ranks:
+            size_tuple = tuple([S_target] * rank)
+            for align_corners in dyn_align_corners:
+                yield OpDynamicInput(
+                    op_compile_input=OpSampleInput(
+                        op_input=ms.Tensor(shape=tuple([N, C] + [None] * rank), dtype=dtype),
+                        op_args=(),
+                        op_kwargs={
+                            "size": size_tuple,
+                            "scale_factor": None,
+                            "mode": internal_mode,
+                            "align_corners": align_corners,
+                            "recompute_scale_factor": None,
+                        },
+                        op_name=f'{op_info.name}_dynamic_shape_compile_input_size_r{rank}',
+                    ),
+                    op_running_inputs=(
+                        OpSampleInput(
+                            op_input=make_func(shape=nc_shape(rank, D1)),
+                            op_args=(),
+                            op_kwargs={
+                                "size": size_tuple,
+                                "scale_factor": None,
+                                "mode": internal_mode,
+                                "align_corners": align_corners,
+                                "recompute_scale_factor": None,
+                            },
+                            op_name=f'{op_info.name}_dynamic_shape_running_input_size_r{rank}',
+                        ),
+                        OpSampleInput(
+                            op_input=make_func(shape=nc_shape(rank, D2)),
+                            op_args=(),
+                            op_kwargs={
+                                "size": size_tuple,
+                                "scale_factor": None,
+                                "mode": internal_mode,
+                                "align_corners": align_corners,
+                                "recompute_scale_factor": None,
+                            },
+                            op_name=f'{op_info.name}_dynamic_shape_running_input_size_r{rank}',
+                        ),
+                    ),
+                )
+
+        # Dynamic shape with scale_factor fixed at compile time
+        for rank in ranks:
+            for align_corners in dyn_align_corners:
+                for scale in (1.7, 0.6):
+                    yield OpDynamicInput(
+                        op_compile_input=OpSampleInput(
+                            op_input=ms.Tensor(shape=tuple([N, C] + [None] * rank), dtype=dtype),
+                            op_args=(),
+                            op_kwargs={
+                                "size": None,
+                                "scale_factor": scale,
+                                "mode": internal_mode,
+                                "align_corners": align_corners,
+                                "recompute_scale_factor": None,
+                            },
+                            op_name=f'{op_info.name}_dynamic_shape_compile_input_scale_r{rank}',
+                        ),
+                        op_running_inputs=(
+                            OpSampleInput(
+                                op_input=make_func(shape=nc_shape(rank, D1)),
+                                op_args=(),
+                                op_kwargs={
+                                    "size": None,
+                                    "scale_factor": scale,
+                                    "mode": internal_mode,
+                                    "align_corners": align_corners,
+                                    "recompute_scale_factor": None,
+                                },
+                                op_name=f'{op_info.name}_dynamic_shape_running_input_scale_r{rank}',
+                            ),
+                            OpSampleInput(
+                                op_input=make_func(shape=nc_shape(rank, D2)),
+                                op_args=(),
+                                op_kwargs={
+                                    "size": None,
+                                    "scale_factor": scale,
+                                    "mode": internal_mode,
+                                    "align_corners": align_corners,
+                                    "recompute_scale_factor": None,
+                                },
+                                op_name=f'{op_info.name}_dynamic_shape_running_input_scale_r{rank}',
+                            ),
+                        ),
+                    )
+
+    if not kwargs.get("only_dynamic_shape", False):
+        # Dynamic rank with size specified
+        for rank in ranks:
+            size_tuple = tuple([S_target] * rank)
+            align_corners = dyn_align_corners[0]
+            yield OpDynamicInput(
+                op_compile_input=OpSampleInput(
+                    op_input=ms.Tensor(shape=None, dtype=dtype),
+                    op_args=(),
+                    op_kwargs={
+                        "size": size_tuple,
+                        "scale_factor": None,
+                        "mode": internal_mode,
+                        "align_corners": align_corners,
+                        "recompute_scale_factor": None,
+                    },
+                    op_name=f'{op_info.name}_dynamic_rank_compile_input_r{rank}',
+                ),
+                op_running_inputs=(
+                    OpSampleInput(
+                        op_input=make_func(shape=nc_shape(rank, D1)),
+                        op_args=(),
+                        op_kwargs={
+                            "size": size_tuple,
+                            "scale_factor": None,
+                            "mode": internal_mode,
+                            "align_corners": align_corners,
+                            "recompute_scale_factor": None,
+                        },
+                        op_name=f'{op_info.name}_dynamic_rank_running_input_r{rank}',
+                    ),
+                    OpSampleInput(
+                        op_input=make_func(shape=nc_shape(rank, D2)),
+                        op_args=(),
+                        op_kwargs={
+                            "size": size_tuple,
+                            "scale_factor": None,
+                            "mode": internal_mode,
+                            "align_corners": align_corners,
+                            "recompute_scale_factor": None,
+                        },
+                        op_name=f'{op_info.name}_dynamic_rank_running_input_r{rank}',
+                    ),
+                ),
+            )
+
 # op database
 op_db: Dict[str, OpInfo] = {
     'mint.add': BinaryOpInfo(
@@ -566,6 +818,8 @@ op_db: Dict[str, OpInfo] = {
         dtypes_cpu=(),
         dtypes_gpu=(),
         default_loss_override={ms.float16: 1e-3, ms.float32: 1e-4},
+        # tanh has precision problem when converting input from half(fp16) to float
+        convert_half_to_float=False,
     ),
     'Tensor.tanh': UnaryOpInfo(
         name='Tensor.tanh',
@@ -575,6 +829,8 @@ op_db: Dict[str, OpInfo] = {
         dtypes_ascend910b=tuple(d for d in dtypes_as_torch if (not d.is_complex and d != ms.float64)),
         dtypes_cpu=(),
         dtypes_gpu=(),
+        # tanh has precision problem when converting input from half(fp16) to float
+        convert_half_to_float=False,
     ),
     'mint.nn.Tanh': UnaryOpInfo(
         name='mint.nn.Tanh',
@@ -584,6 +840,8 @@ op_db: Dict[str, OpInfo] = {
         dtypes_ascend910b=tuple(d for d in dtypes_as_torch if (not d.is_complex and d != ms.float64)),
         dtypes_cpu=(),
         dtypes_gpu=(),
+        # tanh has precision problem when converting input from half(fp16) to float
+        convert_half_to_float=False,
     ),
     'mint.chunk': OpInfo(
         name='mint.chunk',
@@ -609,6 +867,94 @@ op_db: Dict[str, OpInfo] = {
         op_extra_reference_inputs_func=extra_sample_inputs_mint_gather,
         op_dynamic_inputs_func=dynamic_sample_inputs_mint_gather,
     ),
+    'mint.nn.functional.interpolate(mode="bilinear")': OpInfo(
+        name='mint.nn.functional.interpolate(mode="bilinear")',
+        op=mint.nn.functional.interpolate,
+        ref=torch.nn.functional.interpolate,
+        # On Ascend 910A, the results match PTA bitwise, but the deviation vs torch_cpu is large,
+        # thus it should be considered unavailable.
+        dtypes_ascend=(),
+        dtypes_ascend910b=(ms.float16, ms.float32),
+        dtypes_cpu=(),
+        dtypes_gpu=(),
+        op_basic_reference_inputs_func=functools.partial(basic_sample_inputs_mint_interpolate, mode="bilinear"),
+        op_extra_reference_inputs_func=None,
+        op_dynamic_inputs_func=functools.partial(dynamic_sample_inputs_mint_interpolate, mode="bilinear"),
+    ),
+    'mint.nn.functional.interpolate(mode="trilinear")': OpInfo(
+        name='mint.nn.functional.interpolate(mode="trilinear")',
+        op=mint.nn.functional.interpolate,
+        ref=torch.nn.functional.interpolate,
+        dtypes_ascend=(ms.float16, ms.float32, ms.float64),
+        dtypes_ascend910b=(ms.float16, ms.float32, ms.float64),
+        dtypes_cpu=(),
+        dtypes_gpu=(),
+        op_basic_reference_inputs_func=functools.partial(basic_sample_inputs_mint_interpolate, mode="trilinear"),
+        op_extra_reference_inputs_func=None,
+        op_dynamic_inputs_func=functools.partial(dynamic_sample_inputs_mint_interpolate, mode="trilinear"),
+    ),
+    'mint.nn.functional.interpolate(mode="bicubic")': OpInfo(
+        name='mint.nn.functional.interpolate(mode="bicubic")',
+        op=mint.nn.functional.interpolate,
+        ref=torch.nn.functional.interpolate,
+        dtypes_ascend=(ms.float16, ms.float32),
+        dtypes_ascend910b=(ms.float16, ms.float32),
+        dtypes_cpu=(),
+        dtypes_gpu=(),
+        op_basic_reference_inputs_func=functools.partial(basic_sample_inputs_mint_interpolate, mode="bicubic"),
+        op_extra_reference_inputs_func=None,
+        op_dynamic_inputs_func=functools.partial(dynamic_sample_inputs_mint_interpolate, mode="bicubic"),
+    ),
+    'mint.nn.functional.interpolate(mode="linear")': OpInfo(
+        name='mint.nn.functional.interpolate(mode="linear")',
+        op=mint.nn.functional.interpolate,
+        ref=torch.nn.functional.interpolate,
+        # On Ascend 910A, the results match PTA bitwise, but the deviation vs torch_cpu is large,
+        # thus it should be considered unavailable.
+        dtypes_ascend=(),
+        dtypes_ascend910b=(ms.float16, ms.float32),
+        dtypes_cpu=(),
+        dtypes_gpu=(),
+        op_basic_reference_inputs_func=functools.partial(basic_sample_inputs_mint_interpolate, mode="linear"),
+        op_extra_reference_inputs_func=None,
+        op_dynamic_inputs_func=functools.partial(dynamic_sample_inputs_mint_interpolate, mode="linear"),
+    ),
+    'mint.nn.functional.interpolate(mode="nearest")-1d': OpInfo(
+        name='mint.nn.functional.interpolate(mode="nearest")-1d',
+        op=mint.nn.functional.interpolate,
+        ref=torch.nn.functional.interpolate,
+        dtypes_ascend=(ms.uint8, ms.float16, ms.float32, ms.float64),
+        dtypes_ascend910b=(ms.uint8, ms.float16, ms.float32, ms.float64, ms.bfloat16),
+        dtypes_cpu=(),
+        dtypes_gpu=(),
+        op_basic_reference_inputs_func=functools.partial(basic_sample_inputs_mint_interpolate, mode="nearest1d"),
+        op_extra_reference_inputs_func=None,
+        op_dynamic_inputs_func=functools.partial(dynamic_sample_inputs_mint_interpolate, mode="nearest1d"),
+    ),
+    'mint.nn.functional.interpolate(mode="nearest")-2d': OpInfo(
+        name='mint.nn.functional.interpolate(mode="nearest")-2d',
+        op=mint.nn.functional.interpolate,
+        ref=torch.nn.functional.interpolate,
+        dtypes_ascend=(ms.uint8, ms.float16, ms.float32),
+        dtypes_ascend910b=(ms.uint8, ms.float16, ms.float32, ms.bfloat16),
+        dtypes_cpu=(),
+        dtypes_gpu=(),
+        op_basic_reference_inputs_func=functools.partial(basic_sample_inputs_mint_interpolate, mode="nearest2d"),
+        op_extra_reference_inputs_func=None,
+        op_dynamic_inputs_func=functools.partial(dynamic_sample_inputs_mint_interpolate, mode="nearest2d"),
+    ),
+    'mint.nn.functional.interpolate(mode="nearest")-3d': OpInfo(
+        name='mint.nn.functional.interpolate(mode="nearest")-3d',
+        op=mint.nn.functional.interpolate,
+        ref=torch.nn.functional.interpolate,
+        dtypes_ascend=(ms.float16, ms.float32, ms.float64),
+        dtypes_ascend910b=(ms.float16, ms.float32, ms.float64),
+        dtypes_cpu=(),
+        dtypes_gpu=(),
+        op_basic_reference_inputs_func=functools.partial(basic_sample_inputs_mint_interpolate, mode="nearest3d"),
+        op_extra_reference_inputs_func=None,
+        op_dynamic_inputs_func=functools.partial(dynamic_sample_inputs_mint_interpolate, mode="nearest3d"),
+    ),
 }
 
 all_op_db = list(op_db.keys())
@@ -626,7 +972,14 @@ unary_op_db = [
 
 other_op_db = [
     'mint.chunk',
-    'mint.gather'
+    'mint.gather',
+    'mint.nn.functional.interpolate(mode="bilinear")',
+    'mint.nn.functional.interpolate(mode="trilinear")',
+    'mint.nn.functional.interpolate(mode="bicubic")',
+    'mint.nn.functional.interpolate(mode="linear")',
+    'mint.nn.functional.interpolate(mode="nearest")-1d',
+    'mint.nn.functional.interpolate(mode="nearest")-2d',
+    'mint.nn.functional.interpolate(mode="nearest")-3d',
 ]
 
 def get_op_info(op_name: str, *, op_database: Optional[Dict[str, OpInfo]] = None) -> OpInfo:
