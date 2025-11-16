@@ -35,24 +35,34 @@ def execute_command(cmd_list, timeout=1000.0):
         str: The decoded standard output from the command execution.
     """
     cmd_str = " ".join(cmd_list)
-    with subprocess.Popen(
-        cmd_list,
-        shell=False,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        text=True,
-        encoding="utf-8",
-        errors="strict"
-    ) as p:
-        try:
-            out, err = p.communicate(timeout=timeout)
-        except subprocess.TimeoutExpired as e:
-            p.kill()
-            raise RuntimeError(f"Command '{cmd_str}' timed out after {timeout}s!") from e
+    try:
+        with subprocess.Popen(
+            cmd_list,
+            shell=False,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            encoding="utf-8",
+            errors="strict"
+        ) as p:
+            try:
+                out, err = p.communicate(timeout=timeout)
+            except subprocess.TimeoutExpired as e:
+                p.kill()
+                raise RuntimeError(f"Command '{cmd_str}' timed out after {timeout}s!") from e
 
-        if p.returncode != 0:
-            raise RuntimeError(f"Command '{cmd_str}' failed (return code {p.returncode})! Stderr: {err.strip()}")
-    return out
+            if p.returncode != 0:
+                raise RuntimeError(f"Command '{cmd_str}' failed (return code {p.returncode})! Stderr: {err.strip()}")
+        return out
+    except FileNotFoundError as e:
+        raise RuntimeError(f"Command '{cmd_str}' not found!") from e
+    except PermissionError as e:
+        raise RuntimeError(f"Permission denied to execute '{cmd_str}'!") from e
+    except OSError as e:
+        raise RuntimeError(f"Command '{cmd_str}' failed to start (system error): {str(e)} Possible causes: missing "
+                           "dependent libraries, insufficient system resources, etc.") from e
+    except Exception as e:
+        raise RuntimeError(f"Failed to execute '{cmd_str}'! {e}") from e
 
 
 def _adapt_to_dict(affinity_cpu_list):
