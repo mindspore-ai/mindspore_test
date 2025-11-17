@@ -452,10 +452,10 @@ COMMON_EXPORT void SetTensorPyType(PyTypeObject *TensorPyType);
 /// \brief alloc Python Tensor from C++ Tensor.
 /// \param[in] tensor [TensorPtr] C++ Tensor.
 /// \return A PyObject address of Python Tensor.
-COMMON_EXPORT PyObject *TensorPythonInit(TensorPtr tensor);
+COMMON_EXPORT PyObject *TensorPythonInit(const TensorPtr &tensor);
 COMMON_EXPORT PyObject *TensorPythonInitFromTensor(TensorPtr tensor);
 
-COMMON_EXPORT py::object PackTensorToPyObject(TensorPtr tensor);
+COMMON_EXPORT py::object PackTensorToPyObject(const TensorPtr &tensor);
 
 /// \brief Get the Python Tensor Object.
 /// \return The python Tensor.

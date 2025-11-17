@@ -750,10 +750,10 @@ const py::handle ConvertToTensorPy(const py::handle &obj) {
   return nullptr;
 }
 
-PyObject *TensorPythonInit(TensorPtr tensor) {
-  PyObject *tensorPythonClass = PyObject_GetAttrString(PyObjManager::Get().GetTensorModule(), "Tensor");
-  PyObject *obj = (reinterpret_cast<PyTypeObject *>(tensorPythonClass))
-                    ->tp_alloc(reinterpret_cast<PyTypeObject *>(tensorPythonClass), 0);
+PyObject *TensorPythonInit(const TensorPtr &tensor) {
+  PyObject *python_tensor_class = PyObjManager::Get().GetTensorPythonClass();
+  PyObject *obj = (reinterpret_cast<PyTypeObject *>(python_tensor_class))
+                    ->tp_alloc(reinterpret_cast<PyTypeObject *>(python_tensor_class), 0);
   if (obj == nullptr) {
     PyErr_SetString(PyExc_RuntimeError, "Failed to create TensorPy object");
     return nullptr;
@@ -792,13 +792,13 @@ PyTypeObject *GetTensorPyType() { return TensorPy_Type; }
 
 void SetTensorPyType(PyTypeObject *TensorPyType) { TensorPy_Type = TensorPyType; }
 
-py::object PackTensorToPyObject(TensorPtr tensor) {
+py::object PackTensorToPyObject(const TensorPtr &tensor) {
   PyObject *tensor_py = TensorPythonInit(tensor);
   return py::reinterpret_steal<py::object>(tensor_py);
 }
 
 PyObject *PackTensor(const TensorPtr &tensor, bool has_side_effect) {
-  PyObject *python_tensor_class = PyObject_GetAttrString(PyObjManager::Get().GetTensorModule(), "Tensor");
+  PyObject *python_tensor_class = PyObjManager::Get().GetTensorPythonClass();
   auto tensor_py_type = reinterpret_cast<PyTypeObject *>(python_tensor_class);
   PyObject *obj = tensor_py_type->tp_alloc(tensor_py_type, 0);
   if (obj == nullptr) {
@@ -813,7 +813,7 @@ PyObject *PackTensor(const TensorPtr &tensor, bool has_side_effect) {
 }
 
 PyObject *PackStubTensor(const stub::StubNodePtr &stub_node) {
-  PyObject *python_tensor_class = PyObject_GetAttrString(PyObjManager::Get().GetTensorModule(), "Tensor");
+  PyObject *python_tensor_class = PyObjManager::Get().GetTensorPythonClass();
   auto tensor_py_type = reinterpret_cast<PyTypeObject *>(python_tensor_class);
   PyObject *obj = tensor_py_type->tp_alloc(tensor_py_type, 0);
   if (obj == nullptr) {
