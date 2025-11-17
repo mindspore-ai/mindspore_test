@@ -19,7 +19,7 @@ from mindspore._c_expression import set_device_limit as set_device_limit_
 
 def get_device_limit(device):
     r"""
-    Return current device limit core num.
+    Return selected device limit core num.
 
     Note:
         This interface will synchronize the operator issuance, which may affect performance.
@@ -43,15 +43,15 @@ def get_device_limit(device):
 
 def set_device_limit(device, cube_num=-1, vector_num=-1):
     r"""
-    Sets the device limit.
+    Sets selected device limit.
 
     Note:
         This interface will synchronize the operator issuance, which may affect performance.
 
     Args:
         device (int): selected set device id.
-        cube_num (int): set cube num for device.
-        vector_num (int): set vector num for device.
+        cube_num (int, optional): set cube num for device. Default is ``-1``, indicating that it is not set.
+        vector_num (int, optional): set vector num for device. Default is ``-1``, indicating that it is not set.
 
     Supported Platforms:
         ``Ascend``

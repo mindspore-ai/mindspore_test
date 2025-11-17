@@ -21,13 +21,13 @@ from .stream import Stream
 
 def get_stream_limit(stream):
     r"""
-    Return current stream limit core num.
+    Return selected stream limit core num.
 
     Note:
         This interface will synchronize the operator issuance, which may affect performance.
 
     Args:
-        stream (Stream): selected stream.
+        stream (:class:`mindspore.runtime.Stream`): selected stream.
 
     Returns:
         limit info (dict), stream limit core num.
@@ -50,12 +50,12 @@ def get_stream_limit(stream):
 
 def set_stream_limit(stream, cube_num=-1, vector_num=-1):
     r"""
-    Sets the stream limit.
+    Sets selected stream limit.
 
     Args:
-        stream (Stream): set stream id.
-        cube_num (int): set cube num for steam.
-        vector_num (int): set vector num for steam.
+        stream (:class:`mindspore.runtime.Stream`): selected stream.
+        cube_num (int, optional): set cube num for steam. Default is ``-1``, indicating that it is not set.
+        vector_num (int, optional): set vector num for steam. Default is ``-1``, indicating that it is not set.
 
     Supported Platforms:
         ``Ascend``
@@ -75,13 +75,13 @@ def set_stream_limit(stream, cube_num=-1, vector_num=-1):
 
 def reset_stream_limit(stream):
     r"""
-    Reset the stream limit.
+    Reset selected stream limit.
 
     Note:
         This interface will synchronize the operator issuance, which may affect performance.
 
     Args:
-        stream (Stream): reset stream id.
+        stream (:class:`mindspore.runtime.Stream`): selected stream.
 
     Supported Platforms:
         ``Ascend``
@@ -101,18 +101,18 @@ def reset_stream_limit(stream):
 
 class StreamLimitCtx:
     r"""
-    Context-manager that selects a given stream limit.
+    Context-manager that selects a given stream core number limit.
 
     All kernels queued within its context will be enqueued on a selected
     stream.
 
     Args:
-        stream (Stream): selected stream.
-        cube_num (int): set aic num for steam.
-        vector_num (int): set aiv num for steam.
+        stream (:class:`mindspore.runtime.Stream`): selected stream.
+        cube_num (int, optional): set cube num for steam. Default is ``-1``, indicating that it is not set.
+        vector_num (int, optional): set vector num for steam. Default is ``-1``, indicating that it is not set.
 
     Raises:
-        TypeError: If 'stream' is neither a :class:`mindspore.runtime.Stream` nor a ``None``.
+        TypeError: If `stream` is not :class:`mindspore.runtime.Stream`.
 
     Supported Platforms:
         ``Ascend``
