@@ -1,5 +1,5 @@
 /**
- * Copyright 2021-2022 Huawei Technologies Co., Ltd
+ * Copyright 2021-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
  */
 #include <memory>
 #include <vector>
+#include <string>
 
 #include "backend/ms_backend/graph_fusion/expanders/op_desc_registry.h"
 
@@ -117,8 +118,4 @@ class Squeeze : public OpDesc {
   ShapeVector target_shape_;
 };
 EXPANDER_OP_DESC_REGISTER("Squeeze", Squeeze);
-
-ShapeVector ExpandDimsInferShape(const ShapeVector &shape, const std::vector<int64_t> &axis) {
-  return ExpandDims::InferShape(shape, axis);
-}
 }  // namespace mindspore::graphkernel::expanders

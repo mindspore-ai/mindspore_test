@@ -1,5 +1,5 @@
 /**
- * Copyright 2021-2024 Huawei Technologies Co., Ltd
+ * Copyright 2021-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@
 #include <vector>
 #include <queue>
 #include <map>
+#include <set>
 #include <utility>
 #include <string>
 #include <tuple>
@@ -332,22 +333,6 @@ class TransposeHandle : public TransformOp {
 
  private:
   std::map<NodePtr, tensor::TensorPtr> node_to_input_tensor_map_;
-};
-
-class LayoutTransformHandle : public TransformOp {
- public:
-  using TransformOp::TransformOp;
-  NodePtr GenTransformOp(const NodePtr &, TransOpType trans_type) override {
-    auto op = inner::OpRegistry::Instance().NewOp(op_);
-    if (trans_type == TransOpType::kTransAB) {
-      op->SetAttr(kAttrSrcFormat, MakeValue(format_a_));
-      op->SetAttr(kAttrDstFormat, MakeValue(format_b_));
-    } else {
-      op->SetAttr(kAttrSrcFormat, MakeValue(format_b_));
-      op->SetAttr(kAttrDstFormat, MakeValue(format_a_));
-    }
-    return op;
-  }
 };
 
 class ReshapeHandle : public TransformOp {
@@ -719,7 +704,6 @@ bool TransformOpOptimizer::Process(const LiteGraphPtr &litegraph, const Transfor
 
 void TransformOpOptimizer::Init() {
   (void)supported_ops_.emplace_back(TRANS_OP_CREATOR("Transpose", TransposeHandle));
-  (void)supported_ops_.emplace_back(TRANS_OP_CREATOR("LayoutTransform", LayoutTransformHandle));
   (void)supported_ops_.emplace_back(TRANS_OP_CREATOR("Reshape", ReshapeHandle));
 }
 

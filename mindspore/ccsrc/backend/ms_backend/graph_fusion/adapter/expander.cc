@@ -80,8 +80,6 @@ ExpanderPtr GetExpander(const AnfNodePtr &node, const ExpanderPtr &init) {
     {prim::kPrimDropout->name(), {DropoutExpanderDeco::Creator}},
     {prim::kPrimArgMaxWithValue->name(), {ArgWithValueDeco::Creator}},
     {prim::kPrimArgMinWithValue->name(), {ArgWithValueDeco::Creator}},
-    {prim::kPrimSolveTriangular->name(), {ProcessCustomOpDeco::Creator}},
-    {prim::kPrimLU->name(), {ProcessCustomOpDeco::Creator}},
     {prim::kPrimExpandDims->name(), {DependValueDeco::GetCreator({1})}},
     {prim::kPrimReduceMean->name(), {DependValueDeco::GetCreator({1})}},
     {prim::kPrimTile->name(), {DependValueDeco::GetCreator({1})}},
@@ -110,23 +108,6 @@ ExpanderPtr GetExpander(const AnfNodePtr &node, bool abstract) {
           std::static_pointer_cast<Callback>(std::make_shared<CallbackImplWithInferShape>()))
       : std::make_shared<LitegraphExpander>(std::static_pointer_cast<Callback>(std::make_shared<CallbackImpl>()));
   return GetExpander(node, expander);
-}
-
-AnfNodePtr ProcessCustomOpDeco::Run(const AnfNodePtr &node) {
-  if (node == nullptr) {
-    return nullptr;
-  }
-  auto new_node = decorated_->Run(node);
-  auto graph = GetCNodeFuncGraph(new_node);
-  if (graph == nullptr) {
-    return nullptr;
-  }
-  auto optimizer = std::make_shared<opt::GraphOptimizer>();
-  auto pm = std::make_shared<opt::PassManager>();
-  pm->AddPass(std::make_shared<opt::InplaceAssignForCustomOp>());
-  optimizer->AddPassManager(pm);
-  (void)optimizer->Optimize(graph);
-  return new_node;
 }
 
 void SetDynamicShapeAttrToCNode(const CNodePtr &cnode) {

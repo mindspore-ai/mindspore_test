@@ -77,26 +77,6 @@ bool CheckAttrs(const DefaultIrBuilder *ib, const std::vector<std::string> &attr
   return true;
 }
 
-bool CheckSupportFormat(const DefaultIrBuilder *ib, const std::vector<std::vector<std::string>> &formats_list) {
-  for (auto &formats : formats_list) {
-    if (formats.size() != ib->inputs().size()) {
-      continue;
-    }
-    bool match = true;
-    for (size_t i = 0; i < formats.size(); i++) {
-      if (ib->inputs()[i]->GetFormat() != formats[i]) {
-        match = false;
-        break;
-      }
-    }
-    if (match) {
-      return true;
-    }
-  }
-  MS_LOG(INFO) << "unsupported format for op " << ib->name();
-  return false;
-}
-
 ShapeVector ExpandDimsInferShape(const ShapeVector &shape, const std::vector<int64_t> &axis) {
   ShapeVector new_shape = shape;
   for (auto x : axis) {

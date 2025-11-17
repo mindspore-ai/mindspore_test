@@ -125,12 +125,6 @@ class BroadcastOp : public PrimOp {
   NodePtr InferValue(const NodePtrList &inputs, const DAttrs &attrs) override { return nullptr; }
 };
 
-class TileOp : public BroadcastOp {
- public:
-  explicit TileOp(const std::string &op) : BroadcastOp(op) {}
-  ~TileOp() = default;
-};
-
 class ReduceOp : public PrimOp {
  public:
   explicit ReduceOp(const std::string &op) : PrimOp(op, ComputeType::REDUCE) {}
@@ -179,37 +173,6 @@ class TransposeOp : public OpaqueOp {
   DFormat InferFormat(const NodePtrList &inputs, const DAttrs &attrs) override;
 };
 
-class OneHotOp : public OpaqueOp {
- public:
-  explicit OneHotOp(const std::string &op) : OpaqueOp(op) {}
-  ~OneHotOp() = default;
-
- protected:
-  void RectifyAbstract(const PrimitivePtr &, AbstractBasePtrList *input_abstract_ptr) override;
-};
-
-class CumSumOp : public OpaqueOp {
- public:
-  explicit CumSumOp(const std::string &op) : OpaqueOp(op) {}
-  ~CumSumOp() = default;
-
- protected:
-  void RectifyAbstract(const PrimitivePtr &, AbstractBasePtrList *input_abstract_ptr) override;
-};
-
-class LayoutTransformOp : public OpaqueOp {
- public:
-  explicit LayoutTransformOp(const std::string &op) : OpaqueOp(op) {}
-  ~LayoutTransformOp() = default;
-
- protected:
-  std::vector<DShape> InferShape(const NodePtrList &inputs, const DAttrs &attrs) override;
-  std::vector<TypeId> InferType(const NodePtrList &inputs, const DAttrs &) override { return {inputs[0]->type}; }
-  DFormat InferFormat(const NodePtrList &, const DAttrs &attrs) override {
-    return GetValue<std::string>(attrs.find("dst_format")->second);
-  }
-};
-
 class ElemAnyOp : public OpaqueOp {
  public:
   explicit ElemAnyOp(const std::string &op) : OpaqueOp(op) {}
@@ -238,21 +201,6 @@ class ShapeOp : public OpaqueOp {
   }
   std::vector<TypeId> InferType(const NodePtrList &, const DAttrs &) override { return {TypeId::kNumberTypeInt32}; }
   DFormat InferFormat(const NodePtrList &, const DAttrs &) override { return kOpFormat_DEFAULT; };
-};
-
-class ConstantOfShapeOp : public OpaqueOp {
- public:
-  explicit ConstantOfShapeOp(const std::string &op) : OpaqueOp(op) {}
-  ~ConstantOfShapeOp() = default;
-
-  NodePtr InferValue(const NodePtrList &inputs, const DAttrs &attrs) override;
-
- protected:
-  std::vector<DShape> InferShape(const NodePtrList &inputs, const DAttrs &attrs) override;
-  std::vector<TypeId> InferType(const NodePtrList &, const DAttrs &attrs) override {
-    return {static_cast<TypeId>(GetValue<int64_t>(attrs.find("data_type")->second))};
-  }
-  DFormat InferFormat(const NodePtrList &, const DAttrs &) override { return kOpFormat_DEFAULT; }
 };
 
 class PadAkgOp : public OpaqueOp {
@@ -287,19 +235,6 @@ class Conv2dOp : public OpaqueOp {
   DFormat InferFormat(const NodePtrList &inputs, const DAttrs &attrs) override;
 };
 
-class GatherOp : public OpaqueOp {
- public:
-  explicit GatherOp(const std::string &op) : OpaqueOp(op) {}
-  ~GatherOp() = default;
-  NodePtr InferValue(const NodePtrList &inputs, const DAttrs &attrs) override;
-
- protected:
-  template <typename TM>
-  tensor::TensorPtr CalcGather(const NodePtrList &inputs, const DAttrs &attrs) const;
-  DFormat InferFormat(const NodePtrList &, const DAttrs &) override { return kOpFormat_DEFAULT; };
-  void RectifyAbstract(const PrimitivePtr &, AbstractBasePtrList *input_abstract_ptr) override;
-};
-
 class ConcatOp : public OpaqueOp {
  public:
   explicit ConcatOp(const std::string &op) : OpaqueOp(op) {}
@@ -327,16 +262,6 @@ class CImagRealOp : public ElemwiseOp {
 
   std::vector<DShape> InferShape(const NodePtrList &inputs, const DAttrs &) override { return {inputs[0]->shape}; }
   std::vector<TypeId> InferType(const NodePtrList &, const DAttrs &) override { return {TypeId::kNumberTypeFloat32}; }
-};
-
-class Pool2DOp : public OpaqueOp {
- public:
-  explicit Pool2DOp(const std::string &op) : OpaqueOp(op) {}
-  ~Pool2DOp() = default;
-
- protected:
-  std::vector<DShape> InferShape(const NodePtrList &inputs, const DAttrs &attrs) override;
-  std::vector<TypeId> InferType(const NodePtrList &inputs, const DAttrs &) override { return {inputs[0]->type}; }
 };
 
 class ComplexOp : public ElemwiseOp {
@@ -374,22 +299,6 @@ class StridedSliceOp : public OpaqueOp {
   }
 };
 
-class StridedSliceOnnxOp : public OpaqueOp {
- public:
-  explicit StridedSliceOnnxOp(const std::string &op) : OpaqueOp(op) {}
-  ~StridedSliceOnnxOp() = default;
-  NodePtr InferValue(const NodePtrList &inputs, const DAttrs &attrs) override;
-
- protected:
-  template <typename TM>
-  tensor::TensorPtr CalcStridedSliceOnnx(const NodePtrList &inputs, const DAttrs &) const;
-  std::vector<DShape> InferShape(const NodePtrList &, const DAttrs &attrs) override {
-    return GetValue<std::vector<DShape>>(attrs.find("output_shape")->second);
-  }
-  std::vector<TypeId> InferType(const NodePtrList &inputs, const DAttrs &) override { return {inputs[0]->type}; }
-  DFormat InferFormat(const NodePtrList &, const DAttrs &) override { return kOpFormat_DEFAULT; }
-};
-
 class MatMulOp : public OpaqueOp {
  public:
   explicit MatMulOp(const std::string &op) : OpaqueOp(op) {}
@@ -405,15 +314,6 @@ class TupleGetItemOp : public VirtualOp {
  public:
   using VirtualOp::VirtualOp;
   ~TupleGetItemOp() = default;
-};
-
-class PagedAttentionOp : public OpaqueOp {
- public:
-  explicit PagedAttentionOp(const std::string &op) : OpaqueOp(op) {}
-  ~PagedAttentionOp() = default;
-
- protected:
-  void RectifyAbstract(const PrimitivePtr &, AbstractBasePtrList *input_abstract_ptr) override;
 };
 }  // namespace mindspore::graphkernel::inner
 #endif

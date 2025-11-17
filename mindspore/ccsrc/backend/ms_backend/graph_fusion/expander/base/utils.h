@@ -28,7 +28,6 @@ bool CheckAllFormatsSame(const DefaultIrBuilder *ib,
                          const std::function<bool(const std::string &, const std::string &)> &check = nullptr);
 bool CheckAllDataTypeSame(const DefaultIrBuilder *ib);
 bool CheckAttrs(const DefaultIrBuilder *ib, const std::vector<std::string> &attrs);
-bool CheckSupportFormat(const DefaultIrBuilder *ib, const std::vector<std::vector<std::string>> &formats_list);
 ShapeVector ExpandDimsInferShape(const ShapeVector &shape, const std::vector<int64_t> &axis);
 std::vector<int64_t> GetAxisList(const ValuePtr &value);
 }  // namespace mindspore::graphkernel::expander

@@ -15,7 +15,8 @@
  */
 
 #include <memory>
-
+#include <string>
+#include <vector>
 #include "backend/ms_backend/graph_fusion/expanders/op_desc_registry.h"
 #include "backend/ms_backend/graph_fusion/expanders/utils.h"
 #include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
@@ -33,7 +34,7 @@ class Softmax : public OpDesc {
   bool CheckInputs() override {
     const auto &var = inputs_info_[0];
     if (Processor() == kernel::kProcessorAiCore &&
-        (var.format != kOpFormat_FRAC_NZ || var.format != kOpFormat_DEFAULT)) {
+        (var.format != kOpFormat_FRAC_NZ && var.format != kOpFormat_DEFAULT)) {
       MS_LOG(INFO) << "Only support default format and FRAC_NZ format on Ascend";
       return false;
     }
