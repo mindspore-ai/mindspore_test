@@ -163,16 +163,8 @@ endif()
 if(ENABLE_AKG AND CMAKE_SYSTEM_NAME MATCHES "Linux")
     if(ENABLE_GPU)
         install(
-                TARGETS akg
+                TARGETS akg::akg
                 DESTINATION ${INSTALL_PLUGIN_DIR}/gpu${CUDA_VERSION}
-                COMPONENT mindspore
-        )
-    endif()
-
-    if(ENABLE_D)
-        install(
-                TARGETS akg
-                DESTINATION ${INSTALL_PLUGIN_DIR}/ascend
                 COMPONENT mindspore
         )
     endif()

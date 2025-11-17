@@ -73,10 +73,6 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(PYBIND11_CPP_STANDARD -std=c++17)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OPTION_CXX_FLAGS}")
 
-if(ENABLE_AKG AND CMAKE_SYSTEM_NAME MATCHES "Linux")
-    add_subdirectory("${CMAKE_SOURCE_DIR}/akg")
-endif()
-
 include(${CMAKE_SOURCE_DIR}/cmake/mind_expression.cmake)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/third_party/flatbuffers/include)
