@@ -142,7 +142,7 @@ class AutoGradImplGenerator(BaseGenerator):
         non_differentiable = TRUE if op_proto.non_differentiable else FALSE
         if op_proto.op_name in ["reshape", "view", "expand_dims", "transpose", "slice_ext_view",\
                                  "select_ext_view", "transpose_ext_view", "split_tensor", "split_with_size",
-                                 "expand_dims_view"]:
+                                 "expand_dims_view", "squeeze"]:
             do_view_grad_function_body_tpl = self.DO_VIEW_CUSTOMIZE_GRAD_FUNCTION_BODY_TEMPLATE
             convert_basic_to_value = ""
         else:
