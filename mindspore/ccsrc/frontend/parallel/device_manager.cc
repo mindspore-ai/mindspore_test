@@ -15,6 +15,7 @@
  */
 
 #include "frontend/parallel/device_manager.h"
+#include "include/frontend/parallel/device_manager.h"
 
 #include <algorithm>
 #include <string>

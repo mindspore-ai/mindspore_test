@@ -25,7 +25,7 @@
 #include "ir/value.h"
 #include "ir/core_ops_primitive.h"
 #include "ir/tensor_new.h"
-#include "frontend/parallel/auto_parallel/graph_costmodel.h"
+#include "include/frontend/parallel/graph_costmodel.h"
 #include "frontend/parallel/device_matrix.h"
 #include "frontend/parallel/dynamic_creator.h"
 #include "frontend/parallel/step_parallel_utils.h"

@@ -29,7 +29,7 @@
 #include "include/frontend/optimizer/optimizer.h"
 #include "frontend/parallel/auto_parallel/dp_algo_costmodel.h"
 #include "frontend/parallel/auto_parallel/edge_costmodel.h"
-#include "frontend/parallel/auto_parallel/graph_costmodel.h"
+#include "include/frontend/parallel/graph_costmodel.h"
 #include "frontend/parallel/auto_parallel/rec_core/rec_generate_strategy.h"
 #include "frontend/parallel/auto_parallel/rec_core/rec_parse_graph.h"
 #include "frontend/parallel/auto_parallel/rec_core/rec_partition.h"

@@ -15,6 +15,7 @@
  */
 
 #include "frontend/parallel/strategy_checkpoint/parallel_strategy_checkpoint.h"
+#include "include/frontend/parallel/parallel_strategy_checkpoint.h"
 
 #include <pybind11/operators.h>
 

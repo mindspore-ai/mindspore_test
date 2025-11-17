@@ -21,7 +21,7 @@
 #include <vector>
 #include <set>
 
-#include "frontend/parallel/auto_parallel/graph_costmodel.h"
+#include "include/frontend/parallel/graph_costmodel.h"
 #include "frontend/parallel/ops_info/reshape_info.h"
 #include "frontend/parallel/step_auto_parallel.h"
 

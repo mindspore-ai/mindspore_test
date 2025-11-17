@@ -29,7 +29,7 @@
 #include "include/frontend/jit/ps/parse/py_data_convert.h"
 #include "frontend/optimizer/ad/dfunctor.h"
 #include "frontend/optimizer/ad/prim_bprop_optimizer.h"
-#include "frontend/parallel/auto_parallel/graph_costmodel.h"
+#include "include/frontend/parallel/graph_costmodel.h"
 #include "frontend/expander/utils.h"
 #include "pynative/utils/pynative_execute.h"
 #include "pynative/forward/pyboost/converter.h"

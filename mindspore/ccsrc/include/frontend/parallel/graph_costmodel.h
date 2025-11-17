@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CCSRC_FRONTEND_PARALLEL_AUTO_PARALLEL_GRAPH_COSTMODEL_H_
-#define MINDSPORE_CCSRC_FRONTEND_PARALLEL_AUTO_PARALLEL_GRAPH_COSTMODEL_H_
+#ifndef MINDSPORE_CCSRC_INCLUDE_FRONTEND_PARALLEL_GRAPH_COSTMODEL_H_
+#define MINDSPORE_CCSRC_INCLUDE_FRONTEND_PARALLEL_GRAPH_COSTMODEL_H_
 
 #include <map>
 #include <memory>
@@ -24,7 +24,7 @@
 #include <vector>
 #include <queue>
 #include "frontend/parallel/auto_parallel/edge_costmodel.h"
-#include "frontend/parallel/costmodel_context.h"
+#include "include/frontend/parallel/costmodel_context.h"
 #include "frontend/parallel/ops_info/operator_info.h"
 #include "frontend/parallel/ops_info/tmp_identity_info.h"
 #include "utils/ms_utils.h"
@@ -266,4 +266,4 @@ class CostGraph {
 }  // namespace parallel
 }  // namespace mindspore
 
-#endif  // MINDSPORE_CCSRC_FRONTEND_PARALLEL_AUTO_PARALLEL_GRAPH_COSTMODEL_H_
+#endif  // MINDSPORE_CCSRC_INCLUDE_FRONTEND_PARALLEL_GRAPH_COSTMODEL_H_
