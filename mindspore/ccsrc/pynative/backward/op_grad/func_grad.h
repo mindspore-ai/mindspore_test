@@ -297,6 +297,9 @@ class AutoDiff : public AutoDiffInterface {
   /// Add the given node to exec grad graph.
   /// \param node
   void AddNodeToExecGraph(const BackwardNodePtr &node) override;
+  /// Get engine id.
+  /// \param autodiff engine id.
+  size_t CurrentAutoDiffEngineId() override;
   /// Add final callback
   /// \param callback
   void AddFinalCallback(std::function<void()> callback);
@@ -421,6 +424,7 @@ class AutoDiff : public AutoDiffInterface {
   BackwardNodePtr graph_root_{nullptr};
   std::shared_ptr<FuncBuilder> func_impl_;
   device::DeviceType device_target_;
+  size_t engine_id_;
   bool keep_graph_{false};
   bool high_order_{false};
   bool is_run_recompute_{false};

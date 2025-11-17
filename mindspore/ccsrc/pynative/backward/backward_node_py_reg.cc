@@ -14,10 +14,11 @@
  * limitations under the License.
  */
 
-#include "pybind_api/pynative/backward_node_py.h"
+#include "pynative/backward/backward_node_py.h"
 #include <memory>
 #include "include/utils/exception.h"
 #include "include/utils/pyobj_manager.h"
+#include "pynative/backward/hook/custom_function.h"
 
 namespace mindspore::pynative::autograd {
 namespace py = pybind11;
@@ -38,16 +39,7 @@ PyObject *PyBackwardNode_repr(PyObject *self) { return PyBackwardNode_str(self);
 PyObject *PyBackwardNode_get_next_edges(PyObject *self, void *) {
   HANDLE_MS_EXCEPTION
   const auto &backward_node = reinterpret_cast<BackwardNodePy *>(self)->cdata;
-  const auto &next_edges = backward_node->next_edges();
-  PyObject *output = PyTuple_New(next_edges.size());
-  for (size_t i = 0; i < next_edges.size(); i++) {
-    const auto &edge = next_edges[i];
-    PyObject *item = PyTuple_New(2);
-    PyTuple_SetItem(item, 0, Wrap(edge.grad_node));
-    PyTuple_SetItem(item, 1, PyLong_FromSize_t(edge.input_index));
-    PyTuple_SetItem(output, i, item);
-  }
-  return output;
+  return BackwardNode_get_next_edges(backward_node);
   HANDLE_MS_EXCEPTION_END
 }
 
@@ -78,7 +70,9 @@ PyObject *PyBackwardNode_seq_nr(PyObject *self, PyObject *) {
 PyObject *RunRegisterHookFn(PyObject *hook_dict, PyObject *hook_fn) {
   PyObject *hook_utils_class = PyObjManager::Get().GetHookUtilsClass();
   PyObject *register_hook_fn = PyObject_GetAttrString(hook_utils_class, "register_hook");
-  return PyObject_CallFunctionObjArgs(register_hook_fn, hook_dict, hook_fn, nullptr);
+  PyObject *res = PyObject_CallFunctionObjArgs(register_hook_fn, hook_dict, hook_fn, nullptr);
+  Py_XDECREF(register_hook_fn);
+  return res;
 }
 
 PyObject *PyBackwardNode_register_pre_hook(PyObject *self, PyObject *arg) {
@@ -88,21 +82,7 @@ PyObject *PyBackwardNode_register_pre_hook(PyObject *self, PyObject *arg) {
     return nullptr;
   }
   const auto &backward_node = reinterpret_cast<BackwardNodePy *>(self)->cdata;
-  PyObject *hook_dict = Py_None;
-  if (const auto &py_pre_hook = backward_node->py_pre_hook()) {
-    hook_dict = py_pre_hook->hook_dict_;
-  }
-  PyObject *result = RunRegisterHookFn(hook_dict, arg);
-
-  if (hook_dict == Py_None) {
-    hook_dict = PyTuple_GetItem(result, 0);
-    backward_node->SetPyPreHook(std::make_unique<PyBackwardNodePreHook>(hook_dict));
-  }
-
-  PyObject *hook_handle = PyTuple_GetItem(result, 1);
-  Py_INCREF(hook_handle);
-  Py_DECREF(result);
-  return hook_handle;
+  return BackwardNode_register_pre_hook(backward_node, arg);
   HANDLE_MS_EXCEPTION_END
 }
 
@@ -113,21 +93,7 @@ PyObject *PyBackwardNode_register_post_hook(PyObject *self, PyObject *arg) {
     return nullptr;
   }
   const auto &backward_node = reinterpret_cast<BackwardNodePy *>(self)->cdata;
-  PyObject *hook_dict = Py_None;
-  if (const auto &py_post_hook = backward_node->py_post_hook()) {
-    hook_dict = py_post_hook->hook_dict_;
-  }
-  PyObject *result = RunRegisterHookFn(hook_dict, arg);
-
-  if (hook_dict == Py_None) {
-    hook_dict = PyTuple_GetItem(result, 0);
-    backward_node->SetPyPostHook(std::make_unique<PyBackwardNodePostHook>(hook_dict));
-  }
-
-  PyObject *hook_handle = PyTuple_GetItem(result, 1);
-  Py_INCREF(hook_handle);
-  Py_DECREF(result);
-  return hook_handle;
+  return BackwardNode_register_post_hook(backward_node, arg);
   HANDLE_MS_EXCEPTION_END
 }
 
@@ -184,6 +150,14 @@ PyObject *Wrap(const BackwardNodePtr &backward_node) {
   if (!backward_node) {
     Py_RETURN_NONE;
   }
+  if (autograd::isa<PyBackwardNode>(backward_node)) {
+    auto py_node = std::static_pointer_cast<PyBackwardNode>(backward_node);
+    if (!py_node->obj()) {
+      MS_LOG(EXCEPTION) << "Try to get grad node of custom function which ctx has been freed!";
+    }
+    Py_INCREF(py_node->obj().ptr());
+    return py_node->obj().ptr();
+  }
   PyTypeObject *type = &BackwardNodePyType;
   PyObject *obj = type->tp_alloc(type, 0);
   auto bn = reinterpret_cast<BackwardNodePy *>(obj);
@@ -193,6 +167,55 @@ PyObject *Wrap(const BackwardNodePtr &backward_node) {
   }
   new (&bn->cdata) BackwardNodePtr(backward_node);
   return obj;
+}
+
+PyObject *BackwardNode_get_next_edges(const BackwardNodePtr &backward_node) {
+  const auto &next_edges = backward_node->next_edges();
+  PyObject *output = PyTuple_New(next_edges.size());
+  for (size_t i = 0; i < next_edges.size(); i++) {
+    const auto &edge = next_edges[i];
+    PyObject *item = PyTuple_New(2);
+    PyTuple_SetItem(item, 0, Wrap(edge.grad_node));
+    PyTuple_SetItem(item, 1, PyLong_FromSize_t(edge.input_index));
+    PyTuple_SetItem(output, i, item);
+  }
+  return output;
+}
+
+PyObject *BackwardNode_register_pre_hook(const BackwardNodePtr &backward_node, PyObject *hook_fn) {
+  PyObject *hook_dict = Py_None;
+  if (const auto &py_pre_hook = backward_node->py_pre_hook()) {
+    hook_dict = py_pre_hook->hook_dict_;
+  }
+  PyObject *result = RunRegisterHookFn(hook_dict, hook_fn);
+
+  if (hook_dict == Py_None) {
+    hook_dict = PyTuple_GetItem(result, 0);
+    backward_node->SetPyPreHook(std::make_unique<PyBackwardNodePreHook>(hook_dict));
+  }
+
+  PyObject *hook_handle = PyTuple_GetItem(result, 1);
+  Py_INCREF(hook_handle);
+  Py_DECREF(result);
+  return hook_handle;
+}
+
+PyObject *BackwardNode_register_post_hook(const BackwardNodePtr &backward_node, PyObject *hook_fn) {
+  PyObject *hook_dict = Py_None;
+  if (const auto &py_post_hook = backward_node->py_post_hook()) {
+    hook_dict = py_post_hook->hook_dict_;
+  }
+  PyObject *result = RunRegisterHookFn(hook_dict, hook_fn);
+
+  if (hook_dict == Py_None) {
+    hook_dict = PyTuple_GetItem(result, 0);
+    backward_node->SetPyPostHook(std::make_unique<PyBackwardNodePostHook>(hook_dict));
+  }
+
+  PyObject *hook_handle = PyTuple_GetItem(result, 1);
+  Py_INCREF(hook_handle);
+  Py_DECREF(result);
+  return hook_handle;
 }
 
 namespace py = pybind11;

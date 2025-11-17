@@ -76,7 +76,7 @@ class CustomBackward : public BackwardNode {
 
 class PyBackwardNode : public BackwardNode {
  public:
-  PyBackwardNode(string name, py::function backward_fn, py::object obj, size_t output_size = 1)
+  PyBackwardNode(string name, py::object backward_fn, py::object obj, size_t output_size = 1)
       : BackwardNode(std::move(name), output_size), backward_fn_(std::move(backward_fn)), obj_(std::move(obj)) {}
   ~PyBackwardNode() override;
   ValuePtrList CallBackward(const ValuePtrList &grads) override;
@@ -86,9 +86,10 @@ class PyBackwardNode : public BackwardNode {
   void SetOutputSize(size_t output_size) { output_size_ = output_size; }
   void SetSavedTensors(SavedTensorPtrList saved_tensors) { saved_tensors_ = std::move(saved_tensors); }
   SavedTensorPtrList GetSavedTensors() { return saved_tensors_; }
+  py::object obj() { return obj_; }
 
  private:
-  py::function backward_fn_;
+  py::object backward_fn_;
   py::object obj_;
   abstract::AbstractBasePtr out_abstract_;
   SavedTensorPtrList saved_tensors_;

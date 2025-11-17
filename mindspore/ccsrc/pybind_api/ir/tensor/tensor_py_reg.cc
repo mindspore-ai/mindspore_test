@@ -37,7 +37,7 @@
 #include "pynative/utils/runtime/op_executor.h"
 #include "include/frontend/jit/trace/trace_recorder_interface.h"
 #include "pybind_api/ir/tensor/storage/storage_py.h"
-#include "pybind_api/pynative/backward_node_py.h"
+#include "mindspore/ccsrc/pynative/backward/backward_node_py.h"
 
 namespace mindspore {
 namespace tensor {

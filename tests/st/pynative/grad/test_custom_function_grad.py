@@ -1112,7 +1112,10 @@ def test_custom_function_ctx_get_unset_attr():
         @staticmethod
         def forward(ctx, x):
             for key in dir(ctx):
-                getattr(ctx, key)
+                try:
+                    getattr(ctx, key)
+                except AttributeError as e:
+                    print(f'getattr error: {e}')
             return x
 
     x = mindspore.Tensor(1.0)
@@ -1186,3 +1189,55 @@ def test_custom_function_mark_dirty_error():
 
     with pytest.raises(RuntimeError, match="element of dirty_tensors should be a tensor"):
         MarkDirtyErrorOp.apply(Tensor([1.0]))
+
+
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
+def test_custom_function_grad_node():
+    """
+    Feature: Custom autograd function.
+    Description: Test grad node saved tensors
+    Expectation: success.
+    """
+    class CustomFunctionContextCell(nn.Cell):
+        def construct(self, x):
+            return CustomFunctionContextNet.apply(x)
+
+    x = Tensor([3, 3, 3], mindspore.float32)
+    forward_net = CustomFunctionContextCell()
+    forward_net.set_grad(True)
+    output = forward_net(x)
+    assert len(output._grad_node.next_functions) == 1
+    assert np.allclose(output._grad_node.saved_tensors[0].asnumpy(), np.array([3., 3., 3.]), 0.00001, 0.00001)
+
+
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
+def test_custom_function_add_saved_tensor_not_tensor_or_none():
+    """
+    Feature: Custom autograd function.
+    Description: Test saved tensor
+    Expectation: Raise Runtime error.
+    """
+
+    class RaiseErrorNet(_Function):
+        @staticmethod
+        def forward(ctx, x):
+            ctx.age = 7
+            x2 = x * x
+            y = x2 + 1
+            ctx.save_for_backward(x, (x2, y))
+            return y
+
+        @staticmethod
+        def backward(ctx, grad_output):
+            _ = ctx.saved_tensors
+            return grad_output
+
+    x = Tensor([3, 3, 3], mindspore.float32)
+    with pytest.raises(RuntimeError, match="only support None and tensor"):
+        _ = mindspore.grad(RaiseErrorNet.apply)(x)

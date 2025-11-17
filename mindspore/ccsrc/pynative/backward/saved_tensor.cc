@@ -224,12 +224,11 @@ SavedTensorPtrList GenerateCustomSavedTensor(const std::vector<TensorPtr> &to_sa
   SavedTensorPtrList saved_tensors;
   saved_tensors.reserve(to_saved_tensors.size());
   for (size_t i = 0; i < to_saved_tensors.size(); i++) {
-    auto saved_tensor = to_saved_tensors[i];
+    const auto &saved_tensor = to_saved_tensors[i];
     if (saved_tensor == nullptr) {
       saved_tensors.emplace_back(nullptr);
       continue;
     }
-
     bool is_output = impl::GetUnsafeGradNodeImpl(saved_tensor) == grad_node;
     bool is_view_inplace = false;
     if (!is_output) {

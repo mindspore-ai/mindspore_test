@@ -68,6 +68,7 @@ py::object RunBackward(const py::object &tensors, const py::object &grad_tensors
   auto engine = std::make_shared<autograd::AutoDiff>(output, keep_graph, high_order, false);
   autograd::AutoDiffGuard auto_diff_guard(engine);
   auto grads = engine->RunBackward(input_tensors, sens_gradients, accumulate_grad);
+  engine->RunFinalCallback();
   engine->Clear();
   if (accumulate_grad) {
     return py::none();

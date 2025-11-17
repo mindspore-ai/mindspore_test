@@ -378,9 +378,14 @@ void PyNativeExecutor::EnableFrontendAndBpropPipeline() {
   runtime::Pipeline::Get().bprop_stage()->SetMultiThreadDisabled(false);
 }
 
-void RegPyNativeExecutor(const py::module *m) {
-  autograd::RegFunctionBase(m);
+bool PyNativeExecutor::IsSavedTensorHookActive() { return autograd::DefaultSavedTensorHookUtil::IsActive(); }
 
+int64_t PyNativeExecutor::CurrentAutoDiffEngineId() {
+  return autograd::impl::CurrentAutoDiffEngine() ? autograd::impl::CurrentAutoDiffEngine()->CurrentAutoDiffEngineId()
+                                                 : -1;
+}
+
+void RegPyNativeExecutor(const py::module *m) {
   using autograd::CreationType;
   py::enum_<CreationType>(*m, "CreationType")
     .value("DEFAULT", CreationType::kDefault)
@@ -433,7 +438,11 @@ void RegPyNativeExecutor(const py::module *m) {
     .def("disable_frontend_and_bprop_pipeline", &PyNativeExecutor::DisableFrontendAndBpropPipeline,
          "disable frontend and bprop pipeline")
     .def("enable_frontend_and_bprop_pipeline", &PyNativeExecutor::EnableFrontendAndBpropPipeline,
-         "enable frontend and bprop pipeline,");
+         "enable frontend and bprop pipeline,")
+    .def("is_saved_tensor_hook_active", &PyNativeExecutor::IsSavedTensorHookActive,
+         "is current context saved tensor hook active")
+    .def("get_current_autodiff_engine_id", &PyNativeExecutor::CurrentAutoDiffEngineId,
+         "get current auto diff engine ids");
 }
 
 struct PyNativeExecutorRegister {

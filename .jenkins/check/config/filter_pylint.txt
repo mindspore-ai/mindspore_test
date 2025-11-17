@@ -310,6 +310,7 @@
 "mindspore/tests/st/ops/test_ops_cosh.py"                                                               "not-callable"
 "mindspore/tests/st/compiler/compile_cache"                                                             "missing-module-docstring"
 "mindspore/tests/st/mint/test_unsqueeze.py"                                                             "missing-module-docstring"
+"mindspore/tests/st/pynative/recompute/test_pynative_recompute.py"                                      "missing-module-docstring"
 "mindspore/tests/st/amp/test_amp.py"                                                                    "missing-module-docstring"
 "mindspore/tests/st/common/test_dtype.py"                                                               "missing-module-docstring"
 "mindspore/tests/st/ops/test_ops_concat.py"                                                             "missing-function-docstring"

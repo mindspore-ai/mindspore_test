@@ -44,6 +44,7 @@ struct DefaultSavedTensorHookUtil {
   static std::optional<std::string> Disable(const std::string &error_msg, bool is_error_on_outer_hook);
   static void SetDisableErrorMessage(std::optional<std::string> error_msg);
   static bool IsEnabled();
+  static bool IsActive();
 
  private:
   static std::stack<std::pair<py::function, py::function>> hook_stack_;

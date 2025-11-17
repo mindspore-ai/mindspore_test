@@ -24,12 +24,14 @@ namespace {
 PyObject *RunHookDict(PyObject *hook_dict, PyObject *hook_args) {
   PyObject *hook_utils_class = PyObjManager::Get().GetHookUtilsClass();
   PyObject *run_hook_fn = PyObject_GetAttrString(hook_utils_class, "run_hook");
-  return PyObject_CallFunctionObjArgs(run_hook_fn, hook_dict, hook_args, nullptr);
+  PyObject *res = PyObject_CallFunctionObjArgs(run_hook_fn, hook_dict, hook_args, nullptr);
+  Py_XDECREF(run_hook_fn);
+  return res;
 }
 }  // namespace
 
 CppTensorBackwardNodePreHook::CppTensorBackwardNodePreHook(CppHookFn hook_fn, size_t output_idx)
-  : hook_fn_(std::move(hook_fn)), output_idx_(output_idx) {}
+    : hook_fn_(std::move(hook_fn)), output_idx_(output_idx) {}
 
 void CppTensorBackwardNodePreHook::operator()(ValuePtrList *grad) {
   if (output_idx_ >= grad->size()) {

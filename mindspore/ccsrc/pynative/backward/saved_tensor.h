@@ -65,7 +65,7 @@ ValuePtr SavedValueToValue(const ValuePtr &saved_value, const BackwardNodePtr &g
 
 ValuePtrList SavedValueListToValueList(const ValuePtrList &saved_value_list, const BackwardNodePtr &grad_node);
 
-SavedTensorPtrList GenerateCustomSavedTensor(const std::vector<TensorPtr> &to_saved_tensors,
+SavedTensorPtrList GenerateCustomSavedTensor(const std::vector<tensor::TensorPtr> &to_saved_tensors,
                                              const TensorPtrSet &dirty_tensor_set, const BackwardNodePtr &grad_node);
 }  // namespace mindspore::pynative::autograd
 #endif

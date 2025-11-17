@@ -11,7 +11,10 @@ mindspore.recompute
     参数：
         - **block** (Cell) - 需要重计算的网络模块。
         - **args** (tuple) - 指需要重计算的网络模块的前向输入。
-        - **kwargs** (dict) - 可选输入。
+
+    关键字参数：
+        - **use_reentrant** (bool, 可选) - 该参数只在PyNative模式下有效。若设置为 ``True``，将通过自定义反向传播函数实现重计算，该方式不支持List/Tuple等复杂类型的求导；若设置为 ``False``，将使用 :class:`mindspore.saved_tensors_hooks` 实现重计算，该方式支持对复杂类型内部张量的求导。默认值： ``True`` 。
+        - **fuse_recompute** (bool, 可选) - 该参数只在PyNative模式下有效。若设置 ``True``，默认将使用 :class:`mindspore.saved_tensors_hooks` 实现重计算。当存在两个相邻cell均需重计算时（其中一个cell的输出作为另一个cell的输入），这两个cell的重计算将被融合。在此情况下，第一个cell的输出激活值将不会被保存。默认值： ``False`` 。
 
     返回：
         同block的返回类型相同。
