@@ -20,7 +20,7 @@ import threading
 import numpy as np
 import mindspore as ms
 from tests.mark_utils import arg_mark
-from tests.st.pi_jit.share.utils import assert_graph_compile_status
+from tests.st.pi_jit.share.utils import assert_graph_compile_status, match_array
 
 
 def count_file_key(file, key):
@@ -31,6 +31,36 @@ def count_file_key(file, key):
             if key in line:
                 count += 1
     return count
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+def test_enable_dynamic_input_signature_with_jit():
+    """
+    Feature: ms.enable_dynamic input signature.
+    Description: Use enable_dynamic with a dynamic shape tensor and wrap the function by ms.jit.
+    Expectation: JIT execution matches pynative execution for different input shapes.
+    Migrated from: test_pijit_use.py::test_pijit_input_signature
+    """
+    input_signature = ms.Tensor(shape=[3, None], dtype=ms.float32)
+
+    @ms.enable_dynamic(x=input_signature)
+    def mul_dynamic(x):
+        return x * x
+
+    jit_mul = ms.jit(mul_dynamic, capture_mode="bytecode", fullgraph=True)
+
+    tensor_x = ms.Tensor(np.random.rand(3, 4).astype(np.float32), dtype=ms.float32)
+    tensor_y = ms.Tensor(np.random.rand(3, 5).astype(np.float32), dtype=ms.float32)
+
+    pynative_out1 = mul_dynamic(tensor_x)
+    pynative_out2 = mul_dynamic(tensor_y)
+
+    jit_out1 = jit_mul(tensor_x)
+    jit_out2 = jit_mul(tensor_y)
+
+    match_array(pynative_out1, jit_out1)
+    match_array(pynative_out2, jit_out2)
+    assert_graph_compile_status(jit_mul, 0, 2, 1)
 
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')

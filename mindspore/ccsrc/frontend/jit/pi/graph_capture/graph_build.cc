@@ -753,7 +753,10 @@ bool GraphBuilder::DoSend(const Instr &instr) {
 
 bool GraphBuilder::DoYieldFrom(const Instr &instr) {
   auto iter_node = dynamic_cast<IterNode *>(seek(1));
-  MS_EXCEPTION_IF_NULL(iter_node);
+  if (iter_node == nullptr) {
+    MS_LOG(INFO) << "Expect TOS1 to be an iterator, but got: " << ToString(seek(1));
+    return false;
+  }
   size_t size = frame_.GetStacks().size();
   if (!UnpackElements(iter_node->iterable())) {
     return false;
