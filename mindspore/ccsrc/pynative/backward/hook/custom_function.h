@@ -85,7 +85,7 @@ class PyBackwardNode : public BackwardNode {
   void SetOutAbstract(abstract::AbstractBasePtr out_abstract) { out_abstract_ = std::move(out_abstract); }
   void SetOutputSize(size_t output_size) { output_size_ = output_size; }
   void SetSavedTensors(SavedTensorPtrList saved_tensors) { saved_tensors_ = std::move(saved_tensors); }
-  SavedTensorPtrList GetSavedTensors() { return saved_tensors_; }
+  const SavedTensorPtrList &GetSavedTensors() { return saved_tensors_; }
   py::object obj() { return obj_; }
 
  private:

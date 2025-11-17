@@ -383,7 +383,7 @@
 
         `pipeline_stage` 表示当前Cell所在的stage。
 
-    .. py:method:: recompute(use_reentrant=True, fuse_recompute=False, **kwargs)
+    .. py:method:: recompute(*, use_reentrant=True, output_recompute=False, **kwargs)
 
         设置Cell重计算。Cell中输出算子以外的所有算子将被设置为重计算。如果一个算子的计算结果被输出到一些反向节点来进行梯度计算，且被设置成重计算，那么我们会在反向传播中重新计算它，而不去存储在前向传播中的中间激活层的计算结果。
 
@@ -396,10 +396,12 @@
             - 当应用了重计算但内存不足时，可以配置'parallel_optimizer_comm_recompute=True'来节省内存。有相同融合group的Cell应该配置相同的parallel_optimizer_comm_recompute。
 
         关键字参数：
-            - **use_reentrant** (bool) - 该参数只在PyNative模式下有效。若设置为 ``True``，将通过自定义反向传播函数实现重计算，该方式不支持List/Tuple等复杂类型的求导；若设置为 ``False``，将使用 :class:`mindspore.saved_tensors_hooks` 实现重计算，该方式支持对复杂类型内部张量的求导。
-            - **fuse_recompute** (bool) - 该参数只在PyNative模式下有效。若设置为 ``True``，默认使用 :class:`mindspore.saved_tensors_hooks` 功能实现重计算。当存在两个相邻cell均需重计算时（其中一个cell的输出作为另一个cell的输入），这两个cell的重计算将被融合。在此情况下，第一个cell的输出激活值将不会被保存。
-            - **mp_comm_recompute** (bool) - 表示在自动并行或半自动并行模式下，指定Cell内部由模型并行引入的通信操作是否重计算。默认值： ``True`` 。
-            - **parallel_optimizer_comm_recompute** (bool) - 表示在自动并行或半自动并行模式下，指定Cell内部由优化器并行引入的AllGather通信是否重计算。默认值： ``False`` 。
+            - **use_reentrant** (bool，可选) - 该参数只在PyNative模式下有效。若设置为 ``True``，将通过自定义反向传播函数实现重计算，该方式不支持List/Tuple等复杂类型的求导；若设置为 ``False``，将使用 :class:`mindspore.saved_tensors_hooks` 实现重计算，该方式支持对复杂类型内部张量的求导。默认值： ``True`` 。
+            - **output_recompute** (bool，可选) - 该参数只在PyNative模式下有效。若设置为 ``True``，默认使用 :class:`mindspore.saved_tensors_hooks` 功能实现重计算。该模块的输出不会被后续需要求导的算子缓存。当存在两个相邻cell均需重计算时（其中一个cell的输出作为另一个cell的输入），这两个cell的重计算将被融合。在此情况下，第一个cell的输出激活值将不会被保存。默认值： ``False`` 。
+            - **\*\*kwargs** - 其他参数。
+
+              - **mp_comm_recompute** (bool，可选) - 表示在自动并行或半自动并行模式下，指定Cell内部由模型并行引入的通信操作是否重计算。默认值： ``True`` 。
+              - **parallel_optimizer_comm_recompute** (bool，可选) - 表示在自动并行或半自动并行模式下，指定Cell内部由优化器并行引入的AllGather通信是否重计算。默认值： ``False`` 。
 
     .. py:method:: register_backward_hook(hook_fn)
 
