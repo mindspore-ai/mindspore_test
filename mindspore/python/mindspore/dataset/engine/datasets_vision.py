@@ -130,7 +130,7 @@ class Caltech101Dataset(GeneratorDataset):
             return category represents the target class. If `target_type` is ``'annotation'``,
             return annotation. If `target_type` is ``'all'``, return category and annotation.
             Default: ``None`` , means ``'category'``.
-        num_samples (int, optional): The number of images to be included in the dataset.f
+        num_samples (int, optional): The number of images to be included in the dataset.
             Default: ``None`` , all images.
         num_parallel_workers (int, optional): Number of worker subprocesses to read the data.
             Default: ``1``.
@@ -1195,18 +1195,18 @@ class DIV2KDataset(MappableDataset, VisionBaseDataset):
 
     Raises:
         RuntimeError: If `dataset_dir` is invalid or does not contain data files.
-        ValueError: If `num_parallel_workers` exceeds the max thread numbers.
         RuntimeError: If `sampler` and `shuffle` are specified at the same time.
         RuntimeError: If `sampler` and `num_shards`/`shard_id` are specified at the same time.
         RuntimeError: If `num_shards` is specified but `shard_id` is None.
         RuntimeError: If `shard_id` is specified but `num_shards` is None.
-        ValueError: If `dataset_dir` is not exist.
+        ValueError: If `dataset_dir` does not exist.
         ValueError: If `usage` is invalid.
         ValueError: If `downgrade` is invalid.
-        ValueError: If `scale` is invalid.
-        ValueError: If `scale` equal to ``8`` and downgrade not equal to ``'bicubic'``.
+        ValueError: If `scale` is invalid, or does not match the value of the `downgrade` parameter.
+        ValueError: If `scale` equals ``8`` and `downgrade` does not equal ``'bicubic'``.
         ValueError: If `downgrade` is ``'mild'``, ``'difficult'`` or ``'wild'``, and `scale`
-            not equal to ``4``.
+            does not equal ``4``.
+        ValueError: If `num_parallel_workers` exceeds the max thread numbers.
         ValueError: If `shard_id` is not in range of [0, `num_shards` ).
 
     Tutorial Examples:
