@@ -36,6 +36,7 @@ class TestUCEException : public UT::Common {
 TEST_F(TestUCEException, test_interface) {
   EXPECT_EQ(UCEException::IsEnableUCE(), false);
 
+  // test arf/uce/ttp basic interface
   const auto kTftEnv = "MS_ENABLE_TFT";
   common::SetEnv(kTftEnv, "{TTP:1,UCE:1,ARF:1}");
   EXPECT_NO_THROW(UCEException::GetInstance().CheckUceARFEnv());
@@ -54,5 +55,8 @@ TEST_F(TestUCEException, test_interface) {
 
   EXPECT_NO_THROW(UCEException::GetInstance().set_force_stop_flag(true));
   EXPECT_EQ(UCEException::GetInstance().get_force_stop_flag(), true);
+
+  EXPECT_NO_THROW(UCEException::GetInstance().set_reboot_type("arf"));
+  EXPECT_EQ(UCEException::GetInstance().get_reboot_type(), "arf");
 }
 }  // namespace mindspore
