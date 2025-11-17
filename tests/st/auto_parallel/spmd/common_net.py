@@ -22,7 +22,7 @@ class DenseL2(nn.Cell):
     def __init__(self, in_channels, hidden_size):
         super().__init__()
         self.dense1 = nn.Dense(in_channels, hidden_size, weight_init="normal", has_bias=False)
-        self.bias = Parameter(initializer("zeros", [hidden_size], self.dense1.weight.dtype))
+        self.bias = Parameter(initializer("zeros", [hidden_size], self.dense1.weight.dtype), name="bias")
 
     def construct(self, x):
         x = self.dense1(x)
@@ -85,4 +85,17 @@ class DenseMutiLayerNet(nn.Cell):
     def construct(self, x):
         for i in range(self.layer_num):
             x = self.layers[i](x)
+        return x
+
+class NetWithScaler(nn.Cell):
+    """dense net with scaler"""
+    def __init__(self, in_channels, out_channels):
+        super().__init__()
+        self.dense = nn.Dense(in_channels, out_channels, weight_init="normal", has_bias=False)
+        self.scaler = Parameter(initializer("zeros", (), self.dense.weight.dtype), name="scaler")
+        self.scaler.requires_grad = False
+
+    def construct(self, x):
+        x = self.dense(x)
+        x = mint.add(x, self.scaler)
         return x

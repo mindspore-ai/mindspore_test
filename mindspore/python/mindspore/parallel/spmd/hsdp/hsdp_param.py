@@ -65,6 +65,9 @@ class HSDPParam:
         else:
             self.shard_size = self.config.shard_size
 
+        if len(self.param.local_shape) < 1:
+            self.shard_size = 1
+            return
         param_size = functools.reduce(lambda x, y: x * y, self.param.local_shape, type_size_in_bytes(self.param.dtype))
         if param_size < self.config.threshold:
             self.shard_size = 1
