@@ -321,6 +321,7 @@ CNodePtr AclStreamAssign::CreateLimitApplyKernel(const NotNull<KernelGraphPtr> &
 void AclStreamAssign::InsertResLimitForNonTaskSink(const NotNull<KernelGraphPtr> &kernel_graph,
                                                    DeviceResManager *device_res_manager) {
   bool enable_with_stream = false;
+  bool is_dyn_graph = false;
   mindspore::HashMap<size_t, ResLimitInfoPtr> stream_res_limit_map;
   auto kernels = kernel_graph->execution_order();
   std::vector<CNodePtr> new_exec_orders;
@@ -342,6 +343,11 @@ void AclStreamAssign::InsertResLimitForNonTaskSink(const NotNull<KernelGraphPtr>
         IsUsersSetResLimitOp(kernel, kAttrVectorNum, &vector_num)) {
       enable_with_stream = true;
     }
+    if (common::AnfAlgo::IsDynamicShape(kernel) ||
+        common::AnfAlgo::IsDynamicSequence(kernel) | common::AnfAlgo::IsAnyTypeOutput(kernel) ||
+        common::AnfAlgo::IsDynamicValue(kernel)) {
+      is_dyn_graph = true;
+    }
   }
   if (!enable_with_stream) {
     return;
@@ -351,7 +357,9 @@ void AclStreamAssign::InsertResLimitForNonTaskSink(const NotNull<KernelGraphPtr>
   uint32_t device_vector_num = 0;
   int32_t default_device_id = -1;
   MS_EXCEPTION_IF_NULL(device_res_manager);
+  device_res_manager->SetEnableStreamLimit();
   device_res_manager->GetDeviceLimit(default_device_id, &device_cube_num, &device_vector_num);
+  std::set<size_t> streams_set;
   for (const auto &node : kernels) {
     uint32_t cube_num = device_cube_num;
     uint32_t vector_num = device_vector_num;
@@ -367,6 +375,7 @@ void AclStreamAssign::InsertResLimitForNonTaskSink(const NotNull<KernelGraphPtr>
     if (iter->second->cube_num_modify_flag && iter->second->cube_num != cube_num) {
       iter->second->cube_num = cube_num;
       res_limit_map[kAttrCubeNum] = cube_num;
+      MS_LOG(DEBUG) << "Set StreamLimit with cube_num " << cube_num << " for stream id: " << process_stream_id;
     }
     if (IsUsersSetResLimitOp(node, kAttrVectorNum, &vector_num)) {
       iter->second->vector_num_modify_flag = true;
@@ -374,13 +383,31 @@ void AclStreamAssign::InsertResLimitForNonTaskSink(const NotNull<KernelGraphPtr>
     if (iter->second->vector_num_modify_flag && iter->second->vector_num != vector_num) {
       iter->second->vector_num = vector_num;
       res_limit_map[kAttrVectorNum] = vector_num;
+      MS_LOG(DEBUG) << "Set StreamLimit with vector_num " << vector_num << " for stream id: " << process_stream_id;
     }
     if (res_limit_map.size() != 0) {
       auto limit_node = CreateLimitApplyKernel(kernel_graph, res_limit_map);
-      MS_LOG(INFO) << "Create Limit node " << limit_node->fullname_with_scope();
+      AnfAlgo::SetStreamId(process_stream_id, limit_node.get());
+      streams_set.insert(process_stream_id);
+      common::AnfAlgo::SetNodeAttr(kAttrStreamId, MakeValue<uint32_t>(process_stream_id), limit_node);
+      common::AnfAlgo::SetNodeAttr(kAttrIsKernelDynamicImpl, MakeValue<bool>(is_dyn_graph), limit_node);
+      MS_LOG(DEBUG) << "Create Limit node " << limit_node->fullname_with_scope()
+                    << ", stream id: " << process_stream_id;
       new_exec_orders.push_back(limit_node);
     }
     new_exec_orders.push_back(node);
+  }
+  mindspore::HashMap<std::string, uint32_t> restore_limit_map;
+  restore_limit_map[kAttrCubeNum] = device_cube_num;
+  restore_limit_map[kAttrVectorNum] = device_vector_num;
+  for (const auto &stream : streams_set) {
+    auto limit_node = CreateLimitApplyKernel(kernel_graph, restore_limit_map);
+    AnfAlgo::SetStreamId(stream, limit_node.get());
+    streams_set.insert(stream);
+    common::AnfAlgo::SetNodeAttr(kAttrStreamId, MakeValue<uint32_t>(stream), limit_node);
+    common::AnfAlgo::SetNodeAttr(kAttrIsKernelDynamicImpl, MakeValue<bool>(is_dyn_graph), limit_node);
+    MS_LOG(DEBUG) << "Create Restore Limit node " << limit_node->fullname_with_scope() << ", stream id: " << stream;
+    new_exec_orders.push_back(limit_node);
   }
   MS_LOG(INFO) << "End to Insert ResLimit node.";
   kernel_graph->set_execution_order(new_exec_orders);

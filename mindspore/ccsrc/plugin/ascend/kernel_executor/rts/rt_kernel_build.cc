@@ -21,6 +21,7 @@
 #include "plugin/ascend/kernel_executor/rts/rt_kernel.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/utils/anfalgo.h"
+#include "runtime/hardware_abstract/kernel_base/graph_fusion/framework_utils.h"
 
 namespace mindspore {
 namespace kernel {
@@ -34,6 +35,16 @@ KernelModPtr RtOpBuild(const AnfNodePtr &anf_node) {
   if (!ker_ptr->Init(anf_node)) {
     MS_LOG(ERROR) << "Rt Op initialize failed!";
     return nullptr;
+  }
+  std::vector<KernelTensor *> input_kernel_tensors = AnfAlgo::GetOrCreateAllInputKernelTensors(anf_node);
+  std::vector<KernelTensor *> output_kernel_tensors = AnfAlgo::GetOrCreateAllOutputKernelTensors(anf_node);
+  auto cnode = anf_node->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(cnode);
+  if (CheckResizeCondition(cnode)) {
+    if (ker_ptr->Resize(input_kernel_tensors, output_kernel_tensors) == KRET_RESIZE_FAILED) {
+      MS_LOG(EXCEPTION) << "#dmsg#Kernel build failed:#dmsg#internal kernel op[" << cnode->fullname_with_scope()
+                        << "] Resize failed.";
+    }
   }
   return ker_ptr;
 }

@@ -1141,6 +1141,50 @@ void AscendKernelExecutor::OptimizeExecutionOrder(const FuncGraphPtr &graph) con
 }
 
 namespace {
+void ReCreateKernelModForLimit(const KernelGraphPtr &kernel_graph) {
+  MS_EXCEPTION_IF_NULL(kernel_graph);
+  auto nodes = kernel_graph->execution_order();
+  for (const auto &kernel : nodes) {
+    MS_EXCEPTION_IF_NULL(kernel);
+    if (AnfAlgo::IsKernelSelectBackoffOp(kernel)) {
+      continue;
+    }
+    std::string opname = common::AnfAlgo::GetCNodeName(kernel);
+    kernel::KernelModPtr kernel_mod_ptr = nullptr;
+    auto kernel_type = AnfAlgo::GetKernelType(kernel);
+    if (kernel_type == KernelType::ACL_KERNEL) {
+      kernel_mod_ptr = kernel::AclOpBuild(kernel);
+    } else if (kernel_type == KernelType::HOST_KERNEL) {
+      continue;
+    } else if (kernel_type == KernelType::HCCL_KERNEL) {
+      if (common::IsExecuteSimulation()) {
+        kernel_mod_ptr = kernel::SimuOpBuild(kernel);
+      } else {
+        kernel_mod_ptr = kernel::HcclOpBuild(kernel);
+      }
+    } else if (kernel_type == KernelType::OPAPI_KERNEL) {
+      kernel_mod_ptr = kernel::AclnnOpBuild(kernel);
+    } else if (kernel_type == KernelType::AKG_KERNEL) {
+      kernel_mod_ptr = GenerateAkgKernelMod(kernel);
+    } else if (kernel_type == KernelType::RT_KERNEL) {
+      kernel_mod_ptr = kernel::RtOpBuild(kernel);
+    } else if (kernel_type == KernelType::INTERNAL_KERNEL) {
+      kernel_mod_ptr = kernel::InternalKernelBuild(kernel);
+    } else if (kernel_type == KernelType::ATB_KERNEL) {
+      kernel_mod_ptr = kernel::AtbKernelBuild(kernel);
+    } else if (kernel_type == KernelType::CUSTOM_KERNEL) {
+      kernel_mod_ptr = kernel::CustomKernelBuild(kernel);
+    } else {
+      MS_LOG_WITH_NODE(EXCEPTION, kernel)
+        << "The kernel: " << kernel->fullname_with_scope()
+        << " kernel build failed, kernel type: " << kernel::KernelTypeLabel(AnfAlgo::GetKernelType(kernel));
+    }
+    MS_LOG(INFO) << "kernel opname:" << opname << ", kernel type:" << GetKernelTypeStr(kernel_type);
+    MS_EXCEPTION_IF_NULL(kernel_mod_ptr);
+    RegisterSilentCheckForNode(kernel, kernel_mod_ptr, opname, kernel_type);
+    AnfAlgo::SetKernelMod(kernel_mod_ptr, kernel.get());
+  }
+}
 void CreateEventKernelMod(const KernelGraphPtr &kernel_graph) {
   MS_EXCEPTION_IF_NULL(kernel_graph);
   auto nodes = kernel_graph->execution_order();
@@ -1153,6 +1197,14 @@ void CreateEventKernelMod(const KernelGraphPtr &kernel_graph) {
     auto kernel_mod_ptr = kernel::RtOpBuild(node);
     MS_EXCEPTION_IF_NULL(kernel_mod_ptr);
     AnfAlgo::SetKernelMod(kernel_mod_ptr, node.get());
+  }
+
+  for (auto &node : nodes) {
+    MS_EXCEPTION_IF_NULL(node);
+    if (IsPrimitiveCNode(node, prim::kPrimResLimit)) {
+      ReCreateKernelModForLimit(kernel_graph);
+      break;
+    }
   }
 }
 }  // namespace

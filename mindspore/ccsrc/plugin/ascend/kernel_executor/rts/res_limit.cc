@@ -30,24 +30,44 @@ bool ResLimitKernel::Init(const AnfNodePtr &anf_node) {
   auto primitive = common::AnfAlgo::GetCNodePrimitive(anf_node);
   MS_EXCEPTION_IF_NULL(primitive);
   if (common::AnfAlgo::HasNodeAttr(kAttrCubeNum, anf_node->cast<CNodePtr>())) {
-    res_limit_map_[aclrtDevResLimitType::ACL_RT_DEV_RES_CUBE_CORE] =
-      GetValue<uint32_t>(primitive->GetAttr(kAttrCubeNum));
+    ResLimitInfo limit_info;
+    limit_info.type = aclrtDevResLimitType::ACL_RT_DEV_RES_CUBE_CORE;
+    limit_info.core_num = GetValue<uint32_t>(primitive->GetAttr(kAttrCubeNum));
+    limit_info.stream_id = GetValue<uint32_t>(primitive->GetAttr(kAttrStreamId));
+    res_limit_infos_.push_back(limit_info);
   }
   if (common::AnfAlgo::HasNodeAttr(kAttrVectorNum, anf_node->cast<CNodePtr>())) {
-    res_limit_map_[aclrtDevResLimitType::ACL_RT_DEV_RES_VECTOR_CORE] =
-      GetValue<uint32_t>(primitive->GetAttr(kAttrVectorNum));
+    ResLimitInfo limit_info;
+    limit_info.type = aclrtDevResLimitType::ACL_RT_DEV_RES_VECTOR_CORE;
+    limit_info.core_num = GetValue<uint32_t>(primitive->GetAttr(kAttrVectorNum));
+    limit_info.stream_id = GetValue<uint32_t>(primitive->GetAttr(kAttrStreamId));
+    res_limit_infos_.push_back(limit_info);
+  }
+  if (common::AnfAlgo::HasNodeAttr(kAttrIsKernelDynamicImpl, anf_node->cast<CNodePtr>())) {
+    is_dyn_graph_ = GetValue<bool>(primitive->GetAttr(kAttrIsKernelDynamicImpl));
   }
   return true;
 }
 
-bool ResLimitKernel::Launch(const std::vector<KernelTensor *> &, const std::vector<KernelTensor *> &,
-                            const std::vector<KernelTensor *> &, void *stream_ptr) {
-  MS_EXCEPTION_IF_NULL(stream_ptr);
-  for (const auto &iter : res_limit_map_) {
-    auto ret = CALL_ASCEND_API(aclrtSetStreamResLimit, stream_ptr, iter.first, iter.second);
+int ResLimitKernel::Resize(const std::vector<KernelTensor *> &, const std::vector<KernelTensor *> &) {
+  for (const auto &iter : res_limit_infos_) {
+    auto stream_ptr = device::ascend::AscendStreamMng::GetInstance().GetStream(iter.stream_id);
+    auto ret = CALL_ASCEND_API(aclrtSetStreamResLimit, stream_ptr, iter.type, iter.core_num);
     if (ret != ACL_SUCCESS) {
       MS_LOG(EXCEPTION) << "Call aclrtSetStreamResLimit failed! Error flag is " << ret;
-      return false;
+    }
+  }
+  return 0;
+}
+
+bool ResLimitKernel::Launch(const std::vector<KernelTensor *> &, const std::vector<KernelTensor *> &,
+                            const std::vector<KernelTensor *> &, void *stream_ptr) {
+  if (is_dyn_graph_) {
+    for (const auto &iter : res_limit_infos_) {
+      auto ret = CALL_ASCEND_API(aclrtSetStreamResLimit, stream_ptr, iter.type, iter.core_num);
+      if (ret != ACL_SUCCESS) {
+        MS_LOG(EXCEPTION) << "Call aclrtSetStreamResLimit failed! Error flag is " << ret;
+      }
     }
   }
   return true;

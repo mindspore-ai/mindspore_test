@@ -302,6 +302,7 @@ class RUNTIME_HARDWARE_EXPORT DeviceResManager {
   virtual void SetStreamLimit(size_t stream_id, int32_t cube_num, int32_t vector_num) {}
   virtual void ResetStreamLimit(size_t stream_id) {}
   virtual void UseStreamResInCurrentThread(size_t stream_id) {}
+  virtual void SetEnableStreamLimit() {}
   // Destroy specified device event.
   virtual bool DestroyEvent(const DeviceEventPtr &event) { return true; }
 

@@ -162,7 +162,7 @@ class ASCEND_RES_MANAGER_EXPORT AscendResManager : public DeviceResManager {
   void SetStreamLimit(size_t stream_id, int32_t cube_num, int32_t vector_num) override;
   void ResetStreamLimit(size_t stream_id) override;
   void UseStreamResInCurrentThread(size_t stream_id) override;
-
+  void SetEnableStreamLimit() override;
   bool single_op_multi_stream_enable() const override;
   void set_single_op_multi_stream_enable(bool single_op_multi_stream_enable) override;
   // Only used in graph_mode with MS_DISABLE_REF_MODE, delete it when delete MS_DISABLE_REF_MODEF

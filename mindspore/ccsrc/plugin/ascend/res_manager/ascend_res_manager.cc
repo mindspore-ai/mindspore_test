@@ -1837,6 +1837,11 @@ void AscendResManager::UseStreamResInCurrentThread(size_t stream_id) {
   prev_set_stream_id_ = stream_id;
 }
 
+void AscendResManager::SetEnableStreamLimit() {
+  MS_LOG(DEBUG) << "Enter SetEnableStreamLimit";
+  enable_res_limit_ = true;
+}
+
 bool AscendResManager::GetMemUceInfo(int32_t device_id) {
   aclrtMemUceInfo info[MAX_MEM_UCE_INFO_ARRAY_SIZE];
   size_t retSize = 0;

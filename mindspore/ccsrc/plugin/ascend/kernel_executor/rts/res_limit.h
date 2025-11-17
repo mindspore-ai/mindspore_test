@@ -24,16 +24,24 @@
 
 namespace mindspore {
 namespace kernel {
+struct ResLimitInfo {
+  aclrtDevResLimitType type;
+  uint32_t core_num;
+  uint32_t stream_id;
+};
+
 class ResLimitKernel : public RtKernel {
  public:
   ResLimitKernel() = default;
   ~ResLimitKernel() override;
   bool Init(const AnfNodePtr &anf_node) override;
+  int Resize(const std::vector<KernelTensor *> &, const std::vector<KernelTensor *> &) override;
   bool Launch(const std::vector<KernelTensor *> &, const std::vector<KernelTensor *> &,
               const std::vector<KernelTensor *> &, void *stream_ptr) override;
 
  private:
-  std::map<aclrtDevResLimitType, uint32_t> res_limit_map_;
+  std::vector<ResLimitInfo> res_limit_infos_;
+  bool is_dyn_graph_ = false;
 };
 
 MS_REG_RTKERNEL(reslimit, ResLimitKernel);
