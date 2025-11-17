@@ -5215,7 +5215,7 @@ REG_BPROP_BUILDER("DiagExt").SetUnusedInputs({i0, i2}).SetBody(BODYFUNC(ib) {
   }
 });
 
-REG_BPROP_BUILDER("Polar").FreeUselessValues_I({}).SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("Polar").FreeUselessValues_I({i0}).SetBody(BODYFUNC(ib) {
   auto input_abs = ib->GetInput(i0);
   auto input_angle = ib->GetInput(i1);
   auto out = ib->GetInput(i2);
