@@ -126,6 +126,8 @@ class AclStreamAssign {
   CNodePtr CreateLimitApplyKernel(const NotNull<KernelGraphPtr> &graph_ptr,
                                   const mindspore::HashMap<std::string, uint32_t> &res_limit_map);
   void InsertResLimitForNonTaskSink(const NotNull<KernelGraphPtr> &kernel_graph, DeviceResManager *device_res_manager);
+  void InsertResLimit(const NotNull<KernelGraphPtr> &kernel_graph, DeviceResManager *device_res_manager,
+                      const mindspore::HashMap<size_t, ResLimitInfoPtr> &stream_res_limit_map, bool is_dyn_graph);
   CNodePtr CreateSendApplyKernel(const NotNull<KernelGraphPtr> &graph_ptr, uint32_t event_id, uint32_t stream_id,
                                  uint32_t event_generate_id);
   CNodePtr CreateRecvApplyKernel(const NotNull<KernelGraphPtr> &graph_ptr, uint32_t event_id, uint32_t record_stream_id,

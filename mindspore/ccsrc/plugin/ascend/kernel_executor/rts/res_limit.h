@@ -42,6 +42,7 @@ class ResLimitKernel : public RtKernel {
  private:
   std::vector<ResLimitInfo> res_limit_infos_;
   bool is_dyn_graph_ = false;
+  bool is_exec_resize_ = false;
 };
 
 MS_REG_RTKERNEL(reslimit, ResLimitKernel);

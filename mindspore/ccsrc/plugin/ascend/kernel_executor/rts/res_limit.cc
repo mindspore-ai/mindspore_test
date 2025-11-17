@@ -20,6 +20,7 @@
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "plugin/ascend/res_manager/symbol_interface/symbol_utils.h"
+#include "ops_utils/op_utils.h"
 
 namespace mindspore {
 namespace kernel {
@@ -43,33 +44,28 @@ bool ResLimitKernel::Init(const AnfNodePtr &anf_node) {
     limit_info.stream_id = GetValue<uint32_t>(primitive->GetAttr(kAttrStreamId));
     res_limit_infos_.push_back(limit_info);
   }
-  if (common::AnfAlgo::HasNodeAttr(kAttrIsKernelDynamicImpl, anf_node->cast<CNodePtr>())) {
-    is_dyn_graph_ = GetValue<bool>(primitive->GetAttr(kAttrIsKernelDynamicImpl));
+  if (anf_node->cast<CNodePtr>()->HasAttr(mindspore::ops::kHasDynamicValue)) {
+    is_dyn_graph_ = true;
   }
   return true;
 }
 
 int ResLimitKernel::Resize(const std::vector<KernelTensor *> &, const std::vector<KernelTensor *> &) {
-  for (const auto &iter : res_limit_infos_) {
-    auto stream_ptr = device::ascend::AscendStreamMng::GetInstance().GetStream(iter.stream_id);
-    auto ret = CALL_ASCEND_API(aclrtSetStreamResLimit, stream_ptr, iter.type, iter.core_num);
-    if (ret != ACL_SUCCESS) {
-      MS_LOG(EXCEPTION) << "Call aclrtSetStreamResLimit failed! Error flag is " << ret;
+  if (!is_exec_resize_ || is_dyn_graph_) {
+    for (const auto &iter : res_limit_infos_) {
+      auto stream_ptr = device::ascend::AscendStreamMng::GetInstance().GetStream(iter.stream_id);
+      auto ret = CALL_ASCEND_API(aclrtSetStreamResLimit, stream_ptr, iter.type, iter.core_num);
+      if (ret != ACL_SUCCESS) {
+        MS_LOG(EXCEPTION) << "Call aclrtSetStreamResLimit failed! Error flag is " << ret;
+      }
     }
+    is_exec_resize_ = true;
   }
   return 0;
 }
 
 bool ResLimitKernel::Launch(const std::vector<KernelTensor *> &, const std::vector<KernelTensor *> &,
                             const std::vector<KernelTensor *> &, void *stream_ptr) {
-  if (is_dyn_graph_) {
-    for (const auto &iter : res_limit_infos_) {
-      auto ret = CALL_ASCEND_API(aclrtSetStreamResLimit, stream_ptr, iter.type, iter.core_num);
-      if (ret != ACL_SUCCESS) {
-        MS_LOG(EXCEPTION) << "Call aclrtSetStreamResLimit failed! Error flag is " << ret;
-      }
-    }
-  }
   return true;
 }
 }  // namespace kernel
