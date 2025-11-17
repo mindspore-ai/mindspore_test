@@ -67,8 +67,9 @@ class OpInfo:
         is_inplace_op: Whether the op mutates its input (in-place semantics).
         convert_extra_uint: Whether to convert extra uint dtypes for references
             that do not support them (e.g., PyTorch).
-        convert_half_to_float: Whether to cast float16 to float32 for reference
-            computation on backends where half precision is not supported.
+        convert_half_to_float: Whether to cast the reference inputs from float16 to float32. In principle, when
+            comparing cases with float16 inputs, this conversion should always be performed, so the default value
+            of this option is True. This also helps avoid failures when the reference does not support float16 inputs.
 
         compare_method: Comparison strategy, e.g. 'default_golden',
             'single_golden', or 'double_golden'.
@@ -105,7 +106,7 @@ class OpInfo:
     is_differentiable: Optional[bool] = True
     is_inplace_op: Optional[bool] = False
     convert_extra_uint: Optional[bool] = True
-    convert_half_to_float: Optional[bool] = False
+    convert_half_to_float: Optional[bool] = True
 
     # comparison params
     compare_method: Optional[str] = 'default_golden'

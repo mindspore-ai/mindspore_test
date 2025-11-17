@@ -19,7 +19,7 @@ from math import pi, log, floor
 
 from mindspore import context
 from mindspore import log as logger
-import mindspore.ops as ops
+from mindspore import ops
 from mindspore.ops.primitive import constexpr, _primexpr
 from mindspore.ops import operations as P
 from mindspore.ops import functional as F
@@ -93,8 +93,7 @@ from mindspore.ops.auto_generate import avg_pool3d_ext_op
 # 19
 from mindspore.ops.functional_overload import nsa_select_attention
 # 20
-from mindspore.ops.auto_generate.gen_ops_prim import embedding_op, MaxPoolWithIndices, \
-    PromptFlashAttention, MaxPoolWithMask
+from mindspore.ops.auto_generate.gen_ops_prim import embedding_op, PromptFlashAttention
 from mindspore.ops.auto_generate.gen_ops_prim import speed_fusion_attention_op
 from mindspore.common.generator import default_generator
 from mindspore.ops.auto_generate import hardshrink, hardsigmoid, hardswish
@@ -2282,7 +2281,7 @@ def _check_axis_valid(axes, ndim):
     to the built-in operator (non-negative, int or tuple)
     """
     if axes is None:
-        raise ValueError(f"The parameter dims can not be None.")
+        raise ValueError("The parameter dims can not be None.")
     if isinstance(axes, (tuple, list)):
         axes = tuple(map(lambda x: _check_axis_in_range(x, ndim), axes))
         if any(axes.count(el) > 1 for el in axes):
@@ -2293,18 +2292,18 @@ def _check_axis_valid(axes, ndim):
 
 def _get_flip_start(ndim, shape, axes):
     """Calculate the start index of flip"""
-    return tuple([shape[i] - 1 if i in axes else 0 for i in range(ndim)])
+    return tuple(shape[i] - 1 if i in axes else 0 for i in range(ndim))
 
 
 def _get_flip_end(ndim, shape, axes):
     """Calculate the end index of flip"""
-    return tuple([-shape[i] - 1 if i in axes else shape[i] + 1 for i in range(ndim)])
+    return tuple(-shape[i] - 1 if i in axes else shape[i] + 1 for i in range(ndim))
 
 
 @constexpr
 def _get_flip_strides(ndim, axes):
     """Calculate the strides of flip"""
-    return tuple([-1 if i in axes else 1 for i in range(ndim)])
+    return tuple(-1 if i in axes else 1 for i in range(ndim))
 
 
 def _is_shape_empty(shp):
@@ -2798,7 +2797,7 @@ def interpolate(input,
         else:
             check_positive_int_const(size, "size", "interpolate")
             if dim_unknown is False:
-                size = tuple([size for _ in range(rank - 2)])
+                size = tuple(size for _ in range(rank - 2))
             else:
                 size = _interploate_make_tuple(rank - 2, size)
     elif scale_factor is not None:
@@ -2811,7 +2810,7 @@ def interpolate(input,
             check_positive_float_const(scale_factor, "scale_factor",
                                        "interpolate")
             if dim_unknown is False:
-                scale_factor = tuple([scale_factor for _ in range(rank - 2)])
+                scale_factor = tuple(scale_factor for _ in range(rank - 2))
             else:
                 scale_factor = _interploate_make_tuple(rank - 2, scale_factor)
     else:
@@ -2838,8 +2837,7 @@ def interpolate(input,
                 " after specifying an explicit 'size'.")
         if F.isconstant(shape) and F.isconstant(scale_factor):
             tuple_len = min(len(shape) - 2, len(scale_factor))
-            size = tuple([floor(shape[i + 2] * scale_factor[i])
-                          for i in range(tuple_len)])
+            size = tuple(floor(shape[i + 2] * scale_factor[i]) for i in range(tuple_len))
         else:
             size = _interpolate_scale_factor_convert_size(shape, scale_factor)
         scale_factor = None
@@ -2869,7 +2867,7 @@ def _interploate_ext_make_tuple(input, value):
     rank = F.rank(input) - 2
     out = None
     if F.isconstant(value) and F.isconstant(rank):
-        out = tuple([value for _ in range(rank)])
+        out = tuple(value for _ in range(rank))
     else:
         out = tensor_to_tuple_(fill_scalar_op((rank,), value, None))
     return out
@@ -2883,8 +2881,7 @@ def _interpolate_ext_scale_factor_convert_size(input, scale_factor):
     size = None
     if F.isconstant(shape) and F.isconstant(scale_factor):
         tuple_len = min(len(shape) - 2, len(scale_factor))
-        size = tuple([floor(shape[i + 2] * scale_factor[i])
-                      for i in range(tuple_len)])
+        size = tuple(floor(shape[i + 2] * scale_factor[i]) for i in range(tuple_len))
     else:
         x = tuple_to_tensor_(shape[2:], mstype.float32)
         y = tuple_to_tensor_(tuple(scale_factor), mstype.float32)
@@ -2903,8 +2900,6 @@ def interpolate_ext(input,
     Samples the input Tensor to the given size or scale_factor by using one of the interpolate algorithms.
 
     .. note::
-        - In 'linear' mode, the scenarios, where `scale_factor` is not None and `align_corners` is False,
-          is not supported.
         - In 'nearest' mode, there may exist precision problem in the scenarios, where input is 3-D/4-D Tensor
           and the image is scaled by scale_factor.
         - `mode` and `recompute_scale_factor` should be constants.
@@ -2960,9 +2955,9 @@ def interpolate_ext(input,
     +---------------+-----------+---------------+--------------+----------------+
     | linear        | 3         | √             | √            | Ascend         |
     +---------------+-----------+---------------+--------------+----------------+
-    | bilinear      | 4         | √             | ×            | Ascend         |
+    | bilinear      | 4         | √             | √            | Ascend         |
     +---------------+-----------+---------------+--------------+----------------+
-    | bicubic       | 4         | √             | ×            | Ascend         |
+    | bicubic       | 4         | √             | √            | Ascend         |
     +---------------+-----------+---------------+--------------+----------------+
     | trilinear     | 5         | √             | √            | Ascend         |
     +---------------+-----------+---------------+--------------+----------------+
@@ -3075,11 +3070,9 @@ def interpolate_ext(input,
         scale_factor = None
 
     # scale_factor
-    if mode in ("bilinear", "bicubic", "nearest-exact"):
+    if mode in ("nearest-exact",):
         if scale_factor is not None:
-            raise ValueError("scale_factor option can only be set with the "
-                             "interpolating modes: nearest | linear | area | trilinear"
-                             )
+            raise ValueError("scale_factor option is not supported for interpolating modes: nearest-exact.")
 
     return resize_funcs.get(mode)(input, size, align_corners, scale_factor)
 
@@ -3881,7 +3874,7 @@ def pad_ext(input, pad, mode='constant', value=None):
         out = constant_pad_nd_op(input, pad, value)
     else:
         if value is not None and value != 0:
-            raise ValueError(f"Padding mode {mode} doesn\'t take in value argument.")
+            raise ValueError("Padding mode does not take in a value argument.")
         if mode == "circular":
             out = _circular_pad(input, pad)
         elif mode == "reflect":
@@ -3889,7 +3882,7 @@ def pad_ext(input, pad, mode='constant', value=None):
         elif mode == "replicate":
             out = _replication_pad(input, pad)
         else:
-            raise ValueError(f"Pad filling mode must be 'constant' 'circular' 'reflect' or 'replicate'.")
+            raise ValueError("Pad filling mode must be 'constant' 'circular' 'reflect' or 'replicate'.")
     return out
 
 
@@ -4720,9 +4713,9 @@ def cross_entropy_ext(input, target, weight=None, ignore_index=-100, reduction='
     if weight is not None and not isinstance(weight, Tensor):
         raise TypeError(f"For cross_entropy, weight must be Tensor or None, but got {type(weight)}.")
     if label_smoothing < 0.0 or label_smoothing > 1.0:
-        raise ValueError(f"For cross_entropy, label_smoothing must in [0, 1]")
+        raise ValueError("For cross_entropy, label_smoothing must be in [0, 1].")
     if input.ndim == 0 or input.shape[0] == 0:
-        raise ValueError(f"For cross_entropy, input don't support 0-dim and shape[0].")
+        raise ValueError("For cross_entropy, input doesn't support 0-dim or shape[0] == 0.")
     class_dim = 0 if input.ndim == 1 else 1
     n_classes = input.shape[class_dim]
     input = log_softmax_ext(input, class_dim, dtype=input.dtype)
@@ -7290,7 +7283,7 @@ def pixel_shuffle(input, upscale_factor):
     c = c // upscale_factor ** 2
     input_perm = pre + (c, upscale_factor, upscale_factor, h, w)
     input = reshape_(input, input_perm)
-    input_perm = [i for i in range(length - 2)]
+    input_perm = list(range(length - 2))
     input_perm = input_perm + [length, length - 2, length + 1, length - 1]
     input_perm = tuple(input_perm)
     input = transpose_(input, input_perm)
@@ -7354,7 +7347,7 @@ def pixel_unshuffle(input, downscale_factor):
     w = w // downscale_factor
     input_perm = pre + (c, h, downscale_factor, w, downscale_factor)
     input = reshape_(input, input_perm)
-    input_perm = [i for i in range(length - 2)]
+    input_perm = list(range(length - 2))
     input_perm = input_perm + [length - 1, length + 1, length - 2, length]
     input_perm = tuple(input_perm)
     input = transpose_(input, input_perm)
@@ -7822,7 +7815,7 @@ def lp_pool1d(x, norm_type, kernel_size, stride=None, ceil_mode=False):
     else:
         raise TypeError(f"For lp_pool1d, the type of 'norm_type' must be float or int, but got {type(norm_type)}")
     if norm_type == 0:
-        raise ValueError(f"For lp_pool1d, the value of 'norm_type' can not be 0.")
+        raise ValueError("For lp_pool1d, the value of 'norm_type' can not be 0.")
     sign = _get_cache_prim(ops.Sign)()
     squeeze = _get_cache_prim(ops.Squeeze)(0)
     expand_dims = _get_cache_prim(ops.ExpandDims)()
@@ -7917,7 +7910,7 @@ def lp_pool2d(x, norm_type, kernel_size, stride=None, ceil_mode=False):
     else:
         raise TypeError(f"For lp_pool2d, the type of 'norm_type' must be float or int, but got {type(norm_type)}")
     if norm_type == 0:
-        raise ValueError(f"For lp_pool2d, the value of 'norm_type' can not be 0.")
+        raise ValueError("For lp_pool2d, the value of 'norm_type' can not be 0.")
     sign = _get_cache_prim(ops.Sign)()
     if not isinstance(kernel_size, tuple):
         kernel_size = (kernel_size, kernel_size)

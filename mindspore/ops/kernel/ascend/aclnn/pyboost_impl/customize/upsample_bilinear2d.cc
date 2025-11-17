@@ -55,7 +55,6 @@ tensor::TensorPtr UpsampleBilinear2DAscendCustomize(const std::shared_ptr<OpRunn
   constexpr pyfloat DEFAULT_SCALE_VALUE = 0.;
   std::vector<pyfloat> scales(kDim2, DEFAULT_SCALE_VALUE);
   if (scale_factors.has_value()) {
-    MS_EXCEPTION(RuntimeError) << "For UpsampleBilinear2D, scale_factors is not supported now.";
     scales = ConvertValueTupleToVector<pyfloat>(scale_factors.value());
   }
 
