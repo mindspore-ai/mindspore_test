@@ -211,14 +211,18 @@ void ControlNodeScheduler::BuildGraphParameterStoreForControlNode(const GraphCom
     }
 
     CreateBuildInfoForFrontNode(parameter_with_index, node_with_index.first);
-    const auto &device_address = AnfAlgo::GetMutableOutputAddr(node_with_index.first, node_with_index.second, false);
+    const auto &old_kernel_tensor =
+      AnfAlgo::GetOutputKernelTensor(node_with_index.first, node_with_index.second, false);
+    MS_EXCEPTION_IF_NULL(old_kernel_tensor);
+    const auto &device_address = old_kernel_tensor->device_address();
     MS_EXCEPTION_IF_NULL(device_address);
     const auto &sub_abstract =
       common::AnfAlgo::FetchAbstractByIndex(parameter_with_index.first->abstract(), parameter_with_index.second);
     MS_EXCEPTION_IF_NULL(sub_abstract);
     const auto &kernel_tensor = AnfAlgo::CreateKernelTensor(
       sub_abstract->BuildShape(), sub_abstract->BuildType(), nullptr, nullptr, device_address->GetSize(),
-      device_address->format(), device_address->type_id(), device_address->GetShapeVector(),
+      kernel::GetFormatFromEnumToStr(old_kernel_tensor->format()), old_kernel_tensor->dtype_id(),
+      old_kernel_tensor->GetShapeVector(),
       device::GetDeviceNameByType(device_context->device_context_key().device_type_),
       device_context->device_context_key().device_id_);
     MS_EXCEPTION_IF_NULL(kernel_tensor);
@@ -295,7 +299,8 @@ void ControlNodeScheduler::BuildDataSourceActorForControlNode(
       MS_EXCEPTION_IF_NULL(sub_abstract);
       const auto &kernel_tensor = AnfAlgo::CreateKernelTensor(
         sub_abstract->BuildShape(), sub_abstract->BuildType(), nullptr, nullptr, device_address->GetSize(),
-        device_address->format(), device_address->type_id(), old_kernel_tensor->GetShapeVector(),
+        kernel::GetFormatFromEnumToStr(old_kernel_tensor->format()), old_kernel_tensor->dtype_id(),
+        old_kernel_tensor->GetShapeVector(),
         device::GetDeviceNameByType(device_context->device_context_key().device_type_),
         device_context->device_context_key().device_id_);
       MS_EXCEPTION_IF_NULL(kernel_tensor);

@@ -257,8 +257,8 @@ void OutputActor::FetchParameterInput(OpContext<KernelTensor> *const context) {
       new_tensor->set_device_address(old_to_new_device_address_[device_tensor]);
     } else {
       auto kernel_tensor = AnfAlgo::CreateKernelTensor(
-        nullptr, device_tensor->GetSize(), kernel::GetFormatFromStrToEnum(device_tensor->format()),
-        device_tensor->type_id(), parameter_kernel_tensor->GetShapeVector(),
+        nullptr, device_tensor->GetSize(), parameter_kernel_tensor->format(), parameter_kernel_tensor->dtype_id(),
+        parameter_kernel_tensor->GetShapeVector(),
         device::GetDeviceNameByType(device_contexts_[output_position]->device_context_key().device_type_),
         device_contexts_[output_position]->device_context_key().device_id_);
       kernel_tensor->SetType(parameter_kernel_tensor->GetType());
@@ -268,7 +268,7 @@ void OutputActor::FetchParameterInput(OpContext<KernelTensor> *const context) {
       auto tensor_device_address = kernel_tensor->device_address();
       MS_EXCEPTION_IF_NULL(tensor_device_address);
       if (device_tensor->GetTensorStorageInfo() != nullptr) {
-        tensor_device_address->SetShapeVector(device_tensor->GetShapeVector());
+        tensor_device_address->SetShapeVector(parameter_kernel_tensor->GetShapeVector());
       }
       // SetShape will calculate a default size by host shape, need to set real device size for special format.
       kernel_tensor->set_size(device_tensor->GetSize());
@@ -555,7 +555,7 @@ TensorPtr OutputActor::CreateOutputTensor(const AnfNodePtr &output_node, size_t 
   } else {
     auto kernel_tensor = AnfAlgo::CreateKernelTensor(
       nullptr, device_tensor->GetSize(), kernel::GetFormatFromStrToEnum(device_tensor->format()),
-      device_tensor->type_id(), node_kernel_tensor->GetShapeVector(),
+      node_kernel_tensor->dtype_id(), node_kernel_tensor->GetShapeVector(),
       device::GetDeviceNameByType(device_context->device_context_key().device_type_),
       device_context->device_context_key().device_id_);
     kernel_tensor->SetType(output_kernel_tensor->GetType());
@@ -736,7 +736,7 @@ void OutputActor::HandleOutput() {
     }
     device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(
       MarkTensorAsOutput, GetAID().Name(), device::GetDeviceNameByType(device_tensor->GetDeviceType()),
-      device_tensor->GetPtr(), device_tensor->type_id(), device_tensor->GetShapeVector(),
+      device_tensor->GetPtr(), kernel_tensor->dtype_id(), kernel_tensor->GetShapeVector(),
       device_tensor->GetTensorStorageInfo());
   }
 }

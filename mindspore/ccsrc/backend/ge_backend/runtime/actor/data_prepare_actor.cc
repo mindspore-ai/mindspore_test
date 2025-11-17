@@ -74,7 +74,7 @@ void SyncTensorData(const TensorPtr &host_tensor, const KernelTensorPtr &kernel_
     }
     device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(
       MarkTensorAsOutput, "SyncTensorData", device::GetDeviceNameByType(device_tensor->GetDeviceType()),
-      device_tensor->GetPtr(), device_tensor->type_id(), device_tensor->GetShapeVector(),
+      device_tensor->GetPtr(), kernel_tensor->dtype_id(), kernel_tensor->GetShapeVector(),
       device_tensor->GetTensorStorageInfo());
     if (memory::mem_pool::IsNeedProfilieMemoryLog()) {
       auto output_address = reinterpret_cast<std::uintptr_t>(device_tensor.get());
@@ -139,16 +139,18 @@ void ValueTupleToValue(const ValuePtr &value, std::vector<ValuePtr> *const value
 }
 
 void UpdateDataNodeDeviceAddressSize(const AnfNodePtr &input_node, const TensorPtr &input_tensor,
-                                     const device::DeviceAddressPtr &device_address) {
+                                     const kernel::KernelTensorPtr &kernel_tensor) {
   MS_EXCEPTION_IF_NULL(input_node);
   MS_EXCEPTION_IF_NULL(input_tensor);
+  MS_EXCEPTION_IF_NULL(kernel_tensor);
+  const auto &device_address = kernel_tensor->device_address();
   MS_EXCEPTION_IF_NULL(device_address);
   TypeId output_type_id = AnfAlgo::GetOutputDeviceDataType(input_node, 0);
   if (output_type_id == kTypeUnknown) {
     output_type_id = common::AnfAlgo::GetOutputInferDataType(input_node, 0);
   }
-  auto device_shape =
-    trans::TransShapeToDevice(input_tensor->shape(), device_address->format(), input_node, 0, output_type_id);
+  auto device_shape = trans::TransShapeToDevice(
+    input_tensor->shape(), kernel::GetFormatFromEnumToStr(kernel_tensor->format()), input_node, 0, output_type_id);
   size_t type_size = GetTypeByte(TypeIdToType(output_type_id));
   auto device_address_size = type_size * SizeOf(device_shape);
   MS_LOG(INFO) << "Size of device_address is updated from " << device_address->GetSize() << " to "
@@ -195,9 +197,11 @@ void DataPrepareActor::UpdateDynamicShapeAndSize(const AnfNodePtr &input_node, c
   }
   auto input_param = input_node->cast<ParameterPtr>();
   MS_EXCEPTION_IF_NULL(input_param);
-  auto device_address = AnfAlgo::GetMutableOutputAddr(input_node, 0, false);
+  auto kernel_tensor = AnfAlgo::GetOutputKernelTensor(input_node, 0, false);
+  MS_EXCEPTION_IF_NULL(kernel_tensor);
+  auto device_address = kernel_tensor->device_address();
   MS_EXCEPTION_IF_NULL(device_address);
-  if (!input_param->has_dynamic_shape() && !IsDynamic(device_address->GetShapeVector())) {
+  if (!input_param->has_dynamic_shape() && !IsDynamic(kernel_tensor->GetShapeVector())) {
     return;
   }
 
@@ -212,7 +216,7 @@ void DataPrepareActor::UpdateDynamicShapeAndSize(const AnfNodePtr &input_node, c
   output_kernel_tensor->SetShape(input_tensor->base_shape_ptr());
 
   // Update size.
-  auto device_format = device_address->format();
+  auto device_format = kernel::GetFormatFromEnumToStr(kernel_tensor->format());
   static const std::set<std::string> kNormalFormat = {
     kOpFormat_DEFAULT, kOpFormat_ND, kOpFormat_NCHW, kOpFormat_NHWC, kOpFormat_HWCN,
   };
@@ -224,7 +228,7 @@ void DataPrepareActor::UpdateDynamicShapeAndSize(const AnfNodePtr &input_node, c
   } else {
     MS_LOG(DEBUG) << "Update data node device address size";
     // Size of 5D format device_address is larger than tensor_data_size.
-    UpdateDataNodeDeviceAddressSize(input_node, input_tensor, device_address);
+    UpdateDataNodeDeviceAddressSize(input_node, input_tensor, kernel_tensor);
   }
 }
 
@@ -232,7 +236,7 @@ void DataPrepareActor::UpdateDeviceAddressForDataNode(const AnfNodePtr &input_no
   MS_EXCEPTION_IF_NULL(input_tensor);
   MS_EXCEPTION_IF_NULL(input_node);
 
-  auto tensor_address = std::dynamic_pointer_cast<DeviceTensor>(input_tensor->device_address());
+  auto tensor_address = input_tensor->device_address();
   if (tensor_address == nullptr) {
     return;
   }
@@ -250,10 +254,10 @@ void DataPrepareActor::UpdateDeviceAddressForDataNode(const AnfNodePtr &input_no
 
   // If tensor address and device address are different (heterogeneous scenarios), or device address is persisted
   // Update device address data in data source actor process.
-  if (kernel_tensor->is_ptr_persisted() || (tensor_address->GetDeviceType() != device_address->GetDeviceType()) ||
+  if (kernel_tensor->is_ptr_persisted() || tensor_address->GetDeviceType() != device_address->GetDeviceType() ||
       (!AnfAlgo::IsEquivalentFormat(kernel::GetFormatFromStrToEnum(tensor_address->format()),
-                                    kernel::GetFormatFromStrToEnum(device_address->format()))) ||
-      (tensor_address->type_id() != device_address->type_id())) {
+                                    kernel_tensor->format())) ||
+      (tensor_address->type_id() != kernel_tensor->dtype_id())) {
     MS_LOG(DEBUG) << "Cannot update address of " << input_node->DebugString();
     return;
   }
@@ -697,7 +701,7 @@ void DataPrepareActor::PrepareDataForControlValueNode(const KernelWithIndex &nod
   }
   device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(
     MarkTensorAsOutput, "PrepareDataForControlValueNode", device::GetDeviceNameByType(device_tensor->GetDeviceType()),
-    device_tensor->GetPtr(), device_tensor->type_id(), device_tensor->GetShapeVector(),
+    device_tensor->GetPtr(), kernel_tensor->dtype_id(), kernel_tensor->GetShapeVector(),
     device_tensor->GetTensorStorageInfo());
   if (memory::mem_pool::IsNeedProfilieMemoryLog()) {
     auto output_address = reinterpret_cast<uintptr_t>(device_tensor.get());
@@ -781,7 +785,7 @@ void DataPrepareActor::PrepareDataForStringValue(const ValueNodePtr &node, size_
   }
   device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(
     MarkTensorAsOutput, "PrepareDataForStringValue", device::GetDeviceNameByType(device_tensor->GetDeviceType()),
-    device_tensor->GetPtr(), device_tensor->type_id(), device_tensor->GetShapeVector(),
+    device_tensor->GetPtr(), kernel_tensor->dtype_id(), kernel_tensor->GetShapeVector(),
     device_tensor->GetTensorStorageInfo());
   if (memory::mem_pool::IsNeedProfilieMemoryLog()) {
     auto output_address = reinterpret_cast<uintptr_t>(device_tensor.get());
@@ -859,8 +863,8 @@ void DataPrepareActor::PrepareDataForSequenceAndScalarValue(const ValueNodePtr &
   }
   device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(
     MarkTensorAsOutput, "PrepareDataForSequenceAndScalarValue",
-    device::GetDeviceNameByType(device_tensor->GetDeviceType()), device_tensor->GetPtr(), device_tensor->type_id(),
-    device_tensor->GetShapeVector(), device_tensor->GetTensorStorageInfo());
+    device::GetDeviceNameByType(device_tensor->GetDeviceType()), device_tensor->GetPtr(), kernel_tensor->dtype_id(),
+    kernel_tensor->GetShapeVector(), device_tensor->GetTensorStorageInfo());
   if (memory::mem_pool::IsNeedProfilieMemoryLog()) {
     auto output_address = reinterpret_cast<uintptr_t>(device_tensor.get());
     MS_LOG(WARNING) << "Need Profile Memory, alloc type: PrepareDataForValueNode, device address class ptr: "

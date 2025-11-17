@@ -493,7 +493,7 @@ void UpdateDynamicShapeAndSize(tensor::Tensor *input_tensor, KernelTensorPtr ker
                 << output_kernel_tensor->GetShapeVector();
 
   // Update size.
-  auto device_format = device_tensor->format();
+  auto device_format = kernel::GetFormatFromEnumToStr(kernel_tensor->format());
   static const std::set<std::string> kNormalFormat = {
     kOpFormat_DEFAULT, kOpFormat_ND, kOpFormat_NCHW, kOpFormat_NHWC, kOpFormat_HWCN,
   };

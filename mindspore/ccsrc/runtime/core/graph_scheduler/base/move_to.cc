@@ -94,7 +94,7 @@ void MoveTo(const tensor::TensorPtr &src_tensor, const tensor::TensorPtr &dst_te
   auto src_addr = src_tensor->device_address();
   device::DeviceAddressPtr src_device_ptr = nullptr;
   if (src_addr != nullptr) {
-    src_device_ptr = std::dynamic_pointer_cast<device::DeviceAddress>(src_addr);
+    src_device_ptr = src_addr;
     MS_EXCEPTION_IF_NULL(src_device_ptr);
     auto src_type = GetDeviceNameByType(src_device_ptr->GetDeviceType());
     if (to == src_type) {
@@ -119,7 +119,7 @@ void MoveTo(const tensor::TensorPtr &src_tensor, const tensor::TensorPtr &dst_te
 
   if (dst_addr == nullptr) {
     auto size = src_device_ptr != nullptr ? src_device_ptr->GetSize() : src_tensor->Size();
-    auto type_id = src_device_ptr != nullptr ? src_device_ptr->type_id() : src_tensor->data_type();
+    auto type_id = src_tensor->data_type();
     auto host_shape = src_tensor->shape();
 
     device::DeviceContextKey host_key = {GetDeviceTypeByName(to), device_id};

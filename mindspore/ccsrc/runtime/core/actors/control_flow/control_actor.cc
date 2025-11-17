@@ -505,11 +505,10 @@ CNodePtr CreateRealMakeTuple(const std::vector<KernelTensor *> &addr_list, const
   std::vector<abstract::AbstractBasePtr> abs_list;
   for (const auto &addr_kernel : addr_list) {
     MS_EXCEPTION_IF_NULL(addr_kernel);
-    const auto &addr = addr_kernel->device_address();
-    MS_EXCEPTION_IF_NULL(addr);
-    auto abs = std::make_shared<abstract::AbstractTensor>(TypeIdToType(addr->type_id()), addr->GetShapeVector());
+    auto abs =
+      std::make_shared<abstract::AbstractTensor>(TypeIdToType(addr_kernel->dtype_id()), addr_kernel->GetShapeVector());
     abs_list.emplace_back(abs);
-    formats.emplace_back(addr->format());
+    formats.emplace_back(kernel::GetFormatFromEnumToStr(addr_kernel->format()));
     MS_VLOG(VL_RUNTIME_FRAMEWORK_KERNEL) << "Create new abstract:" << abs->ToString();
   }
   auto tuple_abs = std::make_shared<abstract::AbstractTuple>(abs_list);
@@ -539,21 +538,15 @@ void CheckDeviceAddressConsist(OpContext<KernelTensor> *const context, const std
     return;
   }
   // Check consistence of device address.
-  const auto &shape = addr_list[0]->device_address()->GetShapeVector();
+  const auto &shape = addr_list[0]->GetShapeVector();
   const auto &size = addr_list[0]->device_address()->GetSize();
-  const auto &type = addr_list[0]->device_address()->type_id();
-  const auto &device_name = device::GetDeviceNameByType(addr_list[0]->GetDeviceType());
+  const auto &type = addr_list[0]->dtype_id();
   for (size_t i = 1; i < addr_list.size(); ++i) {
     MS_EXCEPTION_IF_NULL(addr_list[i]);
     MS_EXCEPTION_IF_NULL(addr_list[i]->device_address());
-    if (size != addr_list[i]->device_address()->GetSize() || type != addr_list[i]->device_address()->type_id()) {
-      MS_LOG(ERROR) << "Failed to merge two device address, addr1:" << addr_list[0]->device_address().get()
-                    << " size:" << size << " shape:" << shape << " device name:" << device_name << " type:" << type
-                    << " addr2:" << addr_list[i]->device_address().get()
-                    << " size:" << addr_list[i]->device_address()->GetSize()
-                    << " shape:" << addr_list[i]->device_address()->GetShapeVector()
-                    << " device name:" << device::GetDeviceNameByType(addr_list[i]->GetDeviceType()) << " type"
-                    << addr_list[i]->device_address()->type_id() << " for actor:" << actor_name;
+    if (size != addr_list[i]->device_address()->GetSize() || type != addr_list[i]->dtype_id()) {
+      MS_LOG(ERROR) << "Failed to merge two device address, addr1:" << addr_list[0]->ToString()
+                    << " addr2:" << addr_list[i]->ToString() << " for actor:" << actor_name;
       SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), "Failed to merge two device address");
     }
     if (shape != addr_list[i]->GetShapeVector()) {
@@ -578,7 +571,7 @@ void ControlActor::MergeDeviceAddress(OpContext<KernelTensor> *const context,
   MS_EXCEPTION_IF_NULL(addr_list[0]->device_address());
   const auto &total_size = addr_list[0]->device_address()->GetSize() * addr_list.size();
   ShapeVector total_shape = {SizeToLong(addr_list.size())};
-  const auto &shape = addr_list[0]->device_address()->GetShapeVector();
+  const auto &shape = addr_list[0]->GetShapeVector();
   total_shape.insert(total_shape.end(), shape.begin(), shape.end());
   auto device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
     {addr_list[0]->device_address()->GetDeviceType(), addr_list[0]->device_address()->device_id()});
@@ -592,10 +585,9 @@ void ControlActor::MergeDeviceAddress(OpContext<KernelTensor> *const context,
   auto tuple_type = std::make_shared<Tuple>(type_list);
   MS_LOG(DEBUG) << "Create kernel tensor by shape:" << tuple_shape->ToString() << " type:" << tuple_type->ToString()
                 << " in device address:" << addr_list[0]->device_address();
-  const auto &new_kernel_tensor =
-    AnfAlgo::CreateKernelTensor(tuple_shape, tuple_type, nullptr, nullptr, total_size,
-                                addr_list[0]->device_address()->format(), addr_list[0]->device_address()->type_id(),
-                                total_shape, device_name, device_context->device_context_key().device_id_);
+  const auto &new_kernel_tensor = AnfAlgo::CreateKernelTensor(
+    tuple_shape, tuple_type, nullptr, nullptr, total_size, kernel::GetFormatFromEnumToStr(addr_list[0]->format()),
+    addr_list[0]->dtype_id(), total_shape, device_name, device_context->device_context_key().device_id_);
   new_kernel_tensor->set_stream_id(addr_list[0]->device_address()->stream_id());
   const auto &new_device_tensor = new_kernel_tensor->device_address();
   MS_EXCEPTION_IF_NULL(new_device_tensor);
@@ -620,9 +612,8 @@ void ControlActor::MergeDeviceAddress(OpContext<KernelTensor> *const context,
 
   // Merge device address list into a single device address.
   auto tmp_kernel_tensor = AnfAlgo::CreateKernelTensor(
-    new_device_tensor->GetMutablePtr(), addr_list[0]->device_address()->GetSize(),
-    kernel::GetFormatFromStrToEnum(addr_list[0]->device_address()->format()), addr_list[0]->device_address()->type_id(),
-    shape, device_name, device_context->device_context_key().device_id_);
+    new_device_tensor->GetMutablePtr(), addr_list[0]->device_address()->GetSize(), addr_list[0]->format(),
+    addr_list[0]->dtype_id(), shape, device_name, device_context->device_context_key().device_id_);
   tmp_kernel_tensor->set_stream_id(addr_list[0]->device_address()->stream_id());
   const auto &tmp_device_tensor = tmp_kernel_tensor->device_address();
   MS_EXCEPTION_IF_NULL(tmp_device_tensor);
@@ -649,9 +640,8 @@ void ControlActor::MergeDeviceAddress(OpContext<KernelTensor> *const context,
   new_kernel_tensor->set_task_id_on_stream(max_task_id_on_stream);
   tmp_device_tensor->set_ptr(nullptr);
   created_kernel_tensors_.emplace_back(new_kernel_tensor);
-  MS_LOG(DEBUG) << "actor:" << GetAID() << " create new device address:" << new_device_tensor
-                << " for addr list size:" << addr_list.size()
-                << " device address shape:" << new_device_tensor->GetShapeVector();
+  MS_LOG(DEBUG) << "actor:" << GetAID() << " create new kernel tensor:" << new_kernel_tensor->ToString()
+                << " for addr list size:" << addr_list.size();
   (*kernel_tensor) = new_kernel_tensor;
   return;
 }

@@ -74,8 +74,8 @@ const kernel::KernelTensorPtr GetParameterInfo(const AnfNodePtr &node, NotNull<S
  * Runtime category: Old runtime, MindRT.
  * Description: Dump the data in memory into file path.
  */
-void DumpMemToFile(const std::string &file_path, const device::DeviceAddress &addr, const ShapeVector &int_shapes,
-                   const TypeId &type, bool trans_flag = false);
+void DumpMemToFile(const std::string &file_path, const kernel::KernelTensorPtr &kernel_tensor,
+                   const ShapeVector &int_shapes, const TypeId &type, bool trans_flag = false);
 
 /*
  * Feature group: Dump.

@@ -102,7 +102,7 @@ void SyncTensorData(const TensorPtr &host_tensor, const KernelTensorPtr &kernel_
     kernel_tensor->IncreaseNewRefCount(name);
     device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(
       MarkTensorAsOutput, "SyncTensorData", device::GetDeviceNameByType(device_tensor->GetDeviceType()),
-      device_tensor->GetPtr(), device_tensor->type_id(), device_tensor->GetShapeVector(),
+      device_tensor->GetPtr(), kernel_tensor->dtype_id(), kernel_tensor->GetShapeVector(),
       device_tensor->GetTensorStorageInfo());
     if (memory::mem_pool::IsNeedProfilieMemoryLog()) {
       auto output_address = reinterpret_cast<std::uintptr_t>(device_tensor.get());
@@ -345,7 +345,7 @@ void DataPrepareActor::UpdateDeviceAddressForDataNode(const AnfNodePtr &input_no
   MS_EXCEPTION_IF_NULL(input_node);
   // Assign tensor address to input data node and set `ref_count` to `SIZE_MAX` for avoiding clean.
   (void)address_modified_input_nodes_.insert(input_node.get());
-  auto tensor_address = std::dynamic_pointer_cast<DeviceTensor>(input_tensor->device_address());
+  auto tensor_address = input_tensor->device_address();
   if (tensor_address == nullptr) {
     return;
   }
@@ -1033,7 +1033,7 @@ void DataPrepareActor::PrepareDataForControlValueNode(const KernelWithIndex &nod
   kernel_tensor->IncreaseNewRefCount(name);
   device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(
     MarkTensorAsOutput, "PrepareDataForControlValueNode", device::GetDeviceNameByType(device_tensor->GetDeviceType()),
-    device_tensor->GetPtr(), device_tensor->type_id(), device_tensor->GetShapeVector(),
+    device_tensor->GetPtr(), kernel_tensor->dtype_id(), kernel_tensor->GetShapeVector(),
     device_tensor->GetTensorStorageInfo());
   if (memory::mem_pool::IsNeedProfilieMemoryLog()) {
     auto output_address = reinterpret_cast<uintptr_t>(device_tensor.get());
@@ -1113,7 +1113,7 @@ void DataPrepareActor::PrepareDataForStringValue(const ValueNodePtr &node, size_
   kernel_tensor->IncreaseNewRefCount(name);
   device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(
     MarkTensorAsOutput, "PrepareDataForStringValue", device::GetDeviceNameByType(device_tensor->GetDeviceType()),
-    device_tensor->GetPtr(), device_tensor->type_id(), device_tensor->GetShapeVector(),
+    device_tensor->GetPtr(), kernel_tensor->dtype_id(), kernel_tensor->GetShapeVector(),
     device_tensor->GetTensorStorageInfo());
   if (memory::mem_pool::IsNeedProfilieMemoryLog()) {
     auto output_address = reinterpret_cast<uintptr_t>(device_tensor.get());
@@ -1185,8 +1185,8 @@ void DataPrepareActor::PrepareDataForSequenceAndScalarValue(const ValueNodePtr &
   kernel_tensor->IncreaseNewRefCount(name);
   device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(
     MarkTensorAsOutput, "PrepareDataForSequenceAndScalarValue",
-    device::GetDeviceNameByType(device_tensor->GetDeviceType()), device_tensor->GetPtr(), device_tensor->type_id(),
-    device_tensor->GetShapeVector(), device_tensor->GetTensorStorageInfo());
+    device::GetDeviceNameByType(device_tensor->GetDeviceType()), device_tensor->GetPtr(), kernel_tensor->dtype_id(),
+    kernel_tensor->GetShapeVector(), device_tensor->GetTensorStorageInfo());
   if (memory::mem_pool::IsNeedProfilieMemoryLog()) {
     auto output_address = reinterpret_cast<uintptr_t>(device_tensor.get());
     MS_LOG(WARNING) << "Need Profile Memory, alloc type: PrepareDataForValueNode, device address class ptr: "
@@ -1276,7 +1276,7 @@ void DataPrepareActor::CopyDataFromDeviceTensorStore(const AnfNodePtr &front_nod
       device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(
         MarkTensorAsOutput, "CopyDataFromDeviceTensorStore",
         device::GetDeviceNameByType(another_device_tensor->GetDeviceType()), another_device_tensor->GetPtr(),
-        another_device_tensor->type_id(), another_device_tensor->GetShapeVector(),
+        another_kernel_tensor->dtype_id(), another_kernel_tensor->GetShapeVector(),
         another_device_tensor->GetTensorStorageInfo());
     }
     if (memory::mem_pool::IsNeedProfilieMemoryLog() && need_alloc_memory) {
@@ -1349,16 +1349,16 @@ void DataPrepareActor::PrepareDataForWeightNode(const AnfNodePtr &backend_node, 
     if (host_tensor_address->GetDeviceType() != device_context->GetDeviceType()) {
       if (device_tensor->GetDeviceType() != device_context->GetDeviceType()) {
         const auto &kernel_tensor = AnfAlgo::CreateOutputKernelTensorWithDeviceInfo(
-          {backend_node, 0}, nullptr, device_tensor->GetSize(), device_tensor->format(), device_tensor->type_id(),
-          device_tensor->GetShapeVector(),
+          {backend_node, 0}, nullptr, device_tensor->GetSize(),
+          kernel::GetFormatFromEnumToStr(node_kernel_tensor->format()), node_kernel_tensor->dtype_id(),
+          node_kernel_tensor->GetShapeVector(),
           device::GetDeviceNameByType(device_context->device_context_key().device_type_),
           device_context->device_context_key().device_id_);
         kernel_tensor->set_stream_id(device_tensor->stream_id());
         host_kernel_tensor = kernel_tensor;
         host_tensor_address = host_kernel_tensor->device_address();
         MS_EXCEPTION_IF_NULL(host_tensor_address);
-        MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
-          << "Create device tensor:" << host_tensor_address << " type:" << host_tensor_address->type_id();
+        MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS) << "Create kernel tensor:" << kernel_tensor->ToString();
         host_tensor_address->set_from_persistent_mem(tensor->is_parameter());
       } else {
         host_tensor_address = device_tensor;

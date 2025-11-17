@@ -1223,13 +1223,15 @@ void GEBackend::SetTensorUpdateCallback(const tensor::TensorPtr &update_tensor) 
 }
 
 void GEBackend::UpdateInputsShapeAndSize(const ParameterPtr &input_node,
-                                         const mindspore::device::DeviceAddressPtr &device_tensor,
+                                         const mindspore::kernel::KernelTensorPtr &kernel_tensor,
                                          const tensor::TensorPtr &input_tensor) {
   MS_EXCEPTION_IF_NULL(input_node);
+  MS_EXCEPTION_IF_NULL(kernel_tensor);
+  const auto &device_tensor = kernel_tensor->device_address();
   MS_EXCEPTION_IF_NULL(device_tensor);
   MS_EXCEPTION_IF_NULL(input_tensor);
   // update shape and size, for dynamic shape
-  if (!input_node->has_dynamic_shape() && !IsDynamic(device_tensor->GetShapeVector())) {
+  if (!input_node->has_dynamic_shape() && !IsDynamic(kernel_tensor->GetShapeVector())) {
     return;
   }
 
@@ -1245,7 +1247,7 @@ void GEBackend::UpdateInputsShapeAndSize(const ParameterPtr &input_node,
   output_kernel_tensor->SetShape(input_tensor->base_shape_ptr());
 
   // Update size.
-  auto device_format = device_tensor->format();
+  auto device_format = kernel::GetFormatFromEnumToStr(kernel_tensor->format());
   static const std::set<std::string> kNormalFormat = {
     kOpFormat_DEFAULT, kOpFormat_ND, kOpFormat_NCHW, kOpFormat_NHWC, kOpFormat_HWCN,
   };
@@ -1261,8 +1263,8 @@ void GEBackend::UpdateInputsShapeAndSize(const ParameterPtr &input_node,
     if (output_type_id == kTypeUnknown) {
       output_type_id = common::AnfAlgo::GetOutputInferDataType(input_node, 0);
     }
-    auto device_shape =
-      trans::TransShapeToDevice(input_tensor->shape(), device_tensor->format(), input_node, 0, output_type_id);
+    auto device_shape = trans::TransShapeToDevice(
+      input_tensor->shape(), kernel::GetFormatFromEnumToStr(kernel_tensor->format()), input_node, 0, output_type_id);
     size_t type_size = GetTypeByte(TypeIdToType(output_type_id));
     auto device_address_size = type_size * SizeOf(device_shape);
     MS_LOG(INFO) << "Size of device_address is updated from " << device_tensor->GetSize() << " to "
@@ -1308,7 +1310,7 @@ void GEBackend::ConstructInputsRefMode(const KernelGraphPtr &func_graph, const V
       auto host_tensor_address =
         std::dynamic_pointer_cast<mindspore::device::DeviceAddress>(flatten_tensors[j]->device_address());
 
-      UpdateInputsShapeAndSize(parameter, device_tensor, flatten_tensors[j]);
+      UpdateInputsShapeAndSize(parameter, kernel_tensor, flatten_tensors[j]);
       CheckContiguousTensor(flatten_tensors[j]);
       // in different backend object, but has init, skip
       if (common::AnfAlgo::IsParameterWeight(parameter)) {
@@ -1423,7 +1425,7 @@ bool GEBackend::Copy(KernelTensor *const dst_kernel_tensor, KernelTensor *const 
                  << ", output size:" << dst_device_tensor->GetSize();
     if (src_kernel_tensor->format() == dst_kernel_tensor->format()) {
       auto new_address_size =
-        GetTypeByte(TypeIdToType(src_kernel_tensor->type_id())) * SizeOf(src_kernel_tensor->GetShapeVector());
+        GetTypeByte(TypeIdToType(src_kernel_tensor->dtype_id())) * SizeOf(src_kernel_tensor->GetShapeVector());
       src_device_tensor->SetSize(new_address_size);
     }
   }
@@ -1450,9 +1452,9 @@ void GEBackend::ConstructOutputs(const KernelGraphPtr &func_graph, std::vector<t
     if (HasAbstractMonad(output_node)) {
       continue;
     }
-    auto output_addr = AnfAlgo::GetMutableOutputAddr(output_node, idx, false);
     const auto &output_kernel_tensor = AnfAlgo::GetOutputKernelTensor(output_node, idx, false);
     MS_EXCEPTION_IF_NULL(output_kernel_tensor);
+    auto output_addr = output_kernel_tensor->device_address();
     MS_EXCEPTION_IF_NULL(output_addr);
 
     // when output_addr exist, need gen fake output
@@ -1460,12 +1462,13 @@ void GEBackend::ConstructOutputs(const KernelGraphPtr &func_graph, std::vector<t
       continue;
     }
 
-    auto out_tensor =
-      tensor::from_spec(output_addr->type_id(), output_kernel_tensor->GetShapeVector(), device::DeviceType::kNone);
+    auto out_tensor = tensor::from_spec(output_kernel_tensor->dtype_id(), output_kernel_tensor->GetShapeVector(),
+                                        device::DeviceType::kNone);
 
-    auto kernel_tensor = AnfAlgo::CreateKernelTensor(
-      nullptr, output_addr->GetSize(), kernel::GetFormatFromStrToEnum(output_addr->format()), output_addr->type_id(),
-      output_addr->GetShapeVector(), kAscendDevice, MsContext::GetInstance()->get_param<uint32_t>(MS_CTX_DEVICE_ID));
+    auto kernel_tensor =
+      AnfAlgo::CreateKernelTensor(nullptr, output_addr->GetSize(), output_kernel_tensor->format(),
+                                  output_kernel_tensor->dtype_id(), output_kernel_tensor->GetShapeVector(),
+                                  kAscendDevice, MsContext::GetInstance()->get_param<uint32_t>(MS_CTX_DEVICE_ID));
     kernel_tensor->SetType(output_kernel_tensor->GetType());
     kernel_tensor->SetShape(output_kernel_tensor->GetShape());
     kernel_tensor->set_stream_id(output_addr->stream_id());

@@ -196,8 +196,7 @@ void DeviceAddressUtils::CreateDeviceAddressByMapTensorNode(const AnfNodePtr &no
     {node, index}, nullptr, 1, kOpFormat_DEFAULT, TypeId::kObjectTypeMapTensorType, ShapeVector(), node_target,
     device_id, user_data);
   kernel_tensor->set_stream_id(AnfAlgo::GetStreamId(node));
-  auto device_address = kernel_tensor->device_address();
-  MS_LOG(DEBUG) << "Create device tensor:" << device_address << " type:" << device_address->type_id();
+  MS_LOG(DEBUG) << "Create kernel tensor:" << kernel_tensor->ToString();
   AnfAlgo::SetOutputKernelTensor(kernel_tensor, index, node.get());
 }
 
@@ -269,7 +268,7 @@ void DeviceAddressUtils::CreateParameterDeviceAddress(const KernelGraphPtr &grap
       if (item->isa<Parameter>()) {
         auto input_param = item->cast<ParameterPtr>();
         MS_EXCEPTION_IF_NULL(input_param);
-        if (IsDynamic(device_address->GetShapeVector())) {
+        if (IsDynamic(kernel_tensor->GetShapeVector())) {
           input_param->set_has_dynamic_shape(true);
         }
         // Unused address will not alloc memory, which is easy to cause problems for weight node, so skip weight node.
@@ -282,8 +281,8 @@ void DeviceAddressUtils::CreateParameterDeviceAddress(const KernelGraphPtr &grap
       }
       device_address->SetNodeIndex(item, index);
       device_address->set_from_persistent_mem(item->isa<Parameter>());
-      MS_LOG(DEBUG) << "Create addr for node:" << common::AnfAlgo::GetNodeDebugString(item)
-                    << " addr:" << device_address << " type:" << device_address->type_id();
+      MS_LOG(DEBUG) << "Create kernel tensor for node:" << item->DebugString()
+                    << " kernel tensor:" << kernel_tensor->ToString();
       AnfAlgo::SetOutputKernelTensor(kernel_tensor, index, item.get());
     }
   }
@@ -418,8 +417,8 @@ KernelTensorPtr DeviceAddressUtils::CloneEmptyKernelTensor(const KernelTensorPtr
   MS_EXCEPTION_IF_NULL(host_context);
   MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
   auto new_device_address = host_context->device_res_manager_->CreateDeviceAddress(
-    old_device_address->device_pointer()->ptr(), old_device_address->size(), old_device_address->GetShapeVector(),
-    old_kernel_tensor->format(), old_device_address->type_id(), device_name, old_device_address->stream_id());
+    old_device_address->device_pointer()->ptr(), old_device_address->size(), old_kernel_tensor->GetShapeVector(),
+    old_kernel_tensor->format(), old_kernel_tensor->dtype_id(), device_name, old_device_address->stream_id());
   new_device_address->SetShapeVector(old_kernel_tensor->GetShapeVector());
   auto new_kernel_tensor = old_kernel_tensor->CloneKernelTensor();
   MS_EXCEPTION_IF_NULL(new_kernel_tensor);
@@ -429,7 +428,7 @@ KernelTensorPtr DeviceAddressUtils::CloneEmptyKernelTensor(const KernelTensorPtr
   new_kernel_tensor->set_device_ptr(nullptr);
   new_kernel_tensor->set_user_data(old_kernel_tensor->user_data());
   new_kernel_tensor->set_need_sync_user_data(old_kernel_tensor->need_sync_user_data());
-  MS_LOG(DEBUG) << "Create device tensor:" << new_device_address << " type:" << new_device_address->type_id();
+  MS_LOG(DEBUG) << "Create new kernel tensor:" << new_kernel_tensor->ToString();
 
   new_kernel_tensor->set_original_ref_count(old_kernel_tensor->original_ref_count());
   new_kernel_tensor->ResetRefCount();

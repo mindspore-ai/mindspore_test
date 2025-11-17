@@ -321,8 +321,11 @@ void SavePrevStepWeight(const std::vector<AnfNodePtr> &weights, aclrtStream stre
     if (common::AnfAlgo::IsParameterWeight(param)) {
       auto tensor = param->default_param()->cast<tensor::TensorPtr>();
       MS_EXCEPTION_IF_NULL(tensor);
-      auto out_addr = AnfAlgo::GetMutableOutputAddr(param, 0, false);
-      if (out_addr == nullptr || out_addr->GetPtr() == nullptr || IsOneOfHWSpecialFormat(out_addr->format())) {
+      auto out_kernel_tensor = AnfAlgo::GetOutputKernelTensor(param, 0, false);
+      MS_EXCEPTION_IF_NULL(out_kernel_tensor);
+      auto out_addr = out_kernel_tensor->device_address();
+      if (out_addr == nullptr || out_addr->GetPtr() == nullptr ||
+          IsOneOfHWSpecialFormat(kernel::GetFormatFromEnumToStr(out_kernel_tensor->format()))) {
         // skip async copy if addr is nullptr.
         // special format need convert to default format at host, so skip async copy if format is a special format.
         continue;

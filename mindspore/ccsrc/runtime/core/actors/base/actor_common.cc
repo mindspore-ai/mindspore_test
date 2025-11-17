@@ -1212,10 +1212,10 @@ void CheckInputSize(const KernelTensorPtr &kernel_tensor, Tensor *tensor, size_t
   }
 }
 
-device::DeviceAddressPtr PrepareOffloadedParameter(Tensor *tensor, const device::DeviceAddressPtr &tensor_address,
-                                                   const KernelTensorPtr &kernel_tensor,
+device::DeviceAddressPtr PrepareOffloadedParameter(Tensor *tensor, const KernelTensorPtr &kernel_tensor,
                                                    const device::DeviceAddressPtr &device_address) {
   MS_EXCEPTION_IF_NULL(tensor);
+  const auto &tensor_address = tensor->device_address();
   MS_EXCEPTION_IF_NULL(tensor_address);
   MS_EXCEPTION_IF_NULL(kernel_tensor);
   MS_EXCEPTION_IF_NULL(device_address);
@@ -1276,18 +1276,18 @@ void PrepareParameter(const std::pair<KernelWithIndex, size_t> &parameter_index,
   auto tensor = graph_parameter_store->FetchTensor(outer_index, front_node);
   MS_EXCEPTION_IF_NULL(tensor);
   CheckInputSize(kernel_tensor, tensor, outer_index, inner_index);
-  auto tensor_address = std::static_pointer_cast<DeviceTensor>(tensor->device_address());
+  auto tensor_address = tensor->device_address();
   if (tensor_address == nullptr) {
     // Tensor with initializer but didn't init_data yet.
     auto empty_tensor = tensor::from_spec(tensor->data_type(), tensor->shape(), device::DeviceType::kCPU);
     tensor->set_device_address(empty_tensor->device_address());
-    tensor_address = std::static_pointer_cast<DeviceTensor>(empty_tensor->device_address());
+    tensor_address = empty_tensor->device_address();
   }
   auto device_tensor = kernel_tensor->device_address();
 
   if (graph_parameter_store->GetOffloaded(outer_index, inner_index) &&
       !graph_parameter_store->GetPinned(outer_index, inner_index)) {
-    tensor_address = PrepareOffloadedParameter(tensor, tensor_address, kernel_tensor, device_tensor);
+    tensor_address = PrepareOffloadedParameter(tensor, kernel_tensor, device_tensor);
     graph_parameter_store->SetPinned(outer_index, inner_index, true);
     MS_LOG(DEBUG) << "Prepare offloaded parameter: " << front_node.first->fullname_with_scope();
   }

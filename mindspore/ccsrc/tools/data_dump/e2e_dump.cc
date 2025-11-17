@@ -154,11 +154,11 @@ void E2eDump::DumpOutputImpl(const CNodePtr &node, bool trans_flag, const std::s
         if (!AnfAlgo::OutputAddrExist(node, j, true)) {
           continue;
         }
-        auto addr = AnfAlgo::GetOutputAddr(node, j);
-        MS_EXCEPTION_IF_NULL(addr);
+        auto kt = AnfAlgo::GetOutputKernelTensor(node, j);
+        MS_EXCEPTION_IF_NULL(kt);
         ShapeVector int_shapes;
         GetDumpIntShape(node, j, NOT_NULL(&int_shapes), trans_flag);
-        DumpMemToFile(file_path, *addr, int_shapes, type, trans_flag);
+        DumpMemToFile(file_path, kt, int_shapes, type, trans_flag);
       }
     }
     if (DumpJsonParser::GetInstance().IsStatisticDump() && IsMindRTKernelByKernel()) {
@@ -321,10 +321,10 @@ void E2eDump::DumpInputImpl(const CNodePtr &node, bool trans_flag, const std::st
         if (!AnfAlgo::OutputAddrExist(input, index)) {
           continue;
         }
-        auto addr = AnfAlgo::GetOutputAddr(input, index);
-        MS_EXCEPTION_IF_NULL(addr);
+        auto kt = AnfAlgo::GetOutputKernelTensor(input, index);
+        MS_EXCEPTION_IF_NULL(kt);
         GetDumpIntShape(input, index, NOT_NULL(&int_shapes), trans_flag);
-        DumpMemToFile(file_path, *addr, int_shapes, type, trans_flag);
+        DumpMemToFile(file_path, kt, int_shapes, type, trans_flag);
       }
     }
     if (DumpJsonParser::GetInstance().IsStatisticDump() && IsMindRTKernelByKernel()) {
@@ -362,8 +362,8 @@ void E2eDump::DumpSingleAnfNode(const AnfNodePtr &anf_node, const size_t output_
   if (!AnfAlgo::OutputAddrExist(anf_node, output_index)) {
     return;
   }
-  auto addr = AnfAlgo::GetOutputAddr(anf_node, output_index);
-  MS_EXCEPTION_IF_NULL(addr);
+  auto kt = AnfAlgo::GetOutputKernelTensor(anf_node, output_index);
+  MS_EXCEPTION_IF_NULL(kt);
   ShapeVector int_shapes;
   GetDumpIntShape(anf_node, output_index, NOT_NULL(&int_shapes), trans_flag);
   auto type = common::AnfAlgo::GetOutputInferDataType(anf_node, output_index);
@@ -397,7 +397,7 @@ void E2eDump::DumpSingleAnfNode(const AnfNodePtr &anf_node, const size_t output_
       }
     }
     if (dump_json_parser.IsTensorDump()) {
-      DumpMemToFile(file_path, *addr, int_shapes, type, trans_flag);
+      DumpMemToFile(file_path, kt, int_shapes, type, trans_flag);
     }
   }
 }
@@ -427,7 +427,6 @@ void E2eDump::DumpSingleParameterNode(const AnfNodePtr &anf_node, const std::str
     MS_LOG(DEBUG) << "Skip node: " << node_name << ". Parameter data is not available for mindRT.";
     return;
   }
-  auto addr = kt->device_address();
   uint64_t timestamp = Common::GetTimeStamp();
   uint32_t task_id = 0;
   uint32_t stream_id = 0;
@@ -456,7 +455,7 @@ void E2eDump::DumpSingleParameterNode(const AnfNodePtr &anf_node, const std::str
       (void)stat_dump.DumpTensorStatsToFile(node_name, dump_path, debugger);
     }
     if (dump_json_parser.IsTensorDump()) {
-      DumpMemToFile(file_path, *addr, int_shapes, type, trans_flag);
+      DumpMemToFile(file_path, kt, int_shapes, type, trans_flag);
     }
   }
 }

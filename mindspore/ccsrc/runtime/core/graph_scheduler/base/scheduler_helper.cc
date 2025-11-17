@@ -1382,8 +1382,8 @@ void CheckControlActorValid(const ActorSet *actor_set) {
       for (auto iter = kernel_tensors.begin(); iter != kernel_tensors.end(); ++iter) {
         MS_EXCEPTION_IF_NULL((*kernel_tensors.begin())->device_address());
         MS_EXCEPTION_IF_NULL((*iter)->device_address());
-        if (((*kernel_tensors.begin())->device_address()->format() != (*iter)->device_address()->format()) ||
-            ((*kernel_tensors.begin())->device_address()->type_id() != (*iter)->device_address()->type_id())) {
+        if (((*kernel_tensors.begin())->format() != (*iter)->format()) ||
+            ((*kernel_tensors.begin())->dtype_id() != (*iter)->dtype_id())) {
           MS_LOG(INTERNAL_EXCEPTION) << "#dmsg#Runtime error info:#dmsg#" << control_actor->GetAID().Name()
                                      << " does not support the ref node formal parameters with different format.";
         }
@@ -1395,7 +1395,7 @@ void CheckControlActorValid(const ActorSet *actor_set) {
       for (auto iter = kernel_tensors.begin(); iter != kernel_tensors.end(); ++iter) {
         MS_EXCEPTION_IF_NULL((*kernel_tensors.begin())->device_address());
         MS_EXCEPTION_IF_NULL((*iter)->device_address());
-        if ((*kernel_tensors.begin())->device_address()->type_id() != (*iter)->device_address()->type_id()) {
+        if ((*kernel_tensors.begin())->dtype_id() != (*iter)->dtype_id()) {
           MS_LOG(INTERNAL_EXCEPTION) << "#dmsg#Runtime error info:#dmsg#" << control_actor->GetAID().Name()
                                      << " does not support the ref formal parameters with different type.";
         }
@@ -1600,8 +1600,8 @@ KernelTensorPtr SchedulerHelper::CloneKernelTensorWithDeviceInfo(const KernelTen
   auto device_address = kernel_tensor->device_address();
   MS_EXCEPTION_IF_NULL(device_address);
   auto new_device_address = device_context->device_res_manager_->CreateDeviceAddress(
-    device_address->device_pointer()->ptr(), device_address->size(), device_address->GetShapeVector(),
-    kernel_tensor->format(), device_address->type_id(),
+    device_address->device_pointer()->ptr(), device_address->size(), kernel_tensor->GetShapeVector(),
+    kernel_tensor->format(), kernel_tensor->dtype_id(),
     device::GetDeviceNameByType(device_context->device_context_key().device_type_), device_address->stream_id());
   new_device_address->SetShapeVector(kernel_tensor->GetShapeVector());
   auto new_kernel_tensor = kernel_tensor->CloneKernelTensor();
