@@ -339,3 +339,26 @@ def test_hsigmoid():
     output = get_output(nn.HSigmoid, [x0_ms], enable_graph_kernel=True)
     output = output.asnumpy()
     assert np.allclose(expect, output, 1e-4, 1e-4, equal_nan=True)
+
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_fuse_virtual_node():
+    """
+    Feature: test split pattern FuseVirtualNode
+    Description: Transpose + Assign
+    Expectation: the result match with expect
+    """
+
+    class Net1(nn.Cell):
+        def construct(self, x0, x1):
+            y0 = ops.transpose(x0, (1, 0))
+            return ops.assign(x1, y0)
+
+    np.random.seed(1)
+    context.set_context(mode=context.GRAPH_MODE)
+    x = np.random.normal(0, 1, (10, 20)).astype(np.float32)
+    y = np.random.normal(0, 1, (20, 10)).astype(np.float32)
+    expect = np.transpose(x, (1, 0))
+    output = get_output(Net1, [Tensor(x), Parameter(Tensor(y), name="y")], enable_graph_kernel=True)
+    output = output.asnumpy()
+    assert np.allclose(expect, output, 1e-4, 1e-4, equal_nan=True)

@@ -1,5 +1,5 @@
 /**
- * Copyright 2022 Huawei Technologies Co., Ltd
+ * Copyright 2022-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -295,13 +295,30 @@ class FuseAllReduceBwd : public FusePattern {
   }
 };
 
+// bind the virtual nodes to their inputs
+class FuseVirtualNode : public FusePattern {
+ public:
+  FuseVirtualNode() : FusePattern("fuse_virtual_node") { direction_ = FuseDirection::FORWARD; }
+  ~FuseVirtualNode() = default;
+
+ protected:
+  bool Check(const AreaPtr &dom) override { return dom->pattern() == NodePattern::VIRTUAL; }
+  bool Match(const AreaPtr &dom) override {
+    for (auto &inp : dom->inputs()) {
+      if (inp != nullptr && inp->dom()->op() != kTransposeOpName) {
+        (void)fused_areas_.emplace_back(inp);
+      }
+    }
+    return !fused_areas_.empty();
+  }
+};
 }  // namespace dvm
 
 void SplitModelAscend::InitFusePatterns() {
   is_dvm_ = (GraphKernelFlags::GetInstance().kernel_generator == "DVM");
   if (is_dvm_) {
     // fuse pattern for dvm
-    AddPattern(std::make_shared<FuseVirtualNode>(), true);
+    AddPattern(std::make_shared<inner::dvm::FuseVirtualNode>(), true);
     AddPattern(std::make_shared<FuseReshape>(), true);
     AddPattern(FuseElemwiseBroadcastFwd::CreateDepthMatcher(), true);
     AddPattern(FuseElemwiseBroadcastFwd::CreateWidthMatcher(), true);
