@@ -52,7 +52,9 @@
 #include "plugin/ascend/res_manager/op_adapter/op_adapter.h"
 #include "plugin/ascend/res_manager/op_adapter/op_adapter_desc.h"
 #include "plugin/ascend/res_manager/op_adapter/op_adapter_map.h"
+#ifdef ENABLE_D
 #include "backend/ge_backend/graph_ir/storage_format_convertor.h"
+#endif
 #include "utils/check_convert_utils.h"
 #include "utils/log_adapter.h"
 #include "utils/ms_context.h"
@@ -442,6 +444,7 @@ void SetXDataIndex(const OperatorPtr &op, T idx) {
   op->SetAttr(kTypeIndex, static_cast<int64_t>(idx));
 }
 
+#ifdef ENABLE_D
 bool ParamCompare(const std::string &l, const std::string &r, const mindspore::HashMap<std::string, AnfNodePtr> &params,
                   const NodeUsersMap &node_users) {
   auto lpram_iter = params.find(l);
@@ -462,6 +465,7 @@ bool ParamCompare(const std::string &l, const std::string &r, const mindspore::H
 
   return l.compare(r) < 0;
 }
+#endif
 
 void GetBranchToParentMapFromFuncGraph(const AnfNodePtr &branch_node, ParamIndexMap *branch_to_parent_node_map) {
   MS_EXCEPTION_IF_NULL(branch_node);
@@ -827,6 +831,7 @@ void DfGraphConvertor::InitParamWithData(const TensorOrderMap &tensors) {
   int index = 0;
   std::vector<Operator> init_input;
   MS_EXCEPTION_IF_NULL(graph_manager_);
+#ifdef ENABLE_D
   // The format of Momentum's accum is updated according to format of Momentum's var, so here sort tensors to put
   // Momentum's accum parameter at last
   auto cmp = std::bind(ParamCompare, std::placeholders::_1, std::placeholders::_2, std::cref(params_),
@@ -840,6 +845,10 @@ void DfGraphConvertor::InitParamWithData(const TensorOrderMap &tensors) {
   for (const auto &itor : ordered_tensors) {
     std::string name = itor.first;
     auto &it = itor.second;
+#else
+  for (const auto &it : tensors) {
+    std::string name = it.first;
+#endif
     auto node_itor = params_.find(name);
     // if name not in params_, create a node in graph
     if (node_itor == params_.end()) {
@@ -878,7 +887,9 @@ void DfGraphConvertor::InitParamWithData(const TensorOrderMap &tensors) {
       continue;
     }
     if (as_ref_data) {
+#ifdef ENABLE_D
       StorageFormatConvertor::SetupStorageFormat(anf_graph_, node, desc);
+#endif
       if (name.empty()) {
         name = "RefData_NULL_" + std::to_string(refdata_null_idx++);
       }
@@ -917,7 +928,12 @@ void DfGraphConvertor::InitParamWithData(const TensorOrderMap &tensors) {
       }
       auto param_op = adpt->generate(name + "_data");
       if (it.second->is_init() == 0) {
+#ifdef ENABLE_D
         SetXDataIndex(param_op, it.first);
+#else
+        SetXDataIndex(param_op, index);
+        index++;
+#endif
         ProcessInputData(&init_input, &infer_need_update_parameter_names, param_op, name, desc);
       }
 
@@ -2300,6 +2316,7 @@ void DfGraphConvertor::SetupInputFormat(const FuncGraphManagerPtr &manager, cons
   if (!node->isa<Parameter>()) {
     return;
   }
+#ifdef ENABLE_D
   auto para = node->cast<ParameterPtr>();
   MS_EXCEPTION_IF_NULL(para);
   std::vector<int64_t> shape;
@@ -2338,6 +2355,7 @@ void DfGraphConvertor::SetupInputFormat(const FuncGraphManagerPtr &manager, cons
   }
   auto desc = device::ascend::TransformUtil::GetGeTensorDesc(shape, type, format);
   StorageFormatConvertor::SetupStorageFormat(anf_graph_, node, desc);
+#endif
 }
 
 void DfGraphConvertor::GenFakeGraphInRefMode() {
@@ -2588,7 +2606,9 @@ void DfGraphConvertor::UpdateConstOpDesc(const AnfNodePtr &it, const OperatorPtr
   auto tensor = value->cast<std::shared_ptr<tensor::Tensor>>();
   MS_EXCEPTION_IF_NULL(tensor);
   auto const_op_desc = device::ascend::TransformUtil::GetGeTensorDesc(tensor->shape_c(), tensor->data_type(), format);
+#ifdef ENABLE_D
   StorageFormatConvertor::SetupStorageFormat(anf_graph_, it, const_op_desc, format);
+#endif
   if (const_op_desc == nullptr) {
     MS_LOG(WARNING) << "Create parameter " << para->name() << " output descriptor failed!";
     return;
@@ -2635,7 +2655,9 @@ void DfGraphConvertor::UpdateDataOpDesc(const AnfNodePtr &it, const OperatorPtr 
     }
   }
   auto desc = device::ascend::TransformUtil::GetGeTensorDesc(shape, me_type, format);
+#ifdef ENABLE_D
   StorageFormatConvertor::SetupStorageFormat(anf_graph_, it, desc, format);
+#endif
   if (desc == nullptr) {
     MS_LOG(ERROR) << "Update data op descriptor failed! TensorDesc is null.";
   } else {
