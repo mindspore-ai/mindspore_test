@@ -13,8 +13,12 @@
 # limitations under the License.
 # ============================================================================
 """pipeline schedule"""
-from abc import ABC, abstractmethod
+from abc import ABC
 from enum import Enum, auto
+from collections import defaultdict
+import itertools
+import bisect
+from mindspore.parallel.mpmd.pipeline_parallel import PipelineStage
 from ._utils import _MicroBatch
 
 
@@ -39,8 +43,8 @@ class MetaStep:
         type (MetaStepType): Specify the type of current step.
         stage_index(int): Specify the stage index of current step.
     """
-    def __init__(self, micro_index, type, stage_index):
-        self._type = type
+    def __init__(self, micro_index, meta_type, stage_index):
+        self._type = meta_type
         self._micro_index = micro_index
         self._stage_index = stage_index
 
@@ -56,6 +60,23 @@ class MetaStep:
     def type(self):
         return self._type
 
+    def __eq__(self, value):
+        if not isinstance(value, MetaStep):
+            return NotImplemented
+        return self.type == value.type and \
+            self.micro_index == value.micro_index and \
+            self.stage_index == value.stage_index
+
+    def __ne__(self, value):
+        if not isinstance(value, MetaStep):
+            return NotImplemented
+        return self.type != value.type or \
+            self.micro_index != value.micro_index or \
+            self.stage_index != value.stage_index
+
+    def __hash__(self):
+        return hash((self.type, self.micro_index, self.stage_index))
+
     def __str__(self):
         return f"MetaStep(type={self.type}, micro_index={self.micro_index}, stage_index={self.stage_index})"
 
@@ -67,114 +88,138 @@ class MetaStep:
         pass
 
 
-class PipelineScheduleBase(ABC):
+class PipelineScheduleRuntime(ABC):
     """
     Base class for pipeline schedule.
-    Implements the `split_microbatches` method.
+    Implements the `split_microbatches` and `run_microbatches` method.
     Derived classes should implement `run_microbatches` method and `run` method.
 
     Args:
+        stages (list[PipelineStage], PipelineStage):  PipelineStage used to run_microbatches.
         micro_batch_num (int): The number of micro-batch.
         args_batch_dim (list, optional): Specify the batch dim of the args.
             Default ``None``.
         kwargs_batch_dim(dict, optional): Specify the batch dim of the kwargs.
             Default ``None``.
     """
-    def __init__(self, micro_batch_num, args_batch_dim=None, kwargs_batch_dim=None,
-                 output_concat_dim=None, scale_grads=True):
+    def __init__(self,
+                 stages,
+                 micro_batch_num,
+                 args_batch_dim=None,
+                 kwargs_batch_dim=None,
+                 output_concat_dim=None):
+        self.stages = self._check_stages(stages)
         self.micro_batch_num = micro_batch_num
         self._args_batch_dim = args_batch_dim
         self._kwargs_batch_dim = kwargs_batch_dim
         self._output_concat_dim = output_concat_dim
-        self._scale_grads = scale_grads
         self.split_micro_batch = _MicroBatch(self.micro_batch_num, self._args_batch_dim, self._kwargs_batch_dim)
+        self.n_local_stages = len(self.stages)
+        self._stage_dict = self.convert_stages_dict()
+        self.real_stage_num = self.stages[0].stage_num // self.n_local_stages
+        self._stage_num = self.stages[0].stage_num
+        self.exec_order = {}
+        self._init_stages()
+
+    def convert_stages_dict(self):
+        """convert stages to dict."""
+        stage_dict = {}
+        for stage in self.stages:
+            stage_dict[stage.stage_index] = stage
+        return stage_dict
 
     def split_microbatches(self, args, kwargs):
+        """split_microbatches."""
         if args or kwargs:
             args_split, kwargs_split = self.split_micro_batch(args, kwargs)
             return args_split, kwargs_split
         return [[]] * self.micro_batch_num, [{}] * self.micro_batch_num
 
-    @abstractmethod
-    def run_microbatches(self, arg_mbs, kwarg_mbs):
-        raise NotImplementedError
+    def _check_stages(self, stages):
+        """check stages type."""
+        if isinstance(stages, PipelineStage):
+            return [stages]
+        if isinstance(stages, (list, tuple)):
+            for stage in stages:
+                if not isinstance(stage, PipelineStage):
+                    raise TypeError(f"Argument 'stages' must be type of PipelineStage, \
+                                     list or tuple of PipelineStage, but got list or tuple of {type(stage)}.")
+            return stages
+        raise TypeError(f"Argument 'stages' must be type of PipelineStage, \
+                         list or tuple of PipelineStage, but got type of {type(stages)}.")
 
-    @abstractmethod
+    def _init_stages(self):
+        """init stages."""
+        for stage in self.stages:
+            stage.init(self.n_local_stages)
+
     def run(self, *args, **kwargs):
-        raise NotImplementedError
+        """schedule run."""
+        split_args, split_kwargs = self.split_microbatches(args, kwargs)
+        losses = []
+        grads = []
+        self.run_microbatches(split_args, split_kwargs, losses, grads)
+        return losses, tuple(grads)
 
+    def sync_shared_parameters_grad(self):
+        """sync_shared_parameters_grad."""
+        for stage in self.stages:
+            stage.sync_shared_parameters_grad()
 
-class PipelineScheduleSingle(PipelineScheduleBase):
-    """
-    Base class for pipeline schedule with single-stage.
-    Implements the `run` and `run_microbatches` method.
-    Derived classes should implement `_construct_exec_order`.
-    Args:
-        stage (PipelineStage): A Pipeline stage representing partial of Model.
-        micro_batch_num (int): The number of micro-batch.
-        args_batch_dim (list, optional): Specify the batch dim of the args.
-            Default ``None``.
-        kwargs_batch_dim(dict, optional): Specify the batch dim of the kwargs.
-            Default ``None``.
-        scale_grads(bool): Whether to scale grads by a factor of 1/micro_batches.
-    """
-    def __init__(self,
-                 stage,
-                 micro_batch_num,
-                 args_batch_dim=None,
-                 kwargs_batch_dim=None,
-                 output_concat_dim=None,
-                 scale_grads=True):
-        super().__init__(micro_batch_num,
-                         args_batch_dim=args_batch_dim,
-                         kwargs_batch_dim=kwargs_batch_dim,
-                         output_concat_dim=output_concat_dim,
-                         scale_grads=scale_grads)
-        self.stage = stage
-        self.exec_order = {}
-        self.construct_exec_order()
+    def update_losses(self, stage, loss, losses):
+        """update_losses."""
+        if stage.is_last_stage:
+            losses.append(loss)
 
-    @abstractmethod
-    def construct_exec_order(self):
-        raise NotImplementedError
-
-    def run_microbatches(self, arg_mbs, kwarg_mbs):
-        out_list = []
-        grad_out = None
-        for cur_step in self.exec_order[self.stage.stage_index]:
+    def run_microbatches(self, arg_mbs, kwarg_mbs, losses, grads):
+        """run_microbatches."""
+        real_stage_index = self.stages[0].stage_index % self.real_stage_num
+        for cur_step in self.exec_order[real_stage_index]:
+            if cur_step is None:
+                continue
+            stage = self._stage_dict[cur_step.stage_index]
             micro_index = cur_step.micro_index
             if cur_step.type == MetaStepType.FWD_RECV:
-                self.stage.exec_fwd_recv_ops(micro_index)
+                stage.exec_fwd_recv_ops(micro_index)
             if cur_step.type == MetaStepType.FWD:
-                out = self.stage.forward_one_chunk(micro_index, arg_mbs[micro_index], kwarg_mbs[micro_index])
-                out_list.append(out)
+                out = stage.forward_one_chunk(micro_index, arg_mbs[micro_index], kwarg_mbs[micro_index])
+                self.update_losses(stage, out, losses)
             if cur_step.type == MetaStepType.FWD_SEND:
-                self.stage.exec_fwd_send_ops(micro_index)
+                stage.exec_fwd_send_ops(micro_index)
             if cur_step.type == MetaStepType.BWD_RECV:
-                self.stage.exec_bwd_recv_ops(micro_index)
+                stage.exec_bwd_recv_ops(micro_index)
             if cur_step.type == MetaStepType.BWD:
                 if micro_index == self.micro_batch_num - 1:
-                    grad_out = self.stage.backward_one_chunk(micro_index, True)
+                    grad_out = stage.backward_one_chunk(micro_index, True)
+                    grads += grad_out
                 else:
-                    _ = self.stage.backward_one_chunk(micro_index)
+                    _ = stage.backward_one_chunk(micro_index)
             if cur_step.type == MetaStepType.BWD_SEND:
-                self.stage.exec_bwd_send_ops(micro_index)
-        self.stage.sync_shared_parameters_grad()
-        return out_list, grad_out
-
-    def run(self, *args, **kwargs):
-        split_args, split_kwargs = self.split_microbatches(args, kwargs)
-        out = self.run_microbatches(split_args, split_kwargs)
-        return out
+                stage.exec_bwd_send_ops(micro_index)
+        self.sync_shared_parameters_grad()
 
 
-class ScheduleGPipe(PipelineScheduleSingle):
+class ScheduleGPipe(PipelineScheduleRuntime):
     """
     The Gpipe schedule.
     It first executes all forward micro batches and then execute all backward micro batches.
     """
+    def __init__(self,
+                 stages,
+                 micro_batch_num,
+                 args_batch_dim=None,
+                 kwargs_batch_dim=None,
+                 output_concat_dim=None):
+        super().__init__(stages,
+                         micro_batch_num,
+                         args_batch_dim=args_batch_dim,
+                         kwargs_batch_dim=kwargs_batch_dim,
+                         output_concat_dim=output_concat_dim)
+        self.construct_exec_order()
+
     def construct_exec_order(self):
-        for stage_index in range(self.stage.stage_num):
+        """construct_exec_order of Gpipe."""
+        for stage_index in range(self.real_stage_num):
             order_list = []
             for mb_index in range(self.micro_batch_num):
                 if stage_index != 0:
@@ -183,7 +228,7 @@ class ScheduleGPipe(PipelineScheduleSingle):
                 if stage_index != self.stage.stage_num - 1:
                     order_list.append(MetaStep(mb_index, MetaStepType.FWD_SEND, stage_index))
             for mb_index in range(self.micro_batch_num):
-                if stage_index != self.stage.stage_num - 1:
+                if stage_index != self.real_stage_num - 1:
                     order_list.append(MetaStep(mb_index, MetaStepType.BWD_RECV, stage_index))
                 order_list.append(MetaStep(mb_index, MetaStepType.BWD, stage_index))
                 if stage_index != 0:
@@ -191,18 +236,32 @@ class ScheduleGPipe(PipelineScheduleSingle):
             self.exec_order[stage_index] = order_list
 
 
-class Schedule1F1B(PipelineScheduleSingle):
+class Schedule1F1B(PipelineScheduleRuntime):
     """
     The 1F1B schedule.
     It will perform one forward and one backward on the micro batches in steady state.
     """
+    def __init__(self,
+                 stages,
+                 micro_batch_num,
+                 args_batch_dim=None,
+                 kwargs_batch_dim=None,
+                 output_concat_dim=None):
+        super().__init__(stages,
+                         micro_batch_num,
+                         args_batch_dim=args_batch_dim,
+                         kwargs_batch_dim=kwargs_batch_dim,
+                         output_concat_dim=output_concat_dim)
+        self.construct_exec_order()
+
     def construct_exec_order(self):
-        for stage_index in range(self.stage.stage_num):
+        """construct_exec_order of 1F1B."""
+        for stage_index in range(self.real_stage_num):
             order_list = []
             fwd_index = 0
             bwd_index = 0
             # warmup phase
-            warmup_micro_batches = min(self.stage.stage_num - stage_index, self.micro_batch_num)
+            warmup_micro_batches = min(self.real_stage_num - stage_index, self.micro_batch_num)
             for _ in range(warmup_micro_batches):
                 if stage_index != 0:
                     order_list.append(MetaStep(fwd_index, MetaStepType.FWD_RECV, stage_index))
@@ -217,14 +276,14 @@ class Schedule1F1B(PipelineScheduleSingle):
                 fwd_index += 1
 
             # if warmup phase cannot filled up, then we need to execute fwd send in advance
-            if self.stage.stage_num - stage_index > self.micro_batch_num:
+            if self.real_stage_num - stage_index > self.micro_batch_num:
                 order_list.append(MetaStep(fwd_index - 1, MetaStepType.FWD_SEND, stage_index))
                 fwd_index += 1
 
             # steady phase
             steady_micro_batches = self.micro_batch_num - warmup_micro_batches
             for _ in range(steady_micro_batches):
-                if stage_index != self.stage.stage_num - 1:
+                if stage_index != self.real_stage_num - 1:
                     order_list.append(MetaStep(bwd_index, MetaStepType.BWD_RECV, stage_index))
                     order_list.append(MetaStep(fwd_index - 1, MetaStepType.FWD_SEND, stage_index))
                 order_list.append(MetaStep(bwd_index, MetaStepType.BWD, stage_index))
@@ -239,7 +298,7 @@ class Schedule1F1B(PipelineScheduleSingle):
             # cooldown phase
             cooldown_micro_batches = warmup_micro_batches
             for _ in range(cooldown_micro_batches):
-                if stage_index != self.stage.stage_num - 1:
+                if stage_index != self.real_stage_num - 1:
                     order_list.append(MetaStep(bwd_index, MetaStepType.BWD_RECV, stage_index))
                     if bwd_index == self.micro_batch_num - warmup_micro_batches and fwd_index <= self.micro_batch_num:
                         order_list.append(MetaStep(fwd_index - 1, MetaStepType.FWD_SEND, stage_index))
@@ -249,3 +308,118 @@ class Schedule1F1B(PipelineScheduleSingle):
                     order_list.append(MetaStep(bwd_index, MetaStepType.BWD_SEND, stage_index))
                 bwd_index += 1
             self.exec_order[stage_index] = order_list
+
+
+class ScheduleInterleaved1F1B(PipelineScheduleRuntime):
+    """
+    The Interleaved 1F1B schedule.
+    Support multiple stages per rank. It will perform one forward and one backward
+    on the micro batches in steady state.
+    We support cases where num_microbatch is less than or equal, or greater than the
+    stage num, as well as cases where num_microbatch can't be evenly divided by the
+    stage num.
+    """
+    def __init__(self,
+                 stages,
+                 micro_batch_num,
+                 args_batch_dim=None,
+                 kwargs_batch_dim=None,
+                 output_concat_dim=None):
+        super().__init__(stages,
+                         micro_batch_num,
+                         args_batch_dim=args_batch_dim,
+                         kwargs_batch_dim=kwargs_batch_dim,
+                         output_concat_dim=output_concat_dim)
+        self.n_rounds = max(1, self.micro_batch_num // self.real_stage_num)
+        if self.micro_batch_num < self.real_stage_num:
+            base = self.micro_batch_num - self.real_stage_num
+            remainder = 0
+        else:
+            n_extra_microbatch = self.micro_batch_num % self.real_stage_num
+            base = n_extra_microbatch // self.n_rounds
+            remainder = n_extra_microbatch % self.n_rounds
+        self.n_microbatch_per_round = \
+            [self.real_stage_num + base + 1 if i < remainder else
+             self.real_stage_num + base for i in range(self.n_rounds)]
+        self.n_microbatch_per_round_accu = \
+            [x * self.n_local_stages for x in itertools.accumulate(self.n_microbatch_per_round)]
+        self.n_microbatch_per_round_accu.insert(0, 0)
+        for stage_index in range(self.real_stage_num):
+            self.exec_order[stage_index] = self.construct_stage_exec_order(stage_index)
+
+    def warmup_ops(self, stage_index):
+        """warmup phase."""
+        warmup_ops_last_stage = (self.n_local_stages - 1) * self.n_microbatch_per_round[0]
+        warmup_ops = warmup_ops_last_stage + 2 * (self.real_stage_num - 1 - stage_index)
+        return min(warmup_ops, self.micro_batch_num * self.n_local_stages)
+
+    def forward_stage_index(self, op_index, stage_index):
+        """obtain forward stage_index based on op_index."""
+        accu_index = bisect.bisect_right(self.n_microbatch_per_round_accu, op_index) - 1
+        local_index = (op_index - self.n_microbatch_per_round_accu[accu_index]) // \
+            self.n_microbatch_per_round[accu_index]
+        return (local_index * self.real_stage_num) + stage_index
+
+    def backward_stage_index(self, op_index, stage_index):
+        """obtain backward stage_index based on op_index."""
+        accu_index = bisect.bisect_right(self.n_microbatch_per_round_accu, op_index) - 1
+        local_index = (op_index - self.n_microbatch_per_round_accu[accu_index]) // \
+            self.n_microbatch_per_round[accu_index]
+        local_index = self.n_local_stages - 1 - local_index
+        return (local_index * self.real_stage_num) + stage_index
+
+    def construct_stage_exec_order(self, stage_index):
+        """construct the execution order of specified stage_index."""
+        warmup_ops = self.warmup_ops(stage_index)
+        fwd_bwd_ops = self.n_local_stages * self.micro_batch_num - warmup_ops
+        cooldown_ops = warmup_ops
+        total_ops = warmup_ops + fwd_bwd_ops + cooldown_ops
+        # Pre-padding bubbles, stage starts with no-ops based on the warmup.
+        order_list = [None for _ in range(stage_index)]
+        fwd_stage_micro_index = defaultdict(int)
+        bwd_stage_micro_index = defaultdict(int)
+        # WarmUp Phase
+        for op_idx in range(warmup_ops):
+            fwd_stage_idx = self.forward_stage_index(op_idx, stage_index)
+            fwd_micro_idx = fwd_stage_micro_index[fwd_stage_idx]
+            order_list.append(MetaStep(fwd_micro_idx, MetaStepType.FWD, fwd_stage_idx))
+            # If micro is less than stage num, there will be additional bubbles during warmup phase.
+            if self.micro_batch_num < self.real_stage_num and fwd_micro_idx == self.micro_batch_num - 1:
+                if op_idx != warmup_ops - 1 or stage_index == self.real_stage_num - 1:
+                    order_list.extend([None] * (self.real_stage_num - self.micro_batch_num))
+            fwd_stage_micro_index[fwd_stage_idx] += 1
+        # If micro is less than 2 * (self.real_stage_num - stage_index - 1),
+        # there will be additional bubbles during warmup phase.
+        if self.micro_batch_num < 2 * (self.real_stage_num - stage_index - 1):
+            order_list.extend([None] * (2 * (self.real_stage_num - stage_index - 1) - self.micro_batch_num))
+        # Bubble from the end of warmup to the start of backward.
+        order_list.extend([None] * (self.real_stage_num - 1 - stage_index))
+
+        # 1f1b phase
+        for op_idx in range(warmup_ops, warmup_ops+fwd_bwd_ops):
+            fwd_stage_idx = self.forward_stage_index(op_idx, stage_index)
+            fwd_micro_idx = fwd_stage_micro_index[fwd_stage_idx]
+            order_list.append(MetaStep(fwd_micro_idx, MetaStepType.FWD, fwd_stage_idx))
+            fwd_stage_micro_index[fwd_stage_idx] += 1
+            bwd_stage_idx = self.backward_stage_index(op_idx - warmup_ops, stage_index)
+            bwd_micro_idx = bwd_stage_micro_index[bwd_stage_idx]
+            order_list.append(MetaStep(bwd_micro_idx, MetaStepType.BWD, bwd_stage_idx))
+            # If micro is less than 2 * (self.real_stage_num - stage_index - 1),
+            # there will be additional bubbles after 1f1b phase in last stage.
+            if self.micro_batch_num < self.real_stage_num and bwd_micro_idx == self.micro_batch_num - 1:
+                if stage_index == self.real_stage_num - 1:
+                    order_list.extend([None] * (self.real_stage_num - self.micro_batch_num))
+            bwd_stage_micro_index[bwd_stage_idx] += 1
+
+        # cooldown phase
+        for op_idx in range(warmup_ops+fwd_bwd_ops, total_ops):
+            order_list.append(None)
+            bwd_stage_idx = self.backward_stage_index(op_idx - warmup_ops, stage_index)
+            bwd_micro_idx = bwd_stage_micro_index[bwd_stage_idx]
+            order_list.append(MetaStep(bwd_micro_idx, MetaStepType.BWD, bwd_stage_idx))
+            # If micro is less than 2 * (self.real_stage_num - stage_index - 1),
+            # there will be additional bubbles during cooldown phase.
+            if self.micro_batch_num < self.real_stage_num and bwd_micro_idx == self.micro_batch_num - 1:
+                order_list.extend([None] * (self.real_stage_num - self.micro_batch_num))
+            bwd_stage_micro_index[bwd_stage_idx] += 1
+        return order_list
