@@ -20,6 +20,11 @@
 #include <algorithm>
 #include <unordered_map>
 #include <limits>
+#include <set>
+#include <memory>
+#include <utility>
+#include <vector>
+#include <string>
 
 #include "ir/dtype/tensor_type.h"
 #include "runtime/core/graph_executor/pipeline/runtime_pipeline.h"
@@ -666,8 +671,8 @@ void KernelRunner::ConvertInputContiguous(OpContext<KernelTensor> *const context
       // Launch CopyInplace to make tensor contiguous.
       if (i >= depend_shape_input_list_.size() || !depend_shape_input_list_[i]) {
         if (!device_contexts_[0]->GetKernelExecutor()->ExecuteKernelTask(runtime::KernelTaskType::kCONTIGUOUS_TASK,
-                                                                         {input_device_tensor},
-                                                                         {new_device_address.get()}, stream_id)) {
+                                                                         {input_kernel_tensors_[i].get()},
+                                                                         {new_kernel_tensor.get()}, stream_id)) {
           MS_LOG(EXCEPTION) << "Graph mode executeKernelTask Contiguous failed.";
         }
         // Store the old tensor storage info , input device tensor and input kernel tensor.
@@ -678,7 +683,7 @@ void KernelRunner::ConvertInputContiguous(OpContext<KernelTensor> *const context
         }
       }
       temp_input_kernel_tensors_[i] = input_kernel_tensors_[i];
-      MS_LOG(DEBUG) << "Repalce input kernel tensor from:" << input_kernel_tensors_[i]->ToString()
+      MS_LOG(DEBUG) << "Replace input kernel tensor from:" << input_kernel_tensors_[i]->ToString()
                     << " to:" << new_kernel_tensor->ToString() << " input index:" << i << " for actor:" << GetAID();
       input_kernel_tensors_[i] = new_kernel_tensor;
       input_launch_tensors_[i] = new_kernel_tensor.get();

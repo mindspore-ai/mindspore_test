@@ -19,6 +19,10 @@
 #include <algorithm>
 #include <unordered_set>
 #include <vector>
+#include <utility>
+#include <string>
+#include <stack>
+#include <memory>
 #include "ir/tensor_new.h"
 #include "mindspore/ops/op_def/structure_op_name.h"
 #include "mindspore/ops/op_def/array_ops.h"
@@ -952,18 +956,16 @@ void ForwardExecutor::CreateInputAddressForViewOp(const tensor::TensorPtr &input
   op_backend_->RunAllocMemTask(device_context, input_tensor, EnablePipeline(""));
 }
 
-DeviceAddressPtr ForwardExecutor::TensorContiguousCallback(const DeviceAddressPtr &device_address,
-                                                           const TensorStorageInfoPtr &storage_info) {
-  MS_EXCEPTION_IF_NULL(device_address);
+DeviceAddressPtr ForwardExecutor::TensorContiguousCallback(const tensor::TensorPtr &input_tensor) {
   // Gil might be release  by ACL, so release here to reduce conflict
-  auto device_addr = device_address;
+  const auto &storage_info = input_tensor->storage_info();
+  const auto &device_addr = input_tensor->device_address();
   MS_EXCEPTION_IF_NULL(device_addr);
   if (storage_info == nullptr) {
     return device_addr;
   }
-
   // as_numpy sync promise contiguous run_sync
-  return runtime::DeviceAddressUtils::ConvertContiguousDeviceAddress(nullptr, device_addr);
+  return runtime::DeviceAddressUtils::ConvertContiguousDeviceAddress(nullptr, input_tensor);
 }
 
 void ForwardExecutor::PrepareOpInputs(const FrontendOpRunInfoPtr &op_run_info) {
@@ -984,9 +986,8 @@ void ForwardExecutor::CreateViewOutputTensor(const FrontendOpRunInfoPtr &op_run_
   MS_EXCEPTION_IF_NULL(storage_info);
   auto output_tensor = tensor::from_spec(input_tensor->data_type(), storage_info->shape, device::DeviceType::kNone);
   output_tensor->set_need_pipeline_sync(true);
-  output_tensor->set_contiguous_callback([this](const DeviceAddressPtr &device_address) -> DeviceAddressPtr {
-    return TensorContiguousCallback(device_address, device_address->GetTensorStorageInfo());
-  });
+  output_tensor->set_contiguous_callback(
+    [this](const tensor::TensorPtr &self) -> DeviceAddressPtr { return TensorContiguousCallback(self); });
 
   auto input_device_address = input_tensor->device_address();
   MS_EXCEPTION_IF_NULL(input_device_address);

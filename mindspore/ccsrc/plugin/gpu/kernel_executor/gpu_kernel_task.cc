@@ -15,6 +15,7 @@
  */
 
 #include "plugin/gpu/kernel_executor/gpu_kernel_task.h"
+#include <vector>
 #include "kernel/gpu/cuda/arrays/contiguous_gpu_kernel.h"
 #include "kernel/gpu/cuda/arrays/copy_with_slice_gpu_kernel.h"
 #include "include/runtime/memory/mem_pool/mem_tracker.h"
@@ -65,9 +66,15 @@ bool GpuContiguousKernelTask::RunWithRet() {
   auto device_context = context_->device_context();
   MS_EXCEPTION_IF_NULL(device_context);
 
-  const auto &input_address = context_->GetInputAddr(0);
-  const auto &output_address = context_->GetOutputAddr(0);
-  const auto &input_storage_info = context_->GetInputAddr(0)->GetTensorStorageInfo();
+  const auto &input_tensor = context_->GetInput(0);
+  const auto &input_address = std::static_pointer_cast<DeviceAddress>(input_tensor->device_address());
+  MS_EXCEPTION_IF_NULL(input_address);
+  const auto &input_storage_info = input_tensor->storage_info();
+
+  const auto &output_tensor = context_->GetOutput(0);
+  const auto &output_address = std::static_pointer_cast<DeviceAddress>(output_tensor->device_address());
+  MS_EXCEPTION_IF_NULL(output_address);
+
   auto stream = context_->stream();
   MS_EXCEPTION_IF_NULL(stream);
 
@@ -120,12 +127,18 @@ bool GpuCopyWithSliceKernelTask::RunWithRet() {
   auto device_context = context_->device_context();
   MS_EXCEPTION_IF_NULL(device_context);
 
-  const auto &dst_device_address = context_->GetInputAddr(0);
-  const auto &src_device_address = context_->GetInputAddr(1);
+  const auto &dst_tensor = context_->GetInput(0);
+  MS_EXCEPTION_IF_NULL(dst_tensor);
+  const auto &dst_device_address = std::static_pointer_cast<DeviceAddress>(dst_tensor->device_address());
   MS_EXCEPTION_IF_NULL(dst_device_address);
+  const auto &dst_storage_info = dst_tensor->storage_info();
 
-  const auto &dst_storage_info = context_->GetInputAddr(0)->GetTensorStorageInfo();
-  const auto &src_storage_info = context_->GetInputAddr(1)->GetTensorStorageInfo();
+  const auto &src_tensor = context_->GetInput(1);
+  MS_EXCEPTION_IF_NULL(src_tensor);
+  const auto &src_device_address = std::static_pointer_cast<DeviceAddress>(src_tensor->device_address());
+  MS_EXCEPTION_IF_NULL(src_device_address);
+  const auto &src_storage_info = src_tensor->storage_info();
+
   auto stream = context_->stream();
   MS_EXCEPTION_IF_NULL(stream);
   MS_LOG(DEBUG) << "Src_storage_info:" << (src_storage_info == nullptr ? "" : src_storage_info->ToString())

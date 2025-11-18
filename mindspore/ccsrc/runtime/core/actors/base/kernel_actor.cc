@@ -20,6 +20,11 @@
 #include <algorithm>
 #include <unordered_map>
 #include <limits>
+#include <set>
+#include <memory>
+#include <utility>
+#include <vector>
+#include <string>
 
 #include "include/runtime/hardware_abstract/stream/multi_stream_controller.h"
 #include "backend/common/device_address_utils.h"
@@ -655,8 +660,9 @@ void KernelActor::ConvertInputContiguous(OpContext<KernelTensor> *const context)
       }
       new_device_address->set_tensor_storage_info(nullptr);
       // Launch CopyInplace to make tensor contiguous.
-      if (!device_contexts_[0]->GetKernelExecutor()->ExecuteKernelTask(
-            runtime::KernelTaskType::kCONTIGUOUS_TASK, {input_device_tensor}, {new_device_address.get()}, stream_id)) {
+      if (!device_contexts_[0]->GetKernelExecutor()->ExecuteKernelTask(runtime::KernelTaskType::kCONTIGUOUS_TASK,
+                                                                       {input_kernel_tensors_[i].get()},
+                                                                       {new_kernel_tensor.get()}, stream_id)) {
         MS_LOG(EXCEPTION) << "Graph mode executeKernelTask Contiguous failed.";
       }
       // Store the old tensor storage info , input device tensor and input kernel tensor.

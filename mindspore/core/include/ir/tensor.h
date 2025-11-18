@@ -393,14 +393,12 @@ class MS_CORE_API Tensor : public MetaTensor {
   /// \brief Contiguous callback function to this Tensor
   ///
   /// \return The contiguous callback function
-  const std::function<DeviceAddressPtr(const DeviceAddressPtr &)> &contiguous_callback() {
-    return contiguous_callback_;
-  }
+  const std::function<DeviceAddressPtr(const TensorPtr &)> &contiguous_callback() { return contiguous_callback_; }
 
   /// \brief Set contiguous callback function to this Tensor
   ///
   /// \param[in] contiguous_callback The callback from backend when need to make tensor contiguous.
-  void set_contiguous_callback(const std::function<DeviceAddressPtr(const DeviceAddressPtr &)> &contiguous_callback) {
+  void set_contiguous_callback(const std::function<DeviceAddressPtr(const TensorPtr &)> &contiguous_callback) {
     contiguous_callback_ = contiguous_callback;
   }
 
@@ -727,7 +725,7 @@ class MS_CORE_API Tensor : public MetaTensor {
 
   // function size 32
   inline static std::function<void(void)> lazy_callback_{nullptr};
-  std::function<DeviceAddressPtr(const DeviceAddressPtr &)> contiguous_callback_{nullptr};
+  std::function<DeviceAddressPtr(const TensorPtr &)> contiguous_callback_{nullptr};
   std::function<void(const Tensor *)> update_value_callback_{nullptr};
 
   // string size 32

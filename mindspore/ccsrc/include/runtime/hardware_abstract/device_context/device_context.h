@@ -413,15 +413,14 @@ class RUNTIME_HARDWARE_EXPORT KernelExecutor {
     MS_LOG(EXCEPTION) << "Stress detection is not supported.";
   }
 
-  virtual bool ExecuteKernelTask(const runtime::KernelTaskType &task_type,
-                                 const device::DeviceAddressPtrList &input_addr_list,
-                                 const device::DeviceAddressPtrList &output_addr_list, const size_t &stream_id) const {
+  virtual bool ExecuteKernelTask(const runtime::KernelTaskType &task_type, const tensor::TensorPtrList &input_tensors,
+                                 const tensor::TensorPtrList &output_tensors, const size_t &stream_id) const {
     return false;
   }
 
   virtual bool ExecuteKernelTask(const runtime::KernelTaskType &task_type,
-                                 const std::vector<device::DeviceAddress *> &input_addr_list,
-                                 const std::vector<device::DeviceAddress *> &output_addr_list,
+                                 const std::vector<KernelTensor *> &input_kernel_tensors,
+                                 const std::vector<KernelTensor *> &output_kernel_tensors,
                                  const size_t &stream_id) const {
     return false;
   }

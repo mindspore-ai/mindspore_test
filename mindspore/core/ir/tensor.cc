@@ -397,7 +397,8 @@ void Tensor::ExecuteLazyTask() const {
 DeviceAddressPtr Tensor::CallContiguousCallback() const {
   DeviceAddressPtr contiguous_device_address = nullptr;
   if (contiguous_callback_ != nullptr && storage_info() != nullptr) {
-    contiguous_device_address = contiguous_callback_(device_address());
+    auto self_tensor = std::make_shared<Tensor>(*this);
+    contiguous_device_address = contiguous_callback_(self_tensor);
   }
   return contiguous_device_address;
 }

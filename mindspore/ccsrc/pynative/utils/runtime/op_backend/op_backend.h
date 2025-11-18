@@ -39,8 +39,8 @@ class PYNATIVE_UTILS_EXPORT ViewBackend {
   void RunAllocMemTask(DeviceContext *device_context, const tensor::TensorPtr &tensor, bool enable_async) const;
 
   void RunViewKernelTaskAsyncImpl(const runtime::KernelTaskType &task_type, DeviceContext *device_context,
-                                  const device::DeviceAddressPtrList &input_addr_list,
-                                  const device::DeviceAddressPtrList &output_addr_list, const size_t &stream_id) const;
+                                  const tensor::TensorPtrList &input_tensors,
+                                  const tensor::TensorPtrList &output_tensors, const size_t &stream_id) const;
 
   void AllocateMemForTensor(const tensor::TensorPtr &tensor, DeviceContext *device_context) const;
 

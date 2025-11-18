@@ -19,6 +19,8 @@
 #include <string>
 #include <vector>
 #include <algorithm>
+#include <memory>
+
 #include "op_def/structure_op_name.h"
 #include "pynative/utils/runtime/op_executor.h"
 #include "pynative/utils/runtime/op_runner.h"
@@ -554,13 +556,11 @@ void ViewBackend::ContiguousInputByRunInfo(const BackendOpRunInfoPtr &op_run_inf
 
 void ViewBackend::RunViewKernelTask(const pynative::BaseOpRunInfo &base_op_run_info,
                                     const runtime::KernelTaskType &task_type, bool enable_async) const {
-  device::DeviceAddressPtrList input_addr_list;
-  device::DeviceAddressPtrList output_addr_list;
-
   const auto &device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
     {base_op_run_info.device_target, MsContext::GetInstance()->get_param<uint32_t>(MS_CTX_DEVICE_ID)});
   MS_EXCEPTION_IF_NULL(device_context);
 
+  std::vector<tensor::TensorPtr> input_tensors;
   for (size_t idx = 0; idx < base_op_run_info.expanded_input_values.size(); idx++) {
     auto input_tensor = base_op_run_info.expanded_input_values[idx]->cast<tensor::TensorPtr>();
     MS_EXCEPTION_IF_NULL(input_tensor);
@@ -584,29 +584,24 @@ void ViewBackend::RunViewKernelTask(const pynative::BaseOpRunInfo &base_op_run_i
 
       input_tensor->set_device_address(input_addr);
       RunAllocMemTask(device_context, input_tensor, enable_async);
-      (void)input_addr_list.emplace_back(input_addr);
+      (void)input_tensors.emplace_back(input_tensor);
     } else {
       auto input_addr = std::static_pointer_cast<device::DeviceAddress>(input_tensor->device_address());
       MS_EXCEPTION_IF_NULL(input_addr);
       if (input_addr->GetDeviceType() == device::DeviceType::kCPU) {
         RunAllocMemTask(device_context, input_tensor, enable_async);
       }
-
-      (void)input_addr_list.emplace_back(input_addr);
+      (void)input_tensors.emplace_back(input_tensor);
     }
   }
 
-  std::transform(base_op_run_info.output_tensors.begin(), base_op_run_info.output_tensors.end(),
-                 std::back_inserter(output_addr_list), [](const auto &tensor) {
-                   return std::dynamic_pointer_cast<device::DeviceAddress>(tensor->device_address());
-                 });
+  const auto &output_tensors = base_op_run_info.output_tensors;
 
   if (enable_async) {
-    RunViewKernelTaskAsyncImpl(task_type, device_context, input_addr_list, output_addr_list,
-                               base_op_run_info.stream_id);
+    RunViewKernelTaskAsyncImpl(task_type, device_context, input_tensors, output_tensors, base_op_run_info.stream_id);
   } else {
     WaitTasksFinish();
-    runtime::OpRunner::LaunchKernelTask(task_type, device_context, input_addr_list, output_addr_list,
+    runtime::OpRunner::LaunchKernelTask(task_type, device_context, input_tensors, output_tensors,
                                         base_op_run_info.stream_id);
   }
 }
@@ -623,11 +618,11 @@ void ViewBackend::RunAllocMemTask(DeviceContext *device_context, const tensor::T
 }
 
 void ViewBackend::RunViewKernelTaskAsyncImpl(const runtime::KernelTaskType &task_type, DeviceContext *device_context,
-                                             const device::DeviceAddressPtrList &input_addr_list,
-                                             const device::DeviceAddressPtrList &output_addr_list,
+                                             const tensor::TensorPtrList &input_tensors,
+                                             const tensor::TensorPtrList &output_tensors,
                                              const size_t &stream_id) const {
-  static auto kernel_task_func = [stream_id, task_type, &input_addr_list, &output_addr_list, device_context]() {
-    runtime::OpRunner::LaunchKernelTask(task_type, device_context, input_addr_list, output_addr_list, stream_id);
+  static auto kernel_task_func = [stream_id, task_type, input_tensors, output_tensors, device_context]() {
+    runtime::OpRunner::LaunchKernelTask(task_type, device_context, input_tensors, output_tensors, stream_id);
   };
 
   runtime::OpExecutor::GetInstance().PushSimpleOpRunTask(
@@ -658,7 +653,6 @@ void ViewBackend::AllocateMemForTensor(const tensor::TensorPtr &tensor, DeviceCo
 
   device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(
     MarkTensorAsOutput, "PyNative", device::GetDeviceNameByType(device_address->GetDeviceType()),
-    device_address->GetPtr(), device_address->type_id(), device_address->GetShapeVector(),
-    device_address->GetTensorStorageInfo());
+    device_address->GetPtr(), device_address->type_id(), device_address->GetShapeVector(), tensor->storage_info());
 }
 }  // namespace mindspore::compile

@@ -16,6 +16,8 @@
 
 #include "kernel/ascend/dvm/pyboost_impl/lazy_fusion_kernel.h"
 #include <utility>
+#include <string>
+#include <memory>
 #include "kernel/ascend/dvm/pyboost_impl/lazy_fusion_flags.h"
 #include "plugin/ascend/res_manager/stream_manager/ascend_stream_manager.h"
 #include "tools/profiler/profiling.h"
@@ -197,7 +199,7 @@ void LazyFusionKernelAscend::Output(const TensorPtr &tensor, dvm::NDObject *obj,
     obj = Cast(obj, tensor_type);
   }
   auto &store = outputs_.emplace_back(obj, tensor, false, inplace);
-  ops_map_[store.dev_addr.get()] = obj;
+  ops_map_[store.tensor->device_address().get()] = obj;
 }
 
 bool LazyFusionKernelAscend::HasTensor(const TensorPtr &x) const {
@@ -262,11 +264,13 @@ void LazyFusionKernelAscend::Flush() {
       // Malloc for output tensors
       bool has_store = false;
       for (auto &out : outputs_) {
-        auto &device_address = out.dev_addr;
-        if (device_address.use_count() == 1 && device_address->device_pointer().use_count() == 1) {
+        const auto &out_tensor = out.tensor;
+        if (out_tensor.use_count() == 1) {
           out.skip = true;
           continue;
         }
+
+        auto &device_address = out_tensor->device_address();
         if (device_address->GetPtr() == nullptr) {
           device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, "PyNative",
                                                          memory::mem_pool::MemType::kPyNativeOutput,
@@ -350,7 +354,7 @@ std::pair<bool, uint32_t> LazyFusionKernelAscend::GetOutputIdx(const TensorPtr &
   }
   auto dev_addr = tensor->device_address();
   for (int64_t i = SizeToLong(outputs_.size()) - 1; i >= 0; --i) {
-    if (outputs_[LongToSize(i)].dev_addr == dev_addr) {
+    if (outputs_[LongToSize(i)].tensor->device_address() == dev_addr) {
       return std::make_pair(true, static_cast<uint32_t>(i));
     }
   }

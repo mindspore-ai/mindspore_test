@@ -15,6 +15,8 @@
  */
 
 #include "mindspore/ccsrc/pynative/utils/pyboost/customize/op_common.h"
+#include <vector>
+#include <memory>
 #include "mindspore/ccsrc/pynative/utils/pyboost/pyboost_utils.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "mindspore/ccsrc/pynative/utils/pyboost/auto_generate/maximum.h"
@@ -68,10 +70,8 @@ tensor::TensorPtr CopyCustomizeCall(const std::shared_ptr<OpRunner> &op, const T
                                  op->stream_id());
     }
   } else {
-    const auto &input_address = std::dynamic_pointer_cast<device::DeviceAddress>(input_tensor->device_address());
-    const auto &output_address = std::dynamic_pointer_cast<device::DeviceAddress>(op->output(0)->device_address());
     if (!device_context->GetKernelExecutor()->ExecuteKernelTask(runtime::KernelTaskType::kCONTIGUOUS_TASK,
-                                                                {input_address}, {output_address}, op->stream_id())) {
+                                                                {input_tensor}, {op->output(0)}, op->stream_id())) {
       MS_LOG(EXCEPTION) << "ExecuteKernelTask failed, task_type:" << runtime::KernelTaskType::kCONTIGUOUS_TASK;
     }
   }
