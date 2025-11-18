@@ -155,6 +155,9 @@ def _handle_exception_info(obj, uce_env, tft, e):
     elif "HCCEError" in e_str:
         logger.warning("uce wrapper caught HCCEError")
         tft.tft_report_error(tft.ReportState.RS_HCCL_FAILED.value)
+    elif "SuspectRemoteError" in e_str:
+        logger.warning("uce wrapper caught SuspectRemoteError")
+        tft.tft_report_error(tft.ReportState.RS_HCCL_FAILED.value)
     elif "ForceStopError" in e_str:
         logger.warning("uce wrapper caught RuntimeError ForceStopError")
         force_stop_err = tft.ReportState.RS_NORMAL.value
