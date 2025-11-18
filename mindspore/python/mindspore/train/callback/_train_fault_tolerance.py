@@ -535,6 +535,10 @@ class TrainFaultTolerance(Callback):
         if self.has_init_replica is False:
             self.has_init_replica = True
             self._set_tft_optimizer_replica(run_context)
+        if int(direct_copy_to_host(cb_params.network.optimizer.tft_g_one_flag)) != 1:
+            # check overflow: no need end update if overflow
+            self.tft.tft_end_updating_os(cb_params.cur_step_num + self.initial_step)
+            logger.info("END Set optimizer finish step status to TFT.")
         if cb_params.optimizer is not None:
             self.global_step = cb_params.optimizer.global_step.clone()
             self.assign(cb_params.optimizer.tft_g_one_flag, self.g_one)
@@ -543,8 +547,6 @@ class TrainFaultTolerance(Callback):
             self.assign(cb_params.network.optimizer.tft_g_one_flag, self.g_one)
         else:
             raise ValueError("TFT feature need optimizer or network's optimizer!")
-        self.tft.tft_end_updating_os(cb_params.cur_step_num + self.initial_step)
-        logger.info("END Set optimizer finish step status to TFT.")
         # pause train
         envs = os.getenv("MS_ENABLE_TFT", "")
         if any([opt in envs for opt in ["TSP:1", "ARF:1"]]):  # pylint: disable=R1729
