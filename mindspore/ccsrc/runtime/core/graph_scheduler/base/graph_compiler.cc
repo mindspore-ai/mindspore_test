@@ -26,7 +26,7 @@
 #include <set>
 #include <vector>
 #include <string>
-#include "include/runtime/core/graph_scheduler/base/graph_scheduler.h"
+#include "runtime/core/graph_scheduler/base/graph_scheduler.h"
 #include "backend/common/device_address_utils.h"
 #include "device_address/device_address.h"
 #include "include/utils/convert_utils.h"

@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CCSRC_INCLUDE_RUNTIME_CORE_GRAPH_SCHEDULER_BASE_PARAMETER_STORE_H_
-#define MINDSPORE_CCSRC_INCLUDE_RUNTIME_CORE_GRAPH_SCHEDULER_BASE_PARAMETER_STORE_H_
+#ifndef MINDSPORE_CCSRC_RUNTIME_CORE_GRAPH_SCHEDULER_BASE_PARAMETER_STORE_H_
+#define MINDSPORE_CCSRC_RUNTIME_CORE_GRAPH_SCHEDULER_BASE_PARAMETER_STORE_H_
 
 #include <string>
 #include <memory>
@@ -24,7 +24,7 @@
 #include "utils/hash_map.h"
 #include "utils/ms_utils.h"
 #include "include/backend/visible.h"
-#include "include/runtime/core/graph_scheduler/base/graph_parameter_store.h"
+#include "runtime/core/graph_scheduler/base/graph_parameter_store.h"
 
 namespace mindspore {
 namespace runtime {
@@ -108,4 +108,4 @@ class BACKEND_EXPORT ParameterStore {
 }  // namespace runtime
 }  // namespace mindspore
 
-#endif  // MINDSPORE_CCSRC_INCLUDE_RUNTIME_CORE_GRAPH_SCHEDULER_BASE_PARAMETER_STORE_H_
+#endif  // MINDSPORE_CCSRC_RUNTIME_CORE_GRAPH_SCHEDULER_BASE_PARAMETER_STORE_H_

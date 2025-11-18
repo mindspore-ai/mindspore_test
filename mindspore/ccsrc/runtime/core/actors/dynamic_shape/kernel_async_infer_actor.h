@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CCSRC_INCLUDE_RUNTIME_CORE_ACTORS_BASE_ASYNC_RESIZE_ACTOR_H_
-#define MINDSPORE_CCSRC_INCLUDE_RUNTIME_CORE_ACTORS_BASE_ASYNC_RESIZE_ACTOR_H_
+#ifndef MINDSPORE_CCSRC_RUNTIME_CORE_ACTORS_BASE_ASYNC_INFER_ACTOR_H_
+#define MINDSPORE_CCSRC_RUNTIME_CORE_ACTORS_BASE_ASYNC_INFER_ACTOR_H_
 
 #include <vector>
 #include <memory>
@@ -30,15 +30,15 @@ namespace runtime {
 class KernelActor;
 class KernelRunner;
 
-class BACKEND_EXPORT KernelAsyncResizeActor : public ActorBase {
+class BACKEND_EXPORT KernelAsyncInferActor : public ActorBase {
  public:
-  static std::shared_ptr<KernelAsyncResizeActor> &GetInstance();
-  ~KernelAsyncResizeActor() override = default;
+  static std::shared_ptr<KernelAsyncInferActor> &GetInstance();
+  ~KernelAsyncInferActor() override = default;
 
   void Initialize();
 
-  void ResizeKernelMod(OpContext<KernelTensor> *const context, KernelActor *kernel_actor);
-  void ResizeKernelModV2(OpContext<KernelTensor> *const context, KernelRunner *kernel_runner, bool high_perf);
+  void InferShape(OpContext<KernelTensor> *const context, KernelActor *kernel_actor);
+  void InferShapeV2(OpContext<KernelTensor> *const context, KernelRunner *kernel_runner, bool high_perf);
 
   void Wait();
 
@@ -47,8 +47,8 @@ class BACKEND_EXPORT KernelAsyncResizeActor : public ActorBase {
   const std::thread::id &actor_thread_id() const { return thread_id_; }
 
  private:
-  KernelAsyncResizeActor() : ActorBase("KernelAsyncResizeActor") {}
-  DISABLE_COPY_AND_ASSIGN(KernelAsyncResizeActor);
+  KernelAsyncInferActor() : ActorBase("KernelAsyncInferActor") {}
+  DISABLE_COPY_AND_ASSIGN(KernelAsyncInferActor);
 
   void GetThreadId() { thread_id_ = std::this_thread::get_id(); }
 
@@ -58,4 +58,4 @@ class BACKEND_EXPORT KernelAsyncResizeActor : public ActorBase {
 }  // namespace runtime
 }  // namespace mindspore
 
-#endif  // MINDSPORE_CCSRC_INCLUDE_RUNTIME_CORE_ACTORS_BASE_ASYNC_RESIZE_ACTOR_H_
+#endif  // MINDSPORE_CCSRC_RUNTIME_CORE_ACTORS_BASE_ASYNC_INFER_ACTOR_H_

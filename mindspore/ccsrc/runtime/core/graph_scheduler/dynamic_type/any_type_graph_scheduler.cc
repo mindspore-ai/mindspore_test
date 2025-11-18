@@ -19,7 +19,7 @@
 #include <memory>
 #include <string>
 #include <utility>
-#include "include/runtime/core/graph_scheduler/base/graph_scheduler.h"
+#include "runtime/core/graph_scheduler/base/graph_scheduler.h"
 #include "runtime/core/graph_scheduler/base/scheduler_helper.h"
 
 namespace mindspore {

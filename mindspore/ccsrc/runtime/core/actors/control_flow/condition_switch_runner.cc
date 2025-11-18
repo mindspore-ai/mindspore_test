@@ -17,7 +17,7 @@
 #include "runtime/core/actors/control_flow/condition_switch_runner.h"
 #include <utility>
 #include "runtime/core/actors/control_flow/condition_gather_runner.h"
-#include "include/runtime/core/graph_executor/pipeline/runtime_pipeline.h"
+#include "runtime/core/graph_executor/pipeline/runtime_pipeline.h"
 
 namespace mindspore {
 namespace runtime {

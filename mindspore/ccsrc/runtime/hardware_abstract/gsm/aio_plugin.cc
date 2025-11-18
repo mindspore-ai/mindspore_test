@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "include/runtime/hardware_abstract/gsm/aio_plugin.h"
+#include "runtime/hardware_abstract/gsm/aio_plugin.h"
 
 #include <fcntl.h>
 #include <libaio.h>

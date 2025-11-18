@@ -27,7 +27,7 @@
 #include "include/utils/convert_utils.h"
 #include "include/cluster/topology/collective_manager.h"
 #include "include/runtime/memory/mem_pool/mem_tracker.h"
-#include "include/runtime/core/graph_scheduler/base/parameter_store.h"
+#include "runtime/core/graph_scheduler/base/parameter_store.h"
 
 namespace mindspore {
 namespace runtime {

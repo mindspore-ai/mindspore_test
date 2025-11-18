@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "include/runtime/core/graph_scheduler/base/graph_parameter_store.h"
+#include "runtime/core/graph_scheduler/base/graph_parameter_store.h"
 
 #include <algorithm>
 #include <string>

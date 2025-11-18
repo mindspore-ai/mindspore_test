@@ -28,7 +28,7 @@
 #include "runtime/core/actors/base/recorder_actor.h"
 #include "runtime/core/actors/base/debug_actor.h"
 #include "include/backend/debug/execute_order_tracker/kernel_cache.h"
-#include "include/runtime/core/graph_executor/pipeline/runtime_pipeline.h"
+#include "runtime/core/graph_executor/pipeline/runtime_pipeline.h"
 #include "async/async.h"
 #include "utils/log_adapter.h"
 #include "utils/ms_exception.h"
