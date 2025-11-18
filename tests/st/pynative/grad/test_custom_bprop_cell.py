@@ -179,7 +179,7 @@ def test_custom_function_reduce_exception():
     grad_net = C.GradOperation(get_all=True)
     with pytest.raises(RuntimeError) as err:
         grad_net(net)(x, y)
-    assert "For custom function, grad tensor should be broadcast to" in str(err.value)
+    assert "grad tensor should be broadcast to" in str(err.value)
 
 
 class CustomFunctionReturnSelfNet(nn.Cell):
