@@ -142,7 +142,9 @@ std::vector<size_t> GetValidDumpIndex(const CNodePtr &cnode, size_t index_size, 
                          "currently skipped.";
       continue;
     }
-    if (tensor->GetDeviceType() != device_context->GetDeviceType()) {
+    // Check if the current dump mode is exception dump.
+    bool is_exception_dump = DumpJsonParser::GetInstance().op_debug_mode() == DumpJsonParser::DUMP_LITE_EXCEPTION;
+    if (tensor->GetDeviceType() != device_context->GetDeviceType() && !is_exception_dump) {
       MS_LOG(WARNING) << cnode->fullname_with_scope() << (is_input ? " input" : " output") << ", index " << index
                       << " tensor's target device(" << tensor->GetDeviceType() << ") is different from running device("
                       << device_context->GetDeviceType() << "), currently skipped.";

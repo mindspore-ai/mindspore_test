@@ -209,6 +209,10 @@ bool CPUResManager::Copy(void *dst, const void *src, uint64_t size, CopyType kin
   return true;
 }
 
+bool CPUResManager::CopyDirectly(void *dst, uint64_t size, const void *src, size_t stream_id, CopyType kind) const {
+  return Copy(dst, src, size, kind, stream_id);
+}
+
 bool CPUResManager::LoadCollectiveCommLib() {
   bool using_mpi = common::UseMPI();
   if (using_mpi) {
