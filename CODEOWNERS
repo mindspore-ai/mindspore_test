@@ -57,6 +57,7 @@
 /mindspore/ccsrc/utils/ @limingqi107
 /mindspore/ccsrc/utils/expander/ @gaoxiong1
 /mindspore/ccsrc/utils/ir_dump/ @ginfung
+/mindspore/ccsrc/utils/frontend/ @ginfung
 /mindspore/ccsrc/utils/symbol_engine/ @ginfung
 /mindspore/ccsrc/utils/*tensor*.cc @chujinjin
 /mindspore/ccsrc/utils/*utils*.cc @ginfung

@@ -33,6 +33,7 @@
 #include "frontend/optimizer/irpass/gradient_eliminate.h"
 #include "frontend/parallel/step_parallel_utils.h"
 #include "frontend/operator/composite/vmap.h"
+#include "include/frontend/jit/ps/parse/py_data_convert.h"
 #include "include/utils/convert_utils_py.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"

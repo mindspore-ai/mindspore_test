@@ -27,6 +27,7 @@
 #include "include/utils/amp.h"
 #include "include/utils/convert_utils.h"
 #include "include/utils/pybind_api/api_register.h"
+#include "include/utils/frontend/primitive_utils.h"
 #include "frontend/jit/ps/static_analysis/prim.h"
 #include "frontend/jit/ps/static_analysis/prim_utils.h"
 #include "ir/anf.h"
@@ -525,28 +526,6 @@ FuncGraphPtr DoSignatureMetaFuncGraph::GenerateFuncGraph(const AbstractBasePtrLi
   func_graph->set_output(new_cnode);
   func_graph->set_flag(FUNC_GRAPH_FLAG_CORE, true);
   return func_graph;
-}
-
-std::string ErrorMessageForConvertRefDtype(const ValuePtr &func, const std::string &ref_type,
-                                           const std::string &target_type, size_t index) {
-  std::ostringstream buffer;
-  if (func->isa<Primitive>()) {
-    auto prim = func->cast<PrimitivePtr>();
-    auto args_names_value = prim->GetAttr("input_names");
-    if (args_names_value != nullptr) {
-      auto args_names = GetValue<std::vector<std::string>>(args_names_value);
-      if (index < args_names.size()) {
-        buffer << " the argument[" << args_names[index] << "]'s data type of primitive[" << prim->name() << "] is ";
-      }
-    }
-  }
-  if (buffer.str().empty()) {
-    buffer << " so data type ";
-  }
-  std::ostringstream ss;
-  ss << "Data type conversion is not supported for a 'Parameter', nor for the input tensor of an in-place operator,"
-     << buffer.str() << ref_type << ", which cannot be converted to data type " << target_type << " automatically.\n";
-  return ss.str();
 }
 
 bool IfRaiseExceptionForCheckParameter(const std::string &func_name, const ValuePtr &function,

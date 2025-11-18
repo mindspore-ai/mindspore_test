@@ -19,6 +19,7 @@
 #include "frontend/jit/ps/resource.h"
 #include "frontend/jit/ps/pass_config.h"
 #include "frontend/expander/utils.h"
+#include "frontend/jit/ps/static_analysis/prim.h"
 #include "frontend/jit/ps/static_analysis/async_eval_result.h"
 
 namespace mindspore {
@@ -37,5 +38,7 @@ void CleanParserResource() { parse::Parser::CleanParserResource(); }
 void ClearAnalysisSchedule() { abstract::AnalysisSchedule::GetInstance().Stop(); }
 
 void ClearAnalysisResultCacheMgr() { abstract::AnalysisResultCacheMgr::GetInstance().Clear(); }
+
+void ClearPrimitiveEvaluatorMap() { abstract::ClearPrimEvaluatorMap(); }
 }  // namespace pipeline
 }  // namespace mindspore

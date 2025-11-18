@@ -20,7 +20,7 @@
 #include "mindspore/core/include/ir/func_graph.h"
 #include "mindspore/core/include/ir/func_graph_flag.h"
 #include "mindspore/core/include/utils/ms_context.h"
-#include "mindspore/ccsrc/frontend/jit/ps/parse/data_converter.h"
+#include "include/frontend/jit/ps/parse/py_data_convert.h"
 #include "include/frontend/jit/ps/action_interface.h"
 #include "include/frontend/jit/ps/resource_interface.h"
 #include "include/frontend/jit/ps/pipeline_interface.h"

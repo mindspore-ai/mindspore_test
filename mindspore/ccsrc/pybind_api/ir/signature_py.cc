@@ -17,7 +17,7 @@
 #include "ir/signature.h"
 #include "pybind11/operators.h"
 #include "include/utils/pybind_api/api_register.h"
-#include "frontend/jit/ps/parse/data_converter.h"
+#include "include/frontend/jit/ps/parse/py_data_convert.h"
 
 namespace py = pybind11;
 

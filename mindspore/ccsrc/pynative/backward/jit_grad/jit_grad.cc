@@ -24,14 +24,15 @@
 #include "pynative/backward/grad_utils.h"
 #include "pynative/utils/pynative_utils.h"
 #include "frontend/jit/ps/pipeline.h"
-#include "include/frontend/jit/ps/executor/jit_executor_py.h"
 #include "ir/func_graph_cloner.h"
 #include "frontend/expander/bprop/bprop.h"
 #include "include/utils/pynative/common_utils.h"
 #include "include/utils/pynative/adapter.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 #include "pynative/backward/op_grad/func_grad.h"
-#include "frontend/optimizer/ad/pynative_jit_grad.h"
+#include "include/frontend/optimizer/ad/grad_interface.h"
+#include "include/frontend/optimizer/ad/jit_grad_interface.h"
+#include "include/frontend/jit/ps/executor/jit_executor_py.h"
 
 namespace mindspore {
 namespace pynative {

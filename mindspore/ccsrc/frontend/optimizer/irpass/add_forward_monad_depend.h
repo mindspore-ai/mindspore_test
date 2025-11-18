@@ -19,7 +19,7 @@
 
 #include <vector>
 #include "include/frontend/optimizer/optimizer.h"
-#include "frontend/optimizer/ad/grad.h"
+#include "include/frontend/optimizer/ad/grad_interface.h"
 #include "frontend/optimizer/utils.h"
 #include "ir/func_graph.h"
 #include "ir/func_graph_flag.h"

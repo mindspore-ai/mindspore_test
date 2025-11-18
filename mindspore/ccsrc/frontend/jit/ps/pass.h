@@ -54,7 +54,7 @@ bool ValidatePass(const ResourcePtr &resource);
 bool GradPartialTransformPass(const ResourcePtr &resource);
 bool PynativeOptPass(const ResourcePtr &resource);
 bool OptAfterJitGradPass(const ResourcePtr &resource);
-bool FRONTEND_EXPORT AutoMonadElimOptPass(const FuncGraphPtr &func_graph);
+bool AutoMonadElimOptPass(const FuncGraphPtr &func_graph);
 FuncGraphPtr PrimBpOptPassStep1(const opt::irpass::OptimizeIRPassLib &irpass, const ResourcePtr &resource);
 FuncGraphPtr PrimBpOptPassStep2(const opt::irpass::OptimizeIRPassLib &irpass, const ResourcePtr &resource,
                                 const std::vector<bool> &need_grad_flags);

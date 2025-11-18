@@ -264,9 +264,6 @@ enum SyntaxSupportType : int {
 };
 
 // Convert python object to ValuePtr.
-FRONTEND_EXPORT bool ConvertData(const py::object &obj, ValuePtr *data, bool use_signature = false,
-                                 const TypePtr &dtype = nullptr, bool forbid_reuse = false);
-
 bool ConvertStubData(const py::object &obj, ValuePtr *data, bool use_signature = false, const TypePtr &dtype = nullptr,
                      bool forbid_reuse = false);
 

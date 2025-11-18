@@ -32,6 +32,7 @@
 #include "frontend/optimizer/irpass/virtualviewgrad_op.h"
 #include "frontend/optimizer/irpass/view_inplace_utils.h"
 #include "frontend/optimizer/irpass/free_variables_eliminate.h"
+#include "include/frontend/optimizer/ad/grad_interface.h"
 #include "ir/func_graph_cloner.h"
 #include "utils/ms_context.h"
 #include "utils/symbolic.h"
@@ -317,8 +318,6 @@ MetaFuncGraphPtr Kmeta(const PrimitivePtr &prim, const pipeline::ResourceBasePtr
   MetaFuncGraphPtr fg = g_k_prims.KMetaFuncGraph(prim, node);
   return fg;
 }
-
-void CleanRes() { DFunctor::Clear(); }
 
 bool MergeForward(const FuncGraphPtr &root, const opt::OptimizerPtr &opt) {
   auto manager = opt->manager();

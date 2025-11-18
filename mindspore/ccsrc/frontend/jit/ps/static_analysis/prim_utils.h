@@ -34,9 +34,6 @@
 
 namespace mindspore {
 namespace abstract {
-FRONTEND_EXPORT py::tuple PreparePyInputs(const AbstractBasePtrList &args);
-FRONTEND_EXPORT AbstractBasePtr PyInferRes2Abstract(const PrimitivePyPtr &prim_py, const py::dict &output);
-
 // Get the __init__() arguments of the PrimitivePy object.
 AnfNodePtrList GetPrimitiveInitArgs(const PrimitivePyPtr &prim_py, const ops::OpDef *op_def);
 

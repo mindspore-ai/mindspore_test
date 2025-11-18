@@ -18,6 +18,7 @@
 #endif
 
 #include "include/utils/utils.h"
+#include "include/frontend/jit/ps/static_analysis/py_infer_convert.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "include/frontend/operator/primitive_py.h"
 #include "frontend/jit/ps/static_analysis/prim.h"

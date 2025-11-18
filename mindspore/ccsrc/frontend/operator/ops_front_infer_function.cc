@@ -33,6 +33,7 @@
 #include "frontend/jit/ps/static_analysis/prim_utils.h"
 #include "frontend/jit/ps/fallback.h"
 #include "frontend/jit/trace/trace_recorder.h"
+#include "include/frontend/operator/frontend_primitive_infer.h"
 #include "abstract/param_validator.h"
 #include "frontend/operator/ops.h"
 #include "infer/deprecated_infer/infer_functions.h"

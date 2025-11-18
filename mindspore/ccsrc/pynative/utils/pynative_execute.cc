@@ -20,7 +20,6 @@
 #include "pynative/utils/predict_out_type_map.h"
 #include "pynative/forward/pyboost/auto_grad_register.h"
 #include "include/utils/tensor_py.h"
-#include "frontend/jit/ps/debug/trace.h"
 #include "pybind_api/pybind_patch.h"
 #include "pybind_api/gil_scoped_long_running.h"
 #include "pynative/backward/hook/hook_py.h"
@@ -29,6 +28,7 @@
 #include "include/utils/pybind_api/api_register.h"
 #include "frontend/optimizer/ad/grad.h"
 #include "frontend/jit/ps/pass.h"
+#include "include/frontend/optimizer/ad/grad_interface.h"
 #include "pynative/utils/runtime/op_executor.h"
 #include "pynative/utils/runtime/op_compiler.h"
 #include "pynative/utils/runtime/op_runner.h"
@@ -55,17 +55,7 @@ T PyNativeExecutorTry(const std::function<T(const Args &...)> &method, const Arg
   const auto &inst = PyNativeExecutor::GetInstance();
   MS_EXCEPTION_IF_NULL(inst);
   MS_EXCEPTION_IF_NULL(method);
-  auto already_set_error_handler = [&inst]() {
-    // Print function call stack info before release.
-    std::ostringstream oss;
-    trace::TraceGraphEval();
-    trace::GetEvalStackInfo(oss);
-    // Call py::print to output function call stack to STDOUT, in case of output the log to file, the user can see
-    // these info from screen, no need to open log file to find these info.
-    py::print(oss.str());
-    MS_LOG(ERROR) << oss.str();
-    inst->ClearRes();
-  };
+  auto already_set_error_handler = [&inst]() { inst->ClearRes(); };
 
   if constexpr (std::is_same_v<T, void>) {
     HandleExceptionRethrow([&method, &args...]() { method(args...); }, already_set_error_handler,
@@ -194,7 +184,7 @@ void PyNativeExecutor::ClearRes() const {
   if (grad_executor_ != nullptr) {
     grad_executor_->ClearRes();
   }
-  ad::CleanRes();
+  ad::ClearDFunctor();
   pipeline::ReclaimOptimizer();
   MS_LOG(DEBUG) << "Clear all res";
 }

@@ -28,10 +28,11 @@
 
 #include "utils/ordered_map.h"
 #include "frontend/jit/ps/parse/parse_base.h"
+#include "include/frontend/jit/ps/parse/py_data_convert.h"
+#include "include/utils/visible.h"
 #include "include/utils/python_adapter.h"
 #include "utils/log_adapter.h"
 #include "ops/op_def.h"
-#include "include/utils/visible.h"
 #include "ir/dtype/op_dtype.h"
 
 namespace mindspore {
@@ -57,10 +58,7 @@ bool IsClassType(const py::object &obj);
 py::object CreatePythonObject(const py::object &type, const py::tuple &args_kwargs);
 FRONTEND_EXPORT py::object CallPythonScript(const py::object &script, const py::tuple &args_kwargs);
 py::set GetPythonScriptIdAttrs(const py::object &script);
-FRONTEND_EXPORT ValuePtr PyDataToValue(const py::object &obj);
-FRONTEND_EXPORT ValuePtr PyDataToStubNode(const py::object &obj);
-FRONTEND_EXPORT void ClearObjectCache();
-FRONTEND_EXPORT ValuePtr PyObjToValue(const py::object &obj, bool stub = false);
+ValuePtr PyDataToStubNode(const py::object &obj);
 }  // namespace data_converter
 
 class DataConverter {

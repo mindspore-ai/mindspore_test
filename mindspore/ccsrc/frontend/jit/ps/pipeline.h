@@ -89,8 +89,6 @@ std::string GetJitLevel();
 
 std::string GetObjDesc(const py::object &source);
 bool IsPhaseLoadFromMindIR(const std::string &phase);
-FRONTEND_EXPORT void CheckArgsValid(const py::object &source, const py::tuple &args);
-FRONTEND_EXPORT void FinalizeCluster();
 
 bool IsPhaseExport(const std::string &phase);
 void SetLoopCount(const ResourcePtr &resource);

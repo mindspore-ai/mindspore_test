@@ -23,9 +23,10 @@
 #include "include/frontend/jit/ps/resource_interface.h"
 #include "include/frontend/jit/ps/executor/executor_py.h"
 #include "include/frontend/jit/ps/executor/graph_executor_py.h"
+#include "include/frontend/optimizer/ad/grad_interface.h"
 #include "frontend/jit/ps/pass.h"
 #include "include/frontend/jit/ps/executor/jit_executor_py.h"
-#include "frontend/jit/ps/parse/data_converter.h"
+#include "include/frontend/jit/ps/parse/py_data_convert.h"
 #include "frontend/optimizer/ad/dfunctor.h"
 #include "frontend/optimizer/ad/prim_bprop_optimizer.h"
 #include "frontend/parallel/auto_parallel/graph_costmodel.h"
@@ -64,7 +65,7 @@
 #include "include/runtime/hardware_abstract/data_queue/data_queue_mgr.h"
 
 #if defined(__linux__) && defined(WITH_BACKEND)
-#include "include/cluster/topology/cluster_context.h"
+#include "include/cluster/init.h"
 #endif
 #ifdef ENABLE_DUMP_IR
 #include "ir/cell.h"
@@ -80,8 +81,8 @@ void RecordExitStatus() { MS_LOG(INFO) << "Status record: system exit."; }
 
 void MemoryRecycle() {
   pipeline::ReclaimOptimizer();
-  ad::g_k_prims.clear();
-  ad::PrimBpropOptimizer::GetPrimBpropOptimizerInst().Clear();
+  ad::ClearKPrim();
+  ad::ClearPrimBpropOptimizer();
   pipeline::ClearAnalysisResultCacheMgr();
   abstract::AnalysisContext::ClearContext();
   pipeline::CleanCache();
@@ -119,10 +120,10 @@ void ClearResPart1() {
   pipeline::ClearPassConfigure();
 
   PrimitivePy::ClearHookRes();
-  ad::g_k_prims.clear();
-  ad::PrimBpropOptimizer::GetPrimBpropOptimizerInst().Clear();
+  ad::ClearKPrim();
+  ad::ClearPrimBpropOptimizer();
 
-  abstract::ClearPrimEvaluatorMap();
+  pipeline::ClearPrimitiveEvaluatorMap();
   pipeline::ClearAttrAndMethodMap();
   pipeline::GraphExecutorPy::ClearRes();
   pipeline::JitExecutorPy::ClearRes();
@@ -146,10 +147,12 @@ void ClearResPart2() {
   (void)distributed::collective::CollectiveManager::instance()->Finalize();
   MS_LOG(INFO) << "End clear CollectiveManager.";
 
+#if defined(__linux__) && defined(WITH_BACKEND)
   MS_LOG(INFO) << "Start clear ClusterContext...";
   // ClusterContext should be finalized only after all communication groups have been cleared.
-  pipeline::FinalizeCluster();
+  distributed::FinalizeCluster();
   MS_LOG(INFO) << "End clear ClusterContext.";
+#endif
 
   MS_LOG(INFO) << "Start clear device context...";
   device::DeviceContextManager::GetInstance().ClearDeviceContexts();
