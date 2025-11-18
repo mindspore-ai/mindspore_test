@@ -50,16 +50,6 @@ KernelModPtr CustomKernelPlugin::BuildKernel(const AnfNodePtr &anf_node) {
     MS_LOG_WITH_NODE(EXCEPTION, anf_node) << "#dmsg#Kernel build failed:#dmsg#Initialize internal kernel op["
                                           << anf_node->fullname_with_scope() << "] failed.";
   }
-
-  auto cnode = anf_node->cast<CNodePtr>();
-  MS_EXCEPTION_IF_NULL(cnode);
-  if (CheckResizeCondition(cnode)) {
-    if (kernel_ptr->Resize(input_kernel_tensors, output_kernel_tensors) == KRET_RESIZE_FAILED) {
-      MS_LOG(EXCEPTION) << "#dmsg#Kernel build failed:#dmsg#internal kernel op[" << cnode->fullname_with_scope()
-                        << "] Resize failed.";
-    }
-  }
-
   return kernel_ptr;
 }
 

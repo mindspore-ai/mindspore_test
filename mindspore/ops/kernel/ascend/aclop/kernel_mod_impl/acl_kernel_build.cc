@@ -68,7 +68,6 @@ KernelModPtr AclOpBuild(const std::shared_ptr<AnfNode> &anf_node) {
 
   if (kernel::CheckResizeCondition(cnode)) {
     kernel_mod_ptr->SetDynamic(false);
-    kernel_mod_ptr->Resize(input_kernel_tensors, output_kernel_tensors);
   }
 
   MS_LOG(INFO) << "Finished creating acl kernel module for primitive " << primitive->name();

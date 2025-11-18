@@ -44,13 +44,6 @@ KernelModPtr HostOpBuild(const std::shared_ptr<AnfNode> &anf_node) {
       << "#dmsg#Kernel build failed:#dmsg#Initialize host kernel op[" << anf_node->fullname_with_scope() << "] failed."
       << trace::DumpSourceLines(anf_node);
   }
-
-  auto cnode = anf_node->cast<CNodePtr>();
-  MS_EXCEPTION_IF_NULL(cnode);
-  if (kernel::CheckResizeCondition(cnode)) {
-    kernel_mod_ptr->Resize(input_kernel_tensors, output_kernel_tensors);
-  }
-
   return kernel_mod_ptr;
 }
 }  // namespace kernel
