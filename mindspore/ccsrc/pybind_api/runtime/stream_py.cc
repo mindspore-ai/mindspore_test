@@ -19,10 +19,11 @@
 #include "include/runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "include/runtime/hardware_abstract/stream/multi_stream_controller.h"
 #include "utils/ms_context.h"
-#include "include/utils/pybind_api/api_register.h"
+
 #include "pybind_api/runtime/utils_py.h"
 #include "utils/stream_guard.h"
 #include "utils/ms_exception.h"
+#include "pybind_api/runtime/runtime_api.h"
 
 namespace mindspore {
 namespace hal {

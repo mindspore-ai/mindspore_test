@@ -35,6 +35,7 @@
 #include "include/utils/exception.h"
 #include "include/utils/pyobj_manager.h"
 #include "pynative/backward/backward_node_py.h"
+#include "pybind_api/pynative/pynative_api.h"
 
 namespace mindspore {
 namespace pynative {

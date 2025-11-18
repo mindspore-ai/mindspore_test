@@ -22,10 +22,11 @@
 #include "include/runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "utils/log_adapter.h"
 #include "mindapi/base/format.h"
-#include "include/utils/pybind_api/api_register.h"
+
 #include "include/runtime/hardware_abstract/stream/multi_stream_controller.h"
 #include "pynative/utils/pynative_utils.h"
 #include "include/utils/convert_utils_py.h"
+#include "pybind_api/utils/utils_api.h"
 
 namespace mindspore {
 

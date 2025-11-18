@@ -23,7 +23,6 @@
 #include <memory>
 #include <utility>
 #include <algorithm>
-#include "include/utils/pybind_api/api_register.h"
 #include "include/utils/frontend/primitive_utils.h"
 #include "primitive/structure_ops.h"
 #include "ir/core_ops_primitive.h"
@@ -40,12 +39,6 @@
 #include "primitive/auto_generate/gen_ops_primitive_m.h"
 
 namespace mindspore {
-void RegFunctional(const py::module *m) {
-  (void)py::class_<Functional, std::shared_ptr<Functional>>(*m, "Functional_")
-    .def(py::init<py::str &>())
-    .def_property_readonly("name", &Functional::name, "Get functional name.");
-}
-
 namespace prim {
 namespace {
 size_t GetHashIdForFunctionalCache(const std::string &functional_name, const AbstractBasePtrList &args_abs_list,

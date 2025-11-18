@@ -17,7 +17,7 @@
 #include <pybind11/chrono.h>
 #include <memory>
 #include "utils/device_manager_conf.h"
-#include "include/utils/pybind_api/api_register.h"
+#include "pybind_api/runtime/runtime_api.h"
 
 namespace mindspore {
 void RegDeviceManagerConf(const py::module *m) {

@@ -23,7 +23,7 @@
 #include "include/utils/tensor_utils.h"
 #include "mindspore/ccsrc/pynative/utils/pynative_utils.h"
 #include "mindspore/ccsrc/frontend/jit/ps/parse/data_converter.h"
-#include "mindspore/ccsrc/pybind_api/ir/tensor/tensor_py.h"
+#include "mindspore/ccsrc/pybind_api/pynative/tensor/tensor_py.h"
 #include "pynative/common.h"
 namespace mindspore {
 class TensorTest : public PyCommon {

@@ -18,11 +18,12 @@
 #include "include/runtime/pipeline/pipeline.h"
 #include "include/runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "utils/ms_context.h"
-#include "include/utils/pybind_api/api_register.h"
+
 #include "include/runtime/memory/mem_pool/mem_tracker.h"
 #include "include/utils/convert_utils_py.h"
 #include "include/runtime/hardware_abstract/device_context/device_context.h"
 #include "include/runtime/hardware_abstract/stream/multi_stream_controller.h"
+#include "pybind_api/runtime/runtime_api.h"
 
 namespace mindspore {
 namespace hal {

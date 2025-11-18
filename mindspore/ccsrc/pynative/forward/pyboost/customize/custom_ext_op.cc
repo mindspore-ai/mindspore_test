@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-#include "include/utils/pybind_api/api_register.h"
 #include "pynative/backward/grad_utils.h"
 #include "pynative/utils/pynative_utils.h"
 #include "pynative/forward/pyboost/converter.h"
@@ -26,6 +25,7 @@
 #include "mindspore/ccsrc/pynative/utils/pyboost/functions/base.h"
 #include "mindspore/ccsrc/pynative/utils/pyboost/auto_generate/custom_ext.h"
 #include "primitive/auto_generate/gen_ops_primitive_c.h"
+#include "pybind_api/pynative/pynative_api.h"
 
 namespace mindspore::pynative {
 py::object PYNATIVE_EXPORT PyboostCustomExtBase(const PrimitivePtr &prim, const py::list &args) {

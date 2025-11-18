@@ -30,7 +30,7 @@
 #include "frontend/jit/ps/parse/resolve.h"
 #include "frontend/jit/ps/pipeline.h"
 #include "include/utils/python_adapter.h"
-#include "include/utils/pybind_api/api_register.h"
+
 #include "ops_utils/op_constants.h"
 #include "primitive/auto_generate/gen_ops_primitive_m.h"
 #include "primitive/auto_generate/gen_ops_primitive_t.h"

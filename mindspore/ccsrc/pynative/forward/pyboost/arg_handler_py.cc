@@ -26,6 +26,9 @@
 #include "utils/anf_utils.h"
 #include "include/utils/tensor_py.h"
 #include "include/utils/pynative/py_parse.h"
+#include "pybind11/pybind11.h"
+
+namespace py = pybind11;
 
 namespace mindspore {
 

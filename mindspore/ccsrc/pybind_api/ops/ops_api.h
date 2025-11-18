@@ -18,9 +18,14 @@
 #define MINDSPORE_CCSRC_PYBIND_API_OPS_OPS_API_H_
 
 #include "pybind11/pybind11.h"
+#include "pybind11/stl.h"
 
 namespace py = pybind11;
 namespace mindspore {
+namespace initializer {
+void RegRandomNormal(py::module *m);
+}
+void RegRandomSeededGenerator(py::module *m);
 void RegPyFuncOpBuilder(py::module *m);
 void RegOpsModule(py::module *m);
 }  // namespace mindspore

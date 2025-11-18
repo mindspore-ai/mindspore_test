@@ -19,10 +19,11 @@
 #include "pynative/utils/runtime/task/device_task.h"
 #include "include/runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "utils/ms_context.h"
-#include "include/utils/pybind_api/api_register.h"
+
 #include "pynative/forward/pyboost/forward_task.h"
 #include "pynative/utils/pynative_utils.h"
 #include "include/runtime/hardware_abstract/stream/multi_stream_controller.h"
+#include "pybind_api/runtime/runtime_api.h"
 
 namespace mindspore {
 namespace hal {
@@ -54,7 +55,7 @@ void EventPy::DispatchRecordEventTask(const StreamPyPtr &stream) {
   MS_EXCEPTION_IF_NULL(event_);
   MS_EXCEPTION_IF_NULL(stream);
 
-  // Record task is in pipline, record cnt firstly. Cnt will be decreased after event was recorded in device.
+  // Record task is in pipeline, record cnt firstly. Cnt will be decreased after event was recorded in device.
   EventCnt::IncreaseUnrecordedCnt(event_);
 
   // Record event async.

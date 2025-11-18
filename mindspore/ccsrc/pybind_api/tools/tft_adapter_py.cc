@@ -19,7 +19,7 @@
 #include <memory>
 #include <unordered_map>
 #include <map>
-#include "include/utils/pybind_api/api_register.h"
+
 #include "include/runtime/utils/runtime_conf/runtime_env.h"
 #include "tools/error_handler/exit_handler.h"
 #include "include/utils/tensor_py.h"
@@ -33,6 +33,7 @@
 #include "tools/error_handler/error_handler.h"
 #include "tools/error_handler/error_config.h"
 #include "include/utils/callback.h"
+#include "mindspore/ccsrc/pybind_api/tools/tools_api.h"
 
 namespace mindspore {
 using DeviceContext = mindspore::device::DeviceContext;

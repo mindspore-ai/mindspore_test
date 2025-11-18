@@ -25,6 +25,7 @@
 #include "utils/ms_context.h"
 #include "include/utils/utils.h"
 #include "include/utils/callback.h"
+#include "pybind11/stl.h"
 
 namespace mindspore {
 namespace tools {

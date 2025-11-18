@@ -16,6 +16,9 @@
 
 #ifndef MINDSPORE_MINDSPORE_CCSRC_INCLUDE_COMMON_UTILS_EXCEPTION_H_
 #define MINDSPORE_MINDSPORE_CCSRC_INCLUDE_COMMON_UTILS_EXCEPTION_H_
+#include "pybind11/pybind11.h"
+
+namespace py = pybind11;
 
 #define HANDLE_MS_EXCEPTION try {
 #define HANDLE_MS_EXCEPTION_END                             \

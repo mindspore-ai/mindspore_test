@@ -16,8 +16,8 @@
 #include "include/op_enum.h"
 #include "ops/op_def.h"
 #include "mindapi/base/format.h"
-#include "include/utils/pybind_api/api_register.h"
 #include "mindapi/base/types.h"
+#include "pybind_api/utils/utils_api.h"
 
 namespace mindspore::ops {
 

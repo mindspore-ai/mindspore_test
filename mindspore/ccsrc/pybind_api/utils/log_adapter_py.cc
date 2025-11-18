@@ -20,6 +20,7 @@
 #include "utils/log_adapter.h"
 #include "include/utils/python_utils.h"
 #include "utils/trace_base.h"
+#include "pybind_api/utils/utils_api.h"
 
 namespace py = pybind11;
 namespace mindspore {

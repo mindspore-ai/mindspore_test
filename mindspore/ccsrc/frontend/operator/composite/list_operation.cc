@@ -20,7 +20,6 @@
 
 #include "abstract/param_validator.h"
 #include "frontend/operator/ops.h"
-#include "include/utils/pybind_api/api_register.h"
 #include "primitive/sequence_ops.h"
 #include "frontend/jit/ps/fallback.h"
 #include "utils/ms_context.h"
