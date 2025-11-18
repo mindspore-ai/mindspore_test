@@ -348,7 +348,9 @@ class KernelRunner {
   void SetMemInfoForRdr();
   void SetShapeDependInfo();
   void DispatchDebugActor(OpContext<KernelTensor> *const context);
-  bool LaunchKernelWithDebug(OpContext<KernelTensor> *const context, const bool skip_launch);
+  bool PreLaunchKernel();
+  void PostLaunchKernel(bool launch_success);
+  bool LaunchKernelWithDebug(OpContext<KernelTensor> *const context, bool skip_launch);
 
   bool IsRunningFailed(const OpContext<KernelTensor> *context);
 

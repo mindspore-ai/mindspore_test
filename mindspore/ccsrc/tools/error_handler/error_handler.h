@@ -20,8 +20,12 @@
 #include <map>
 #include <string>
 #include <vector>
-#include "include/backend/visible.h"
+#include "tools/visible.h"
 #include "include/backend/common/kernel_graph/kernel_graph.h"
+#include "include/runtime/hardware_abstract/kernel_base/kernel_tensor.h"
+#include "runtime/core/actors/base/actor_common.h"
+#include "runtime/core/actors/base/actor_set.h"
+#include "runtime/core/graph_scheduler/base/graph_scheduler.h"
 #include "utils/ms_context.h"
 #include "ir/tensor.h"
 
@@ -46,17 +50,23 @@ enum class ErrorType : int {
   kUnknownError
 };
 
-class BACKEND_COMMON_EXPORT ErrorHandler {
+class TOOLS_EXPORT ErrorHandler {
  public:
   static ErrorHandler &GetInstance();
 
-  ErrorHandler() = default;
   virtual ~ErrorHandler() = default;
-  // disable copy constructor and the assignment operator
-  ErrorHandler(const ErrorHandler &) = delete;
-  ErrorHandler &operator=(const ErrorHandler &) = delete;
+  DISABLE_COPY_AND_ASSIGN(ErrorHandler)
 
-  virtual void Initialize() {}
+  // Send and receive parameters, return 0 when success, otherwise return 1
+  int SendRecv(const std::vector<tensor::TensorPtr> &params, int src_rank, int dst_rank);
+
+  std::vector<uint64_t> GetOptimizerTimestamps();
+
+  void TftCheckBeforeGraphRun();
+
+  void TftProcessGraphRunError(runtime::ActorSet *const actor_set,
+                               runtime::OpContext<kernel::KernelTensor> *const context,
+                               runtime::GraphScheduler *const graph_scheduler);
 
   void ProcessError(const FuncInfo &fn_info, int error_code, const FuncGetRecentErrMsg &fn_get_recent_err_msg,
                     ErrorType error_type, bool throw_exception = false);
@@ -108,6 +118,9 @@ class BACKEND_COMMON_EXPORT ErrorHandler {
   uint64_t GetUceOccurTime() { return uce_occur_time_; }
 
  private:
+  // singleton, make constructor private
+  ErrorHandler() = default;
+
   // save constant values for uce scenario, for constant tensor device memory may be corrupted
   std::map<AnfNodePtr, ValuePtr> const_values_{};
 
@@ -124,18 +137,14 @@ class BACKEND_COMMON_EXPORT ErrorHandler {
 using ErrorHandlerPtr = std::shared_ptr<ErrorHandler>;
 
 // Parameter snapshot manager
-class BACKEND_COMMON_EXPORT SnapshotMgr {
+class TOOLS_EXPORT SnapshotMgr {
  public:
-  static std::shared_ptr<SnapshotMgr> GetInstance(const std::string &device);
-  static std::map<std::string, std::shared_ptr<SnapshotMgr>> &GetInstanceMap();
-  static bool Register(const std::string &name, const std::shared_ptr<SnapshotMgr> &instance);
-  static void Clear();
+  static SnapshotMgr &GetInstance();
 
-  SnapshotMgr() = default;
-  virtual ~SnapshotMgr() = default;
-  // disable copy constructor and the assignment operator
-  SnapshotMgr(const SnapshotMgr &) = delete;
-  SnapshotMgr &operator=(const SnapshotMgr &) = delete;
+  ~SnapshotMgr() = default;
+  DISABLE_COPY_AND_ASSIGN(SnapshotMgr)
+
+  void SaveParameters(const std::vector<AnfNodePtr> &weights, void *stream, device::DeviceResManager *res_manager);
 
   bool IsSavingSnapshot() const { return is_saving_snapshot_; }
   void SetSavingSnapshot(bool val) { is_saving_snapshot_ = val; }
@@ -152,7 +161,10 @@ class BACKEND_COMMON_EXPORT SnapshotMgr {
     saved_params_.clear();
   }
 
- protected:
+ private:
+  // singleton, make constructor private
+  SnapshotMgr() = default;
+
   // whether is in the progress of copying parameters from device to host
   bool is_saving_snapshot_ = false;
 
@@ -163,9 +175,5 @@ class BACKEND_COMMON_EXPORT SnapshotMgr {
 using SnapshotMgrPtr = std::shared_ptr<SnapshotMgr>;
 }  // namespace tools
 }  // namespace mindspore
-
-#define SNAPSHOT_MANAGER_REG(NAME, CLAZZ)         \
-  static bool g_SnapshotMgr_##NAME##_reg_result = \
-    mindspore::tools::SnapshotMgr::Register(NAME, std::make_shared<CLAZZ>())
 
 #endif  // MINDSPORE_TOOLS_ERROR_HANDLER_ERROR_HANDLER_H_

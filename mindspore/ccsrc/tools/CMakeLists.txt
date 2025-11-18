@@ -52,9 +52,6 @@ if(NOT CMAKE_SYSTEM_NAME MATCHES "Windows")
 endif()
 list(APPEND _DATADUMP_SRC_LIST ${_DEVICE_STATISTIC_LIST})
 
-file(GLOB_RECURSE _ERROR_HANDLER_LIST "${CMAKE_CURRENT_SOURCE_DIR}/error_handler/*.cc")
-list(APPEND _TOOLS_SRC_LIST ${_ERROR_HANDLER_LIST})
-
 list(LENGTH _TOOLS_SRC_LIST debug_files_size)
 if(${debug_files_size} GREATER 0)
   add_library(_mindspore_tools_obj OBJECT ${_TOOLS_SRC_LIST})
@@ -75,10 +72,13 @@ file(GLOB_RECURSE _ALL_SILENTDETECT_LIST "${CMAKE_CURRENT_SOURCE_DIR}/silent_det
 set(_SILENTDETECT_LIST ${_ALL_SILENTDETECT_LIST})
 list(APPEND _TOOLS_SRC_INDEPENDENT_LIST ${_SILENTDETECT_LIST})
 
+file(GLOB_RECURSE _ERROR_HANDLER_LIST "${CMAKE_CURRENT_SOURCE_DIR}/error_handler/*.cc")
+list(APPEND _TOOLS_SRC_INDEPENDENT_LIST ${_ERROR_HANDLER_LIST})
+
 add_library(mindspore_tools SHARED ${_TOOLS_SRC_INDEPENDENT_LIST})
 
 target_link_libraries(mindspore_tools PRIVATE mindspore_core mindspore_common proto_input
-        mindspore_backend_common mindspore_hardware_abstract mindspore_memory_pool)
+        mindspore_backend_common mindspore_hardware_abstract mindspore_memory_pool mindspore_ms_backend)
 set_target_properties(mindspore_tools PROPERTIES INSTALL_RPATH $ORIGIN)
 
 if(CMAKE_SYSTEM_NAME MATCHES "Windows" OR CMAKE_SYSTEM_NAME MATCHES "Darwin")

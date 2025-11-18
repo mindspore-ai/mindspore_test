@@ -34,27 +34,29 @@ class TestErrorHandler : public UT::Common {
 /// Expectation: The return value of the normal interface is as expected, and the exception branch is expected to catch
 /// the exception.
 TEST_F(TestErrorHandler, test_interface) {
+  auto &error_handler = tools::ErrorHandler::GetInstance();
+
   EXPECT_EQ(tools::TftConfig::GetInstance()->IsEnableUCE(), false);
-  EXPECT_EQ(tools::ErrorHandler::GetInstance().HasThrownError(), false);
-  EXPECT_EQ(tools::ErrorHandler::GetInstance().GetForceStopFlag(), false);
-  EXPECT_EQ(tools::ErrorHandler::GetInstance().GetUceFlag(), false);
-  EXPECT_EQ(tools::ErrorHandler::GetInstance().IsRebootNode(), false);
-  EXPECT_EQ(tools::ErrorHandler::GetInstance().IsArf(), false);
+  EXPECT_EQ(error_handler.HasThrownError(), false);
+  EXPECT_EQ(error_handler.GetForceStopFlag(), false);
+  EXPECT_EQ(error_handler.GetUceFlag(), false);
+  EXPECT_EQ(error_handler.IsRebootNode(), false);
+  EXPECT_EQ(error_handler.IsArf(), false);
 
   // test arf/uce/ttp basic interface  
-  EXPECT_NO_THROW(tools::ErrorHandler::GetInstance().SetIsArf(true));
-  EXPECT_NO_THROW(tools::ErrorHandler::GetInstance().SetRebootNode(true));
-  EXPECT_EQ(tools::ErrorHandler::GetInstance().IsRebootNode(), true);
-  EXPECT_EQ(tools::ErrorHandler::GetInstance().IsArf(), true);
-  EXPECT_EQ(tools::ErrorHandler::GetInstance().HasThrownError(), true);
+  EXPECT_NO_THROW(error_handler.SetIsArf(true));
+  EXPECT_NO_THROW(error_handler.SetRebootNode(true));
+  EXPECT_EQ(error_handler.IsRebootNode(), true);
+  EXPECT_EQ(error_handler.IsArf(), true);
+  EXPECT_EQ(error_handler.HasThrownError(), true);
 
-  EXPECT_NO_THROW(tools::ErrorHandler::GetInstance().SetForceStopFlag(true));
-  EXPECT_EQ(tools::ErrorHandler::GetInstance().GetForceStopFlag(), true);
+  EXPECT_NO_THROW(error_handler.SetForceStopFlag(true));
+  EXPECT_EQ(error_handler.GetForceStopFlag(), true);
 
-  EXPECT_NO_THROW(tools::ErrorHandler::GetInstance().SetRebootType("arf"));
-  EXPECT_EQ(tools::ErrorHandler::GetInstance().GetRebootType(), "arf");
+  EXPECT_NO_THROW(error_handler.SetRebootType("arf"));
+  EXPECT_EQ(error_handler.GetRebootType(), "arf");
 
-  EXPECT_EQ(tools::ErrorHandler::GetInstance().GetSuspectRemoteFlag(), false);
-  EXPECT_EQ(tools::ErrorHandler::GetInstance().HasThrownError(), true);
+  EXPECT_EQ(error_handler.GetSuspectRemoteFlag(), false);
+  EXPECT_EQ(error_handler.HasThrownError(), true);
 }
 }  // namespace mindspore

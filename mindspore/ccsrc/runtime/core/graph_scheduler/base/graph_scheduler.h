@@ -62,6 +62,9 @@ class BACKEND_EXPORT GraphScheduler {
   // The control flow actors will generate some data in the loop body execution, so need clear on the end of execution.
   void ClearActorData(const ActorSet *actor_set);
 
+  // Reset actor state
+  void ResetActorState(ActorSet *const actor_set, OpContext<KernelTensor> *const context);
+
   // Transform graph to actor DAG, contains build and link.
   ActorSet *Transform(const GraphCompilerInfo &graph_compiler_info);
 
@@ -241,9 +244,6 @@ class BACKEND_EXPORT GraphScheduler {
 
   // Spawn kernel async infer/resize/launch kernel in run graph phase if need.
   void SpawnMultiPipelineActor(ActorSet *const actor_set, ActorThreadPool *const thread_pool);
-
-  // Reset actor state and throw uce exception.
-  void ProcessUceError(ActorSet *const actor_set, OpContext<KernelTensor> *const context);
 
   // The global maps, only be cleared in the deconstruction.
   mindspore::HashMap<ActorInfo, ActorSetPtr> actors_;

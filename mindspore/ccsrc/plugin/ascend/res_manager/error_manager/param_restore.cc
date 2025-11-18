@@ -25,7 +25,6 @@
 #include "plugin/ascend/res_manager/symbol_interface/acl_rt_symbol.h"
 #include "plugin/ascend/res_manager/symbol_interface/symbol_utils.h"
 #include "include/cluster/topology/collective_manager.h"
-#include "tools/error_handler/error_handler.h"
 #include "utils/log_adapter.h"
 
 namespace mindspore {
@@ -267,7 +266,8 @@ int ParamReplication::CopyParamsOneByOne(const std::vector<tensor::TensorPtr> &p
 }
 
 // return 0 when success, otherwise return 1
-int ParamReplication::SendRecv(const std::vector<tensor::TensorPtr> &params, int src_rank, int dst_rank) {
+int ParamReplication::SendRecv(const std::vector<tensor::TensorPtr> &params, int src_rank, int dst_rank,
+                               bool use_batch) {
   MS_LOG(INFO) << "Copy parameters start.";
 
   if (rank_id_ != src_rank && rank_id_ != dst_rank) {
@@ -299,7 +299,7 @@ int ParamReplication::SendRecv(const std::vector<tensor::TensorPtr> &params, int
   size_t xchg_buf_size = GetExchangeBufferSize(local_info, remote_info);
   void *xchg_buf_addr = nullptr;
   if (xchg_buf_size != DataExchangeInfo::kInvalidParamSize &&
-      UceCanUseBatchCopy(xchg_buf_size, local_info.GetFreeDevMem()) && !tools::ErrorHandler::GetInstance().IsArf()) {
+      UceCanUseBatchCopy(xchg_buf_size, local_info.GetFreeDevMem()) && use_batch) {
     xchg_buf_addr = res_mgr_->AllocateMemory(xchg_buf_size, stream_id_);
   }
 

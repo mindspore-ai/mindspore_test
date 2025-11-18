@@ -15,11 +15,73 @@
  */
 
 #include "include/runtime/hardware_abstract/device_context/device_context.h"
+#include <memory>
+#include <utility>
+#include <vector>
 #include "utils/ms_context.h"
 #include "include/runtime/pipeline/pipeline.h"
 
 namespace mindspore {
 namespace device {
+namespace {
+std::vector<std::shared_ptr<ExecutorCallback<PreLaunchKernelFunc>>> g_pre_launch_kernel_callbacks;
+std::vector<std::shared_ptr<ExecutorCallback<PostLaunchKernelFunc>>> g_post_launch_kernel_callbacks;
+
+template <typename CallbackType>
+void RegisterKernelCallback(std::vector<std::shared_ptr<ExecutorCallback<CallbackType>>> *ptr_cb_vector,
+                            const std::shared_ptr<ExecutorCallback<CallbackType>> &callback) {
+  ptr_cb_vector->emplace_back(callback);
+}
+
+template <typename CallbackType>
+const std::vector<std::shared_ptr<ExecutorCallback<CallbackType>>> &GetKernelCallbacks(
+  const std::vector<std::shared_ptr<ExecutorCallback<CallbackType>>> &cb_list) {
+  static std::vector<std::shared_ptr<ExecutorCallback<CallbackType>>> callbacks;
+  static std::once_flag init_flag{};
+  std::call_once(init_flag, [&]() {
+    // filter enabled callbacks
+    for (auto &obj : cb_list) {
+      if (obj->fn_is_enabled_()) {
+        callbacks.emplace_back(obj);
+      }
+    }
+    // sort callbacks by priority from high to low, larger value means higher priority
+    std::sort(callbacks.begin(), callbacks.end(),
+              [](const auto &a, const auto &b) -> bool { return a->priority_ > b->priority_; });
+  });
+  return callbacks;
+}
+}  // namespace
+
+template <>
+RUNTIME_HARDWARE_EXPORT void KernelExecutor::RegisterLaunchKernelCallback<PreLaunchKernelFunc>(
+  const std::shared_ptr<ExecutorCallback<PreLaunchKernelFunc>> &callback) {
+  RegisterKernelCallback<PreLaunchKernelFunc>(&g_pre_launch_kernel_callbacks, callback);
+}
+
+template <>
+RUNTIME_HARDWARE_EXPORT void KernelExecutor::RegisterLaunchKernelCallback<PostLaunchKernelFunc>(
+  const std::shared_ptr<ExecutorCallback<PostLaunchKernelFunc>> &callback) {
+  RegisterKernelCallback<PostLaunchKernelFunc>(&g_post_launch_kernel_callbacks, callback);
+}
+
+template <>
+RUNTIME_HARDWARE_EXPORT const std::vector<std::shared_ptr<ExecutorCallback<PreLaunchKernelFunc>>> &
+KernelExecutor::GetLaunchKernelCallbacks() {
+  return GetKernelCallbacks<PreLaunchKernelFunc>(g_pre_launch_kernel_callbacks);
+}
+
+template <>
+RUNTIME_HARDWARE_EXPORT const std::vector<std::shared_ptr<ExecutorCallback<PostLaunchKernelFunc>>> &
+KernelExecutor::GetLaunchKernelCallbacks() {
+  return GetKernelCallbacks<PostLaunchKernelFunc>(g_post_launch_kernel_callbacks);
+}
+
+#if (defined(_WIN32) || defined(__WIN32__) || defined(WIN32) || defined(__CYGWIN__))
+template class RUNTIME_HARDWARE_EXPORT ExecutorCallback<PreLaunchKernelFunc>;
+template class RUNTIME_HARDWARE_EXPORT ExecutorCallback<PostLaunchKernelFunc>;
+#endif
+
 DeviceResManager::DeviceResManager() {
   collective_comm_lib_ = nullptr;
   device_context_ = nullptr;

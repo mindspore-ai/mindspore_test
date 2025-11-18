@@ -53,7 +53,6 @@ class AscendKernelExecutor : public KernelExecutor {
 
   int StressDetect(const std::string &detect_type) const override;
   int CleanTdtChannel() const override;
-  int SendRecv(const std::vector<tensor::TensorPtr> &params, int src_rank, int dst_rank) const override;
   // Adjust kernel graph before run graph, used in Graph Mode.
   void PreprocessBeforeRun(const FuncGraphPtr &graph) const override;
 
@@ -101,10 +100,6 @@ class AscendKernelExecutor : public KernelExecutor {
   // launch
   bool MemoryCopyAsync(const CNodePtr &node, const std::vector<KernelTensor *> &inputs,
                        const std::vector<KernelTensor *> &outputs, void *stream) const;
-  void DoAsyncCkpt(const CNodePtr &kernel) const;
-  void SetResumableError() const;
-  bool PreSaveWeight(const CNodePtr &kernel, KernelMod *kernel_mod, const std::vector<KernelTensor *> &inputs,
-                     void *stream) const;
   bool LaunchCallback(CallbackFunc callback_func, size_t stream_id, bool is_block) const;
 
   mutable std::set<CNodePtr> nop_op_to_memcpy_;

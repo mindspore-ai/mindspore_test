@@ -239,7 +239,7 @@ std::map<std::string, std::string> &TftConfig::GetConfigMap() {
     flag,
     [](std::map<std::string, std::string> &configs, bool &config_parsed) {
       auto tft_config = common::GetEnv(kMsEnableTft);
-      MS_LOG(WARNING) << "Value of `" << kMsEnableTft << "` is `" << tft_config << "`";
+      MS_LOG(INFO) << "Value of `" << kMsEnableTft << "` is `" << tft_config << "`";
       if (tft_config.empty()) {
         config_parsed = true;
         return;
@@ -258,7 +258,7 @@ std::map<std::string, std::string> &TftConfig::GetConfigMap() {
         auto &key = Trim(&elems[0]);
         auto &value = Trim(&elems[1]);
         configs[key] = value;
-        MS_LOG(WARNING) << "Insert key `" << key << "` with value `" << value << "`";
+        MS_LOG(INFO) << "Insert key `" << key << "` with value `" << value << "`";
       }
 
       config_parsed = true;
@@ -276,13 +276,17 @@ bool TftConfig::IsEnableFeature(const std::string &feature_name) {
   return iter->second == kTftValueEnable;
 }
 
+bool IsEnableUce() { return mindspore::tools::TftConfig::GetInstance()->IsEnableUCE(); }
+
 bool IsEnableArf() { return mindspore::tools::TftConfig::GetInstance()->IsEnableARF(); }
-bool IsEnableWatchDog() {
-  return tools::TftConfig::GetInstance()->IsEnableWatchdog() ||
-         tools::TftConfig::GetInstance()->IsEnableSaveHcclOpStatus();
+
+bool IsTftDisableHighPerfMode() {
+  auto tft_inst = tools::TftConfig::GetInstance();
+  return tft_inst->IsEnableUCE() || tft_inst->IsEnableStepTRE() || tft_inst->IsEnableSaveHcclOpStatus();
 }
 
+REGISTER_COMMON_CALLBACK(IsEnableUce);
 REGISTER_COMMON_CALLBACK(IsEnableArf);
-REGISTER_COMMON_CALLBACK(IsEnableWatchDog);
+REGISTER_COMMON_CALLBACK(IsTftDisableHighPerfMode);
 }  // namespace tools
 }  // namespace mindspore

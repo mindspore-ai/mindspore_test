@@ -15,25 +15,156 @@
  */
 
 #include "tools/error_handler/error_handler.h"
+#include <functional>
+#include <mutex>
 #include <string>
 #include <utility>
 #include <vector>
 #include "error_handler/error_config.h"
+#include "include/runtime/hardware_abstract/kernel_base/kernel_tensor.h"
 #include "include/utils/callback.h"
+#include "ir/device_type.h"
+#include "runtime/core/actors/base/actor_common.h"
+#include "runtime/core/actors/base/actor_set.h"
+#include "utils/log_adapter.h"
+#include "utils/ms_exception.h"
 
 namespace mindspore {
 namespace tools {
+using mindspore::device::DeviceResManager;
+using mindspore::device::DeviceType;
+using mindspore::kernel::KernelMod;
+using mindspore::kernel::KernelTensor;
+using mindspore::runtime::ActorSet;
+using mindspore::runtime::GraphScheduler;
+using mindspore::runtime::OpContext;
+
 namespace {
 constexpr char kStrUceTimeBegin[] = "time us=";
 constexpr size_t kStrUceTimeBeginLen = sizeof(kStrUceTimeBegin) - 1;
+constexpr int64_t kInterval = 30;
 
-SNAPSHOT_MANAGER_REG(kCPUDevice, SnapshotMgr);
-SNAPSHOT_MANAGER_REG(kGPUDevice, SnapshotMgr);
+bool NeedSaveAsyncCkpt() {
+  static bool disable_ckpt_d2h_async = common::GetEnv("MS_ENABLE_CKPT_D2H_ASYNC") != "1";
+  if (MS_LIKELY(disable_ckpt_d2h_async)) {
+    return false;
+  }
+
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+  if (!ms_context->get_param<bool>(MS_CTX_NEED_CKPT)) {
+    return false;
+  }
+
+  auto cur_step = ms_context->get_param<int>(MS_CTX_CUR_STEP_NUM);
+  auto last_triggered_step = ms_context->get_param<int>(MS_CTX_LAST_TRIGGERED_STEP);
+  auto checkpoint_steps = ms_context->get_param<int>(MS_CTX_SAVE_CKPT_STEPS);
+  MS_LOG(DEBUG) << "cur_step:" << cur_step << ", checkpoint_steps: " << checkpoint_steps
+                << ", last_triggered_step:" << last_triggered_step;
+  return cur_step >= (last_triggered_step + checkpoint_steps);
+}
+
+bool NeedSaveSnapshot() {
+  if (!TftConfig::IsEnableStepTRE()) {
+    return false;
+  }
+
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+  auto cur_step = ms_context->get_param<int>(MS_CTX_CUR_STEP_NUM);
+  auto last_save_step = SnapshotMgr::GetInstance().LastSaveStep();
+  auto snapshot_steps = TftConfig::GetSnapShotSteps();
+  MS_LOG(DEBUG) << "cur_step:" << cur_step << ", snapshot_steps: " << snapshot_steps
+                << ", last_save_step:" << last_save_step;
+  return last_save_step > 0 ? cur_step >= (last_save_step + snapshot_steps) : cur_step > snapshot_steps;
+}
+
+ErrorType GetErrorType(int error_code) {
+  static std::vector<std::pair<ErrorType, std::function<bool(int)>>> error_type_callbacks = {
+    {ErrorType::kDeviceMemError, GET_COMMON_CALLBACK(IsDeviceMemError, bool, int)},
+    {ErrorType::kHbmMultBitEccError, GET_COMMON_CALLBACK(IsHbmMultBitEccError, bool, int)},
+    {ErrorType::kCommOpRetryFailError, GET_COMMON_CALLBACK(IsCommOpRetryFailError, bool, int)},
+    {ErrorType::kForceStopError, GET_COMMON_CALLBACK(IsForceStopError, bool, int)},
+    {ErrorType::kSuspectRemoteError, GET_COMMON_CALLBACK(IsSuspectRemoteError, bool, int)},
+  };
+
+  for (auto &[error_type, func] : error_type_callbacks) {
+    if (func != nullptr && func(error_code)) {
+      return error_type;
+    }
+  }
+  return ErrorType::kUnknownError;
+}
+
 }  // namespace
 
 ErrorHandler &ErrorHandler::GetInstance() {
   static ErrorHandler instance;
   return instance;
+}
+
+int ErrorHandler::SendRecv(const std::vector<tensor::TensorPtr> &params, int src_rank, int dst_rank) {
+  static auto send_recv_cb =
+    GET_COMMON_CALLBACK(TftSendRecvParams, int, const std::vector<tensor::TensorPtr> &, int, int, bool);
+  if (send_recv_cb == nullptr) {
+    return 1;
+  }
+  return send_recv_cb(params, src_rank, dst_rank, !is_arf_);
+}
+
+std::vector<uint64_t> ErrorHandler::GetOptimizerTimestamps() {
+  static auto get_opt_times_cb = GET_COMMON_CALLBACK(TftGetOptimizerTimestamps, std::pair<uint64_t, uint64_t>);
+  MS_EXCEPTION_IF_NULL(get_opt_times_cb);
+  auto [opt_start_timestamp, opt_end_timestamp] = get_opt_times_cb();
+  auto hbm_error_time = GetUceOccurTime();
+  return std::vector<uint64_t>{hbm_error_time, opt_start_timestamp, opt_end_timestamp};
+}
+
+void ErrorHandler::TftCheckBeforeGraphRun() {
+  if (tools::TftConfig::GetInstance()->IsEnableUCE() || tools::TftConfig::GetInstance()->IsEnableHCCE() ||
+      tools::TftConfig::GetInstance()->IsEnableARF()) {
+    if (GetHcceFlag()) {
+      MS_LOG(INFO) << "Restart from step after a hcce error occurs.";
+    } else if (GetSuspectRemoteFlag()) {
+      MS_LOG(INFO) << "Restart from step after a SuspectRemote error occurs.";
+    } else if (GetUceFlag()) {
+      MS_LOG(INFO) << "Restart from step after a uce error occurs.";
+    } else if (GetForceStopFlag()) {
+      MS_LOG(EXCEPTION) << "ForceStopError occurs when execute.";
+    }
+  }
+}
+
+void ErrorHandler::TftProcessGraphRunError(ActorSet *const actor_set, OpContext<KernelTensor> *const context,
+                                           GraphScheduler *const graph_scheduler) {
+  if (!(tools::TftConfig::GetInstance()->IsEnableUCE() || tools::TftConfig::GetInstance()->IsEnableHCCE() ||
+        tools::TftConfig::GetInstance()->IsEnableARF())) {
+    return;
+  }
+
+  if (HasThrownError()) {
+    if (GetForceStopFlag()) {
+      MS_LOG(WARNING) << "There is a ForceStop error, reset the actor state.";
+    }
+    if (GetHcceFlag()) {
+      MS_LOG(WARNING) << "There is a HCCE error, reset the actor state.";
+    } else if (GetSuspectRemoteFlag()) {
+      MS_LOG(WARNING) << "There is a SuspectRemote error, reset the actor state.";
+    } else if (GetUceFlag()) {
+      MS_LOG(WARNING) << "There is a UCE error, reset the actor state.";
+    }
+    // reset actor state
+    graph_scheduler->ResetActorState(actor_set, context);
+    MsException::Instance().ResetException();
+    MS_LOG(WARNING) << "Clear state end.";
+  }
+
+  if (GetUceFlag()) {
+    MS_LOG(EXCEPTION) << GetErrorMsg();
+  } else if (GetForceStopFlag()) {
+    actor_set->is_execution_failed_ = false;
+    MS_LOG(EXCEPTION) << GetForceStopErrorMsg();
+  }
 }
 
 void ErrorHandler::ProcessError(const FuncInfo &fn_info, int error_code,
@@ -142,38 +273,271 @@ const ValuePtr &ErrorHandler::GetConstant(const AnfNodePtr &node) {
 
 void ErrorHandler::Clear() { const_values_.clear(); }
 
-SnapshotMgrPtr SnapshotMgr::GetInstance(const std::string &device) {
-  auto iter = GetInstanceMap().find(device);
-  if (iter == GetInstanceMap().end()) {
-    MS_LOG(EXCEPTION) << "Can not find SnapshotMgr for device " << device;
+SnapshotMgr &SnapshotMgr::GetInstance() {
+  static SnapshotMgr instance;
+  return instance;
+}
+
+void SnapshotMgr::SaveParameters(const std::vector<AnfNodePtr> &weights, void *stream, DeviceResManager *res_manager) {
+  static auto save_params_cb = GET_COMMON_CALLBACK(TftSaveParameters, void, const std::vector<AnfNodePtr> &, void *,
+                                                   std::map<std::string, tensor::TensorPtr> *);
+  if (save_params_cb != nullptr) {
+    save_params_cb(weights, res_manager->GetCopyDataStream(), &saved_params_);
   }
-  auto snapshot_mgr = iter->second;
-  MS_EXCEPTION_IF_NULL(snapshot_mgr);
-  return snapshot_mgr;
 }
 
-std::map<std::string, SnapshotMgrPtr> &SnapshotMgr::GetInstanceMap() {
-  static std::map<std::string, SnapshotMgrPtr> instance_map = {};
-  return instance_map;
+void DestroySnapshotMgr() { SnapshotMgr::GetInstance().Reset(); }
+
+REGISTER_COMMON_CALLBACK(DestroySnapshotMgr);
+
+void TftCheckBeforeGraphRun() { ErrorHandler::GetInstance().TftCheckBeforeGraphRun(); }
+
+void TftProcessGraphRunError(ActorSet *const actor_set, OpContext<KernelTensor> *const context,
+                             GraphScheduler *const graph_scheduler) {
+  ErrorHandler::GetInstance().TftProcessGraphRunError(actor_set, context, graph_scheduler);
 }
 
-bool SnapshotMgr::Register(const std::string &device, const SnapshotMgrPtr &instance) {
-  auto ret = GetInstanceMap().insert(std::pair<std::string, SnapshotMgrPtr>(device, instance));
-  if (ret.second) {
-    MS_LOG(INFO) << "SnapshotMgr for device " << device << " is registered successfully.";
-  } else {
-    MS_LOG(WARNING) << "SnapshotMgr for device " << device << " has already been registered.";
+void TftSaveConstants(const std::vector<KernelGraphPtr> &graphs) { ErrorHandler::GetInstance().SaveConstants(graphs); }
+
+bool SkipHcomInitWait() {
+  auto reboot_type = ErrorHandler::GetInstance().GetRebootType();
+  auto rebuild_flag = ErrorHandler::GetInstance().GetRebuildGroupFlag();
+  return reboot_type == "hot_switch" && !rebuild_flag;
+}
+
+bool SkipSubmitTask() {
+  auto reboot_type = ErrorHandler::GetInstance().GetRebootType();
+  auto rebuild_flag = ErrorHandler::GetInstance().GetRebuildGroupFlag();
+  auto flag = reboot_type == "hot_switch" && !rebuild_flag;
+  if (flag) {
+    MS_LOG(WARNING) << "HOT Switch node no need submit hcom init task before rebuild hcom flag";
   }
-  return true;
+  return flag;
 }
 
-void SnapshotMgr::Clear() { GetInstanceMap().clear(); }
+bool TftGetUceFlag() { return ErrorHandler::GetInstance().GetUceFlag(); }
 
-bool HasResumableError() { return tools::ErrorHandler::GetInstance().HasThrownError(); }
+bool TftIsRebootNode() { return ErrorHandler::GetInstance().IsRebootNode(); }
 
-bool NeedRebuildGroup() { return mindspore::tools::ErrorHandler::GetInstance().GetRebuildGroupFlag(); }
+bool TftIsArf() { return ErrorHandler::GetInstance().IsArf(); }
 
-REGISTER_COMMON_CALLBACK(HasResumableError);
+void TftClearErrorType() { ErrorHandler::GetInstance().ClearErrorType(); }
+
+const ValuePtr &TftGetConstant(const AnfNodePtr &node) { return ErrorHandler::GetInstance().GetConstant(node); }
+
+REGISTER_COMMON_CALLBACK(TftCheckBeforeGraphRun);
+REGISTER_COMMON_CALLBACK(TftProcessGraphRunError);
+REGISTER_COMMON_CALLBACK(TftSaveConstants);
+
+REGISTER_COMMON_CALLBACK(SkipHcomInitWait);
+REGISTER_COMMON_CALLBACK(SkipSubmitTask);
+
+REGISTER_COMMON_CALLBACK(TftGetUceFlag);
+REGISTER_COMMON_CALLBACK(TftIsRebootNode);
+REGISTER_COMMON_CALLBACK(TftIsArf);
+REGISTER_COMMON_CALLBACK(TftClearErrorType);
+REGISTER_COMMON_CALLBACK(TftGetConstant);
+
+void RunFailCallback(const char *caller_file, int caller_line, const char *caller_name, const std::string &api_info,
+                     bool throw_exception) {
+  static auto get_last_error_cb = GET_COMMON_CALLBACK(TftGetErrorCode, int);
+  static auto get_recent_err_msg_cb = GET_COMMON_CALLBACK(TftGetRecentErrMsg, const char *);
+  if (get_last_error_cb != nullptr &&
+      (TftConfig::GetInstance()->IsEnableUCE() || TftConfig::GetInstance()->IsEnableHCCE())) {
+    auto error_code = get_last_error_cb();
+    auto error_type = GetErrorType(error_code);
+    ErrorHandler::GetInstance().ProcessError(FuncInfo{caller_file, caller_line, caller_name, api_info}, error_code,
+                                             get_recent_err_msg_cb, error_type, throw_exception);
+  }
+  if (TftConfig::GetInstance()->IsEnableARF()) {
+    if (get_last_error_cb != nullptr) {
+      auto error_code = get_last_error_cb();
+      auto error_type = GetErrorType(error_code);
+      MS_LOG(DEBUG) << "Call ascend api <" << api_info << "> in <" << caller_name << "> at " << caller_file << ":"
+                    << caller_line << " failed, error code [" << error_code << "].";
+      if (error_type == ErrorType::kForceStopError) {
+        ErrorHandler::GetInstance().SetForceStopFlag(true);
+      }
+    }
+  }
+}
+
+void TaskFailCallback(std::string *error_info) {
+  MS_EXCEPTION_IF_NULL(error_info);
+  if (TftConfig::GetInstance()->IsEnableUCE() || TftConfig::GetInstance()->IsEnableARF()) {
+    if (ErrorHandler::GetInstance().GetForceStopFlag() && !ErrorHandler::GetInstance().HasThrownError()) {
+      if (error_info->empty()) {
+        *error_info = std::string(ErrorHandler::GetInstance().GetForceStopErrorMsg());
+        MS_LOG(EXCEPTION) << ErrorHandler::GetInstance().GetForceStopErrorMsg();
+      }
+    }
+    if (ErrorHandler::GetInstance().GetUceFlag() && !ErrorHandler::GetInstance().HasThrownError()) {
+      if (error_info->empty()) {
+        *error_info = std::string(ErrorHandler::GetInstance().GetErrorMsg());
+        MS_LOG(EXCEPTION) << ErrorHandler::GetInstance().GetErrorMsg();
+      }
+    }
+  }
+}
+
+void SyncCopyFailCallback() {
+  auto &error_handler = ErrorHandler::GetInstance();
+  MS_LOG(WARNING) << "Uce flag: " << error_handler.GetUceFlag()
+                  << ", force stop flag: " << error_handler.GetForceStopFlag();
+  if (error_handler.GetUceFlag()) {
+    MS_LOG(EXCEPTION) << "UCEError occurs when execute.";
+  } else if (error_handler.GetForceStopFlag()) {
+    MS_LOG(EXCEPTION) << "ForceStopError occurs when execute.";
+  }
+}
+
+REGISTER_COMMON_CALLBACK(RunFailCallback);
+REGISTER_COMMON_CALLBACK(TaskFailCallback);
+REGISTER_COMMON_CALLBACK(SyncCopyFailCallback);
+
+bool NeedRebuildGroup() { return ErrorHandler::GetInstance().GetRebuildGroupFlag(); }
+
+bool IsRebootNode() { return ErrorHandler::GetInstance().IsRebootNode(); }
+
 REGISTER_COMMON_CALLBACK(NeedRebuildGroup);
+REGISTER_COMMON_CALLBACK(IsRebootNode);
+
+class TftCallback {
+ public:
+  static bool OnLaunchBegin(const CNodePtr &kernel, const std::vector<KernelTensor *> &inputs,
+                            const std::vector<KernelTensor *> &outputs, KernelMod *kernel_mod, void *stream,
+                            const DeviceContext *device_context) {
+    AsyncSaveSnapshot(kernel, device_context->device_res_manager_.get());
+    return ProcessEvent(kernel, kernel_mod, stream);
+  }
+
+  static void OnLaunchEnd(const CNodePtr &kernel, const std::vector<KernelTensor *> &inputs,
+                          const std::vector<KernelTensor *> &outputs, KernelMod *kernel_mod, void *stream,
+                          const DeviceContext *device_context, bool launch_success) {
+    if (launch_success) {
+      return;
+    }
+    ProcessResumableError();
+    if (!ErrorHandler::GetInstance().HasThrownError()) {
+      device_context->device_res_manager_->ResetStreamAndCtx();
+    }
+  }
+
+ private:
+  static void AsyncSaveSnapshot(const CNodePtr &kernel, DeviceResManager *res_manager);
+  static bool ProcessEvent(const CNodePtr &kernel, KernelMod *kernel_mod, void *stream);
+  static void ProcessResumableError();
+};
+
+bool IsEnableTftCallback() {
+  static bool enabled = TftConfig::GetInstance()->IsEnableUCE() || TftConfig::GetInstance()->IsEnableARF() ||
+                        TftConfig::GetInstance()->IsEnableHCCE() || TftConfig::GetInstance()->IsEnableRsc() ||
+                        TftConfig::GetInstance()->IsEnableTRE() || TftConfig::GetInstance()->IsEnableStepTRE();
+  return enabled;
+}
+
+REGISTER_PRE_LAUNCH_CALLBACK(TftPreLaunchKernel, &TftCallback::OnLaunchBegin, IsEnableTftCallback, DeviceType::kAscend,
+                             0);
+
+REGISTER_POST_LAUNCH_CALLBACK(TftPostLaunchKernel, &TftCallback::OnLaunchEnd, IsEnableTftCallback, DeviceType::kAscend,
+                              0);
+
+bool TftCallback::ProcessEvent(const CNodePtr &kernel, KernelMod *kernel_mod, void *stream) {
+  static auto process_opt_event =
+    GET_COMMON_CALLBACK(TftProcessOptimizerEvent, bool, const CNodePtr &, KernelMod *, void *, bool, bool);
+  MS_EXCEPTION_IF_NULL(process_opt_event);
+  return process_opt_event(kernel, kernel_mod, stream, SnapshotMgr::GetInstance().IsSavingSnapshot(),
+                           TftConfig::GetInstance()->IsEnableUCE());
+}
+
+void TftCallback::AsyncSaveSnapshot(const CNodePtr &kernel, DeviceResManager *res_manager) {
+  if (!IsGraphPipelineCompiled()) {
+    return;
+  }
+
+  MS_EXCEPTION_IF_NULL(kernel);
+  auto kg = std::dynamic_pointer_cast<session::KernelGraph>(kernel->func_graph());
+  if (kg == nullptr) {
+    return;
+  }
+
+  if (!NeedSaveAsyncCkpt() && !NeedSaveSnapshot()) {
+    return;
+  }
+
+  if (!SnapshotMgr::GetInstance().IsSavingSnapshot()) {
+    SnapshotMgr::GetInstance().SetSavingSnapshot(true);
+    MS_LOG(INFO) << "Enable async d2h copy";
+    SnapshotMgr::GetInstance().SaveParameters(kg->GetRootWeights(), res_manager->GetCopyDataStream(), res_manager);
+    SnapshotMgr::GetInstance().SaveLastSaveStep(MsContext::GetInstance()->get_param<int>(MS_CTX_CUR_STEP_NUM));
+  }
+}
+
+void TftCallback::ProcessResumableError() {
+  static auto get_last_error_cb = GET_COMMON_CALLBACK(TftGetErrorCode, int);
+  static auto get_recent_err_msg_cb = GET_COMMON_CALLBACK(TftGetRecentErrMsg, const char *);
+  if (get_last_error_cb != nullptr &&
+      (TftConfig::GetInstance()->IsEnableUCE() || TftConfig::GetInstance()->IsEnableHCCE())) {
+    auto error_code = get_last_error_cb();
+    auto error_type = GetErrorType(error_code);
+    ErrorHandler::GetInstance().ProcessError(FuncInfo{FILE_NAME, __LINE__, __FUNCTION__, "Launch kernel failed"},
+                                             error_code, get_recent_err_msg_cb, error_type, false);
+  }
+  if (TftConfig::GetInstance()->IsEnableARF()) {
+    if (get_last_error_cb != nullptr) {
+      auto error_code = get_last_error_cb();
+      MS_LOG(DEBUG) << "Launch kernel failed in <" << __FUNCTION__ << "> at " << FILE_NAME << ":" << __LINE__
+                    << " failed, error code [" << error_code << "].";
+      auto error_type = GetErrorType(error_code);
+      if (error_type == ErrorType::kForceStopError) {
+        ErrorHandler::GetInstance().SetForceStopFlag(true);
+      }
+    }
+  }
+}
+
+void InitWatchDogCallback() {
+  static auto init_cb =
+    GET_COMMON_CALLBACK(TftInitWatchDogCallback, void, bool, bool, bool, int64_t, const std::string &);
+  if (init_cb != nullptr) {
+    init_cb(TftConfig::GetInstance()->IsEnableWatchdog(), TftConfig::GetInstance()->IsEnableSaveHcclOpStatus(),
+            TftConfig::GetInstance()->CheckSupport(kStatusRecord, false),
+            TftConfig::GetInstance()->GetConfigValue<int64_t>(kStatusSaveInterval, kInterval),
+            TftConfig::GetInstance()->GetConfigValue<std::string>(kStatusSavePath, "/tmp"));
+  }
+}
+
+bool WatchDogPreLaunchKernel(const CNodePtr &kernel, const std::vector<KernelTensor *> &inputs,
+                             const std::vector<KernelTensor *> &outputs, KernelMod *kernel_mod, void *stream,
+                             const DeviceContext *device_context) {
+  static auto func_cb =
+    GET_COMMON_CALLBACK(TftWatchDogPreLaunchKernel, bool, const CNodePtr &, const std::vector<KernelTensor *> &,
+                        const std::vector<KernelTensor *> &, KernelMod *, void *, const DeviceContext *);
+  static std::once_flag flag;
+  std::call_once(flag, [&]() { tools::InitWatchDogCallback(); });
+  return func_cb == nullptr ? false : func_cb(kernel, inputs, outputs, kernel_mod, stream, device_context);
+}
+
+void WatchDogPostLaunchKernel(const CNodePtr &kernel, const std::vector<KernelTensor *> &inputs,
+                              const std::vector<KernelTensor *> &outputs, KernelMod *kernel_mod, void *stream,
+                              const DeviceContext *device_context, bool launch_success) {
+  static auto func_cb =
+    GET_COMMON_CALLBACK(TftWatchDogPostLaunchKernel, void, const CNodePtr &, const std::vector<KernelTensor *> &,
+                        const std::vector<KernelTensor *> &, KernelMod *, void *, const DeviceContext *, bool);
+  static std::once_flag flag;
+  std::call_once(flag, [&]() { tools::InitWatchDogCallback(); });
+  if (func_cb != nullptr) {
+    func_cb(kernel, inputs, outputs, kernel_mod, stream, device_context, launch_success);
+  }
+}
+
+REGISTER_PRE_LAUNCH_CALLBACK(
+  WatchDogPreLaunchKernel, WatchDogPreLaunchKernel, []() { return TftConfig::GetInstance()->IsEnableWatchdog(); },
+  DeviceType::kAscend, 0);
+
+REGISTER_POST_LAUNCH_CALLBACK(
+  WatchDogPostLaunchKernel, WatchDogPostLaunchKernel, []() { return TftConfig::GetInstance()->IsEnableWatchdog(); },
+  DeviceType::kAscend, 0);
+
 }  // namespace tools
 }  // namespace mindspore

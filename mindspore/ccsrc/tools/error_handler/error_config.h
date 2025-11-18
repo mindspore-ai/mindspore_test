@@ -19,7 +19,7 @@
 #include <map>
 #include <string>
 #include <memory>
-#include "include/backend/visible.h"
+#include "tools/visible.h"
 #include "nlohmann/json.hpp"
 #include "utils/log_adapter.h"
 #include "include/utils/pybind_api/api_register.h"
@@ -30,7 +30,7 @@ constexpr auto kStatusSavePath = "CCAE_HCCL_STATUS_SAVE_PATH";
 constexpr auto kStatusSaveInterval = "CCAE_HCCL_STATUS_SAVE_INTERVAL";
 constexpr auto kWatchdog = "HCCL_WATCHDOG";
 namespace tools {
-class BACKEND_COMMON_EXPORT TftConfig {
+class TOOLS_EXPORT TftConfig {
  public:
   TftConfig() = default;
   ~TftConfig() = default;

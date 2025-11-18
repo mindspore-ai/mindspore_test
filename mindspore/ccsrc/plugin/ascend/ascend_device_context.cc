@@ -46,7 +46,6 @@
 #include "plugin/ascend/res_manager/symbol_interface/symbol_utils.h"
 #include "plugin/ascend/res_manager/symbol_interface/acl_compiler_symbol.h"
 #include "plugin/ascend/res_manager/mem_manager/ascend_pluggable_mem_allocator.h"
-#include "plugin/ascend/res_manager/error_manager/ascend_error_manager.h"
 #include "plugin/ascend/res_manager/hal_manager/ascend_hal_manager.h"
 #include "plugin/ascend/res_manager/mbuf_manager/tdt_manager.h"
 #include "primitive/auto_generate/gen_ops_primitive_c.h"
@@ -167,8 +166,12 @@ void AscendDeviceContext::Destroy() {
   if (device_res_manager_ == nullptr) {
     return;
   }
-  tools::ascend::AscendSnapshotMgr::GetInstance()->Clear();
-  tools::ErrorHandler::GetInstance().Clear();
+
+  static auto destroy_snapshot_helper_cb = GET_COMMON_CALLBACK(DestroySnapshotHelper, void);
+  if (destroy_snapshot_helper_cb != nullptr) {
+    destroy_snapshot_helper_cb();
+  }
+
   // Device resource manager must be destroyed before 'FinalizeGe' unless some runtime APIs will throw exception.
   // for ge, has destropy in graph_executor->finalize
   device_res_manager_->Destroy();

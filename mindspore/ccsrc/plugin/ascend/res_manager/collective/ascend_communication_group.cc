@@ -25,7 +25,6 @@
 #include <algorithm>
 #include "include/cluster/topology/collective_manager.h"
 #include "plugin/ascend/res_manager/hccl_adapter/hccl_adapter.h"
-#include "plugin/ascend/res_manager/error_manager/collective_comm_monitor.h"
 #include "plugin/ascend/res_manager/collective/ascend_collective_comm_lib.h"
 #include "utils/ms_context.h"
 #include "plugin/ascend/res_manager/symbol_interface/acl_rt_symbol.h"
@@ -119,14 +118,10 @@ bool AscendCommunicationGroup::Initialize(void *root_info) {
   initialized_ = true;
 
   // Initialize watch dog for every group.
-  static auto watchdog_enabled_cb = GET_COMMON_CALLBACK(IsEnableWatchDog, bool);
-  if (common::GetEnv(kSimulationLevel).empty() && watchdog_enabled_cb != nullptr && watchdog_enabled_cb()) {
-    MS_LOG(INFO) << "Start initializing hccl watchdog on device side for group: " << name_
-                 << ", rank: " << global_rank_;
-    HcclWatchDogManager::GetInstance().AddHandler(
-      std::make_unique<HcclWatchDogHandler>(global_rank_, device_id, name_, comm_, group_ranks_));
-    (void)HcclWatchDogManager::GetInstance().InitHandler(name_);
-    MS_LOG(INFO) << "hccl watchdog on device side is successfully initialized.";
+  static auto reg_hccl_watchdog_cb = GET_COMMON_CALLBACK(RegisterHcclWatchDog, void, uint32_t, uint32_t,
+                                                         const std::string &, HcclComm, const std::vector<uint32_t> &);
+  if (reg_hccl_watchdog_cb != nullptr) {
+    reg_hccl_watchdog_cb(global_rank_, device_id, name_, comm_, group_ranks_);
   }
   // If communication is obtained directly via the external hcom (InitByHcclComm), which does not depend on the
   // synchronization of HCCL, the uniqueID will not be cleared.
@@ -153,7 +148,10 @@ bool AscendCommunicationGroup::Finalize() {
   MS_EXCEPTION_IF_NULL(ms_context);
   auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
   (void)CALL_ASCEND_API(aclrtSetDevice, device_id);
-  HcclWatchDogManager::GetInstance().DestroyHandlerByName(name_);
+  static auto destroy_hccl_watchdog_handler_cb = GET_COMMON_CALLBACK(DestroyWatchDogHandler, void, const std::string &);
+  if (destroy_hccl_watchdog_handler_cb != nullptr) {
+    destroy_hccl_watchdog_handler_cb(name_);
+  }
   (void)HcclCommDestroy(comm_);
   (void)CALL_ASCEND_API(aclrtResetDevice, device_id);
   initialized_ = false;

@@ -53,7 +53,6 @@
 #include "tools/profiler/profiler.h"
 #include "include/cluster/topology/collective_manager.h"
 #include "tools/profiler/profiling.h"
-#include "tools/error_handler/exit_handler.h"
 #include "include/runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/graph_kernel_builder_manager.h"
 #include "include/runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel_info.h"
 #include "include/runtime/hardware_abstract/data_queue/data_queue_mgr.h"
@@ -148,6 +147,13 @@ void ClearResPart2() {
   MS_LOG(INFO) << "End clear ClusterContext.";
 #endif
 
+  MS_LOG(INFO) << "Start clear snapshot manager...";
+  static auto destroy_snapshot_manager_cb = GET_COMMON_CALLBACK(DestroySnapshotMgr, void);
+  if (destroy_snapshot_manager_cb != nullptr) {
+    destroy_snapshot_manager_cb();
+  }
+  MS_LOG(INFO) << "End clear snapshot manager.";
+
   MS_LOG(INFO) << "Start clear device context...";
   device::DeviceContextManager::GetInstance().ClearDeviceContexts();
   MS_LOG(INFO) << "End clear device context.";
@@ -214,7 +220,10 @@ void ClearResPart3() {
 void ClearSingleton() {
   MS_LOG(INFO) << "Start clear singleton...";
   profiler::Profiler::Clear();
-  tools::TFTWaitSem::GetInstance().Clear();
+  auto destroy_wait_sem_cb = GET_COMMON_CALLBACK(TftDestroyWaitSemaphore, void);
+  if (destroy_wait_sem_cb != nullptr) {
+    destroy_wait_sem_cb();
+  }
 #ifdef ENABLE_AKG
   kernel::GraphKernelBuildManager::Instance().Clear();
 #endif

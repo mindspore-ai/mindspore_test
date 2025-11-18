@@ -25,6 +25,7 @@
 #include <mutex>
 #include "utils/ms_context.h"
 #include "include/utils/utils.h"
+#include "include/utils/callback.h"
 
 namespace mindspore {
 namespace tools {
@@ -138,5 +139,18 @@ bool TFTWaitSem::IsEnable() {
 void TFTWaitSem::StartRecordThreads() { RecordThreads(true); }
 
 void TFTWaitSem::FinishRecordThreads() { RecordThreads(false); }
+
+void TftWaitSemaphore() {
+  if (TFTWaitSem::IsEnable()) {
+    MS_LOG(INFO) << "Start waiting for TFT.";
+    TFTWaitSem::GetInstance().Wait();
+    MS_LOG(INFO) << "End waiting for TFT.";
+  }
+}
+
+void TftDestroyWaitSemaphore() { TFTWaitSem::GetInstance().Clear(); }
+
+REGISTER_COMMON_CALLBACK(TftWaitSemaphore);
+REGISTER_COMMON_CALLBACK(TftDestroyWaitSemaphore);
 }  // namespace tools
 }  // namespace mindspore
