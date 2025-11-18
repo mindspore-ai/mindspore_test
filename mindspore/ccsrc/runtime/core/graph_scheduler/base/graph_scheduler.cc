@@ -960,6 +960,8 @@ void CheckUceBeforeGraphRun(ActorSet *const actor_set) {
   if (UCEException::IsEnableUCE() || UCEException::IsEnableHCCE() || UCEException::GetInstance().enable_arf()) {
     if (UCEException::GetInstance().get_hcce_flag()) {
       MS_LOG(INFO) << "Restart from step after a hcce error occurs.";
+    } else if (UCEException::GetInstance().get_suspect_remote_flag()) {
+      MS_LOG(INFO) << "Restart from step after a SuspectRemote error occurs.";
     } else if (UCEException::GetInstance().get_uce_flag()) {
       MS_LOG(INFO) << "Restart from step after a uce error occurs.";
     } else if (UCEException::GetInstance().get_force_stop_flag()) {
@@ -1047,6 +1049,8 @@ void GraphScheduler::ProcessUceError(ActorSet *const actor_set, OpContext<Kernel
     }
     if (UCEException::GetInstance().get_hcce_flag()) {
       MS_LOG(WARNING) << "There is a HCCE error, reset the actor state.";
+    } else if (UCEException::GetInstance().get_suspect_remote_flag()) {
+      MS_LOG(WARNING) << "There is a SuspectRemote error, reset the actor state.";
     } else if (UCEException::GetInstance().get_uce_flag()) {
       MS_LOG(WARNING) << "There is a UCE error, reset the actor state.";
     }
