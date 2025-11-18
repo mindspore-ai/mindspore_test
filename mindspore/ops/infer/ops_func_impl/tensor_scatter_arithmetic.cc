@@ -36,8 +36,9 @@ namespace mindspore {
 namespace ops {
 namespace {
 bool CheckUpdatesShape(const std::vector<int64_t> &updates_shape, const std::vector<int64_t> &check_shape) {
-  if (std::find(updates_shape.begin(), updates_shape.end(), -2) != updates_shape.end() ||
-      std::find(check_shape.begin(), check_shape.end(), -2) != check_shape.end()) {
+  if (std::find(updates_shape.begin(), updates_shape.end(), abstract::TensorShape::kShapeRankAny) !=
+        updates_shape.end() ||
+      std::find(check_shape.begin(), check_shape.end(), abstract::TensorShape::kShapeRankAny) != check_shape.end()) {
     return true;
   }
   if (updates_shape.size() != check_shape.size()) {

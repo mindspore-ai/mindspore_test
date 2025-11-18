@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "kernel/ascend/aclnn/kernel_mod_impl/customize/gather_nd_aclnn_kernel.h"
+#include "kernel/ascend/aclnn/kernel_mod_impl/customize/gather_nd_ext_aclnn_kernel.h"
 #include <algorithm>
 #include <vector>
 #include <memory>
@@ -25,21 +25,21 @@
 
 namespace mindspore {
 namespace kernel {
-namespace gather_nd {
+namespace gather_nd_ext {
 
-void GatherNdAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
-                                      const std::vector<KernelTensor *> &outputs) {
+void GatherNdExtAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
+                                         const std::vector<KernelTensor *> &outputs) {
   GetWorkspaceForResize(inputs[kIndex0], inputs[kIndex1], negative_index_, outputs[kIndex0]);
 }
 
-bool GatherNdAscend::Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
-                            const std::vector<KernelTensor *> &outputs, void *stream_ptr) {
+bool GatherNdExtAscend::Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
+                               const std::vector<KernelTensor *> &outputs, void *stream_ptr) {
   MS_EXCEPTION_IF_NULL(stream_ptr);
   RunOp(stream_ptr, workspace, inputs[kIndex0], inputs[kIndex1], negative_index_, outputs[kIndex0]);
   return true;
 }
 
-MS_ACLNN_KERNEL_FACTORY_REG(GatherNd, GatherNdAscend);
-}  // namespace gather_nd
+MS_ACLNN_KERNEL_FACTORY_REG(GatherNdExt, GatherNdExtAscend);
+}  // namespace gather_nd_ext
 }  // namespace kernel
 }  // namespace mindspore

@@ -17,7 +17,7 @@
 #include "ops/utils/general_infer_utils.h"
 
 namespace mindspore::ops {
-namespace  {
+namespace {
 std::vector<GeneralInferParam> prepare_params() {
   GeneralInferParamGenerator generator;
   // static
@@ -26,8 +26,8 @@ std::vector<GeneralInferParam> prepare_params() {
                     InferInfoParam{ShapeVector{2, 3, 4}, kNumberTypeInt32}})
     .FeedExpectedOutput({{2, 3, 9, 1, 1, 9}}, {kNumberTypeFloat32});
   generator
-    .FeedInputArgs({InferInfoParam{ShapeVector{2, 3, 4, 5}, kNumberTypeFloat32},
-                    InferInfoParam{ShapeVector{}, kNumberTypeInt32}})
+    .FeedInputArgs(
+      {InferInfoParam{ShapeVector{2, 3, 4, 5}, kNumberTypeFloat32}, InferInfoParam{ShapeVector{}, kNumberTypeInt32}})
     .FeedExpectedOutput({{3, 4, 5}}, {kNumberTypeFloat32});
   // dynamic shape
   generator
@@ -54,7 +54,7 @@ std::vector<GeneralInferParam> prepare_params() {
     .FeedInputArgs({InferInfoParam{ShapeVector{-1, -1, -1, -1, -1, -1}, kNumberTypeFloat32},
                     InferInfoParam{ShapeVector{-1, -1, -1}, kNumberTypeInt32}})
     .FeedExpectedOutput({{-2}}, {kNumberTypeFloat32});
-  //dynamic rank
+  // dynamic rank
   generator
     .FeedInputArgs({InferInfoParam{ShapeVector{5, 6, 7, 8, 9, 1, 1, 9}, kNumberTypeComplex128},
                     InferInfoParam{ShapeVector{-2}, kNumberTypeInt64}})
@@ -65,6 +65,6 @@ std::vector<GeneralInferParam> prepare_params() {
     .FeedExpectedOutput({{-2}}, {kNumberTypeComplex64});
   return generator.Generate();
 }
-}  //namespace
-INSTANTIATE_TEST_CASE_P(GatherNd, GeneralInferTest, testing::ValuesIn(prepare_params()));
+}  // namespace
+INSTANTIATE_TEST_CASE_P(GatherNdExt, GeneralInferTest, testing::ValuesIn(prepare_params()));
 }  // namespace mindspore
