@@ -630,7 +630,8 @@ CNodePtr AllToAllAllGatherBatchMatMulFusion::FindReshapeBeforeBatchMatMul(const 
       return FindReshapeBeforeBatchMatMul(func_graph, user_node);
     }
 
-    if (is_grad_ && IsPrimitiveCNode(user_node, prim::kPrimTranspose)) {
+    if (is_grad_ &&
+        (IsPrimitiveCNode(user_node, prim::kPrimTranspose) || IsPrimitiveCNode(user_node, prim::kPrimTransposeView))) {
       return FindReshapeBeforeBatchMatMul(func_graph, user_node);
     }
   }
@@ -677,7 +678,7 @@ AnfNodePtr AllToAllAllGatherBatchMatMulFusion::Run(const FuncGraphPtr &func_grap
           alltoall_cnode_, {prim::kPrimAllGather},
           {prim::kPrimStridedSlice, prim::kPrimReshape, prim::kPrimSplit, prim::kPrimConcat, prim::kPrimTupleGetItem},
           false, &allgather_user, &alltoall_other_users)) {
-      MS_LOG(DEBUG) << "Cannot find expect AllGather user";
+      MS_LOG(DEBUG) << "Cannot find expected AllGather user.";
       return nullptr;
     }
     // allgather_cnode_ = AllGather
@@ -688,10 +689,11 @@ AnfNodePtr AllToAllAllGatherBatchMatMulFusion::Run(const FuncGraphPtr &func_grap
     // allgather_last_cnode_ = concat
     MS_CHECK_TRUE_RET(allgather_last_cnode_ != nullptr, nullptr);
   } else {
-    if (!GetExpectedUserAndOtherUserList(alltoall_cnode_, {prim::kPrimAllGather},
-                                         {prim::kPrimReshape, prim::kPrimStridedSliceGrad, prim::kPrimTranspose}, false,
-                                         &allgather_user, &alltoall_other_users)) {
-      MS_LOG(DEBUG) << "Cannot find expect AllGather user";
+    if (!GetExpectedUserAndOtherUserList(
+          alltoall_cnode_, {prim::kPrimAllGather},
+          {prim::kPrimReshape, prim::kPrimStridedSliceGrad, prim::kPrimTranspose, prim::kPrimTransposeView}, false,
+          &allgather_user, &alltoall_other_users)) {
+      MS_LOG(DEBUG) << "Cannot find expected AllGather user.";
       return nullptr;
     }
     allgather_cnode_ = allgather_user.first->cast<CNodePtr>();
@@ -713,7 +715,7 @@ AnfNodePtr AllToAllAllGatherBatchMatMulFusion::Run(const FuncGraphPtr &func_grap
   AnfNodeIndexList reshape_before_batch_matmul_user_other_users;
   if (!GetExpectedUserAndOtherUserList(reshape_before_batch_matmul_cnode_, {prim::kPrimBatchMatMul}, {}, true,
                                        &batch_matmul_user, &reshape_before_batch_matmul_user_other_users)) {
-    MS_LOG(DEBUG) << "Cannot find expect BatchMatMul user";
+    MS_LOG(DEBUG) << "Cannot find expected BatchMatMul user.";
     return nullptr;
   }
 
