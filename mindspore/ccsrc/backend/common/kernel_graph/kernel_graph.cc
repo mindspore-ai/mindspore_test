@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "include/backend/kernel_graph.h"
+#include "include/backend/common/kernel_graph/kernel_graph.h"
 #include <algorithm>
 #include <exception>
 #include <queue>

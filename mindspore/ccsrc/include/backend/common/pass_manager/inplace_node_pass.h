@@ -21,7 +21,7 @@
 #include <string>
 #include "ir/func_graph.h"
 #include "include/backend/visible.h"
-#include "include/backend/optimizer/node_pass.h"
+#include "include/backend/common/pass_manager/node_pass.h"
 
 namespace mindspore {
 namespace opt {

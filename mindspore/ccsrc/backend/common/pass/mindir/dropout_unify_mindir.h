@@ -20,7 +20,7 @@
 #include <string>
 #include <vector>
 #include "include/backend/optimizer/optimizer.h"
-#include "include/backend/optimizer/pattern_to_pattern.h"
+#include "include/backend/common/pass_manager/pattern_to_pattern.h"
 #include "include/backend/visible.h"
 
 namespace mindspore {

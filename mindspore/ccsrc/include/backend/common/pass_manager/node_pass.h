@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef MINDSPORE_CCSRC_BACKEND_OPTIMIZER_COMMON_NODE_PASS_H_
-#define MINDSPORE_CCSRC_BACKEND_OPTIMIZER_COMMON_NODE_PASS_H_
+#ifndef MINDSPORE_CCSRC_INCLUDE_BACKEND_COMMON_PASS_MANAGER_NODE_PASS_H_
+#define MINDSPORE_CCSRC_INCLUDE_BACKEND_COMMON_PASS_MANAGER_NODE_PASS_H_
 #include <string>
 #include <memory>
 #include <vector>
@@ -53,4 +53,4 @@ void ModifyOutputAndCallerToMap(const CNodePtr &cnode, const FuncGraphPtr &fg,
 std::string GetCNodeKey(const AnfNodePtr &node);
 }  // namespace opt
 }  // namespace mindspore
-#endif  // MINDSPORE_CCSRC_BACKEND_OPTIMIZER_COMMON_NODE_PASS_H_
+#endif  // MINDSPORE_CCSRC_INCLUDE_BACKEND_COMMON_PASS_MANAGER_NODE_PASS_H_

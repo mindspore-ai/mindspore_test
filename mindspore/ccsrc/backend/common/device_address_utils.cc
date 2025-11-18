@@ -33,7 +33,7 @@
 #include "ir/graph_utils.h"
 #include "device_address/device_address.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_info.h"
-#include "include/backend/py_execute_utils.h"
+#include "include/backend/common/kernel_graph/py_execute_utils.h"
 #include "include/utils/anfalgo.h"
 #include "include/utils/callback.h"
 #include "include/backend/anf_runtime_algorithm.h"

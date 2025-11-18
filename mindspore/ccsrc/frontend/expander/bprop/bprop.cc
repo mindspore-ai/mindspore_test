@@ -19,7 +19,7 @@
 #include <unordered_map>
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "mindspore/ccsrc/include/utils/expander/infer.h"
-#include "include/backend/kernel_graph.h"
+#include "include/backend/common/kernel_graph/kernel_graph.h"
 #include "ir/graph_utils.h"
 #include "mindspore/ccsrc/utils/ir_dump/anf_ir_dump.h"
 #include "frontend/expander/utils.h"

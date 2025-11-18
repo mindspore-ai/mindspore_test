@@ -20,7 +20,7 @@
 #include <memory>
 #include <map>
 #include "include/backend/optimizer/optimizer.h"
-#include "include/backend/optimizer/op_adaptation_info_factory.h"
+#include "include/backend/common/pass_manager/op_adaptation_info_factory.h"
 
 namespace mindspore {
 namespace opt {

@@ -23,7 +23,7 @@
 #include <set>
 #include <unordered_map>
 
-#include "include/backend/kernel_graph.h"
+#include "include/backend/common/kernel_graph/kernel_graph.h"
 #include "include/utils/contract.h"
 
 namespace mindspore {

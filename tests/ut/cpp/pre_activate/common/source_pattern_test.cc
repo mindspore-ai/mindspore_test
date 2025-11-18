@@ -20,7 +20,7 @@
 #include "mindspore/ops/op_def/math_op_name.h"
 #define private public
 #define protected public
-#include "include/backend/optimizer/pattern_to_pattern.h"
+#include "include/backend/common/pass_manager/pattern_to_pattern.h"
 #undef private
 #undef protected
 

@@ -17,7 +17,7 @@
 #include "common/common_test.h"
 #include "mindspore/ops/op_def/math_ops.h"
 #include "frontend/operator/ops.h"
-#include "include/backend/kernel_graph.h"
+#include "include/backend/common/kernel_graph/kernel_graph.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/utils/utils.h"
 #include "include/utils/anfalgo.h"

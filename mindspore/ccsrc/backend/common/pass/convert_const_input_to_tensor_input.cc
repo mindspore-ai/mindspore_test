@@ -19,7 +19,7 @@
 #include <vector>
 #include <string>
 #include "include/backend/anf_runtime_algorithm.h"
-#include "include/backend/kernel_graph.h"
+#include "include/backend/common/kernel_graph/kernel_graph.h"
 #include "include/backend/optimizer/helper.h"
 #include "include/utils/anfalgo.h"
 #include "mindspore/ops/op_def/array_op_name.h"

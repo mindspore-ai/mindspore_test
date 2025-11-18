@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CCSRC_INCLUDE_BACKEND_PY_EXECUTE_UTILS_H
-#define MINDSPORE_CCSRC_INCLUDE_BACKEND_PY_EXECUTE_UTILS_H
+#ifndef MINDSPORE_CCSRC_INCLUDE_BACKEND_COMMON_KERNEL_GRAPH_PY_EXECUTE_UTILS_H
+#define MINDSPORE_CCSRC_INCLUDE_BACKEND_COMMON_KERNEL_GRAPH_PY_EXECUTE_UTILS_H
 
 #include "include/runtime/hardware_abstract/kernel_base/kernel_tensor.h"
 #include "include/utils/python_adapter.h"
@@ -33,4 +33,4 @@ void UserDataToRawMemory(KernelTensor *const kernel_tensor);
 ValuePtr GetValueFromUserData(const UserDataPtr &user_data);
 }  // namespace pyexecute
 }  // namespace mindspore
-#endif  // MINDSPORE_CCSRC_INCLUDE_BACKEND_PY_EXECUTE_UTILS_H
+#endif  // MINDSPORE_CCSRC_INCLUDE_BACKEND_COMMON_KERNEL_GRAPH_PY_EXECUTE_UTILS_H

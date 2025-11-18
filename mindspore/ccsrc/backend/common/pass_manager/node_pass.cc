@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "include/backend/optimizer/node_pass.h"
+#include "include/backend/common/pass_manager/node_pass.h"
 
 #include <deque>
 #include <utility>
@@ -28,7 +28,7 @@
 #include "ir/manager.h"
 #include "utils/hash_map.h"
 #include "utils/trace_info.h"
-#include "include/backend/kernel_graph.h"
+#include "include/backend/common/kernel_graph/kernel_graph.h"
 #include "include/utils/anfalgo.h"
 #include "ops_utils/op_constants.h"
 #include "include/utils/utils.h"

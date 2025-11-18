@@ -26,7 +26,7 @@
 
 #include "device_address/device_address.h"
 #include "google/protobuf/repeated_field.h"
-#include "include/backend/kernel_graph.h"
+#include "include/backend/common/kernel_graph/kernel_graph.h"
 #include "include/runtime/hardware_abstract/device_context/device_context.h"
 #include "tools/data_dump/debug_services.h"
 #include "tools/tensor_data.h"

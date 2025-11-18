@@ -33,7 +33,7 @@
 "mindspore/mindspore/ccsrc/backend/ge_backend/graph_ir/convert.cc"                                           "build/include_what_you_use"
 "mindspore/mindspore/ops/kernel/ascend/aicpu/aicpu_ops/gather_grad_kernels.cc"      "build/include"
 "mindspore/mindspore/ops/kernel/ascend/aicpu/aicpu_ops/drop_out_gen_mask_kernels.cc"      "build/include"
-"mindspore/mindspore/ccsrc/include/backend/optimizer/op_adaptation_info_factory.h"                   "runtime/explicit"
+"mindspore/mindspore/ccsrc/include/backend/common/pass_manager/op_adaptation_info_factory.h"                   "runtime/explicit"
 "mindspore/mindspore/ops/kernel/gpu/cuda_impl/cuda_ops/concatv2_impl.cu"            "runtime/int"
 "mindspore/mindspore/ops/kernel/gpu/cuda/sequence/sequence_addn_gpu_kernel.cc"          "whitespace/indent"
 "mindspore/mindspore/ops/kernel/cpu/native/sequence/sequence_addn_cpu_kernel.cc"          "whitespace/indent"

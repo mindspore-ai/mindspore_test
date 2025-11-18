@@ -47,7 +47,7 @@
 #include "mindspore/ccsrc/utils/ir_dump/anf_ir_dump.h"
 #endif
 
-#include "include/backend/optimizer/graph_optimizer.h"
+#include "include/backend/common/pass_manager/graph_optimizer.h"
 #if defined(__linux__) && defined(WITH_BACKEND)
 #include "include/cluster/topology/ps_context.h"
 #endif

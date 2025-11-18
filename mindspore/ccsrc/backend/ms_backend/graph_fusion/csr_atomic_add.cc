@@ -18,7 +18,7 @@
 #include <memory>
 #include <vector>
 #include "backend/ms_backend/graph_fusion/graph_kernel_helper.h"
-#include "include/backend/kernel_graph.h"
+#include "include/backend/common/kernel_graph/kernel_graph.h"
 #include "include/utils/utils.h"
 #include "ir/graph_utils.h"
 #include "mindspore/ops/op_def/math_ops.h"

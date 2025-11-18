@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef MINDSPORE_CCSRC_BACKEND_OPTIMIZER_COMMON_PASS_MANAGER_H_
-#define MINDSPORE_CCSRC_BACKEND_OPTIMIZER_COMMON_PASS_MANAGER_H_
+#ifndef MINDSPORE_CCSRC_INCLUDE_BACKEND_COMMON_PASS_MANAGER_PASS_MANAGER_H_
+#define MINDSPORE_CCSRC_INCLUDE_BACKEND_COMMON_PASS_MANAGER_PASS_MANAGER_H_
 
 #include <utility>
 #include <vector>
@@ -23,7 +23,7 @@
 #include <map>
 
 #include "include/backend/optimizer/pass.h"
-#include "include/backend/optimizer/node_pass.h"
+#include "include/backend/common/pass_manager/node_pass.h"
 #include "include/backend/visible.h"
 
 namespace mindspore {
@@ -67,4 +67,4 @@ using PassManagerPtr = std::shared_ptr<PassManager>;
 }  // namespace opt
 }  // namespace mindspore
 
-#endif  // MINDSPORE_CCSRC_BACKEND_OPTIMIZER_COMMON_PASS_MANAGER_H_
+#endif  // MINDSPORE_CCSRC_INCLUDE_BACKEND_COMMON_PASS_MANAGER_PASS_MANAGER_H_

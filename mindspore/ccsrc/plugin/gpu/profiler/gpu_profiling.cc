@@ -27,7 +27,7 @@
 #include <ctime>
 #include <thread>
 #include <sstream>
-#include "include/backend/kernel_graph.h"
+#include "include/backend/common/kernel_graph/kernel_graph.h"
 #include "plugin/gpu/profiler/cupti_interface.h"
 #include "plugin/gpu/profiler/gpu_data_saver.h"
 #include "include/utils/pybind_api/api_register.h"

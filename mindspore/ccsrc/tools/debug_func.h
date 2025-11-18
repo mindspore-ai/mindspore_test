@@ -18,7 +18,7 @@
 #define MINDSPORE_CCSRC_TOOLS_DEBUG_FUNC_H_
 
 #include <vector>
-#include "include/backend/kernel_graph.h"
+#include "include/backend/common/kernel_graph/kernel_graph.h"
 #include "include/utils/anfalgo.h"
 #include "include/runtime/hardware_abstract/device_context/device_context.h"
 

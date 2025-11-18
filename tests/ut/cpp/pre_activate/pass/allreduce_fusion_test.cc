@@ -23,7 +23,7 @@
 #include "backend/common/pass/communication_op_fusion.h"
 #include "include/backend/optimizer/optimizer.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_info.h"
-#include "include/backend/optimizer/pass_manager.h"
+#include "include/backend/common/pass_manager/pass_manager.h"
 #include "kernel/kernel_build_info.h"
 #include "include/utils/utils.h"
 #include "utils/ms_context.h"

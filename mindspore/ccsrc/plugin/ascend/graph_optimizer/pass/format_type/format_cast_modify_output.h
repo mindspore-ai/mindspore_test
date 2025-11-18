@@ -18,7 +18,7 @@
 #include <string>
 #include <vector>
 #include "include/backend/optimizer/optimizer.h"
-#include "include/backend/optimizer/pattern_engine.h"
+#include "include/backend/common/pass_manager/pattern_engine.h"
 
 namespace mindspore {
 namespace opt {

@@ -46,7 +46,7 @@
 #include "include/runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel_flags.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_info.h"
 #include "include/backend/optimizer/optimizer.h"
-#include "include/backend/optimizer/pass_manager.h"
+#include "include/backend/common/pass_manager/pass_manager.h"
 #include "backend/common/pass_manager/common_backend_optimization.h"
 #include "backend/common/pass/insert_type_transform_op.h"
 #include "backend/common/pass/flatten_value_sequence_in_pyexecute.h"

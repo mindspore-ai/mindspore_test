@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "include/backend/optimizer/op_adaptation_info_factory.h"
+#include "include/backend/common/pass_manager/op_adaptation_info_factory.h"
 
 #include "include/runtime/hardware_abstract/kernel_base/oplib/oplib.h"
 #include "utils/log_adapter.h"

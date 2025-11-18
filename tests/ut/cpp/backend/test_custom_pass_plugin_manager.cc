@@ -26,7 +26,7 @@
 #define protected public
 #define private public
 #include "backend/common/custom_pass/custom_pass_plugin.h"
-#include "include/backend/optimizer/graph_optimizer.h"
+#include "include/backend/common/pass_manager/graph_optimizer.h"
 #undef private
 #undef protected
 

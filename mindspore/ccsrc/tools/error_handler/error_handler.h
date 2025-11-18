@@ -21,7 +21,7 @@
 #include <string>
 #include <vector>
 #include "include/backend/visible.h"
-#include "include/backend/kernel_graph.h"
+#include "include/backend/common/kernel_graph/kernel_graph.h"
 #include "utils/ms_context.h"
 #include "ir/tensor.h"
 

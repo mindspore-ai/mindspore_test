@@ -31,7 +31,7 @@
 #include "include/runtime/hardware_abstract/kernel_base/kernel.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/utils/anfalgo.h"
-#include "include/backend/kernel_graph.h"
+#include "include/backend/common/kernel_graph/kernel_graph.h"
 #include "utils/log_adapter.h"
 #include "ir/tensor.h"
 #include "include/runtime/utils/runtime_conf/runtime_env.h"

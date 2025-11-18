@@ -22,7 +22,7 @@
 #include "common/py_func_graph_fetcher.h"
 #include "plugin/cpu/graph_optimizer/pass/train/insert_cast_to_pyexecute.h"
 #include "include/backend/optimizer/optimizer.h"
-#include "include/backend/optimizer/pass_manager.h"
+#include "include/backend/common/pass_manager/pass_manager.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_info.h"
 #include "kernel/kernel_build_info.h"
 #include "include/utils/utils.h"

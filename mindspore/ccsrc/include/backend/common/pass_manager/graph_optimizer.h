@@ -13,12 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef MINDSPORE_CCSRC_BACKEND_COMMON_OPTIMIZER_GRAPH_OPTIMIZER_H_
-#define MINDSPORE_CCSRC_BACKEND_COMMON_OPTIMIZER_GRAPH_OPTIMIZER_H_
+#ifndef MINDSPORE_CCSRC_INCLUDE_BACKEND_COMMON_PASS_MANAGER_GRAPH_OPTIMIZER_H_
+#define MINDSPORE_CCSRC_INCLUDE_BACKEND_COMMON_PASS_MANAGER_GRAPH_OPTIMIZER_H_
 
 #include <string>
 #include <vector>
-#include "include/backend/optimizer/pass_manager.h"
+#include "include/backend/common/pass_manager/pass_manager.h"
 #include "include/backend/visible.h"
 
 namespace mindspore {
@@ -39,4 +39,4 @@ class BACKEND_COMMON_EXPORT GraphOptimizer {
 }  // namespace opt
 }  // namespace mindspore
 
-#endif  // MINDSPORE_CCSRC_BACKEND_COMMON_OPTIMIZER_GRAPH_OPTIMIZER_H_
+#endif  // MINDSPORE_CCSRC_INCLUDE_BACKEND_COMMON_PASS_MANAGER_GRAPH_OPTIMIZER_H_

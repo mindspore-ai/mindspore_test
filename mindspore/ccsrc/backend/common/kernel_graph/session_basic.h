@@ -24,7 +24,7 @@
 #include <set>
 
 #include "backend/common/kernel_graph/kernel_graph_mgr.h"
-#include "include/backend/kernel_graph.h"
+#include "include/backend/common/kernel_graph/kernel_graph.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/utils/anfalgo.h"
 #include "include/utils/tensor_future.h"

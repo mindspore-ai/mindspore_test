@@ -38,7 +38,7 @@
 #include "include/runtime/utils/runtime_conf/runtime_env.h"
 #include "tools/profiler/profiling.h"
 #include "include/backend/anf_runtime_algorithm.h"
-#include "include/backend/optimizer/graph_optimizer.h"
+#include "include/backend/common/pass_manager/graph_optimizer.h"
 #include "plugin/ascend/graph_optimizer/pass/backend_common_unify_mindir.h"
 #include "plugin/ascend/graph_optimizer/pass/enhancer/eliminate_maketuple_getitem.h"
 #include "plugin/ascend/graph_optimizer/pass/format_type/deal_ref_output.h"

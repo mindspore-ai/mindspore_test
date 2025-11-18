@@ -40,7 +40,7 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "mindspore/ccsrc/include/backend/optimizer/helper.h"
-#include "mindspore/ccsrc/include/backend/optimizer/op_adaptation_info_factory.h"
+#include "mindspore/ccsrc/include/backend/common/pass_manager/op_adaptation_info_factory.h"
 
 namespace mindspore {
 namespace kernel {

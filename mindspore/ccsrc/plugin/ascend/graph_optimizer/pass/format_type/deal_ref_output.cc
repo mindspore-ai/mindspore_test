@@ -27,7 +27,7 @@
 #include "include/runtime/hardware_abstract/kernel_base/kernel_info.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/utils/anfalgo.h"
-#include "include/backend/kernel_graph.h"
+#include "include/backend/common/kernel_graph/kernel_graph.h"
 #include "include/backend/optimizer/helper.h"
 #include "kernel/ascend/acl_ir/ge_adapter_info.h"
 #include "kernel/ascend/aclop/kernel_mod_impl/acl_kernel_build.h"

@@ -19,7 +19,7 @@
 
 #include "include/backend/optimizer/helper.h"
 #include "include/backend/optimizer/optimizer.h"
-#include "include/backend/optimizer/pass_manager.h"
+#include "include/backend/common/pass_manager/pass_manager.h"
 #include "backend/common/pass/getitem_tuple.h"
 #include "backend/common/pass/insert_type_transform_op.h"
 #include "backend/common/pass/communication_op_fusion.h"

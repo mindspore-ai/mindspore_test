@@ -27,7 +27,7 @@
 #include "ir/func_graph.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/utils/anfalgo.h"
-#include "include/backend/kernel_graph.h"
+#include "include/backend/common/kernel_graph/kernel_graph.h"
 #include "include/runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/graph_kernel_json_generator.h"
 #include <nlohmann/json.hpp>
 #include "backend/ms_backend/graph_fusion/model/lite_graph.h"

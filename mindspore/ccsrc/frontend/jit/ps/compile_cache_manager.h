@@ -20,7 +20,7 @@
 #include <string>
 #include <memory>
 #include "pybind11/pybind11.h"
-#include "include/backend/kernel_graph.h"
+#include "include/backend/common/kernel_graph/kernel_graph.h"
 #include "ir/func_graph.h"
 #include "load_mindir/load_model.h"
 

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "include/backend/py_execute_utils.h"
+#include "include/backend/common/kernel_graph/py_execute_utils.h"
 
 #include "include/utils/anfalgo.h"
 #include "include/utils/fallback.h"

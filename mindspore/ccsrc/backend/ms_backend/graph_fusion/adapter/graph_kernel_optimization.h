@@ -17,9 +17,9 @@
 #define MINDSPORE_CCSRC_BACKEND_OPTIMIZER_GRAPH_KERNEL_ADAPTER_GRAPH_KERNEL_OPTIMIZATION_H_
 
 #include <vector>
-#include "include/backend/kernel_graph.h"
+#include "include/backend/common/kernel_graph/kernel_graph.h"
 #include "include/backend/optimizer/optimizer.h"
-#include "include/backend/optimizer/pass_manager.h"
+#include "include/backend/common/pass_manager/pass_manager.h"
 
 namespace mindspore::graphkernel {
 using opt::PassManagerPtr;

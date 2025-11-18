@@ -35,7 +35,7 @@
 #include "op_def/ascend_op_name.h"
 #include "utils/anf_utils.h"
 #include "include/backend/anf_runtime_algorithm.h"
-#include "include/backend/kernel_graph.h"
+#include "include/backend/common/kernel_graph/kernel_graph.h"
 #include "include/backend/optimizer/helper.h"
 #include "include/utils/anfalgo.h"
 #include "include/utils/utils.h"

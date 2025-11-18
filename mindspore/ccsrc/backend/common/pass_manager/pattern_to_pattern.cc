@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "include/backend/optimizer/pattern_to_pattern.h"
+#include "include/backend/common/pass_manager/pattern_to_pattern.h"
 #include <algorithm>
 #include <set>
 #include <queue>

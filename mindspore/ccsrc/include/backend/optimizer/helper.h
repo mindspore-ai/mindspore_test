@@ -23,9 +23,9 @@
 #include <set>
 #include "base/base.h"
 #include "ir/func_graph.h"
-#include "include/backend/kernel_graph.h"
+#include "include/backend/common/kernel_graph/kernel_graph.h"
 #include "utils/ms_utils.h"
-#include "include/backend/optimizer/pattern_engine.h"
+#include "include/backend/common/pass_manager/pattern_engine.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_build_info.h"
 #include "include/backend/visible.h"
 
