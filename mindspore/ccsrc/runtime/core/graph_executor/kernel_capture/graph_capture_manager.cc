@@ -90,6 +90,7 @@ bool GraphCaptureManager::FindSupportCaptureKernelPositions(const std::vector<Ke
   if (!capture_kernel_range_positions_.empty()) {
     MS_LOG(EXCEPTION) << "GraphCaptureManager has already initialized.";
   }
+  init_ = true;
   size_t start = 0;
   size_t end = 0;
   bool find_kernel_can_capture = false;
