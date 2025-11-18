@@ -12,12 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+
+"""test switch layer."""
+
 import pytest
 import numpy as np
 from tests.mark_utils import arg_mark
 
 import mindspore as ms
-import mindspore.context as context
+from mindspore import context
 from mindspore import Tensor, nn, jit
 from mindspore.common import dtype as mstype
 from mindspore.ops.composite import GradOperation
@@ -39,7 +42,7 @@ class Grad(nn.Cell):
 
 class CaseNet(nn.Cell):
     def __init__(self):
-        super(CaseNet, self).__init__()
+        super().__init__()
         self.conv = nn.Conv2d(1, 1, 3)
         self.relu = nn.ReLU()
         self.relu1 = nn.ReLU()

@@ -12,8 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+
+"""test inplace augassign op."""
+
 import pytest
-import mindspore.nn as nn
+from mindspore import nn
 from mindspore import Tensor, context
 from mindspore.common.api import _cell_graph_executor
 from mindspore.ops import composite as C
@@ -29,7 +32,7 @@ def compile_net(net, x):
 
 class NetWithLoss(nn.Cell):
     def __init__(self, network):
-        super(NetWithLoss, self).__init__()
+        super().__init__()
         self.loss = VirtualLoss()
         self.network = network
 
@@ -40,7 +43,7 @@ class NetWithLoss(nn.Cell):
 
 class GradWrap(nn.Cell):
     def __init__(self, network):
-        super(GradWrap, self).__init__()
+        super().__init__()
         self.network = network
 
     def construct(self, x):

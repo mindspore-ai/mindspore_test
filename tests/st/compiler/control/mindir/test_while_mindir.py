@@ -11,11 +11,14 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+"""test while mindir."""
+
 import os
 import numpy as np
 from tests.mark_utils import arg_mark
 
-import mindspore.nn as nn
+from mindspore import nn
 from mindspore import context, jit
 from mindspore.common.tensor import Tensor
 from mindspore.train.serialization import export, load

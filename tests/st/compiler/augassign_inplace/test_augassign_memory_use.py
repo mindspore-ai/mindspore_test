@@ -12,6 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+
+"""test augassign memory use."""
+
 import os
 import re
 import subprocess
@@ -39,10 +42,11 @@ def run_testcase(testcase_name):
         os.remove(log_filename)
     assert not os.path.exists(log_filename)
 
-    cmd = (f"export GLOG_v=1; export MS_DEV_RUNTIME_CONF=\"memory_statistic:True\"; pytest -s "
-           f"test_augassign_memory_use.py::" + testcase_name + " > " + log_filename + " 2>&1")
+    cmd = ("export GLOG_v=1; export MS_DEV_RUNTIME_CONF=\"memory_statistic:True\"; pytest -s "
+           "test_augassign_memory_use.py::" + testcase_name + " > " + log_filename + " 2>&1")
     subprocess.check_output(cmd, shell=True)
     assert os.path.exists(log_filename)
+    # pylint: disable=W1514
     with open(log_filename, "r") as f:
         data = f.read()
     mem_uses = re.findall(match_dyn_mem, data)

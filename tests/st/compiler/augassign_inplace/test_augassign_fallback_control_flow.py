@@ -12,11 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+
+"""test augassign fallback control flow."""
+
 import pytest
 import numpy as np
-import mindspore.nn as nn
+from mindspore import nn
 import mindspore as ms
-import mindspore.ops as ops
+from mindspore import ops
 from mindspore.common.tensor import Tensor
 from mindspore.ops.functional import grad
 from mindspore.ops import operations as P

@@ -17,8 +17,8 @@
 
 from __future__ import absolute_import
 import mindspore as ms
-import mindspore.nn as nn
-import mindspore.ops as ops
+from mindspore import nn
+from mindspore import ops
 from mindspore.ops.primitive import Primitive
 from mindspore.ops import operations as P
 from mindspore.ops.composite.multitype_ops.zeros_like_impl import zeros_like

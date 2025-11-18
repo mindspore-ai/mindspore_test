@@ -13,6 +13,8 @@
 # limitations under the License.
 # ============================================================================
 
+"""test tensor inplace grad."""
+
 import pytest
 import numpy as np
 import torch
@@ -32,7 +34,7 @@ context.set_context(mode=ms.GRAPH_MODE)
 
 class GradOfFirstInput(nn.Cell):
     def __init__(self, net):
-        super(GradOfFirstInput, self).__init__()
+        super().__init__()
         self.net = net
         self.grad_op = ops.GradOperation()
 
@@ -42,7 +44,7 @@ class GradOfFirstInput(nn.Cell):
 
 class GradOfAllInputsAndParams(nn.Cell):
     def __init__(self, net):
-        super(GradOfAllInputsAndParams, self).__init__()
+        super().__init__()
         self.net = net
         self.params = ParameterTuple(net.trainable_params())
         self.grad_op = ops.GradOperation(get_all=True, get_by_list=True)
@@ -248,7 +250,7 @@ def test_tensor_inplace_add_grad_all_inputs_and_param():
     """
     class Net7(nn.Cell):
         def __init__(self):
-            super(Net7, self).__init__()
+            super().__init__()
             self.param1 = Parameter(Tensor([1], dtype=mstype.float32), name="param1")
             self.param2 = Parameter(Tensor([1], dtype=mstype.float32), name="param2")
 
@@ -286,7 +288,7 @@ def test_tensor_inplace_scatter_grad():
     @test_utils.run_with_cell
     def scatter_val_with_grad(x, dim, index, value, reduce):
         return (x * True).scatter_(dim=dim, index=index, value=value,
-                                   **(dict(reduce=reduce) if reduce != 'none' else {}))
+                                   **({"reduce": reduce} if reduce != 'none' else {}))
     ## inplace backward
     context.set_context(jit_level='O0')
     slf = Tensor([[2] * 4] * 3, dtype=ms.float32)
@@ -449,7 +451,7 @@ def test_inplace_backward_param_assign():
 
     class Net(nn.Cell):
         def __init__(self):
-            super(Net, self).__init__()
+            super().__init__()
             self.param_a = Parameter(Tensor(2, dtype=mstype.int32), name="a")
             self.param_b = Parameter(Tensor(1, dtype=mstype.int32), name="b")
 

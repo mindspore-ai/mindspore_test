@@ -12,8 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+
+"""test aoe."""
+
 import os
-import mindspore.context as context
+from mindspore import context
 import mindspore as ms
 from mindspore import Tensor, nn
 from mindspore.common import dtype as mstype
@@ -64,5 +67,5 @@ def test_aoe():
     Expectation: success.
     """
     aoe_online()
-    ret = os.system(f"ls aoe_result_opat_*.json")
+    ret = os.system("ls aoe_result_opat_*.json")
     assert ret == 0

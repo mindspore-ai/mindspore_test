@@ -13,8 +13,10 @@
 # limitations under the License.
 # ============================================================================
 
+"""test augassign add."""
+
 import pytest
-import mindspore.nn as nn
+from mindspore import nn
 from mindspore import context, Tensor, jit, ParameterTuple
 from mindspore import ops
 from tests.mark_utils import arg_mark
@@ -22,7 +24,7 @@ from tests.mark_utils import arg_mark
 
 class GradOfFirstInput(nn.Cell):
     def __init__(self, net):
-        super(GradOfFirstInput, self).__init__()
+        super().__init__()
         self.net = net
         self.grad_op = ops.GradOperation()
 
@@ -33,7 +35,7 @@ class GradOfFirstInput(nn.Cell):
 
 class GradOfAllInputs(nn.Cell):
     def __init__(self, net):
-        super(GradOfAllInputs, self).__init__()
+        super().__init__()
         self.net = net
         self.grad_op = ops.GradOperation(get_all=True)
 
@@ -44,7 +46,7 @@ class GradOfAllInputs(nn.Cell):
 
 class GradOfAllInputsAndParams(nn.Cell):
     def __init__(self, net):
-        super(GradOfAllInputsAndParams, self).__init__()
+        super().__init__()
         self.net = net
         self.params = ParameterTuple(net.trainable_params())
         self.grad_op = ops.GradOperation(get_all=True, get_by_list=True)

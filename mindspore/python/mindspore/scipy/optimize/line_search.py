@@ -185,7 +185,7 @@ class LineSearch(nn.Cell):
 
     def __init__(self, func, jac):
         """Initialize LineSearch."""
-        super(LineSearch, self).__init__()
+        super().__init__()
         self.func = func
         self.jac = jac
 

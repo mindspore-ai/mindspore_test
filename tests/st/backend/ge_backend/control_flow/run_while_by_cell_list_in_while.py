@@ -12,7 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-import mindspore.context as context
+
+"""run while by cell list in while script."""
+
+from mindspore import context
 from mindspore import Tensor, nn
 from mindspore.common import dtype as mstype
 

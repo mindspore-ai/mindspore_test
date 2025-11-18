@@ -11,9 +11,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+"""check mindir version script."""
+
 import os
 import numpy as np
-import mindspore.nn as nn
+from mindspore import nn
 from mindspore import jit
 from mindspore.common.tensor import Tensor
 from mindspore.ops import operations as P
@@ -22,7 +25,7 @@ from mindspore.train.serialization import export, load
 
 class Net(nn.Cell):
     def __init__(self):
-        super(Net, self).__init__()
+        super().__init__()
         self.batch_size = 32
         self.reshape = P.Reshape()
 

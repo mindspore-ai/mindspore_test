@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""test control flow for mindrt."""
+
 import numpy as np
 from tests.mark_utils import arg_mark
 import mindspore

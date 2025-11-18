@@ -13,9 +13,11 @@
 # limitations under the License.
 # ============================================================================
 
+"""test augassign backend."""
+
 import numpy as np
 import mindspore as ms
-import mindspore.nn as nn
+from mindspore import nn
 from mindspore import Tensor, jit
 from mindspore import Parameter
 from mindspore.common import dtype as mstype

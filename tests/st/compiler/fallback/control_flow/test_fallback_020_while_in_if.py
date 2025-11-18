@@ -148,7 +148,7 @@ def test_while_param_in_if():
 
     class Net(nn.Cell):
         def __init__(self):
-            super(Net, self).__init__()
+            super().__init__()
             self.param_a = Parameter(Tensor(1, ms.float32), name="name_a")
 
         def construct(self):
