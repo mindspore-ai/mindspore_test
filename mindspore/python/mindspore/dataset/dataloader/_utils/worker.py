@@ -26,100 +26,15 @@ import mindspore
 import mindspore._c_dataengine as cde
 from mindspore import log as logger
 from . import WORKER_TIME_OUT
+from .bit_generator import seed_sequence
 
-worker_info_local = None
+WORKER_INFO_LOCAL = None
 
 
 class ResumeIterationFlag:
     """
     Flag for resume iteration.
     """
-
-
-# pylint: disable=header-copyright
-# The function `_generate_state` is adapted from `numpy.random.SeedSequence`
-# from https://github.com/numpy/numpy/blob/main/numpy/random/bit_generator.pyx
-# It's MIT licensed, here is the copyright:
-
-# Copyright (c) 2015 Melissa E. O'Neill
-# Copyright (c) 2019 NumPy Developers
-#
-# Permission is hereby granted, free of charge, to any person obtaining a copy
-# of this software and associated documentation files (the "Software"), to deal
-# in the Software without restriction, including without limitation the rights
-# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-# copies of the Software, and to permit persons to whom the Software is
-# furnished to do so, subject to the following conditions:
-#
-# The above copyright notice and this permission notice shall be included in
-# all copies or substantial portions of the Software.
-#
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-# SOFTWARE.
-
-
-# This function generates an array of int32 as the seed for
-# `numpy.random`, in order to prevent state collision due to same
-# seed and algorithm for `numpy.random` and `random` modules.
-INIT_A = 0x43B0D7E5
-MULT_A = 0x931E8875
-INIT_B = 0x8B51F9DD
-MULT_B = 0x58F38DED
-MIX_MULT_L = 0xCA01F9DD
-MIX_MULT_R = 0x4973F715
-XSHIFT = np.dtype(np.uint32).itemsize * 8 // 2
-MASK32 = 0xFFFFFFFF
-
-
-def _generate_state(base_seed, worker_id):
-    """
-    Generate the state for the random number generator.
-    """
-    entropy = [worker_id, base_seed & MASK32, base_seed >> 32, 0]
-    pool = [0] * 4
-
-    hash_const_a = INIT_A
-
-    def hashmix(value):
-        nonlocal hash_const_a
-        value = (value ^ hash_const_a) & MASK32
-        hash_const_a = (hash_const_a * MULT_A) & MASK32
-        value = (value * hash_const_a) & MASK32
-        value = (value ^ (value >> XSHIFT)) & MASK32
-        return value
-
-    def mix(x, y):
-        result_x = (MIX_MULT_L * x) & MASK32
-        result_y = (MIX_MULT_R * y) & MASK32
-        result = (result_x - result_y) & MASK32
-        result = (result ^ (result >> XSHIFT)) & MASK32
-        return result
-
-    # Add in the entropy to the pool.
-    for i, _ in enumerate(pool):
-        pool[i] = hashmix(entropy[i])
-
-    # Mix all bits together so late bits can affect earlier bits.
-    for i_src, _ in enumerate(pool):
-        for i_dst, _ in enumerate(pool):
-            if i_src != i_dst:
-                pool[i_dst] = mix(pool[i_dst], hashmix(pool[i_src]))
-
-    hash_const_b = INIT_B
-    state = []
-    for i_dst in range(4):
-        data_val = pool[i_dst]
-        data_val = (data_val ^ hash_const_b) & MASK32
-        hash_const_b = (hash_const_b * MULT_B) & MASK32
-        data_val = (data_val * hash_const_b) & MASK32
-        data_val = (data_val ^ (data_val >> XSHIFT)) & MASK32
-        state.append(data_val)
-    return state
 
 
 class WorkerInfo:
@@ -210,16 +125,7 @@ class ParentProcessMonitor:
 
 
 def data_worker_fn(
-    dataset,
-    fetcher,
-    num_workers,
-    worker_id,
-    index_queue,
-    data_queue,
-    worker_done,
-    worker_init_fn,
-    base_seed,
-    persistent_workers,
+    dataset, fetcher, num_workers, worker_id, index_queue, data_queue, worker_done, worker_init_fn, base_seed
 ):
     """
     Data worker function.
@@ -234,10 +140,10 @@ def data_worker_fn(
             random.seed(worker_seed)
             mindspore.set_seed(worker_seed & 0xFFFFFFFF)  # set seed for mindspore.ops and mindspore.dataset
             mindspore.manual_seed(worker_seed)  # set seed for mindspore.mint
-            np.random.seed(_generate_state(base_seed, worker_id))
+            np.random.seed(seed_sequence(base_seed, worker_id))
 
-            global worker_info_local
-            worker_info_local = WorkerInfo(id=worker_id, num_workers=num_workers, seed=worker_seed, dataset=dataset)
+            global WORKER_INFO_LOCAL
+            WORKER_INFO_LOCAL = WorkerInfo(id=worker_id, num_workers=num_workers, seed=worker_seed, dataset=dataset)
 
             if worker_init_fn is not None:
                 worker_init_fn(worker_id)
@@ -259,7 +165,7 @@ def data_worker_fn(
                 fetcher.reset()
                 continue
             if index_item is None:
-                if not worker_done.is_set():
+                if not worker_done.is_set() and not iteration_finished:
                     raise RuntimeError(
                         f"DataLoader worker {worker_id} (pid: {os.getpid()}) got None from index queue "
                         f"before quit flag is set."
@@ -273,9 +179,9 @@ def data_worker_fn(
                 data = fetcher.fetch(data_index)
             except StopIteration:
                 iteration_finished = True
+                # use None as a flag to tell the main process the iteration is finished
                 data_queue.put((order_index, None))
-                if not persistent_workers:
-                    break
+                # continue here to wait for the main process to quit the worker
                 continue
             except Exception:  # pylint: disable=W0703
                 data = WorkerException(worker_id)
@@ -329,4 +235,4 @@ def get_worker_info():
         >>> print(list(dataloader))
         [Tensor(shape=[1], dtype=Int64, value= [0]), Tensor(shape=[1], dtype=Int64, value= [1])]
     """
-    return worker_info_local
+    return WORKER_INFO_LOCAL
