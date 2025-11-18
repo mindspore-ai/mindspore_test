@@ -34,7 +34,7 @@ from mindspore.common.tensor import Tensor
 from mindspore.train.metrics import get_metrics, get_metric_fn
 from mindspore._checkparam import check_input_data, check_output_data
 from mindspore import _checkparam as Validator
-from mindspore.train.callback import _InternalCallbackParam, RunContext, _CallbackManager, Callback, TimeMonitor,\
+from mindspore.train.callback import _InternalCallbackParam, RunContext, _CallbackManager, Callback, TimeMonitor, \
     TrainFaultTolerance
 from mindspore.train.callback import __all__ as internal_cb_names
 from mindspore.train.callback._cluster_monitor import ClusterMonitor
@@ -53,11 +53,12 @@ from mindspore.dataset.engine.datasets import _set_training_dataset, _reset_trai
 from mindspore.train import amp
 from mindspore._c_expression import _framework_profiler_step_start, _framework_profiler_step_end
 from mindspore._c_expression import _get_optimzer_timestamps
-from mindspore._c_expression import clean_tdt_channel, _clean_rootinfo, check_is_arf, set_is_arf
+from mindspore._c_expression import clean_tdt_channel, set_is_arf
 from mindspore._c_expression import _get_snapshot_params, _is_snapshot_valid
 
 from mindspore.parallel._utils import _init_auto_parallel_context, _clear_auto_parallel_context
 from .serialization import load_param_into_net
+
 
 def _transfer_tensor_to_tuple(inputs):
     """
@@ -159,9 +160,12 @@ def _handle_exception_info(obj, uce_env, tft, e):
         force_stop_err = tft.ReportState.RS_NORMAL.value
         tft.tft_report_error(force_stop_err)
     elif "ARF FINISH" in e_str:
-        logger.warning(f"ARF FINISH")
+        logger.warning("ARF FINISH")
         set_is_arf(True)
         tft.tft_report_error(tft.ReportState.RS_PREREPAIR_FINISH.value)
+    elif "STEP FINISH" in e_str:
+        logger.warning("uce wrapper caught STEP FINISH")
+        tft.tft_report_error(tft.ReportState.RS_STEP_FINISH.value)
     else:
         logger.error("uce wrapper caught other RuntimeError, enter MindIO TTP process.", exc_info=True)
         tft.tft_report_error(tft.ReportState.RS_UNKNOWN.value)
@@ -172,11 +176,13 @@ def _handle_training_result_error(model, tft_obj):
     """
     Handle training result error for resuming training.
     """
+
     def load_snapshot_params():
         param_dict = {}
         for name, tensor in _get_snapshot_params().items():
             param_dict[name] = mindspore.Parameter(tensor, name=name)
         return (param_dict, False)
+
     ckpt_load_fn = load_snapshot_params if _is_snapshot_valid() else tft_obj.ckpt_load_func
     train_network = tft_obj.cb_params.train_network
     logger.warning("Process training result error start.")
@@ -455,7 +461,7 @@ def _set_with_processed_inputs(network, inputs):
 
 def _check_tft_reset_dataset():
     env_tft = os.getenv("MS_ENABLE_TFT", "")
-    return any([v in env_tft for v in ["TRE:1", "UCE:1", "HCCE:1", "ARF:1"]])
+    return any([v in env_tft for v in ["TRE:1", "UCE:1", "HCCE:1", "ARF:1"]])  # pylint: disable=R1729
 
 
 class Model:
@@ -688,14 +694,14 @@ class Model:
             self._eval_indexes = eval_indexes
         else:
             if self._loss_fn is None:
-                raise ValueError(f"If `metrics` is set, `eval_network` must not be None. Do not set `metrics` if you"
-                                 f" don't want an evaluation.\n"
-                                 f"If evaluation is required, you need to specify `eval_network`, which will be used in"
-                                 f" the framework to evaluate the model.\n"
-                                 f"For the simple scenarios with one data, one label and one logits, `eval_network` is"
-                                 f" optional, and then you can set `eval_network` or `loss_fn`. For the latter case,"
-                                 f" framework will automatically build an evaluation network with `network` and"
-                                 f" `loss_fn`.")
+                raise ValueError("If `metrics` is set, `eval_network` must not be None. Do not set `metrics` if you"
+                                 " don't want an evaluation.\n"
+                                 "If evaluation is required, you need to specify `eval_network`, which will be used in"
+                                 " the framework to evaluate the model.\n"
+                                 "For the simple scenarios with one data, one label and one logits, `eval_network` is"
+                                 " optional, and then you can set `eval_network` or `loss_fn`. For the latter case,"
+                                 " framework will automatically build an evaluation network with `network` and"
+                                 " `loss_fn`.")
             net_inputs = self._network.get_inputs()
             if self._loss_fn.get_inputs() and net_inputs:
                 loss_inputs = _process_loss_inputs(self._loss_fn.get_inputs())
@@ -736,7 +742,7 @@ class Model:
 
     def _get_metrics(self):
         """Get metrics local values."""
-        metrics = dict()
+        metrics = dict()  # pylint: disable=R1735
         # There's no need for server to execute eval, just give fake metrics.
         for key, value in self._metric_fns.items():
             metrics[key] = value.eval()
@@ -1024,7 +1030,6 @@ class Model:
         cb_params.last_save_ckpt_step = None
         cb_params.latest_ckpt_file = None
         cb_params.loss_scale_mananger = self._loss_scale_manager
-        cb_params.is_arf = check_is_arf()
         cb_params.initial_step = self._initial_step
 
         # build callback list
@@ -1116,11 +1121,6 @@ class Model:
                 cb_params.net_outputs = outputs
 
                 list_callback.on_train_step_end(run_context)
-
-                if cb_params.is_arf:
-                    cb_params.is_arf = False
-                    set_is_arf(False)
-                _clean_rootinfo()
 
             dataset_helper.continue_send()
 
@@ -1220,10 +1220,6 @@ class Model:
                     self._loss_scale_manager.update_loss_scale(overflow)
 
                 list_callback.on_train_step_end(run_context)
-                if cb_params.is_arf:
-                    cb_params.is_arf = False
-                    set_is_arf(False)
-                _clean_rootinfo()
                 should_stop = run_context.get_stop_requested()
                 if should_stop:
                     break

@@ -23,6 +23,7 @@
 #include "utils/ms_context.h"
 #include "utils/ms_utils.h"
 #include "plugin/ascend/res_manager/error_manager/collective_comm_monitor.h"
+#include "include/backend/distributed/collective/collective_manager.h"
 
 constexpr size_t kPathMax = 4096;
 namespace mindspore {
@@ -306,6 +307,7 @@ HcclComm AscendCollectiveCommLib::HcclCommunicator(const std::string &group_name
 HcclComm AscendCollectiveCommLib::GetHcomByGroup(const std::string &group_name) {
   auto iter = group_hccl_comm_map_.find(group_name);
   if (iter == group_hccl_comm_map_.end()) {
+    distributed::collective::CollectiveManager::instance()->WaitCommInitDone(group_name);
     auto comm = HcclCommunicator(group_name);
     group_hccl_comm_map_[group_name] = comm;
     return comm;

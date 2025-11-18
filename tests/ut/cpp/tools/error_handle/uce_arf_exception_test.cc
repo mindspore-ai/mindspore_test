@@ -35,9 +35,8 @@ class TestUCEException : public UT::Common {
 /// the exception.
 TEST_F(TestUCEException, test_interface) {
   EXPECT_EQ(UCEException::IsEnableUCE(), false);
-  EXPECT_EQ(UCEException::GetInstance().check_rootinfo_clean_flag(), false);
-  EXPECT_EQ(UCEException::GetInstance().need_clean_rootinfo(), false);
 
+  // test arf/uce/ttp basic interface
   const auto kTftEnv = "MS_ENABLE_TFT";
   common::SetEnv(kTftEnv, "{TTP:1,UCE:1,ARF:1}");
   EXPECT_NO_THROW(UCEException::GetInstance().CheckUceARFEnv());
@@ -47,9 +46,6 @@ TEST_F(TestUCEException, test_interface) {
   EXPECT_EQ(UCEException::GetInstance().get_uce_flag(), false);
   EXPECT_EQ(UCEException::GetInstance().is_reboot_node(), false);
   EXPECT_EQ(UCEException::GetInstance().is_arf(), false);
-  EXPECT_EQ(UCEException::GetInstance().need_clean_rootinfo(), true);
-  EXPECT_NO_THROW(UCEException::GetInstance().set_rootinfo_clean_flag(true));
-  EXPECT_EQ(UCEException::GetInstance().check_rootinfo_clean_flag(), true);
 
   EXPECT_NO_THROW(UCEException::GetInstance().set_is_arf(true));
   EXPECT_NO_THROW(UCEException::GetInstance().set_reboot_node(true));
@@ -59,5 +55,8 @@ TEST_F(TestUCEException, test_interface) {
 
   EXPECT_NO_THROW(UCEException::GetInstance().set_force_stop_flag(true));
   EXPECT_EQ(UCEException::GetInstance().get_force_stop_flag(), true);
+
+  EXPECT_NO_THROW(UCEException::GetInstance().set_reboot_type("arf"));
+  EXPECT_EQ(UCEException::GetInstance().get_reboot_type(), "arf");
 }
 }  // namespace mindspore

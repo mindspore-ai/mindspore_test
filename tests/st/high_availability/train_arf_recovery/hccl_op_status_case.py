@@ -12,14 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+"""
+Test case for hccl status record
+"""
 
 import os
 import glob
-import mindspore.context as context
+from mindspore import context
 import mindspore.dataset as ds
 import mindspore.dataset.transforms as C
 import mindspore.dataset.vision as CV
-import mindspore.nn as nn
+from mindspore import nn
 from mindspore.common import dtype as mstype
 from mindspore.dataset.vision import Inter
 from mindspore.train import Model, LossMonitor, Accuracy
@@ -53,7 +56,7 @@ class LeNet5(nn.Cell):
     """
 
     def __init__(self, num_class=10, channel=1):
-        super(LeNet5, self).__init__()
+        super().__init__()
         self.num_class = num_class
         self.conv1 = conv(channel, 6, 5)
         self.conv2 = conv(6, 16, 5)
