@@ -15,7 +15,8 @@
  */
 
 #include "include/runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel_flags.h"
-
+#include <memory>
+#include <iostream>
 #include <map>
 #include <string>
 #include <cstring>
@@ -361,7 +362,6 @@ void GraphKernelFlags::RegisterFlags(std::map<std::string, std::string> *flag_ma
   reg.AddFlag("enable_lite_conv_tuning", &enable_lite_conv_tuning);
   reg.AddFlag("enable_vectorization", &enable_vectorization);
   reg.AddFlag("enable_dynamic_shape_fusion", &enable_dynamic_shape_fusion);
-  reg.AddFlag("enable_parallel_op_combine", &enable_parallel_op_combine);
   reg.AddFlag("disable_matmul_post_fusion", &disable_matmul_post_fusion);
   reg.AddFlag("enable_allreduce_prologue_fusion", &enable_allreduce_prologue_fusion);
   reg.AddFlag("enable_allreduce_epilogue_fusion", &enable_allreduce_epilogue_fusion);

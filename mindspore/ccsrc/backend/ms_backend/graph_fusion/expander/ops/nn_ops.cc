@@ -1,5 +1,5 @@
 /**
- * Copyright 2023-2024 Huawei Technologies Co., Ltd
+ * Copyright 2023-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 #include <algorithm>
+#include <string>
+#include <vector>
 #include "backend/ms_backend/graph_fusion/expander/base/ir_builder.h"
 #include "backend/ms_backend/graph_fusion/expander/base/utils.h"
 #include "ops_utils/op_utils.h"
@@ -563,21 +565,37 @@ REG_EXPANDER_FUNC("BCEWithLogitsLoss").SetBody(BODYFUNC(ib) {
 
 REG_EXPANDER_FUNC("BatchNormStats").SetBody(BODYFUNC(ib) {
   auto x = ib->input(kIndex0);
+  auto eps = ib->input(kIndex1);
   auto x_type = x->GetDtype()->type_id();
   if (x_type != kNumberTypeFloat32) {
     MS_LOG(DEBUG) << "Skip data type: " << TypeIdToString(x_type);
     return {};
   }
+  const auto &input_shape = x->GetShape();
   ShapeVector axis;
-  axis.reserve(x->GetShape().size());
-  for (int64_t i = 0; i < static_cast<int64_t>(x->GetShape().size()); ++i) {
+  axis.reserve(input_shape.size());
+  int64_t count = 1;
+  for (int64_t i = 0; i < static_cast<int64_t>(input_shape.size()); ++i) {
     if (i != 1) {  // reduce all axis except C channel(axis 1)
       axis.push_back(i);
+      count *= input_shape[i];
     }
   }
-  auto x_sum = ib->ReduceSum(x, ib->Value(axis), ib->Value(false));
-  auto x_square_sum = ib->ReduceSum(ib->Mul(x, x), ib->Value(axis), ib->Value(false));
-  return {x_sum, x_square_sum};
+  if (count <= 0) {
+    return {};
+  }
+  auto coef = ib->Tensor(1.0 / static_cast<double>(count), x->GetDtype());
+
+  // calc mean
+  auto input_mean = ib->ReduceSum(ib->Mul(x, coef), ib->Value(axis), ib->Value(true));
+
+  // calc invstd
+  auto input_sub_mean = ib->Sub(x, input_mean);
+  auto input_var = ib->Mul(input_sub_mean, input_sub_mean);
+  input_var = ib->ReduceSum(ib->Mul(input_var, coef), ib->Value(axis), ib->Value(false));
+  auto invstd = ib->Reciprocal(ib->Sqrt(ib->Add(input_var, eps)));
+
+  return {ib->Reshape(input_mean, invstd->GetShape()), invstd};
 });
 
 REG_EXPANDER_FUNC("BatchNormGatherStatsWithCounts").SetRealOutputIndices({0, 1}).SetBody(BODYFUNC(ib) {
@@ -587,8 +605,8 @@ REG_EXPANDER_FUNC("BatchNormGatherStatsWithCounts").SetRealOutputIndices({0, 1})
     MS_LOG(DEBUG) << "Skip data type: " << TypeIdToString(x_type);
     return {};
   }
-  auto sum_all = ib->input(kIndex1);
-  auto square_sum_all = ib->input(kIndex2);
+  auto mean_all = ib->input(kIndex1);
+  auto invstd_all = ib->input(kIndex2);
   auto running_mean = ib->input(kIndex3);  // optional input
   auto running_var = ib->input(kIndex4);   // optional input
   auto momentum = ib->input(kIndex5);
@@ -598,19 +616,38 @@ REG_EXPANDER_FUNC("BatchNormGatherStatsWithCounts").SetRealOutputIndices({0, 1})
     MS_LOG(DEBUG) << "Skip counts_all is None";
     return {};
   }
+  NodePtr counts_all_new = counts_all;
+  if (counts_all->GetShape().size() != mean_all->GetShape().size()) {
+    ShapeVector count_shape(mean_all->GetShape());
+    count_shape[count_shape.size() - 1] = 1;
+    counts_all_new = ib->Reshape(counts_all, count_shape);
+  }
+
   auto momentum_value = GetValue<float>(momentum->GetValue());
   auto m1 = ib->Tensor(momentum_value, x->GetDtype());
   auto m2 = ib->Tensor(1.0f - momentum_value, x->GetDtype());
+
   auto global_counts = ib->ReduceSum(counts_all, ib->Value(AllAxis(counts_all->GetShape().size())), ib->Value(false));
   ShapeVector reduce_axis;
-  reduce_axis.reserve(sum_all->GetShape().size());
-  for (int64_t i = 0; i < static_cast<int64_t>(sum_all->GetShape().size()) - 1; ++i) {  // last axis is C channel
+  reduce_axis.reserve(mean_all->GetShape().size());
+  for (int64_t i = 0; i < static_cast<int64_t>(mean_all->GetShape().size()) - 1; ++i) {  // last axis is C channel
     reduce_axis.push_back(i);
   }
-  auto global_sum = ib->ReduceSum(sum_all, ib->Value(reduce_axis), ib->Value(false));
-  auto global_square_sum = ib->ReduceSum(square_sum_all, ib->Value(reduce_axis), ib->Value(false));
-  auto global_mean = ib->Div(global_sum, global_counts);
-  auto global_var = ib->Sub(ib->Div(global_square_sum, global_counts), ib->Mul(global_mean, global_mean));
+
+  // calc global mean
+  auto mean_all_obj = CastOp(ib, mean_all, x_type);
+  auto global_mean = ib->ReduceSum(ib->Div(ib->Mul(mean_all_obj, counts_all_new), global_counts),
+                                   ib->Value(reduce_axis), ib->Value(false));
+
+  // calc global invstd
+  auto mean_sub_all = ib->Sub(mean_all_obj, global_mean);
+  auto std_all = ib->Reciprocal(CastOp(ib, invstd_all, x_type));
+  auto eps_value = GetValue<float>(eps->GetValue());
+  auto var_all = ib->Add(ib->Mul(std_all, std_all), ib->Tensor(eps_value, x->GetDtype()));
+  var_all = ib->Add(var_all, ib->Mul(mean_sub_all, mean_sub_all));
+  var_all = ib->Mul(var_all, counts_all_new);
+  auto global_var_sum = ib->ReduceSum(var_all, ib->Value(reduce_axis), ib->Value(false));
+  auto global_var = ib->Div(global_var_sum, global_counts);
   auto global_invstd = ib->Reciprocal(ib->Sqrt(ib->Add(global_var, eps)));
   NodePtrList results{global_mean, global_invstd};
   // update running_mean

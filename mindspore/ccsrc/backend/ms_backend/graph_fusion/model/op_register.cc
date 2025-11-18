@@ -1,5 +1,5 @@
 /**
- * Copyright 2021-2022 Huawei Technologies Co., Ltd
+ * Copyright 2021-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
  */
 #include "backend/ms_backend/graph_fusion/model/op_register.h"
 #include <memory>
+#include <string>
 
 namespace mindspore::graphkernel::inner {
 namespace {
@@ -107,7 +108,6 @@ OP_REGISTER("Argmin", ArgReduceOp);
 // opaque ops
 OP_REGISTER("_opaque", OpaqueOp);  // default opaque node
 OP_REGISTER("Transpose", TransposeOp);
-OP_REGISTER("LayoutTransform", LayoutTransformOp);
 OP_REGISTER("MatMul", MatMulOp);
 OP_REGISTER("PadAkg", PadAkgOp);
 OP_REGISTER("UnPadAkg", UnPadAkgOp);
@@ -115,25 +115,15 @@ OP_REGISTER("BatchMatMul", MatMulOp);
 OP_REGISTER("CumSum", OpaqueOp);
 OP_REGISTER("OneHot", OpaqueOp);
 OP_REGISTER("StridedSlice", StridedSliceOp);
-OP_REGISTER("StridedSliceOnnx", StridedSliceOnnxOp);
 OP_REGISTER("Concat", ConcatOp);
-OP_REGISTER("Gather", GatherOp);
 OP_REGISTER("Shape", ShapeOp);
-OP_REGISTER("ConstantOfShape", ConstantOfShapeOp);
-OP_REGISTER("TensorScatterAdd", OpaqueOp);
-OP_REGISTER("GatherNd", OpaqueOp);
-OP_REGISTER("UnsortedSegmentSum", OpaqueOp);
 OP_REGISTER("Conv2D", Conv2dOp);
 OP_REGISTER("TransData", OpaqueOp);
 OP_REGISTER("ElemAny", ElemAnyOp);
-OP_REGISTER("Pool2D", Pool2DOp);
 OP_REGISTER("AllReduce", OpaqueOp);
 OP_REGISTER("AllGather", OpaqueOp);
 OP_REGISTER("ReduceScatter", OpaqueOp);
 // virtual ops
 OP_REGISTER("Assign", VirtualOp);
 OP_REGISTER("TupleGetItem", TupleGetItemOp);
-OP_REGISTER("PagedAttention", PagedAttentionOp);
-OP_REGISTER("PagedAttentionMask", PagedAttentionOp);
-OP_REGISTER("ReshapeAndCache", OpaqueOp);
 }  // namespace mindspore::graphkernel::inner

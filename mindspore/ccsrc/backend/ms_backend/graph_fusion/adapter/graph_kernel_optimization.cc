@@ -45,8 +45,6 @@
 #include "backend/ms_backend/graph_fusion/core/update_state_formatter.h"
 #include "backend/ms_backend/graph_fusion/axis_normalizer.h"
 #include "backend/ms_backend/graph_fusion/csr_atomic_add.h"
-#include "backend/ms_backend/graph_fusion/tsa_atomic_add_to_first_tensor.h"
-#include "backend/ms_backend/graph_fusion/uss_atomic_add.h"
 #include "backend/common/pass/getitem_tuple.h"
 #include "backend/ms_backend/graph_fusion/core/graph_kernel_pass_manager.h"
 #include "backend/ms_backend/graph_fusion/core/transform_op_optimizer.h"
@@ -62,7 +60,6 @@
 #include "backend/ms_backend/graph_fusion/adapter/symbol_engine_builder.h"
 #include "backend/ms_backend/graph_fusion/kernel_packet/symbol_engine_extender.h"
 #include "backend/ms_backend/graph_fusion/convert_call_to_prim.h"
-#include "backend/ms_backend/graph_fusion/core/graph_kernel_op_combiner.h"
 #include "include/runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/set_infershape_functor.h"
 #include "backend/ms_backend/graph_fusion/convert_input_and_attr.h"
 #include "backend/ms_backend/graph_fusion/convert_bfloat16.h"
@@ -141,10 +138,6 @@ PassManagerPtr GraphKernelOptimizer::Cluster() const {
 
   // Expand complex basic kernels to composite kernels
   pm->Add(std::make_shared<GraphKernelExpanderCloud>(), OptLevel_1);
-
-  // Combine supported parallel ops that with common inputs
-  pm->Add(std::make_shared<GraphKernelOpCombiner>(),
-          GetPassLevelByFlag(GraphKernelFlags::GetInstance().enable_parallel_op_combine));
 
   // Cluster basic kernels and composite kernels
   pm->Add(std::make_shared<StaticShapeCluster>(), OptLevel_1);
@@ -229,9 +222,6 @@ PassManagerPtr GraphKernelOptimizer::HighLevelOpt2() const {
   auto memory_optimize_level = GetPassLevelByFlag(GraphKernelFlags::GetInstance().enable_auto_tensor_inplace);
   pm->Add(std::make_shared<TensorInplace>(), memory_optimize_level);
 
-  // Enable tsa and uss
-  pm->Add(std::make_shared<TsaAtomicAddToFirstTensor>(), OptLevel_1, is_gpu);
-  pm->Add(std::make_shared<UssAtomicAdd>(), OptLevel_1, is_gpu);
   pm->Add(std::make_shared<CsrAtomicAdd>(), OptLevel_1, is_gpu);
 
   // Replace original output(which is input of Assign) with overridden parameters
