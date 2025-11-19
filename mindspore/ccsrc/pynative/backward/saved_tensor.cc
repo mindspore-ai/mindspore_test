@@ -93,6 +93,9 @@ TensorPtr SavedTensor::UnWrapToTensor(const BackwardNodePtr &saved_for) {
     saved_tensor_hook_ ? CommonUtils::ShallowCopyAndDetachForTensor(saved_tensor_hook_->RunUnpackHook()) : data_;
   // recover
   auto auto_grad_meta_data = std::make_shared<AutoGradMetaData>(gn);
+  if (is_leaf_) {
+    auto_grad_meta_data->set_requires_grad(requires_grad_);
+  }
   auto_grad_meta_data->set_output_index(output_index_);
   auto_grad_meta_data->set_grad_node(gn);
   data->set_auto_grad_meta_data(auto_grad_meta_data);
@@ -107,6 +110,9 @@ void SavedTensor::Clear() {
 
 void SavedTensor::SaveMetaData(const TensorPtr &tensor) {
   output_index_ = tensor->output_index();
+  if (is_leaf_) {
+    requires_grad_ = tensor->requires_grad();
+  }
   if (!is_output_) {
     grad_node_ = impl::GetUnsafeGradNodeImpl(tensor);
   }

@@ -43,6 +43,7 @@ class SavedTensor final : public Value {
   bool is_view_inplace_;
   bool is_leaf_;
   bool is_custom_;
+  bool requires_grad_{false};
   bool saved_original_{false};
 
   size_t output_index_{0};

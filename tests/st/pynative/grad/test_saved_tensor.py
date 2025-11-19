@@ -848,6 +848,26 @@ def test_saved_tensors_hooks_with_recompute():
           level_mark='level0',
           card_mark='onecard',
           essential_mark='essential')
+def test_saved_tensors_hooks_with_high_grad():
+    """
+    Features: Saved Tensor Hook.
+    Description: Test saved tensors hooks with high grad.
+    Expectation: Success.
+    """
+
+    def forward_fn(x):
+        with ms.saved_tensors_hooks(lambda x: x + 2.0, ops.stop_gradient):
+            return ops.pow(x, 3)
+
+    x = ops.randn(2, 2)
+    high_grad_x = ms.grad(ms.grad(forward_fn))(x)
+    assert np.allclose(high_grad_x.asnumpy(), (6 * (x + 2.0)).asnumpy(), 0.00001, 0.00001)
+
+
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
 def test_saved_tensors_hooks_ignore_wrapped_number():
     """
     Features: Saved Tensor Hook.
