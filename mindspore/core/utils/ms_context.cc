@@ -527,7 +527,8 @@ std::string MsContext::GetJitLevel() const {
   }
 
   // If use rank table startup method, set jit level to O2.
-  if (device_target == kAscendDevice && !common::UseDynamicCluster() && !common::GetEnv("RANK_TABLE_FILE").empty() &&
+  if (device_target == kAscendDevice && !common::UseDynamicCluster() &&
+      (!common::GetEnv("RANK_TABLE_FILE").empty() || !common::GetEnv("MINDSPORE_HCCL_CONFIG_PATH").empty()) &&
       jit_level != kAttrJitLevelO2) {
     if (first_call) {
       MS_LOG(WARNING) << "Set jit level to O2 for rank table startup method.";

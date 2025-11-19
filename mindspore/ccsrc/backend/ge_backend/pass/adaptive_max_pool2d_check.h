@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CCSRC_BACKEND_OPTIMIZER_ASCEND_IR_FUSION_ADAPTIVE_MAX_POOL2D_FUSION_H_
-#define MINDSPORE_CCSRC_BACKEND_OPTIMIZER_ASCEND_IR_FUSION_ADAPTIVE_MAX_POOL2D_FUSION_H_
+#ifndef MINDSPORE_CCSRC_BACKEND_OPTIMIZER_ASCEND_IR_FUSION_ADAPTIVE_MAX_POOL2D_CHECK_H_
+#define MINDSPORE_CCSRC_BACKEND_OPTIMIZER_ASCEND_IR_FUSION_ADAPTIVE_MAX_POOL2D_CHECK_H_
 
 #include <vector>
 #include <string>
@@ -25,11 +25,13 @@
 
 namespace mindspore {
 namespace opt {
-class BACKEND_COMMON_EXPORT AdaptiveMaxPool2DGeFusion : public PatternProcessPass {
+/// @brief GE backend pass for checking AdaptiveMaxPool2D node validity
+/// This pass validates and potentially modifies AdaptiveMaxPool2D's output_size input in GE backend
+class BACKEND_COMMON_EXPORT AdaptiveMaxPool2DGeCheck : public PatternProcessPass {
  public:
-  explicit AdaptiveMaxPool2DGeFusion(const std::string &name = "adaptive_max_pool2d_ge_fusion", bool multigraph = true)
+  explicit AdaptiveMaxPool2DGeCheck(const std::string &name = "adaptive_max_pool2d_ge_check", bool multigraph = true)
       : PatternProcessPass(name, multigraph) {}
-  ~AdaptiveMaxPool2DGeFusion() override = default;
+  ~AdaptiveMaxPool2DGeCheck() override = default;
   const BaseRef DefinePattern() const override;
   const AnfNodePtr Process(const FuncGraphPtr &, const AnfNodePtr &, const EquivPtr &) const override;
 
@@ -39,4 +41,4 @@ class BACKEND_COMMON_EXPORT AdaptiveMaxPool2DGeFusion : public PatternProcessPas
 }  // namespace opt
 }  // namespace mindspore
 
-#endif  // MINDSPORE_CCSRC_BACKEND_OPTIMIZER_ASCEND_IR_FUSION_ADAPTIVE_MAX_POOL2D_FUSION_H_
+#endif  // MINDSPORE_CCSRC_BACKEND_OPTIMIZER_ASCEND_IR_FUSION_ADAPTIVE_MAX_POOL2D_CHECK_H_

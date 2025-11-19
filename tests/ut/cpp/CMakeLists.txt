@@ -206,7 +206,6 @@ file(GLOB_RECURSE MINDSPORE_ASCEND_SRC_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
         "${ASCEND_PLUGIN_PATH}/graph_optimizer/pass/ir_fission/bn_split.cc"
         "${ASCEND_PLUGIN_PATH}/graph_optimizer/pass/ir_fission/cdist_fission.cc"
         "${ASCEND_PLUGIN_PATH}/graph_optimizer/pass/ir_fission/seed_adapter.cc"
-        "${ASCEND_PLUGIN_PATH}/graph_optimizer/pass/ir_fusion/adaptive_max_pool2d_fusion.cc"
         "${ASCEND_PLUGIN_PATH}/graph_optimizer/pass/ir_fusion/batchnorm_to_bninfer.cc"
         "${ASCEND_PLUGIN_PATH}/graph_optimizer/pass/ir_fusion/batchnormgrad_to_bninfergrad.cc"
         "${ASCEND_PLUGIN_PATH}/graph_optimizer/pass/ir_fusion/grouped_matmul_assignadd_fusion.cc"

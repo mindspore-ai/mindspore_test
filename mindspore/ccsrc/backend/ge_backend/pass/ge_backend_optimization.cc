@@ -99,7 +99,7 @@
 #include "backend/common/pass/other/lamb_fission.h"
 #include "backend/common/pass/other/adjust_print_for_ge.h"
 #include "backend/common/pass/other/getnext_for_ge.h"
-#include "backend/common/pass/ir_fusion/adaptive_max_pool2d_fusion.h"
+#include "backend/ge_backend/pass/adaptive_max_pool2d_check.h"
 #include "backend/common/pass/other/avg_pool_grad_for_ge.h"
 #include "backend/common/pass/ir_fusion/mc2_fusion.h"
 #include "backend/common/pass/other/add_attr_to_dump.h"
@@ -230,7 +230,7 @@ mindspore::opt::PassManagerPtr GetBackendFusionGroupPassManager() {
   pm->AddFusionPass(std::make_shared<mindspore::opt::BatchMatMulReduceScatterAllToAllFusion>());
   pm->AddFusionPass(std::make_shared<mindspore::opt::AllToAllAllGatherBatchMatMulFusion>());
   pm->AddFusionPass(std::make_shared<mindspore::opt::LambFissionGe>());
-  pm->AddFusionPass(std::make_shared<mindspore::opt::AdaptiveMaxPool2DGeFusion>());
+  pm->AddFusionPass(std::make_shared<mindspore::opt::AdaptiveMaxPool2DGeCheck>());
   pm->AddFusionPass(std::make_shared<mindspore::opt::MatmulReduceScatterFusion>());
   pm->AddFusionPass(std::make_shared<mindspore::opt::AllGatherMatmulFusion>());
   pm->AddFusionPass(std::make_shared<mindspore::opt::FlashAttentionFusionV1>());
