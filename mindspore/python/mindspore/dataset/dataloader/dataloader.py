@@ -468,7 +468,6 @@ class _MultiProcessIterator(_Iterator):
                     self.worker_done,
                     self.worker_init_fn,
                     self._base_seed,
-                    self.persistent_workers,
                 ),
                 name=f"DataLoaderWorker{worker_id}",
                 daemon=True,
