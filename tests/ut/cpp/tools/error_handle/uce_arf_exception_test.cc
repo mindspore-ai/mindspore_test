@@ -28,7 +28,6 @@ class TestUCEException : public UT::Common {
   void TearDown() override {}
 };
 
-
 /// Feature: test UCE Exception instance.
 /// Description:Test all interfaces in the instance.
 /// Expectation: The return value of the normal interface is as expected, and the exception branch is expected to catch
@@ -58,5 +57,7 @@ TEST_F(TestUCEException, test_interface) {
 
   EXPECT_NO_THROW(UCEException::GetInstance().set_reboot_type("arf"));
   EXPECT_EQ(UCEException::GetInstance().get_reboot_type(), "arf");
+  EXPECT_EQ(UCEException::GetInstance().get_suspect_remote_flag(), false);
+  EXPECT_EQ(UCEException::GetInstance().get_has_throw_error(), true);
 }
 }  // namespace mindspore
