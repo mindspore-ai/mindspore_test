@@ -1149,6 +1149,7 @@ class FillV2(PrimitiveWithCheck):
         return (True, x)
 
     def infer_value(self, dims, x):
+        """Infer constant output tensor when inputs are compile-time constants."""
         if x is None or dims is None or isinstance(dims, (Tensor, Tensor_)):
             return None
         if isinstance(dims, (tuple, list)) and None in dims:
@@ -1210,7 +1211,7 @@ class TupleToArray(PrimitiveWithInfer):
 
     def __call__(self, *args):
         x, = args
-        args = list()
+        args = []
         if isinstance(x, range):
             args.append(tuple(x))
         else:
@@ -1285,13 +1286,13 @@ class InvertPermutation(PrimitiveWithInfer):
             if z[i - 1] == z[i]:
                 raise ValueError(f"For '{self.name}', the 'input_x' can not contain duplicate values, "
                                  f"but got duplicated {z[i]} in the 'input_x'.")
-        validator.check(f'value min', min(x_value), '', 0, validator.EQ, self.name)
-        validator.check(f'value max', max(x_value), '', len(x_value) - 1, validator.EQ, self.name)
+        validator.check('value min', min(x_value), '', 0, validator.EQ, self.name)
+        validator.check('value max', max(x_value), '', len(x_value) - 1, validator.EQ, self.name)
 
         y = [None] * len(x_value)
         for i, value in enumerate(x_value):
             validator.check_value_type("input[%d]" % i, value, [int], self.name)
-            validator.check(f'value', z[i], f'index', i, validator.EQ, self.name)
+            validator.check('value', z[i], 'index', i, validator.EQ, self.name)
             y[value] = i
             z.append(value)
         return {'shape': x_shp,
@@ -1412,7 +1413,7 @@ class UnsortedSegmentMin(PrimitiveWithCheck):
         validator.check_subclass("num_segments", num_segments_type, [mstype.number], self.name)
         if not is_shape_unknown(x_shape) and not is_shape_unknown(segment_ids_shape):
             # only validate when both shapes fully known
-            validator.check(f'first shape of input_x', x_shape[0],
+            validator.check('first shape of input_x', x_shape[0],
                             'length of segments_id', segment_ids_shape[0], validator.EQ, self.name)
         num_segments_v = num_segments['value']
         validator.check_value_type('num_segments', num_segments_v, [int], self.name)
@@ -1532,7 +1533,7 @@ class UnsortedSegmentMax(PrimitiveWithCheck):
         validator.check_subclass("num_segments", num_segments_type, [mstype.number], self.name)
         if not is_shape_unknown(x_shape) and not is_shape_unknown(segment_ids_shape):
             # only validate when both shapes fully known
-            validator.check(f'first shape of input_x', x_shape[0],
+            validator.check('first shape of input_x', x_shape[0],
                             'length of segments_id', segment_ids_shape[0], validator.EQ, self.name)
         num_segments_v = num_segments['value']
         if num_segments_v is not None:

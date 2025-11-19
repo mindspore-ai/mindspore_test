@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+"""Tests for ops.tensor_scatter_add."""
 import numpy as np
 import pytest
 import tensorflow as tf

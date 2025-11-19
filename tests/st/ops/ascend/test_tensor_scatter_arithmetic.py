@@ -12,17 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+"""Test tensor_scatter_arithmetic operators."""
 import numpy as np
 import pytest
 
-import mindspore.context as context
-import mindspore.nn as nn
-import mindspore.ops as ops
+from mindspore import context
+from mindspore import nn
+from mindspore import ops
 from mindspore.common import Tensor, Parameter
 from mindspore.common import dtype as mstype
 from mindspore.ops.functional import vmap
 
-import tests.st.utils.test_utils as test_utils
+from tests.st.utils import test_utils
 from tests.mark_utils import arg_mark
 from tests.st.ops.test_tools.test_op import TEST_OP
 
@@ -51,7 +52,7 @@ np_func_map = {
 
 class TestTensorScatterArithmeticNet(nn.Cell):
     def __init__(self, func, input_x, indices, updates):
-        super(TestTensorScatterArithmeticNet, self).__init__()
+        super().__init__()
         self.scatter_func = op_map.get(func)()
         self.input_x = Parameter(input_x, name="input_x")
         self.indices = Parameter(indices, name="indices")
@@ -191,7 +192,7 @@ def test_tensor_scatter_arithmetic_tensor_op(func, data_type, index_type):
 
     if func == 'add':
         output = input_x.scatter_add(indices, updates)
-    elif func == 'sub':
+    else:
         output = input_x.scatter_sub(indices, updates)
 
     np.testing.assert_allclose(output.asnumpy(), expected, rtol=1e-6)
