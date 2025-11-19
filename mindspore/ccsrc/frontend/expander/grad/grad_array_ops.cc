@@ -1892,8 +1892,8 @@ REG_BPROP_BUILDER("InplaceIndexFillTensor").FreeUselessValues_IO({i0, i3}, {}).S
   return {x_grad, ib->OutZeros(dim), ib->OutZeros(index), value_grad};
 });
 
-REG_BPROP_BUILDER("InplaceFillScalar").SetUnusedInputs({i0, i1, i2, i3}).SetBody(BODYFUNC(ib) {
-  return {ib->ZerosLikeExt(ib->GetInput(i0), ib->EmitValue(kNone)), ib->OutZeros(ib->GetInput(i1))};
+REG_BPROP_BUILDER("InplaceFillScalar").SetUnusedInputs({i0, i1, i2}).SetBody(BODYFUNC(ib) {
+  return {ib->ZerosLikeExt(ib->GetInput(i3), ib->EmitValue(kNone)), ib->OutZeros(ib->GetInput(i1))};
 });
 
 REG_BPROP_BUILDER("InplaceFillTensor").SetUnusedInputs({i0, i1, i2}).SetBody(BODYFUNC(ib) {
@@ -1904,7 +1904,7 @@ REG_BPROP_BUILDER("InplaceFillTensor").SetUnusedInputs({i0, i1, i2}).SetBody(BOD
   } else {
     value_grad = ib->OutZeros(value);
   }
-  return {ib->ZerosLikeExt(ib->GetInput(i0), ib->EmitValue(kNone)), value_grad};
+  return {ib->ZerosLikeExt(ib->GetInput(i3), ib->EmitValue(kNone)), value_grad};
 });
 
 REG_BPROP_BUILDER("InplaceMaskedFillScalar").SetUnusedInputs({i0, i2, i3}).SetBody(BODYFUNC(ib) {
