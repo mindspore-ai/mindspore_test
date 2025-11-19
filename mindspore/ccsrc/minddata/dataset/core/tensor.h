@@ -1,5 +1,5 @@
 /**
- * Copyright 2020-2024 Huawei Technologies Co., Ltd
+ * Copyright 2020-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -57,7 +57,7 @@ using TensorPtr = std::shared_ptr<Tensor>;
 /// const of the size of the offset variable
 constexpr uint8_t kOffsetSize = sizeof(offset_t);
 
-class DATASET_API Tensor {
+class Tensor {
  public:
   Tensor() = delete;
   Tensor(const Tensor &other) = delete;

@@ -22,7 +22,6 @@
 #include <memory>
 
 #include "ir/func_graph.h"
-#include "include/api/types.h"
 #include "utils/crypto.h"
 
 namespace mindspore {

@@ -22,9 +22,7 @@
 #include <memory>
 #include <utility>
 #include "include/api/status.h"
-#include "include/api/types.h"
 #include "include/api/graph.h"
-#include "include/api/context.h"
 #include "include/api/callback/callback.h"
 #include "include/api/cell.h"
 #include "include/api/cfg.h"

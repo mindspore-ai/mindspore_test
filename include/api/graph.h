@@ -21,7 +21,6 @@
 #include <map>
 #include <memory>
 #include "include/api/status.h"
-#include "include/api/types.h"
 
 namespace mindspore {
 class MS_API Graph {

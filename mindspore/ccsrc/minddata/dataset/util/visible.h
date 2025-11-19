@@ -1,5 +1,5 @@
 /**
- * Copyright 2022 Huawei Technologies Co., Ltd
+ * Copyright 2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,19 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef MINDSPORE_INCLUDE_API_VISIBLE_H
-#define MINDSPORE_INCLUDE_API_VISIBLE_H
+#ifndef MINDSPORE_CCSRC_MINDDATA_DATASET_UTIL_VISIBLE_H_
+#define MINDSPORE_CCSRC_MINDDATA_DATASET_UTIL_VISIBLE_H_
 
-#ifndef MS_API
-#ifdef _WIN32
-#ifdef BUILDING_DLL
-#define MS_API __declspec(dllexport)
+#ifdef _MSC_VER
+#ifdef BUILDING_DATASET_DLL
+#define DATASET_API __declspec(dllexport)
 #else
-#define MS_API __declspec(dllimport)
-#endif
+#define DATASET_API __declspec(dllimport)
+#endif  // BUILDING_DATASET_DLL
 #else
-#define MS_API __attribute__((visibility("default")))
-#endif  // _WIN32
-#endif
+#define DATASET_API __attribute__((visibility("default")))
+#endif  // _MSC_VER
 
-#endif  // MINDSPORE_INCLUDE_API_VISIBLE_H
+#endif  // MINDSPORE_CCSRC_MINDDATA_DATASET_UTIL_VISIBLE_H_

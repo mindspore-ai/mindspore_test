@@ -23,8 +23,6 @@
 #include <utility>
 #include "include/api/model.h"
 #include "include/api/status.h"
-#include "include/api/types.h"
-#include "include/api/context.h"
 
 namespace mindspore {
 class ModelGroupImpl;
