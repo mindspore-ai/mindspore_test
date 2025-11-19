@@ -1,7 +1,7 @@
 /**
  * This is the C++ adaptation and derivative work of Myia (https://github.com/mila-iqia/myia/).
  *
- * Copyright 2019-2024 Huawei Technologies Co., Ltd
+ * Copyright 2019-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,6 +30,7 @@
 #include "utils/flags.h"
 #include "include/utils/utils.h"
 #include "utils/anf_utils.h"
+#include "mindspore/core/include/ir/func_graph_flag.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_p.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
@@ -177,6 +178,25 @@ bool CSE::BuildOrderGroupForOneGraph(const FuncGraphPtr &fg) {
   return CalReplaceNodes(order_group, &groups);
 }
 
+bool IsSameStreamNode(const AnfNodePtr &main, const AnfNodePtr &node) {
+  if (!main->isa<CNode>() || !node->isa<CNode>()) {
+    return true;
+  }
+  int64_t main_stream_id = -1;
+  auto main_cnode = main->cast<CNodePtr>();
+  if (main_cnode->HasAttr(kFuncGraphFlagStreamId)) {
+    auto main_value = main_cnode->GetAttr(kFuncGraphFlagStreamId);
+    main_stream_id = GetValue<int64_t>(main_value);
+  }
+  int64_t node_stream_id = -1;
+  auto cnode = node->cast<CNodePtr>();
+  if (cnode->HasAttr(kFuncGraphFlagStreamId)) {
+    auto node_value = cnode->GetAttr(kFuncGraphFlagStreamId);
+    node_stream_id = GetValue<int64_t>(node_value);
+  }
+  return main_stream_id == node_stream_id;
+}
+
 void CSE::DoReplace(const FuncGraphManagerPtr &manager) {
   // if A is a hidden_side_effect node, then A's user B can't be replaced by main, then B's user C can't be replaced by
   // main.
@@ -193,6 +213,10 @@ void CSE::DoReplace(const FuncGraphManagerPtr &manager) {
     }
     if (HasHiddenSideEffect(main) || main_input_cannot_replace) {
       (void)cannot_replace_nodes.insert(main);
+      continue;
+    }
+    // If two nodes are on different streams, they cannot be optimized into the same node.
+    if (!IsSameStreamNode(main, node)) {
       continue;
     }
     // We don't merge primitive cnodes with random effect.

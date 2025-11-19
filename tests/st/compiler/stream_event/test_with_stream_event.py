@@ -158,6 +158,7 @@ def test_event_multi_with_streams():
                 event = self.depend(event, z1)
                 event.wait()
                 z = z + z1
+            y = self.depend(y, z)
             return y + z
 
     save_path = "./test_event_multi_with_streams"
@@ -165,20 +166,22 @@ def test_event_multi_with_streams():
     ms.set_context(jit_config={"jit_level": "O0"}, save_graphs=True, save_graphs_path=save_path)
 
     x = Tensor(np.ones([3, 3]), ms.float32)
-    net = WithEventNet1()
+    net = WithEventNet()
     out = net(x)
     os.unsetenv('MS_DEV_DUMP_IR_PASSES')
     ms.set_context(save_graphs=False)
     content = read_file(save_path)
     stream_id_num = re.findall('stream_id', content)
     event_id_num = re.findall('event_id', content)
+    add_num = re.findall('PrimFunc_Add', content)
     try:
         shutil.rmtree(save_path)
     except FileNotFoundError:
         pass
-    assert (out.asnumpy() == (x * 5).asnumpy()).all()
-    assert len(stream_id_num) == 5
-    assert len(event_id_num) == 3
+    assert (out.asnumpy() == (x * 8).asnumpy()).all()
+    assert len(stream_id_num) == 10
+    assert len(event_id_num) == 4
+    assert len(add_num) == 4
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
