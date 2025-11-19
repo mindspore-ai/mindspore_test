@@ -41,7 +41,7 @@ BaseShapePtr InnerCommAllGatherFuncImpl::InferShape(const PrimitivePtr &primitiv
   if (input_shape[kIndex0] >= 1) {
     input_shape[kIndex0] = input_shape[kIndex0] * rank_size;
   } else if (input_shape[kIndex0] != abstract::TensorShape::kShapeDimAny) {
-    MS_EXCEPTION(ValueError) << "For '" << primitive->name() << "', input_shape[0] is valid: " << input_shape[kIndex0]
+    MS_EXCEPTION(ValueError) << "For '" << primitive->name() << "', input_shape[0] is invalid: " << input_shape[kIndex0]
                              << ".";
   }
   return std::make_shared<abstract::TensorShape>(input_shape);
