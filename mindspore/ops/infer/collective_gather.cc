@@ -95,7 +95,7 @@ class CollectiveGatherInfer : public abstract::OpInferBase {
     } else if (x_shape[0] == -1) {
       ret_shape_0 = -1;
     } else {
-      MS_EXCEPTION(TypeError) << "For '" << prim_name << "', input x_shape[0] is valid: " << x_shape[0] << ".";
+      MS_EXCEPTION(TypeError) << "For '" << prim_name << "', input x_shape[0] is invalid: " << x_shape[0] << ".";
     }
     ShapeVector output;
     output.push_back(ret_shape_0);
