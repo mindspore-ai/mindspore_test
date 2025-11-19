@@ -547,6 +547,16 @@ PyObject *TensorPy_pynew(PyTypeObject *type, PyObject *args, PyObject *kwargs) {
   return reinterpret_cast<PyObject *>(self);
 }
 
+/**
+ * @brief Initialize Tensor Python object
+ * @param obj Python object to initialize
+ * @param args Positional arguments from Python
+ * @param kwargs Keyword arguments from Python
+ * @return 0 on success, -1 on failure
+ *
+ * This function handles the initialization of Tensor objects from Python,
+ * parsing input arguments and setting up the tensor data structure.
+ */
 extern int TensorPy_pyinit(PyObject *obj, PyObject *args, PyObject *kwargs) {
   PyType<TensorPy> *self = reinterpret_cast<PyType<TensorPy> *>(obj);
   // parameter need to stop
@@ -566,7 +576,7 @@ extern int TensorPy_pyinit(PyObject *obj, PyObject *args, PyObject *kwargs) {
   TensorInitialization argsT = {Py_None, Py_None, Py_None, Py_None, Py_False, Py_None};
   if (!PyArg_ParseTupleAndKeywords(args, kwargs, fmt, const_cast<char **>(kws), &argsT.input_data_, &argsT.dtype_,
                                    &argsT.shape_, &argsT.init_, &argsT.const_arg_, &argsT.device_)) {
-    MS_EXCEPTION(TypeError) << "Not support tensor input parameter type!!!";
+    return -1;
   }
   py::dict p;
   HANDLE_MS_EXCEPTION
