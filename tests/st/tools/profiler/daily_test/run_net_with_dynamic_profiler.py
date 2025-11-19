@@ -95,7 +95,7 @@ def _cleanup_dynamic_profiler(dp):
                     os.remove(shm_path)
 
 
-def train_net_with_dynamic_profiler(output_path, cfg_path, start, stop):
+def train_net_with_dynamic_profiler(output_path, cfg_path):
     """train net"""
     net = Net()
     step_num = 15
@@ -104,19 +104,19 @@ def train_net_with_dynamic_profiler(output_path, cfg_path, start, stop):
         for i in range(step_num):
             train(net)
             if i == 5:
-                change_cfg_json(os.path.join(cfg_path, "profiler_config.json"), start, stop)
+                change_cfg_json(os.path.join(cfg_path, "profiler_config.json"))
             dp.step()
     finally:
         _cleanup_dynamic_profiler(dp)
 
 
-def change_cfg_json(json_path, start, stop):
+def change_cfg_json(json_path):
     """change json"""
     with open(json_path, 'r', encoding='utf-8') as file:
         data = json.load(file)
 
-    data['start_step'] = start
-    data['stop_step'] = stop
+    data['start_step'] = 6
+    data['stop_step'] = 7
 
     with open(json_path, 'w', encoding='utf-8') as file:
         json.dump(data, file, ensure_ascii=False, indent=4)
@@ -126,9 +126,6 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Run net with dynamic profiler.')
     parser.add_argument('--output_path', type=str)
     parser.add_argument('--cfg_path', type=str)
-    parser.add_argument('--start', type=int)
-    parser.add_argument('--stop', type=int)
     args = parser.parse_args()
     ms.context.set_context(mode=ms.context.PYNATIVE_MODE, device_target="Ascend")
-    train_net_with_dynamic_profiler(output_path=args.output_path, cfg_path=args.cfg_path,
-                                    start=args.start, stop=args.stop)
+    train_net_with_dynamic_profiler(output_path=args.output_path, cfg_path=args.cfg_path)

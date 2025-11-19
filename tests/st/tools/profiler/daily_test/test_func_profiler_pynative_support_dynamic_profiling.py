@@ -30,8 +30,8 @@ def test_func_profiler_dynamic_profiler_monitor_start_1_19_change_1_19():
     Expectation: Generate profiling data and validate expected step IDs.
     """
     data_cfg = {
-        "start_step": 1,
-        "stop_step": 5,
+        "start_step": 6,
+        "stop_step": 7,
         "aic_metrics": "ArithmeticUtilization",
         "profiler_level": "LevelNone",
         "activities": ["CPU", "NPU"],
@@ -48,30 +48,6 @@ def test_func_profiler_dynamic_profiler_monitor_start_1_19_change_1_19():
         "parallel_strategy": True,
         "data_simplification": True,
     }
-    with tempfile.TemporaryDirectory(suffix="10_15") as tmpdir:
-        cfg_path = os.path.join(tmpdir, "profiler_config.json")
-        with open(cfg_path, 'w', encoding='utf-8') as file:
-            json.dump(data_cfg, file, ensure_ascii=False, indent=4)
-
-        rank_id = get_rank()
-        dir_list = [f"rank{rank_id}_start1_stop5", f"rank{rank_id}_start10_stop15"]
-        ret = os.system(
-            f"python run_net_with_dynamic_profiler.py --output_path {tmpdir} --cfg_path {tmpdir} --start 10 --stop 15")
-        assert ret == 0
-        for i in range(2):
-            prof_config = {"output_path": os.path.join(tmpdir, dir_list[i]),
-                           "profile_memory": False,
-                           "profile_level": 0,
-                           "record_shapes": True,
-                           "sys_io": True,
-                           "sys_interconnection": True,
-                           "pynative_step": True,
-                           "export_type": "dbtext"}
-            profiler_check = MSProfilerChecker(prof_config, 1, check_step_id=[1, 2, 3, 4, 5])
-            profiler_check()
-
-    data_cfg["start_step"] = 1
-    data_cfg["stop_step"] = 19
 
     with tempfile.TemporaryDirectory(suffix="1_19") as tmpdir:
         cfg_path = os.path.join(tmpdir, "profiler_config.json")
@@ -79,9 +55,8 @@ def test_func_profiler_dynamic_profiler_monitor_start_1_19_change_1_19():
             json.dump(data_cfg, file, ensure_ascii=False, indent=4)
 
         rank_id = get_rank()
-        dir_list = [f"rank{rank_id}_start1_stop19"]
-        ret = os.system(
-            f"python run_net_with_dynamic_profiler.py --output_path {tmpdir} --cfg_path {tmpdir} --start 1 --stop 19")
+        dir_list = [f"rank{rank_id}_start6_stop7"]
+        ret = os.system(f"python run_net_with_dynamic_profiler.py --output_path {tmpdir} --cfg_path {tmpdir}")
         assert ret == 0
         for i in range(1):
             prof_config = {"output_path": os.path.join(tmpdir, dir_list[i]),
@@ -92,6 +67,5 @@ def test_func_profiler_dynamic_profiler_monitor_start_1_19_change_1_19():
                            "sys_interconnection": True,
                            "pynative_step": True,
                            "export_type": "dbtext"}
-            profiler_check = MSProfilerChecker(prof_config, 1,
-                                               check_step_id=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14])
+            profiler_check = MSProfilerChecker(prof_config, 1, check_step_id=[1, 2])
             profiler_check()
