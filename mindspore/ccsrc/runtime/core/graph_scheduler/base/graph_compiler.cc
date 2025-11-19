@@ -58,6 +58,7 @@
 #include "include/runtime/utils/runtime_conf/runtime_conf.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_g.h"
+#include "backend/backend_manager/backend_jit_config.h"
 
 namespace mindspore {
 namespace runtime {
@@ -440,6 +441,9 @@ void ResetNodeId(const std::vector<KernelGraphPtr> &graphs) {
   for (const auto &graph : graphs) {
     MS_EXCEPTION_IF_NULL(graph);
     if (graph->memory_managed_by_ge()) {
+      continue;
+    }
+    if (!graph->backend_jit_config().IsGptoOptionsEmpty()) {
       continue;
     }
 

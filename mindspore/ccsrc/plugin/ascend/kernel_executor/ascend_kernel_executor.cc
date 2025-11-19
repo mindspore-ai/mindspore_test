@@ -36,6 +36,7 @@
 #include "mindapi/base/type_id.h"
 #include "mindspore/ops/op_def/array_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
+#include "backend/backend_manager/backend_jit_config.h"
 #include "backend/common/kernel_graph/kernel_graph_mgr.h"
 #include "plugin/ascend/res_manager/device_context_conf/op_debug_conf.h"
 #include "plugin/ascend/res_manager/device_context_conf/op_precision_conf.h"
@@ -43,7 +44,6 @@
 #include "plugin/ascend/graph_optimizer/ascend_graph_optimization.h"
 #include "plugin/ascend/graph_optimizer/somas/acl_somas.h"
 #include "plugin/ascend/graph_optimizer/stream_assign/acl_stream_assign.h"
-#include "plugin/ascend/graph_optimizer/gpto/gpto.h"
 #include "plugin/ascend/res_manager/error_manager/param_restore.h"
 #include "plugin/ascend/res_manager/error_manager/collective_comm_monitor.h"
 #include "plugin/ascend/stress_detect/stress_detect.h"
@@ -1070,9 +1070,7 @@ kernel::KernelModPtr AscendKernelExecutor::CreateKernelMod(const std::string &op
   return kernel_ptr;
 }
 
-void AscendKernelExecutor::DoStreamAssign(
-  const KernelGraphPtr &kernel_graph,
-  const std::vector<std::pair<CNodePtr, std::tuple<char, size_t, size_t, size_t>>> &mock_exec_order) const {
+void AscendKernelExecutor::DoStreamAssign(const KernelGraphPtr &kernel_graph) const {
   MS_LOG(DEBUG) << "Status record: start stream assign.";
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
@@ -1086,7 +1084,7 @@ void AscendKernelExecutor::DoStreamAssign(
   if (runtime::IsDisableRuntimeConfig(runtime::kRuntimeMultiStream)) {
     MS_LOG(INFO) << "Force single stream.";
   } else {
-    AclStreamAssign::GetInstance().AssignStream(NOT_NULL(kernel_graph), mock_exec_order, res_manager_);
+    AclStreamAssign::GetInstance().AssignStream(NOT_NULL(kernel_graph), res_manager_);
   }
 #ifdef ENABLE_DUMP_IR
   auto context_ptr = MsContext::GetInstance();
@@ -1179,6 +1177,9 @@ void ResetCNodeName(const AnfNodePtrList &all_nodes) {
 }
 
 void ResetNodeIds(const KernelGraphPtr &kernel_graph) {
+  if (!kernel_graph->backend_jit_config().IsGptoOptionsEmpty()) {
+    return;
+  }
   if (!kernel_graph->memory_managed_by_ge()) {
     MS_LOG(INFO) << "Start reset node id";
     const auto &all_nodes = mindspore::TopoSort(kernel_graph->get_return(), SuccDeeperSimple);
@@ -1242,12 +1243,7 @@ void AscendKernelExecutor::PreprocessBeforeRun(const FuncGraphPtr &graph) const 
     }
   }
   ResetNodeIds({kernel_graph});
-  std::vector<std::pair<CNodePtr, std::tuple<char, size_t, size_t, size_t>>> mock_exec_order;
-  if (common::GetEnv("MS_ENABLE_GPTO") == "1") {
-    MS_LOG(INFO) << "Current Exec Order Algo in MS Context is GPTO";
-    mindspore::gpto::GPTO(res_manager_, kernel_graph, &mock_exec_order);
-  }
-  DoStreamAssign(kernel_graph, mock_exec_order);
+  DoStreamAssign(kernel_graph);
   CreateEventKernelMod(kernel_graph);
   kernel_graph->PrintGraphExecuteOrder();
   DoSomas(NOT_NULL(graph));

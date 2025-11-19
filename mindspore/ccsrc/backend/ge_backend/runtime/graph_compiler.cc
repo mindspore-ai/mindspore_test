@@ -47,6 +47,7 @@
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "include/runtime/utils/runtime_conf/runtime_conf.h"
 #include "backend/ge_backend/executor/ge_graph_executor.h"
+#include "backend/backend_manager/backend_jit_config.h"
 
 namespace mindspore {
 namespace ge_backend {
@@ -78,6 +79,9 @@ void ResetNodeId(const std::vector<KernelGraphPtr> &graphs) {
   for (const auto &graph : graphs) {
     MS_EXCEPTION_IF_NULL(graph);
     if (graph->memory_managed_by_ge()) {
+      continue;
+    }
+    if (!graph->backend_jit_config().IsGptoOptionsEmpty()) {
       continue;
     }
 
