@@ -79,14 +79,6 @@ bool HasShapeDynamic(const ShapeVector &shape_list) {
   return std::any_of(shape_list.begin(), shape_list.end(), [](int64_t v) { return v == kShapeDimAny; });
 }
 
-inline int64_t CalMaxShape(int64_t ori_val, int64_t new_val) {
-  if (ori_val < 0) {
-    return kShapeDimAny;
-  }
-
-  return new_val;
-}
-
 template <typename T>
 T Gcd(T a, T b) {
   if (b == 0) {
