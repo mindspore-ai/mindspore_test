@@ -1,5 +1,5 @@
 /**
- * Copyright 2023-2025 Huawei Technologies Co., Ltd
+ * Copyright 2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,20 +14,17 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_GATHER_ND_H_
-#define MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_GATHER_ND_H_
-
-#include <vector>
-#include "ops/ops_func_impl/op_func_impl.h"
+#include "mindspore/ops/kernel/gpu/pyboost/customize/gather_nd_ext.h"
+#include <optional>
+#include "mindspore/ccsrc/pyboost/customize/gather_nd_ext.h"
 
 namespace mindspore {
-namespace ops {
-class OPS_API GatherNdFuncImpl : public OpFuncImpl {
- public:
-  BaseShapePtr InferShape(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
-  TypePtr InferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
-};
-}  // namespace ops
+namespace kernel {
+namespace pyboost {
+tensor::TensorPtr GatherNdExtGPUCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
+                                          const TensorPtr &indices_tensor) {
+  return GatherNdExtCustomize(op, input_tensor, indices_tensor);
+}
+}  // namespace pyboost
+}  // namespace kernel
 }  // namespace mindspore
-
-#endif  // MINDSPORE_CORE_OPS_GATHER_ND_H_

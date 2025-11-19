@@ -1,5 +1,5 @@
 /**
- * Copyright 2023-2025 Huawei Technologies Co., Ltd
+ * Copyright 2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,20 +14,21 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_GATHER_ND_H_
-#define MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_GATHER_ND_H_
+#ifndef MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_TENSOR_SCATTER_ARITHMETIC_H_
+#define MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_TENSOR_SCATTER_ARITHMETIC_H_
 
 #include <vector>
 #include "ops/ops_func_impl/op_func_impl.h"
 
 namespace mindspore {
 namespace ops {
-class OPS_API GatherNdFuncImpl : public OpFuncImpl {
+class OPS_API TensorScatterArithmeticFuncImpl : public OpFuncImpl {
  public:
-  BaseShapePtr InferShape(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
-  TypePtr InferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
+  ShapeArray InferShape(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const override;
+  std::vector<TypeId> InferType(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const override;
+  bool GeneralInferRegistered() const override { return true; };
 };
 }  // namespace ops
 }  // namespace mindspore
 
-#endif  // MINDSPORE_CORE_OPS_GATHER_ND_H_
+#endif  // MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_TENSOR_SCATTER_ARITHMETIC_H_

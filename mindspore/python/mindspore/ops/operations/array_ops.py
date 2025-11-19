@@ -42,7 +42,7 @@ from ..auto_generate import (
     NonZero, ResizeNearestNeighbor, Identity, Split, CumSum, CumProd,
     MaskedSelect, Cummax, Cummin, Argmin, Concat, UnsortedSegmentSum, UniqueConsecutive,
     ScalarToTensor, Triu, BroadcastTo, StridedSlice, Select, TopkExt,
-    SearchSorted, Meshgrid, Squeeze, Slice, TransposeExtView, MaskedScatter)
+    SearchSorted, Meshgrid, Squeeze, Slice, TransposeExtView, MaskedScatter, TensorScatterAdd)
 from .manually_defined import Rank, Shape, Tile, Cast, Ones, Zeros, TypeAs
 from ..auto_generate import ArgMaxWithValue, ArgMinWithValue
 from ..auto_generate import TensorScatterElements as TensorScatterElementsExt
@@ -1149,6 +1149,7 @@ class FillV2(PrimitiveWithCheck):
         return (True, x)
 
     def infer_value(self, dims, x):
+        """Infer constant output tensor when inputs are compile-time constants."""
         if x is None or dims is None or isinstance(dims, (Tensor, Tensor_)):
             return None
         if isinstance(dims, (tuple, list)) and None in dims:
@@ -1210,7 +1211,7 @@ class TupleToArray(PrimitiveWithInfer):
 
     def __call__(self, *args):
         x, = args
-        args = list()
+        args = []
         if isinstance(x, range):
             args.append(tuple(x))
         else:
@@ -1285,13 +1286,13 @@ class InvertPermutation(PrimitiveWithInfer):
             if z[i - 1] == z[i]:
                 raise ValueError(f"For '{self.name}', the 'input_x' can not contain duplicate values, "
                                  f"but got duplicated {z[i]} in the 'input_x'.")
-        validator.check(f'value min', min(x_value), '', 0, validator.EQ, self.name)
-        validator.check(f'value max', max(x_value), '', len(x_value) - 1, validator.EQ, self.name)
+        validator.check('value min', min(x_value), '', 0, validator.EQ, self.name)
+        validator.check('value max', max(x_value), '', len(x_value) - 1, validator.EQ, self.name)
 
         y = [None] * len(x_value)
         for i, value in enumerate(x_value):
             validator.check_value_type("input[%d]" % i, value, [int], self.name)
-            validator.check(f'value', z[i], f'index', i, validator.EQ, self.name)
+            validator.check('value', z[i], 'index', i, validator.EQ, self.name)
             y[value] = i
             z.append(value)
         return {'shape': x_shp,
@@ -1412,7 +1413,7 @@ class UnsortedSegmentMin(PrimitiveWithCheck):
         validator.check_subclass("num_segments", num_segments_type, [mstype.number], self.name)
         if not is_shape_unknown(x_shape) and not is_shape_unknown(segment_ids_shape):
             # only validate when both shapes fully known
-            validator.check(f'first shape of input_x', x_shape[0],
+            validator.check('first shape of input_x', x_shape[0],
                             'length of segments_id', segment_ids_shape[0], validator.EQ, self.name)
         num_segments_v = num_segments['value']
         validator.check_value_type('num_segments', num_segments_v, [int], self.name)
@@ -1532,7 +1533,7 @@ class UnsortedSegmentMax(PrimitiveWithCheck):
         validator.check_subclass("num_segments", num_segments_type, [mstype.number], self.name)
         if not is_shape_unknown(x_shape) and not is_shape_unknown(segment_ids_shape):
             # only validate when both shapes fully known
-            validator.check(f'first shape of input_x', x_shape[0],
+            validator.check('first shape of input_x', x_shape[0],
                             'length of segments_id', segment_ids_shape[0], validator.EQ, self.name)
         num_segments_v = num_segments['value']
         if num_segments_v is not None:
@@ -4243,57 +4244,6 @@ class TensorScatterSub(Primitive):
         >>> print(output)
         [[-3.3000002  0.3        3.6      ]
          [ 0.4        0.5       -3.2      ]]
-    """
-
-    @prim_attr_register
-    def __init__(self):
-        self.init_prim_io_names(inputs=['input_x', 'indices', 'updates'], outputs=['y'])
-
-
-class TensorScatterAdd(Primitive):
-    """
-    Creates a new tensor by adding the values from the positions in `input_x` indicated by
-    `indices`, with values from `updates`. When multiple values are given for the same
-    index, the updated result will be the sum of all values. This operation is almost
-    equivalent to using :class:`mindspore.ops.ScatterNdAdd`, except that the updates are applied on output `Tensor`
-    instead of input `Parameter`.
-
-    Refer to :func:`mindspore.ops.tensor_scatter_add` for more details.
-
-    Inputs:
-        - **input_x** (Tensor) - The target tensor. The dimension of input_x must be no less than indices.shape[-1].
-        - **indices** (Tensor) - The index of input tensor whose data type is int32 or int64.
-          The rank must be at least 2.
-        - **updates** (Tensor) - The tensor to update the input tensor, has the same type as input,
-          and updates. Shape should be equal to indices.shape[:-1] + input_x.shape[indices.shape[-1]:].
-
-    Outputs:
-        Tensor, has the same shape and type as `input_x`.
-
-    Supported Platforms:
-        ``Ascend`` ``GPU`` ``CPU``
-
-    Examples:
-        >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> input_x = Tensor(np.array([[-0.1, 0.3, 3.6], [0.4, 0.5, -3.2]]), mindspore.float32)
-        >>> indices = Tensor(np.array([[0, 0], [0, 0]]), mindspore.int32)
-        >>> updates = Tensor(np.array([1.0, 2.2]), mindspore.float32)
-        >>> # Next, demonstrate the approximate operation process of this operator:
-        >>> # 1, indices[0] = [0, 0], indices[1] = [0, 0]
-        >>> # 2, And input_x[0, 0] = -0.1
-        >>> # 3, So input_x[indices] = [-0.1, -0.1]
-        >>> # 4, Satisfy the above formula: input_x[indices].shape=(2) == updates.shape=(2)
-        >>> op = ops.TensorScatterAdd()
-        >>> # 5, Perform the addition operation for the first time:
-        >>> #      first_input_x = input_x[0][0] + updates[0] = [[0.9, 0.3, 3.6], [0.4, 0.5, -3.2]]
-        >>> # 6, Perform the addition operation for the second time:
-        >>> #      second_input_x = input_x[0][0] + updates[1] = [[3.1, 0.3, 3.6], [0.4, 0.5, -3.2]]
-        >>> output = op(input_x, indices, updates)
-        >>> print(output)
-        [[ 3.1  0.3  3.6]
-         [ 0.4  0.5 -3.2]]
     """
 
     @prim_attr_register
