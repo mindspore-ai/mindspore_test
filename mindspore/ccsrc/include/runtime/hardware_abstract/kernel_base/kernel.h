@@ -92,30 +92,9 @@ struct KernelLaunchAddr {
   AddressPtrList outputs_;
   AddressPtrList workspaces_;
 };
-struct TensorInfo {
-  mindspore::Format format;
-  abstract::AbstractTensorPtr base_;
-};
-struct ScalarInfo {
-  abstract::AbstractScalarPtr base_;
-};
-struct ListInfo {
-  abstract::AbstractListPtr base_;
-};
-struct TupleInfo {
-  abstract::AbstractTuplePtr base_;
-};
-using TensorInfoPtr = std::shared_ptr<TensorInfo>;
 using BaseOperatorPtr = std::shared_ptr<ops::BaseOperator>;
 
 class KernelAttr;
-
-// The info of kernel launch.
-struct KernelLaunchInfo {
-  std::vector<KernelTensor *> inputs_;
-  std::vector<KernelTensor *> outputs_;
-  std::vector<KernelTensor *> workspaces_;
-};
 
 enum KernelErrorCode : int { KRET_OK = 0, KRET_RESIZE_FAILED = 1, KRET_UNKNOWN_SHAPE = 2, KRET_UNKNOWN_OUT_SHAPE = 3 };
 
