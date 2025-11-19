@@ -5204,7 +5204,7 @@ REG_BPROP_BUILDER("DiagExt").SetUnusedInputs({i0, i2}).SetBody(BODYFUNC(ib) {
   }
 });
 
-REG_BPROP_BUILDER("Polar").FreeUselessValues_I({i0}).SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("Polar").FreeUselessValues_I({}).SetBody(BODYFUNC(ib) {
   const auto &input_abs = ib->GetInput(i0);
   const auto &input_angle = ib->GetInput(i1);
   const auto &out = ib->GetInput(i2);
@@ -5225,9 +5225,7 @@ REG_BPROP_BUILDER("Polar").FreeUselessValues_I({i0}).SetBody(BODYFUNC(ib) {
   }
 
   if (input_angle->need_compute_grad_out()) {
-    auto zeros = ib->ZerosLikeExt(input_angle, ib->EmitValue(kNone));
-    auto ones = ib->OnesLike(input_angle);
-    auto i = ib->Complex(zeros, ones);
+    auto i = ib->Complex(ib->Tensor(0.0, ib->GetDtype(input_angle)), ib->Tensor(1.0, ib->GetDtype(input_angle)));
     auto result_mul_1_j = ib->Mul(out, i);
     auto broadcast_axes = ib->BroadcastGradientArgs(dout, input_angle);
     MS_EXCEPTION_IF_CHECK_FAIL(!broadcast_axes.empty(), "BroadcastGradientArgs out should not be empty!");
