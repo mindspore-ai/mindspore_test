@@ -155,13 +155,120 @@ void MarkStreamLimitCtxForNodes(const FuncGraphPtr &func) {
   }
 }
 
+int64_t ExtractStreamId(const std::string &text) {
+  std::string keyword = "stream id:";
+  size_t pos = text.find(keyword);
+  if (pos == std::string::npos) {
+    return -1;
+  }
+  pos += keyword.length();
+  while (pos < text.length() && std::isspace(text[pos])) {
+    pos++;
+  }
+  int64_t result = 0;
+  bool found_digit = false;
+
+  while (pos < text.length() && std::isdigit(text[pos])) {
+    found_digit = true;
+    result = result * 10 + (text[pos] - '0');
+    pos++;
+  }
+  return found_digit ? result : -1;
+}
+
+size_t GetStreamId(const ValuePtr &value) {
+  auto stream_id = ExtractStreamId(value->ToString());
+  if (stream_id == -1) {
+    MS_LOG(EXCEPTION) << "GetStreamID node is wrong.";
+  }
+  return static_cast<size_t>(stream_id);
+}
+
+void GetFuncAttrFromGetStreamInfoNode(const FuncGraphPtr &func) {
+  auto topo_nodes = TopoSort(func->get_return());
+  auto mgr = func->manager();
+  MS_EXCEPTION_IF_NULL(mgr);
+  for (const auto &node : topo_nodes) {
+    if (!node->isa<CNode>()) {
+      continue;
+    }
+    if (!IsPrimitiveCNode(node, prim::kPrimGetStreamInfo)) {
+      continue;
+    }
+
+    const size_t args_min_size = 3;
+    const size_t args_max_size = 5;
+
+    // GetStreamInfo(kFuncGraphFlagStreamId, stream_id_node)
+    // GetStreamInfo(kFuncGraphFlagStreamCtxAfter, stream_id_node)
+    // GetStreamInfo(kFuncGraphFlagStreamLimitId, stream_id_node, cube_num, vector_num)
+    // GetStreamInfo(kFuncGraphFlagStreamLimitCtxAfter, stream_id_node)
+
+    auto get_stream_info = node->cast<CNodePtr>();
+    size_t arg_length = get_stream_info->inputs().size();
+    if (arg_length != args_min_size && arg_length != args_max_size) {
+      MS_LOG(INTERNAL_EXCEPTION) << "The GetStreamInfo operator requires 3 or 5 arguments, but got " << arg_length
+                                 << ".";
+    }
+    MS_LOG(DEBUG) << "get_stream_info: " << get_stream_info->DebugString();
+    constexpr auto kFlagIndex = 1;
+    constexpr auto kStreamIdIndex = 2;
+
+    auto flag_arg = get_stream_info->input(kFlagIndex)->abstract();
+    auto flag_str = GetValue<string>(flag_arg->BuildValue());
+    MS_LOG(DEBUG) << "flag_str: " << flag_str;
+    auto stream_id_node = get_stream_info->input(kStreamIdIndex);
+    MS_LOG(DEBUG) << "stream_id_node: " << stream_id_node->DebugString();
+    auto stream_id_abs = stream_id_node->abstract();
+    MS_EXCEPTION_IF_NULL(stream_id_abs);
+    ValuePtr value_track = stream_id_abs->GetValueTrack();
+    MS_EXCEPTION_IF_NULL(value_track);
+    size_t stream_id = GetStreamId(value_track);
+
+    if (arg_length == args_min_size) {
+      MS_LOG(DEBUG) << "set flag_str: " << flag_str << " for func:" << func->ToString();
+      func->set_attr(flag_str, MakeValue(static_cast<size_t>(stream_id)));
+    } else {
+      constexpr auto kCubeNumIndex = 3;
+      constexpr auto kVectorNumIndex = 4;
+      auto cube_num_node = get_stream_info->input(kCubeNumIndex);
+      auto cube_num_abs = cube_num_node->abstract();
+      MS_EXCEPTION_IF_NULL(cube_num_abs);
+      auto cube_value = cube_num_abs->BuildValue();
+      auto cube_num = GetValue<int64_t>(cube_value);
+
+      auto vector_num_node = get_stream_info->input(kVectorNumIndex);
+      auto vector_num_abs = vector_num_node->abstract();
+      MS_EXCEPTION_IF_NULL(vector_num_abs);
+      auto vector_value = vector_num_abs->BuildValue();
+      auto vector_num = GetValue<int64_t>(vector_value);
+      MS_LOG(DEBUG) << "set kFuncGraphFlagStreamLimitId: " << stream_id << " for func:" << func->ToString();
+      MS_LOG(DEBUG) << "cube_num: " << cube_num << " vector_num: " << vector_num;
+      func->set_attr(kFuncGraphFlagStreamLimitId, MakeValue(static_cast<size_t>(stream_id)));
+      func->set_attr(kFuncGraphFlagCubeNum, MakeValue(static_cast<int64_t>(cube_num)));
+      func->set_attr(kFuncGraphFlagVectorNum, MakeValue(static_cast<int64_t>(vector_num)));
+    }
+
+    auto scalar_abs = std::make_shared<abstract::AbstractScalar>(0);
+    ValuePtr val = scalar_abs->BuildValue();
+    MS_EXCEPTION_IF_NULL(val);
+    AnfNodePtr value_node = NewValueNode(val);
+    value_node->set_abstract(scalar_abs);
+    mgr->Replace(node, value_node);
+  }
+}
+
 bool WithStreamMark(const FuncGraphPtr &root, const opt::OptimizerPtr &) {
   MS_EXCEPTION_IF_NULL(root);
   MS_LOG(DEBUG) << "The root fg: " << root->ToString();
-
+  GetFuncAttrFromGetStreamInfoNode(root);
+  const auto &all_func_graphs = root->func_graphs_used_total();
+  for (auto &fg : all_func_graphs) {
+    MS_EXCEPTION_IF_NULL(fg);
+    GetFuncAttrFromGetStreamInfoNode(fg);
+  }
   // For root func_graph, only need transfer stream_id flag.
   TransferFlagForSubFunc(root);
-  const auto &all_func_graphs = root->func_graphs_used_total();
   for (auto &fg : all_func_graphs) {
     MS_EXCEPTION_IF_NULL(fg);
     TransferFlagForSubFunc(fg);
@@ -172,7 +279,6 @@ bool WithStreamMark(const FuncGraphPtr &root, const opt::OptimizerPtr &) {
     MS_EXCEPTION_IF_NULL(fg);
     fg->erase_flag("marked_stream_id");
   }
-
   MarkStreamIdForNodes(root);
   for (auto &fg : all_func_graphs) {
     MarkStreamIdForNodes(fg);

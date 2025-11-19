@@ -4681,6 +4681,7 @@ FunctionBlockPtr Parser::StreamCtxBlock(const FunctionBlockPtr &block, const py:
 
   auto original_body_func = body_block->func_graph();
   MS_EXCEPTION_IF_NULL(original_body_func);
+  auto original_body_block = body_block;
 
   py::object body_node = python_adapter::GetPyObjAttr(node, "body");
   body_block = ParseStatements(body_block, body_node);
@@ -4691,26 +4692,32 @@ FunctionBlockPtr Parser::StreamCtxBlock(const FunctionBlockPtr &block, const py:
   auto after_func = after_block->func_graph();
   MS_EXCEPTION_IF_NULL(after_func);
 
-  // WithStreamCall(mark_flag, func_graph, stream_id)
-  // WithStreamCall("stream_ctx_after", after_func_graph, stream_id)
-  auto with_stream_call_prim = std::make_shared<prim::WithStreamCall>("with_stream_call");
-  AnfNodePtrList with_stream_after_call_inputs{NewValueNode(with_stream_call_prim),
-                                               NewValueNode(kFuncGraphFlagStreamCtxAfter), NewValueNode(after_func),
-                                               stream_id_node};
-  auto with_stream_after_call = after_func->NewCNode(with_stream_after_call_inputs);
-  after_block->AddIsolatedNode(with_stream_after_call);
+  // GetStreamInfo(kFuncGraphFlagStreamCtxAfter, stream_id_node) add to after_func
+  auto get_stream_info_op = NewValueNode(prim::kPrimGetStreamInfo);
+  AnfNodePtrList with_stream_after_nodes_inputs{get_stream_info_op, NewValueNode(kFuncGraphFlagStreamCtxAfter),
+                                                stream_id_node};
+  auto with_stream_after_node = after_func->NewCNode(with_stream_after_nodes_inputs);
+  after_func->set_flag(FUNC_GRAPH_FLAG_NO_INLINE, true);
+  after_block->AddIsolatedNode(with_stream_after_node);
 
   auto body_func = body_block->func_graph();
   MS_EXCEPTION_IF_NULL(body_func);
   if (body_func->get_return() == nullptr) {
     body_block->Jump(after_block, {});
   }
-  // WithStreamCall(mark_flag, func_graph, stream_id)
-  // WithStreamCall("stream_id", body_func_graph, stream_id)
-  AnfNodePtrList with_stream_call_inputs{NewValueNode(with_stream_call_prim), NewValueNode(kFuncGraphFlagStreamId),
-                                         NewValueNode(original_body_func), stream_id_node};
-  auto with_stream_call = body_func->NewCNode(with_stream_call_inputs);
-  body_block->AddIsolatedNode(with_stream_call);
+
+  // GetStreamInfo(kFuncGraphFlagStreamId, stream_id_node) add to body_func
+  AnfNodePtrList with_stream_node_inputs{get_stream_info_op, NewValueNode(kFuncGraphFlagStreamId), stream_id_node};
+  if (original_body_func != body_func) {
+    auto with_stream_node = original_body_func->NewCNode(with_stream_node_inputs);
+    original_body_func->set_flag(FUNC_GRAPH_FLAG_NO_INLINE, true);
+    original_body_block->AddIsolatedNode(with_stream_node);
+  } else {
+    auto with_stream_node = body_func->NewCNode(with_stream_node_inputs);
+    body_func->set_flag(FUNC_GRAPH_FLAG_NO_INLINE, true);
+    body_block->AddIsolatedNode(with_stream_node);
+  }
+
   return after_block;
 }
 
@@ -4733,31 +4740,30 @@ FunctionBlockPtr Parser::StreamLimitCtxBlock(const FunctionBlockPtr &block, cons
   auto after_func = after_block->func_graph();
   MS_EXCEPTION_IF_NULL(after_func);
 
-  // WithStreamCall(mark_flag, func_graph, stream_id, cube_num, vector_num)
-  // WithStreamCall("stream_limit_id", body_func_graph, stream_id, cube_num, vector_num)
   constexpr size_t stream_id_index = 0;
   constexpr size_t cube_num_index = 1;
   constexpr size_t vector_num_index = 2;
   auto arg_nodes = NewStreamLimitCtxArgsNode(block, context_expr_obj);
-
-  // WithStreamCall(mark_flag, func_graph, stream_id)
-  // WithStreamCall("stream_limit_ctx_after", limit_after_func_graph, stream_id)
-  auto with_stream_call_prim = std::make_shared<prim::WithStreamCall>("with_stream_call");
-  AnfNodePtrList with_stream_limit_after_call_inputs{NewValueNode(with_stream_call_prim),
-                                                     NewValueNode(kFuncGraphFlagStreamLimitCtxAfter),
-                                                     NewValueNode(after_func), arg_nodes[stream_id_index]};
-  auto with_stream_limit_after_call = after_func->NewCNode(with_stream_limit_after_call_inputs);
-  after_block->AddIsolatedNode(with_stream_limit_after_call);
+  // GetStreamInfo(kFuncGraphFlagStreamLimitCtxAfter, stream_id_node) add to StreamLimitCTx after_func.
+  auto get_stream_info_op = NewValueNode(prim::kPrimGetStreamInfo);
+  AnfNodePtrList with_stream_limit_after_node_inputs{
+    get_stream_info_op, NewValueNode(kFuncGraphFlagStreamLimitCtxAfter), arg_nodes[stream_id_index]};
+  auto with_stream_limit_after_node = after_func->NewCNode(with_stream_limit_after_node_inputs);
+  after_func->set_flag(FUNC_GRAPH_FLAG_NO_INLINE, true);
+  after_block->AddIsolatedNode(with_stream_limit_after_node);
   auto body_func = body_block->func_graph();
   MS_EXCEPTION_IF_NULL(body_func);
   if (body_func->get_return() == nullptr) {
     body_block->Jump(after_block, {});
   }
-  AnfNodePtrList with_stream_call_inputs{NewValueNode(with_stream_call_prim), NewValueNode(kFuncGraphFlagStreamLimitId),
-                                         NewValueNode(original_body_func),    arg_nodes[stream_id_index],
-                                         arg_nodes[cube_num_index],           arg_nodes[vector_num_index]};
-  auto with_stream_call = body_func->NewCNode(with_stream_call_inputs);
-  body_block->AddIsolatedNode(with_stream_call);
+  // GetStreamInfo(kFuncGraphFlagStreamLimitId, stream_id_node, cube_num_node, vector_num_node)
+  // add to StreamLimitCTx body_func.
+  AnfNodePtrList with_stream_node_inputs{get_stream_info_op, NewValueNode(kFuncGraphFlagStreamLimitId),
+                                         arg_nodes[stream_id_index], arg_nodes[cube_num_index],
+                                         arg_nodes[vector_num_index]};
+  auto with_stream_node = body_func->NewCNode(with_stream_node_inputs);
+  body_func->set_flag(FUNC_GRAPH_FLAG_NO_INLINE, true);
+  body_block->AddIsolatedNode(with_stream_node);
   return after_block;
 }
 

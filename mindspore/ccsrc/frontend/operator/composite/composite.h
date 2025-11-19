@@ -31,7 +31,6 @@
 #include "frontend/operator/composite/list_operation.h"
 #include "frontend/operator/composite/do_signature.h"
 #include "frontend/operator/composite/unpack_call.h"
-#include "frontend/operator/composite/with_stream_call.h"
 #include "frontend/operator/composite/multitype_funcgraph.h"
 #include "frontend/operator/composite/starred_operation.h"
 #include "frontend/jit/ps/static_analysis/static_analysis.h"

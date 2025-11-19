@@ -14,6 +14,7 @@
 # ============================================================================
 """Test with StreamCtx."""
 # pylint: disable=W1514
+# pylint: disable=W0621
 import os
 import re
 import shutil
@@ -770,6 +771,8 @@ def test_my_ms_jit_stream_ctx_self():
 s4 = Stream()
 s6 = Stream()
 stream_list = [s4, s6]
+
+
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_my_ms_jit_stream_ctx_list():
     """
@@ -834,7 +837,7 @@ def test_with_stream_event_with_morph_cse():
             with ms.runtime.StreamCtx(s2):
                 event_end_recv = event.wait()
                 x = ops.Depend()(input_x, event_end_recv)
-                x = ops.matmul(x, x+1)
+                x = ops.matmul(x, x + 1)
                 output.append(x)
                 event2 = ms.runtime.Event()
                 event2 = ops.Depend()(event2, x)
@@ -846,6 +849,7 @@ def test_with_stream_event_with_morph_cse():
             output = ops.Depend()(output, event_end_recv)
             output = output[0] + output[1]
             return output * 0.0000000001
+
         return inner
 
     class MorphNet(nn.Cell):
@@ -878,3 +882,89 @@ def test_with_stream_event_with_morph_cse():
     except FileNotFoundError:
         pass
     assert len(stream_recv_num) == 4
+
+
+loop_size = 2
+stream_list_2 = []
+for i in range(loop_size):
+    stream_list_2.append(Stream())
+
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_with_stream_with_morph_for_loop():
+    """
+    Feature: Support with stream in for loop.
+    Description: Support with stream in for loop.
+    Expectation: Run success.
+    """
+
+    def infer_dtype(args):
+        return args
+
+    def infer_shape(args):
+        return args
+
+    def mul_by(*args):
+        def inner(input_x):
+            for step_id in stream_list_2:
+                with ms.runtime.StreamCtx(step_id):
+                    input_x = ops.matmul(input_x, input_x)
+            return input_x
+
+        return inner
+
+    class MorphNet(nn.Cell):
+        def __init__(self):
+            super().__init__()
+            self.mul_by_100 = ops.Morph(mul_by(100), infer_shape, infer_dtype)
+
+        def construct(self, x):
+            out = self.mul_by_100(x)
+            return out
+
+    save_path = "./test_with_stream_with_morph_loop"
+    os.environ['MS_DEV_DUMP_IR_PASSES'] = 'validate'
+    ms.set_context(jit_config={"jit_level": "O0"}, save_graphs=True, save_graphs_path=save_path)
+    input_x = ops.ones((8192, 8192), dtype=ms.float32)
+    net = MorphNet()
+    net(input_x)
+    os.unsetenv('MS_DEV_DUMP_IR_PASSES')
+    content = read_file(save_path)
+    stream_id_num = re.findall('stream_id: I64', content)
+    try:
+        shutil.rmtree(save_path)
+    except FileNotFoundError:
+        pass
+    assert len(stream_id_num) == 2
+
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_with_stream_while_loop():
+    """
+    Feature: Support with stream in while loop.
+    Description: Support with stream in while loop.
+    Expectation: Run success.
+    """
+    class StreamWhileNet(nn.Cell):
+        def construct(self, x):
+            step_id = 0
+            while step_id < len(stream_list_2):
+                with ms.runtime.StreamCtx(stream_list_2[step_id]):
+                    x = ops.matmul(x, x)
+                step_id = step_id + 1
+            return x
+
+    save_path = "./test_with_stream_while_loop"
+    os.environ['MS_DEV_DUMP_IR_PASSES'] = 'validate'
+    ms.set_context(jit_config={"jit_level": "O0"}, save_graphs=True, save_graphs_path=save_path)
+    input_x = ops.ones((8192, 8192), dtype=ms.float32)
+    net = StreamWhileNet()
+    net(input_x)
+    os.unsetenv('MS_DEV_DUMP_IR_PASSES')
+    content = read_file(save_path)
+    stream_id_num = re.findall('stream_id: I64', content)
+    try:
+        shutil.rmtree(save_path)
+    except FileNotFoundError:
+        pass
+    assert len(stream_id_num) == 2

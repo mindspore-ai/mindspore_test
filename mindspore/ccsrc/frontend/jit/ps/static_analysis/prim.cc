@@ -5075,6 +5075,22 @@ class StreamRecvEvaluator final : public TransitionPrimEvaluator {
   }
 };
 
+class GetStreamInfoEvaluator final : public TransitionPrimEvaluator {
+ public:
+  GetStreamInfoEvaluator() : TransitionPrimEvaluator("GetStreamInfoEvaluator") {}
+  ~GetStreamInfoEvaluator() override = default;
+  MS_DECLARE_PARENT(GetStreamInfoEvaluator, TransitionPrimEvaluator);
+  EvalResultPtr EvalPrim(const AnalysisEnginePtr &, const AbstractBasePtrList &args_abs_list, const ConfigPtr &,
+                         const AnfNodeConfigPtr &out_conf) override {
+    // Set AbstractAny to ensure that the GetStreamInfo operator in constant loops remains in the subgraph, preventing
+    // it from being optimized away by constant folding.
+    const auto any_abstract = std::make_shared<AbstractAny>();
+    auto infer_result = std::make_shared<EvalResult>(any_abstract, std::make_shared<AttrValueMap>());
+    evaluator_cache_mgr_->SetValue(args_abs_list, infer_result);
+    return infer_result;
+  }
+};
+
 struct PrimitiveImplInferValue {
   PrimitiveImpl impl_;        // implement function of primitive
   bool eval_value_;           // whether evaluate value
@@ -5144,6 +5160,7 @@ void InitPrimEvaluatorConstructors() {
   constructor[prim::kPrimTraceGraph] = std::make_shared<TraceGraphEvaluator>();
   constructor[prim::kPrimStreamSend] = std::make_shared<StreamSendEvaluator>();
   constructor[prim::kPrimStreamRecv] = std::make_shared<StreamRecvEvaluator>();
+  constructor[prim::kPrimGetStreamInfo] = std::make_shared<GetStreamInfoEvaluator>();
 }
 
 void InitBuiltinPrimEvaluatorConstructors() {
