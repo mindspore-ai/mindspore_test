@@ -183,11 +183,17 @@ struct PYNATIVE_EXPORT ParserArgs {
     return std::make_optional(Convert<T>(index));
   }
 
+  void CheckHasFallback();
+  void CheckHasFallback(PyObject *obj);
+
+  bool has_fallback() const { return has_fallback_; }
+
   FunctionSignaturePtr signature_;
   std::vector<PyObject *> arg_list_;
   // {src_type , dst_type} for convert
   std::vector<ops::OP_DTYPE> src_types_;
   std::vector<ops::OP_DTYPE> dst_types_;
+  bool has_fallback_{false};
 };
 
 // parser util
@@ -207,12 +213,14 @@ inline const ParserArgs PythonArgParser::Parse(PyObject *args, PyObject *kwargs,
   if (signatures_.size() == 1) {
     ParserArgs parser_args(signatures_[0]);
     signatures_[0]->Parse(args, kwargs, parser_args, true);
+    parser_args.CheckHasFallback();
     return parser_args;
   }
 
   for (auto &signature : signatures_) {
     ParserArgs parser_args(signature);
     if (signature->Parse(args, kwargs, parser_args, false)) {
+      parser_args.CheckHasFallback();
       return parser_args;
     }
   }
@@ -265,12 +273,24 @@ class PYNATIVE_EXPORT Converter {
   std::optional<int64_t> ToBasicIntOptional(PyObject *python_args, size_t i);
   std::vector<int64_t> ToBasicIntVector(PyObject *python_args, size_t i);
   std::optional<std::vector<int64_t>> ToBasicIntVectorOptional(PyObject *python_args, size_t i);
+  bool has_fallback() const { return has_fallback_; }
 
  private:
   ops::OpDefPtr op_def_;
   // If op not type cast, source_type is default type: DT_BEGIN, if op type cast, source_type is origin type.
   std::vector<ops::OP_DTYPE> source_type_;
+  bool has_fallback_{false};
 };
+
+PYNATIVE_EXPORT PyObject *HandleFallback(PyObject *self, PyObject *py_args, PyObject *py_kwargs,
+                                         const std::string &func_name);
+PYNATIVE_EXPORT PyObject *HandleFallback(PyObject *self, PyObject *py_args, PyObject *py_kwargs,
+                                         const std::string &func_name, const py::cpp_function &func);
+
+PYNATIVE_EXPORT PyObject *HandleFallback(PyObject *self, PyObject *py_args, PyObject *py_kwargs,
+                                         const py::object &primitive);
+PYNATIVE_EXPORT PyObject *HandleFallback(PyObject *py_args, const py::object &primitive);
+PYNATIVE_EXPORT py::object HandleFallback(const py::args &args, const py::kwargs &kwargs, const py::object &primitive);
 }  // namespace pynative
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_PIPELINE_PYNATIVE_OP_FUNCTION_CONVERTER_H

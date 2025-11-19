@@ -23,6 +23,7 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <algorithm>
+#include "pynative/forward/pyboost/fallback.h"
 #include "include/common/utils/convert_utils_py.h"
 #include "frontend/operator/composite/functional_overload.h"
 #include "frontend/jit/ps/parse/data_converter.h"
@@ -325,6 +326,14 @@ std::optional<std::vector<int64_t>> ConvertIntVectorTuple(PyObject *obj) {
   }
   return convert;
 }
+
+bool PyObjectHasFallbackAttr(PyObject *obj) {
+  constexpr auto kFallback = "__fallback__";
+  if (!tensor::IsPyObjectTensorPy(obj)) {
+    return false;
+  }
+  return PyObject_HasAttrString(obj, kFallback);
+}
 }  // namespace
 namespace py = pybind11;
 
@@ -372,6 +381,9 @@ std::optional<std::vector<int64_t>> Converter::ToBasicIntVectorOptional(PyObject
 }
 
 void Converter::Parse(PyObject *python_args) {
+  // Converter is a static object
+  // reset the flag every time.
+  has_fallback_ = false;
   Py_ssize_t args_size = (python_args && python_args != Py_None) ? GetListOrTupleSize(python_args) : 0;
   if (op_def_->args_.size() != static_cast<size_t>(args_size)) {
     MS_LOG(EXCEPTION) << "For operator " << op_def_->name_ << ", it requires " << op_def_->args_.size()
@@ -383,6 +395,13 @@ ValuePtr Converter::ToTensor(PyObject *python_args, size_t i) {
   // type of python_args is py::list
   const auto &op_arg = op_def_->args_[i];
   PyObject *obj = PyList_GetItem(python_args, i);
+
+  if (!has_fallback_) {
+    if (fallback_enabled() && PyObjectHasFallbackAttr(obj)) {
+      has_fallback_ = true;
+    }
+  }
+
   source_type_[i] = OP_DTYPE::DT_BEGIN;
   auto tensor = parse::ConvertPyObjectTensor(obj);
   if (tensor != nullptr) {
@@ -428,8 +447,16 @@ ValueTuplePtr Converter::ToTensorList(PyObject *python_args, size_t i) {
   source_type_[i] = OP_DTYPE::DT_BEGIN;
   auto val_seq = parse::ConvertSequence<py::tuple, ValueTuple, parse::ConvertTensor>(obj);
   if (val_seq != nullptr && val_seq->isa<ValueTuple>()) {
-    EnablePipelineForTupleTensor(val_seq->cast<ValueTuplePtr>());
-    return val_seq->cast<ValueTuplePtr>();
+    auto value_tuple = val_seq->cast<ValueTuplePtr>();
+    if (!has_fallback_ && fallback_enabled()) {
+      const auto &values = value_tuple->value();
+      has_fallback_ = std::any_of(values.begin(), values.end(), [](const ValuePtr &value) {
+        MS_EXCEPTION_IF_NULL(value);
+        return value->isa<Tensor>() && value->cast<TensorPtr>()->has_fallback();
+      });
+    }
+    EnablePipelineForTupleTensor(value_tuple);
+    return value_tuple;
   }
   return ConvertValueTupleByCastDtype(python_args, op_arg, i);
 }
@@ -1246,8 +1273,7 @@ bool ListTypeCheck(PyObject *obj, const ops::OP_DTYPE &type, int &idx, bool full
     case OP_DTYPE::DT_LIST_BOOL:
       return CheckPyListType(obj, idx, IsPyBool, fullcheck);
     case OP_DTYPE::DT_LIST_STR:
-      return CheckPyListType(
-        obj, idx, [](PyObject *obj) { return PyUnicode_Check(obj); }, fullcheck);
+      return CheckPyListType(obj, idx, [](PyObject *obj) { return PyUnicode_Check(obj); }, fullcheck);
     case OP_DTYPE::DT_LIST_NUMBER:
       return CheckPyListType(obj, idx, parse::ParseUtilsCheckScalar, fullcheck);
     case OP_DTYPE::DT_TUPLE_ANY:
@@ -1590,6 +1616,30 @@ void ParserArgs::PrintConvertError(size_t index) {
   MS_EXCEPTION(TypeError) << ss.str();
 }
 
+void ParserArgs::CheckHasFallback() {
+  if (!fallback_enabled()) {
+    return;
+  }
+  for (const auto &arg : arg_list_) {
+    MS_LOG(DEBUG) << "Has fallback " << PyObjectHasFallbackAttr(arg) << " for " << PyUnicode_AsUTF8(PyObject_Str(arg));
+    if (PyObjectHasFallbackAttr(arg)) {
+      has_fallback_ = true;
+      return;
+    }
+  }
+}
+
+void ParserArgs::CheckHasFallback(PyObject *obj) {
+  if (!fallback_enabled()) {
+    return;
+  }
+  MS_LOG(DEBUG) << "Has fallback " << PyObjectHasFallbackAttr(obj) << " for " << PyUnicode_AsUTF8(PyObject_Str(obj));
+  if (PyObjectHasFallbackAttr(obj)) {
+    has_fallback_ = true;
+    return;
+  }
+}
+
 std::vector<std::string> GetInvalidKwargsName(PyObject *kwargs, const std::vector<FunctionParameter> &params) {
   std::vector<std::string> invalid_names;
   Py_ssize_t kwargs_size = PyDict_Size(kwargs);
@@ -1721,6 +1771,198 @@ std::string PythonArgParser::PrintParseError(PyObject *args, PyObject *kwargs, c
 ParserDefaultObjects &ParserDefaultObjects::GetInstance() {
   static ParserDefaultObjects default_objs_instance;
   return default_objs_instance;
+}
+
+PyObject *MergeSelfAndArgs(PyObject *self, PyObject *args) {
+  if (!self) {
+    PyErr_SetString(PyExc_RuntimeError, "self is null");
+    return nullptr;
+  }
+
+  PyObject *result = nullptr;
+
+  // Case 1: args is nullptr
+  if (args == nullptr) {
+    result = PyTuple_New(1);
+    if (!result) return nullptr;
+
+    Py_INCREF(self);  // SET_ITEM steals ref
+    PyTuple_SET_ITEM(result, 0, self);
+    return result;
+  }
+
+  // Case 2: args is a tuple
+  if (PyTuple_Check(args)) {
+    Py_ssize_t n = PyTuple_GET_SIZE(args);
+    result = PyTuple_New(n + 1);
+    if (!result) return nullptr;
+
+    Py_INCREF(self);
+    PyTuple_SET_ITEM(result, 0, self);
+
+    for (Py_ssize_t i = 0; i < n; ++i) {
+      PyObject *item = PyTuple_GET_ITEM(args, i);  // borrowed
+      Py_INCREF(item);
+      PyTuple_SET_ITEM(result, i + 1, item);
+    }
+    return result;
+  }
+
+  // Case 3: args is a single object
+  result = PyTuple_New(2);
+  if (!result) return nullptr;
+
+  Py_INCREF(self);
+  Py_INCREF(args);
+  PyTuple_SET_ITEM(result, 0, self);
+  PyTuple_SET_ITEM(result, 1, args);
+  return result;
+}
+
+PyObject *HandleFallback(PyObject *self, PyObject *py_args, PyObject *py_kwargs, const std::string &func_name) {
+  MS_LOG(DEBUG) << "Start HandleFallback";
+  // 1. self is tensor or subclass of tensor
+
+  // 2. get attr: self.__fallback__
+  PyObject *fallback = PyObject_GetAttrString(self, "__fallback__");
+  if (fallback == nullptr) {
+    MS_LOG(EXCEPTION) << "Cannot found __fallback__ attr from object " << Py_TYPE(self)->tp_name;
+  }
+
+  // 3. get `func` by `self.func_name`
+  PyObject *func = PyObject_GetAttrString((PyObject *)tensor::GetTensorPyType(), func_name.c_str());
+  if (func == nullptr) {
+    MS_LOG(EXCEPTION) << "Cannot found " << func_name << " from object " << Py_TYPE(self)->tp_name;
+  }
+
+  // 4. combine `self` and `py_args` to `new_args`
+  PyObject *new_args = MergeSelfAndArgs(self, py_args);
+
+  // 5. Call (self.__fallback__, func,  new_args, py_kwargs)
+  PyObject *ret = PyObject_CallFunctionObjArgs(fallback, func, new_args, py_kwargs, NULL);
+  if (ret == nullptr) {
+    PyErr_Print();
+    MS_LOG(EXCEPTION) << "Python fallback failed.";
+  }
+  MS_LOG(DEBUG) << "End HandleFallback";
+  return ret;
+}
+
+PyObject *HandleFallback(PyObject *self, PyObject *py_args, PyObject *py_kwargs, const py::object &primitive) {
+  MS_LOG(DEBUG) << "Start HandleFallback";
+  PyObject *fallback = PyObject_GetAttrString(self, "__fallback__");
+  if (fallback == nullptr) {
+    MS_LOG(EXCEPTION) << "Cannot found __fallback__ attr from object " << Py_TYPE(self)->tp_name;
+  }
+  // combine `self` and `py_args` to `new_args`
+  PyObject *new_args = MergeSelfAndArgs(self, py_args);
+  PyObject *ret = PyObject_CallFunctionObjArgs(fallback, primitive.ptr(), new_args, py_kwargs, NULL);
+  if (ret == nullptr) {
+    PyErr_Print();
+    MS_LOG(EXCEPTION) << "Python fallback failed.";
+  }
+  MS_LOG(DEBUG) << "End HandleFallback";
+  return ret;
+}
+
+PyObject *HandleFallback(PyObject *self, PyObject *py_args, PyObject *py_kwargs, const std::string &func_name,
+                         const py::cpp_function &func) {
+  MS_LOG(DEBUG) << "Start HandleFallback";
+  PyObject *fallback = PyObject_GetAttrString(self, "__fallback__");
+  if (fallback == nullptr) {
+    MS_LOG(EXCEPTION) << "Cannot found __fallback__ attr from object " << Py_TYPE(self)->tp_name;
+  }
+
+  // func -> OpDef
+  auto cls = py::module_::import("mindspore.common").attr("OpDef");
+  auto callable_obj = cls(py::cast(func_name), func);
+
+  // combine `self` and `py_args` to `new_args`
+  PyObject *new_args = MergeSelfAndArgs(self, py_args);
+
+  // 5. Call (self.__fallback__, func,  new_args, py_kwargs)
+  PyObject *ret = PyObject_CallFunctionObjArgs(fallback, callable_obj.ptr(), new_args, py_kwargs, NULL);
+  if (ret == nullptr) {
+    PyErr_Print();
+    MS_LOG(EXCEPTION) << "Python fallback failed.";
+  }
+  MS_LOG(DEBUG) << "End HandleFallback";
+  return ret;
+}
+
+PyObject *GetFallbackFromObj(PyObject *py_args) {
+  if (tensor::IsPyObjectTensorPy(py_args)) {
+    constexpr auto kFallback = "__fallback__";
+    if (!PyObject_HasAttrString(py_args, kFallback)) {
+      return nullptr;
+    }
+    return PyObject_GetAttrString(py_args, kFallback);
+  } else if (PyTuple_Check(py_args)) {
+    Py_ssize_t size = PyTuple_Size(py_args);
+    for (Py_ssize_t i = 0; i < size; ++i) {
+      PyObject *item = PyTuple_GetItem(py_args, i);
+      auto fallback = GetFallbackFromObj(item);
+      if (fallback != nullptr) {
+        MS_LOG(DEBUG) << "Get fallback from " << Py_TYPE(item)->tp_name;
+        return fallback;
+      }
+    }
+    return nullptr;
+  } else if (PyList_Check(py_args)) {
+    Py_ssize_t size = PyList_Size(py_args);
+    for (Py_ssize_t i = 0; i < size; ++i) {
+      PyObject *item = PyList_GetItem(py_args, i);
+      auto fallback = GetFallbackFromObj(item);
+      if (fallback != nullptr) {
+        MS_LOG(DEBUG) << "Get fallback from " << Py_TYPE(item)->tp_name;
+        return fallback;
+      }
+    }
+    return nullptr;
+  } else {
+    MS_LOG(DEBUG) << "Cannot get __fallback__ attr from: " << Py_TYPE(py_args)->tp_name
+                  << ". Supported type is <Tensor, tuple, list>";
+    return nullptr;
+  }
+}
+
+PyObject *GetFallbackFromInput(PyObject *py_args) {
+  auto fallback = GetFallbackFromObj(py_args);
+  if (fallback == nullptr) {
+    MS_LOG(EXCEPTION) << "Input has no __fallback__ attribute!";
+  }
+  return fallback;
+}
+
+py::object HandleFallback(const py::args &args, const py::kwargs &kwargs, const py::object &primitive) {
+  MS_LOG(DEBUG) << "Start HandleFallback";
+  PyObject *fallback = GetFallbackFromInput(args.ptr());
+  if (fallback == nullptr) {
+    MS_LOG(EXCEPTION) << "Cannot found __fallback__ attr from inputs";
+  }
+  PyObject *ret = PyObject_CallFunctionObjArgs(fallback, primitive.ptr(), args.ptr(), kwargs.ptr(), NULL);
+  if (ret == nullptr) {
+    PyErr_Print();
+    MS_LOG(EXCEPTION) << "Python fallback failed.";
+  }
+  MS_LOG(DEBUG) << "End HandleFallback";
+  return py::reinterpret_steal<py::object>(ret);
+}
+
+PyObject *HandleFallback(PyObject *py_args, const py::object &primitive) {
+  MS_LOG(DEBUG) << "Start HandleFallback";
+  PyObject *fallback = GetFallbackFromInput(py_args);
+  if (fallback == nullptr) {
+    MS_LOG(EXCEPTION) << "Cannot found __fallback__ attr from py_args";
+  }
+  // combine `self` and `py_args` to `new_args`
+  PyObject *ret = PyObject_CallFunctionObjArgs(fallback, primitive.ptr(), py_args, NULL);
+  if (ret == nullptr) {
+    PyErr_Print();
+    MS_LOG(EXCEPTION) << "Python fallback failed.";
+  }
+  MS_LOG(DEBUG) << "End HandleFallback";
+  return ret;
 }
 
 // Declare template to compile corresponding method.

@@ -207,6 +207,75 @@ struct PyBoost {
 };
 };  // namespace PyNativeAlgo
 
+class PYNATIVE_EXPORT OpCall {
+ public:
+  OpCall() = default;
+  OpCall(std::string name, std::function<py::object(const py::args &, const py::kwargs &)> func)
+      : name_(std::move(name)), func_(std::move(func)) {}
+
+  py::object operator()(const py::args &args, const py::kwargs &kwargs) {
+    MS_LOG(DEBUG) << "In OpCall __call__";
+    if (func_) {
+      return func_(args, kwargs);
+    } else {
+      MS_LOG(EXCEPTION) << "OpCall func is not callable!";
+    }
+  }
+
+  const std::string &name() const { return name_; }
+
+ private:
+  std::string name_;
+  std::function<py::object(const py::args &, const py::kwargs &)> func_;
+};
+
+class PYNATIVE_EXPORT TensorOverloadCall {
+ public:
+  TensorOverloadCall() = default;
+  TensorOverloadCall(std::string name,
+                     std::function<py::object(const py::object &, const py::args &, const py::kwargs &)> func)
+      : name_(std::move(name)), func_(std::move(func)) {}
+
+  py::object operator()(const py::object &self, const py::args &args, const py::kwargs &kwargs) {
+    MS_LOG(DEBUG) << "In OpCall __call__";
+    if (func_) {
+      return func_(self, args, kwargs);
+    } else {
+      MS_LOG(EXCEPTION) << "OpCall func is not callable!";
+    }
+  }
+
+  const std::string &name() const { return name_; }
+
+ private:
+  std::string name_;
+  std::function<py::object(const py::object &, const py::args &, const py::kwargs &)> func_;
+};
+
+class PYNATIVE_EXPORT FunctionalOverloadCall {
+ public:
+  FunctionalOverloadCall() = default;
+  FunctionalOverloadCall(std::string name, std::function<py::object(const py::args &, const py::kwargs &)> func)
+      : name_(std::move(name)), func_(std::move(func)) {}
+
+  py::object operator()(const py::args &args, const py::kwargs &kwargs) {
+    MS_LOG(DEBUG) << "In OpCall __call__";
+    if (func_) {
+      return func_(args, kwargs);
+    } else {
+      MS_LOG(EXCEPTION) << "OpCall func is not callable!";
+    }
+  }
+
+  const std::string &name() const { return name_; }
+
+ private:
+  std::string name_;
+  std::function<py::object(const py::args &, const py::kwargs &)> func_;
+};
+
+PYNATIVE_EXPORT void RegOpCall(const py::module *m);
+
 PYNATIVE_EXPORT void DispatchOp(const std::shared_ptr<runtime::AsyncTask> &task);
 }  // namespace pynative
 }  // namespace mindspore

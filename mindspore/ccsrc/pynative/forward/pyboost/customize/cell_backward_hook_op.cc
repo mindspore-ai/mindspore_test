@@ -26,6 +26,7 @@
 #include "mindspore/ccsrc/pyboost/functions/base.h"
 #include "mindspore/ccsrc/pyboost/auto_generate/cell_backward_hook.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "pynative/forward/pyboost/fallback.h"
 
 namespace mindspore::pynative {
 py::object PYNATIVE_EXPORT PyboostCellBackwardHookBase(const PrimitivePtr &prim, const py::list &args) {
@@ -35,6 +36,18 @@ py::object PYNATIVE_EXPORT PyboostCellBackwardHookBase(const PrimitivePtr &prim,
   static pynative::Converter converter(&ops::gCellBackwardHook);
   converter.Parse(args.ptr());
   auto tensors = converter.ToTensorList<pynative::CPythonTuple>(args.ptr(), kIndex0);
+
+  const auto &values = tensors->value();
+  if (fallback_enabled() && std::any_of(values.begin(), values.end(), [](const ValuePtr &value) {
+        MS_EXCEPTION_IF_NULL(value);
+        return value->isa<Tensor>() && value->cast<TensorPtr>()->has_fallback();
+      })) {
+    auto op_call = std::make_shared<OpCall>("CellBackwardHook", [prim](const py::args &args, const py::kwargs &kwargs) {
+      auto list_args = py::list(args);
+      return PyboostCellBackwardHookBase(prim, list_args);
+    });
+    return py::reinterpret_steal<py::object>(pynative::HandleFallback(args.ptr(), py::cast(op_call)));
+  }
 
   static auto op_type = kernel::pyboost::GetOpTypeFromOpdef(ops::gCellBackwardHook);
   op_run_info->source_type = converter.source_type();

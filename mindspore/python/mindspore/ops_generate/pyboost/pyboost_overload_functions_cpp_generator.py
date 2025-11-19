@@ -22,14 +22,14 @@ the necessary header files for the generated functions.
 
 import os
 
-import common.template as template
+from common import template
 import common.gen_constants as K
 from common.template import Template
 from common.gen_utils import save_file
 from common.op_proto import OpProto
 from common.base_generator import BaseGenerator
 from pyboost import pyboost_utils
-import api.op_api_proto as op_api_proto
+from api import op_api_proto
 
 from .op_template_parser import OpTemplateParser
 
@@ -68,6 +68,10 @@ class PyboostOverloadFunctionsGenerator(BaseGenerator):
             '}'
         )
         self.pyboost_return_template = Template(
+            'if (parse_args.has_fallback()) {\n'
+            '  auto op_call = std::make_shared<FunctionalOverloadCall>("${class_name}", callback);\n'
+            '  return pynative::HandleFallback(args, kwargs, py::cast(op_call));\n'
+            '}\n'
             '${arg_handler_processor}\n'
             'MS_LOG(INFO) << "Call Tensor${class_name}";\n'
             'auto res = ${pyboost_base_func_name}_OP(${prim_name}, parse_args.src_types_, ${convert_args});\n'
@@ -75,6 +79,10 @@ class PyboostOverloadFunctionsGenerator(BaseGenerator):
             'return py::reinterpret_steal<py::object>(res);\n'
         )
         self.callback_python_template = Template(
+            'if (parse_args.has_fallback()) {\n'
+            '  auto op_call = std::make_shared<FunctionalOverloadCall>("${class_name}", callback);\n'
+            '  return pynative::HandleFallback(args, kwargs, py::cast(op_call));\n'
+            '}\n'
             'MS_LOG(INFO) << "Callback python method: ${py_method}";\n'
             'py::function fn = python_adapter::GetPyFn(\"mindspore.ops.tensor_method\", \"${py_method}\");\n'
             'py::object res = fn(*args, **kwargs);\n'
@@ -321,10 +329,12 @@ class PyboostOverloadFunctionsGenerator(BaseGenerator):
             return self.pyboost_return_template.replace(arg_handler_processor=arg_handler_processor_str,
                                                         class_name=func_proto.op_proto.op_class.name,
                                                         prim_name=prim_name,
+                                                        op_name=func_proto.op_proto.op_name,
                                                         pyboost_base_func_name=op_pyboost_func_name,
                                                         convert_args=convert_args_str)
         if func_proto_device == 'py_method':
-            return self.callback_python_template.replace(py_method=func_proto.py_method)
+            return self.callback_python_template.replace(py_method=func_proto.py_method,
+                                                         class_name=func_proto.op_proto.op_class.name)
 
         raise TypeError("Only support pyboost or python_method.")
 

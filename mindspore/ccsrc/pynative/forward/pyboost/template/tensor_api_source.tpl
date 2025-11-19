@@ -28,7 +28,7 @@ ${ops_inc}
 
 namespace mindspore {
 namespace tensor {
-
+using TensorOverloadCall = pynative::TensorOverloadCall;
 ${tenosr_func_call_body}
 
 }  // namespace tensor
