@@ -45,6 +45,7 @@ mindspore.dataset.Dataset.map
         攻击者可构造恶意 pickle 数据，在反序列化过程中执行任意代码。切勿加载可能来自不可信来源或已被篡改的数据。
 
     .. note::
+        - 参数 `max_rowsize` 将在后续版本废弃。
         - `operations` 参数接收 `TensorOperation` 类型的数据处理操作，以及用户定义的Python函数（PyFuncs）。
         - 通过ds.config.set_multiprocessing_start_method("spawn")方式设置多进程的启动方式为 `spawn` 模式，且 `python_multiprocessing=True`
           和 `num_parallel_workers>1` 时，支持将 `mindspore.nn` 和 `mindspore.ops` 或其他的网络计算算子添加到 `operations` 中，

@@ -97,8 +97,8 @@ def _init_device_info():
             try:
                 rank_size = int(env_rank_size.strip())
                 rank_id = int(env_rank_id.strip())
-            except ValueError:
-                raise ValueError("rank_size or rank_id is not int.")
+            except ValueError as exc:
+                raise ValueError("rank_size or rank_id is not int.") from exc
         if rank_size > 1:
             if numa_enable:
                 _config.set_numa_enable(True)
@@ -634,7 +634,8 @@ def get_enable_shared_mem():
     Get the default state of shared mem enabled variable.
 
     Note:
-        `get_enable_shared_mem` is not supported on Windows and MacOS platforms yet.
+        - `get_enable_shared_mem` is not supported on Windows and MacOS platforms yet.
+        - The `get_enable_shared_mem` interface will be deprecated in a future version.
 
     Returns:
         bool, the state of shared mem enabled variable.
@@ -644,6 +645,7 @@ def get_enable_shared_mem():
         >>> import mindspore.dataset as ds
         >>> shared_mem_flag = ds.config.get_enable_shared_mem()
     """
+    logger.warning("'get_enable_shared_mem' is deprecated from version 2.8.0 and will be removed in a future version.")
     # For Windows and MacOS we forbid shared mem function temporarily
     enable_shared_mem = _config.get_enable_shared_mem()
     if enable_shared_mem and platform.system().lower() in {"windows", "darwin"}:
@@ -661,7 +663,8 @@ def set_enable_shared_mem(enable):
     Shared memory is used by default.
 
     Note:
-        Windows and MacOS systems are not supported yet.
+        - Windows and MacOS systems are not supported yet.
+        - The `set_enable_shared_mem` interface will be deprecated in a future version.
 
     Args:
         enable (bool): Whether to use shared memory for interprocess communication.
@@ -674,6 +677,7 @@ def set_enable_shared_mem(enable):
         >>> import mindspore.dataset as ds
         >>> ds.config.set_enable_shared_mem(True)
     """
+    logger.warning("'set_enable_shared_mem' is deprecated from version 2.8.0 and will be removed in a future version.")
     if not isinstance(enable, bool):
         raise TypeError("enable must be of type bool.")
     if enable:

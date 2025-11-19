@@ -68,11 +68,13 @@ void SIGINTHandler(int signal, siginfo_t *info, void *context) {
   TaskManager::WakeUpWatchDog();
 }
 
-#define OSTREAM_WRITE(STD_FILENO, ERROR_MSG)                    \
-  do {                                                          \
-    auto ret = write(STD_FILENO, ERROR_MSG, strlen(ERROR_MSG)); \
-    (void)ret;                                                  \
-  } while (false)
+inline void OStreamWrite(int std_fileno, const char *error_msg) {
+  if (!IS_OUTPUT_ON(mindspore::kInfo) && std_fileno == STDOUT_FILENO) {
+    return;
+  }
+  auto ret = write(std_fileno, error_msg, strlen(error_msg));
+  (void)ret;
+}
 
 // Memory cannot be dynamically allocated during the signal processing phase, so global variables are used here.
 const char err_shmctl_delete[] = "shmctl delete shm_id failed.\n";
@@ -85,18 +87,18 @@ void DoReleaseShmAndMsg(const std::string &key, bool need_lock = true) {
   if (g_shm_id[key] != -1) {
     if (shmctl(g_shm_id[key], IPC_RMID, NULL) == -1 && errno != EINVAL) {
       // ignore the return value during the signal exit phase.
-      OSTREAM_WRITE(STDERR_FILENO, err_shmctl_delete);
+      OStreamWrite(STDERR_FILENO, err_shmctl_delete);
     } else {
-      OSTREAM_WRITE(STDOUT_FILENO, info_shmctl_delete);
+      OStreamWrite(STDOUT_FILENO, info_shmctl_delete);
     }
   }
 
   // release the msg
   if (g_msg_id[key] != -1) {
     if (msgctl(g_msg_id[key], IPC_RMID, 0) == -1 && errno != EINVAL && errno != EIDRM) {
-      OSTREAM_WRITE(STDERR_FILENO, err_msgctl_delelte);
+      OStreamWrite(STDERR_FILENO, err_msgctl_delelte);
     } else {
-      OSTREAM_WRITE(STDOUT_FILENO, info_msgctl_delelte);
+      OStreamWrite(STDOUT_FILENO, info_msgctl_delelte);
     }
   }
 
@@ -132,6 +134,7 @@ void ReleaseShmAndMsgByWorkerPIDs(const std::vector<int> &pids) {
 
 // Memory cannot be dynamically allocated during the signal processing phase, so global variables are used here.
 const int32_t g_pid_len = 64;
+const int32_t DECIMAL_BASE = 10;
 char g_current_pid[g_pid_len] = {0};
 char g_ppid[g_pid_len] = {0};
 char g_substr_ppid[g_pid_len] = {0};
@@ -169,8 +172,8 @@ bool PIDToString(pid_t pid, char *buffer, size_t buffer_size) {
 
   // extract number in reverse
   while (num > 0 && i < static_cast<int>(sizeof(temp)) - 1) {
-    temp[i++] = '0' + (num % 10);
-    num /= 10;
+    temp[i++] = static_cast<char>('0' + (num % DECIMAL_BASE));
+    num /= DECIMAL_BASE;
   }
 
   // reverse the char
@@ -185,22 +188,22 @@ bool PIDToString(pid_t pid, char *buffer, size_t buffer_size) {
 bool GetPIDAndPPID() {
   if (memset_s(g_current_pid, g_pid_len, 0, g_pid_len) != EOK) {
     // ignore the return value during the signal exit phase.
-    OSTREAM_WRITE(STDERR_FILENO, message_memset);
+    OStreamWrite(STDERR_FILENO, message_memset);
     return false;
   }
 
   if (!PIDToString(getpid(), g_current_pid, g_pid_len)) {
-    OSTREAM_WRITE(STDERR_FILENO, message_pid_to_string);
+    OStreamWrite(STDERR_FILENO, message_pid_to_string);
     return false;
   }
 
   if (memset_s(g_ppid, g_pid_len, 0, g_pid_len) != EOK) {
-    OSTREAM_WRITE(STDERR_FILENO, message_memset);
+    OStreamWrite(STDERR_FILENO, message_memset);
     return false;
   }
 
   if (!PIDToString(getppid(), g_ppid, g_pid_len)) {
-    OSTREAM_WRITE(STDERR_FILENO, message_pid_to_string);
+    OStreamWrite(STDERR_FILENO, message_pid_to_string);
     return false;
   }
   return true;
@@ -236,25 +239,25 @@ void ReleaseShmAndMsg() {
     auto first_underline_char = item.first.find("_");
     if (first_underline_char == std::string::npos || first_underline_char <= 0) {
       // ignore the return value during the signal exit phase.
-      OSTREAM_WRITE(STDERR_FILENO, err_find_first);
+      OStreamWrite(STDERR_FILENO, err_find_first);
       return;
     }
     auto second_underline_char = item.first.find("_", first_underline_char + 1);
     if (second_underline_char == std::string::npos) {
       // ignore the return value during the signal exit phase.
-      OSTREAM_WRITE(STDERR_FILENO, err_find_second);
+      OStreamWrite(STDERR_FILENO, err_find_second);
       return;
     }
 
     if (memset_s(g_substr_ppid, g_pid_len, 0, g_pid_len) != EOK) {
-      OSTREAM_WRITE(STDERR_FILENO, message_memset);
+      OStreamWrite(STDERR_FILENO, message_memset);
       return;
     }
 
     if (memcpy_s(g_substr_ppid, second_underline_char - first_underline_char - 1,
                  item.first.data() + first_underline_char + 1,
                  second_underline_char - first_underline_char - 1) != EOK) {
-      OSTREAM_WRITE(STDERR_FILENO, message_memcpy);
+      OStreamWrite(STDERR_FILENO, message_memcpy);
       return;
     }
 
@@ -267,27 +270,27 @@ void ReleaseShmAndMsg() {
       msqid_ds msg_status;
       if (g_msg_id[item.first] != -1 && msgctl(g_msg_id[item.first], IPC_STAT, &msg_status) != 0) {
         // it may have already been released yet
-        OSTREAM_WRITE(STDOUT_FILENO, info1);
+        OStreamWrite(STDOUT_FILENO, info1);
       }
 
       // get the shm queue status
       shmid_ds shm_status;
       if (g_shm_id[item.first] != -1 && shmctl(g_shm_id[item.first], IPC_STAT, &shm_status) != 0) {
         // it may have already been released yet
-        OSTREAM_WRITE(STDOUT_FILENO, info2);
+        OStreamWrite(STDOUT_FILENO, info2);
       }
 
       // the msg & shm already be used by current process and parent process, it will be released by parent process
       if (msg_status.msg_stime != 0 && shm_status.shm_ctime != 0) {
         // Scenario 1
-        OSTREAM_WRITE(STDOUT_FILENO, info3);
+        OStreamWrite(STDOUT_FILENO, info3);
         continue;
       } else {  // the msg & shm just be used by current process, it will be released by current process
         // Scenario 2
-        OSTREAM_WRITE(STDOUT_FILENO, info4);
+        OStreamWrite(STDOUT_FILENO, info4);
       }
     } else {
-      OSTREAM_WRITE(STDOUT_FILENO, info5);
+      OStreamWrite(STDOUT_FILENO, info5);
     }
 
     // release the shm & msg
@@ -309,7 +312,7 @@ const char err_sigaction[] = "Failed to set handler.\n";
 /// \param[in] context The context info.
 void SIGTERMHandler(int signal, siginfo_t *info, void *context) {
   if (signal != SIGTERM) {
-    OSTREAM_WRITE(STDERR_FILENO, err_sigterm);
+    OStreamWrite(STDERR_FILENO, err_sigterm);
     _exit(EXIT_FAILURE);
   }
 
@@ -317,7 +320,7 @@ void SIGTERMHandler(int signal, siginfo_t *info, void *context) {
   ReleaseShmAndMsg();
 
   if (info->si_pid == getppid()) {
-    OSTREAM_WRITE(STDOUT_FILENO, info6);
+    OStreamWrite(STDOUT_FILENO, info6);
     _exit(EXIT_SUCCESS);
   }
   // reset the handler to the default
@@ -325,11 +328,11 @@ void SIGTERMHandler(int signal, siginfo_t *info, void *context) {
   term_action.sa_handler = SIG_DFL;
   term_action.sa_flags = 0;
   if (sigemptyset(&term_action.sa_mask) != 0) {
-    OSTREAM_WRITE(STDERR_FILENO, err_sigemptyset);
+    OStreamWrite(STDERR_FILENO, err_sigemptyset);
     _exit(EXIT_FAILURE);
   }
   if (sigaction(signal, &term_action, nullptr) != 0) {
-    OSTREAM_WRITE(STDERR_FILENO, err_sigaction);
+    OStreamWrite(STDERR_FILENO, err_sigaction);
     _exit(EXIT_FAILURE);
   }
   raise(signal);
@@ -347,12 +350,12 @@ const char err_bus_adrerr[] =
 /// \param[in] context The context info.
 void SIGBUSHandler(int signal, siginfo_t *info, void *context) {
   if (signal != SIGBUS) {
-    OSTREAM_WRITE(STDERR_FILENO, err_sigbus);
+    OStreamWrite(STDERR_FILENO, err_sigbus);
     _exit(EXIT_FAILURE);
   }
 
   if (info->si_code == BUS_ADRERR) {
-    OSTREAM_WRITE(STDERR_FILENO, err_bus_adrerr);
+    OStreamWrite(STDERR_FILENO, err_bus_adrerr);
   }
 
   // reset the handler to the default
@@ -360,11 +363,11 @@ void SIGBUSHandler(int signal, siginfo_t *info, void *context) {
   bus_action.sa_handler = SIG_DFL;
   bus_action.sa_flags = 0;
   if (sigemptyset(&bus_action.sa_mask) != 0) {
-    OSTREAM_WRITE(STDERR_FILENO, err_sigemptyset);
+    OStreamWrite(STDERR_FILENO, err_sigemptyset);
     _exit(EXIT_FAILURE);
   }
   if (sigaction(signal, &bus_action, nullptr) != 0) {
-    OSTREAM_WRITE(STDERR_FILENO, err_sigaction);
+    OStreamWrite(STDERR_FILENO, err_sigaction);
     _exit(EXIT_FAILURE);
   }
   raise(signal);
