@@ -142,6 +142,7 @@ enum class UCEError : int {
   kHbmMultBitEccError,
   kCommOpRetryFailError,
   kForceStopError,
+  kSuspectRemoteError,
   kUnknownError
 };
 
@@ -151,13 +152,16 @@ class MS_CORE_API UCEException {
   static uint64_t ExtractUceTime(const char *error_msg);
   static bool IsEnableUCE();
   static bool IsEnableHCCE();
-  bool get_has_throw_error() const { return force_stop_flag_ || get_uce_flag() || is_reboot_node_; }
+  bool get_has_throw_error() const {
+    return force_stop_flag_ || get_uce_flag() || is_reboot_node_ || get_suspect_remote_flag();
+  }
 
   void set_force_stop_flag(bool flag) { force_stop_flag_ = flag; }
   bool get_force_stop_flag() const { return force_stop_flag_; }
 
   bool get_uce_flag() const { return uce_error_type_ != UCEError::kNoneError; }
   bool get_hcce_flag() const { return uce_error_type_ == UCEError::kCommOpRetryFailError; }
+  bool get_suspect_remote_flag() const { return uce_error_type_ == UCEError::kSuspectRemoteError; }
   void clear_uce_error() { uce_error_type_ = UCEError::kNoneError; }
 
   void set_reboot_node(bool flag) { is_reboot_node_ = flag; }
@@ -206,7 +210,9 @@ class MS_CORE_API UCEException {
     } else if (uce_error_type_ == UCEError::kHbmMultBitEccError) {
       return "UCEError error occurs when execute, error_code=507054";
     } else if (uce_error_type_ == UCEError::kCommOpRetryFailError) {
-      return "HCCEError error occurs when execute";
+      return "HCCEError error occurs when execute, error_code=507904";
+    } else if (uce_error_type_ == UCEError::kSuspectRemoteError) {
+      return "SuspectRemoteError error occurs when execute, error_code=507057";
     } else if (uce_error_type_ == UCEError::kNoneError) {
       return "No uce error occurs.";
     } else {

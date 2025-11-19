@@ -69,17 +69,16 @@ void UCEException::ProcessApiUceError(const FuncInfo &fn_info, int error_code,
   }
 
   if ((error_type == UCEError::kDeviceMemError || error_type == UCEError::kHbmMultBitEccError ||
-       error_type == UCEError::kCommOpRetryFailError) &&
+       error_type == UCEError::kCommOpRetryFailError || error_type == UCEError::kSuspectRemoteError) &&
       !get_has_throw_error()) {
     if (error_type == UCEError::kHbmMultBitEccError && fn_get_recent_err_msg != nullptr) {
       set_uce_occur_time(ExtractUceTime(fn_get_recent_err_msg()));
     }
     uce_error_type_ = error_type;
-    auto error_keyword = error_type == UCEError::kCommOpRetryFailError ? "HCCEError" : "UCEError";
     if (throw_exception) {
-      MS_LOG(EXCEPTION) << error_keyword << " error occurs when execute, error_code=" << error_code << ".";
+      MS_LOG(EXCEPTION) << GetUceErrorMsg();
     } else {
-      MS_LOG(ERROR) << error_keyword << " error occurs when execute, error_code=" << error_code << ".";
+      MS_LOG(ERROR) << GetUceErrorMsg();
     }
   }
   if (error_type == UCEError::kForceStopError) {

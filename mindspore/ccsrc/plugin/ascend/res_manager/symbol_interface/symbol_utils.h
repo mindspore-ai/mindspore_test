@@ -36,6 +36,9 @@
 #ifndef ACL_ERROR_RT_DEVICE_TASK_ABORT
 #define ACL_ERROR_RT_DEVICE_TASK_ABORT 107022
 #endif
+#ifndef ACL_ERROR_RT_SUSPECT_REMOTE_ERROR
+#define ACL_ERROR_RT_SUSPECT_REMOTE_ERROR 507057
+#endif
 
 inline mindspore::UCEError GetErrorType(int error_code) {
   switch (error_code) {
@@ -47,6 +50,8 @@ inline mindspore::UCEError GetErrorType(int error_code) {
       return mindspore::UCEError::kCommOpRetryFailError;
     case ACL_ERROR_RT_DEVICE_TASK_ABORT:
       return mindspore::UCEError::kForceStopError;
+    case ACL_ERROR_RT_SUSPECT_REMOTE_ERROR:
+      return mindspore::UCEError::kSuspectRemoteError;
     default:
       return mindspore::UCEError::kUnknownError;
   }
