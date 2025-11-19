@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-
+""" test_cumsum """
 import pytest
 import numpy as np
 import mindspore as ms
@@ -45,7 +45,7 @@ def cumsum_backward_func(x, dim):
     return cumsum_bwd_func(x, dim)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', ['pynative', 'KBK'])
 def test_cumsum_normal(mode):
     """
@@ -56,18 +56,23 @@ def test_cumsum_normal(mode):
     test_shape = (2, 3, 4, 5)
     dim1 = 2
     dim2 = 0
+    dim3 = -2
 
     x, expect = generate_random_input(test_shape, dim1)
     expect1 = np.flip(np.cumsum(np.flip(np.ones(test_shape), dim2), dim2), dim2)
+    expect2 = np.flip(np.cumsum(np.flip(np.ones(test_shape), dim3), dim3), dim3)
     if mode == 'pynative':
         ms.set_context(mode=ms.PYNATIVE_MODE)
         output = cumsum_forward_func(ms.Tensor(x), dim1)
         output1 = cumsum_backward_func(ms.Tensor(x), dim2)
+        output2 = cumsum_backward_func(ms.Tensor(x), dim3)
     else:
         output = (jit(cumsum_forward_func, backend="ms_backend", jit_level="O0"))(ms.Tensor(x), dim1)
         output1 = (jit(cumsum_backward_func, backend="ms_backend", jit_level="O0"))(ms.Tensor(x), dim2)
+        output2 = (jit(cumsum_backward_func, backend="ms_backend", jit_level="O0"))(ms.Tensor(x), dim3)
     np.testing.assert_allclose(output.asnumpy(), expect, rtol=1e-4)
     np.testing.assert_allclose(output1.asnumpy(), expect1, rtol=1e-4)
+    np.testing.assert_allclose(output2.asnumpy(), expect2, rtol=1e-4)
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
