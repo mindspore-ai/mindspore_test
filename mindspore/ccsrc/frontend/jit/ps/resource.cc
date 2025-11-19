@@ -770,7 +770,8 @@ void Resource::Clean() {
   parse::Parser::CleanParserResource();
   // Clear all graphs' holding for python object(such as Cell),
   // otherwise it will result to circular reference between the func_graph and cell.
-  for (auto graph : manager()->func_graphs()) {
+  for (const auto &graph : manager()->func_graphs()) {
+    MS_LOG(INFO) << "Clear python object of graph: " << graph->ToString();
     graph->set_python_obj(nullptr);
   }
   trace::ClearTraceStack();

@@ -312,7 +312,7 @@ class FRONTEND_EXPORT Parser {
   const mindspore::HashMap<ParameterPtr, AnfNodePtr> CalRemovablePhis();
   void CreatePhiArgMaps(mindspore::HashMap<ParameterPtr, std::set<AnfNodePtr>> *phi_to_args,
                         mindspore::HashMap<AnfNodePtr, std::set<ParameterPtr>> *arg_to_phis);
-  void RemoveUnnecessaryPhis(const FunctionBlockPtr &block);
+  void RemoveUnnecessaryPhis(const FuncGraphManagerPtr &manager);
   void ConvertGetattrNodes();
   // Write a new var.
   void WriteAssignVars(const FunctionBlockPtr &block, const py::object &target_object, const AnfNodePtr &value_node,
@@ -377,7 +377,7 @@ class FRONTEND_EXPORT Parser {
   void CheckReturnInLoop(const FunctionBlockPtr &block, const FunctionBlockPtr &body_block) const;
 
   // Check whether the functions referred by this function and itself are missing 'return' statement.
-  void CheckFuncReturn();
+  void CheckFuncReturn(const FuncGraphManagerPtr &manager, const FuncGraphPtr &fn);
 
   // If the node is Parameter member of class.
   bool IsClassParameterMember(const py::object &target_obj, const AnfNodePtr &target_node) const;
