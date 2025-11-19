@@ -501,7 +501,7 @@ std::pair<bool, FuncGraphPtr> GetBpropGraph(const pynative::GradParamPtr &grad_p
   bool loaded = false;
   py::dict weights;
   if (CompileCacheEnable() && !cache_hit) {
-    auto graph_executor = pipeline::GraphExecutorPy::GetInstance();
+    auto graph_executor = pipeline::JitExecutorPy::GetInstance();
     weights = graph_executor->weights();
     {
       MsProfileStatGuard stat_guard("LoadCachedFuncGraph");
@@ -537,6 +537,8 @@ std::pair<bool, FuncGraphPtr> GetBpropGraph(const pynative::GradParamPtr &grad_p
     MS_LOG(INFO) << "Forward graph generated successfully.";
     pynative::CommonUtils::DumpGraphIR("opt_forward.ir", forward_fg);
   }
+  auto &context = CompileCacheContext::GetInstance();
+  context.SetUseCompileCache(CompileCacheEnable() && loaded);
   CacheFuncGraph(compile_cache_manager_forward, forward_fg, loaded, cache_hit);
 
   VectorRef arg_list = ExecuteForward(grad_param, forward_fg, need_forward_result, need_reuse_forward_node, cache_hit);
@@ -591,12 +593,12 @@ std::pair<FuncGraphPtr, FuncGraphPtr> CacheFuncGraphBeforeOpt(const FuncGraphPtr
   FuncGraphPtr forward_graph_before_opt = nullptr;
   bool loaded = false;
   if (CompileCacheEnable()) {
-    auto graph_executor = pipeline::GraphExecutorPy::GetInstance();
+    auto graph_executor = pipeline::JitExecutorPy::GetInstance();
     const auto &weights = graph_executor->weights();
     {
       MsProfileStatGuard stat_guard("LoadCachedFuncGraph");
       static size_t idx = 0;
-      auto pair = GetCompileCacheResource(weights, "grad_before_opt", idx++, true);
+      auto pair = GetCompileCacheResource(py::dict(), "grad_before_opt", idx++, true);
       grad_graph_before_opt = pair.first;
       compile_cache_manager = pair.second;
     }
