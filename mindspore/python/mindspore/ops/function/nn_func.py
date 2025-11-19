@@ -1,4 +1,4 @@
-# Copyright 2023-2024 Huawei Technologies Co., Ltd
+# Copyright 2023-2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -1017,7 +1017,8 @@ def adaptive_max_pool2d(input, output_size, return_indices=False):
         \end{align}
 
     Note:
-        In KBK mode, `output_size` does not support mutable.
+        - In KBK mode, `output_size` does not support mutable.
+        - Atlas training series products do not support backward propagation.
 
     Args:
         input (Tensor): A 3D or 4D tensor,

@@ -23,7 +23,6 @@
 #include <memory>
 #include <algorithm>
 #include <functional>
-#include "mindspore/ops/infer/grad/adaptive_max_pool2d_grad.h"
 #include "kernel/gpu/gpu_kernel.h"
 #include "kernel/gpu/gpu_kernel_factory.h"
 #include "kernel/gpu/cuda_impl/cuda_class/adaptive_max_pool_grad_helper.h"

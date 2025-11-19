@@ -1,4 +1,4 @@
-# Copyright 2020-2024 Huawei Technologies Co., Ltd
+# Copyright 2020-2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -24,7 +24,7 @@ class _AdaptiveAvgPoolNd(Cell):
     """Common base of AdaptiveAvgPoolNd"""
 
     def __init__(self, output_size) -> None:
-        super(_AdaptiveAvgPoolNd, self).__init__()
+        super().__init__()
         self.output_size = output_size
 
     def extend_repr(self):
@@ -178,7 +178,7 @@ class AdaptiveAvgPool3d(Cell):
 
     def __init__(self, output_size):
         """Initialize AdaptiveAvgPool3d."""
-        super(AdaptiveAvgPool3d, self).__init__()
+        super().__init__()
         self.output_size = output_size
 
     def construct(self, input):
@@ -258,7 +258,7 @@ class MaxUnpool2d(Cell):
     """
 
     def __init__(self, kernel_size, stride=None, padding=0) -> None:
-        super(MaxUnpool2d, self).__init__()
+        super().__init__()
         self.kernel_size = kernel_size
         self.stride = stride
         self.padding = padding
@@ -273,7 +273,7 @@ class _AdaptiveMaxPoolNd(Cell):
     """Common base of AdaptiveMaxPool1d"""
 
     def __init__(self, output_size, return_indices=False) -> None:
-        super(_AdaptiveMaxPoolNd, self).__init__()
+        super().__init__()
         self.output_size = output_size
         self.return_indices = return_indices
 
@@ -290,6 +290,9 @@ class AdaptiveMaxPool1d(_AdaptiveMaxPoolNd):
 
     .. warning::
         This is an experimental API that is subject to change or deletion.
+
+    .. note::
+        Atlas training series products do not support backward propagation.
 
     Args:
         output_size (Union[int, tuple]): the target output size :math:`L_{out}` .
