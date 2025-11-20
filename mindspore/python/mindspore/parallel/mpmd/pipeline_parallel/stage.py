@@ -287,7 +287,7 @@ class PipelineStage(ABC):
         real_stage_num = self.stage_num // self._virtual_chunk_num
         device_num_per_stage = device_num // real_stage_num
         index = self.stage_index % real_stage_num
-        rank_list = list(range(index * device_num_per_stage, (index + 1) * device_num_per_stage))
+        rank_list = tuple(range(index * device_num_per_stage, (index + 1) * device_num_per_stage))
         layout.rank_list = rank_list
         layout.update_mesh()
         layout.update_compact_str()

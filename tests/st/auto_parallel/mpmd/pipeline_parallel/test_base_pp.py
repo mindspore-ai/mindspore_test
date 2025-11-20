@@ -12,10 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-
+"""test base pp"""
 
 import os
-
 from tests.mark_utils import arg_mark
 
 
@@ -23,18 +22,18 @@ def run_case(case_name, master_port):
     cmd = f"export GLOG_v=3 && msrun --worker_num=8 --local_worker_num=8 " \
           f"--master_addr=127.0.0.1 --master_port={master_port} " \
           f"--join=True --log_dir=./{case_name} pytest -s -v " \
-          f"simple_mlp.py::{case_name}"
+          f"base_pp.py::{case_name}"
     ret = os.system(cmd)
     assert ret == 0
 
 
 @arg_mark(plat_marks=["platform_ascend910b"], level_mark="level0", card_mark="allcards", essential_mark="unessential")
-def test_simple_mlp():
+def test_base_pp():
     """
     Feature: schedule 1f1b + hsdp + shard.
     Description: Test simple mlp net.
     Expectation: Run success.
     """
-    case_name = "test_simple_mlp"
+    case_name = "test_base_pp"
     master_port = 12346
     run_case(case_name, master_port)
