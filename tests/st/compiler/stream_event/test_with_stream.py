@@ -733,6 +733,60 @@ def test_with_stream_with_morph():
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_with_stream_with_morph_2():
+    """
+    Feature: Support with stream with morph.
+    Description: Support with stream with morph.
+    Expectation: Run success.
+    """
+
+    def infer_dtype(args):
+        return args
+
+    def infer_shape(args):
+        return args
+
+    def mul_by(*args):
+        def inner(x):
+            y = args[0] * x
+            return y - 1
+        return inner
+
+    class MorphNet(nn.Cell):
+        def __init__(self):
+            super().__init__()
+            np_weight0 = np.array([1.0, 2.0, 3.0])
+            np_weight1 = np.array([4.0, 5.0, 6.0])
+            self.weight0 = Parameter(Tensor(np_weight0, ms.float32), name="weight0")
+            self.weight1 = Parameter(Tensor(np_weight1, ms.float32), name="weight1")
+            self.mul_by_100 = ops.Morph(mul_by(100), infer_shape, infer_dtype)
+
+        def construct(self, x):
+            with ms.runtime.StreamCtx(s1):
+                input_a = x * self.weight0
+                input_b = self.mul_by_100(input_a)
+            out = input_b * self.weight1
+            return out
+
+    save_path = "./test_with_stream_with_morph_2"
+    os.environ['MS_DEV_DUMP_IR_PASSES'] = 'validate'
+    ms.set_context(jit_config={"jit_level": "O0"}, save_graphs=True, save_graphs_path=save_path)
+    np_input_x = np.array([7.0, 8.0, 9.0])
+    input_x = Tensor(np_input_x, ms.float32)
+    net = MorphNet()
+    net(input_x)
+
+    os.unsetenv('MS_DEV_DUMP_IR_PASSES')
+    ms.set_context(save_graphs=False)
+    content = read_file(save_path)
+    stream_id_num = re.findall('stream_id', content)
+    try:
+        shutil.rmtree(save_path)
+    except FileNotFoundError:
+        pass
+    assert len(stream_id_num) == 6
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_my_ms_jit_stream_ctx_self():
     """
     Feature: Support with stream.
