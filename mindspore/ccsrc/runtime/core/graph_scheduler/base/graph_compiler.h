@@ -181,7 +181,6 @@ class GraphCompiler {
   // The member variable 'session_' will be removed after removing session module.
   // Now all the GraphCompiler share the same 'session_'.
   session::SessionPtr session_;
-  bool use_cache_to_compile_graph_ = false;
   bool export_compile_cache_ = false;
   bool export_kbk_compile_cache_ = false;
 };

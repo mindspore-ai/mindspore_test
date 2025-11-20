@@ -91,13 +91,17 @@ def check_hash_file(cache_path, first_run_hash):
 
 def get_compile_times_log(compile_times):
     # The default compile times is one.
-    backend_compile_time_cost_log = 1
+    backend_compile_time_cost_log = [1, 1]
     # Compile graph twice
     if compile_times == "twice":
-        backend_compile_time_cost_log = 2
+        backend_compile_time_cost_log = [2, 2]
     # Compile graph four times
     elif compile_times == "four_times":
-        backend_compile_time_cost_log = 4
+        backend_compile_time_cost_log = [4, 4]
+    elif compile_times == "special":
+        backend_compile_time_cost_log = [4, 3]
+    elif compile_times == "temp":
+        backend_compile_time_cost_log = [3, 2]
     return backend_compile_time_cost_log
 
 
@@ -198,7 +202,7 @@ def run_twice_with_same_network(file_name, cache_path, log_file_name_first, log_
     # First run check compile cache end and save compile cache
     assert "Status record: Start cache backend kernel graph." in data_first
     assert "Status record: End cache backend kernel graph and control node info." in data_first
-    assert data_first.count("] [PROF]compile_backend_graph cost") == backend_compile_time_cost_log
+    assert data_first.count("] [PROF]compile_backend_graph cost") == backend_compile_time_cost_log[0]
     assert "Status record: end compile function graph:" in data_first
     # Check lazy inline log
     check_lazy_inline_log(temp_file, log_file_name_first)
@@ -235,7 +239,7 @@ def run_twice_with_same_network(file_name, cache_path, log_file_name_first, log_
     assert "Enable backend compile cache." in data_second
     assert "Status record: Start load backend kernel graph." in data_second
     assert "Status record: start use cache to compile graph kbk." in data_second
-    assert data_second.count("] [PROF]Load_backend_compile_cache") == backend_compile_time_cost_log
+    assert data_second.count("] [PROF]Load_backend_compile_cache") == backend_compile_time_cost_log[1]
     # Check lazy inline log
     check_lazy_inline_log(temp_file, log_file_name_second)
     # Check kernel packet log
@@ -573,3 +577,57 @@ def test_branch_same_shape():
     pypath = fpath + "/compile_cache/run_net_if_by_if.py"
     run_twice_with_same_network(pypath, "./net_if_by_if", "net_if_by_if_first.txt",
                                 "net_if_by_if_second.txt", "once")
+
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_grad_net_single_cache():
+    """
+    Feature: Compile cache with jit enable dynamic.
+    Description: Test compile cache with enable_dynamic decorator with mutable tuple.
+    Expectation: Run success.
+    """
+    fpath = os.path.realpath(os.path.dirname(os.getcwd()))
+    pypath = fpath + "/compile_cache/run_net_with_jit_grad.py"
+    run_twice_with_same_network(pypath, "./net_jit_grad", "net_jit_grad_first.txt", "net_jit_grad_second.txt",
+                                "special")
+
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_input_tuple_paramter_dynamic_jit():
+    """
+    Feature: Compile cache with jit enable dynamic.
+    Description: Test compile cache with enable_dynamic decorator with mutable tuple.
+                 The input is a tuple[param, cnode], and the cnode contains inputt parameters.
+    Expectation: Run success.
+    """
+    fpath = os.path.realpath(os.path.dirname(os.getcwd()))
+    pypath = fpath + "/compile_cache/run_net_enable_dynamic.py"
+    run_twice_with_same_network(pypath, "./net_enable_dynamic", "net_enable_dynamic_first.txt",
+                                "net_enable_dynamic_second.txt", "once")
+
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_dynamic_shape():
+    """
+    Feature: Compile cache with dynamic shape net.
+    Description: Test compile cache with enable_dynamic decorator. Create a dynamic shape net get tensor.shape, and add.
+                 The output nodes are nodified by backend, exported, but not loaded.
+    Expectation: Run success.
+    """
+    fpath = os.path.realpath(os.path.dirname(os.getcwd()))
+    pypath = fpath + "/compile_cache/run_net_input_signature_shape.py"
+    run_twice_with_same_network(pypath, "./net_input_signature_shape", "net_input_signature_shape_first.txt",
+                                "net_input_signature_shape_second.txt", "once")
+
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_addn_pass_net():
+    """
+    Feature: Compile cache with addn pass.
+    Description: Test compile cache with addn pass.
+    Expectation: Run success.
+    """
+    fpath = os.path.realpath(os.path.dirname(os.getcwd()))
+    pypath = fpath + "/compile_cache/run_net_addn_pass.py"
+    run_twice_with_same_network(pypath, "./net_addn_pass", "net_addn_pass_first.txt",
+                                "net_addn_pass_second.txt", "temp")
