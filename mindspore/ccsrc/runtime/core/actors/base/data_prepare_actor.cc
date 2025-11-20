@@ -483,7 +483,7 @@ void DataPrepareActor::PrepareDataBeforeInputOptimize(const std::vector<std::vec
   graph_parameter_store->ResetPrepareState();
   // Only prepare weight for first step, because the weight memory is not released.
   // Allocate memory for weights in actor would have memory fragmentation.
-  if (first_step_ || UCEException::GetInstance().get_uce_flag()) {
+  if (first_step_ || tools::ErrorHandler::GetInstance().GetUceFlag()) {
     PrepareDataForDeviceTensorStore(input_tensors, args, context);
   }
   first_step_ = false;
@@ -532,7 +532,7 @@ void DataPrepareActor::PrepareData(const std::vector<std::vector<TensorPtr>> &in
   real_strategy_ = real_strategy;
   try {
     bool not_empty_input = !input_tensors.empty() || !args.empty();
-    if (first_step_ || UCEException::GetInstance().get_uce_flag() || (enable_prepare_case() && not_empty_input)) {
+    if (first_step_ || tools::ErrorHandler::GetInstance().GetUceFlag() || (enable_prepare_case() && not_empty_input)) {
       PrepareDataForDeviceTensorStore(input_tensors, args, context);
     }
     PrepareDataForHostTensorQueue(input_tensors, args, context);
@@ -698,7 +698,7 @@ void DataPrepareActor::PrepareDataForDeviceTensorStore(const std::vector<std::ve
     }
 
     // Uce error restart do not need to prepare weights.
-    if (UCEException::GetInstance().get_uce_flag()) {
+    if (tools::ErrorHandler::GetInstance().GetUceFlag()) {
       continue;
     }
 
@@ -726,9 +726,9 @@ void DataPrepareActor::PrepareDataForDeviceTensorStore(const std::vector<std::ve
     }
   }
 
-  if (UCEException::GetInstance().get_uce_flag()) {
+  if (tools::ErrorHandler::GetInstance().GetUceFlag()) {
     MS_LOG(INFO) << "Clear UCE state.";
-    UCEException::GetInstance().clear_uce_error();
+    tools::ErrorHandler::GetInstance().ClearErrorType();
   }
 
   std::vector<TensorPtr> control_input = input_tensors.empty() ? std::vector<TensorPtr>() : input_tensors.back();
@@ -737,7 +737,8 @@ void DataPrepareActor::PrepareDataForDeviceTensorStore(const std::vector<std::ve
 }
 
 void DataPrepareActor::RaiseARFError(const VectorRef &args) {
-  if (UCEException::GetInstance().is_reboot_node() && !UCEException::GetInstance().is_arf() && !args.empty()) {
+  if (tools::ErrorHandler::GetInstance().IsRebootNode() && !tools::ErrorHandler::GetInstance().IsArf() &&
+      !args.empty()) {
     MS_LOG(EXCEPTION) << "ARF FINISH , do next step repair weight.";
   }
 }
@@ -945,7 +946,7 @@ void DataPrepareActor::PrepareDataForValueNodeTensor(const ValueNodePtr &node, c
   auto tensor = node_value->cast<TensorPtr>();
   MS_EXCEPTION_IF_NULL(tensor);
 
-  if (!(first_step_ || UCEException::GetInstance().get_uce_flag())) {
+  if (!(first_step_ || tools::ErrorHandler::GetInstance().GetUceFlag())) {
     return;
   }
 
@@ -956,7 +957,7 @@ void DataPrepareActor::PrepareDataForValueNodeTensor(const ValueNodePtr &node, c
   // If the ptr of device tensor is not nullptr, it indicates that the device data has been prepared.
   if (device_tensor->IsPtrValid()) {
     CopyDataFromDeviceTensorStore(front_node, node, kernel_tensor, device_context, context);
-    if (UCEException::GetInstance().get_uce_flag()) {
+    if (tools::ErrorHandler::GetInstance().GetUceFlag()) {
       SyncTensorData(tensor, kernel_tensor, node, device_context, context, real_strategy_);
     }
     return;
@@ -1093,10 +1094,10 @@ void DataPrepareActor::PrepareDataForStringValue(const ValueNodePtr &node, size_
 
   // If the ptr of device tensor is not nullptr, it indicates that the device data has been prepared.
   if (device_tensor->GetPtr() != nullptr) {
-    if (first_step_ || UCEException::GetInstance().get_uce_flag()) {
+    if (first_step_ || tools::ErrorHandler::GetInstance().GetUceFlag()) {
       CopyDataFromDeviceTensorStore(front_node, node, kernel_tensor, device_context, context);
     }
-    if (UCEException::GetInstance().get_uce_flag()) {
+    if (tools::ErrorHandler::GetInstance().GetUceFlag()) {
       copy_to_device();
     }
     return;
@@ -1131,7 +1132,7 @@ void DataPrepareActor::PrepareDataForSequenceAndScalarValue(const ValueNodePtr &
                                                             const AnfNodePtr &front_node,
                                                             const DeviceContext *device_context,
                                                             OpContext<KernelTensor> *const context) const {
-  if (!(first_step_ || UCEException::GetInstance().get_uce_flag())) {
+  if (!(first_step_ || tools::ErrorHandler::GetInstance().GetUceFlag())) {
     return;
   }
   MS_EXCEPTION_IF_NULL(node);
@@ -1166,7 +1167,7 @@ void DataPrepareActor::PrepareDataForSequenceAndScalarValue(const ValueNodePtr &
   // If the ptr of device tensor is not nullptr, it indicates that the device data has been prepared.
   if (device_tensor->GetPtr() != nullptr) {
     CopyDataFromDeviceTensorStore(front_node, node, kernel_tensor, device_context, context);
-    if (UCEException::GetInstance().get_uce_flag()) {
+    if (tools::ErrorHandler::GetInstance().GetUceFlag()) {
       copy_to_device();
     }
     return;
@@ -1212,7 +1213,7 @@ void DataPrepareActor::PrepareDataForValueNode(const ValueNodePtr &node, const A
   MS_EXCEPTION_IF_NULL(context);
   ValuePtr node_value = node->value();
   MS_EXCEPTION_IF_NULL(node_value);
-  if (UCEException::GetInstance().get_uce_flag() && node_value->isa<tensor::Tensor>()) {
+  if (tools::ErrorHandler::GetInstance().GetUceFlag() && node_value->isa<tensor::Tensor>()) {
     // In UCE scenario, the constants value in device may be corrupted, so here restore from host backup values
     node_value = tools::ErrorHandler::GetInstance().GetConstant(node);
   }
@@ -1291,7 +1292,7 @@ void DataPrepareActor::CopyDataFromDeviceTensorStore(const AnfNodePtr &front_nod
     MS_LOG(INFO) << "Prepare device data for weight node:" << backend_node->fullname_with_scope()
                  << ", device name:" << another_device_name << " from device address:" << host_tensor_address
                  << " to:" << another_device_tensor;
-    auto skip_h2d = UCEException::GetInstance().is_reboot_node();
+    auto skip_h2d = tools::ErrorHandler::GetInstance().IsRebootNode();
     if (!skip_h2d && (!SyncAllStreamForDeviceAddress(another_device_tensor, host_tensor_address) ||
                       !SyncCopy(another_kernel_tensor.get(), host_kernel_tensor.get(), kDefaultStreamIndex))) {
       std::string error_info = "Sync data error.";
@@ -1342,7 +1343,7 @@ void DataPrepareActor::PrepareDataForWeightNode(const AnfNodePtr &backend_node, 
   auto host_kernel_tensor = node_kernel_tensor->CloneKernelTensor();
   host_kernel_tensor->set_device_address(host_tensor_address);
   MS_LOG(DEBUG) << "Create kernel tensor:" << host_kernel_tensor->ToString();
-  auto skip_h2d = UCEException::GetInstance().is_reboot_node();
+  auto skip_h2d = tools::ErrorHandler::GetInstance().IsRebootNode();
   // Use the device address of host tensor to set device tensor.
   bool is_need_sync = false;
   if (host_tensor_address != device_tensor) {
@@ -1411,7 +1412,7 @@ void DataPrepareActor::PrepareDataForWeightNode(const AnfNodePtr &backend_node, 
     MS_LOG(INFO) << "Prepare device data for weight node:" << backend_node->DebugString()
                  << ", device type:" << host_tensor_address->GetDeviceType();
     SyncTensorData(tensor, host_kernel_tensor, backend_node, device_context, context, real_strategy_,
-                   UCEException::GetInstance().is_reboot_node());
+                   tools::ErrorHandler::GetInstance().IsRebootNode());
   }
   tensor->set_device_address(host_tensor_address);
 
@@ -1481,7 +1482,7 @@ void DataPrepareActor::PrepareDeviceTensorStoreForControlNode(const ControlNodeP
       auto device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
         {kernel_tensor->device_address()->GetDeviceType(), kernel_tensor->device_address()->device_id()});
       SyncTensorData(tensor, kernel_tensor, node, device_context, context, GraphExecutionStrategy::kPipeline,
-                     UCEException::GetInstance().is_reboot_node());
+                     tools::ErrorHandler::GetInstance().IsRebootNode());
     } else {
       if (host_tensor_address->GetSize() != kernel_tensor->device_address()->GetSize()) {
         MS_LOG(WARNING) << "Please check the size of parameter:" << front_parameter->fullname_with_scope()

@@ -26,15 +26,60 @@
 #include "plugin/ascend/res_manager/symbol_interface/symbol_utils.h"
 #include "plugin/ascend/res_manager/symbol_interface/acl_rt_symbol.h"
 #include "include/runtime/hardware_abstract/device_context/device_context_manager.h"
+#include "tools/error_handler/error_handler.h"
 #include "utils/log_adapter.h"
 #include "utils/ms_context.h"
 #include "tools/error_handler/error_config.h"
+#include "include/utils/callback.h"
 
 namespace mindspore {
 namespace tools {
 namespace ascend {
 namespace {
 SNAPSHOT_MANAGER_REG(kAscendDevice, AscendSnapshotMgr);
+
+inline ErrorType GetErrorType(int error_code) {
+  switch (error_code) {
+    case ACL_ERROR_RT_DEVICE_MEM_ERROR:
+      return ErrorType::kDeviceMemError;
+    case ACL_ERROR_RT_HBM_MULTI_BIT_ECC_ERROR:
+      return ErrorType::kHbmMultBitEccError;
+    case ACL_ERROR_RT_COMM_OP_RETRY_FAIL:
+      return ErrorType::kCommOpRetryFailError;
+    case ACL_ERROR_RT_DEVICE_TASK_ABORT:
+      return ErrorType::kForceStopError;
+    case ACL_ERROR_RT_SUSPECT_REMOTE_ERROR:
+      return ErrorType::kSuspectRemoteError;
+    default:
+      return ErrorType::kUnknownError;
+  }
+}
+
+void RunFailCallback(const char *caller_file, int caller_line, const char *caller_name, const std::string &api_info,
+                     bool throw_exception) {
+  auto aclrt_get_last_error = mindspore::device::ascend::aclrtGetLastError_;
+  auto acl_get_recent_err_msg = mindspore::device::ascend::aclGetRecentErrMsg_;
+  if (aclrt_get_last_error != nullptr && (mindspore::tools::TftConfig::GetInstance()->IsEnableUCE() ||
+                                          mindspore::tools::TftConfig::GetInstance()->IsEnableHCCE())) {
+    auto error_code = aclrt_get_last_error(ACL_RT_THREAD_LEVEL);
+    auto error_type = GetErrorType(error_code);
+    mindspore::tools::ErrorHandler::GetInstance().ProcessError(
+      mindspore::tools::FuncInfo{caller_file, caller_line, caller_name, api_info}, error_code, acl_get_recent_err_msg,
+      error_type, throw_exception);
+  }
+  if (mindspore::tools::TftConfig::GetInstance()->IsEnableARF()) {
+    if (aclrt_get_last_error != nullptr) {
+      auto error_code = aclrt_get_last_error(ACL_RT_THREAD_LEVEL);
+      MS_LOG(DEBUG) << "Call ascend api <" << api_info << "> in <" << caller_name << "> at " << caller_file << ":"
+                    << caller_line << " failed, error code [" << error_code << "].";
+      if (error_code == ACL_ERROR_RT_DEVICE_TASK_ABORT) {
+        mindspore::tools::ErrorHandler::GetInstance().SetForceStopFlag(true);
+      }
+    }
+  }
+}
+
+REGISTER_COMMON_CALLBACK(RunFailCallback);
 }  // namespace
 
 AscendSnapshotMgrPtr AscendSnapshotMgr::GetInstance() {

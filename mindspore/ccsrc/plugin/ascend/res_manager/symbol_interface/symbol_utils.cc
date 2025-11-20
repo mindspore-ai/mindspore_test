@@ -27,8 +27,10 @@
 
 namespace mindspore::device::ascend {
 
-static bool load_ascend_api = false;
-static bool load_simulation_api = false;
+namespace {
+bool load_ascend_api = false;
+bool load_simulation_api = false;
+}  // namespace
 
 void *GetLibHandler(const std::string &lib_path, bool if_global) {
   void *handler = nullptr;

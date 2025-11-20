@@ -228,23 +228,18 @@ class ApiCachePool {
 };
 
 // check and throw only when enable uce.
-#define CHECK_AND_THROW_RECOVERABLE_ERROR(aclnn_api)                                                             \
-  do {                                                                                                           \
-    auto aclrt_get_last_error = mindspore::device::ascend::aclrtGetLastError_;                                   \
-    auto acl_get_recent_err_msg = mindspore::device::ascend::aclGetRecentErrMsg_;                                \
-    if ((mindspore::UCEException::IsEnableUCE() || mindspore::UCEException::IsEnableHCCE()) &&                   \
-        aclrt_get_last_error != nullptr) {                                                                       \
-      auto error_code = aclrt_get_last_error(ACL_RT_THREAD_LEVEL);                                               \
-      auto error_type = GetErrorType(error_code);                                                                \
-      mindspore::UCEException::GetInstance().ProcessApiUceError(                                                 \
-        mindspore::FuncInfo{FILE_NAME, __LINE__, __FUNCTION__, (aclnn_api)}, error_code, acl_get_recent_err_msg, \
-        error_type);                                                                                             \
-    }                                                                                                            \
+#define CHECK_AND_THROW_RECOVERABLE_ERROR(aclnn_api)                                                          \
+  do {                                                                                                        \
+    static auto fail_cb =                                                                                     \
+      GET_COMMON_CALLBACK(RunFailCallback, void, const char *, int, const char *, const std::string &, bool); \
+    if (fail_cb != nullptr) {                                                                                 \
+      fail_cb(FILE_NAME, __LINE__, __FUNCTION__, aclnn_api, true);                                            \
+    }                                                                                                         \
   } while (false)
 
 // For custom op generate executor.
 #define GEN_CUSTOM_EXECUTOR(aclnn_api, ...)                                                                            \
-  [](const std::string &api_str, const std::string &workspace_api_name, const auto &... args) -> auto {                \
+  [](const std::string &api_str, const std::string &workspace_api_name, const auto &...args) -> auto {                 \
     static device::ascend::ApiCachePool api_cache_pool;                                                                \
     const char *api_name = api_cache_pool.get(api_str);                                                                \
     const auto get_workspace_size_func_ptr = device::ascend::GetOpApiFunc(workspace_api_name.c_str());                 \
@@ -282,12 +277,11 @@ class ApiCachePool {
     }                                                                                                                  \
     device::ascend::UninitCacheThreadLocal();                                                                          \
     return std::make_tuple(workspace_size, executor, process_cache, release_func);                                     \
-  }                                                                                                                    \
-  (aclnn_api, aclnn_api + "GetWorkspaceSize", __VA_ARGS__)
+  }(aclnn_api, aclnn_api + "GetWorkspaceSize", __VA_ARGS__)
 
 // For generate executor.
 #define GEN_EXECUTOR(aclnn_api, ...)                                                                              \
-  [](const std::string &api_str, const std::string &workspace_api_name, const auto &... args) -> auto {           \
+  [](const std::string &api_str, const std::string &workspace_api_name, const auto &...args) -> auto {            \
     static mindspore::device::ascend::ApiCachePool api_cache_pool;                                                \
     const char *api_name = api_cache_pool.get(api_str);                                                           \
     static const auto get_workspace_size_func_ptr =                                                               \
@@ -329,12 +323,11 @@ class ApiCachePool {
     }                                                                                                             \
     mindspore::device::ascend::UninitCacheThreadLocal();                                                          \
     return std::make_tuple(workspace_size, executor, process_cache, release_func);                                \
-  }                                                                                                               \
-  (aclnn_api, aclnn_api + "GetWorkspaceSize", __VA_ARGS__)
+  }(aclnn_api, aclnn_api + "GetWorkspaceSize", __VA_ARGS__)
 
 // For generate executor without cache.
 #define GEN_EXECUTOR_CUST(aclnn_api, ...)                                                                              \
-  [](const std::string &workspace_api_name, auto &... args) -> auto {                                                  \
+  [](const std::string &workspace_api_name, auto &...args) -> auto {                                                   \
     static const auto get_workspace_size_func_ptr = device::ascend::GetOpApiFunc(workspace_api_name.c_str());          \
     if (get_workspace_size_func_ptr == nullptr) {                                                                      \
       MS_LOG(EXCEPTION) << workspace_api_name << " not in " << device::ascend::GetOpApiLibName() << ", please check!"; \
@@ -352,13 +345,12 @@ class ApiCachePool {
     }                                                                                                                  \
     return std::make_tuple(workspace_size, executor,                                                                   \
                            device::ascend::OpApiParams<decltype(convert_params)>(std::move(convert_params)));          \
-  }                                                                                                                    \
-  (aclnn_api + "GetWorkspaceSize", __VA_ARGS__)
+  }(aclnn_api + "GetWorkspaceSize", __VA_ARGS__)
 
 // For speed up generate executor without hash_id.
 #define GEN_EXECUTOR_BOOST(aclnn_api, hash_id, ...)                                                                    \
   [](const std::string &api_str, const std::string &workspace_api_name, uint64_t hash_id,                              \
-     const auto &... args) -> auto {                                                                                   \
+     const auto &...args) -> auto {                                                                                    \
     static device::ascend::ApiCachePool api_cache_pool;                                                                \
     const char *api_name = api_cache_pool.get(api_str);                                                                \
     static const auto get_workspace_size_func_ptr = device::ascend::GetOpApiFunc(workspace_api_name.c_str());          \
@@ -395,12 +387,11 @@ class ApiCachePool {
     }                                                                                                                  \
     device::ascend::UninitCacheThreadLocal();                                                                          \
     return std::make_tuple(workspace_size, executor, release_func, new_hash_id, false);                                \
-  }                                                                                                                    \
-  (aclnn_api, aclnn_api + "GetWorkspaceSize", hash_id, __VA_ARGS__)
+  }(aclnn_api, aclnn_api + "GetWorkspaceSize", hash_id, __VA_ARGS__)
 
 // Gen acltensor for view op
 #define GEN_EXECUTOR_FOR_VIEW(aclnn_api, ...)                                                          \
-  [](const std::string &workspace_api_name, const auto &... args) -> auto {                            \
+  [](const std::string &workspace_api_name, const auto &...args) -> auto {                             \
     uint64_t workspace_size = 0;                                                                       \
     device::ascend::aclOpExecutor *executor = nullptr;                                                 \
     uint64_t *workspace_size_addr = &workspace_size;                                                   \
@@ -412,7 +403,7 @@ class ApiCachePool {
 
 // First stage for static graph.
 #define GEN_EXECUTOR_FOR_RESIZE(aclnn_api, ...)                                                                   \
-  [](const std::string &workspace_api_name, const auto &... args) -> auto {                                       \
+  [](const std::string &workspace_api_name, const auto &...args) -> auto {                                        \
     static const auto get_workspace_size_func_ptr =                                                               \
       mindspore::device::ascend::GetOpApiFunc(workspace_api_name.c_str());                                        \
     if (get_workspace_size_func_ptr == nullptr) {                                                                 \
@@ -435,11 +426,10 @@ class ApiCachePool {
     auto graph_cache = mindspore::device::ascend::GraphCache(executor, std::move(converted_params));              \
     auto process_cache = mindspore::device::ascend::ProcessCache(graph_cache);                                    \
     return std::make_tuple(workspace_size, executor, process_cache, repeat_ret);                                  \
-  }                                                                                                               \
-  (aclnn_api + "GetWorkspaceSize", __VA_ARGS__)
+  }(aclnn_api + "GetWorkspaceSize", __VA_ARGS__)
 
 #define GEN_CUSTOM_EXECUTOR_FOR_RESIZE(aclnn_api, ...)                                                                 \
-  [](const std::string &workspace_api_name, const auto &... args) -> auto {                                            \
+  [](const std::string &workspace_api_name, const auto &...args) -> auto {                                             \
     const auto get_workspace_size_func_ptr = device::ascend::GetOpApiFunc(workspace_api_name.c_str());                 \
     if (get_workspace_size_func_ptr == nullptr) {                                                                      \
       MS_LOG(EXCEPTION) << workspace_api_name << " not in " << device::ascend::GetOpApiLibName() << ", please check!"; \
@@ -459,8 +449,7 @@ class ApiCachePool {
     auto graph_cache = device::ascend::GraphCache(executor, std::move(converted_params));                              \
     auto process_cache = device::ascend::ProcessCache(graph_cache);                                                    \
     return std::make_tuple(workspace_size, executor, process_cache, repeat_ret);                                       \
-  }                                                                                                                    \
-  (aclnn_api + "GetWorkspaceSize", __VA_ARGS__)
+  }(aclnn_api + "GetWorkspaceSize", __VA_ARGS__)
 
 // Update tensor for static graph.
 #define UPDATE_TENSOR_FOR_LAUNCH(process_cache, ...)                                     \

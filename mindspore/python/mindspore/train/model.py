@@ -53,7 +53,7 @@ from mindspore.dataset.engine.datasets import _set_training_dataset, _reset_trai
 from mindspore.train import amp
 from mindspore._c_expression import _framework_profiler_step_start, _framework_profiler_step_end
 from mindspore._c_expression import _get_optimzer_timestamps
-from mindspore._c_expression import clean_tdt_channel, set_is_arf
+from mindspore._c_expression import clean_tdt_channel, set_is_arf, _reset_error_state
 from mindspore._c_expression import _get_snapshot_params, _is_snapshot_valid
 
 from mindspore.parallel._utils import _init_auto_parallel_context, _clear_auto_parallel_context
@@ -285,6 +285,7 @@ def _handle_tft(func):
                         ret = obj.tft.tft_wait_next_action()
                         if ret == obj.tft.Action.EXIT.value:
                             raise e
+                        _reset_error_state()
                         repair_step = obj.tft.tft_get_repair_step()
                         logger.warning(
                             "uce wrapper caught repair finish REPAIR STEP: {} batch_num:{}".format(repair_step,
@@ -464,7 +465,7 @@ def _set_with_processed_inputs(network, inputs):
 
 def _check_tft_reset_dataset():
     env_tft = os.getenv("MS_ENABLE_TFT", "")
-    return any([v in env_tft for v in ["TRE:1", "UCE:1", "HCCE:1", "ARF:1"]])  # pylint: disable=R1729
+    return any(v in env_tft for v in ["TRE:1", "UCE:1", "HCCE:1", "ARF:1"])
 
 
 class Model:
@@ -745,7 +746,7 @@ class Model:
 
     def _get_metrics(self):
         """Get metrics local values."""
-        metrics = dict()  # pylint: disable=R1735
+        metrics = {}
         # There's no need for server to execute eval, just give fake metrics.
         for key, value in self._metric_fns.items():
             metrics[key] = value.eval()

@@ -48,6 +48,7 @@
 #include "include/runtime/utils/runtime_conf/thread_bind_core.h"
 #include "include/runtime/pipeline/pipeline.h"
 #include "runtime/core/graph_executor/pipeline/runtime_pipeline.h"
+#include "tools/error_handler/error_config.h"
 #include "tools/error_handler/error_handler.h"
 #include "tools/profiler/profiler.h"
 #include "actor/actormgr.h"
@@ -840,8 +841,6 @@ ActorSet *GraphScheduler::Transform(const GraphCompilerInfo &graph_compiler_info
     execution_order_running_ = true;
     graph_compiler_info.strategy_ = GraphExecutionStrategy::kPipeline;
   }
-  // Check whether UCE is enabled.
-  UCEException::GetInstance().CheckUceARFEnv();
   InitGraphParameterStore(graph_compiler_info);
   PersistDeviceTensor(graph_compiler_info);
   uint64_t start_time_1 = profiler::GetClockSyscnt();
@@ -973,14 +972,15 @@ void GraphScheduler::Schedule(const ActorSet *actor_set) {
 }
 
 void CheckUceBeforeGraphRun(ActorSet *const actor_set) {
-  if (UCEException::IsEnableUCE() || UCEException::IsEnableHCCE() || UCEException::GetInstance().enable_arf()) {
-    if (UCEException::GetInstance().get_hcce_flag()) {
+  if (tools::TftConfig::GetInstance()->IsEnableUCE() || tools::TftConfig::GetInstance()->IsEnableHCCE() ||
+      tools::TftConfig::GetInstance()->IsEnableARF()) {
+    if (tools::ErrorHandler::GetInstance().GetHcceFlag()) {
       MS_LOG(INFO) << "Restart from step after a hcce error occurs.";
-    } else if (UCEException::GetInstance().get_suspect_remote_flag()) {
+    } else if (tools::ErrorHandler::GetInstance().GetSuspectRemoteFlag()) {
       MS_LOG(INFO) << "Restart from step after a SuspectRemote error occurs.";
-    } else if (UCEException::GetInstance().get_uce_flag()) {
+    } else if (tools::ErrorHandler::GetInstance().GetUceFlag()) {
       MS_LOG(INFO) << "Restart from step after a uce error occurs.";
-    } else if (UCEException::GetInstance().get_force_stop_flag()) {
+    } else if (tools::ErrorHandler::GetInstance().GetForceStopFlag()) {
       MS_LOG(EXCEPTION) << "ForceStopError occurs when execute.";
     }
   }
@@ -1055,19 +1055,20 @@ void ClearKernelActorDataForUce(ActorSet *const actor_set, OpContext<KernelTenso
 }
 
 void GraphScheduler::ProcessUceError(ActorSet *const actor_set, OpContext<KernelTensor> *const context) {
-  if (!(UCEException::IsEnableUCE() || UCEException::IsEnableHCCE() || UCEException::GetInstance().enable_arf())) {
+  if (!(tools::TftConfig::GetInstance()->IsEnableUCE() || tools::TftConfig::GetInstance()->IsEnableHCCE() ||
+        tools::TftConfig::GetInstance()->IsEnableARF())) {
     return;
   }
 
-  if (UCEException::GetInstance().get_has_throw_error()) {
-    if (UCEException::GetInstance().get_force_stop_flag()) {
+  if (tools::ErrorHandler::GetInstance().HasThrownError()) {
+    if (tools::ErrorHandler::GetInstance().GetForceStopFlag()) {
       MS_LOG(WARNING) << "There is a ForceStop error, reset the actor state.";
     }
-    if (UCEException::GetInstance().get_hcce_flag()) {
+    if (tools::ErrorHandler::GetInstance().GetHcceFlag()) {
       MS_LOG(WARNING) << "There is a HCCE error, reset the actor state.";
-    } else if (UCEException::GetInstance().get_suspect_remote_flag()) {
+    } else if (tools::ErrorHandler::GetInstance().GetSuspectRemoteFlag()) {
       MS_LOG(WARNING) << "There is a SuspectRemote error, reset the actor state.";
-    } else if (UCEException::GetInstance().get_uce_flag()) {
+    } else if (tools::ErrorHandler::GetInstance().GetUceFlag()) {
       MS_LOG(WARNING) << "There is a UCE error, reset the actor state.";
     }
     MS_LOG(WARNING) << "Clear state start.";
@@ -1085,11 +1086,11 @@ void GraphScheduler::ProcessUceError(ActorSet *const actor_set, OpContext<Kernel
     MS_LOG(WARNING) << "Clear state end.";
   }
 
-  if (UCEException::GetInstance().get_uce_flag()) {
-    MS_LOG(EXCEPTION) << UCEException::GetInstance().GetUceErrorMsg();
-  } else if (UCEException::GetInstance().get_force_stop_flag()) {
+  if (tools::ErrorHandler::GetInstance().GetUceFlag()) {
+    MS_LOG(EXCEPTION) << tools::ErrorHandler::GetInstance().GetErrorMsg();
+  } else if (tools::ErrorHandler::GetInstance().GetForceStopFlag()) {
     actor_set->is_execution_failed_ = false;
-    MS_LOG(EXCEPTION) << UCEException::GetInstance().GetForceStopErrorMsg();
+    MS_LOG(EXCEPTION) << tools::ErrorHandler::GetInstance().GetForceStopErrorMsg();
   }
 }
 

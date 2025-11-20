@@ -197,7 +197,8 @@ std::string OpApiUtil::GetCommName(const std::string &group) {
 }
 
 bool OpApiUtil::NeedRebuildWorkspaceSize(const std::string &group, const std::string &inner_name) {
-  if (!mindspore::UCEException::GetInstance().enable_arf()) {
+  static auto enable_arf_cb = GET_COMMON_CALLBACK(IsEnableArf, bool);
+  if (enable_arf_cb != nullptr && !enable_arf_cb()) {
     return false;
   }
   return OpApiUtil::GetCommName(group) != inner_name;

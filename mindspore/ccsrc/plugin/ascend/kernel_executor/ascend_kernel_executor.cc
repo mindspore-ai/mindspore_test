@@ -31,6 +31,8 @@
 #include "include/utils/parallel_context.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel.h"
 #include "ir/graph_utils.h"
+#include "tools/error_handler/error_config.h"
+#include "tools/error_handler/error_handler.h"
 #include "tools/profiler/profiler.h"
 #include "include/utils/utils.h"
 #include "mindapi/base/type_id.h"
@@ -1319,7 +1321,7 @@ bool AscendKernelExecutor::PreSaveWeight(const CNodePtr &kernel, KernelMod *kern
   }
 
   bool is_opt_end_kernel = OptimizerEventInfo::GetInstance().IsOptimizerEndKernelMod(kernel_mod, kernel);
-  if (MS_UNLIKELY(UCEException::IsEnableUCE())) {
+  if (MS_UNLIKELY(tools::TftConfig::GetInstance()->IsEnableUCE())) {
     if (is_opt_start_kernel || is_opt_end_kernel) {
       // insert event for optimizer start and end
       OptimizerEventInfo::GetInstance().RecordEvent(is_opt_start_kernel, stream);
@@ -1365,8 +1367,7 @@ bool AscendKernelExecutor::LaunchKernel(const CNodePtr &kernel, const std::vecto
     }
     if (!ret) {
       MS_LOG(ERROR) << "Launch kernel failed, kernel full name: " << kernel->fullname_with_scope();
-      SetUceError();
-      SetArfError();
+      SetResumableError();
       return false;
     }
   }
@@ -1395,41 +1396,23 @@ bool AscendKernelExecutor::LaunchKernelHP(const CNodePtr &kernel, const std::vec
     bool ret = kernel_mod->Launch(inputs, workspace, outputs, stream);
     if (!ret) {
       MS_LOG(ERROR) << "Launch kernel failed, kernel full name: " << kernel->fullname_with_scope();
-      SetUceError();
-      SetArfError();
+      SetResumableError();
       return false;
     }
   }
   return true;
 }
 
-void AscendKernelExecutor::SetUceError() const {
-  auto aclrt_get_last_error = mindspore::device::ascend::aclrtGetLastError_;
-  auto acl_get_recent_err_msg = mindspore::device::ascend::aclGetRecentErrMsg_;
-  if (UCEException::IsEnableUCE() && aclrt_get_last_error != nullptr) {
-    auto error_code = aclrt_get_last_error(ACL_RT_THREAD_LEVEL);
-    auto error_type = GetErrorType(error_code);
-    UCEException::GetInstance().ProcessUceError(
-      mindspore::FuncInfo{FILE_NAME, __LINE__, __FUNCTION__, "Launch kernel failed"}, error_code,
-      acl_get_recent_err_msg, error_type);
-    if (!UCEException::GetInstance().get_has_throw_error()) {
-      auto arf_env = common::GetEnv("MS_ENABLE_TFT");
-      constexpr std::string_view arf = "ARF:1";
-      if (arf_env.find(arf) == std::string::npos) {
-        res_manager_->ResetStreamAndCtx();
-      }
-    }
+void AscendKernelExecutor::SetResumableError() const {
+  static auto fail_cb =
+    GET_COMMON_CALLBACK(RunFailCallback, void, const char *, int, const char *, const std::string &, bool);
+  if (fail_cb != nullptr) {
+    fail_cb(FILE_NAME, __LINE__, __FUNCTION__, "Launch kernel failed", false);
   }
-}
 
-void AscendKernelExecutor::SetArfError() const {
-  auto aclrt_get_last_error = mindspore::device::ascend::aclrtGetLastError_;
-  if (UCEException::GetInstance().enable_arf() && aclrt_get_last_error != nullptr) {
-    auto rts_code = aclrt_get_last_error(ACL_RT_THREAD_LEVEL);
-    MS_LOG(ERROR) << "Launch kernel failed, get last error is " << rts_code;
-    if (rts_code == ACL_ERROR_RT_DEVICE_TASK_ABORT) {
-      UCEException::GetInstance().set_force_stop_flag(true);
-    }
+  static auto need_resume_cb = GET_COMMON_CALLBACK(HasResumableError, bool);
+  if (need_resume_cb != nullptr && !need_resume_cb()) {
+    res_manager_->ResetStreamAndCtx();
   }
 }
 

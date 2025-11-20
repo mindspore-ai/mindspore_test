@@ -2153,7 +2153,7 @@ bool SuperKernelActor::IsHighPerfModeAtComp() {
     recorder_aid_ != nullptr,
     EnableExecuteOrderDump(),
     device::tracker::MemTrackerManager::GetInstance().IsEnabled(),
-    UCEException::IsEnableUCE(),
+    tools::TftConfig::GetInstance()->IsEnableUCE(),
     mindspore::runtime::RuntimeConf::GetInstance()->launch_blocking(),
     common::GetEnv("MS_ENABLE_CKPT_D2H_ASYNC") == "1",
     memory::mem_pool::IsNeedProfilieMemoryLog(),

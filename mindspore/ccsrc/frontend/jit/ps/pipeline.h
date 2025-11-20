@@ -74,7 +74,6 @@ class GraphCompilingScope {
   GraphCompilingScope() {
     MsContext::GetInstance()->set_jit_status(kGraphCompiling);
     MsContext::GetInstance()->set_graph_pipeline_compiled(true);
-    UCEException::GetInstance().SetGraphPipelineCompiled(true);
   }
   ~GraphCompilingScope() { MsContext::GetInstance()->set_jit_status(kNotJit); }
 };

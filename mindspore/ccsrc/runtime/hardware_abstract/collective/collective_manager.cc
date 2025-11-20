@@ -890,8 +890,7 @@ bool CollectiveManager::ResumeHcclComm() {
   if (!device_comm_lib_instance_->ResumeHcclComm()) {
     MS_LOG(EXCEPTION) << "Failed to resume comm group.";
   }
-  MS_LOG(INFO) << "Resume hccl comm, and clear force stop state.";
-  UCEException::GetInstance().set_force_stop_flag(false);
+  MS_LOG(INFO) << "Resume hccl comm.";
   return true;
 }
 

@@ -56,14 +56,22 @@ class BACKEND_COMMON_EXPORT TftConfig {
     }
     return default_value;
   }
+
   static bool IsEnableTRE();
   static bool IsEnableStepTRE();
   static int GetSnapShotSteps();
 
+  bool IsEnableUCE();
+  bool IsEnableHCCE();
+  bool IsEnableARF();
+  bool IsEnableRsc();
+
  private:
   nlohmann::json config_json_;
   std::map<std::string, bool> mark_check_;
+
   static std::map<std::string, std::string> &GetConfigMap();
+  static bool IsEnableFeature(const std::string &feature_name);
 };
 }  // namespace tools
 }  // namespace mindspore

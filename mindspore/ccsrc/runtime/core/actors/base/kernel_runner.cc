@@ -36,8 +36,9 @@
 #include "runtime/core/graph_executor/kernel_capture/graph_capture_manager.h"
 #include "include/runtime/hardware_abstract/stream/multi_stream_controller.h"
 #include "async/async.h"
+#include "tools/error_handler/error_config.h"
+#include "tools/error_handler/error_handler.h"
 #include "utils/log_adapter.h"
-#include "utils/ms_exception.h"
 #include "include/runtime/memory/mem_pool/mem_tracker.h"
 #include "include/backend/debug/execute_order_tracker/execute_order_tracker.h"
 #include "include/cluster/topology/collective_manager.h"
@@ -275,9 +276,6 @@ KernelRunner::KernelRunner(const std::string &name, const CNodePtr &kernel, cons
   }
   // shape depend need kernel is cnode.
   SetShapeDependInfo();
-
-  enable_uce_ = UCEException::IsEnableUCE();
-  enable_arf_ = UCEException::GetInstance().enable_arf();
 }
 
 void KernelRunner::Init() {
@@ -1991,19 +1989,19 @@ void KernelRunner::FetchInputByTensorStore(std::vector<KernelTensor *> *const in
 }
 
 bool KernelRunner::IsRunningFailed(const OpContext<KernelTensor> *context) {
-  if (enable_uce_ || enable_arf_) {
-    if (UCEException::GetInstance().get_force_stop_flag() && !UCEException::GetInstance().get_has_throw_error()) {
+  if (tools::TftConfig::GetInstance()->IsEnableUCE() || tools::TftConfig::GetInstance()->IsEnableARF()) {
+    if (tools::ErrorHandler::GetInstance().GetForceStopFlag() && !tools::ErrorHandler::GetInstance().HasThrownError()) {
       if (context->error_info_.empty()) {
         const_cast<OpContext<KernelTensor> *>(context)->error_info_ =
-          std::string(UCEException::GetInstance().GetForceStopErrorMsg());
-        MS_LOG(EXCEPTION) << UCEException::GetInstance().GetForceStopErrorMsg();
+          std::string(tools::ErrorHandler::GetInstance().GetForceStopErrorMsg());
+        MS_LOG(EXCEPTION) << tools::ErrorHandler::GetInstance().GetForceStopErrorMsg();
       }
     }
-    if (UCEException::GetInstance().get_uce_flag() && !UCEException::GetInstance().get_has_throw_error()) {
+    if (tools::ErrorHandler::GetInstance().GetUceFlag() && !tools::ErrorHandler::GetInstance().HasThrownError()) {
       if (context->error_info_.empty()) {
         const_cast<OpContext<KernelTensor> *>(context)->error_info_ =
-          std::string(UCEException::GetInstance().GetUceErrorMsg());
-        MS_LOG(EXCEPTION) << UCEException::GetInstance().GetUceErrorMsg();
+          std::string(tools::ErrorHandler::GetInstance().GetErrorMsg());
+        MS_LOG(EXCEPTION) << tools::ErrorHandler::GetInstance().GetErrorMsg();
       }
     }
   }

@@ -22,6 +22,7 @@
 #include <string>
 #include <vector>
 #include "pybind11/pybind11.h"
+#include "tools/error_handler/error_config.h"
 #include "utils/log_adapter.h"
 #include "plugin/ascend/res_manager/symbol_interface/acl_rt_symbol.h"
 #include "mindspore/ops/op_def/image_op_name.h"
@@ -178,7 +179,7 @@ void TensorReportUtils::ReportReceiveData(
   const std::string &tensor_name,
   const std::vector<std::variant<std::string, mindspore::tensor::TensorPtr>> &data_items) {
   MS_LOG(DEBUG) << "Enter report recevice data.";
-  if (UCEException::IsEnableUCE()) {
+  if (tools::TftConfig::GetInstance()->IsEnableUCE()) {
     OptimizerEventInfo::GetInstance().GetOptimizerTimestamp(true);
   }
   if (_optStart != nullptr) {

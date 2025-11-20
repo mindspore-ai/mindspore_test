@@ -28,6 +28,8 @@
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "mindspore/ops/op_def/structure_op_name.h"
 #include "include/runtime/hardware_abstract/kernel_base/device_tensor_store.h"
+#include "tools/error_handler/error_config.h"
+#include "tools/error_handler/error_handler.h"
 #include "utils/ms_context.h"
 #include "utils/ms_utils.h"
 #include "include/utils/anfalgo.h"
@@ -70,19 +72,19 @@ bool IsSuperKernelActor(const AnfNodePtr &node, const KernelGraphPtr &kernel_gra
 }
 
 bool IsRunningFailed(const OpContext<KernelTensor> *context) {
-  if (UCEException::IsEnableUCE() || UCEException::GetInstance().enable_arf()) {
-    if (UCEException::GetInstance().get_force_stop_flag() && !UCEException::GetInstance().get_has_throw_error()) {
+  if (tools::TftConfig::GetInstance()->IsEnableUCE() || tools::TftConfig::GetInstance()->IsEnableARF()) {
+    if (tools::ErrorHandler::GetInstance().GetForceStopFlag() && !tools::ErrorHandler::GetInstance().HasThrownError()) {
       if (context->error_info_.empty()) {
         const_cast<OpContext<KernelTensor> *>(context)->error_info_ =
-          std::string(UCEException::GetInstance().GetForceStopErrorMsg());
-        MS_LOG(EXCEPTION) << UCEException::GetInstance().GetForceStopErrorMsg();
+          std::string(tools::ErrorHandler::GetInstance().GetForceStopErrorMsg());
+        MS_LOG(EXCEPTION) << tools::ErrorHandler::GetInstance().GetForceStopErrorMsg();
       }
     }
-    if (UCEException::GetInstance().get_uce_flag() && !UCEException::GetInstance().get_has_throw_error()) {
+    if (tools::ErrorHandler::GetInstance().GetUceFlag() && !tools::ErrorHandler::GetInstance().HasThrownError()) {
       if (context->error_info_.empty()) {
         const_cast<OpContext<KernelTensor> *>(context)->error_info_ =
-          std::string(UCEException::GetInstance().GetUceErrorMsg());
-        MS_LOG(EXCEPTION) << UCEException::GetInstance().GetUceErrorMsg();
+          std::string(tools::ErrorHandler::GetInstance().GetErrorMsg());
+        MS_LOG(EXCEPTION) << tools::ErrorHandler::GetInstance().GetErrorMsg();
       }
     }
   }
@@ -1079,7 +1081,7 @@ void AllocMemAndCopyForParameter(size_t outer_index, size_t inner_index, tensor:
     }
   }
 
-  auto skip_h2d = UCEException::GetInstance().is_reboot_node();
+  auto skip_h2d = tools::ErrorHandler::GetInstance().IsRebootNode();
   if (skip_h2d && graph_parameter_store->GetPositionWeight(outer_index)) {
     return;
   }
