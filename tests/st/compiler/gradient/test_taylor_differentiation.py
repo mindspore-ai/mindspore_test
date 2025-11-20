@@ -19,7 +19,7 @@ from mindspore import nn
 from mindspore import context
 from mindspore import ops
 from mindspore import Tensor, jit, Parameter
-from mindspore.ops.functional import jet, derivative, grad
+from mindspore.ops.functional import jet, derivative
 from mindspore.common import dtype
 from mindspore.common.api import _pynative_executor
 from tests.mark_utils import arg_mark
@@ -84,16 +84,6 @@ class SingleInputSingleOutputWithScalarNet(nn.Cell):
         out1 = self.log(x)
         out = ops.add(ops.div(1, out1), 2)
         return ops.mul(out, 3)
-
-
-class SinNet(nn.Cell):
-    def __init__(self):
-        super().__init__()
-        self.sin = ops.Sin()
-
-    def construct(self, x):
-        out = self.sin(x)
-        return out
 
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux'], level_mark='level1', card_mark='onecard',
@@ -731,38 +721,6 @@ def test_jet_function_graph_mode(mode):
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux'], level_mark='level1', card_mark='onecard',
           essential_mark='unessential')
 @pytest.mark.parametrize('mode', [context.GRAPH_MODE, context.PYNATIVE_MODE])
-def test_derivative_derivative_grad(mode):
-    """
-    Features: high grad derivative
-    Description: Test high grad derivative.
-    Expectation: No exception.
-    """
-
-    class Grad(nn.Cell):
-        def __init__(self, net):
-            super().__init__()
-            self.net = net
-
-        def construct(self, a, b):
-            def get_der(x, y):
-                return derivative(self.net, x, y)
-
-            grad_net = grad(get_der)
-            grad_ret = grad_net(a, b)
-            return grad_ret
-
-    context.set_context(mode=mode)
-    net = SinNet()
-    x = Tensor([1., 1.])
-    y = 2
-    ms_net = Grad(net)
-    d_grad = ms_net(x, y)
-    assert np.allclose(d_grad.asnumpy(), np.array([0, 0]), 0.001, 0.001)
-
-
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux'], level_mark='level1', card_mark='onecard',
-          essential_mark='unessential')
-@pytest.mark.parametrize('mode', [context.GRAPH_MODE, context.PYNATIVE_MODE])
 def test_jet_jet_grad(mode):
     """
     Features: high grad jet
@@ -779,7 +737,7 @@ def test_jet_jet_grad(mode):
             def get_jet(x, y):
                 return jet(self.net, x, y)
 
-            grad_net = grad(get_jet)
+            grad_net = ops.grad(get_jet)
             grad_ret = grad_net(a, b)
             return grad_ret
 
