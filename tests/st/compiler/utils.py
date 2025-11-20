@@ -20,6 +20,25 @@ def match_array(actual, expected, error=0, err_msg=''):
         np.testing.assert_equal(actual, expected, err_msg=err_msg)
 
 
+def assert_equal(expected, actual, decimal=7, err_msg=''):
+    if isinstance(expected, (list, tuple)):
+        assert type(expected) is type(actual)
+        assert len(expected) == len(actual)
+        for l, r in zip(expected, actual):
+            assert_equal(l, r, decimal=decimal, err_msg=err_msg)
+    elif isinstance(expected, dict):
+        assert type(expected) is type(actual)
+        assert len(expected) == len(actual)
+        for k in expected:
+            assert k in actual
+            assert_equal(expected[k], actual[k], decimal=decimal, err_msg=err_msg)
+    elif isinstance(expected, Tensor):
+        assert isinstance(actual, Tensor)
+        match_array(actual, expected, error=decimal, err_msg=err_msg)
+    else:
+        assert expected == actual, f'expect: {expected}, actual: {actual}'
+
+
 def _count_unequal_element(data_expected, data_me, rtol, atol):
     assert data_expected.shape == data_me.shape
     total_count = len(data_expected.flatten())
