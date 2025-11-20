@@ -502,22 +502,12 @@ void GraphKernelPassChecker::Init() {
 
 void GraphKernelPassChecker::SetEnablePassActive(size_t index, bool value) {
   if (index < GraphKernelFlags::GetInstance().enable_pass.size()) {
-    if (enable_pass_active_[index]) {
-      MS_LOG(WARNING) << "More than one graph kernel pass enable by "
-                      << GraphKernelFlags::GetInstance().enable_pass[index] << "!";
-    } else {
-      enable_pass_active_[index] = value;
-    }
+    enable_pass_active_[index] = value;
   }
 }
 void GraphKernelPassChecker::SetDisablePassActive(size_t index, bool value) {
   if (index < GraphKernelFlags::GetInstance().disable_pass.size()) {
-    if (disable_pass_active_[index]) {
-      MS_LOG(WARNING) << "More than one graph kernel pass disable by "
-                      << GraphKernelFlags::GetInstance().disable_pass[index] << "!";
-    } else {
-      disable_pass_active_[index] = value;
-    }
+    disable_pass_active_[index] = value;
   }
 }
 
