@@ -73,7 +73,7 @@ def _rank_to_coordinate(rank_index, device_arrangement):
         List, the coordinate for local device in the device matrix
     """
     dim_len = len(device_arrangement)
-    device_coordinate = np.zeros(dim_len)
+    device_coordinate = [0] * dim_len
     for i in range(dim_len):
         size = device_arrangement[dim_len - 1 - i]
         device_coordinate[dim_len - 1 - i] = rank_index % size
@@ -756,9 +756,9 @@ def _apply_operator(operator_name):
         slice_index = tuple(slice_index)
         return numpy_data[slice_index]
 
-    _apply_operator_map = {"Reshape": _apply_reshape_operator, "StridedSlice": _apply_slice_operator,
-                           "AllConcat": _apply_allconcat_operator}
-    return _apply_operator_map.get(operator_name)
+    apply_operator_map = {"Reshape": _apply_reshape_operator, "StridedSlice": _apply_slice_operator,
+                          "AllConcat": _apply_allconcat_operator}
+    return apply_operator_map.get(operator_name)
 
 
 def _reshape_param_data_with_weight(param_data, dev_mat, field_size):
@@ -932,7 +932,7 @@ def _get_pipeline_operator_map(from_layout, to_layout, self_rank):
             f"{from_layout[0]}, {from_layout[1]}, {from_layout[2]}, {from_layout[3]}"
             f" -> "
             f"{to_layout[0]}, {to_layout[1]}, {from_layout[2]}, {to_layout[3]}")
-        global COMM_TENSOR_CELL_CACHE
+        global COMM_TENSOR_CELL_CACHE  # pylint: disable=W0602
         if comm_tensor_cache_key not in COMM_TENSOR_CELL_CACHE:
             logger.debug(f"comm_tensor_cache_key is {comm_tensor_cache_key}, not match cache")
             broadcast_map = _infer_pp_op_map(from_layout, to_layout, self_rank)
@@ -1021,7 +1021,7 @@ def _get_resharding_operator_map(from_layout, to_layout, self_rank):
         f"{from_layout[0]}, {from_layout[1]}, {from_layout[2]}, {from_layout[3]}"
         f" -> "
         f"{to_layout[0]}, {to_layout[1]}, {from_layout[2]}, {to_layout[3]}")
-    global RESHARD_OP_MAP_CACHE
+    global RESHARD_OP_MAP_CACHE  # pylint: disable=W0602
     if reshard_op_cache_key not in RESHARD_OP_MAP_CACHE:
         operator_map = _infer_reshard_op_map(from_layout, to_layout, self_rank)
         op_map_dict = {rank_id: operator_map for rank_id in operator_map}
