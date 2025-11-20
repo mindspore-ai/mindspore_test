@@ -2282,6 +2282,11 @@ std::vector<PassItem> JitPipeline(const ResourcePtr &resource, bool build_top_gr
   MS_EXCEPTION_IF_NULL(ms_context);
   if (ms_context->backend_policy() != "ge") {
 #endif
+    // Phase with "export" prefix need to skip backend compilation.
+    const std::string &phase = PhaseManager::GetInstance().phase();
+    if (pipeline::IsPhaseExport(phase)) {
+      return jit_passes;
+    }
     // Compile the backend graph.
     (void)jit_passes.emplace_back(kTaskEmit, TaskEmitAction);
 

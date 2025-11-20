@@ -2340,7 +2340,8 @@ def _msfunc_info(net, jit_executor, *inputs):
     """Get mindir stream and parameter dict of ms_function"""
     # pylint: disable=protected-access
     net_dict = OrderedDict()
-    graph_id = jit_executor.compile(net.__name__, *inputs)
+    phase_name = "export.mindir"
+    graph_id = jit_executor.compile(net.__name__, phase=phase_name, *inputs)
     mindir_stream = jit_executor._get_func_graph_proto(net, graph_id, 'mind_ir')
     params = jit_executor._graph_executor.get_params(graph_id)
     for name, value in params.items():
