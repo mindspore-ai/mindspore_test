@@ -35,14 +35,14 @@ class OpSampleInput:
         op_input: The first positional input (commonly a Tensor).
         op_args: Extra positional arguments of the operator.
         op_kwargs: Keyword arguments of the operator.
-        op_name: A short name for identification in logs.
+        sample_name: A short name for identification in logs.
     """
 
     __slots__ = [
         "op_input",
         "op_args",
         "op_kwargs",
-        "op_name",
+        "sample_name",
     ]
 
     def __init__(
@@ -50,19 +50,19 @@ class OpSampleInput:
             op_input,
             op_args: Optional[tuple] = tuple(),
             op_kwargs: Optional[dict] = None,
-            op_name: Optional[str] = None,
+            sample_name: Optional[str] = None,
     ):
         self.op_input = op_input
         self.op_args = op_args
         self.op_kwargs = op_kwargs if op_kwargs is not None else {}
-        self.op_name = op_name if op_name is not None else "UnknownOp"
+        self.sample_name = sample_name if sample_name is not None else "UnknownSample"
 
     def transform(self, fn, method_name):
         """Apply a transformation recursively to op_input/op_args/op_kwargs.
 
         Args:
             fn: A callable used to transform each leaf element.
-            method_name: Suffix appended to `op_name` for traceability.
+            method_name: Suffix appended to `sample_name` for traceability.
 
         Returns:
             A new OpSampleInput with transformed fields.
@@ -96,7 +96,7 @@ class OpSampleInput:
             transformed_op_input,
             op_args=transformed_op_args,
             op_kwargs=transformed_op_kwargs,
-            op_name=self.op_name + "_transformed_" + method_name,
+            sample_name=self.sample_name + "_transformed_" + method_name,
         )
 
     def convert_to_args(self, append_dout=None):
@@ -132,7 +132,7 @@ class OpSampleInput:
             op_input=None,
             op_args=tuple(op_args),
             op_kwargs={},
-            op_name=self.op_name + ("_to_args_with_dout" if append_dout is not None else "_to_args"),
+            sample_name=self.sample_name + ("_to_args_with_dout" if append_dout is not None else "_to_args"),
         )
 
     def copy(self):
@@ -222,7 +222,7 @@ class OpSampleInput:
 
             return x
 
-        if 'transformed_astorch' in self.op_name:
+        if 'transformed_astorch' in self.sample_name:
             raise RuntimeError("OpSampleInput only supports discontiguous method with mindspore.Tensor now.")
 
         return self.transform(_discontiguous, 'discontiguous')
@@ -261,7 +261,7 @@ class OpSampleInput:
                f"op_input={print_func(self.op_input)},\n" + \
                f"op_args={print_func(self.op_args)},\n" + \
                f"op_kwargs={print_func(self.op_kwargs)},\n" + \
-               f"op_name={print_func(self.op_name)})"
+               f"sample_name={print_func(self.sample_name)})"
 
 
 class OpErrorInput:
@@ -495,3 +495,23 @@ def make_tensor_with_np_array(
             result = _tensor_to_discontiguous(result)
 
     return result
+
+
+def skip_sample_inputs(input_func, skip_keywords):
+    """
+    Args:
+        input_func(function): sample input generator function.
+        skip_keywords(str or list): keyword string or keyword list, used to match sample_name.
+    Returns:
+        function: wrapped generator function.
+    """
+    if isinstance(skip_keywords, str):
+        skip_keywords = [skip_keywords]
+
+    def wrapped_func(op_info: OpInfo, dtype=None, device=None, **kwargs):
+        for sample_input in input_func(op_info, dtype, device, **kwargs):
+            if any(keyword in sample_input.sample_name for keyword in skip_keywords):
+                continue
+            yield sample_input
+
+    return wrapped_func

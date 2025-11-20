@@ -169,7 +169,7 @@ def basic_reference_inputs_binary_op_common_func(
         yield OpSampleInput(
             op_input=_input,
             op_args=(_other,),
-            op_name=op_info.name,
+            sample_name=op_info.name,
         )
 
 # op_extra_reference_inputs_func for ops
@@ -218,7 +218,7 @@ def _generate_binary_op_tensors_sample_inputs_func(
                 ),
             ),
             op_kwargs={},
-            op_name=f"{op_info.name}_tensor_inputs",
+            sample_name=f"{op_info.name}_tensor_inputs",
         )
 
 
@@ -285,7 +285,7 @@ def _generate_binary_op_small_value_tensor_inputs_func(
         op_input= make_tensor_with_np_array(np.array(_input_values), dtype=dtype, device=device),
         op_args=(make_tensor_with_np_array(np.array(_other_values), dtype=dtype, device=device),),
         op_kwargs={},
-        op_name=f"{op_info.name}_small_value_tensor_inputs",
+        sample_name=f"{op_info.name}_small_value_tensor_inputs",
     )
 
 
@@ -334,7 +334,7 @@ def _generate_binary_op_large_value_tensor_inputs_func(
         op_input= make_tensor_with_np_array(np.array(_input_values), dtype=dtype, device=device),
         op_args=(make_tensor_with_np_array(np.array(_other_values), dtype=dtype, device=device),),
         op_kwargs={},
-        op_name=f"{op_info.name}_large_value_tensor_inputs",
+        sample_name=f"{op_info.name}_large_value_tensor_inputs",
     )
 
 def _generate_binary_op_broadcasting_and_discontiguous_tensor_inputs_func(
@@ -392,7 +392,7 @@ def _generate_binary_op_broadcasting_and_discontiguous_tensor_inputs_func(
                 ),
             ),
             op_kwargs={},
-            op_name=f"{op_info.name}_broadcasting_and_discontiguous_tensor_inputs",
+            sample_name=f"{op_info.name}_broadcasting_and_discontiguous_tensor_inputs",
         )
 
 
@@ -429,7 +429,7 @@ def _generate_binary_op_scalar_inputs_func(
                 op_input=make_func(shape, low=op_info.input_low, high=op_info.input_high),
                 op_args=(_scalar,),
                 op_kwargs={},
-                op_name=f"{op_info.name}_scalarxtensor_inputs",
+                sample_name=f"{op_info.name}_scalarxtensor_inputs",
             )
 
     if op_info.supports_right_python_scalar:
@@ -438,7 +438,7 @@ def _generate_binary_op_scalar_inputs_func(
                 op_input=_scalar,
                 op_args=(make_func(shape, low=op_info.other_low, high=op_info.other_high),),
                 op_kwargs={},
-                op_name=f"{op_info.name}_tensorxscalar_inputs",
+                sample_name=f"{op_info.name}_tensorxscalar_inputs",
             )
 
     if op_info.supports_both_python_scalar:
@@ -446,7 +446,7 @@ def _generate_binary_op_scalar_inputs_func(
             op_input=_scalar,
             op_args=(_scalar,),
             op_kwargs={},
-            op_name=f"{op_info.name}_scalarxscalar_inputs",
+            sample_name=f"{op_info.name}_scalarxscalar_inputs",
         )
 
 def _generate_binary_op_extremal_value_tensor_inputs_func(
@@ -466,7 +466,7 @@ def _generate_binary_op_extremal_value_tensor_inputs_func(
     Returns:
         Generator[OpSampleInput]: Inputs covering extremal value.
     """
-    # inf and nan is unsupported on Ascend910 devices.
+    # inf and nan are unsupported on Ascend910 devices.
     if device == 'ascend':
         ascend_name = MSContext.get_instance().get_ascend_soc_version()
         if ascend_name == 'ascend910':
@@ -478,19 +478,19 @@ def _generate_binary_op_extremal_value_tensor_inputs_func(
         op_input=make_tensor_with_np_array(np.full((S, S), np.inf), dtype=dtype, device=device),
         op_args=(make_tensor_with_np_array(np.full((S, S), np.inf), dtype=dtype, device=device),),
         op_kwargs={},
-        op_name=op_info.name,
+        sample_name=op_info.name,
     )
     yield OpSampleInput(
         op_input=make_tensor_with_np_array(np.full((S, S), -np.inf), dtype=dtype, device=device),
         op_args=(make_tensor_with_np_array(np.full((S, S), -np.inf), dtype=dtype, device=device),),
         op_kwargs={},
-        op_name=op_info.name,
+        sample_name=op_info.name,
     )
     yield OpSampleInput(
         op_input=make_tensor_with_np_array(np.full((S, S), np.nan), dtype=dtype, device=device),
         op_args=(make_tensor_with_np_array(np.full((S, S), np.nan), dtype=dtype, device=device),),
         op_kwargs={},
-        op_name=op_info.name,
+        sample_name=op_info.name,
     )
 
 
@@ -559,20 +559,20 @@ def dynamic_inputs_binary_op_common_func(
                 op_input=ms.Tensor(shape=(None, None), dtype=dtype),
                 op_args=(ms.Tensor(shape=(None, None), dtype=dtype),),
                 op_kwargs={},
-                op_name=f"{op_info.name}_dynamic_shape_compile_input",
+                sample_name=f"{op_info.name}_dynamic_shape_compile_input",
             ),
             op_running_inputs=(
                 OpSampleInput(
                     op_input=make_func(shape=(2, 3), low=op_info.input_low, high=op_info.input_high),
                     op_args=(make_func(shape=(2, 3), low=op_info.other_low, high=op_info.other_high),),
                     op_kwargs={},
-                    op_name=f"{op_info.name}_dynamic_shape_running_input",
+                    sample_name=f"{op_info.name}_dynamic_shape_running_input",
                 ),
                 OpSampleInput(
                     op_input=make_func(shape=(4, 5), low=op_info.input_low, high=op_info.input_high),
                     op_args=(make_func(shape=(4, 5), low=op_info.other_low, high=op_info.other_high),),
                     op_kwargs={},
-                    op_name=f"{op_info.name}_dynamic_shape_running_input",
+                    sample_name=f"{op_info.name}_dynamic_shape_running_input",
                 ),
             ),
         )
@@ -583,20 +583,20 @@ def dynamic_inputs_binary_op_common_func(
                 op_input=ms.Tensor(shape=None, dtype=dtype),
                 op_args=(ms.Tensor(shape=None, dtype=dtype),),
                 op_kwargs={},
-                op_name=f"{op_info.name}_dynamic_rank_compile_input",
+                sample_name=f"{op_info.name}_dynamic_rank_compile_input",
             ),
             op_running_inputs=(
                 OpSampleInput(
                     op_input=make_func(shape=(2, 3), low=op_info.input_low, high=op_info.input_high),
                     op_args=(make_func(shape=(2, 3), low=op_info.other_low, high=op_info.other_high),),
                     op_kwargs={},
-                    op_name=f"{op_info.name}_dynamic_rank_running_input",
+                    sample_name=f"{op_info.name}_dynamic_rank_running_input",
                 ),
                 OpSampleInput(
                     op_input=make_func(shape=(2, 3, 4), low=op_info.input_low, high=op_info.input_high),
                     op_args=(make_func(shape=(2, 3, 4), low=op_info.other_low, high=op_info.other_high),),
                     op_kwargs={},
-                    op_name=f"{op_info.name}_dynamic_rank_running_input",
+                    sample_name=f"{op_info.name}_dynamic_rank_running_input",
                 ),
             ),
         )
@@ -625,7 +625,7 @@ def error_inputs_binary_op_common_func(op_error_inputs_func = None):
                     op_input=2,
                     op_args=(make_tensor(shape=(S,), dtype=ms.int64, device=device),),
                     op_kwargs={},
-                    op_name=op_info.name,
+                    sample_name=op_info.name,
                 ),
                 op_error_type=(TypeError, ValueError, RuntimeError),
                 op_error_info=f'left_python_scalar is not supported for {op_info.name}',
@@ -636,7 +636,7 @@ def error_inputs_binary_op_common_func(op_error_inputs_func = None):
                     op_input=make_tensor(shape=(S,), dtype=ms.int64, device=device),
                     op_args=(2,),
                     op_kwargs={},
-                    op_name=op_info.name,
+                    sample_name=op_info.name,
                 ),
                 op_error_type=(TypeError, ValueError, RuntimeError),
                 op_error_info=f'right_python_scalar is not supported for {op_info.name}',
@@ -647,7 +647,7 @@ def error_inputs_binary_op_common_func(op_error_inputs_func = None):
                     op_input=1,
                     op_args=(2,),
                     op_kwargs={},
-                    op_name=op_info.name,
+                    sample_name=op_info.name,
                 ),
                 op_error_type=(TypeError, ValueError, RuntimeError),
                 op_error_info=f'both_python_scalar is not supported for {op_info.name}',
@@ -767,7 +767,7 @@ def basic_reference_inputs_unary_op_common_func(
         yield OpSampleInput(
             _input,
             op_args=(),
-            op_name=op_info.name,
+            sample_name=op_info.name,
         )
 
 
@@ -809,7 +809,7 @@ def _generate_unary_op_tensors_sample_inputs_func(
             ),
             op_args=(),
             op_kwargs={},
-            op_name=f"{op_info.name}_tensor_inputs",
+            sample_name=f"{op_info.name}_tensor_inputs",
         )
 
 
@@ -864,7 +864,7 @@ def _generate_unary_op_small_value_tensor_inputs_func(
         op_input=make_tensor_with_np_array(np.array(values), dtype=dtype, device=device),
         op_args=(),
         op_kwargs={},
-        op_name=f"{op_info.name}_small_value_tensor_inputs",
+        sample_name=f"{op_info.name}_small_value_tensor_inputs",
     )
 
 
@@ -904,7 +904,7 @@ def _generate_unary_op_large_value_tensor_inputs_func(
         op_input=make_tensor_with_np_array(np.array(values), dtype=dtype, device=device),
         op_args=(),
         op_kwargs={},
-        op_name=f"{op_info.name}_large_value_tensor_inputs",
+        sample_name=f"{op_info.name}_large_value_tensor_inputs",
     )
 
 
@@ -944,7 +944,7 @@ def _generate_unary_op_discontiguous_tensor_inputs_func(
             ),
             op_args=(),
             op_kwargs={},
-            op_name=f"{op_info.name}_discontiguous_tensor_inputs",
+            sample_name=f"{op_info.name}_discontiguous_tensor_inputs",
         )
 
 
@@ -977,19 +977,19 @@ def _generate_unary_op_extremal_value_tensor_inputs_func(
         op_input=make_tensor_with_np_array(np.full((S, S), np.inf), dtype=dtype, device=device),
         op_args=(),
         op_kwargs={},
-        op_name=op_info.name,
+        sample_name=op_info.name,
     )
     yield OpSampleInput(
         op_input=make_tensor_with_np_array(np.full((S, S), -np.inf), dtype=dtype, device=device),
         op_args=(),
         op_kwargs={},
-        op_name=op_info.name,
+        sample_name=op_info.name,
     )
     yield OpSampleInput(
         op_input=make_tensor_with_np_array(np.full((S, S), np.nan), dtype=dtype, device=device),
         op_args=(),
         op_kwargs={},
-        op_name=op_info.name,
+        sample_name=op_info.name,
     )
 
 
@@ -1054,20 +1054,20 @@ def dynamic_inputs_unary_op_common_func(
                 op_input=ms.Tensor(shape=(None, None), dtype=dtype),
                 op_args=(),
                 op_kwargs={},
-                op_name=f"{op_info.name}_dynamic_shape_compile_input",
+                sample_name=f"{op_info.name}_dynamic_shape_compile_input",
             ),
             op_running_inputs=(
                 OpSampleInput(
                     op_input=make_func(shape=(2, 3), low=op_info.input_low, high=op_info.input_high),
                     op_args=(),
                     op_kwargs={},
-                    op_name=f"{op_info.name}_dynamic_shape_running_input",
+                    sample_name=f"{op_info.name}_dynamic_shape_running_input",
                 ),
                 OpSampleInput(
                     op_input=make_func(shape=(4, 5), low=op_info.input_low, high=op_info.input_high),
                     op_args=(),
                     op_kwargs={},
-                    op_name=f"{op_info.name}_dynamic_shape_running_input",
+                    sample_name=f"{op_info.name}_dynamic_shape_running_input",
                 ),
             ),
         )
@@ -1078,20 +1078,20 @@ def dynamic_inputs_unary_op_common_func(
                 op_input=ms.Tensor(shape=None, dtype=dtype),
                 op_args=(),
                 op_kwargs={},
-                op_name=f"{op_info.name}_dynamic_rank_compile_input",
+                sample_name=f"{op_info.name}_dynamic_rank_compile_input",
             ),
             op_running_inputs=(
                 OpSampleInput(
                     op_input=make_func(shape=(2, 3), low=op_info.input_low, high=op_info.input_high),
                     op_args=(),
                     op_kwargs={},
-                    op_name=f"{op_info.name}_dynamic_rank_running_input",
+                    sample_name=f"{op_info.name}_dynamic_rank_running_input",
                 ),
                 OpSampleInput(
                     op_input=make_func(shape=(2, 3, 4), low=op_info.input_low, high=op_info.input_high),
                     op_args=(),
                     op_kwargs={},
-                    op_name=f"{op_info.name}_dynamic_rank_running_input",
+                    sample_name=f"{op_info.name}_dynamic_rank_running_input",
                 ),
             ),
         )
