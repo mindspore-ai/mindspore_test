@@ -869,7 +869,7 @@ void PrepareFAGradInput(const FuncGraphPtr &graph,
       MS_EXCEPTION_IF_NULL(dout_node);
       auto filter_func = [&](const CNodePtr &cnode) {
         bool filter = IsPrimitiveCNode(cnode, prim::kPrimSplit) || IsPrimitiveCNode(cnode, prim::kPrimTupleGetItem) ||
-                      IsPrimitiveCNode(cnode, prim::kPrimDepend);
+                      IsPrimitiveCNode(cnode, prim::kPrimDepend) || IsPrimitiveCNode(cnode, prim::kPrimSplitWithSize);
         return std::make_pair(filter, 1);
       };
       full_info.dout = GetInputNodeWithFilter(dout_node, filter_func);
