@@ -354,21 +354,21 @@ install(
     COMPONENT mindspore
 )
 
-if(ENABLE_AKG AND CMAKE_SYSTEM_NAME MATCHES "Linux")
+if(ENABLE_AKG AND CMAKE_SYSTEM_NAME MATCHES "Linux" AND NOT ENABLE_D)
     set (AKG_PATH ${BUILD_PATH}/mindspore/akg)
     file(REMOVE_RECURSE ${AKG_PATH}/_akg)
     file(MAKE_DIRECTORY ${AKG_PATH}/_akg)
     file(TOUCH ${AKG_PATH}/_akg/__init__.py)
-    install(DIRECTORY "${AKG_PATH}/akg" DESTINATION "${AKG_PATH}/_akg")
+    install(DIRECTORY "${akg_LIBPATH}/akg" DESTINATION "${AKG_PATH}/_akg")
     install(
         DIRECTORY
             ${AKG_PATH}/_akg
         DESTINATION ${INSTALL_PY_DIR}/
         COMPONENT mindspore
     )
-    if(ENABLE_CPU AND NOT ENABLE_GPU AND NOT ENABLE_D)
+    if(ENABLE_CPU AND NOT ENABLE_GPU)
         install(
-                TARGETS akg
+                FILES ${akg_LIBPATH}/libakg.so
                 DESTINATION ${INSTALL_PLUGIN_DIR}/cpu
                 COMPONENT mindspore
         )
@@ -376,16 +376,8 @@ if(ENABLE_AKG AND CMAKE_SYSTEM_NAME MATCHES "Linux")
 
     if(ENABLE_GPU)
         install(
-                TARGETS akg
+                FILES ${akg_LIBPATH}/libakg.so
                 DESTINATION ${INSTALL_PLUGIN_DIR}/gpu${CUDA_VERSION}
-                COMPONENT mindspore
-        )
-    endif()
-
-    if(ENABLE_D)
-        install(
-                TARGETS akg
-                DESTINATION ${INSTALL_PLUGIN_DIR}/ascend
                 COMPONENT mindspore
         )
     endif()
