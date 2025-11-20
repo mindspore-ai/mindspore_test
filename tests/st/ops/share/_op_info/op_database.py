@@ -21,6 +21,7 @@ This module provides:
 - The operator database (op_db) and get_op_info accessor.
 """
 import functools
+from typing import Dict, Optional
 import torch
 import mindspore as ms
 from mindspore import mint, mutable
@@ -29,7 +30,7 @@ from tests.st.ops.share._op_info.op_info import basic_reference_inputs_binary_op
 from tests.st.ops.share._op_info.op_common import dtypes_as_torch, dtypes_extra_uint
 from tests.st.ops.share._op_info.op_common import SMALL_DIM_SIZE
 from tests.st.ops.share._internal.utils import OpSampleInput, OpDynamicInput, OpErrorInput, make_tensor
-from typing import Dict, Optional
+
 
 # op_basic_reference_inputs_func for ops
 def basic_sample_inputs_add_sub_ext(
@@ -60,14 +61,14 @@ def basic_sample_inputs_add_sub_ext(
             op_input=_input,
             op_args=(_other,),
             op_kwargs={'alpha': 2},
-            op_name=op_info.name
+            sample_name=op_info.name
         )
     else:
         yield OpSampleInput(
             op_input=_input,
             op_args=(_other,),
             op_kwargs={'alpha': True},
-            op_name=op_info.name
+            sample_name=op_info.name
         )
 
     neg_alpha = -0.1415 if (dtype.is_floating_point or dtype.is_complex) else -3
@@ -81,14 +82,14 @@ def basic_sample_inputs_add_sub_ext(
             op_input=_input,
             op_args=(_other,),
             op_kwargs={'alpha': neg_alpha},
-            op_name=op_info.name
+            sample_name=op_info.name
         )
     else:
         yield OpSampleInput(
             op_input=_input,
             op_args=(_other,),
             op_kwargs={'alpha': False},
-            op_name=op_info.name
+            sample_name=op_info.name
         )
 
 # op_dynamic_inputs_func for ops
@@ -116,20 +117,20 @@ def dynamic_sample_inputs_add_sub_ext(
                 op_input=ms.Tensor(shape=(None, None, None, None, None), dtype=dtype),
                 op_args=(ms.Tensor(shape=(None, None, None, 1, None), dtype=dtype),),
                 op_kwargs={"alpha": mutable(input_data=3.3, dynamic_len=False)},
-                op_name=f'{op_info.name}_dynamic_shape_compile_input'
+                sample_name=f'{op_info.name}_dynamic_shape_compile_input'
             ),
             op_running_inputs=(
                 OpSampleInput(
                     op_input=make_func(shape=(5, 5, 8, 5, 4)),
                     op_args=(make_func(shape=(5, 5, 8, 1, 4)),),
                     op_kwargs={"alpha": mutable(input_data=4.3, dynamic_len=False)},
-                    op_name=f'{op_info.name}_dynamic_shape_running_input'
+                    sample_name=f'{op_info.name}_dynamic_shape_running_input'
                 ),
                 OpSampleInput(
                     op_input=make_func(shape=(9, 9, 8, 8, 4)),
                     op_args=(make_func(shape=(9, 9, 8, 1, 4)),),
                     op_kwargs={"alpha": mutable(input_data=-2.1, dynamic_len=False)},
-                    op_name=f'{op_info.name}_dynamic_shape_running_input'
+                    sample_name=f'{op_info.name}_dynamic_shape_running_input'
                 ),
             )
         )
@@ -140,20 +141,20 @@ def dynamic_sample_inputs_add_sub_ext(
                 op_input=ms.Tensor(shape=None, dtype=dtype),
                 op_args=(ms.Tensor(shape=None, dtype=dtype),),
                 op_kwargs={"alpha": mutable(input_data=2.33, dynamic_len=False)},
-                op_name=f'{op_info.name}_dynamic_rank_compile_input'
+                sample_name=f'{op_info.name}_dynamic_rank_compile_input'
             ),
             op_running_inputs=(
                 OpSampleInput(
                     op_input=make_func(shape=(5, 5)),
                     op_args=(make_func(shape=(5, 5)),),
                     op_kwargs={"alpha": mutable(input_data=9.6, dynamic_len=False)},
-                    op_name=f'{op_info.name}_dynamic_rank_running_input'
+                    sample_name=f'{op_info.name}_dynamic_rank_running_input'
                 ),
                 OpSampleInput(
                     op_input=make_func(shape=(9, 9, 7)),
                     op_args=(make_func(shape=(9, 9, 7)),),
                     op_kwargs={"alpha": mutable(input_data=10.10, dynamic_len=False)},
-                    op_name=f'{op_info.name}_dynamic_rank_running_input'
+                    sample_name=f'{op_info.name}_dynamic_rank_running_input'
                 ),
             )
         )
@@ -169,7 +170,7 @@ def error_inputs_add_sub_ext_func(op_info: OpInfo, dtype=None, device=None, **kw
             op_input=make_tensor(shape=(2,), dtype=ms.float32),
             op_args=(make_tensor(shape=(3,), dtype=ms.float32),),
             op_kwargs={},
-            op_name=op_info.name,
+            sample_name=op_info.name,
         ),
         op_error_type=ValueError,
         op_error_info='other shape does not match input',
@@ -180,7 +181,7 @@ def error_inputs_add_sub_ext_func(op_info: OpInfo, dtype=None, device=None, **kw
             op_input=make_tensor(shape=(2,), dtype=ms.float32),
             op_args=((1, 2),),
             op_kwargs={},
-            op_name=op_info.name,
+            sample_name=op_info.name,
         ),
         op_error_type=TypeError,
         op_error_info='other is not tensor or number',
@@ -225,7 +226,7 @@ def basic_sample_inputs_mint_chunk(op_info: OpInfo, dtype=None, device=None, **k
             op_input=make_arg(shape),
             op_args=args,
             op_kwargs={},
-            op_name=op_info.name,
+            sample_name=op_info.name,
         )
 
 def extra_sample_inputs_mint_chunk(op_info: OpInfo, dtype=None, device=None, **kwargs):
@@ -250,7 +251,7 @@ def extra_sample_inputs_mint_chunk(op_info: OpInfo, dtype=None, device=None, **k
             op_input=make_arg(shape),
             op_args=(chunks, dim),
             op_kwargs={},
-            op_name=op_info.name,
+            sample_name=op_info.name,
         )
 
 def dynamic_sample_inputs_mint_chunk(op_info: OpInfo, dtype=None, device=None, **kwargs):
@@ -270,20 +271,20 @@ def dynamic_sample_inputs_mint_chunk(op_info: OpInfo, dtype=None, device=None, *
                 op_input=ms.Tensor(shape=(None, 6), dtype=dtype),  # dim=1 is static 6
                 op_args=(chunks, dim),
                 op_kwargs={},
-                op_name=f"{op_info.name}_dynamic_shape_compile_input_A",
+                sample_name=f"{op_info.name}_dynamic_shape_compile_input_A",
             ),
             op_running_inputs=(
                 OpSampleInput(
                     op_input=make_func(shape=(3, 6)),
                     op_args=(chunks, dim),
                     op_kwargs={},
-                    op_name=f"{op_info.name}_dynamic_shape_running_input_A",
+                    sample_name=f"{op_info.name}_dynamic_shape_running_input_A",
                 ),
                 OpSampleInput(
                     op_input=make_func(shape=(5, 6)),
                     op_args=(chunks, dim),
                     op_kwargs={},
-                    op_name=f"{op_info.name}_dynamic_shape_running_input_A",
+                    sample_name=f"{op_info.name}_dynamic_shape_running_input_A",
                 ),
             ),
         )
@@ -295,20 +296,20 @@ def dynamic_sample_inputs_mint_chunk(op_info: OpInfo, dtype=None, device=None, *
                 op_input=ms.Tensor(shape=(6, None, 2), dtype=dtype),  # dim=0 is static 6
                 op_args=(chunks, dim),
                 op_kwargs={},
-                op_name=f"{op_info.name}_dynamic_shape_compile_input_B",
+                sample_name=f"{op_info.name}_dynamic_shape_compile_input_B",
             ),
             op_running_inputs=(
                 OpSampleInput(
                     op_input=make_func(shape=(6, 3, 2)),
                     op_args=(chunks, dim),
                     op_kwargs={},
-                    op_name=f"{op_info.name}_dynamic_shape_running_input_B",
+                    sample_name=f"{op_info.name}_dynamic_shape_running_input_B",
                 ),
                 OpSampleInput(
                     op_input=make_func(shape=(6, 5, 2)),
                     op_args=(chunks, dim),
                     op_kwargs={},
-                    op_name=f"{op_info.name}_dynamic_shape_running_input_B",
+                    sample_name=f"{op_info.name}_dynamic_shape_running_input_B",
                 ),
             ),
         )
@@ -331,7 +332,7 @@ def basic_sample_inputs_mint_gather(op_info: OpInfo, dtype=None, device=None, **
         op_input=make_x(x_shape),
         op_args=(0, make_index(shape=(S,), high=x_shape[0])),
         op_kwargs={},
-        op_name=op_info.name,
+        sample_name=op_info.name,
     )
 
     # 2D: dim=0 and dim=1
@@ -340,13 +341,13 @@ def basic_sample_inputs_mint_gather(op_info: OpInfo, dtype=None, device=None, **
         op_input=make_x(x_shape),
         op_args=(0, make_index(shape=(S, S), high=x_shape[0])),
         op_kwargs={},
-        op_name=op_info.name,
+        sample_name=op_info.name,
     )
     yield OpSampleInput(
         op_input=make_x(x_shape),
         op_args=(1, make_index(shape=(S, S // 2), high=x_shape[1])),
         op_kwargs={},
-        op_name=op_info.name,
+        sample_name=op_info.name,
     )
 
 
@@ -368,7 +369,7 @@ def extra_sample_inputs_mint_gather(op_info: OpInfo, dtype=None, device=None, **
         op_input=make_x(x_shape),
         op_args=(0, make_index(shape=(), high=1)),
         op_kwargs={},
-        op_name=op_info.name,
+        sample_name=op_info.name,
     )
 
     # Empty index tensor case (1D input). Although 1D was in basic, this is a distinct edge case.
@@ -377,7 +378,7 @@ def extra_sample_inputs_mint_gather(op_info: OpInfo, dtype=None, device=None, **
         op_input=make_x(x_shape),
         op_args=(0, make_index(shape=(0,), high=1, dtype=ms.int32)),
         op_kwargs={},
-        op_name=op_info.name,
+        sample_name=op_info.name,
     )
 
     # 3D: gather along middle dim (dim=1)
@@ -386,7 +387,7 @@ def extra_sample_inputs_mint_gather(op_info: OpInfo, dtype=None, device=None, **
         op_input=make_x(x_shape),
         op_args=(1, make_index(shape=(2, 2, 4), high=x_shape[1])),
         op_kwargs={},
-        op_name=op_info.name,
+        sample_name=op_info.name,
     )
 
     # 4D: negative dim (-1)
@@ -395,7 +396,7 @@ def extra_sample_inputs_mint_gather(op_info: OpInfo, dtype=None, device=None, **
         op_input=make_x(x_shape),
         op_args=(-1, make_index(shape=(2, 2, 3, 1), high=x_shape[-1])),
         op_kwargs={},
-        op_name=op_info.name,
+        sample_name=op_info.name,
     )
 
     # 5D: dim=3, non-dim axes of index <= input
@@ -404,7 +405,7 @@ def extra_sample_inputs_mint_gather(op_info: OpInfo, dtype=None, device=None, **
         op_input=make_x(x_shape),
         op_args=(3, make_index(shape=(2, 2, 2, 2, 2), high=x_shape[3])),
         op_kwargs={},
-        op_name=op_info.name,
+        sample_name=op_info.name,
     )
 
     # 6D: dim=0
@@ -413,7 +414,7 @@ def extra_sample_inputs_mint_gather(op_info: OpInfo, dtype=None, device=None, **
         op_input=make_x(x_shape),
         op_args=(0, make_index(shape=(2, 2, 2, 2, 2, 2), high=x_shape[0])),
         op_kwargs={},
-        op_name=op_info.name,
+        sample_name=op_info.name,
     )
 
     # 7D: last dim
@@ -422,7 +423,7 @@ def extra_sample_inputs_mint_gather(op_info: OpInfo, dtype=None, device=None, **
         op_input=make_x(x_shape),
         op_args=(-1, make_index(shape=(2, 2, 2, 2, 2, 2, 2), high=x_shape[-1])),
         op_kwargs={},
-        op_name=op_info.name,
+        sample_name=op_info.name,
     )
 
     # 8D: dim=5
@@ -431,7 +432,7 @@ def extra_sample_inputs_mint_gather(op_info: OpInfo, dtype=None, device=None, **
         op_input=make_x(x_shape),
         op_args=(5, make_index(shape=(2, 2, 2, 2, 2, 2, 2, 2), high=x_shape[5])),
         op_kwargs={},
-        op_name=op_info.name,
+        sample_name=op_info.name,
     )
 
 
@@ -454,20 +455,20 @@ def dynamic_sample_inputs_mint_gather(op_info: OpInfo, dtype=None, device=None, 
                 op_input=ms.Tensor(shape=(5, None), dtype=dtype),  # non-dim axis (0) static
                 op_args=(dim, ms.Tensor(shape=(5, None), dtype=ms.int64)),  # index dim-axis length dynamic
                 op_kwargs={},
-                op_name=f"{op_info.name}_dynamic_shape_compile_input_A",
+                sample_name=f"{op_info.name}_dynamic_shape_compile_input_A",
             ),
             op_running_inputs=(
                 OpSampleInput(
                     op_input=make_func(shape=(5, 6)),
                     op_args=(dim, make_tensor(shape=(5, 3), dtype=ms.int64, device=device, low=0, high=6)),
                     op_kwargs={},
-                    op_name=f"{op_info.name}_dynamic_shape_running_input_A",
+                    sample_name=f"{op_info.name}_dynamic_shape_running_input_A",
                 ),
                 OpSampleInput(
                     op_input=make_func(shape=(5, 8)),
                     op_args=(dim, make_tensor(shape=(5, 4), dtype=ms.int64, device=device, low=0, high=8)),
                     op_kwargs={},
-                    op_name=f"{op_info.name}_dynamic_shape_running_input_A",
+                    sample_name=f"{op_info.name}_dynamic_shape_running_input_A",
                 ),
             ),
         )
@@ -479,20 +480,20 @@ def dynamic_sample_inputs_mint_gather(op_info: OpInfo, dtype=None, device=None, 
                 op_input=ms.Tensor(shape=(6, None, 2), dtype=dtype),  # dim axis static
                 op_args=(dim, ms.Tensor(shape=(None, 2, 2), dtype=ms.int64)),  # index dim-axis length dynamic
                 op_kwargs={},
-                op_name=f"{op_info.name}_dynamic_shape_compile_input_B",
+                sample_name=f"{op_info.name}_dynamic_shape_compile_input_B",
             ),
             op_running_inputs=(
                 OpSampleInput(
                     op_input=make_func(shape=(6, 3, 2)),
                     op_args=(dim, make_tensor(shape=(3, 2, 2), dtype=ms.int64, device=device, low=0, high=6)),
                     op_kwargs={},
-                    op_name=f"{op_info.name}_dynamic_shape_running_input_B",
+                    sample_name=f"{op_info.name}_dynamic_shape_running_input_B",
                 ),
                 OpSampleInput(
                     op_input=make_func(shape=(6, 5, 2)),
                     op_args=(dim, make_tensor(shape=(4, 2, 2), dtype=ms.int64, device=device, low=0, high=6)),
                     op_kwargs={},
-                    op_name=f"{op_info.name}_dynamic_shape_running_input_B",
+                    sample_name=f"{op_info.name}_dynamic_shape_running_input_B",
                 ),
             ),
         )
@@ -505,20 +506,20 @@ def dynamic_sample_inputs_mint_gather(op_info: OpInfo, dtype=None, device=None, 
                 op_input=ms.Tensor(shape=None, dtype=dtype),
                 op_args=(dim, ms.Tensor(shape=None, dtype=ms.int64)),
                 op_kwargs={},
-                op_name=f"{op_info.name}_dynamic_rank_compile_input",
+                sample_name=f"{op_info.name}_dynamic_rank_compile_input",
             ),
             op_running_inputs=(
                 OpSampleInput(
                     op_input=make_func(shape=(3,)),
                     op_args=(dim, make_tensor(shape=(2,), dtype=ms.int64, device=device, low=0, high=3)),
                     op_kwargs={},
-                    op_name=f"{op_info.name}_dynamic_rank_running_input",
+                    sample_name=f"{op_info.name}_dynamic_rank_running_input",
                 ),
                 OpSampleInput(
                     op_input=make_func(shape=(2, 3)),
                     op_args=(dim, make_tensor(shape=(2, 3), dtype=ms.int64, device=device, low=0, high=2)),
                     op_kwargs={},
-                    op_name=f"{op_info.name}_dynamic_rank_running_input",
+                    sample_name=f"{op_info.name}_dynamic_rank_running_input",
                 ),
             ),
         )
@@ -581,7 +582,7 @@ def basic_sample_inputs_mint_interpolate(op_info: OpInfo, dtype=None, device=Non
                     "align_corners": align_corners,
                     "recompute_scale_factor": None,
                 },
-                op_name=op_info.name,
+                sample_name=op_info.name,
             )
             yield OpSampleInput(
                 op_input=make_arg(shape_with_nc(D, rank)),
@@ -593,7 +594,7 @@ def basic_sample_inputs_mint_interpolate(op_info: OpInfo, dtype=None, device=Non
                     "align_corners": align_corners,
                     "recompute_scale_factor": None,
                 },
-                op_name=op_info.name,
+                sample_name=op_info.name,
             )
 
             # Using scale_factor and varying recompute_scale_factor
@@ -609,7 +610,7 @@ def basic_sample_inputs_mint_interpolate(op_info: OpInfo, dtype=None, device=Non
                             "align_corners": align_corners,
                             "recompute_scale_factor": recompute,
                         },
-                        op_name=op_info.name,
+                        sample_name=op_info.name,
                     )
 
 
@@ -655,7 +656,7 @@ def dynamic_sample_inputs_mint_interpolate(op_info: OpInfo, dtype=None, device=N
                             "align_corners": align_corners,
                             "recompute_scale_factor": None,
                         },
-                        op_name=f'{op_info.name}_dynamic_shape_compile_input_size_r{rank}',
+                        sample_name=f'{op_info.name}_dynamic_shape_compile_input_size_r{rank}',
                     ),
                     op_running_inputs=(
                         OpSampleInput(
@@ -668,7 +669,7 @@ def dynamic_sample_inputs_mint_interpolate(op_info: OpInfo, dtype=None, device=N
                                 "align_corners": align_corners,
                                 "recompute_scale_factor": None,
                             },
-                            op_name=f'{op_info.name}_dynamic_shape_running_input_size_r{rank}',
+                            sample_name=f'{op_info.name}_dynamic_shape_running_input_size_r{rank}',
                         ),
                         OpSampleInput(
                             op_input=make_func(shape=nc_shape(rank, D2)),
@@ -680,7 +681,7 @@ def dynamic_sample_inputs_mint_interpolate(op_info: OpInfo, dtype=None, device=N
                                 "align_corners": align_corners,
                                 "recompute_scale_factor": None,
                             },
-                            op_name=f'{op_info.name}_dynamic_shape_running_input_size_r{rank}',
+                            sample_name=f'{op_info.name}_dynamic_shape_running_input_size_r{rank}',
                         ),
                     ),
                 )
@@ -700,7 +701,7 @@ def dynamic_sample_inputs_mint_interpolate(op_info: OpInfo, dtype=None, device=N
                                 "align_corners": align_corners,
                                 "recompute_scale_factor": None,
                             },
-                            op_name=f'{op_info.name}_dynamic_shape_compile_input_scale_r{rank}',
+                            sample_name=f'{op_info.name}_dynamic_shape_compile_input_scale_r{rank}',
                         ),
                         op_running_inputs=(
                             OpSampleInput(
@@ -713,7 +714,7 @@ def dynamic_sample_inputs_mint_interpolate(op_info: OpInfo, dtype=None, device=N
                                     "align_corners": align_corners,
                                     "recompute_scale_factor": None,
                                 },
-                                op_name=f'{op_info.name}_dynamic_shape_running_input_scale_r{rank}',
+                                sample_name=f'{op_info.name}_dynamic_shape_running_input_scale_r{rank}',
                             ),
                             OpSampleInput(
                                 op_input=make_func(shape=nc_shape(rank, D2)),
@@ -725,7 +726,7 @@ def dynamic_sample_inputs_mint_interpolate(op_info: OpInfo, dtype=None, device=N
                                     "align_corners": align_corners,
                                     "recompute_scale_factor": None,
                                 },
-                                op_name=f'{op_info.name}_dynamic_shape_running_input_scale_r{rank}',
+                                sample_name=f'{op_info.name}_dynamic_shape_running_input_scale_r{rank}',
                             ),
                         ),
                     )
@@ -746,7 +747,7 @@ def dynamic_sample_inputs_mint_interpolate(op_info: OpInfo, dtype=None, device=N
                         "align_corners": align_corners,
                         "recompute_scale_factor": None,
                     },
-                    op_name=f'{op_info.name}_dynamic_rank_compile_input_r{rank}',
+                    sample_name=f'{op_info.name}_dynamic_rank_compile_input_r{rank}',
                 ),
                 op_running_inputs=(
                     OpSampleInput(
@@ -759,7 +760,7 @@ def dynamic_sample_inputs_mint_interpolate(op_info: OpInfo, dtype=None, device=N
                             "align_corners": align_corners,
                             "recompute_scale_factor": None,
                         },
-                        op_name=f'{op_info.name}_dynamic_rank_running_input_r{rank}',
+                        sample_name=f'{op_info.name}_dynamic_rank_running_input_r{rank}',
                     ),
                     OpSampleInput(
                         op_input=make_func(shape=nc_shape(rank, D2)),
@@ -771,7 +772,7 @@ def dynamic_sample_inputs_mint_interpolate(op_info: OpInfo, dtype=None, device=N
                             "align_corners": align_corners,
                             "recompute_scale_factor": None,
                         },
-                        op_name=f'{op_info.name}_dynamic_rank_running_input_r{rank}',
+                        sample_name=f'{op_info.name}_dynamic_rank_running_input_r{rank}',
                     ),
                 ),
             )

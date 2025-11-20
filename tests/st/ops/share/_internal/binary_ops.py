@@ -65,15 +65,16 @@ class BinaryOpsFactory(OpsFactory):
                             op_input=make_tensor(shape=(S, S), dtype=input_dtype, device=device),
                             op_args=(make_tensor(shape=(S, S), dtype=other_dtype, device=device),),
                             op_kwargs={},
-                            op_name=op_info.name,
+                            sample_name=op_info.name,
                         )
         try:
             if not self.op_info.support_tensor_type_promotion:
-                print(f"\nop_name: {self.op_name} does not support tensor type promotion, "
+                print(f"\nsample_name: {self.sample_name} does not support tensor type promotion, "
                       f"skip test_binary_op_tensor_type_promotion.")
                 return
 
-            print(f"\nop_name: {self.op_name}, mode:{self._context_mode}, test_binary_op_tensor_type_promotion...")
+            print(f"\nsample_name: {self.sample_name}, mode:{self._context_mode}, "
+                  f"test_binary_op_tensor_type_promotion...")
             self.supported_dtypes = tuple(set(self.supported_dtypes) & set(dtypes_as_torch))
             self.op_basic_reference_inputs_func = sample_inputs_binary_tensor_type_promotion_func
             for sample_input in self.op_basic_reference_inputs_func(
@@ -84,7 +85,7 @@ class BinaryOpsFactory(OpsFactory):
                 self.compare_with_torch(sample_inputs=sample_input)
         except Exception as e:
             print(f"\ntest_binary_op_tensor_type_promotion failed:"
-                  f"\nop_name: {self.op_name}"
+                  f"\nsample_name: {self.sample_name}"
                   f"\nmode: {self._context_mode}"
                   f"\ndtypes: {self.supported_dtypes}"
                   f"\n{sample_input.summary(True)}")
@@ -108,7 +109,7 @@ class BinaryOpsFactory(OpsFactory):
                 return
 
             try:
-                print(f"\nop_name: {self.op_name}, mode:{self._context_mode}, "
+                print(f"\nsample_name: {self.sample_name}, mode:{self._context_mode}, "
                       f"{'right_python_scalar' if right_python_scalar else 'left_python_scalar'}, "
                       f"test_intxfloat_scalar_type_promotion...")
                 # int tensor x float scalar
@@ -118,7 +119,7 @@ class BinaryOpsFactory(OpsFactory):
                     op_input=_tensor if right_python_scalar else _scalar,
                     op_args=(_scalar,) if right_python_scalar else (_tensor,),
                     op_kwargs={},
-                    op_name=self.op_info.name,
+                    sample_name=self.op_info.name,
                 )
                 self.compare_with_torch(sample_inputs=_sample_input)
                 # int tensor x float scalar tensor
@@ -127,7 +128,7 @@ class BinaryOpsFactory(OpsFactory):
                     op_input=_tensor if right_python_scalar else _scalar_tensor,
                     op_args=(_scalar_tensor,) if right_python_scalar else (_tensor,),
                     op_kwargs={},
-                    op_name=self.op_info.name,
+                    sample_name=self.op_info.name,
                 )
                 self.compare_with_torch(sample_inputs=_sample_input)
                 # int tensor x float64 scalar tensor
@@ -137,12 +138,12 @@ class BinaryOpsFactory(OpsFactory):
                         op_input=_tensor if right_python_scalar else _scalar_tensor,
                         op_args=(_scalar_tensor,) if right_python_scalar else (_tensor,),
                         op_kwargs={},
-                        op_name=self.op_info.name,
+                        sample_name=self.op_info.name,
                     )
                     self.compare_with_torch(sample_inputs=_sample_input)
             except Exception as e:
                 print(f"\test_intxfloat_scalar_type_promotion failed:"
-                      f"\nop_name: {self.op_name}"
+                      f"\nsample_name: {self.sample_name}"
                       f"\nmode: {self._context_mode}"
                       f"\n{'right_python_scalar' if right_python_scalar else 'left_python_scalar'}, "
                       f"\n{_sample_input.summary(True)}")
@@ -159,7 +160,7 @@ class BinaryOpsFactory(OpsFactory):
                 return
 
             try:
-                print(f"\nop_name: {self.op_name}, mode:{self._context_mode}, "
+                print(f"\nsample_name: {self.sample_name}, mode:{self._context_mode}, "
                       f"{'right_python_scalar' if right_python_scalar else 'left_python_scalar'}, "
                       f"test_floatxcomplex_scalar_type_promotion...")
                 # float tensor x complex64 scalar tensor
@@ -169,7 +170,7 @@ class BinaryOpsFactory(OpsFactory):
                     op_input=_tensor if right_python_scalar else _scalar_tensor,
                     op_args=(_scalar_tensor,) if right_python_scalar else (_tensor,),
                     op_kwargs={},
-                    op_name=self.op_info.name,
+                    sample_name=self.op_info.name,
                 )
                 self.compare_with_torch(sample_inputs=_sample_input)
                 # float tensor x complex128 scalar tensor
@@ -179,12 +180,12 @@ class BinaryOpsFactory(OpsFactory):
                         op_input=_tensor if right_python_scalar else _scalar_tensor,
                         op_args=(_scalar_tensor,) if right_python_scalar else (_tensor,),
                         op_kwargs={},
-                        op_name=self.op_info.name,
+                        sample_name=self.op_info.name,
                     )
                     self.compare_with_torch(sample_inputs=_sample_input)
             except Exception as e:
                 print(f"\test_floatxcomplex_scalar_type_promotion failed:"
-                      f"\nop_name: {self.op_name}"
+                      f"\nsample_name: {self.sample_name}"
                       f"\nmode: {self._context_mode}"
                       f"\n{'right_python_scalar' if right_python_scalar else 'left_python_scalar'}, "
                       f"\n{_sample_input.summary(True)}")
@@ -201,7 +202,7 @@ class BinaryOpsFactory(OpsFactory):
                 return
 
             try:
-                print(f"\nop_name: {self.op_name}, mode:{self._context_mode}, "
+                print(f"\nsample_name: {self.sample_name}, mode:{self._context_mode}, "
                       f"{'right_python_scalar' if right_python_scalar else 'left_python_scalar'}, "
                       f"test_floatxfloat_scalar_type_promotion...")
                 _tensor = make_tensor_func(dtype=ms.float32)
@@ -210,12 +211,12 @@ class BinaryOpsFactory(OpsFactory):
                     op_input=_tensor if right_python_scalar else _scalar_tensor,
                     op_args=(_scalar_tensor,) if right_python_scalar else (_tensor,),
                     op_kwargs={},
-                    op_name=self.op_info.name,
+                    sample_name=self.op_info.name,
                 )
                 self.compare_with_torch(sample_inputs=_sample_input)
             except Exception as e:
                 print(f"\test_floatxfloat_scalar_type_promotion failed:"
-                      f"\nop_name: {self.op_name}"
+                      f"\nsample_name: {self.sample_name}"
                       f"\nmode: {self._context_mode}"
                       f"\n{'right_python_scalar' if right_python_scalar else 'left_python_scalar'}, "
                       f"\n{_sample_input.summary(True)}")
@@ -232,7 +233,7 @@ class BinaryOpsFactory(OpsFactory):
                 return
 
             try:
-                print(f"\nop_name: {self.op_name}, mode:{self._context_mode}, "
+                print(f"\nsample_name: {self.sample_name}, mode:{self._context_mode}, "
                       f"{'right_python_scalar' if right_python_scalar else 'left_python_scalar'}, "
                       f"test_complexxcomplex_scalar_type_promotion...")
                 # complex64 tensor x complex128 scalar tensor
@@ -242,12 +243,12 @@ class BinaryOpsFactory(OpsFactory):
                     op_input=_tensor if right_python_scalar else _scalar_tensor,
                     op_args=(_scalar_tensor,) if right_python_scalar else (_tensor,),
                     op_kwargs={},
-                    op_name=self.op_info.name,
+                    sample_name=self.op_info.name,
                 )
                 self.compare_with_torch(sample_inputs=_sample_input)
             except Exception as e:
                 print(f"\test_complexxcomplex_scalar_type_promotion failed:"
-                      f"\nop_name: {self.op_name}"
+                      f"\nsample_name: {self.sample_name}"
                       f"\nmode: {self._context_mode}"
                       f"\n{'right_python_scalar' if right_python_scalar else 'left_python_scalar'}, "
                       f"\n{_sample_input.summary(True)}")
@@ -259,7 +260,8 @@ class BinaryOpsFactory(OpsFactory):
                 return
 
             try:
-                print(f"\nop_name: {self.op_name}, mode:{self._context_mode}, test_all_scalar_type_promotion...")
+                print(f"\nsample_name: {self.sample_name}, mode:{self._context_mode},"
+                      f"test_all_scalar_type_promotion...")
                 # int scalar x float scalar
                 _r_scalar = 2.0
                 for _l_scalar in (1, 1.0):
@@ -267,12 +269,12 @@ class BinaryOpsFactory(OpsFactory):
                         op_input=_l_scalar,
                         op_args=(_r_scalar,),
                         op_kwargs={},
-                        op_name=self.op_info.name,
+                        sample_name=self.op_info.name,
                     )
                     self.compare_with_torch(sample_inputs=_sample_input)
             except Exception as e:
                 print(f"\test_all_scalar_type_promotion failed:"
-                      f"\nop_name: {self.op_name}"
+                      f"\nsample_name: {self.sample_name}"
                       f"\nmode: {self._context_mode}"
                       f"\n{_sample_input.summary(True)}")
                 raise e
@@ -298,12 +300,12 @@ class BinaryOpsFactory(OpsFactory):
         Test binary op error cases.
         '''
         if self.op_error_inputs_func is None:
-            print(f"\nop_name: {self.op_name} has no op_error_inputs_func, "
+            print(f"\nsample_name: {self.sample_name} has no op_error_inputs_func, "
                   f"skip test_binary_op_error.")
             return
 
         try:
-            print(f"\nop_name: {self.op_name}, mode:{self._context_mode}, test_binary_op_error...")
+            print(f"\nsample_name: {self.sample_name}, mode:{self._context_mode}, test_binary_op_error...")
             for error_input in self.op_error_inputs_func(self.op_info, device=self._device):
                 _sample_input = error_input.op_sample_input
                 _error_type = error_input.op_error_type
@@ -313,7 +315,7 @@ class BinaryOpsFactory(OpsFactory):
                     _pynative_executor.sync()
         except Exception as e:
             print(f"\ntest_binary_op_error catch expect {_error_type.__name__} failed, but got {type(e).__name__}:"
-                  f"\nop_name: {self.op_name}"
+                  f"\nsample_name: {self.sample_name}"
                   f"\nmode: {self._context_mode}"
                   f"\nsample_input: {_sample_input.summary()}"
                   f"\nerror_info: {error_input.op_error_info}")
