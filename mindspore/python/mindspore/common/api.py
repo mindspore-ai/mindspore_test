@@ -162,7 +162,7 @@ def _convert_python_data(data):
         return PythonRowTensor(row_tensor=data)
     if data.__class__ is list:
         # Keep list object not change for inplace operation.
-        for i in range(len(data)):
+        for i,_ in enumerate(data):
             data[i] = _convert_python_data(data[i])
         return data
     if data.__class__ is dict:
@@ -1376,8 +1376,6 @@ def jit(
     jit_level = Validator.check_string(jit_level, ["O0", "O1"], "jit_level", "jit")
     dynamic = Validator.check_int_range(dynamic, 0, 1, Validator.INC_BOTH, "dynamic", "jit")
     fullgraph = Validator.check_bool(fullgraph, "fullgraph", "jit")
-    if backend != "":
-        backend = Validator.check_string(backend, ["ms_backend", "GE"], "backend", "jit")
     jit_syntax_level = "LAX" if fullgraph is False else "STRICT"
     hash_obj = _get_hash_obj(options)
     _check_options(options, backend)

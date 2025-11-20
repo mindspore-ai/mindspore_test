@@ -20,16 +20,14 @@
 #include <string>
 #include <utility>
 #include <map>
+#include <mutex>
 #include <vector>
 #include "include/backend/backend_manager/backend_base.h"
 
 namespace mindspore {
 namespace backend {
-// The register entry of new backend.
-#define MS_REGISTER_BACKEND(BACKEND_NAME, BACKEND_CLASS)                    \
-  static const BackendRegister g_backend_##BACKEND_NAME##_reg(BACKEND_NAME, \
-                                                              []() { return std::make_shared<BACKEND_CLASS>(); });
 using BackendCreator = std::function<std::shared_ptr<BackendBase>()>;
+using BackendName = std::string;
 
 // The backend name must be equal to the backend field of api "mindspore.jit".
 const char kMSBackendName[] = "ms_backend";
@@ -40,17 +38,11 @@ const char kGEBackendLibName[] = "libmindspore_ge_backend.so";
 
 // The backend type enum, please add a new enumeration definition before kInvalidBackend when adding a new backend.
 enum BackendType {
-  kMSBackend = 0,
-  kGEBackend,
-  kInvalidBackend,
+  kMSBackend = 0,       // 0 for ms_backend
+  kGEBackend,           // 1 for GE
+  kCustomBackend = 11,  // 2~11 for custom backend, support up to 10 custom backend
+  kInvalidBackend,      // number of backend
 };
-
-const std::map<std::string, BackendType> backend_name_to_type = {{kMSBackendName, kMSBackend},
-                                                                 {kGEBackendName, kGEBackend}};
-const std::map<BackendType, std::string> backend_type_to_name = {{kMSBackend, kMSBackendName},
-                                                                 {kGEBackend, kGEBackendName}};
-
-const std::map<BackendType, std::string> backend_type_to_lib_name = {{kGEBackend, kGEBackendLibName}};
 
 class BACKEND_MANAGER_EXPORT BackendManager {
  public:
@@ -70,6 +62,9 @@ class BACKEND_MANAGER_EXPORT BackendManager {
   // which are generated through the graph Build interface above.
   RunningStatus Run(BackendType backend_type, BackendGraphId graph_id, const VectorRef &inputs, VectorRef *outputs);
 
+  // Load backend plugin for GE backend or custom backend.
+  bool LoadBackend(const BackendName &backend_name, const std::string &backend_path = "");
+
   // Clear the members.
   void Clear();
 
@@ -86,10 +81,9 @@ class BACKEND_MANAGER_EXPORT BackendManager {
   BackendManager() = default;
   ~BackendManager() = default;
 
-  void LoadBackend(BackendType backend_type);
   void UnloadBackend();
 
-  BackendBase *GetOrCreateBackend(BackendType backend_type);
+  BackendBase *GetOrCreateBackend(const BackendType &backend_type);
 
   // BackendType -> BackendLoadHandle.
   std::map<BackendType, void *> backend_load_handle_;
@@ -97,7 +91,10 @@ class BACKEND_MANAGER_EXPORT BackendManager {
   // BackendType -> BackendCreator.
   std::map<BackendType, BackendCreator> backend_creators_;
 
+  // BackendType -> BackendBase.
   BackendBasePtr backends_[kInvalidBackend];
+
+  std::mutex backend_mutex_;
 };
 
 class BackendRegister {
@@ -109,4 +106,9 @@ class BackendRegister {
 };
 }  // namespace backend
 }  // namespace mindspore
+
+// The register entry of new backend.
+#define MS_REGISTER_BACKEND(BACKEND_NAME, BACKEND_CLASS)                           \
+  static const mindspore::backend::BackendRegister g_backend_##BACKEND_NAME##_reg( \
+    BACKEND_NAME, []() { return std::make_shared<BACKEND_CLASS>(); });
 #endif  // MINDSPORE_CCSRC_INCLUDE_BACKEND_BACKEND_MANAGER_BACKEND_MANAGER_H_
