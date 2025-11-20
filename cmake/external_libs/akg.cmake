@@ -10,6 +10,7 @@ endif()
 
 mindspore_add_pkg(akg
         LIBS akg
+        VER 2.4.0
         URL ${REQ_URL}
         SHA256 ${SHA256}
         CMAKE_OPTION ${akg_cmake_option}

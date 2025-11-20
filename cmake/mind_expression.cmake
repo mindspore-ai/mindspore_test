@@ -22,7 +22,7 @@ include(${CMAKE_SOURCE_DIR}/cmake/external_libs/securec.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/external_libs/protobuf.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/external_libs/pocketfft.cmake)
 
-if(ENABLE_AKG AND NOT ENABLE_D)
+if(CMAKE_SYSTEM_NAME MATCHES "Linux" AND ENABLE_AKG AND NOT ENABLE_D)
     include(${CMAKE_SOURCE_DIR}/cmake/external_libs/akg.cmake)
 endif()
 
