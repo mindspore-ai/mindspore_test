@@ -24,11 +24,11 @@
 #include <vector>
 #include <utility>
 #include "frontend/parallel/status.h"
-#include "frontend/parallel/tensor_layout/array.h"
+#include "include/frontend/parallel/tensor_layout/array.h"
 
 namespace mindspore {
 namespace parallel {
-class FRONTEND_EXPORT Arrangement : public Array {
+class Arrangement : public Array {
  public:
   Arrangement() : size_(1) {}
   ~Arrangement() override = default;

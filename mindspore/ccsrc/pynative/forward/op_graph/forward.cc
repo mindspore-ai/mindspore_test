@@ -38,6 +38,8 @@
 #include "pynative/utils/runtime/op_executor.h"
 #include "tools/profiler/profiling.h"
 using mindspore::profiler::ProfilerManager;
+#include "include/frontend/expander/bprop_interface.h"
+#include "include/frontend/jit/ps/parse/py_data_convert.h"
 #include "include/frontend/operator/frontend_primitive_infer.h"
 #include "include/runtime/pipeline/pipeline.h"
 #include "backend/common/device_address_utils.h"
@@ -48,7 +50,6 @@ using mindspore::profiler::ProfilerManager;
 #include "mindspore/ccsrc/pynative/utils/pyboost/auto_generate/contiguous.h"
 #include "primitive/auto_generate/gen_ops_primitive_c.h"
 #include "include/utils/tensor_py.h"
-#include "mindspore/ccsrc/frontend/expander/bprop/bprop.h"
 #include "utils/stream_guard.h"
 #include "pynative/utils/pyboost/functions/auto_grad_guard.h"
 #include "include/runtime/utils/dispatch/dispatch_env.h"

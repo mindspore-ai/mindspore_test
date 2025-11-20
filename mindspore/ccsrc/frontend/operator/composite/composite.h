@@ -116,31 +116,6 @@ using HyperMapPyPtr = std::shared_ptr<HyperMapPy>;
 
 extern ValuePtr kCompositeHyperMap;
 
-enum TailType { kGradAll, kGradFirst, kGradByPosition, kNotGrad };
-
-class Tail : public MetaFuncGraph {
- public:
-  explicit Tail(const std::string &name, TailType tail_type = kNotGrad, bool return_ids = false)
-      : MetaFuncGraph(name), tail_type_(tail_type), enable_tuple_grad_first_(false), return_ids_(return_ids) {}
-  ~Tail() override = default;
-  MS_DECLARE_PARENT(Tail, MetaFuncGraph)
-
-  FuncGraphPtr GenerateFuncGraph(const AbstractBasePtrList &args_abs_list) override;
-
-  friend bool operator==(const Tail &lhs, const Tail &rhs) { return lhs.name_ == rhs.name_; }
-  void set_enable_tuple_grad_first(bool enable_tuple_grad_first) { enable_tuple_grad_first_ = enable_tuple_grad_first; }
-
- private:
-  FuncGraphPtr GenerateTailFuncGraph(const abstract::AbstractSequencePtr &sequence_arg) const;
-  FuncGraphPtr GenerateGradFuncGraph(const abstract::AbstractTuplePtr &tuple_arg,
-                                     const abstract::AbstractTuplePtr &position = nullptr) const;
-
-  TailType tail_type_;
-  bool enable_tuple_grad_first_;
-  bool return_ids_;
-};
-using TailPtr = std::shared_ptr<Tail>;
-
 class MakeTupleGradient : public MetaFuncGraph {
  public:
   explicit MakeTupleGradient(const std::string &name) : MetaFuncGraph(name) {}
@@ -190,40 +165,6 @@ class MutableGradient : public MetaFuncGraph {
   friend bool operator==(const MutableGradient &lhs, const MutableGradient &rhs) { return lhs.name_ == rhs.name_; }
 };
 using MutableGradientPtr = std::shared_ptr<MutableGradient>;
-
-class FRONTEND_EXPORT GradOperation : public MetaFuncGraph {
- public:
-  explicit GradOperation(const std::string &name, bool get_all = false, bool get_by_list = false,
-                         bool sens_param = false, bool get_by_position = false, bool has_aux = false,
-                         bool get_value = false, bool return_ids = false, bool merge_forward = false);
-  ~GradOperation() override = default;
-  MS_DECLARE_PARENT(GradOperation, MetaFuncGraph)
-
-  FuncGraphPtr GetGrad(const AnfNodePtr &j, const AnfNodePtr &weights, const AnfNodePtr &position,
-                       const FuncGraphPtr &forward_graph, bool is_weights_none) const;
-
-  FuncGraphPtr GenerateFuncGraph(const AbstractBasePtrList &args_abs_list) override;
-
-  bool sens_param() const { return sens_param_; }
-
-  bool get_all_;
-  bool get_by_list_;
-  bool sens_param_;
-  bool get_by_position_;
-  bool has_aux_;
-  bool get_value_;
-  bool return_ids_;
-  bool merge_forward_;
-
- private:
-  void GradByParameter(const FuncGraphPtr &k_child, const AnfNodePtr &f_app, const AnfNodePtr &bprop,
-                       const AnfNodePtr &weights, const AnfNodePtr &position, const FuncGraphPtr &forward_graph,
-                       bool is_weights_none) const;
-  CNodePtr SetNodeByParameter(const CNodePtr &grad, const FuncGraphPtr &fg) const;
-
-  AbstractBasePtr weight_value_;
-};
-using GradOperationPtr = std::shared_ptr<GradOperation>;
 
 class GradAux : public MetaFuncGraph {
  public:

@@ -28,7 +28,7 @@
 #include "frontend/parallel/step_parallel.h"
 #include "frontend/parallel/step_parallel_utils.h"
 #include "frontend/parallel/graph_util/graph_utils.h"
-#include "include/frontend/parallel/tensor_transform.h"
+#include "include/frontend/parallel/tensor_layout/tensor_transform.h"
 #include "include/frontend/parallel/graph_costmodel.h"
 #include "utils/log_adapter.h"
 #include "primitive/auto_generate/gen_ops_primitive_s.h"

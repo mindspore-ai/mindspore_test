@@ -34,7 +34,6 @@
 #include "ir/tensor_new.h"
 #include "primitive/array_ops.h"
 #include "backend/ms_backend/segment_runner.h"
-#include "frontend/jit/ps/parse/data_converter.h"
 #include "backend/common/pass/erase_invalid_micro_depend.h"
 #include "backend/common/pass/erase_not_cut_attr.h"
 #include "backend/common/pass/switch_not_cut.h"

@@ -451,8 +451,7 @@ std::string PrimitiveConverter::BuildMatchInfo(const std::vector<std::string> &a
 }
 
 std::string PrimitiveConverter::BuildDetailedErrorMsg(const std::vector<std::string> &arg_info_list) const {
-  const auto &signature_map =
-    is_method_ ? ops::tensor_method_overload_signature_map : ops::function_overload_signature_map;
+  const auto &signature_map = GetFunctionalSignatureMap(is_method_);
   auto it = signature_map.find(functional_name_);
   std::stringstream ss;
   if (it != signature_map.end()) {
@@ -479,31 +478,6 @@ std::string PrimitiveConverter::BuildDetailedErrorMsg(const std::vector<std::str
           ss << "\t" << error_msgs_[i] << "\n";
         }
       }
-    }
-    ss << std::endl;
-  } else {
-    MS_LOG(EXCEPTION) << "Valid arg options are not correctly generated." << std::endl;
-  }
-  return ss.str();
-}
-
-bool IsFunctionalRegInMap(const std::string &function_name, bool is_method) {
-  const auto &signature_map =
-    is_method ? ops::tensor_method_overload_signature_map : ops::function_overload_signature_map;
-  auto it = signature_map.find(function_name);
-  return it == signature_map.end() ? false : true;
-}
-
-std::string BuildFunctionalErrorMsg(const std::string &function_name, const std::vector<std::string> &arg_info_list,
-                                    bool is_method) {
-  std::stringstream ss = BuildApiInputInfo(function_name, arg_info_list);
-  const auto &signature_map =
-    is_method ? ops::tensor_method_overload_signature_map : ops::function_overload_signature_map;
-  auto it = signature_map.find(function_name);
-  if (it != signature_map.end()) {
-    const std::vector<std::string> &valid_arg_options = it->second;
-    for (const std::string &arg_option : valid_arg_options) {
-      ss << "\"" << arg_option << "\"\n";
     }
     ss << std::endl;
   } else {

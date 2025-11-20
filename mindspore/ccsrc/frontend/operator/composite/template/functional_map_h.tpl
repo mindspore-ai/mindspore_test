@@ -1,5 +1,5 @@
 /**
- * Copyright 2024 Huawei Technologies Co., Ltd
+ * Copyright 2024-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CCSRC_PIPELINE_PYNATIVE_OP_FUNCTION_AUTO_GENERATE_FUNCTIONAL_MAP_H
-#define MINDSPORE_CCSRC_PIPELINE_PYNATIVE_OP_FUNCTION_AUTO_GENERATE_FUNCTIONAL_MAP_H
+#ifndef MINDSPORE_CCSRC_FRONTEND_OPERATOR_COMPOSITE_AUTO_GENERATE_FUNCTIONAL_MAP_H
+#define MINDSPORE_CCSRC_FRONTEND_OPERATOR_COMPOSITE_AUTO_GENERATE_FUNCTIONAL_MAP_H
 
 #include <map>
 #include <set>
@@ -31,7 +31,5 @@ extern std::map<std::string, std::set<std::string>> tensor_method_kwonlyargs_map
 extern std::map<std::string, std::set<std::string>> function_kwonlyargs_map;
 extern std::map<std::string, size_t> tensor_method_varargs_map;
 extern std::map<std::string, size_t> function_varargs_map;
-extern std::map<std::string, std::vector<std::string>> tensor_method_overload_signature_map;
-extern std::map<std::string, std::vector<std::string>> function_overload_signature_map;
 }  // namespace mindspore::ops
-#endif  // MINDSPORE_CCSRC_PIPELINE_PYNATIVE_OP_FUNCTION_AUTO_GENERATE_FUNCTIONAL_MAP_H
+#endif  // MINDSPORE_CCSRC_FRONTEND_OPERATOR_COMPOSITE_AUTO_GENERATE_FUNCTIONAL_MAP_H

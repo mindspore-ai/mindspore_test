@@ -31,7 +31,6 @@
 
 #include "base/base.h"
 #include "frontend/jit/ps/action.h"
-#include "include/utils/visible.h"
 #include "utils/ms_exception.h"
 
 namespace mindspore {

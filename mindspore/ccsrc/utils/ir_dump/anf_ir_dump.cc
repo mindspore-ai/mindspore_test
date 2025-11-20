@@ -43,8 +43,9 @@
 #include "frontend/expander/bprop/bprop_meta_func_graph.h"
 #include "frontend/operator/composite/vmap.h"
 #include "frontend/operator/composite/map.h"
-#include "mindspore/ccsrc/frontend/operator/meta_dsl/common/meta_impl.h"
+#include "frontend/operator/meta_dsl/common/meta_impl.h"
 #include "frontend/operator/composite/functional_overload.h"
+#include "include/frontend/operator/composite/grad_operation.h"
 #include "include/utils/parallel_context.h"
 
 using MetaFuncGraph = mindspore::MetaFuncGraph;

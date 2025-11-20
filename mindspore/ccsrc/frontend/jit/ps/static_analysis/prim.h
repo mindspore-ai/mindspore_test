@@ -31,7 +31,6 @@
 #include "abstract/ops/primitive_infer_map.h"
 #include "ops/op_def.h"
 #include "ops/ops_frontend_func_impl.h"
-#include "include/utils/visible.h"
 
 namespace mindspore {
 namespace abstract {

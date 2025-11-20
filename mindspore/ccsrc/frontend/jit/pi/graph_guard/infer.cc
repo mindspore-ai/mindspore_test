@@ -44,6 +44,7 @@
 #include "frontend/jit/ps/parse/data_converter.h"
 #include "frontend/jit/ps/action.h"
 #include "frontend/jit/pi/graph_build/func_graph_builder.h"
+#include "include/frontend/operator/composite/grad_operation.h"
 #include "include/utils/convert_utils.h"
 #include "include/utils/tensor_py.h"
 #include "include/utils/pynative/common_utils.h"

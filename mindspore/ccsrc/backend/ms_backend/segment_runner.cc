@@ -37,7 +37,6 @@
 #include "include/utils/anfalgo.h"
 #include "ir/manager.h"
 #include "ir/func_graph_cloner.h"
-#include "frontend/operator/ops.h"
 #include "primitive/auto_generate/gen_ops_primitive_d.h"
 #include "primitive/auto_generate/gen_ops_primitive_m.h"
 #include "ir/func_graph_flag.h"

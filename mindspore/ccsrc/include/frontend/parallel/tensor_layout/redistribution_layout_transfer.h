@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CCSRC_FRONTEND_PARALLEL_TENSOR_LAYOUT_REDISTRIBUTION_LAYOUT_TRANSFER_H_
-#define MINDSPORE_CCSRC_FRONTEND_PARALLEL_TENSOR_LAYOUT_REDISTRIBUTION_LAYOUT_TRANSFER_H_
+#ifndef MINDSPORE_CCSRC_INCLUDE_FRONTEND_PARALLEL_TENSOR_LAYOUT_REDISTRIBUTION_LAYOUT_TRANSFER_H_
+#define MINDSPORE_CCSRC_INCLUDE_FRONTEND_PARALLEL_TENSOR_LAYOUT_REDISTRIBUTION_LAYOUT_TRANSFER_H_
 
 #include <memory>
 #include "frontend/parallel/status.h"
-#include "frontend/parallel/tensor_layout/layout_transfer.h"
+#include "include/frontend/parallel/tensor_layout/layout_transfer.h"
 #include "frontend/parallel/tensor_layout/reshape_layout_transfer.h"
 #include "include/utils/visible.h"
 
@@ -38,4 +38,4 @@ class FRONTEND_EXPORT RedistributionLayoutTransfer : public LayoutTransfer {
 }  // namespace parallel
 }  // namespace mindspore
 
-#endif  // MINDSPORE_CCSRC_FRONTEND_PARALLEL_TENSOR_LAYOUT_REDISTRIBUTION_LAYOUT_TRANSFER_H_
+#endif  // MINDSPORE_CCSRC_INCLUDE_FRONTEND_PARALLEL_TENSOR_LAYOUT_REDISTRIBUTION_LAYOUT_TRANSFER_H_

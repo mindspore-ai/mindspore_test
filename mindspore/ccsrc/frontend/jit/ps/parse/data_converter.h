@@ -29,7 +29,6 @@
 #include "utils/ordered_map.h"
 #include "frontend/jit/ps/parse/parse_base.h"
 #include "include/frontend/jit/ps/parse/py_data_convert.h"
-#include "include/utils/visible.h"
 #include "include/utils/python_adapter.h"
 #include "utils/log_adapter.h"
 #include "ops/op_def.h"
@@ -56,7 +55,7 @@ bool IsMsClassInstance(const py::object &obj);
 bool IsJITForbiddenAPI(const py::object &obj);
 bool IsClassType(const py::object &obj);
 py::object CreatePythonObject(const py::object &type, const py::tuple &args_kwargs);
-FRONTEND_EXPORT py::object CallPythonScript(const py::object &script, const py::tuple &args_kwargs);
+py::object CallPythonScript(const py::object &script, const py::tuple &args_kwargs);
 py::set GetPythonScriptIdAttrs(const py::object &script);
 ValuePtr PyDataToStubNode(const py::object &obj);
 }  // namespace data_converter

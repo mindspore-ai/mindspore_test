@@ -30,7 +30,6 @@
 #include <vector>
 
 #include "include/utils/parallel_context.h"
-#include "include/utils/visible.h"
 #include "ir/dtype/type.h"
 #include "utils/hash_map.h"
 

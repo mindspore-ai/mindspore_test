@@ -27,7 +27,6 @@
 #include "backend/common/kernel_graph/session_factory.h"
 #include "include/backend/optimizer/helper.h"
 #include "include/frontend/jit/ps/action_interface.h"
-#include "frontend/jit/ps/parse/data_converter.h"
 #include "backend/common/kernel_graph/jit_call_graph.h"
 #include "ir/anf.h"
 #include "mindspore/ccsrc/utils/base_ref_py.h"

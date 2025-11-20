@@ -150,6 +150,7 @@ FRONTEND_EXPORT void CleanParserResource();
 FRONTEND_EXPORT void ClearAnalysisSchedule();
 FRONTEND_EXPORT void ClearAnalysisResultCacheMgr();
 FRONTEND_EXPORT void ClearPrimitiveEvaluatorMap();
+FRONTEND_EXPORT void ClearActionConfigure();
 }  // namespace pipeline
 }  // namespace mindspore
 

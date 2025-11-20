@@ -62,7 +62,7 @@
 #include "frontend/parallel/parameter_manager.h"
 #include "frontend/parallel/ops_info/matmul_info.h"
 #include "frontend/parallel/dynamic_shape/dynamic_shape.h"
-#include "include/frontend/parallel/tensor_transform.h"
+#include "include/frontend/parallel/tensor_layout/tensor_transform.h"
 #include "frontend/parallel/strategy_utils.h"
 #include "frontend/parallel/strategy_loader.h"
 #include "frontend/parallel/parallel_node_check.h"

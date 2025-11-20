@@ -23,7 +23,6 @@
 #include "mindspore/ccsrc/pynative/utils/pyboost/functions/base.h"
 #include "mindspore/ccsrc/pynative/utils/pyboost/functions/auto_grad_reg.h"
 #include "mindspore/ccsrc/pynative/utils/pyboost/functions/auto_grad_guard.h"
-#include "frontend/expander/bprop/bprop_irbuilder.h"
 #include "primitive/auto_generate/gen_ops_def.h"
 #include "mindspore/ccsrc/pynative/utils/base.h"
 #include "mindspore/ccsrc/pynative/backward/grad_utils.h"

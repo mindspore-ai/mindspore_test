@@ -23,8 +23,8 @@
 #include <memory>
 
 #include "utils/hash_map.h"
-#include "frontend/expander/bprop/bprop_irbuilder.h"
 #include "pynative/backward/op_grad/func_pass.h"
+#include "include/frontend/expander/bprop_interface.h"
 
 namespace mindspore::pynative::autograd {
 using NodePtr = expander::NodePtr;

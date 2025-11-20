@@ -28,7 +28,7 @@ namespace mindspore {
 namespace pipeline {
 using ActionItem = std::pair<std::string, std::function<bool(ResourcePtr)>>;
 
-class FRONTEND_EXPORT ActionConfigure {
+class ActionConfigure {
  public:
   void Clear() {
     jit_actions_.clear();

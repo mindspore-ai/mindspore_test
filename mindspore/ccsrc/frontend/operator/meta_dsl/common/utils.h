@@ -22,7 +22,6 @@
 #include <set>
 #include <memory>
 #include "utils/ms_utils.h"
-#include "include/utils/visible.h"
 #include "include/utils/utils.h"
 #include "ir/anf.h"
 #include "ir/meta_func_graph.h"

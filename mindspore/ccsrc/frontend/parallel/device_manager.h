@@ -30,7 +30,6 @@
 #include "frontend/parallel/status.h"
 #include "frontend/parallel/strategy.h"
 #include "include/utils/convert_utils.h"
-#include "include/utils/visible.h"
 #include "utils/ms_utils.h"
 
 namespace mindspore {

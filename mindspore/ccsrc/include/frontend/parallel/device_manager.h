@@ -35,20 +35,6 @@
 
 namespace mindspore {
 namespace parallel {
-
-class DeviceManager;
-using DeviceManagerPtr = std::shared_ptr<DeviceManager>;
-// 'g_device_manager' is the globally unique manager to manage the devices.
-extern DeviceManagerPtr g_device_manager;
-
-// This method is used for initializing the global DeviceManager 'g_device_manager',
-// arguments including 'device_num' and 'global_rank'
-bool InitDevice(int64_t device_num, int64_t global_rank, const std::string &backend, const std::vector<int64_t> &stage);
-
-void CheckGlobalDeviceManager();
-
-std::string HashName(const std::string &origin_name);
-
 class FRONTEND_EXPORT ParallelCommManager {
  public:
   ParallelCommManager() = default;
