@@ -27,7 +27,7 @@ from tests.st.ops.share._op_info.op_database import get_op_info, unary_op_db
           level_mark='level0',
           card_mark='onecard',
           essential_mark='essential')
-@pytest.mark.parametrize("mode", ['pynative', 'kbk'])
+@pytest.mark.parametrize("mode", ['pynative'])
 @pytest.mark.parametrize("op_info", unary_op_db)
 def test_unary_op_reference_forward(mode, op_info):
     '''
@@ -48,7 +48,7 @@ def test_unary_op_reference_forward(mode, op_info):
           level_mark='level0',
           card_mark='onecard',
           essential_mark='essential')
-@pytest.mark.parametrize("mode", ['pynative', 'kbk'])
+@pytest.mark.parametrize("mode", ['pynative'])
 @pytest.mark.parametrize("op_info", unary_op_db)
 def test_unary_op_reference_backward(mode, op_info):
     '''

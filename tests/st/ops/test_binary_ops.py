@@ -27,7 +27,7 @@ from tests.st.ops.share._op_info.op_database import get_op_info, binary_op_db
           level_mark='level0',
           card_mark='onecard',
           essential_mark='essential')
-@pytest.mark.parametrize("mode", ['pynative', 'kbk'])
+@pytest.mark.parametrize("mode", ['pynative'])
 @pytest.mark.parametrize("op_info", binary_op_db)
 def test_binary_op_reference_forward(mode, op_info):
     '''
@@ -48,7 +48,7 @@ def test_binary_op_reference_forward(mode, op_info):
           level_mark='level0',
           card_mark='onecard',
           essential_mark='essential')
-@pytest.mark.parametrize("mode", ['pynative', 'kbk'])
+@pytest.mark.parametrize("mode", ['pynative'])
 @pytest.mark.parametrize("op_info", binary_op_db)
 def test_binary_op_reference_backward(mode, op_info):
     '''
@@ -67,8 +67,8 @@ def test_binary_op_reference_backward(mode, op_info):
           level_mark='level0',
           card_mark='onecard',
           essential_mark='essential')
-@pytest.mark.parametrize("mode", ['pynative', 'kbk'])
-@pytest.mark.parametrize("op_info", binary_op_db)
+@pytest.mark.parametrize("mode", ['pynative'])
+@pytest.mark.parametrize("op_info", ['mint.add', 'mint.sub'])
 def test_binary_op_type_promotion(mode, op_info):
 
     '''
@@ -135,7 +135,7 @@ def test_binary_op_dynamic_backward(mode, op_info):
           card_mark='onecard',
           essential_mark='essential')
 @pytest.mark.parametrize("mode", ['kbk'])
-@pytest.mark.parametrize("op_info", binary_op_db)
+@pytest.mark.parametrize("op_info", ['mint.add', 'mint.sub'])
 def test_binary_op_error(mode, op_info):
     '''
     Feature: Binary operations

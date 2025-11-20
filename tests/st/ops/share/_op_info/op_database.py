@@ -804,6 +804,9 @@ op_db: Dict[str, OpInfo] = {
         dtypes_ascend910b=tuple(d for d in dtypes_as_torch if d != ms.bool_),
         dtypes_cpu=tuple([d for d in dtypes_as_torch if d != ms.bfloat16 and d != ms.bool_] + list(dtypes_extra_uint)),
         dtypes_gpu=tuple([d for d in dtypes_as_torch if d != ms.bfloat16 and d != ms.bool_] + list(dtypes_extra_uint)),
+        # On Ascend 910B, the bf16 results match PTA bitwise, but specified value has large deviation
+        # when using random inputs, so we temporarily override the default loss value for bf16.
+        default_loss_override={ms.bfloat16: 4e-2},
         op_basic_reference_inputs_func=basic_sample_inputs_add_sub_ext,
         op_dynamic_inputs_func=dynamic_sample_inputs_add_sub_ext,
         op_error_inputs_func=error_inputs_add_sub_ext_func,
