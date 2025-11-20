@@ -37,7 +37,7 @@ def init_parameters(cell):
             data_slice_index = _get_slice_index(param.layout.device_matrix, param.layout.tensor_map, None)
 
         if data_slice_index is not None:
-            init_data = param.init_mode.init_data(slice_index=data_slice_index)
+            init_data = param.init_mode.init_data(slice_index=int(data_slice_index))
         else:
             init_data = param.init_mode.init_data()
         param.init_mode = None
