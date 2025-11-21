@@ -49,12 +49,15 @@
 #include "include/utils/tensor_py_wrapper.h"
 #include "include/utils/parallel_context.h"
 #include "include/utils/config_manager.h"
+#include "include/utils/frontend/pipeline_utils.h"
 
 #include "frontend/jit/ps/event_message_print.h"
 #include "frontend/jit/ps/pass_config.h"
 #include "frontend/jit/ps/pipeline.h"
 #include "include/frontend/jit/ps/pass_interface.h"
 #include "include/frontend/jit/ps/pipeline_interface.h"
+#include "include/frontend/jit/ps/parse/py_data_convert.h"
+#include "include/frontend/optimizer/ad/grad_interface.h"
 
 #include "pybind_api/pybind_patch.h"
 #include "pybind11/pybind11.h"
@@ -270,8 +273,8 @@ void GraphExecutorPy::CleanCompileRes(const ResourcePtr &resource) {
   uint64_t start_time = profiler::GetClockSyscnt();
   abstract::AnalysisContext::ClearContext();
   ClearCompileArgumentsResource();
-  ad::PrimBpropOptimizer::GetPrimBpropOptimizerInst().Clear();
-  ad::g_k_prims.clear();
+  ad::ClearPrimBpropOptimizer();
+  ad::ClearKPrim();
   ad::DFunctor::Clear();
   ReclaimOptimizer();
   resource->Clean();

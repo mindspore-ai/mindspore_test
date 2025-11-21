@@ -101,7 +101,8 @@ bool Finalize() {
     return false;
   }
 
-  if (!FinalizeCluster()) {
+  bool finalize_cluster = cluster::ClusterContext::instance()->Finalize();
+  if (!finalize_cluster) {
     MS_LOG(ERROR) << "Failed to finalize cluster.";
     return false;
   }
@@ -179,7 +180,18 @@ bool InitializeCluster(std::optional<std::string> url, int64_t timeout, uint32_t
   return true;
 }
 
-bool FinalizeCluster() { return cluster::ClusterContext::instance()->Finalize(); }
+void FinalizeCluster() {
+  if (distributed::cluster::ClusterContext::instance()->initialized()) {
+    if (!distributed::cluster_exit_with_exception()) {
+      MS_LOG(INFO) << "Start finalize the cluster instance.";
+      // Finalize MindSpore cluster only when this process exits without any exception.
+      (void)distributed::cluster::ClusterContext::instance()->Finalize(UINT32_MAX);
+      MS_LOG(INFO) << "End finalize the cluster instance.";
+    } else {
+      (void)distributed::cluster::ClusterContext::instance()->StopThreadsOnException();
+    }
+  }
+}
 
 bool InitializeCollective() {
   if (collective::CollectiveManager::instance()->initialized()) {

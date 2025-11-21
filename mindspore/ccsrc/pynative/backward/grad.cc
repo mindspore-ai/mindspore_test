@@ -24,19 +24,19 @@
 #include "ir/value.h"
 #include "ir/tensor_new.h"
 #include "frontend/optimizer/ad/grad.h"
-#include "frontend/optimizer/environ_conversion.h"
 #include "frontend/optimizer/fallback_rewriter.h"
 #include "include/frontend/jit/ps/pass_interface.h"
 #include "include/frontend/jit/ps/resource_interface.h"
 #include "include/frontend/jit/ps/executor/jit_executor_py.h"
+#include "include/frontend/optimizer/ad/grad_interface.h"
 #include "include/backend/optimizer/helper.h"
 #include "include/utils/convert_utils_py.h"
 #include "include/utils/tensor_py.h"
 #include "include/utils/pynative/common_utils.h"
+#include "include/utils/frontend/pipeline_utils.h"
 #include "frontend/jit/ps/debug/trace.h"
-#include "frontend/jit/ps/parse/data_converter.h"
+#include "include/frontend/jit/ps/parse/py_data_convert.h"
 #include "frontend/jit/ps/pass.h"
-#include "frontend/jit/ps/pipeline.h"
 #include "pybind_api/gil_scoped_long_running.h"
 #include "pynative/backward/hook/custom_function.h"
 #include "pynative/backward/top_cell.h"
@@ -783,7 +783,7 @@ void GradExecutor::ClearGlobalRes() const {
   parse::data_converter::ClearObjectCache();
   pipeline::CleanParserResource();
   trace::ClearTraceStack();
-  ad::CleanRes();
+  ad::ClearDFunctor();
   pipeline::ReclaimOptimizer();
 }
 

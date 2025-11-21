@@ -25,7 +25,7 @@
 #include <map>
 
 #include "pynative/utils/pynative_utils.h"
-#include "include/utils/primitive_utils.h"
+#include "include/utils/frontend/primitive_utils.h"
 #include "include/utils/pynative/common_utils.h"
 #include "frontend/jit/ps/pass.h"
 #include "ir/func_graph_cloner.h"
@@ -34,7 +34,6 @@
 #include "mindspore/ops/op_def/structure_ops.h"
 #include "mindspore/ops/op_def/other_ops.h"
 #include "frontend/jit/ps/pipeline.h"
-#include "frontend/optimizer/fallback_rewriter.h"
 #include "frontend/jit/ps/parse/data_converter.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
@@ -50,6 +49,7 @@
 #include "include/frontend/jit/ps/executor/jit_executor_py.h"
 #include "include/frontend/jit/ps/action_interface.h"
 #include "include/frontend/jit/ps/pipeline_interface.h"
+#include "include/frontend/optimizer/fallback_rewriter_opt.h"
 
 namespace mindspore {
 namespace ad {

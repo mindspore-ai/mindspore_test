@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2021 Huawei Technologies Co., Ltd
+ * Copyright 2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,16 +14,18 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CCSRC_FRONTEND_OPTIMIZER_ENVIRON_CONVERSION_H_
-#define MINDSPORE_CCSRC_FRONTEND_OPTIMIZER_ENVIRON_CONVERSION_H_
+#ifndef MINDSPORE_CCSRC_INCLUDE_FRONTEND_OPTIMIZER_FALLBACK_REWRITRER_OPT_H_
+#define MINDSPORE_CCSRC_INCLUDE_FRONTEND_OPTIMIZER_FALLBACK_REWRITRER_OPT_H_
 
+#include "ir/anf.h"
+#include "frontend/operator/ops.h"
+#include "ir/manager.h"
 #include "frontend/jit/ps/resource.h"
 
 namespace mindspore {
-/* namespace to support opt */
 namespace opt {
-FRONTEND_EXPORT bool EnvironConversion(const pipeline::ResourcePtr &resource);
+FRONTEND_EXPORT bool RewriterAfterOptA(const FuncGraphPtr &root, const pipeline::ResourcePtr &resource);
 }  // namespace opt
 }  // namespace mindspore
 
-#endif  // MINDSPORE_CCSRC_FRONTEND_OPTIMIZER_ENVIRON_CONVERSION_H_
+#endif  // MINDSPORE_CCSRC_INCLUDE_FRONTEND_OPTIMIZER_FALLBACK_REWRITRER_OPT_H_

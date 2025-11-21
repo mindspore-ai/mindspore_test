@@ -24,6 +24,7 @@
 #include <utility>
 #include <algorithm>
 #include "include/utils/pybind_api/api_register.h"
+#include "include/utils/frontend/primitive_utils.h"
 #include "mindspore/ops/op_def/structure_ops.h"
 #include "ir/core_ops_primitive.h"
 #include "ir/dtype/tensor_type.h"
@@ -426,16 +427,6 @@ std::string BuildArgsTypeString(const TypePtr &arg_type) {
     return "Tensor";
   }
   return BuildOtherTypeString(arg_type);
-}
-
-std::stringstream BuildApiInputInfo(const std::string &function_name, const std::vector<std::string> &arg_info_list) {
-  std::stringstream ss;
-  std::string result = std::accumulate(
-    arg_info_list.begin(), arg_info_list.end(), std::string(),
-    [](const std::string &a, const std::string &b) -> std::string { return a.empty() ? b : a + ", " + b; });
-  ss << "Failed calling " << function_name << " with \"" << function_name << "(" << result << ")\".\n";
-  ss << "The valid calling should be:\n";
-  return ss;
 }
 
 std::string PrimitiveConverter::BuildMatchInfo(const std::vector<std::string> &arg_info_list) const {

@@ -38,7 +38,7 @@
 #include "pynative/utils/runtime/op_executor.h"
 #include "tools/profiler/profiling.h"
 using mindspore::profiler::ProfilerManager;
-#include "frontend/operator/ops_front_infer_function.h"
+#include "include/frontend/operator/frontend_primitive_infer.h"
 #include "include/runtime/pipeline/pipeline.h"
 #include "backend/common/device_address_utils.h"
 #include "backend/common/kernel_graph/session_basic.h"

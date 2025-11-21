@@ -29,6 +29,7 @@
 #include "include/utils/tensor_py.h"
 #include "include/utils/tensor_utils.h"
 #include "include/utils/pynative/py_parse.h"
+#include "include/utils/frontend/primitive_utils.h"
 #include "frontend/operator/composite/auto_generate/functional_map.h"
 #include "mindspore/core/include/utils/value_utils.h"
 

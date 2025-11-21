@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CCSRC_INCLUDE_COMMON_UTILS_PRIMITIVE_UTILS_H_
-#define MINDSPORE_CCSRC_INCLUDE_COMMON_UTILS_PRIMITIVE_UTILS_H_
+#ifndef MINDSPORE_CCSRC_INCLUDE_UTILS_FRONTEND_PRIMITIVE_UTILS_H_
+#define MINDSPORE_CCSRC_INCLUDE_UTILS_FRONTEND_PRIMITIVE_UTILS_H_
 
 #include <string>
 #include "pybind11/pybind11.h"
@@ -46,6 +46,14 @@ COMMON_EXPORT py::tuple ConvertDatatoPyTuple(const VectorRef &args);
 COMMON_EXPORT py::function GetVmapRuleFunctionByObj(const py::object &obj, int axis_size);
 
 COMMON_EXPORT py::function GetVmapRuleFunction(const std::string &name, int axis_size);
+
+namespace prim {
+COMMON_EXPORT std::string ErrorMessageForConvertRefDtype(const ValuePtr &func, const std::string &ref_type,
+                                                         const std::string &target_type, size_t index);
+
+COMMON_EXPORT std::stringstream BuildApiInputInfo(const std::string &function_name,
+                                                  const std::vector<std::string> &arg_info_list);
+}  // namespace prim
 }  // namespace mindspore
 
-#endif  // MINDSPORE_CCSRC_INCLUDE_COMMON_UTILS_PRIMITIVE_UTILS_H_
+#endif  // MINDSPORE_CCSRC_INCLUDE_UTILS_FRONTEND_PRIMITIVE_UTILS_H_

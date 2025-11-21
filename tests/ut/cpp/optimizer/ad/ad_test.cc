@@ -40,6 +40,7 @@
 #include "frontend/optimizer/irpass.h"
 #include "utils/ms_context.h"
 #include "include/frontend/jit/ps/action_interface.h"
+#include "include/frontend/optimizer/ad/grad_interface.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"

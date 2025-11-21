@@ -47,7 +47,7 @@ CLUSTER_EXPORT bool Finalize();
 CLUSTER_EXPORT bool InitializeCluster();
 CLUSTER_EXPORT bool InitializeCluster(std::optional<std::string> url, int64_t timeout, uint32_t world_size,
                                       uint32_t node_id, cluster::TCPStoreClientPtr store);
-CLUSTER_EXPORT bool FinalizeCluster();
+CLUSTER_EXPORT void FinalizeCluster();
 
 // Initialize and finalize collective communication for distributed execution.
 CLUSTER_EXPORT bool InitializeCollective();

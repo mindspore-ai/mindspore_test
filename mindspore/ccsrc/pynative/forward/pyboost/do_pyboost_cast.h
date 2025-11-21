@@ -26,6 +26,7 @@
 #include "pynative/forward/cast_base.h"
 #include "frontend/operator/composite/do_signature.h"
 #include "include/utils/convert_utils.h"
+#include "include/utils/frontend/primitive_utils.h"
 #include "ir/cell.h"
 
 namespace mindspore {

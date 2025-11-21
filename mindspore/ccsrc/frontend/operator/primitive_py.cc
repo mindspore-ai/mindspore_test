@@ -26,7 +26,7 @@
 #include "mindspore/ccsrc/utils/base_ref_py.h"
 #include "include/utils/convert_utils_py.h"
 #include "utils/ms_context.h"
-#include "include/utils/primitive_utils.h"
+#include "include/utils/frontend/primitive_utils.h"
 #include "utils/check_convert_utils.h"
 #include "tools/profiler/profiler.h"
 #include "mindspore/ops/op_def/other_op_name.h"

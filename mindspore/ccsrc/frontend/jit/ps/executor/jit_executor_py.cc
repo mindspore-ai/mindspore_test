@@ -21,7 +21,9 @@
 
 #include "include/frontend/jit/ps/pass_interface.h"
 #include "include/frontend/jit/ps/pipeline_interface.h"
+#include "include/frontend/jit/ps/parse/py_data_convert.h"
 #include "include/frontend/jit/ps/executor/graph_executor_py.h"
+#include "include/frontend/optimizer/ad/grad_interface.h"
 #include "frontend/jit/ps/pass.h"
 #include "frontend/jit/ps/pipeline.h"
 #include "frontend/jit/ps/event_message_print.h"
@@ -407,8 +409,8 @@ void JitExecutorPy::CleanCompileRes(const ResourcePtr &resource) {
   MS_LOG(INFO) << "Clean compile resource start";
   abstract::AnalysisContext::ClearContext();
   ClearCompileArgumentsResource();
-  ad::PrimBpropOptimizer::GetPrimBpropOptimizerInst().Clear();
-  ad::g_k_prims.clear();
+  ad::ClearPrimBpropOptimizer();
+  ad::ClearKPrim();
   ad::DFunctor::Clear();
   ReclaimOptimizer();
   resource->Clean();

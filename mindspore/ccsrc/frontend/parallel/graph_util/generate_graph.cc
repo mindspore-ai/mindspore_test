@@ -31,7 +31,7 @@
 #include "ir/tensor_new.h"
 #include "ir/anf.h"
 #include "ir/value.h"
-#include "mindspore/ccsrc/frontend/jit/ps/parse/parse_base.h"
+#include "include/frontend/jit/ps/parse/py_data_convert.h"
 #include "utils/log_adapter.h"
 #include "ops_utils/op_utils.h"
 #include "ops/op_def.h"

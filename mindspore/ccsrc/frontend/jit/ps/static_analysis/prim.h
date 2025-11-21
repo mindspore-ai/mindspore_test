@@ -339,7 +339,7 @@ bool IsInWhiteList(const PrimitivePtr &primitive);
 
 PrimEvaluatorMap &GetPrimEvaluatorConstructors();
 
-FRONTEND_EXPORT void ClearPrimEvaluatorMap();
+void ClearPrimEvaluatorMap();
 }  // namespace abstract
 }  // namespace mindspore
 

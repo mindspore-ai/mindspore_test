@@ -66,8 +66,6 @@ namespace mindspore {
 namespace pipeline {
 using MetaTensor = mindspore::tensor::MetaTensor;
 using MetaSparseTensor = mindspore::tensor::MetaSparseTensor;
-using CSRTensor = mindspore::tensor::CSRTensor;
-using COOTensor = mindspore::tensor::COOTensor;
 using mindspore::abstract::AbstractTuple;
 using mindspore::abstract::AbstractTuplePtr;
 using DeviceTensor = mindspore::device::DeviceAddress;
@@ -130,44 +128,6 @@ bool GradForScalar(const ValuePtr &value) {
   return (MsContext::GetInstance()->get_param<bool>(MS_CTX_GRAD_FOR_SCALAR) ||
           common::GetCompileConfig("GRAD_FOR_SCALAR") == "1") &&
          value->isa<Scalar>();
-}
-
-bool CheckArgValid(const py::handle &arg) {
-  if (py::isinstance<py::list>(arg) || py::isinstance<py::tuple>(arg)) {
-    auto vector_arg = py::cast<py::list>(arg);
-    return std::all_of(vector_arg.begin(), vector_arg.end(), CheckArgValid);
-  }
-
-  if (py::isinstance<py::dict>(arg)) {
-    auto dict_arg = py::cast<py::dict>(arg);
-    return std::all_of(dict_arg.begin(), dict_arg.end(), [](const auto &pair) { return CheckArgValid(pair.second); });
-  }
-
-  if (tensor::IsTensorPy(arg)) {
-    auto tensor = tensor::ConvertToTensor(arg);
-    MS_EXCEPTION_IF_NULL(tensor);
-    if (tensor->data_type() == kNumberTypeBool) {
-      MS_LOG(INFO) << "It is not recommended to use a tensor of bool data type as network input, which may cause "
-                   << "operator compilation failure. For more details, please refer to the FAQ at "
-                   << "https://mindspore.cn/search?[AddN]%20input(kNumberTypeBool.";
-    }
-  }
-
-  return py::isinstance<py::int_>(arg) || py::isinstance<py::float_>(arg) || py::isinstance<py::none>(arg) ||
-         py::isinstance<Number>(arg) || py::isinstance<py::str>(arg) || tensor::IsTensorPy(arg) ||
-         py::isinstance<CSRTensor>(arg) || py::isinstance<COOTensor>(arg);
-}
-
-std::string ToOrdinal(const size_t &i) {
-  auto suffix = "th";
-  if (i == kIndex1) {
-    suffix = "st";
-  } else if (i == kIndex2) {
-    suffix = "nd";
-  } else if (i == kIndex3) {
-    suffix = "rd";
-  }
-  return std::to_string(i) + suffix;
 }
 
 void AddManager(const FuncGraphManagerPtr &manager, const ValuePtr &value) {
@@ -277,18 +237,6 @@ std::string GetObjDesc(const py::object &source) {
     }
   }
   return obj_desc;
-}
-
-void CheckArgsValid(const py::object &source, const py::tuple &args) {
-  if (!IS_OUTPUT_ON(mindspore::kInfo)) {
-    return;
-  }
-  for (size_t i = 0; i < args.size(); i++) {
-    if (!CheckArgValid(args[i])) {
-      MS_LOG(INFO) << "The " << ToOrdinal(i + 1) << " arg type is " << args[i].get_type() << ", value is '"
-                   << py::str(args[i]) << "'.";
-    }
-  }
 }
 
 bool IsPhaseExport(const std::string &phase) {
@@ -548,21 +496,6 @@ std::string GetJitLevel() {
     return iter->second;
   }
   return "";
-}
-
-void FinalizeCluster() {
-#if defined(__linux__) && defined(WITH_BACKEND)
-  if (distributed::cluster::ClusterContext::instance()->initialized()) {
-    if (!distributed::cluster_exit_with_exception()) {
-      MS_LOG(INFO) << "Start finalize the cluster instance.";
-      // Finalize MindSpore cluster only when this process exits without any exception.
-      (void)distributed::cluster::ClusterContext::instance()->Finalize(UINT32_MAX);
-      MS_LOG(INFO) << "End finalize the cluster instance.";
-    } else {
-      (void)distributed::cluster::ClusterContext::instance()->StopThreadsOnException();
-    }
-  }
-#endif
 }
 }  // namespace pipeline
 }  // namespace mindspore

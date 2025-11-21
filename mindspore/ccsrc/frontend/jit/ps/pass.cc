@@ -96,7 +96,7 @@
 #include "frontend/parallel/pass/offloading_packed_expert.h"
 #include "frontend/parallel/pass/comm_op_attrs.h"
 #include "frontend/parallel/pass/process_send_recv_for_ge.h"
-#include "frontend/optimizer/environ_conversion.h"
+#include "include/frontend/optimizer/environ_conversion.h"
 #include "frontend/parallel/pass/comm_op_reuse_tag.h"
 #include "frontend/optimizer/py_interpret_to_execute.h"
 #include "frontend/parallel/pass/flash_sp.h"

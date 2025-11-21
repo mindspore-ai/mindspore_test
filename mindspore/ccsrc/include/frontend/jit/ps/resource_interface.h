@@ -149,6 +149,7 @@ FRONTEND_EXPORT void ClearOpPrimPyRegister();
 FRONTEND_EXPORT void CleanParserResource();
 FRONTEND_EXPORT void ClearAnalysisSchedule();
 FRONTEND_EXPORT void ClearAnalysisResultCacheMgr();
+FRONTEND_EXPORT void ClearPrimitiveEvaluatorMap();
 }  // namespace pipeline
 }  // namespace mindspore
 

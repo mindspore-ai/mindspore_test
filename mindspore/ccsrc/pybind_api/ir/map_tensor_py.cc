@@ -25,6 +25,7 @@
 #include "include/utils/python_adapter.h"
 #include "include/utils/tensor_py.h"
 #include "frontend/jit/ps/parse/parse_base.h"
+#include "include/frontend/jit/ps/parse/py_data_convert.h"
 #include "utils/log_adapter.h"
 
 namespace mindspore {

@@ -14,8 +14,9 @@
  * limitations under the License.
  */
 
-#include "include/utils/primitive_utils.h"
+#include "include/utils/frontend/primitive_utils.h"
 
+#include <string>
 #include <memory>
 
 #include "ir/primitive.h"
@@ -119,4 +120,38 @@ py::function GetVmapRuleFunction(const std::string &name, int axis_size) {
   auto fn = GetVmapRuleFunctionByObj(py::str(name), axis_size);
   return fn;
 }
+
+namespace prim {
+std::string ErrorMessageForConvertRefDtype(const ValuePtr &func, const std::string &ref_type,
+                                           const std::string &target_type, size_t index) {
+  std::ostringstream buffer;
+  if (func->isa<Primitive>()) {
+    auto prim = func->cast<PrimitivePtr>();
+    auto args_names_value = prim->GetAttr("input_names");
+    if (args_names_value != nullptr) {
+      auto args_names = GetValue<std::vector<std::string>>(args_names_value);
+      if (index < args_names.size()) {
+        buffer << " the argument[" << args_names[index] << "]'s data type of primitive[" << prim->name() << "] is ";
+      }
+    }
+  }
+  if (buffer.str().empty()) {
+    buffer << " so data type ";
+  }
+  std::ostringstream ss;
+  ss << "Data type conversion is not supported for a 'Parameter', nor for the input tensor of an in-place operator,"
+     << buffer.str() << ref_type << ", which cannot be converted to data type " << target_type << " automatically.\n";
+  return ss.str();
+}
+
+std::stringstream BuildApiInputInfo(const std::string &function_name, const std::vector<std::string> &arg_info_list) {
+  std::stringstream ss;
+  std::string result = std::accumulate(
+    arg_info_list.begin(), arg_info_list.end(), std::string(),
+    [](const std::string &a, const std::string &b) -> std::string { return a.empty() ? b : a + ", " + b; });
+  ss << "Failed calling " << function_name << " with \"" << function_name << "(" << result << ")\".\n";
+  ss << "The valid calling should be:\n";
+  return ss;
+}
+}  // namespace prim
 }  // namespace mindspore
