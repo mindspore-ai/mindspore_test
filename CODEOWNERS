@@ -193,6 +193,7 @@
 /tests/st/numpy_native/ @yi-zhang95
 /tests/st/offload/ @limingqi107
 /tests/st/ops/ @liangchenghui
+/tests/st/frontend @hz893
 /tests/st/optimizer/ @changzherui
 /tests/st/optimizer_ex/ @changzherui
 /tests/st/parameter/ @changzherui
