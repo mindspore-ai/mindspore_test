@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 # Copyright 2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,12 +13,12 @@
 # limitations under the License.
 # ============================================================================
 """
-Tests for other operations (non-unary/binary), e.g., chunk/gather.
+Tests for binary operation.
 """
 import pytest
 from tests.mark_utils import arg_mark
-from tests.st.ops.share._internal.meta import OpsFactory
-from tests.st.ops.share._op_info.op_database import get_op_info, other_op_db
+from tests.st.ops.share._internal.binary_ops import BinaryOpsFactory
+from tests.st.ops.share._op_info.op_database import get_op_info
 
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_ascend910b',
@@ -28,15 +27,15 @@ from tests.st.ops.share._op_info.op_database import get_op_info, other_op_db
           level_mark='level0',
           card_mark='onecard',
           essential_mark='essential')
-@pytest.mark.parametrize("mode", ['pynative'])
-@pytest.mark.parametrize("op_info", other_op_db)
-def test_other_ops_reference_forward(mode, op_info):
+@pytest.mark.parametrize("mode", ['kbk'])
+@pytest.mark.parametrize("op_info", ['mint.add', 'mint.sub'])
+def test_binary_op_reference_forward(mode, op_info):
     '''
-    Feature: Other operations
+    Feature: Binary operations
     Description: Compare forward.
     Expectation: MindSpore matches Benchmark for outputs.
     '''
-    fact = OpsFactory(
+    fact = BinaryOpsFactory(
         op_info=get_op_info(op_info),
     )
     fact.set_context_mode(mode=mode)
@@ -49,19 +48,40 @@ def test_other_ops_reference_forward(mode, op_info):
           level_mark='level0',
           card_mark='onecard',
           essential_mark='essential')
-@pytest.mark.parametrize("mode", ['pynative'])
-@pytest.mark.parametrize("op_info", other_op_db)
-def test_other_ops_reference_backward(mode, op_info):
+@pytest.mark.parametrize("mode", ['kbk'])
+@pytest.mark.parametrize("op_info", ['mint.add', 'mint.sub'])
+def test_binary_op_reference_backward(mode, op_info):
     '''
-    Feature: Other operations
+    Feature: Binary operations
     Description: Compare gradients.
     Expectation: MindSpore matches Benchmark for gradients.
     '''
-    fact = OpsFactory(
+    fact = BinaryOpsFactory(
         op_info=get_op_info(op_info),
     )
     fact.set_context_mode(mode=mode)
     fact.test_op_reference(grad_cmp=True)
+
+
+@arg_mark(plat_marks=['platform_ascend', 'platform_ascend910b'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
+@pytest.mark.parametrize("mode", ['kbk'])
+@pytest.mark.parametrize("op_info", ['mint.add', 'mint.sub'])
+def test_binary_op_type_promotion(mode, op_info):
+
+    '''
+    Feature: Binary operations
+    Description: Compare tensor type promotion.
+    Expectation: MindSpore matches Benchmark for outputs.
+    '''
+    fact = BinaryOpsFactory(
+        op_info=get_op_info(op_info),
+    )
+    fact.set_context_mode(mode=mode)
+    fact.test_binary_op_tensor_type_promotion()
+    fact.test_binary_op_scalar_type_promotion()
 
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_ascend910b',
@@ -71,14 +91,14 @@ def test_other_ops_reference_backward(mode, op_info):
           card_mark='onecard',
           essential_mark='essential')
 @pytest.mark.parametrize("mode", ['kbk'])
-@pytest.mark.parametrize("op_info", other_op_db)
-def test_other_ops_dynamic_forward(mode, op_info):
+@pytest.mark.parametrize("op_info", ['mint.add', 'mint.sub'])
+def test_binary_op_dynamic_forward(mode, op_info):
     '''
-    Feature: Other operations
-    Description: Dynamic shape forward.
+    Feature: Binary operations
+    Description: Dynamic shape with tensor inputs, keeping alpha as mutable.
     Expectation: Outputs match Benchmark.
     '''
-    fact = OpsFactory(
+    fact = BinaryOpsFactory(
         op_info=get_op_info(op_info),
     )
     fact.set_context_mode(mode=mode)
@@ -93,16 +113,37 @@ def test_other_ops_dynamic_forward(mode, op_info):
           card_mark='onecard',
           essential_mark='essential')
 @pytest.mark.parametrize("mode", ['kbk'])
-@pytest.mark.parametrize("op_info", other_op_db)
-def test_other_ops_dynamic_backward(mode, op_info):
+@pytest.mark.parametrize("op_info", ['mint.add', 'mint.sub'])
+def test_binary_op_dynamic_backward(mode, op_info):
     '''
-    Feature: Other operations
-    Description: Dynamic shape backward.
+    Feature: Binary operations
+    Description: Dynamic shape with tensor inputs, keeping alpha as mutable
     Expectation: Gradients match Benchmark.
     '''
-    fact = OpsFactory(
+    fact = BinaryOpsFactory(
         op_info=get_op_info(op_info),
     )
     fact.set_context_mode(mode=mode)
     fact.test_op_dynamic(only_dynamic_shape=True, grad_cmp=True)
     fact.test_op_dynamic(only_dynamic_rank=True, grad_cmp=True)
+
+
+@arg_mark(plat_marks=['platform_ascend', 'platform_ascend910b',
+                      'platform_gpu',
+                      'cpu_linux', 'cpu_windows', 'cpu_macos'],
+          level_mark='level1',
+          card_mark='onecard',
+          essential_mark='essential')
+@pytest.mark.parametrize("mode", ['kbk'])
+@pytest.mark.parametrize("op_info", ['mint.add', 'mint.sub'])
+def test_binary_op_error(mode, op_info):
+    '''
+    Feature: Binary operations
+    Description: Test binary op error cases.
+    Expectation: Run success without error.
+    '''
+    fact = BinaryOpsFactory(
+        op_info=get_op_info(op_info),
+    )
+    fact.set_context_mode(mode=mode)
+    fact.test_binary_op_error()
