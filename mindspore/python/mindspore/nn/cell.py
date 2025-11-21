@@ -3615,8 +3615,8 @@ class Cell(Cell_):
             cell._recompute(mode, True)
 
     @args_type_check(mp_comm_recompute=bool, parallel_optimizer_comm_recompute=bool)
-    def recompute(self, use_reentrant=True, fuse_recompute=False, **kwargs):
-        """
+    def recompute(self, *, use_reentrant=True, output_recompute=False, **kwargs):
+        r"""
         Set the cell recomputed. All the primitive in the cell except the outputs will be set recomputed.
         If a primitive set recomputed feeds into some backward nodes for computing gradient, rather than
         storing the intermediate activation computed in forward pass, we will recompute it in backward pass.
@@ -3639,26 +3639,29 @@ class Cell(Cell_):
               Cells in the same fusion group should have the same parallel_optimizer_comm_recompute configures.
 
         Keyword Arguments:
-            use_reentrant(bool): This keyword is only valid in PyNative mode.
+            use_reentrant(bool, optional): This keyword is only valid in PyNative mode.
                 If use_reentrant=True is set, we will implement recomputation through a custom bprop function,
                 which does not support differentiation of complex types such as List/Tuple; if use_reentrant=False is
                 set, we will use the saved_tensors_hook functionality to implement recomputation, which supports
                 differentiation of tensors inside complex types. Default: ``True`` .
-            fuse_recompute(bool): This keyword is only valid in PyNative mode. If fuse_recompute=True is set,
-                we will implement recomputation by saved_tensors_hook functionality default. when there are two adjacent
-                cells both requiring recomputation (where the output of one cell serves as the input to the other),
-                the recomputation of these two operators will be merged. In this case, the output activation values
-                of the first cell will not be saved. If fuse_recompute=False, we will not merge adjacent cells.
+            output_recompute(bool, optional): This keyword is only valid in PyNative mode. If output_recompute=True is
+                set, we will implement recomputation by saved_tensors_hook functionality default. The output of this
+                cell will not be stored by subsequent operations for backward. when there are two adjacent cells both
+                requiring recomputation (where the output of one cell serves as the input to the other), the
+                recomputation of these two operators will be merged. In this case, the output activation values of the
+                first cell will not be saved. If output_recompute=False, we will not merge adjacent cells.
                 Default: ``False`` .
-            mp_comm_recompute (bool): Specifies whether the model parallel communication operators
-                in the cell are recomputed in auto parallel or semi auto parallel mode. Default: ``True`` .
-            parallel_optimizer_comm_recompute (bool): Specifies whether the communication operator allgathers
-                introduced by optimizer shard are recomputed in auto parallel or semi auto parallel mode.
-                Default: ``False`` .
+            \*\*kwargs: Other arguments
+
+                - mp_comm_recompute (bool, optional): Specifies whether the model parallel communication operators
+                  in the cell are recomputed in auto parallel or semi auto parallel mode. Default: ``True`` .
+                - parallel_optimizer_comm_recompute (bool, optional): Specifies whether the communication operator
+                  allgathers introduced by optimizer shard are recomputed in auto parallel or semi auto parallel mode.
+                  Default: ``False`` .
         """
-        if fuse_recompute:
+        if output_recompute:
             use_reentrant = False
-        self._recompute_cell = recompute_registry.get()(self.construct, use_reentrant, fuse_recompute)
+        self._recompute_cell = recompute_registry.get()(self.construct, use_reentrant, output_recompute)
         self._recompute()
         if 'mp_comm_recompute' in kwargs:
             self._mp_comm_recompute(kwargs.get('mp_comm_recompute', False))

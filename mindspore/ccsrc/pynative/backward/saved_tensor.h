@@ -27,10 +27,12 @@
 namespace mindspore::pynative::autograd {
 class SavedTensor final : public Value {
  public:
-  SavedTensor(const TensorPtr &tensor, bool is_output, bool is_view_inplace, size_t seq_nr, bool is_custom = false);
+  SavedTensor(const TensorPtr &tensor, bool is_output, bool is_view_inplace, size_t seq_nr, bool is_custom = false,
+              bool force_no_recompute = false);
   SavedTensor(const TensorPtr &tensor, bool is_output, size_t seq_nr, bool is_custom = false);
   ValuePtr UnWrap(const BackwardNodePtr &saved_for);
   TensorPtr UnWrapToTensor(const BackwardNodePtr &saved_for);
+  bool saved_original() const { return saved_original_; }
   void Clear();
   ~SavedTensor() override = default;
   bool operator==(const Value &other) const override { return other.isa<SavedTensor>() && &other == this; }
@@ -45,6 +47,7 @@ class SavedTensor final : public Value {
   bool is_leaf_;
   bool is_custom_;
   bool saved_original_{false};
+  bool is_from_recompute_{false};
 
   size_t output_index_{0};
   size_t version_;

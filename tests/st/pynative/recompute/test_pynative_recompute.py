@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+"""Test test_pynative_recompute.py"""
 
 import random
 import numpy as np
@@ -270,7 +271,7 @@ def cell_hook_function(cell_id, grad_input, grad_output):
 
 class ResNet(nn.Cell):
 
-    def __init__(self, block, num_classes=100, batch_size=32, use_reentrant=True, fuse_recompute=False):
+    def __init__(self, block, num_classes=100, batch_size=32, use_reentrant=True, output_recompute=False):
         super().__init__()
         self.batch_size = batch_size
         self.num_classes = num_classes
@@ -282,11 +283,11 @@ class ResNet(nn.Cell):
         self.maxpool = P.MaxPoolWithArgmax(kernel_size=3, strides=2, pad_mode="SAME")
 
         self.layer1 = MakeLayer0(block, in_channels=64, out_channels=256, stride=1)
-        self.layer1.recompute(use_reentrant=use_reentrant, fuse_recompute=fuse_recompute)
+        self.layer1.recompute(use_reentrant=use_reentrant, output_recompute=output_recompute)
         self.layer1.register_backward_hook(cell_hook_function)
         self.layer2 = MakeLayer1(block, in_channels=256, out_channels=512, stride=2)
         self.layer3 = MakeLayer2(block, in_channels=512, out_channels=1024, stride=2)
-        self.layer3.recompute(use_reentrant=use_reentrant, fuse_recompute=fuse_recompute)
+        self.layer3.recompute(use_reentrant=use_reentrant, output_recompute=output_recompute)
         self.layer3.to_float(mstype.float16)
         self.layer4 = MakeLayer3(block, in_channels=1024, out_channels=2048, stride=2)
 
@@ -312,8 +313,8 @@ class ResNet(nn.Cell):
         return x
 
 
-def resnet50(batch_size, num_classes, use_reentrant, fuse_recompute):
-    return ResNet(ResidualBlock, num_classes, batch_size, use_reentrant, fuse_recompute)
+def resnet50(batch_size, num_classes, use_reentrant, output_recompute):
+    return ResNet(ResidualBlock, num_classes, batch_size, use_reentrant, output_recompute)
 
 
 def create_dataset(repeat_num=1, training=True, batch_size=32):
@@ -470,13 +471,13 @@ class Block(Cell):
           level_mark='level0',
           card_mark='onecard',
           essential_mark='essential')
-@pytest.mark.parametrize("use_reentrant, fuse_recompute", [
+@pytest.mark.parametrize("use_reentrant, output_recompute", [
     (True, True),
     (True, False),
     (False, True),
     (False, False),
 ])
-def test_net_normal_recompute(use_reentrant, fuse_recompute):
+def test_net_normal_recompute(use_reentrant, output_recompute):
     """
     Feature: Recompute with normal block
     Description: Each block is set recompute by the cell recompute api.
@@ -490,7 +491,7 @@ def test_net_normal_recompute(use_reentrant, fuse_recompute):
             for i in range(3):
                 b = OuterBlock()
                 if is_recompute and i < 2:
-                    b.recompute(use_reentrant=use_reentrant, fuse_recompute=fuse_recompute)
+                    b.recompute(use_reentrant=use_reentrant, output_recompute=output_recompute)
                 self.blocks.append(b)
 
         def construct(self, x):
@@ -641,11 +642,11 @@ def test_net_normal_recompute_not_tensor_input(use_reentrant):
           level_mark='level1',
           card_mark='onecard',
           essential_mark='essential')
-@pytest.mark.parametrize("fuse_recompute", [
+@pytest.mark.parametrize("output_recompute", [
     True,
     False
 ])
-def test_net_recompute_not_tensor_input(fuse_recompute):
+def test_net_recompute_not_tensor_input(output_recompute):
     """
     Feature: Recompute function with normal block
     Description: Each block is set recompute by the cell recompute api.
@@ -666,7 +667,7 @@ def test_net_recompute_not_tensor_input(fuse_recompute):
             super().__init__()
             self.block = WrapBlcok()
             if is_recompute:
-                self.block.recompute(use_reentrant=False, fuse_recompute=fuse_recompute)
+                self.block.recompute(use_reentrant=False, output_recompute=output_recompute)
 
         def construct(self, x, y, z):
             out = self.block({"input": x})
@@ -740,10 +741,10 @@ def test_net_multi_call_saved_tensors_custom_function():
           level_mark='level0',
           card_mark='onecard',
           essential_mark='essential')
-def test_net_fuse_recompute():
+def test_net_output_recompute_trigger_num():
     """
     Feature: Recompute function
-    Description: Each block is set recompute by the cell recompute api.
+    Description: Test trigger num of recompute function.
     Expectation: Run successfully and the memory usage is reduced.
     """
     count = 0
@@ -775,9 +776,9 @@ def test_net_fuse_recompute():
         def __init__(self):
             super().__init__()
             self.net1 = Net1()
-            self.net1.recompute(fuse_recompute=True)
+            self.net1.recompute(output_recompute=True)
             self.net2 = Net2()
-            self.net2.recompute(fuse_recompute=True)
+            self.net2.recompute(output_recompute=True)
 
         def construct(self, x, y):
             out1 = self.net1(x, y)
@@ -787,7 +788,7 @@ def test_net_fuse_recompute():
     x = Tensor(np.random.rand(8, 128, 16, 32).astype(np.float32))
     y = Tensor(np.random.rand(8, 128, 16, 32).astype(np.float32))
     net = ForwardNet()
-    net.recompute(fuse_recompute=True)
+    net.recompute(output_recompute=True)
     net.set_grad()
     out = net(x, y)
     assert count == 2
@@ -1097,7 +1098,7 @@ def test_net_nested_recompute_function():
           level_mark='level0',
           card_mark='onecard',
           essential_mark='essential')
-def test_net_fuse_recompute_function_ops():
+def test_net_output_recompute_function_ops():
     """
     Feature: Recompute function with op.
     Description: test forward function has side effect.
@@ -1120,7 +1121,7 @@ def test_net_fuse_recompute_function_ops():
         def __init__(self, op):
             super().__init__()
             self.op = op
-            self.recompute(fuse_recompute=True)
+            self.recompute(output_recompute=True)
 
         def construct(self, x, y):
             return self.op(x, y)
@@ -1131,3 +1132,155 @@ def test_net_fuse_recompute_function_ops():
     model.add1 = OpsRecompute(ops.add)
     grad_recompute_net = ms.grad(model)(x)
     assert np.allclose(grad_no_recompute_net.asnumpy(), grad_recompute_net.asnumpy())
+
+
+@arg_mark(plat_marks=['platform_ascend910b'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
+def test_net_output_recompute():
+    """
+    Feature: Recompute function
+    Description: Each block is set recompute by the cell recompute api.
+    Expectation: Run successfully and the memory usage is reduced.
+    """
+
+    class OutputFunction(_Function):
+        @staticmethod
+        def forward(ctx, x):
+            ctx.save_for_backward(x)
+            y = Tensor(np.ones((8, 128, 128, 128)).astype(np.float32))
+            out = y.to("Ascend")
+            return out
+
+        @staticmethod
+        def backward(ctx, *args):
+            return Tensor(np.ones((8, 128, 16, 32)).astype(np.float32))
+
+    class Net2(nn.Cell):
+        def construct(self, x):
+            return OutputFunction.apply(x)
+
+    class ForwardNet(nn.Cell):
+        def __init__(self):
+            super().__init__()
+            self.net2 = Net2()
+            self.net2.recompute(output_recompute=True)
+
+        def construct(self, x, y):
+            out2 = self.net2(x)
+            out2 = out2 * y
+            return out2
+
+    context.set_context(pynative_synchronize=True)
+    x = Tensor(np.random.rand(8, 128, 16, 32).astype(np.float32))
+    y = Tensor(np.random.rand(1).astype(np.float32))
+    net = ForwardNet()
+    net.set_grad()
+    _ = net(x, y)
+    memory = hal.memory_allocated()
+    _ = ms.grad(net)(x, y)
+    assert memory < 70000000
+
+
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
+def test_output_used_by_multi_op_recompute_function():
+    """
+    Feature: Recompute function with side effect forward function
+    Description: test forward function has side effect.
+    Expectation: Run successfully and the memory usage is reduced.
+    """
+    normal_count = 0
+
+    class OutputFunction(_Function):
+        @staticmethod
+        def forward(ctx, x):
+            nonlocal normal_count
+            normal_count += 1
+            ctx.save_for_backward(x)
+            z = x + x
+            return z
+
+        @staticmethod
+        def backward(ctx, *args):
+            return Tensor(np.ones((2, 2)).astype(np.float32))
+
+    class Net2(nn.Cell):
+        def construct(self, x):
+            return OutputFunction.apply(x)
+
+    class ForwardNet(nn.Cell):
+        def __init__(self):
+            super().__init__()
+            self.net2 = Net2()
+            self.net2.recompute(output_recompute=True)
+
+        def construct(self, x, y):
+            out2 = self.net2(x)
+            h = out2 * y
+            z = out2 * h
+            return h + z
+
+    x = Tensor(np.random.rand(2, 2).astype(np.float32))
+    y = Tensor(np.random.rand(2, 2).astype(np.float32))
+    net = ForwardNet()
+    net.set_grad()
+    _ = net(x, y)
+    assert normal_count == 1
+    _ = ms.grad(net)(x, y)
+    assert normal_count == 2
+
+
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
+def test_multi_output_op_recompute_function():
+    """
+    Feature: Recompute function with side effect forward function
+    Description: test forward function has side effect.
+    Expectation: Run successfully and the memory usage is reduced.
+    """
+    normal_count = 0
+
+    class MultiOutputFunction(_Function):
+        @staticmethod
+        def forward(ctx, x):
+            nonlocal normal_count
+            normal_count += 1
+            ctx.save_for_backward(x)
+            out1 = x + x
+            out2 = x * x
+            return out1, out2
+
+        @staticmethod
+        def backward(ctx, *args):
+            return Tensor(np.ones((2, 2)).astype(np.float32))
+
+    class Net2(nn.Cell):
+        def construct(self, x):
+            return MultiOutputFunction.apply(x)
+
+    class ForwardNet(nn.Cell):
+        def __init__(self):
+            super().__init__()
+            self.net2 = Net2()
+            self.net2.recompute(output_recompute=True)
+
+        def construct(self, x, y):
+            out1, out2 = self.net2(x)
+            h = out1 * y
+            z = out2 * h
+            return h + z
+
+    x = Tensor(np.random.rand(2, 2).astype(np.float32))
+    y = Tensor(np.random.rand(2, 2).astype(np.float32))
+    net = ForwardNet()
+    net.set_grad()
+    _ = net(x, y)
+    assert normal_count == 1
+    _ = ms.grad(net)(x, y)
+    assert normal_count == 2

@@ -73,7 +73,7 @@ class _InputSaver(_Function):
         raise RuntimeError("_InputSaver backward function should not be called.")
 
 
-class _OutputsSaver(_Function):
+class _OutputSaver(_Function):
     """
     A custom function saver for recompute outputs, Only support tensor.
     """
@@ -114,12 +114,12 @@ class _RecomputeState:
         self.kwargs = kwargs
         # pylint: disable=protected-access
         self.hybrid_args = [t._grad_node if isinstance(t, Tensor) and t._grad_node is not None
-                            and isinstance(t._grad_node, _OutputsSaver) else t for t in args]
+                            and isinstance(t._grad_node, _OutputSaver) else t for t in args]
 
     def unwrap_original_inputs(self):
         new_args = [self.kwargs]
         for t in self.hybrid_args:
-            if isinstance(t, _OutputsSaver):
+            if isinstance(t, _OutputSaver):
                 new_args.append(t.saved_tensors[0])
             else:
                 new_args.append(t)
@@ -366,7 +366,7 @@ def _check_validation(block, use_reentrant):
         raise TypeError("Recompute function now only support block which inherited from Cell when use_reentrant=True!")
 
 
-def recompute(block, *args, use_reentrant=True, fuse_recompute=False, **kwargs):
+def recompute(block, *args, use_reentrant=True, output_recompute=False, **kwargs):
     r"""
     This function is used to reduce memory, when run block, rather than
     storing the intermediate activation computed in forward pass, we will recompute it in backward pass.
@@ -379,18 +379,19 @@ def recompute(block, *args, use_reentrant=True, fuse_recompute=False, **kwargs):
         args(tuple): Inputs for block object to run forward pass.
 
     Keyword Arguments:
-        use_reentrant (bool): This keyword is only valid in PyNative mode.
-          If use_reentrant=True is set, we will implement recomputation through
-          a custom bprop function, which does not support differentiation of complex types
-          such as List/Tuple, If use_reentrant=False is set, we will use the saved_tensors_hook functionality
-          to implement recomputation, which supports differentiation of tensors inside complex types.
-          Default: ``True``.
-        fuse_recompute (bool): This keyword is only valid in PyNative mode. If fuse_recompute=True is
-          set, we will implement recomputation by saved_tensors_hook functionality by default. when there are two
-          adjacent cells both requiring recomputation (where the output of one cell serves as the input to the
-          other), the recomputation of these two cells will be merged. In this case, the output activation values
-          of the first cell will not be saved. If fuse_recompute=False, we will not merge adjacent cells.
-          Default: ``False``.
+        use_reentrant (bool, optional): This keyword is only valid in PyNative mode.
+            If use_reentrant=True is set, we will implement recomputation through
+            a custom bprop function, which does not support differentiation of complex types
+            such as List/Tuple, If use_reentrant=False is set, we will use the saved_tensors_hook functionality
+            to implement recomputation, which supports differentiation of tensors inside complex types.
+            Default: ``True``.
+        output_recompute (bool, optional): This keyword is only valid in PyNative mode. If output_recompute=True is
+            set, we will implement recomputation by saved_tensors_hook functionality by default. The output of this cell
+            or function will not be stored by subsequent operations for backward. when there are two adjacent cells both
+            requiring recomputation (where the output of one cell serves as the input to the other), the recomputation
+            of these two cells will be merged. In this case, the output activation values of the first cell will not be
+            stored. If output_recompute=False, we will not merge adjacent cells. Default: ``False``.
+        \*\*kwargs: Other arguments.
 
     Returns:
         Same as return type of block.
@@ -430,19 +431,19 @@ def recompute(block, *args, use_reentrant=True, fuse_recompute=False, **kwargs):
     """
     if _run_in_jit():  # @jit.cond: True
         return ops.recompute_block(block)(*args, **kwargs)
-    if fuse_recompute:
+    if output_recompute:
         use_reentrant = False
     _check_validation(block, use_reentrant)
     if use_reentrant:
         return _RecomputeCell(block)(*args, **kwargs)
-    return recompute_without_reentrant(block, fuse_recompute, *args, **kwargs)
+    return recompute_without_reentrant(block, output_recompute, *args, **kwargs)
 
 
-def recompute_without_reentrant(block, fuse_recompute, *args, **kwargs):
+def recompute_without_reentrant(block, output_recompute, *args, **kwargs):
     """
     Compute block by recompute function using saved tensors hook.
     :param block:
-    :param fuse_recompute:
+    :param output_recompute:
     :param args:
     :param kwargs:
     :return:
@@ -453,15 +454,15 @@ def recompute_without_reentrant(block, fuse_recompute, *args, **kwargs):
 
     def wrapper_block(*args, **kwargs):
         out = block(*args, **kwargs)
-        if not fuse_recompute:
+        if not output_recompute:
             return out
         if isinstance(out, Tensor):
-            res = _OutputsSaver.apply(out)
+            res = _OutputSaver.apply(out)
             return res
         if isinstance(out, list):
-            return [_OutputsSaver.apply(t) if isinstance(t, Tensor) else t for t in out]
+            return [_OutputSaver.apply(t) if isinstance(t, Tensor) else t for t in out]
         if isinstance(out, tuple):
-            res = [_OutputsSaver.apply(t) if isinstance(t, Tensor) else t for t in out]
+            res = [_OutputSaver.apply(t) if isinstance(t, Tensor) else t for t in out]
             return tuple(res)
         return out
 
@@ -496,10 +497,10 @@ def recompute_without_reentrant(block, fuse_recompute, *args, **kwargs):
         return wrapper_block(*args, **kwargs)
 
 
-def recompute_generator(block, use_reentrant=True, fuse_recompute=False):
+def recompute_generator(block, use_reentrant=True, output_recompute=False):
     """
     generator of recompute object.
-    :param fuse_recompute:
+    :param output_recompute:
     :param use_reentrant:
     :param block:
     :return:
@@ -508,7 +509,7 @@ def recompute_generator(block, use_reentrant=True, fuse_recompute=False):
         return _RecomputeCell(block)
 
     def create_recompute_func(*args, **kwargs):
-        return recompute_without_reentrant(block, fuse_recompute, *args, **kwargs)
+        return recompute_without_reentrant(block, output_recompute, *args, **kwargs)
     return create_recompute_func
 
 
