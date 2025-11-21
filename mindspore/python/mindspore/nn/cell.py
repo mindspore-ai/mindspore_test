@@ -1435,6 +1435,11 @@ class Cell(Cell_):
         """
         with _no_grad():
             output = self.construct(*args, **kwargs)
+        if self.construct.__defaults__ or self.construct.__kwdefaults__:
+            bound_arguments = self._construct_sig.bind(*args, **kwargs)
+            bound_arguments.apply_defaults()
+            args = bound_arguments.args
+            kwargs = bound_arguments.kwargs
         return _pynative_executor.call_custom_bprop(self, output, *args, **kwargs)
 
     def _add_attr(self, name, value):

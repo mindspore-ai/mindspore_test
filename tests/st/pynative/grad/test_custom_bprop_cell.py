@@ -15,14 +15,14 @@
 """ test_bprop """
 import numpy as np
 import pytest
+import torch
+import torch.nn as pynn
 import mindspore as ms
 from mindspore import Tensor, Parameter, ops, nn
 from mindspore.ops import composite as C
 from mindspore.ops import GradOperation
 from tests.mark_utils import arg_mark
 from tests.st.pynative.utils import GradOfFirstInput, GradOfAllInputsAndParams, GradOfAllInputs
-import torch
-import torch.nn as pynn
 
 
 class CustomBpropNet(nn.Cell):
@@ -757,3 +757,39 @@ def test_custom_bprop_dynamic_shape():
     grad = Tensor(np.random.randn(5, 4, 2).astype(np.float32))
     out = grad_net(inputs, grad)
     np.allclose(out[0].asnumpy(), grad.asnumpy(), 0.00001, 0.00001)
+
+
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
+def test_custom_bprop_with_default_args():
+    """
+    Feature: Custom bprop function.
+    Description: Test bprop function contains default position argument.
+    Expectation: Success.
+    """
+
+    class DefaultArgNet(nn.Cell):
+        def construct(self, x, weight=None):
+            y = x * x
+            if weight is not None:
+                return y + weight
+            return y * y
+
+        def bprop(self, x, weight, out, dout):
+            if weight is not None:
+                return dout * (out + weight), dout * (out + x)
+            return dout * out * x, None
+
+    net = DefaultArgNet()
+    x = ops.rand(2, 2)
+    out, grad_x = ms.value_and_grad(net, grad_position=0)(x)
+    assert np.allclose(out.asnumpy(), ops.pow(x, 4).asnumpy(), 0.00001, 0.00001)
+    assert np.allclose(grad_x.asnumpy(), (out * x).asnumpy(), 0.00001, 0.00001)
+
+    weight = ops.rand(2, 2)
+    out, (grad_x, grad_w) = ms.value_and_grad(net, grad_position=(0, 1))(x, weight)
+    assert np.allclose(out.asnumpy(), (x * x + weight).asnumpy(), 0.00001, 0.00001)
+    assert np.allclose(grad_x.asnumpy(), (out + weight).asnumpy(), 0.00001, 0.00001)
+    assert np.allclose(grad_w.asnumpy(), (out + x).asnumpy(), 0.00001, 0.00001)
