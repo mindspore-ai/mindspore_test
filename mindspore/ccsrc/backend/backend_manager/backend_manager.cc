@@ -32,6 +32,8 @@ namespace backend {
 namespace {
 size_t custom_backend_num = 0;
 constexpr size_t kCustomBackendBeginId = 2;
+std::set<std::string> custom_backend_names;
+
 std::map<BackendType, std::string> backend_type_to_lib_name = {{kGEBackend, kGEBackendLibName}};
 std::map<BackendName, BackendType> backend_name_to_type = {{kMSBackendName, kMSBackend}, {kGEBackendName, kGEBackend}};
 std::map<BackendType, BackendName> backend_type_to_name = {{kMSBackend, kMSBackendName}, {kGEBackend, kGEBackendName}};
@@ -42,6 +44,27 @@ BackendName GetBackendNameByType(BackendType backend_type) {
     MS_LOG(EXCEPTION) << "Invalid backend type: " << backend_type;
   }
   return iter->second;
+}
+
+BackendType GetBackendTypeByName(const BackendName &backend_name) {
+  BackendType backend_type;
+  auto iter = backend_name_to_type.find(backend_name);
+  if (iter == backend_name_to_type.end()) {
+    if (custom_backend_names.find(backend_name) == custom_backend_names.end()) {
+      MS_LOG(EXCEPTION) << "Invalid backend name: " << backend_name << ", you should register custom backend first";
+    }
+    auto custom_backend_type = static_cast<BackendType>(kCustomBackendBeginId + custom_backend_num);
+    if (custom_backend_type >= kInvalidBackend) {
+      MS_LOG(EXCEPTION) << "Max backend type is 11, but now custom_backend_type is: " << custom_backend_type << ".";
+    }
+    ++custom_backend_num;
+    backend_name_to_type.insert({backend_name, custom_backend_type});
+    backend_type_to_name.insert({custom_backend_type, backend_name});
+    backend_type = custom_backend_type;
+  } else {
+    backend_type = iter->second;
+  }
+  return backend_type;
 }
 
 std::string GetBackendLibNameByType(BackendType backend_type) {
@@ -55,32 +78,25 @@ std::string GetBackendLibNameByType(BackendType backend_type) {
 BackendType GetBackendType(const std::string &backend_name) {
   auto context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context);
-  // GE backend is only used for ascend
   auto device_target = context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
-  if (device_target != kAscendDevice && (backend_name == kGEBackendName || !context->IsKByKExecutorMode())) {
+
+  // 1. Use custom backend
+  if (!backend_name.empty() && backend_name != kMSBackendName && backend_name != kGEBackendName) {
+    return GetBackendTypeByName(backend_name);
+  }
+
+  // 2. Return kMSBackend when device target is not Ascend
+  if (device_target != kAscendDevice) {
+    // GE backend is only used for ascend
     return kMSBackend;
   }
 
+  // 3. Use ms_backend or GE when backend_name is specified
   if (!backend_name.empty()) {
-    if (backend_name == kMSBackendName) {
-      return kMSBackend;
-    } else if (backend_name == kGEBackendName) {
-      return kGEBackend;
-    }
-    auto iter = backend_name_to_type.find(backend_name);
-    if (iter == backend_name_to_type.end()) {
-      auto custom_backend_type = static_cast<BackendType>(kCustomBackendBeginId + custom_backend_num);
-      if (custom_backend_type >= kInvalidBackend) {
-        MS_LOG(EXCEPTION) << "Max backend type is 11, but now custom_backend_type is: " << custom_backend_type << ".";
-      }
-      ++custom_backend_num;
-      backend_name_to_type.insert({backend_name, custom_backend_type});
-      backend_type_to_name.insert({custom_backend_type, backend_name});
-      return custom_backend_type;
-    }
-    return iter->second;
+    return GetBackendTypeByName(backend_name);
   }
 
+  // 4. Get backend type when backend_name is not specified
   if (context->IsKByKExecutorMode()) {
     return kMSBackend;
   } else {
@@ -109,6 +125,12 @@ BackendManager &BackendManager::GetInstance() {
 }
 
 void BackendManager::Register(const BackendName &backend_name, BackendCreator &&backend_creator) {
+#ifndef WITH_BACKEND
+  // UT don't load a real custom backend, so add it to the custom_backend_names here.
+  if (custom_backend_names.find(backend_name) == custom_backend_names.end()) {
+    custom_backend_names.insert(backend_name);
+  }
+#endif
   auto backend_type = GetBackendType(backend_name);
   if (backend_creators_.find(backend_type) == backend_creators_.end()) {
     (void)backend_creators_.emplace(backend_type, std::move(backend_creator));
@@ -182,7 +204,9 @@ bool BackendManager::LoadBackend(const BackendName &backend_name, const std::str
   if (backend_name == kMSBackendName) {
     MS_LOG(EXCEPTION) << "MS backend is bulit-in backend, don't support the dynamic load.";
   }
-
+  if (custom_backend_names.find(backend_name) == custom_backend_names.end()) {
+    custom_backend_names.insert(backend_name);
+  }
   auto backend_type = GetBackendType(backend_name);
   if (backend_load_handle_.count(backend_type) > 0) {
     return true;
