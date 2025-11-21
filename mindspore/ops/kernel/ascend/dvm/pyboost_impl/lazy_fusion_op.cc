@@ -456,7 +456,7 @@ template <typename... Args>
 void DumpOp(const std::string &op_name, OpRunner *op, const Args &...inputs) {
   if (LazyFusionFlags::GetInstance().dump_as_text) {
     auto k = g_lazy_fusion_manager.Get(op->device_context(), op->stream_id());
-    k->DumpOp(op_name, op->outputs(), inputs...);
+    k->DumpOp(op_name, inputs...);
   }
 }
 }  // namespace
