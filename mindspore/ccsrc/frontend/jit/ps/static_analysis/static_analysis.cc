@@ -742,6 +742,15 @@ void AnalysisEngine::SaveEvalResultInCache(const AnfNodeConfigPtr &conf, const E
     SynchronizeSuccessiveInputs(old_arg, new_arg);
   }
   MS_EXCEPTION_IF_NULL(result->abstract());
+  if (result->abstract()->has_user_data("constant_tensor")) {
+    auto clone_abs_res = result->abstract()->Clone();
+    clone_abs_res->set_user_data("constant_tensor", std::make_shared<bool>(true));
+    auto eval_result = std::make_shared<EvalResult>(clone_abs_res, std::make_shared<AttrValueMap>());
+    cache_mgr.SetValue(conf, eval_result);
+    MS_LOG(DEBUG) << "Save result for NodeConfig: " << conf->ToString() << ", result: " << clone_abs_res.get() << "/"
+                  << clone_abs_res->ToString();
+    return;
+  }
   MS_LOG(DEBUG) << "Save result for NodeConfig: " << conf->ToString() << ", result: " << result->abstract().get() << "/"
                 << result->abstract()->ToString();
   cache_mgr.SetValue(conf, result);

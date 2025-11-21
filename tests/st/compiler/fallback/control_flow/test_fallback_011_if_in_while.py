@@ -1,4 +1,4 @@
-# Copyright 2022 Huawei Technologies Co., Ltd
+# Copyright 2022-2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -20,8 +20,8 @@ from tests.mark_utils import arg_mark
 context.set_context(mode=context.GRAPH_MODE, jit_config={"jit_level": "O0"})
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
-          essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_if_in_while_1():
     """
     Feature: JIT Fallback
@@ -37,12 +37,13 @@ def test_if_in_while_1():
                 y += Tensor(1)
             x += Tensor(1)
         return x + y
+
     res = control_flow_if_in_while()
     assert res == 7
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
-          essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_if_in_while_2():
     """
     Feature: JIT Fallback
@@ -57,12 +58,12 @@ def test_if_in_while_2():
                 break
             x += Tensor(1)
         return x
+
     res = control_flow_if_in_while()
     assert res == 3
 
-
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
-          essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_if_in_while_3():
     """
     Feature: JIT Fallback
@@ -80,12 +81,12 @@ def test_if_in_while_3():
                 continue
             x += Tensor(1)
         return x + y
+
     res = control_flow_if_in_while()
     assert res == 6
 
-
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
-          essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_if_in_while_4():
     """
     Feature: JIT Fallback
@@ -109,9 +110,9 @@ def test_if_in_while_4():
             else:
                 x += Tensor(1)
         return x + y
+
     res = control_flow_if_in_while()
     assert res == 5
-
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
           essential_mark='unessential')

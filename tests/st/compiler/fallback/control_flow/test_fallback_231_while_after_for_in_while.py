@@ -1,4 +1,4 @@
-# Copyright 2022 Huawei Technologies Co., Ltd
+# Copyright 2022-2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,11 +17,12 @@ import numpy as np
 from mindspore import Tensor, jit, context
 from tests.mark_utils import arg_mark
 
+
 context.set_context(mode=context.GRAPH_MODE, jit_config={"jit_level": "O0"})
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
-          essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_while_after_for_in_while_1():
     """
     Feature: JIT Fallback
@@ -42,6 +43,7 @@ def test_while_after_for_in_while_1():
             y -= x
             z = z + y
         return z
+
 
     res = func2311()
     assert res == 6

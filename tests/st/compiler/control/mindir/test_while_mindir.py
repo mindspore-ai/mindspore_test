@@ -11,11 +11,14 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+"""test while mindir."""
+
 import os
 import numpy as np
 from tests.mark_utils import arg_mark
 
-import mindspore.nn as nn
+from mindspore import nn
 from mindspore import context, jit
 from mindspore.common.tensor import Tensor
 from mindspore.train.serialization import export, load
@@ -31,14 +34,15 @@ class SingleWhileNet(nn.Cell):
         return y
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
-          essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_single_while():
     """
     Feature: Control flow
     Description: Test control flow in graph mode.
     Expectation: No exception.
     """
+
     context.set_context(mode=context.GRAPH_MODE)
     network = SingleWhileNet()
 
@@ -53,18 +57,21 @@ def test_single_while():
 
     graph = load(mindir_name)
     loaded_net = nn.GraphCell(graph)
+    x = Tensor(np.array([1]).astype(np.float32))
+    y = Tensor(np.array([2]).astype(np.float32))
     outputs_after_load = loaded_net(x, y)
     assert origin_out == outputs_after_load
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
-          essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_jit_function_while():
     """
     Features: Control flow.
     Description: Test while in @jit decorated function.
     Expectation: No exception.
     """
+
     context.set_context(mode=context.GRAPH_MODE)
     network = SingleWhileNet()
 
@@ -86,6 +93,8 @@ def test_jit_function_while():
         outputs = loaded_net(x, y)
         return outputs
 
+    x = Tensor(np.array([1]).astype(np.float32))
+    y = Tensor(np.array([2]).astype(np.float32))
     outputs_after_load = run_graph(x, y)
     assert origin_out == outputs_after_load
 
@@ -140,14 +149,15 @@ def test_single_while_inline_load():
     load(mindir_name)
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
-          essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_single_while_inline():
     """
     Feature: Control flow
     Description: Test control flow in graph mode.
     Expectation: No exception.
     """
+
     context.set_context(mode=context.GRAPH_MODE)
     network = SingleWhileInlineNet()
 
@@ -162,5 +172,7 @@ def test_single_while_inline():
 
     graph = load(mindir_name)
     loaded_net = nn.GraphCell(graph)
+    x = Tensor(np.array([1]).astype(np.float32))
+    y = Tensor(np.array([2]).astype(np.float32))
     outputs_after_load = loaded_net(x, y)
     assert origin_out == outputs_after_load

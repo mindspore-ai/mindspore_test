@@ -1548,9 +1548,22 @@ void ControlNodeScheduler::LinkArrowByValueNode(const AnfNodePtr &value_node, Co
       if (!value->isa<ValueTuple>() && from_index > 0) {
         from_index = 0;
       } else {
-        MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, value_node)
-          << "#dmsg#Runtime error info:#dmsg#Invalid output address index:" << from_index
-          << " for value node:" << value_node->DebugString() << " to actor:" << to_actor->GetAID();
+        const auto &kernel_tensors = DeviceTensorStore::GetInstance().Fetch(value_node.get());
+        if (!kernel_tensors.empty() && kernel_tensors[0] != nullptr) {
+          if (value_node->kernel_info() == nullptr) {
+            auto kernel_info = std::make_shared<device::KernelInfo>();
+            MS_EXCEPTION_IF_NULL(kernel_info);
+            std::shared_ptr<KernelBuildInfoBuilder> builder = std::make_shared<KernelBuildInfoBuilder>();
+            MS_EXCEPTION_IF_NULL(builder);
+            kernel_info->set_select_kernel_build_info(builder->Build());
+            value_node->set_kernel_info(kernel_info);
+          }
+          AnfAlgo::SetOutputKernelTensor(kernel_tensors[0], from_index, value_node.get());
+        } else {
+          MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, value_node)
+            << "#dmsg#Runtime error info:#dmsg#Invalid output address index:" << from_index
+            << " for value node:" << value_node->DebugString() << " to actor:" << to_actor->GetAID();
+        }
       }
     }
     to_actor->local_kernel_tensors_[to_index] = {AnfAlgo::GetOutputKernelTensor(value_node, from_index, false),
@@ -1815,6 +1828,7 @@ void ControlNodeScheduler::LinkControlArrowForControlActor(ActorSet *const actor
       MS_EXCEPTION_IF_NULL(to_actor);
     }
 
+    std::set<AnfNodePtr> depend_nodes;
     const auto &cnode = node->cast<CNodePtr>();
     MS_EXCEPTION_IF_NULL(cnode);
     const auto &inputs = cnode->inputs();
@@ -1823,9 +1837,13 @@ void ControlNodeScheduler::LinkControlArrowForControlActor(ActorSet *const actor
       std::vector<AnfNodePtr> monad_nodes = FetchAllMonadNodeByNode(input);
       for (const auto &monad_node : monad_nodes) {
         MS_EXCEPTION_IF_NULL(monad_node);
-        LinkControlArrowByAutoMonad(to_actor, monad_node, parser);
+        MS_LOG(DEBUG) << "Fetch depend node for input:" << input->DebugString() << " to actor:" << to_actor->GetAID()
+                      << " by monad input:" << monad_node->DebugString();
+        FetchRealDependNodeByAutoMonad(monad_node, &depend_nodes);
       }
     }
+    MS_LOG(DEBUG) << "Add monad control arrow to actor:" << to_actor->GetAID();
+    LinkControlArrowByAutoMonad(to_actor, parser, depend_nodes);
   }
 
   // Link copy actor to exit actor.
@@ -2056,16 +2074,11 @@ std::set<AnfNodePtr> CollectInvalidStackControlInput(const std::set<AnfNodePtr> 
   return invalid_stack_control_inputs;
 }
 
-void ControlNodeScheduler::LinkControlArrowByAutoMonad(ControlActor *to_actor, const AnfNodePtr &from_node,
-                                                       const ControlNodeParserPtr &parser) const {
+void ControlNodeScheduler::LinkControlArrowByAutoMonad(ControlActor *to_actor, const ControlNodeParserPtr &parser,
+                                                       const std::set<AnfNodePtr> &depend_nodes) const {
   MS_EXCEPTION_IF_NULL(to_actor);
-  MS_EXCEPTION_IF_NULL(from_node);
   MS_EXCEPTION_IF_NULL(parser);
-  MS_LOG(DEBUG) << "Link auto monad control arrow from node:" << from_node->DebugString()
-                << " to actor:" << to_actor->GetAID();
-
-  std::set<AnfNodePtr> depend_nodes;
-  FetchRealDependNodeByAutoMonad(from_node, &depend_nodes);
+  MS_LOG(DEBUG) << "Link auto monad control arrow to actor:" << to_actor->GetAID();
   std::set<AnfNodePtr> invalid_stack_control_inputs = CollectInvalidStackControlInput(depend_nodes, parser);
   for (const auto &depend_node : depend_nodes) {
     MS_EXCEPTION_IF_NULL(depend_node);
@@ -2142,8 +2155,7 @@ void ControlNodeScheduler::LinkControlArrowByAutoMonad(ControlActor *to_actor, c
       stack_actor->control_aid_to_indexs_[actor->GetAID()] = stack_actor->input_stack_controls_num_;
     }
   }
-  MS_LOG(DEBUG) << "Link auto monad control arrow from node:" << from_node->DebugString()
-                << " to actor:" << to_actor->GetAID() << " end";
+  MS_LOG(DEBUG) << "Link auto monad control arrow to actor:" << to_actor->GetAID() << " end";
 }
 
 void ControlNodeScheduler::LinkControlArrowByKernelGraphGroup(const GraphCompilerInfo &graph_compiler_info) const {
@@ -2153,18 +2165,41 @@ void ControlNodeScheduler::LinkControlArrowByKernelGraphGroup(const GraphCompile
   for (const auto &graph_group : parser->kernel_graph_group_infos_) {
     MS_EXCEPTION_IF_NULL(graph_group);
     if (!graph_group->need_stack_) {
+      MS_LOG(DEBUG) << "Link control arrow for no stack group:" << graph_group->group_name_;
+      // Skip add control arrow for multi graph group to avoid cycle.
+      if (graph_group->graphs_.size() != 1) {
+        continue;
+      }
+      const auto &graph = *(graph_group->graphs_.begin());
+      MS_EXCEPTION_IF_NULL(graph);
+      const auto &to_actor = FetchActor(graph->ToString() + kSuperKernelActorNameSuffix);
+      if (to_actor == nullptr || graph->GetInputFrontFuncNode().empty()) {
+        continue;
+      }
+      for (const auto &control_node : graph->GetInputFrontFuncNode()) {
+        MS_EXCEPTION_IF_NULL(control_node);
+        const auto &from_actor = FetchActor(GetActorName(control_node));
+        if (from_actor != nullptr) {
+          SchedulerHelper::AddControlArrow(from_actor, to_actor);
+          MS_LOG(INFO) << "Add control arrow from actor:" << from_actor->GetAID() << " to:" << to_actor->GetAID();
+        }
+      }
       continue;
     }
     auto stack_actor = FetchActor(graph_group->group_name_ + kStackActorNameSuffix);
     MS_EXCEPTION_IF_NULL(stack_actor);
     auto to_actor = dynamic_cast<ControlActor *>(stack_actor);
     MS_EXCEPTION_IF_NULL(to_actor);
+    std::set<AnfNodePtr> depend_nodes;
     for (const auto &monad_input : graph_group->monad_inputs_) {
       MS_EXCEPTION_IF_NULL(monad_input);
-      MS_LOG(DEBUG) << "Add monad control arrow for group:" << graph_group->group_name_
-                    << " to actor:" << to_actor->GetAID() << " by monad input:" << monad_input->DebugString();
-      LinkControlArrowByAutoMonad(to_actor, monad_input, parser);
+      MS_LOG(DEBUG) << "Fetch depend node for group:" << graph_group->group_name_ << " to actor:" << to_actor->GetAID()
+                    << " by monad input:" << monad_input->DebugString();
+      FetchRealDependNodeByAutoMonad(monad_input, &depend_nodes);
     }
+    MS_LOG(DEBUG) << "Add monad control arrow for group:" << graph_group->group_name_
+                  << " to actor:" << to_actor->GetAID();
+    LinkControlArrowByAutoMonad(to_actor, parser, depend_nodes);
   }
 }
 

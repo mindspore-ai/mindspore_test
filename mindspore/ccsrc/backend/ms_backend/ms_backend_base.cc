@@ -340,6 +340,7 @@ bool IsNodeValid(const AnfNodePtr &node) {
       return false;
     }
   } else if (common::AnfAlgo::IsCallNode(node) && HasAbstractRefOutput(node->abstract())) {
+    MS_LOG(INFO) << "Disable switch inline for call node with AbstractRefOutput:" << node->DebugString();
     return false;
   }
   return true;

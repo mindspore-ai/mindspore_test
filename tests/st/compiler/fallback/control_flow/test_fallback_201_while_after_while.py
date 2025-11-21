@@ -1,4 +1,4 @@
-# Copyright 2022 Huawei Technologies Co., Ltd
+# Copyright 2022-2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -39,6 +39,8 @@ def test_while_after_while_tensor():
             y -= x
             z = z + y
         return z
+
+
     res = control_flow_while_after_while()
     assert res == -3
 

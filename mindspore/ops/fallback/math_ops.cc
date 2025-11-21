@@ -144,7 +144,8 @@ REG_FALLBACK_BUILDER("InplaceSubScalar").SetBody(BODYFUNC(ib) {
 REG_FALLBACK_BUILDER("InplaceMul").SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto y = ib->GetInput(kIndex1);
-  return {x * y};
+  auto y_cast = ib->Cast(y, x->dtype());
+  return {x * y_cast};
 });
 
 REG_FALLBACK_BUILDER("InplaceMuls").SetBody(BODYFUNC(ib) {
@@ -157,7 +158,8 @@ REG_FALLBACK_BUILDER("InplaceMuls").SetBody(BODYFUNC(ib) {
 REG_FALLBACK_BUILDER("InplaceDiv").SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto y = ib->GetInput(kIndex1);
-  return {x / y};
+  auto y_cast = ib->Cast(y, x->dtype());
+  return {x / y_cast};
 });
 
 REG_FALLBACK_BUILDER("InplaceDivs").SetBody(BODYFUNC(ib) {
@@ -177,7 +179,8 @@ REG_FALLBACK_BUILDER("Divs").SetBody(BODYFUNC(ib) {
 REG_FALLBACK_BUILDER("InplaceFloorDivide").SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto y = ib->GetInput(kIndex1);
-  return {ib->Emit("FloorDiv", {x, y})};
+  auto y_cast = ib->Cast(y, x->dtype());
+  return {ib->Emit("FloorDiv", {x, y_cast})};
 });
 
 REG_FALLBACK_BUILDER("InplaceFloorDivides").SetBody(BODYFUNC(ib) {
@@ -523,29 +526,15 @@ REG_FALLBACK_BUILDER("DivMod").SetBody(BODYFUNC(ib) {
 REG_FALLBACK_BUILDER("InplaceRemainderTensorTensor").SetBody(BODYFUNC(ib) {
   auto input = ib->GetInput(kIndex0);
   auto other = ib->GetInput(kIndex1);
-  auto promote_type =
-    mindspore::ops::PromoteType(ib->GetDtype(input), ib->GetDtype(other), "InplaceRemainderTensorTensor");
-  MS_EXCEPTION_IF_NULL(promote_type);
-  auto input_cast = ib->Cast(input, promote_type);
-  auto other_cast = ib->Cast(other, promote_type);
-  return {ib->Emit("FloorMod", {input_cast, other_cast})};
+  auto other_cast = ib->Cast(other, input->dtype());
+  return {ib->Emit("FloorMod", {input, other_cast})};
 });
 
 REG_FALLBACK_BUILDER("InplaceRemainderTensorScalar").SetBody(BODYFUNC(ib) {
   auto input = ib->GetInput(kIndex0);
   auto other = ib->GetInput(kIndex1);
-  auto input_type = ib->GetDtype(input);
-  auto promote_type = input_type;
-  if (input_type->type_id() == kNumberTypeBool) {
-    promote_type = other->dtype();
-  } else if (kIntergralSet.find(input_type->type_id()) != kIntergralSet.end() &&
-             kFloatSet.find(other->dtype()->type_id()) != kFloatSet.end()) {
-    promote_type = TypeIdToType(kNumberTypeFloat32);
-  }
-  MS_EXCEPTION_IF_NULL(promote_type);
-  auto input_cast = ib->Cast(input, promote_type);
-  auto other_cast = ib->ScalarToTensor(other, promote_type);
-  return {ib->Emit("FloorMod", {input_cast, other_cast})};
+  auto other_cast = ib->ScalarToTensor(other, input->dtype());
+  return {ib->Emit("FloorMod", {input, other_cast})};
 });
 
 REG_FALLBACK_BUILDER("RemainderTensorTensor").SetBody(BODYFUNC(ib) {

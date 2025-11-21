@@ -347,9 +347,19 @@ Function: Whether enable augassign inplace.
 Value Range:
     0: Disable
     1: Enable
-    Default: Disable
+    Default: Enable
 """
-JIT_ENABLE_AUGASSIGN_INPLACE = '0'
+JIT_ENABLE_AUGASSIGN_INPLACE = '1'
+
+"""
+Name: JIT_ENABLE_AUGASSIGN_INPLACE_FALLBACK
+Function: Whether enable augassign inplace fallback.
+Value Range:
+    0: Disable
+    1: Enable
+    Default: Enable
+"""
+JIT_ENABLE_AUGASSIGN_INPLACE_FALLBACK = '1'
 
 """
 Name: GRAD_JIT_FILTER
@@ -399,5 +409,6 @@ __all__ = [
     "PUT_ALL_CNODE_INTO_ORDER_LIST",
     "CHECK_PASS_NODE_SCOPE",
     "JIT_ENABLE_AUGASSIGN_INPLACE",
-    "GRAD_JIT_FILTER"
+    "GRAD_JIT_FILTER",
+    "JIT_ENABLE_AUGASSIGN_INPLACE_FALLBACK"
 ]

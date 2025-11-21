@@ -17,8 +17,8 @@
 
 from __future__ import absolute_import
 import mindspore as ms
-import mindspore.nn as nn
-import mindspore.ops as ops
+from mindspore import nn
+from mindspore import ops
 from mindspore.ops.primitive import Primitive
 from mindspore.ops import operations as P
 from mindspore.ops.composite.multitype_ops.zeros_like_impl import zeros_like
@@ -31,7 +31,7 @@ def _factorial(order):
     factorial_zero = ops.ones(1, ms.float32)
     factorial_positive = range_op().astype(ms.float32)
     for i in range(1, order):
-        factorial_positive[i] *= factorial_positive[i - 1]
+        factorial_positive[i] = factorial_positive[i] * factorial_positive[i - 1]
     factorial = ops.concat((factorial_zero, factorial_positive))
     return factorial
 
@@ -82,8 +82,8 @@ def _taylor_fprop_mul(input_x, input_y):
     for k in range(1, series_num + 1):
         for i in range(0, k + 1):
             tmp = ops.div(input_x[i] * input_y[k - i], (factorial[k - i] * factorial[i]))
-            series[k] += tmp
-        series[k] *= factorial[k]
+            series[k] = series[k] + tmp
+        series[k] = series[k] * factorial[k]
     return series
 
 
@@ -111,7 +111,7 @@ def _taylor_fprop_realdiv(input_x, input_y):
     for k in range(1, series_num + 1):
         for i in range(0, k):
             tmp = ops.div(series[i] * input_y[k - i], (factorial[k - i] * factorial[i]))
-            series[k] += tmp
+            series[k] = series[k] + tmp
         series[k] = ops.div(input_x[k] - factorial[k] * series[k], input_y[0])
     return series
 
@@ -140,7 +140,7 @@ def _taylor_fprop_div(input_x, input_y):
     for k in range(1, series_num + 1):
         for i in range(0, k):
             tmp = ops.div(series[i] * input_y[k - i], (factorial[k - i] * factorial[i]))
-            series[k] += tmp
+            series[k] = series[k] + tmp
         series[k] = ops.div(input_x[k] - factorial[k] * series[k], input_y[0])
     return series
 
@@ -169,8 +169,8 @@ def taylor_exp(self):
         for k in range(1, series_num + 1):
             for i in range(1, k + 1):
                 tmp = ops.div(i * inputs[i] * series[k - i], (factorial[k - i] * factorial[i]))
-                series[k] += tmp
-            series[k] *= factorial[k - 1]
+                series[k] = series[k] + tmp
+            series[k] = series[k] * factorial[k - 1]
         return series
 
     return taylor_fprop_exp
@@ -189,7 +189,7 @@ def taylor_log(self):
         for k in range(1, series_num + 1):
             for i in range(1, k):
                 tmp = ops.div(i * inputs[k - i] * series[i], factorial[k - i] * factorial[i])
-                series[k] += tmp
+                series[k] = series[k] + tmp
             series[k] = ops.div(inputs[k] - factorial[k - 1] * series[k], inputs[0])
         return series
 
@@ -208,10 +208,10 @@ def _taylor_fprop_sin_cos(inputs):
     factorial = _factorial(series_num)
     for k in range(1, series_num + 1):
         for i in range(1, k + 1):
-            series_sin[k] += ops.div(i * inputs[i] * series_cos[k - i], factorial[i] * factorial[k - i])
-            series_cos[k] -= ops.div(i * inputs[i] * series_sin[k - i], factorial[i] * factorial[k - i])
-        series_sin[k] *= factorial[k - 1]
-        series_cos[k] *= factorial[k - 1]
+            series_sin[k] = series_sin[k] + ops.div(i * inputs[i] * series_cos[k - i], factorial[i] * factorial[k - i])
+            series_cos[k] = series_cos[k] - ops.div(i * inputs[i] * series_sin[k - i], factorial[i] * factorial[k - i])
+        series_sin[k] = series_sin[k] * factorial[k - 1]
+        series_cos[k] = series_cos[k] * factorial[k - 1]
     return series_sin, series_cos
 
 

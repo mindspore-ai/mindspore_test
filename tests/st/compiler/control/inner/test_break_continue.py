@@ -12,6 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+
+"""test break continue."""
+
 import numpy as np
 from tests.mark_utils import arg_mark
 from mindspore.common import dtype as mstype
@@ -29,7 +32,7 @@ grad_all = C.GradOperation(get_all=True)
 
 class Grad(nn.Cell):
     def __init__(self, net):
-        super(Grad, self).__init__(auto_prefix=False)
+        super().__init__(auto_prefix=False)
         self.forward_net = net
         self.grad = C.GradOperation(get_all=True)
 
@@ -40,7 +43,7 @@ class Grad(nn.Cell):
 
 class ForBreakForwardNet(nn.Cell):
     def __init__(self, max_cycles=10):
-        super(ForBreakForwardNet, self).__init__()
+        super().__init__()
         self.max_cycles = max_cycles
         self.zero = Tensor(np.array(0), mstype.int32)
 
@@ -91,7 +94,7 @@ def test_for_break_backward():
 
 class WhileBreakForwardNet(nn.Cell):
     def __init__(self, max_cycles=10):
-        super(WhileBreakForwardNet, self).__init__()
+        super().__init__()
         self.max_cycles = max_cycles
         self.i = Tensor(np.array(0), mstype.int32)
         self.zero = Tensor(np.array(0), mstype.int32)
@@ -145,7 +148,7 @@ def test_while_break_backward():
 
 class IfAfterIfInWhileBreakForwardNet(nn.Cell):
     def __init__(self, max_cycles=10):
-        super(IfAfterIfInWhileBreakForwardNet, self).__init__()
+        super().__init__()
         self.max_cycles = max_cycles
         self.i = Tensor(np.array(0), mstype.int32)
         self.zero = Tensor(np.array(0), mstype.int32)
@@ -256,7 +259,7 @@ def test_if_after_for_in_if_break():
     assert graph_backward_res == (Tensor(1, mstype.int32),)
 
 
-@arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_if_after_for_in_for_break():
     """
     Feature: Control flow
@@ -293,8 +296,9 @@ def test_if_after_for_in_for_break():
     graph_forward_res = forward_net(x)
 
     if_after_for_in_for_net = IfAfterForInForNet()
+    x1 = Tensor(2, mstype.int32)
     net = Grad(if_after_for_in_for_net)
-    graph_backward_res = net(x)
+    graph_backward_res = net(x1)
 
     assert graph_forward_res == Tensor(106, mstype.int32)
     assert graph_backward_res == (Tensor(16, mstype.int32),)
@@ -302,7 +306,7 @@ def test_if_after_for_in_for_break():
 
 class WhileAfterWhileInWhileBreakForwardNet(nn.Cell):
     def __init__(self, max_cycles=10):
-        super(WhileAfterWhileInWhileBreakForwardNet, self).__init__()
+        super().__init__()
         self.max_cycles = max_cycles
         self.zero = Tensor(np.array(0), mstype.int32)
         self.i = Tensor(np.array(0), mstype.int32)
@@ -364,7 +368,7 @@ def test_while_after_while_in_while_break_backward():
 
 class TwoBreakDeadForwardNet(nn.Cell):
     def __init__(self):
-        super(TwoBreakDeadForwardNet, self).__init__()
+        super().__init__()
         self.zero = Tensor(np.array(0), mstype.int32)
 
     def construct(self, x):
@@ -396,7 +400,7 @@ def test_2break_dead_block():
 
 class ForInFor2BreakForwardNet(nn.Cell):
     def __init__(self):
-        super(ForInFor2BreakForwardNet, self).__init__()
+        super().__init__()
         self.relu = P.ReLU()
         self.add = P.TensorAdd()
 
@@ -439,7 +443,7 @@ def test_while_true_break():
     """
     class WhileTrueBreakNet(nn.Cell):
         def __init__(self, t):
-            super(WhileTrueBreakNet, self).__init__()
+            super().__init__()
             self.add = P.Add()
             self.mul = P.Mul()
             self.para = Parameter(Tensor(t, mstype.int32), name="a")

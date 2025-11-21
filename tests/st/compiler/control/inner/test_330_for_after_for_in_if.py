@@ -12,6 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+
+"""test for after for in if."""
+
 from tests.mark_utils import arg_mark
 from mindspore import context
 from mindspore import Tensor, nn
@@ -49,31 +52,33 @@ def test_for_after_for_in_if():
 
     class GradNet(nn.Cell):
         def __init__(self, net):
-            super(GradNet, self).__init__()
+            super().__init__()
             self.net = net
 
         def construct(self, *inputs):
             return grad_all(self.net)(*inputs)
 
-    x = Tensor(5, mstype.int32)
-
     # graph mode
+    x0 = Tensor(5, mstype.int32)
+    x1 = Tensor(5, mstype.int32)
     context.set_context(mode=context.GRAPH_MODE)
     for_after_for_in_if_net = ForAfterForInIfNet()
     net = GradNet(for_after_for_in_if_net)
 
     forward_net = ForAfterForInIfNet()
-    graph_forward_res = forward_net(x)
-    graph_backward_res = net(x)
+    graph_forward_res = forward_net(x0)
+    graph_backward_res = net(x1)
 
     # pynative mode
+    x2 = Tensor(5, mstype.int32)
+    x3 = Tensor(5, mstype.int32)
     context.set_context(mode=context.PYNATIVE_MODE)
     for_after_for_in_if_net = ForAfterForInIfNet()
     net = GradNet(for_after_for_in_if_net)
 
     forward_net = ForAfterForInIfNet()
-    pynative_forward_res = forward_net(x)
-    pynative_backward_res = net(x)
+    pynative_forward_res = forward_net(x2)
+    pynative_backward_res = net(x3)
 
     assert graph_forward_res == pynative_forward_res
     assert graph_backward_res == pynative_backward_res

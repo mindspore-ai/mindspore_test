@@ -12,7 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-import mindspore.context as context
+
+"""run if by if script."""
+
+from mindspore import context
 from mindspore import Tensor, nn
 from mindspore.common import dtype as mstype
 from mindspore import Parameter
@@ -31,10 +34,10 @@ class IfByIfNet(nn.Cell):
             out = out + self.param_a
             out1 = out1 * self.param_a
         if x > 2:
-            out1 += self.param_a
-            out1 *= out
-            out += self.param_a
-        out1 += self.param_a
+            out1 = out1 + self.param_a
+            out1 = out1 * out
+            out = out + self.param_a
+        out1 = out1 + self.param_a
         out2 = out
         return out, out1, out2
 

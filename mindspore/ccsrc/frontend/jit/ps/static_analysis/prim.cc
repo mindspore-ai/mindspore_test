@@ -2965,6 +2965,9 @@ class PyInterpretEvaluator final : public TransitionPrimEvaluator {
     AbstractBasePtr res = ToAbstract(converted_val, AnalysisContext::DummyContext(), out_conf);
     if (!converted_val->ContainsValueAny()) {
       AnfNodePtr value_node = NewValueNode(converted_val);
+      if (res->isa<abstract::AbstractTensor>()) {
+        res->set_user_data("constant_tensor", std::make_shared<bool>(true));
+      }
       value_node->set_abstract(res);
       value_node->set_debug_info(node->debug_info());
       AnalysisEnginePtr eng = out_conf->engine();

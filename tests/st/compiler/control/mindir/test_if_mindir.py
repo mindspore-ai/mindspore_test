@@ -11,11 +11,14 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+"""test if mindir."""
+
 import os
 import numpy as np
 from tests.mark_utils import arg_mark
 
-import mindspore.nn as nn
+from mindspore import nn
 import mindspore
 from mindspore import context, jit
 from mindspore.common.tensor import Tensor
@@ -47,7 +50,7 @@ def fc_with_initialize(input_channels, out_channels):
 
 class LeNet5(nn.Cell):
     def __init__(self):
-        super(LeNet5, self).__init__()
+        super().__init__()
         self.batch_size = 32
         self.conv1 = conv(1, 6, 5)
         self.conv2 = conv(6, 16, 5)
@@ -77,7 +80,7 @@ class LeNet5(nn.Cell):
 
 class WithLossCell(nn.Cell):
     def __init__(self, network):
-        super(WithLossCell, self).__init__(auto_prefix=False)
+        super().__init__(auto_prefix=False)
         self.loss = nn.SoftmaxCrossEntropyWithLogits()
         self.network = network
 
@@ -88,7 +91,7 @@ class WithLossCell(nn.Cell):
 
 class TrainOneStepCell(nn.Cell):
     def __init__(self, network):
-        super(TrainOneStepCell, self).__init__(auto_prefix=False)
+        super().__init__(auto_prefix=False)
         self.network = network
         self.network.set_train()
         self.weights = ParameterTuple(network.trainable_params())
@@ -158,14 +161,15 @@ def test_load_mindir_and_run():
     assert np.allclose(outputs0.asnumpy(), outputs_after_load.asnumpy())
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
-          essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_single_if():
     """
     Feature: Control flow
     Description: Test control flow in graph mode.
     Expectation: No exception.
     """
+
     context.set_context(mode=context.GRAPH_MODE)
     network = SingleIfNet()
 
@@ -180,6 +184,8 @@ def test_single_if():
 
     graph = load(mindir_name)
     loaded_net = nn.GraphCell(graph)
+    x = Tensor(np.array([1]).astype(np.float32))
+    y = Tensor(np.array([2]).astype(np.float32))
     outputs_after_load = loaded_net(x, y)
     assert origin_out == outputs_after_load
 
@@ -197,7 +203,7 @@ def test_jit_net():
         """
 
         def __init__(self):
-            super(Net, self).__init__()
+            super().__init__()
             self.conv2d = P.Conv2D(out_channel=32, kernel_size=3, data_format="NHWC")
             self.weight = Tensor(np.ones([32, 3, 3, 32]), mindspore.float32)
             self.one = Tensor(np.ones([1, 1, 1, 1]), mindspore.float32)

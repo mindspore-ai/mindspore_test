@@ -716,3 +716,35 @@ def test_jet_function_graph_mode(mode):
                                 [56.995613, 56.995613]]).astype(np.float32)
     assert np.allclose(out_series.asnumpy(), expected_series, atol=1.e-4)
     assert np.allclose(out_primals.asnumpy(), expected_primals, atol=1.e-4)
+
+
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
+@pytest.mark.parametrize('mode', [context.GRAPH_MODE, context.PYNATIVE_MODE])
+def test_jet_jet_grad(mode):
+    """
+    Features: high grad jet
+    Description: Test high grad jet.
+    Expectation: No exception.
+    """
+
+    class Grad(nn.Cell):
+        def __init__(self, net):
+            super().__init__()
+            self.net = net
+
+        def construct(self, a, b):
+            def get_jet(x, y):
+                return jet(self.net, x, y)
+
+            grad_net = ops.grad(get_jet)
+            grad_ret = grad_net(a, b)
+            return grad_ret
+
+    context.set_context(mode=mode)
+    net = SinNet()
+    x = Tensor([1., 1.])
+    y = Tensor([[1., 1.], [0., 0.]])
+    ms_net = Grad(net)
+    jet_grad = ms_net(x, y)
+    assert np.allclose(jet_grad.asnumpy(), np.array([-8.41470957e-01, -8.41470957e-01]), 0.001, 0.001)

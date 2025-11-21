@@ -13,6 +13,8 @@
 # limitations under the License.
 # ============================================================================
 
+"""test tensor inplace grad."""
+
 import pytest
 import numpy as np
 import torch
@@ -32,7 +34,7 @@ context.set_context(mode=ms.GRAPH_MODE)
 
 class GradOfFirstInput(nn.Cell):
     def __init__(self, net):
-        super(GradOfFirstInput, self).__init__()
+        super().__init__()
         self.net = net
         self.grad_op = ops.GradOperation()
 
@@ -42,7 +44,7 @@ class GradOfFirstInput(nn.Cell):
 
 class GradOfAllInputsAndParams(nn.Cell):
     def __init__(self, net):
-        super(GradOfAllInputsAndParams, self).__init__()
+        super().__init__()
         self.net = net
         self.params = ParameterTuple(net.trainable_params())
         self.grad_op = ops.GradOperation(get_all=True, get_by_list=True)
@@ -248,7 +250,7 @@ def test_tensor_inplace_add_grad_all_inputs_and_param():
     """
     class Net7(nn.Cell):
         def __init__(self):
-            super(Net7, self).__init__()
+            super().__init__()
             self.param1 = Parameter(Tensor([1], dtype=mstype.float32), name="param1")
             self.param2 = Parameter(Tensor([1], dtype=mstype.float32), name="param2")
 
@@ -286,7 +288,7 @@ def test_tensor_inplace_scatter_grad():
     @test_utils.run_with_cell
     def scatter_val_with_grad(x, dim, index, value, reduce):
         return (x * True).scatter_(dim=dim, index=index, value=value,
-                                   **(dict(reduce=reduce) if reduce != 'none' else {}))
+                                   **({"reduce": reduce} if reduce != 'none' else {}))
     ## inplace backward
     context.set_context(jit_level='O0')
     slf = Tensor([[2] * 4] * 3, dtype=ms.float32)
@@ -436,6 +438,46 @@ def test_inplace_backward():
                                                  Tensor(2, dtype=ms.float32))
     assert (out_jit[0].asnumpy() == np.array([[2, 2], [2, 2]])).all()
     assert out_jit[1] == 10
+
+
+@arg_mark(plat_marks=['platform_gpu', 'cpu_linux'], level_mark='level0',
+          card_mark='onecard', essential_mark='essential')
+def test_inplace_backward_param_assign():
+    """
+    Feature: Support inplace param assign in graph mode.
+    Description: Support inplace param assign in graph mode.
+    Expectation: Run success.
+    """
+
+    class Net(nn.Cell):
+        def __init__(self):
+            super().__init__()
+            self.param_a = Parameter(Tensor(2, dtype=mstype.int32), name="a")
+            self.param_b = Parameter(Tensor(1, dtype=mstype.int32), name="b")
+
+        def construct(self, x):
+            out = self.param_a
+            if x > self.param_a:
+                self.param_b = self.param_b.add_(2)
+                x = x.add_(self.param_a)
+            out = out.add_(self.param_b)
+            out = out.mul_(x)
+            return out
+
+    x0 = Tensor(3, dtype=mstype.int32)
+    x1 = Tensor(3, dtype=mstype.int32)
+    graph_forward_res = Net()(x0)
+    grad_ops = ops.GradOperation()
+    graph_backward_res = grad_ops(Net())(x1)
+
+    ms.set_context(mode=ms.PYNATIVE_MODE)
+    x2 = Tensor(3, dtype=mstype.int32)
+    x3 = Tensor(3, dtype=mstype.int32)
+    pynative_forward_res = Net()(x2)
+    pynative_backward_res = grad_ops(Net())(x3)
+
+    assert graph_forward_res == pynative_forward_res
+    assert graph_backward_res == pynative_backward_res
 
 
 @arg_mark(plat_marks=['platform_gpu', 'cpu_linux'], level_mark='level0',

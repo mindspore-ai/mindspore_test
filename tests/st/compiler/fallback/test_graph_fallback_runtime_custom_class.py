@@ -47,7 +47,7 @@ def test_getattr_cust_class():
 
     class GetattrClassNet(ms.nn.Cell):
         def __init__(self):
-            super(GetattrClassNet, self).__init__()
+            super().__init__()
             self.cls = GetattrClass()
 
         def construct(self):
@@ -80,7 +80,7 @@ class SelfObjectGetattrNet(ms.nn.Cell):
     """ SelfObjectGetattrNet definition """
 
     def __init__(self, v1, v2):
-        super(SelfObjectGetattrNet, self).__init__()
+        super().__init__()
         self.relu = ms.nn.ReLU()
         self.softmax = ms.nn.Softmax(0)
         self.axis = 0
@@ -121,7 +121,7 @@ class GlobalObjectGetattrNet(ms.nn.Cell):
     """ GlobalObjectGetattrNet definition """
 
     def __init__(self, value1):
-        super(GlobalObjectGetattrNet, self).__init__()
+        super().__init__()
         self.value = value1
 
     @ms.jit
@@ -229,8 +229,8 @@ def test_resolve_cust_class():
     assert output == 200
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level1', card_mark='onecard',
-          essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_resolve_cust_ms_function_call_class():
     """
     Feature: Syntax resolve.
@@ -435,7 +435,7 @@ def test_getattr_cust_class_const():
 
     class GetattrClassNet(ms.nn.Cell):
         def __init__(self):
-            super(GetattrClassNet, self).__init__()
+            super().__init__()
             self.cls = GetattrClass()
 
         def construct(self, x):
@@ -695,7 +695,7 @@ def test_parser_fallback_class_abnormal_call_magic_method():
 
     class Net(nn.Cell):
         def __init__(self, val):
-            super(Net, self).__init__()
+            super().__init__()
             self.val = val
 
         def construct(self):

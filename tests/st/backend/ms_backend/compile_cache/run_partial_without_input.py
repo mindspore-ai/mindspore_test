@@ -74,17 +74,17 @@ class SingleIfNet(nn.Cell):
     def construct(self, x, y):
         x += 1
         out = self.func(x, y)
-        out *= 2
+        out = out * 2
         if self.y > self.z:
             out = out * 2
         return out
 
     def func(self, a, b):
         if a < b:
-            b += a
+            b = b + a
         else:
-            b -= a
-        b += 5
+            b = b - a
+        b = b + 5
         return b
 
 

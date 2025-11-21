@@ -12,15 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+
+"""test while by cell list in while."""
+
 import os
 from tests.mark_utils import arg_mark
 
 
 @arg_mark(
     plat_marks=["platform_ascend", "platform_ascend910b"],
-    level_mark="level1",
+    level_mark="level0",
     card_mark="onecard",
-    essential_mark="unessential",
+    essential_mark="essential",
 )
 def test_while_by_cell_list_in_while():
     """

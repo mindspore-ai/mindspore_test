@@ -1,4 +1,4 @@
-# Copyright 2022 Huawei Technologies Co., Ltd
+# Copyright 2022-2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -44,8 +44,8 @@ def test_if_after_while_in_for_tensor():
     assert res == 13
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
-          essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_if_after_while_in_for_tensor_2():
     """
     Feature: JIT Fallback
@@ -65,6 +65,8 @@ def test_if_after_while_in_for_tensor_2():
         if x + y >= z:
             return y + z
         return y
+
+
     res = control_flow_if_after_while_in_for()
     assert res == 4
 

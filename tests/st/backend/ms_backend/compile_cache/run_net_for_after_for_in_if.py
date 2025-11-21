@@ -50,12 +50,12 @@ class ForAfterForInIfNet(nn.Cell):
         out = self.param_a
         if self.param_a > self.param_b:
             for _ in range(0, 4):
-                self.param_a += 1
-                self.param_b -= 3
-        self.param_b += 10
+                self.param_a = self.param_a + 1
+                self.param_b = self.param_b - 3
+        self.param_b = self.param_b + 10
         for _ in range(0, 5):
-            x += self.param_b
-        out *= x
+            x = x + self.param_b
+        out = out * x
         return out
 
 

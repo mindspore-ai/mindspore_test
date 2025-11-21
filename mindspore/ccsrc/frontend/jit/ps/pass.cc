@@ -832,14 +832,17 @@ OptPassGroupMap GetJitOptPassesAfterCconv(const opt::irpass::OptimizeIRPassLib &
   opt::OptPassConfig updatestate_assign_eliminate = opt::OptPassConfig(opt::irpass::UpdatestateAssignEliminater());
   opt::OptPassConfig updatestate_loads_eliminate = opt::OptPassConfig(opt::irpass::UpdatestateLoadsEliminater());
 
-  OptPassGroupMap map_a({{"c_1", c_1},
-                         {"parameter_eliminate", opt::OptPassConfig(opt::irpass::ParameterEliminator())},
-                         {"updatestate_depend_eliminate", updatestate_depend_eliminate},
-                         {"updatestate_assign_eliminate", updatestate_assign_eliminate},
-                         {"updatestate_loads_eliminate", updatestate_loads_eliminate},
-                         {"cse", opt::OptPassConfig(opt::CSEPass(false))},
-                         {"call_graph_tuple_transform", opt::OptPassConfig({irpass.call_graph_tuple_transform_})},
-                         {"renormalize", opt::OptPassConfig::Renormalize()}});
+  OptPassGroupMap map_a(
+    {{"c_1", c_1},
+     {"parameter_eliminate", opt::OptPassConfig(opt::irpass::ParameterEliminator())},
+     {"updatestate_depend_eliminate", updatestate_depend_eliminate},
+     {"updatestate_assign_eliminate", updatestate_assign_eliminate},
+     {"updatestate_loads_eliminate", updatestate_loads_eliminate},
+     {"cse", opt::OptPassConfig(opt::CSEPass(false))},
+     {"call_graph_tuple_transform", opt::OptPassConfig({irpass.call_graph_tuple_transform_})},
+     {"tuple_list_get_item_eliminator", opt::OptPassConfig({irpass.tuple_list_get_item_eliminator_})},
+     {"none_parameter_eliminate", opt::OptPassConfig(opt::irpass::NoneParameterEliminator())},
+     {"renormalize", opt::OptPassConfig::Renormalize()}});
 
   return map_a;
 }
@@ -857,7 +860,9 @@ OptPassGroupMap GetOptPassesTransformGraph(const opt::irpass::OptimizeIRPassLib 
     irpass.tuple_list_convert_item_index_to_positive_,
   });
 
-  OptPassGroupMap map_a({{"d_1", d_1}, {"renormalize", opt::OptPassConfig::Renormalize()}});
+  OptPassGroupMap map_a({{"d_1", d_1},
+                         {"none_parameter_eliminate", opt::OptPassConfig(opt::irpass::NoneParameterEliminator())},
+                         {"renormalize", opt::OptPassConfig::Renormalize()}});
 
   return map_a;
 }

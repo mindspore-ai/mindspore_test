@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""test control flow for mindrt."""
+
 import numpy as np
 from tests.mark_utils import arg_mark
 import mindspore
@@ -58,7 +60,7 @@ def test_repeat_control_arrow_for_stack_actor():
     x = Tensor(np.array([1]), mindspore.int32)
     net = Net()
     out = net(x)
-    result = 10
+    result = 14
     assert out == result
 
 
