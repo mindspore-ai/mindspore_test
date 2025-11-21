@@ -3924,7 +3924,7 @@ void RunGPTO(const NotNull<KernelGraphPtr> &kernel_graph,
   const auto &backend_jit_config = kernel_graph->backend_jit_config();
   auto it = backend_jit_config.gpto_options.find("mode");
   if (it == backend_jit_config.gpto_options.end()) {
-    MS_LOG(WARNING) << "'mode' not set in gpto_options. Disabling GPTO by default";
+    MS_LOG(INFO) << "'mode' not set in gpto_options. Disabling GPTO by default";
   } else {
     const auto &mode = it->second;
     if (mode == "basic" || mode == "advance") {
