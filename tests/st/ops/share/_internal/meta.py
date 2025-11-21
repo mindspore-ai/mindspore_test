@@ -32,50 +32,16 @@ from mindspore._c_expression import MSContext
 from mindspore.common.dtype import _dtype_to_nptype
 from typing import Optional, Union, List, final
 from tests.st.utils.test_utils import single_golden_compare, double_golden_compare, OpTypes
-from tests.st.ops.share._internal.utils import OpSampleInput, OpDynamicInput, make_tensor, ms_asnumpy
+from tests.st.ops.share._internal.utils import OpSampleInput, OpDynamicInput, is_op_input_dynamic, make_tensor, ms_asnumpy
 from tests.st.ops.share._op_info.op_info import OpInfo
 from tests.st.ops.share._op_info.op_common import get_default_loss, dtypes_extra_uint
 
-class OpsCommonNet(nn.Cell):
-    """Default forward op net wrapper.
 
-    Use this class when a specialized op net is not needed.
+@ms.jit
+def ops_common_net(op, op_input, *op_args, **op_kwargs):
+    """Forward op net wrapper with jit.
     """
-    def __init__(self, op):
-        super().__init__()
-        self.op = op
-
-    def construct(self, op_input, *op_args, **op_kwargs):
-        return self.op(op_input, *op_args, **op_kwargs)
-
-
-class OpsCommonNetNoKwargs(nn.Cell):
-    """Forward op net wrapper without kwargs for grad/dynamic.
-
-    Used in graph mode where kwargs must be converted to args while
-    sens_param=True.
-    """
-    def __init__(self, op):
-        super().__init__()
-        self.op = op
-
-    def construct(self, *op_args):
-        return self.op(*op_args)
-
-
-class OpCommonGradNetFirstInput(nn.Cell):
-    """Gradient network for the first input.
-
-    Before use, ensure op_kwargs are converted to op_args using
-    OpSampleInput.convert_to_args() and append dout to op_args.
-    """
-    def __init__(self, network, *, sens_param=True):
-        super().__init__()
-        self.network = network
-        self.grad = ms.ops.GradOperation(sens_param=sens_param)(self.network)
-
-    def construct(self, *op_args):
-        return self.grad(*op_args)
+    return op(op_input, *op_args, **op_kwargs)
 
 
 class OpCommonGradNetAllInput(nn.Cell):
@@ -84,10 +50,9 @@ class OpCommonGradNetAllInput(nn.Cell):
     Before use, ensure op_kwargs are converted to op_args using
     OpSampleInput.convert_to_args() and append dout to op_args.
     """
-    def __init__(self, network, *, sens_param=True):
+    def __init__(self, op, *, grad_position):
         super().__init__()
-        self.network = network
-        self.grad = ms.ops.GradOperation(get_all=True, sens_param=sens_param)(self.network)
+        self.grad = ms.grad(op, grad_position=grad_position)
 
     def construct(self, *op_args):
         return self.grad(*op_args)
@@ -109,9 +74,9 @@ class OpsFactory():
         self._douts = None
         self._device = None
         self._context_mode = 'pynative'
-        self._op_net_class = OpsCommonNet
-        self._op_net_class_no_kwargs = OpsCommonNetNoKwargs
-        self._op_grad_net_class = OpCommonGradNetAllInput
+        self._op_net_func = ops_common_net
+        self._op_grad_func = None
+        self._op_grad_cell = OpCommonGradNetAllInput
 
         self._parse_op_info(self.op_info)
 
@@ -203,24 +168,22 @@ class OpsFactory():
         return None
 
     @final
-    def update_op_net_class(
+    def update_op_net_func(
             self,
             *,
-            op_net_class=None,
-            op_net_class_no_kwargs=None,
-            op_grad_net_class=None
+            op_net_func=None,
+            op_grad_func=None,
+            op_grad_cell=None
     ):
         """Update forward/grad network wrappers used by the factory.
 
         Args:
-            op_net_class: Net class for standard forward execution.
-            op_net_class_no_kwargs: Net class without kwargs (dynamic/grad).
-            op_grad_net_class: Net class for gradient computation.
+            op_net_func: Net class for standard forward execution.
+            op_grad_func: Function for gradient computation.
         """
-        self._op_net_class = op_net_class if op_net_class is not None else self._op_net_class
-        self._op_net_class_no_kwargs = op_net_class_no_kwargs \
-            if op_net_class_no_kwargs is not None else self._op_net_class_no_kwargs
-        self._op_grad_net_class = op_grad_net_class if op_grad_net_class is not None else self._op_grad_net_class
+        self._op_net_func = op_net_func if op_net_func is not None else self._op_net_func
+        self._op_grad_func = op_grad_func if op_grad_func is not None else self._op_grad_func
+        self._op_grad_cell = op_grad_cell if op_grad_cell is not None else self._op_grad_cell
 
     @final
     def update_inputs(
@@ -386,14 +349,15 @@ class OpsFactory():
         Returns:
             list: Outputs per sample input.
         """
-        op_net = self.op if self._context_mode == 'pynative' else self._op_net_class(self.op)
         out = []
-
         for sample_input in self._sample_inputs:
             if self._inplace_op:
                 sample_input = sample_input.copy()
             op_input, op_args, op_kwargs = sample_input.op_input, sample_input.op_args, sample_input.op_kwargs
-            outi = op_net(op_input, *op_args, **op_kwargs)
+            if self._context_mode == 'pynative':
+                outi = self.op(op_input, *op_args, **op_kwargs)
+            else:
+                outi = self._op_net_func(self.op, op_input, *op_args, **op_kwargs)
             out.append(outi)
 
         return out
@@ -481,33 +445,36 @@ class OpsFactory():
         Returns:
             list: Gradients per sample input.
         """
-        self._douts = None
-        self._generate_random_dout()
+        # TODO: use customized dout when ms.grad supports dout input
+        #self._douts = None
+        #self._generate_random_dout()
 
-        net = self._op_net_class_no_kwargs(self.op_func_without_kwargs)
-        grad_net = self._op_grad_net_class(net)
+        grad_func = self._op_grad_func
         grads = []
 
         def _ms_tensor_supports_grad(t):
             return isinstance(t, ms.Tensor) and (t.dtype.is_floating_point or t.dtype.is_complex)
 
-        for idx, sample_input in enumerate(self._sample_inputs):
+        for sample_input in self._sample_inputs:
             if self._inplace_op:
                 sample_input = sample_input.copy()
             # No-dout args for indexing; with-dout args for actual grad call
             args_no_dout = sample_input.convert_to_args().op_args
             # Use convert_to_args to append dout as a single positional argument (supports multi-output sens)
-            args_with_dout = sample_input.convert_to_args(append_dout=self._douts[idx]).op_args
+            #args_with_dout = sample_input.convert_to_args(append_dout=self._douts[idx]).op_args
 
-            grad_outi = grad_net(*args_with_dout)
-
-            tensor_indices = [i for i, v in enumerate(args_no_dout) if _ms_tensor_supports_grad(v)]
-            if isinstance(grad_outi, (tuple, list)):
-                filtered = tuple(grad_outi[i] for i in tensor_indices)
-            else:
+            # get grad_position (must be int or tuple) and instantiate grad_func
+            tensor_indices = tuple(i for i, v in enumerate(args_no_dout) if _ms_tensor_supports_grad(v))
+            if not tensor_indices:
+                grads.append(tuple())
+                warnings.warn("No tensor inputs to compute gradients for sample input {idx}")
+                continue
+            grad_func = grad_func or ms.grad(self.op_func_without_kwargs, grad_position=tensor_indices)
+            grad_outi = grad_func(*args_no_dout)
+            if not isinstance(grad_outi, (tuple, list)):
                 # Single grad output: keep only if the first input is tensor
-                filtered = (grad_outi,) if tensor_indices and tensor_indices[0] == 0 else tuple()
-            grads.append(filtered)
+                grad_outi = (grad_outi,)
+            grads.append(grad_outi)
 
         return grads
 
@@ -523,7 +490,8 @@ class OpsFactory():
         Returns:
             list[tuple]: Per-sample tuple of gradients matching tensor inputs order.
         """
-        torch_douts = self._generate_random_dout(return_torch_douts=True)
+        # TODO: use customized dout instead of ones_like when ms.grad supports dout input
+        #torch_douts = self._generate_random_dout(return_torch_douts=True)
 
         torch_fn = self.ref
         grads = []
@@ -531,7 +499,7 @@ class OpsFactory():
         def _torch_dtype_supports_grad(t: torch.Tensor) -> bool:
             return torch.is_floating_point(t) or torch.is_complex(t)
 
-        for idx, sample_input in enumerate(self._sample_inputs):
+        for sample_input in self._sample_inputs:
             if self._inplace_op:
                 sample_input = sample_input.copy()
             sample_input = sample_input.astorch(convert_half_to_float=self._convert_half_to_float)
@@ -554,11 +522,13 @@ class OpsFactory():
                 grads.append(tuple())
                 continue
             # Support multi-output backward with matching grad structure
-            dout_i = torch_douts[idx]
+            # dout_i = torch_douts[idx]
             if isinstance(outi, (tuple, list)):
-                torch.autograd.backward(list(outi), grad_tensors=list(dout_i))
+                grad_list = [torch.ones_like(o) for o in outi]
+                torch.autograd.backward(list(outi), grad_tensors=grad_list)
             else:
-                outi.backward(gradient=dout_i)
+                outi_grad = torch.ones_like(outi)
+                outi.backward(gradient=outi_grad)
 
             grad_tuple = []
             for _, tin in tensor_inputs:
@@ -598,18 +568,20 @@ class OpsFactory():
         Returns:
             list: Outputs per dynamic-shape sample.
         """
-        op_net = self._op_net_class_no_kwargs(self.op_func_without_kwargs)
 
-        compile_input = self._dynamic_inputs.op_compile_input.convert_to_args()
-        op_net.set_inputs(*compile_input.op_args)
+        compile_inputs = self._dynamic_inputs.op_compile_input.convert_to_args().op_args
+        _code = self.op_func_without_kwargs.__code__
+        arg_names = _code.co_varnames[:_code.co_argcount]
+        dyn_kwargs = {name: val for name, val in zip(arg_names, compile_inputs) if is_op_input_dynamic(val)}
+
+        dyn_op_func = ms.enable_dynamic(**dyn_kwargs)(ms.jit(self.op_func_without_kwargs))
         out = []
-
         for running_input in self._dynamic_inputs.op_running_inputs:
             if self._inplace_op:
                 running_input = running_input.copy()
 
             running_input = running_input.convert_to_args()
-            outi = op_net(*running_input.op_args)
+            outi = dyn_op_func(*running_input.op_args)
             out.append(outi)
 
         return out
@@ -656,14 +628,19 @@ class OpsFactory():
         Returns:
             list: Gradients per dynamic-shape sample.
         """
-        net = self._op_net_class_no_kwargs(self.op_func_without_kwargs)
-        grad_net = self._op_grad_net_class(net, sens_param=False)
-        compile_input = self._dynamic_inputs.op_compile_input.convert_to_args()
-        grad_net.set_inputs(*compile_input.op_args)
-        grads = []
-
         def _ms_tensor_supports_grad(t):
             return isinstance(t, ms.Tensor) and (t.dtype.is_floating_point or t.dtype.is_complex)
+
+        grads = []
+        compile_inputs = self._dynamic_inputs.op_compile_input.convert_to_args().op_args
+        tensor_indices = tuple(i for i, v in enumerate(compile_inputs) if _ms_tensor_supports_grad(v))
+        if not tensor_indices:
+            grads.append(tuple())
+            warnings.warn("No tensor inputs to compute gradients for compile input")
+            return grads
+
+        grad_net = self._op_grad_cell(self.op_func_without_kwargs, grad_position=tensor_indices)
+        grad_net.set_inputs(*compile_inputs)
 
         for running_input in self._dynamic_inputs.op_running_inputs:
             if self._inplace_op:
@@ -672,15 +649,13 @@ class OpsFactory():
 
             # After convert_to_args, op_input, op_args and op_kwargs are all in op_args now.
             grad_outi = grad_net(*args_no_dout)
-
-            tensor_indices = [i for i, v in enumerate(args_no_dout) if _ms_tensor_supports_grad(v)]
-            if isinstance(grad_outi, (tuple, list)):
-                filtered = tuple(grad_outi[i] for i in tensor_indices)
-            else:
-                filtered = (grad_outi,) if tensor_indices and tensor_indices[0] == 0 else tuple()
-            grads.append(filtered)
+            if not isinstance(grad_outi, (tuple, list)):
+                # Single grad output: keep only if the first input is tensor
+                grad_outi = (grad_outi,)
+            grads.append(grad_outi)
 
         return grads
+
 
     def grad_pytorch_dynamic_shape_impl(
             self,

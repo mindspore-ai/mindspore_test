@@ -423,7 +423,7 @@ def make_tensor(
     def _generate_ndarray(shape, dtype, low, high, random_method):
         def _generate_ndarray_by_random_method(random_method, shape, dtype, low, high):
             if random_method == 'randn':
-                ndarray = np.random.randn(*shape)
+                ndarray = np.clip(np.random.randn(*shape), low, high)
             elif random_method == 'randint':
                 ndarray = np.random.randint(low, high, size=shape)
             elif random_method == 'uniform':
@@ -515,3 +515,36 @@ def skip_sample_inputs(input_func, skip_keywords):
             yield sample_input
 
     return wrapped_func
+
+
+def is_op_input_dynamic(op_input):
+    """Check if op input is dynamic."""
+    DYNAMIC_RANK_DIM = -2
+    DYNAMIC_SHAPE_DIM = -1
+    def is_tensor_dynamic(tensor):
+        return DYNAMIC_RANK_DIM in tensor.shape or DYNAMIC_SHAPE_DIM in tensor.shape
+
+    if isinstance(op_input, ms.Tensor):
+        return is_tensor_dynamic(op_input)
+    if isinstance(op_input, (list, tuple)):
+        result = False
+        for item in op_input:
+            if isinstance(item, ms.Tensor):
+                result = result or is_tensor_dynamic(item)
+            elif isinstance(item, (list, tuple, dict)):
+                result = result or is_op_input_dynamic(item)
+            # skip non-tensor scalars (e.g., int/float/None)
+            if result:
+                break
+        return result
+    if isinstance(op_input, dict):
+        result = False
+        for item in op_input.values():
+            if isinstance(item, ms.Tensor):
+                result = result or is_tensor_dynamic(item)
+            elif isinstance(item, (list, tuple, dict)):
+                result = result or is_op_input_dynamic(item)
+            if result:
+                break
+        return result
+    return False
