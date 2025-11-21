@@ -905,6 +905,14 @@ class OpsFactory():
 
         try:
             print(f"\nsample_name: {self.sample_name}, mode:{self._context_mode}, test_op_dynamic...")
+            if grad_cmp:
+                self.supported_dtypes = tuple(d for d in self.supported_dtypes if d.is_floating_point)
+                if not self.supported_dtypes:
+                    return
+                if ms.float32 in self.supported_dtypes:
+                    dtype = ms.float32
+                else:
+                    dtype = self.supported_dtypes[0]
             for op_dynamic_input in self.op_info.op_dynamic_inputs_func(
                     self.op_info,
                     dtype=dtype,
