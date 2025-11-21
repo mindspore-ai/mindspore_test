@@ -33,6 +33,7 @@
 #include "frontend/parallel/step_parallel_utils.h"
 #include "include/common/utils/parallel_context.h"
 #include "utils/ms_utils.h"
+#include "backend/backend_manager/backend_manager.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
@@ -643,6 +644,12 @@ Resource::Resource(const py::object &obj)
 
 Resource::~Resource() {
   MS_LOG(DEBUG) << "Resource clear";
+
+  if (HasResult(kBuildBackendType) && HasResult(kBuildBackendOutput)) {
+    auto backend_type = GetResult(kBuildBackendType).cast<backend::BackendType>();
+    auto backend_graph_id = GetResult(kBuildBackendOutput).cast<backend::BackendGraphId>();
+    backend::BackendManager::GetInstance().ClearGraph(backend_type, backend_graph_id);
+  }
 
   try {
     mindspore::HashMap<std::string, Any>().swap(results_);

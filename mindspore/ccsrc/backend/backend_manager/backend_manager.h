@@ -73,6 +73,9 @@ class BACKEND_MANAGER_EXPORT BackendManager {
   // Clear the members.
   void Clear();
 
+  // Clear the Build Graph.
+  void ClearGraph(BackendType backend_type, BackendGraphId backend_graph_id);
+
   // convert mindir to ir_format
   void ConvertIR(const FuncGraphPtr &anf_graph,
                  const std::map<std::string, std::shared_ptr<tensor::Tensor>> &init_tensors, IRFormat ir_format,

@@ -120,6 +120,8 @@ class GEBackend : public BackendBase {
                                     std::vector<tensor::TensorPtr> *tuple_tensors,
                                     const std::vector<TypePtr> &output_types);
 
+  void ClearGraph(BackendGraphId backend_graph_id) override;
+
   // for acl dump
   bool DebugOnStepBegin(const KernelGraphPtr &func_graph);
   void DebugOnStepEnd(const KernelGraphPtr &graph, bool dump_flag);
