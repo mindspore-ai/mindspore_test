@@ -1,4 +1,4 @@
-# Copyright 2019-2022 Huawei Technologies Co., Ltd
+# Copyright 2019-2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,16 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
-"""
-Test ManifestDataset
-"""
+"""Test ManifestDataset."""
+
+import subprocess
+import sys
+import textwrap
+
 import numpy as np
 import pytest
 
-import mindspore.dataset as ds
-import mindspore.dataset.vision as vision
-import mindspore.dataset.transforms as data_trans
 from mindspore import log as logger
+import mindspore.dataset as ds
+from mindspore.dataset import vision
+from mindspore.dataset import transforms
 
 DATA_FILE = "../data/dataset/testManifestData/test.manifest"
 
@@ -91,10 +94,10 @@ def test_manifest_dataset_get_class_index():
     """
     data = ds.ManifestDataset(DATA_FILE, decode=True)
     class_indexing = data.get_class_indexing()
-    assert class_indexing == {'cat': 0, 'dog': 1, 'flower': 2}
+    assert class_indexing == {"cat": 0, "dog": 1, "flower": 2}
     data = data.shuffle(4)
     class_indexing = data.get_class_indexing()
-    assert class_indexing == {'cat': 0, 'dog': 1, 'flower': 2}
+    assert class_indexing == {"cat": 0, "dog": 1, "flower": 2}
     count = 0
     for item in data.create_dict_iterator(num_epochs=1):
         logger.info("item[image] is {}".format(item["image"]))
@@ -137,7 +140,7 @@ def test_manifest_dataset_multi_label_onehot():
     """
     data = ds.ManifestDataset(DATA_FILE, decode=True, shuffle=False)
     expect_label = [[[0, 1, 0], [1, 0, 0]], [[1, 0, 0], [1, 0, 1]]]
-    one_hot_encode = data_trans.OneHot(3)
+    one_hot_encode = transforms.OneHot(3)
     data = data.map(operations=one_hot_encode, input_columns=["label"])
     data = data.map(operations=multi_label_hot, input_columns=["label"])
     data = data.batch(2)
@@ -157,7 +160,7 @@ def test_manifest_dataset_get_num_class():
     data = ds.ManifestDataset(DATA_FILE, decode=True, shuffle=False)
     assert data.num_classes() == 3
 
-    padded_samples = [{'image': np.zeros(1, np.uint8), 'label': np.array(1, np.int32)}]
+    padded_samples = [{"image": np.zeros(1, np.uint8), "label": np.array(1, np.int32)}]
     padded_ds = ds.PaddedDataset(padded_samples)
 
     data = data.repeat(2)
@@ -248,16 +251,18 @@ def test_manifest_dataset_error_sample_sourceop():
 
     def test_config(my_error_sample_data_file, my_num_rows):
         # For ManifestDataset, use decode=False
-        data1 = ds.ManifestDataset(my_error_sample_data_file, "eval", num_samples=3, num_parallel_workers=1,
-                                   decode=False)
+        data1 = ds.ManifestDataset(
+            my_error_sample_data_file, "eval", num_samples=3, num_parallel_workers=1, decode=False
+        )
         count = 0
         for _ in data1.create_dict_iterator(num_epochs=1, output_numpy=True):
             count += 1
         assert count == my_num_rows
 
         # For ManifestDataset, use decode=True
-        data2 = ds.ManifestDataset(my_error_sample_data_file, "eval", num_samples=3, num_parallel_workers=1,
-                                   decode=True)
+        data2 = ds.ManifestDataset(
+            my_error_sample_data_file, "eval", num_samples=3, num_parallel_workers=1, decode=True
+        )
         count = 0
         for _ in data2.create_dict_iterator(num_epochs=1, output_numpy=True):
             count += 1
@@ -280,23 +285,24 @@ def test_manifest_dataset_error_sample_mapop_c():
 
     def test_config(my_error_sample_data_file, my_num_rows):
         # For ManifestDataset, use decode=True
-        data3 = ds.ManifestDataset(my_error_sample_data_file, "eval", num_samples=3, num_parallel_workers=1,
-                                   decode=True)
+        data3 = ds.ManifestDataset(
+            my_error_sample_data_file, "eval", num_samples=3, num_parallel_workers=1, decode=True
+        )
         # Add map op to the pipeline
-        data3 = data3.map(operations=[vision.HorizontalFlip()],
-                          input_columns=["image"], num_parallel_workers=1)
+        data3 = data3.map(operations=[vision.HorizontalFlip()], input_columns=["image"], num_parallel_workers=1)
         count = 0
         for _ in data3.create_dict_iterator(num_epochs=1, output_numpy=True):
             count += 1
         assert count == my_num_rows
 
         # For ManifestDataset, use decode=False
-        data4 = ds.ManifestDataset(my_error_sample_data_file, "eval", num_samples=3, num_parallel_workers=1,
-                                   decode=False)
+        data4 = ds.ManifestDataset(
+            my_error_sample_data_file, "eval", num_samples=3, num_parallel_workers=1, decode=False
+        )
         # Add map op to the pipeline
-        data4 = data4.map(operations=[vision.Decode(),
-                                      vision.HorizontalFlip()],
-                          input_columns=["image"], num_parallel_workers=1)
+        data4 = data4.map(
+            operations=[vision.Decode(), vision.HorizontalFlip()], input_columns=["image"], num_parallel_workers=1
+        )
         count = 0
         for _ in data4.create_dict_iterator(num_epochs=1, output_numpy=True):
             count += 1
@@ -319,23 +325,26 @@ def test_manifest_dataset_error_sample_mapop_py():
 
     def test_config(my_error_sample_data_file, my_num_rows):
         # For ManifestDataset, use decode=True
-        data3 = ds.ManifestDataset(my_error_sample_data_file, "eval", num_samples=3, num_parallel_workers=1,
-                                   decode=True)
+        data3 = ds.ManifestDataset(
+            my_error_sample_data_file, "eval", num_samples=3, num_parallel_workers=1, decode=True
+        )
         # Add map op to the pipeline
-        data3 = data3.map(operations=[vision.RandomVerticalFlip(0.8)],
-                          input_columns=["image"], num_parallel_workers=1)
+        data3 = data3.map(operations=[vision.RandomVerticalFlip(0.8)], input_columns=["image"], num_parallel_workers=1)
         count = 0
         for _ in data3.create_dict_iterator(num_epochs=1, output_numpy=True):
             count += 1
         assert count == my_num_rows
 
         # For ManifestDataset, use decode=False
-        data4 = ds.ManifestDataset(my_error_sample_data_file, "eval", num_samples=3, num_parallel_workers=1,
-                                   decode=False)
+        data4 = ds.ManifestDataset(
+            my_error_sample_data_file, "eval", num_samples=3, num_parallel_workers=1, decode=False
+        )
         # Add map op to the pipeline
-        data4 = data4.map(operations=[vision.Decode(to_pil=True),
-                                      vision.RandomVerticalFlip(0.2)],
-                          input_columns=["image"], num_parallel_workers=1)
+        data4 = data4.map(
+            operations=[vision.Decode(to_pil=True), vision.RandomVerticalFlip(0.2)],
+            input_columns=["image"],
+            num_parallel_workers=1,
+        )
         count = 0
         for _ in data4.create_dict_iterator(num_epochs=1, output_numpy=True):
             count += 1
@@ -348,7 +357,45 @@ def test_manifest_dataset_error_sample_mapop_py():
     test_config("../data/dataset/testManifestData/errorSample3_text.manifest", 2)
 
 
-if __name__ == '__main__':
+def test_manifest_dataset_raise_error_with_invalid_utf8():
+    """
+    Feature: ManifestDataset.
+    Description: Test ManifestDataset with wrong dataset file causing the error containing invalid UTF-8.
+    Expectation: No UnicodeDecodeError is raised.
+    """
+    # Run the test logic in a separate Python subprocess and decode the non-UTF8 characters
+    # in the C++ error message before returning to the current pytest process.
+    code = textwrap.dedent(
+        """
+        import numpy as np
+        import pytest
+        import mindspore.dataset as ds
+
+        def run():
+            dataset = ds.ManifestDataset("../data/dataset/testManifestData/train/1.JPEG")
+            iterator = dataset.create_dict_iterator(num_epochs=1, output_numpy=True)
+            with pytest.raises(RuntimeError, match="Invalid manifest file"):
+                next(iterator)
+
+        if __name__ == "__main__":
+            run()
+        """
+    )
+    result = subprocess.run(
+        [sys.executable, "-c", code],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="backslashreplace",
+        check=False,
+    )
+    if result.returncode != 0:
+        if result.stderr:
+            raise RuntimeError(result.stderr)
+    assert result.returncode == 0
+
+
+if __name__ == "__main__":
     test_manifest_dataset_train()
     test_manifest_dataset_eval()
     test_manifest_dataset_class_index()
@@ -361,3 +408,4 @@ if __name__ == '__main__':
     test_manifest_dataset_error_sample_sourceop()
     test_manifest_dataset_error_sample_mapop_c()
     test_manifest_dataset_error_sample_mapop_py()
+    test_manifest_dataset_raise_error_with_invalid_utf8()
