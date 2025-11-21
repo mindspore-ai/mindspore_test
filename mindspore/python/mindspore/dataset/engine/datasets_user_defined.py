@@ -48,7 +48,7 @@ from . import samplers
 from .datasets import UnionBaseDataset, MappableDataset, Schema, to_list, _PythonMultiprocessing
 from .queue import _SharedQueue
 from .validators import check_generator_dataset, check_numpy_slices_dataset, check_padded_dataset
-from ..core.config import get_enable_shared_mem, get_prefetch_size, get_multiprocessing_timeout_interval, \
+from ..core.config import _get_enable_shared_mem, get_prefetch_size, get_multiprocessing_timeout_interval, \
     get_enable_watchdog, get_debug_mode, get_seed, set_seed, get_multiprocessing_start_method, get_video_backend, \
     set_video_backend
 from ..core.datatypes import mstypelist_to_detypelist
@@ -269,7 +269,7 @@ class SamplerFn(cde.PythonMultiprocessingRuntime):
             queue_size = min(queue_size, queue_size * 4 // self.num_worker)
             queue_size = max(2, queue_size)
 
-            if get_enable_shared_mem():
+            if _get_enable_shared_mem():
                 # generator dataset use idx_queue and res_queue to transfer data between main and subprocess
                 # idx_queue is used multiprocess.Queue which is not shared memory, so it's size is 0.
                 # res_queue is used shared memory, so its size is max_rowsize which is defined by user.
@@ -708,7 +708,7 @@ class _GeneratorWorkerMp(multiprocessing.Process):
 
     def __init__(self, dataset, eof, max_rowsize, queue_size, ppid, count, worker_id):
         self.idx_queue = multiprocessing.Queue(queue_size)
-        if get_enable_shared_mem():
+        if _get_enable_shared_mem():
             self.res_queue = _SharedQueue(queue_size, count, max_rowsize=max_rowsize)
         else:
             self.res_queue = multiprocessing.Queue(queue_size)

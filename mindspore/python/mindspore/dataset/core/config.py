@@ -646,6 +646,13 @@ def get_enable_shared_mem():
         >>> shared_mem_flag = ds.config.get_enable_shared_mem()
     """
     logger.warning("'get_enable_shared_mem' is deprecated from version 2.8.0 and will be removed in a future version.")
+    return _get_enable_shared_mem()
+
+
+def _get_enable_shared_mem():
+    """
+    Get the default state of shared mem enabled variable.
+    """
     # For Windows and MacOS we forbid shared mem function temporarily
     enable_shared_mem = _config.get_enable_shared_mem()
     if enable_shared_mem and platform.system().lower() in {"windows", "darwin"}:
