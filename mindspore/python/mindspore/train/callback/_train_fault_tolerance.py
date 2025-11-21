@@ -308,7 +308,7 @@ class TrainFaultTolerance(Callback):
 
     def __init__(self, ckpt_save_path=None, **kwargs):
         super().__init__()
-        logger.info(f"MS_ENABLE_TFT: {os.getenv('MS_ENABLE_TFT', '')}")
+        self.envs = None
         if self._only_enable_tsp():
             self.tft = _tft_handler.get_tft()
             self._check_init()
@@ -534,26 +534,33 @@ class TrainFaultTolerance(Callback):
 
         if self.has_init_replica is False:
             self.has_init_replica = True
+            # stable after training
+            self.envs = os.getenv("MS_ENABLE_TFT", "")
             self._set_tft_optimizer_replica(run_context)
-        if int(direct_copy_to_host(cb_params.network.optimizer.tft_g_one_flag)) != 1:
-            # check overflow: no need end update if overflow
-            self.tft.tft_end_updating_os(cb_params.cur_step_num + self.initial_step)
-            logger.info("END Set optimizer finish step status to TFT.")
         if cb_params.optimizer is not None:
+            self._end_update_report(cb_params.optimizer.tft_g_one_flag, cb_params.cur_step_num)
             self.global_step = cb_params.optimizer.global_step.clone()
             self.assign(cb_params.optimizer.tft_g_one_flag, self.g_one)
         elif hasattr(cb_params.network, 'optimizer') and cb_params.network.optimizer is not None:
+            self._end_update_report(cb_params.network.optimizer.tft_g_one_flag, cb_params.cur_step_num)
             self.global_step = cb_params.network.optimizer.global_step.clone()
             self.assign(cb_params.network.optimizer.tft_g_one_flag, self.g_one)
         else:
             raise ValueError("TFT feature need optimizer or network's optimizer!")
         # pause train
-        envs = os.getenv("MS_ENABLE_TFT", "")
-        if any([opt in envs for opt in ["TSP:1", "ARF:1"]]):  # pylint: disable=R1729
+        if self.envs is None:
+            self.envs = os.getenv("MS_ENABLE_TFT", "")
+        if any([opt in self.envs for opt in ["TSP:1", "ARF:1"]]):  # pylint: disable=R1729
             logger.info("Go into tft_pause_train.")
             self.tft.tft_pause_train(self.cur_step_num)
 
         self._reset_arf_on_step_end(run_context)
+
+    def _end_update_report(self, status, cur_step):
+        if int(direct_copy_to_host(status)) != 1:
+            # check overflow: no need end update if overflow
+            self.tft.tft_end_updating_os(cur_step + self.initial_step)
+            logger.info("End updating step to tft.")
 
     def _reset_arf_on_step_end(self, run_context):
         """reset arf flag on train step end"""
