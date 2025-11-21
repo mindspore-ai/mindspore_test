@@ -871,12 +871,14 @@ class Model:
                                      initialized. Default: ``None``.
         """
         mbuf_size = train_dataset.__transfer_dataset__.get_mbuf_queue_size()
+        start = time.time()
         while mbuf_size == 0:
             time.sleep(10)
             mbuf_size = train_dataset.__transfer_dataset__.get_mbuf_queue_size()
             if mbuf_size != 0:
                 break
-            logger.warning(f"Waiting for the dataset warmup, current device queue size: {mbuf_size}")
+            logger.warning(f"Waiting for the dataset warmup, current device queue size: {mbuf_size}. "
+                           f"Have been waiting for {time.time() - start:.2f} seconds.")
 
     def _init(self, train_dataset=None, valid_dataset=None, sink_size=-1, epoch=1, sink_mode=True):
         """
