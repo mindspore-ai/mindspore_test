@@ -78,16 +78,9 @@ class SuperKernelActor : public DebugAwareActor {
 
   size_t FetchInputNodePosition(const AnfNodePtr &intput_node);
   virtual void FetchInputDeviceTensor(OpContext<KernelTensor> *const context);
-  // The debug related operation interface.
-  void SendDebugReq(OpContext<KernelTensor> *const context) override;
 
-  // The memory related operation interface.
-  void SendMemoryAllocReq(OpContext<KernelTensor> *const context) override;
-  // The callback after memory alloc finished.
-  void OnMemoryAllocFinish(OpContext<KernelTensor> *const context) override;
   // The input may come from the control actor, so need free the input memory by the dynamic ref count.
   void SendMemoryFreeReq(OpContext<KernelTensor> *const context) override;
-  bool CopyInputData(const OpContext<KernelTensor> *context, const KernelGraphPtr &graph);
 
   const KernelGraphPtr &graph() const { return graph_; }
 
@@ -161,9 +154,6 @@ class SuperKernelActor : public DebugAwareActor {
   std::queue<std::vector<KernelTensorPtr>> memory_free_lists_;
 
  protected:
-  bool CopyInputDataPersistedHandle(const DeviceContext *device_context, const KernelTensorPtr &input_kernel_tensor,
-                                    const KernelTensorPtr &node_kernel_tensor, size_t i);
-
   // Generate and initialize all kernel actors by execution order of graph_ for kerkel by kernl execute a sub garph
   // mode.
   void BuildKernelActors();
@@ -189,7 +179,6 @@ class SuperKernelActor : public DebugAwareActor {
                                    size_t output_index);
 
   void RunGraphKernelByKernel(OpContext<KernelTensor> *const context);
-  void FetchPersistentDeviceTensor();
 
   void UpdateMemoryTraceMangerStatus(OpContext<KernelTensor> *const context);
   void SetTraceMemoryForKernel(const KernelRunnerPtr &kernel_actor, bool safe_update = false);
@@ -213,8 +202,6 @@ class SuperKernelActor : public DebugAwareActor {
 
   // Sync dispatch a kernel, including infer/resize/launch.
   void SyncDispatchKernel(OpContext<KernelTensor> *const context, KernelRunner *kernel_actor, bool hp_mode);
-
-  void TrackInputMemory();
 
   void FetchParameterInput(const KernelRunnerPtr &kernel_actor, OpContext<KernelTensor> *const context,
                            size_t stream_id = SIZE_MAX);
