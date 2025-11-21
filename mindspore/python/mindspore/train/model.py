@@ -159,7 +159,7 @@ def _handle_exception_info(obj, uce_env, tft, e):
         force_stop_err = tft.ReportState.RS_NORMAL.value
         tft.tft_report_error(force_stop_err)
     elif "ARF FINISH" in e_str:
-        logger.warning(f"ARF FINISH")
+        logger.warning("ARF FINISH")
         set_is_arf(True)
         tft.tft_report_error(tft.ReportState.RS_PREREPAIR_FINISH.value)
     else:
@@ -455,7 +455,7 @@ def _set_with_processed_inputs(network, inputs):
 
 def _check_tft_reset_dataset():
     env_tft = os.getenv("MS_ENABLE_TFT", "")
-    return any([v in env_tft for v in ["TRE:1", "UCE:1", "HCCE:1", "ARF:1"]])
+    return any(v in env_tft for v in ["TRE:1", "UCE:1", "HCCE:1", "ARF:1"])
 
 
 class Model:
@@ -688,14 +688,14 @@ class Model:
             self._eval_indexes = eval_indexes
         else:
             if self._loss_fn is None:
-                raise ValueError(f"If `metrics` is set, `eval_network` must not be None. Do not set `metrics` if you"
-                                 f" don't want an evaluation.\n"
-                                 f"If evaluation is required, you need to specify `eval_network`, which will be used in"
-                                 f" the framework to evaluate the model.\n"
-                                 f"For the simple scenarios with one data, one label and one logits, `eval_network` is"
-                                 f" optional, and then you can set `eval_network` or `loss_fn`. For the latter case,"
-                                 f" framework will automatically build an evaluation network with `network` and"
-                                 f" `loss_fn`.")
+                raise ValueError("If `metrics` is set, `eval_network` must not be None. Do not set `metrics` if you"
+                                 " don't want an evaluation.\n"
+                                 "If evaluation is required, you need to specify `eval_network`, which will be used in"
+                                 " the framework to evaluate the model.\n"
+                                 "For the simple scenarios with one data, one label and one logits, `eval_network` is"
+                                 " optional, and then you can set `eval_network` or `loss_fn`. For the latter case,"
+                                 " framework will automatically build an evaluation network with `network` and"
+                                 " `loss_fn`.")
             net_inputs = self._network.get_inputs()
             if self._loss_fn.get_inputs() and net_inputs:
                 loss_inputs = _process_loss_inputs(self._loss_fn.get_inputs())
@@ -736,7 +736,7 @@ class Model:
 
     def _get_metrics(self):
         """Get metrics local values."""
-        metrics = dict()
+        metrics = {}
         # There's no need for server to execute eval, just give fake metrics.
         for key, value in self._metric_fns.items():
             metrics[key] = value.eval()
@@ -861,12 +861,14 @@ class Model:
                                      initialized. Default: ``None``.
         """
         mbuf_size = train_dataset.__transfer_dataset__.get_mbuf_queue_size()
+        start = time.time()
         while mbuf_size == 0:
             time.sleep(10)
             mbuf_size = train_dataset.__transfer_dataset__.get_mbuf_queue_size()
             if mbuf_size != 0:
                 break
-            logger.warning(f"Waiting for the dataset warmup, current device queue size: {mbuf_size}")
+            logger.warning(f"Waiting for the dataset warmup, current device queue size: {mbuf_size}. "
+                           f"Have been waiting for {time.time() - start:.2f} seconds.")
 
     def _init(self, train_dataset=None, valid_dataset=None, sink_size=-1, epoch=1, sink_mode=True):
         """
