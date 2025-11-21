@@ -39,6 +39,7 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_g.h"
 #ifdef ENABLE_AKG
 #include "include/runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/graph_kernel_builder.h"
 #endif
@@ -174,9 +175,15 @@ bool ConvertTensorToParameter(const FuncGraphPtr &fg, AnfNodePtrList *inputs_ptr
       }
       auto type_id = tensor->data_type();
       // data is nullptr means uninitialized.
-      if (tensor->unsafe_data() == nullptr || tensor->DataSize() > 1 || !IsFiniteScalar(tensor->data_c(), type_id) ||
-          (type_id == kNumberTypeBool && GraphKernelFlags::GetInstance().kernel_generator == "DVM")) {
+      if (tensor->unsafe_data() == nullptr || tensor->DataSize() > 1 || !IsFiniteScalar(tensor->data_c(), type_id)) {
         (void)value_nodes.insert(tnode);
+      } else if (GraphKernelFlags::GetInstance().kernel_generator == "DVM") {
+        // DVM requires 'grouplist' in GroupedMatMul to be a runtime tensor, not a Python list or constant.
+        bool is_group_list =
+          (IsPrimitiveCNode(cnode, prim::kPrimGroupedMatmul) && type_id == kNumberTypeInt64 && i == kIndex8);
+        if (type_id == kNumberTypeBool || is_group_list) {
+          (void)value_nodes.insert(tnode);
+        }
       }
     }
   }
