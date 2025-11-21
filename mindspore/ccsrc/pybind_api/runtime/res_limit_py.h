@@ -18,7 +18,7 @@
 #define MINDSPORE_CCSRC_PYBIND_API_HAL_RES_LIMIT_PY_H
 #include "pybind11/pybind11.h"
 #include "pybind_api/runtime/stream_py.h"
-#include "runtime/hardware_abstract/device_context/device_context.h"
+#include "include/runtime/hardware_abstract/device_context/device_context.h"
 
 namespace mindspore {
 namespace hal {

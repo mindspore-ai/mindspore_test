@@ -37,6 +37,7 @@
 #include "plugin/ascend/res_manager/stream_manager/ascend_stream_manager.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 #include "mindspore/ops/op_def/framework_ops.h"
+#include "ops_utils/op_utils.h"
 
 namespace mindspore {
 namespace device {
@@ -229,8 +230,8 @@ void AddStreamIdByGroup(const AnfNodePtr &node, DeviceResManager *device_res_man
     } else {
       AnfAlgo::SetStreamId(kDefaultStreamIndex, node.get());
       common::AnfAlgo::SetNodeAttr(kAttrStreamId, MakeValue<uint32_t>(kDefaultStreamIndex), node);
-      MS_LOG(INFO) << "Set stream id by default for node " << node->fullname_with_scope() << ", because group value is "
-                   << group_value->ToString();
+      MS_LOG(INFO) << "Set stream id by default for node " << node->fullname_with_scope()
+                   << ", because group value is not string.";
     }
   }
 }
@@ -423,10 +424,7 @@ void AclStreamAssign::InsertResLimitForNonTaskSink(const NotNull<KernelGraphPtr>
   InsertResLimit(kernel_graph, device_res_manager, stream_res_limit_map, is_dyn_graph);
 }
 
-void AclStreamAssign::AssignStream(
-  const NotNull<KernelGraphPtr> &kernel_graph,
-  const std::vector<std::pair<CNodePtr, std::tuple<char, size_t, size_t, size_t>>> &mock_exec_order,
-  DeviceResManager *device_res_manager) {
+void AclStreamAssign::AssignStream(const NotNull<KernelGraphPtr> &kernel_graph, DeviceResManager *device_res_manager) {
   auto kernels = kernel_graph->execution_order();
   if (kernels.empty()) {
     return;
