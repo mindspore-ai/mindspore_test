@@ -16,14 +16,15 @@
 import os
 from io import BytesIO
 import numpy as np
+import shutil
 
 import mindspore
-import mindspore.nn as nn
+from mindspore import nn
 import mindspore.dataset as ds
 import mindspore.dataset.vision as CV
 import mindspore.dataset.transforms as CT
 from mindspore.dataset.vision import Inter
-from mindspore import context
+from mindspore import context, jit
 from mindspore.common import dtype as mstype
 from mindspore.common.tensor import Tensor
 from mindspore.common.initializer import TruncatedNormal
@@ -82,7 +83,7 @@ def create_dataset():
 
 class LeNet5(nn.Cell):
     def __init__(self):
-        super(LeNet5, self).__init__()
+        super().__init__()
         self.batch_size = 32
         self.conv1 = conv(1, 6, 5)
         self.conv2 = conv(6, 16, 5)
@@ -111,7 +112,7 @@ class LeNet5(nn.Cell):
 
 class WithLossCell(nn.Cell):
     def __init__(self, network):
-        super(WithLossCell, self).__init__(auto_prefix=False)
+        super().__init__(auto_prefix=False)
         self.loss = nn.SoftmaxCrossEntropyWithLogits()
         self.network = network
 
@@ -122,7 +123,7 @@ class WithLossCell(nn.Cell):
 
 class TrainOneStepCell(nn.Cell):
     def __init__(self, network):
-        super(TrainOneStepCell, self).__init__(auto_prefix=False)
+        super().__init__(auto_prefix=False)
         self.network = network
         self.network.set_train()
         self.weights = ParameterTuple(network.trainable_params())
@@ -250,3 +251,36 @@ def test_export_lenet_mindir_with_sm4():
     load_net = nn.GraphCell(load_graph)
     assert isinstance(load_net, nn.GraphCell)
     os.remove(verify_name)
+
+
+def test_export_tensor_add_with_jit():
+    """
+    Feature: Test MindIR Export with jit decorator.
+    Description: Test export as mindir with jit decorator.
+    Expectation: No exception, assert True.
+    """
+
+    @jit
+    def tensor_add(i):
+        a = Tensor([9, 8, 5], mindspore.int32)
+        return a + i
+
+    save_graphs_path = "./test_export_tensor_add_with_jit"
+    os.environ["MS_DEV_SAVE_GRAPHS"] = "1"
+    os.environ["MS_DEV_SAVE_GRAPHS_PATH"] = save_graphs_path
+    os.environ['MS_DEV_DUMP_IR_PASSES'] = 'task_emit'
+
+    if os.path.exists(save_graphs_path):
+        shutil.rmtree(save_graphs_path)
+    try:
+        in_data = Tensor([2, 1, 1], mindspore.int32)
+        file_name = "tensor_add"
+        export(tensor_add, in_data, file_name=file_name, file_format="MINDIR")
+        assert os.path.exists(file_name + ".mindir")
+        assert not os.path.exists(save_graphs_path + '/' + '*task_emit*.ir')
+    finally:
+        os.unsetenv('MS_DEV_SAVE_GRAPHS')
+        os.unsetenv('MS_DEV_SAVE_GRAPHS_PATH')
+        os.unsetenv('MS_DEV_DUMP_IR_PASSES')
+        if os.path.exists(save_graphs_path):
+            shutil.rmtree(save_graphs_path)

@@ -717,7 +717,7 @@ class _JitExecutor:
             return jit_context().run_graph(phase, output, *tuple(new_inputs))
         return output
 
-    def compile(self, method_name, *args, **kwargs):
+    def compile(self, method_name, *args, phase="", **kwargs):
         """Returns pipeline for the given args."""
         # Chose dynamic shape tensors or actual input tensors as compile args.
         self._graph_executor.set_real_args(args, kwargs)
@@ -779,7 +779,7 @@ class _JitExecutor:
         key += "." + _get_hook_key(*args, **kwargs)
         key += "." + str(_hook_version())
 
-        phase = generate_name + '.' + key
+        phase = phase + generate_name + '.' + key
 
         if self.input_signature is None:
             update_auto_dynamic_shape_phase(compile_args, key_id, phase)
