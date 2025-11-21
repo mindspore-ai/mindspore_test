@@ -50,7 +50,7 @@ void MemoryManagerActor::AllocateMemory(const std::vector<KernelTensorPtr> *allo
     try {
       bool success = false;
       if (kernel_tensor->continuous_kernel_tensors() == nullptr) {
-        success = device_context->device_res_manager_->AllocateMemory(device_tensor, kDefaultStreamIndex);
+        success = device_context->device_res_manager_->AllocateMemory(device_tensor, kernel_tensor->alloc_stream_id());
         if (success) {
           static std::string name = "Alloc memory";
           kernel_tensor->IncreaseNewRefCount(name);
@@ -96,7 +96,7 @@ void MemoryManagerActor::AllocateMemoryHP(const std::vector<KernelTensorPtr> *al
     try {
       bool success = false;
       if (kernel_tensor->continuous_kernel_tensors() == nullptr) {
-        success = device_context->device_res_manager_->AllocateMemory(device_tensor, stream_id);
+        success = device_context->device_res_manager_->AllocateMemory(device_tensor, kernel_tensor->alloc_stream_id());
         if (success) {
           static std::string name = "Alloc memory";
           kernel_tensor->IncreaseNewRefCount(name);

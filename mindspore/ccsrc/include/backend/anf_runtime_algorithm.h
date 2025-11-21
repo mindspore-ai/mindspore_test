@@ -171,6 +171,8 @@ class BACKEND_COMMON_EXPORT AnfRuntimeAlgorithm {
   static void SetOutputAddr(const DeviceAddressPtr &addr, size_t output_idx, const AnfNodePtr &node);
   // set output kernel tensor of anf node
   static void SetOutputKernelTensor(const KernelTensorPtr &kernel_tensor, size_t output_idx, AnfNode *node);
+  // set alloc stream id
+  static void SetAllocStreamId(const KernelTensorPtr &kernel_tensor, uint32_t stream_id, const AnfNodePtr &node);
   // set workspace device addr of anf_node
   static void SetWorkspaceAddr(const DeviceAddressPtr &addr, size_t output_idx, const AnfNodePtr &node);
   // set workspace kernel tensor of anf_node

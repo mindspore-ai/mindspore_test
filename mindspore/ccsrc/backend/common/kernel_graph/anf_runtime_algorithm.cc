@@ -1112,6 +1112,14 @@ void AnfRuntimeAlgorithm::SetOutputKernelTensor(const KernelTensorPtr &kernel_te
   }
 }
 
+void AnfRuntimeAlgorithm::SetAllocStreamId(const KernelTensorPtr &kernel_tensor, uint32_t stream_id,
+                                           const AnfNodePtr &node) {
+  if (!common::AnfAlgo::IsCommunicationOp(node)) {
+    MS_LOG(DEBUG) << "Set alloc memory stream id " << stream_id << " for " << node->fullname_with_scope();
+    kernel_tensor->set_alloc_stream_id(stream_id);
+  }
+}
+
 // set workspace device addr of anf_node
 void AnfRuntimeAlgorithm::SetWorkspaceAddr(const DeviceAddressPtr &addr, size_t output_idx, const AnfNodePtr &node) {
   MS_EXCEPTION_IF_NULL(node);

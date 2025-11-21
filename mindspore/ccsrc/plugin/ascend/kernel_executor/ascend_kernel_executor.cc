@@ -57,6 +57,7 @@
 #include "kernel/ascend/internal/internal_kernel_build.h"
 #include "kernel/ascend/custom/kernel_mod_impl/custom_kernel_build.h"
 #include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/kernel_packet/kernel_packet_infer_functor.h"
+#include "include/runtime/hardware_abstract/kernel_base/graph_fusion/framework_utils.h"
 #include "kernel/ascend/kernel_packet/kernel_mod_impl/kernel_packet_ascend_kernel_mod.h"
 #include "plugin/ascend/res_manager/mbuf_manager/tensorreport_utils.h"
 #include "plugin/ascend/res_manager/hal_manager/ascend_hal_manager.h"
@@ -179,6 +180,36 @@ bool GenerateKernelMod(const std::vector<CNodePtr> &kernels) {
     AnfAlgo::SetKernelMod(kernel_mod_ptr, kernel.get());
   }
   return true;
+}
+
+void ExecKernelModResize(const KernelGraphPtr &kernel_graph) {
+  MS_EXCEPTION_IF_NULL(kernel_graph);
+  auto nodes = kernel_graph->execution_order();
+  for (const auto &kernel : nodes) {
+    MS_EXCEPTION_IF_NULL(kernel);
+    if (AnfAlgo::IsKernelSelectBackoffOp(kernel)) {
+      continue;
+    }
+    auto kernel_mod = AnfAlgo::GetKernelMod(kernel);
+    MS_EXCEPTION_IF_NULL(kernel_mod);
+    auto cnode = kernel->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(cnode);
+    auto kernel_type = AnfAlgo::GetKernelType(kernel);
+    std::string opname = common::AnfAlgo::GetCNodeName(kernel);
+    MS_LOG(DEBUG) << "kernel opname:" << opname << ", kernel type:" << GetKernelTypeStr(kernel_type);
+    if (kernel_type == KernelType::OPAPI_KERNEL) {
+      auto prim = kernel_mod->primitive();
+      prim->set_attr(kAttrStreamId, MakeValue<uint32_t>(AnfAlgo::GetStreamId(kernel)));
+    }
+    if (kernel::CheckResizeCondition(cnode)) {
+      std::vector<KernelTensor *> input_kernel_tensors = AnfAlgo::GetOrCreateAllInputKernelTensors(kernel);
+      std::vector<KernelTensor *> output_kernel_tensors = AnfAlgo::GetOrCreateAllOutputKernelTensors(kernel);
+      if (kernel_mod->Resize(input_kernel_tensors, output_kernel_tensors) == kernel::KRET_RESIZE_FAILED) {
+        MS_LOG(EXCEPTION) << "#dmsg#Kernel resize failed:#dmsg#internal kernel op[" << cnode->fullname_with_scope()
+                          << "] Resize failed.";
+      }
+    }
+  }
 }
 
 kernel::KernelModPtr CreateKernelPacketKernelMod(const CNodePtr &kernel) {
@@ -1055,6 +1086,7 @@ void AscendKernelExecutor::CreateKernel(const std::vector<CNodePtr> &nodes) cons
     OptimizeExecutionOrder(NOT_NULL(func_graph));
   } else {
     MS_LOG(INFO) << "Skip optimize after create kernel for:" << kernel_graph->ToString();
+    ExecKernelModResize(kernel_graph);
   }
   (void)profiler::CollectHostInfo("Ascend", "CreateKernel", "CreateGeKernel", start_time, profiler::GetClockSyscnt(),
                                   1);
@@ -1146,7 +1178,7 @@ void CreateEventKernelMod(const KernelGraphPtr &kernel_graph) {
   auto nodes = kernel_graph->execution_order();
   for (auto &node : nodes) {
     MS_EXCEPTION_IF_NULL(node);
-    if (!IsOneOfPrimitiveCNode(node, {prim::kPrimStreamSend, prim::kPrimStreamRecv})) {
+    if (!IsOneOfPrimitiveCNode(node, {prim::kPrimStreamSend, prim::kPrimStreamRecv, prim::kPrimResLimit})) {
       continue;
     }
     device::ascend::GenerateKernelBuildInfo(node, RT_KERNEL);
@@ -1247,6 +1279,7 @@ void AscendKernelExecutor::PreprocessBeforeRun(const FuncGraphPtr &graph) const 
   ResetNodeIds({kernel_graph});
   DoStreamAssign(kernel_graph);
   CreateEventKernelMod(kernel_graph);
+  ExecKernelModResize(kernel_graph);
   kernel_graph->PrintGraphExecuteOrder();
   DoSomas(NOT_NULL(graph));
   (void)profiler::CollectHostInfo("Ascend", "PreprocessBeforeRun", "GePreprocess", start_time,

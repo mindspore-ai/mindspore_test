@@ -547,7 +547,9 @@ void DeviceAddressUtils::CreateKernelOutputDeviceAddress(const DeviceContext *de
         {kernel, i}, nullptr, address_size, output_format, output_type, AnfAlgo::GetRuntimePaddingShape(kernel, i),
         device::GetDeviceNameByType(real_device_context->device_context_key().device_type_),
         real_device_context->device_context_key().device_id_, user_data);
-      kernel_tensor->set_stream_id(AnfAlgo::GetStreamId(kernel));
+      auto stream_id = AnfAlgo::GetStreamId(kernel);
+      kernel_tensor->set_stream_id(stream_id);
+      AnfAlgo::SetAllocStreamId(kernel_tensor, stream_id, kernel);
       MS_LOG(DEBUG) << "Kernel tensor created without set stream id, but set after device address created.";
       auto device_address = kernel_tensor->device_address();
       MS_EXCEPTION_IF_NULL(device_address);
@@ -657,7 +659,9 @@ void DeviceAddressUtils::CreateKernelWorkspaceDeviceAddress(const DeviceContext 
         AnfAlgo::CreateKernelTensor(nullptr, workspace_sizes[i], Format::DEFAULT_FORMAT, kTypeUnknown, ShapeVector(),
                                     device::GetDeviceNameByType(real_device_context->device_context_key().device_type_),
                                     real_device_context->device_context_key().device_id_);
-      kernel_tensor->set_stream_id(AnfAlgo::GetStreamId(kernel));
+      auto stream_id = AnfAlgo::GetStreamId(kernel);
+      kernel_tensor->set_stream_id(stream_id);
+      AnfAlgo::SetAllocStreamId(kernel_tensor, stream_id, kernel);
       auto device_address = kernel_tensor->device_address();
       MS_LOG(DEBUG) << "Create addr for node:" << kernel->fullname_with_scope()
                     << " kernel tensor:" << kernel_tensor->ToString();

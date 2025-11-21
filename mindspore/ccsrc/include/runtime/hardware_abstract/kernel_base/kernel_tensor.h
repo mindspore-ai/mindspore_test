@@ -377,6 +377,12 @@ class RUNTIME_HARDWARE_EXPORT KernelTensor : public AbstractBase {
   // Set logical stream id.
   void set_stream_id(uint32_t stream_id) { device_address_->set_stream_id(stream_id); }
 
+  // Get logical stream id for memory alloc.
+  uint32_t alloc_stream_id() const { return alloc_stream_id_; }
+
+  // Set logical stream id for memory alloc.
+  void set_alloc_stream_id(uint32_t stream_id) { alloc_stream_id_ = stream_id; }
+
   // Get task id on stream.
   std::shared_ptr<int64_t> task_id_on_stream() const { return task_id_on_stream_; }
 
@@ -584,6 +590,8 @@ class RUNTIME_HARDWARE_EXPORT KernelTensor : public AbstractBase {
   mutable std::mutex ptr_mutex_;
   bool managed_by_somas_{false};
   RefCountPtr ref_cnt_;
+  // stream id for memory alloc
+  uint32_t alloc_stream_id_{0};
 };
 
 using KernelTensorPtr = std::shared_ptr<KernelTensor>;

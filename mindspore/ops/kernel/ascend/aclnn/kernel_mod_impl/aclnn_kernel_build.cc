@@ -55,12 +55,7 @@ KernelModPtr AclnnOpBuild(const AnfNodePtr &anf_node) {
 
   auto cnode = anf_node->cast<CNodePtr>();
   MS_EXCEPTION_IF_NULL(cnode);
-  if (CheckResizeCondition(cnode)) {
-    if (kernel_ptr->Resize(input_kernel_tensors, output_kernel_tensors) == KRET_RESIZE_FAILED) {
-      MS_LOG_WITH_NODE(EXCEPTION, cnode) << "#dmsg#Kernel build failed:#dmsg#hostapi kernel op["
-                                         << cnode->fullname_with_scope() << "] Resize failed.";
-    }
-  } else {
+  if (!CheckResizeCondition(cnode)) {
     static std::once_flag set_dynamic_flag;
     std::call_once(set_dynamic_flag, [kernel_ptr]() { kernel_ptr->SetDynamic(true); });
   }

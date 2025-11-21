@@ -59,6 +59,7 @@ constexpr auto kSendOpName = "Send";
 constexpr auto kReceiveOpName = "Receive";
 constexpr auto kStreamSendOpName = "StreamSend";
 constexpr auto kStreamRecvOpName = "StreamRecv";
+constexpr auto kResLimitOpName = "ResLimit";
 constexpr auto kRaiseOpName = "raise";
 constexpr auto kFormatOpName = "Format";
 constexpr auto kMoveToOpName = "MoveTo";

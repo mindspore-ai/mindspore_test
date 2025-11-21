@@ -156,6 +156,13 @@ class ASCEND_RES_MANAGER_EXPORT AscendResManager : public DeviceResManager {
   bool DestroyEvent(const DeviceEventPtr &event) override;
   bool DestroyAllEvents() override;
 
+  void GetDeviceLimit(int32_t device_id, uint32_t *cube_num, uint32_t *vector_num) override;
+  void SetDeviceLimit(int32_t device_id, int32_t cube_num, int32_t vector_num) override;
+  void GetStreamLimit(size_t stream_id, uint32_t *cube_num, uint32_t *vector_num) override;
+  void SetStreamLimit(size_t stream_id, int32_t cube_num, int32_t vector_num) override;
+  void ResetStreamLimit(size_t stream_id) override;
+  void UseStreamResInCurrentThread(size_t stream_id) override;
+  void SetEnableStreamLimit() override;
   bool single_op_multi_stream_enable() const override;
   void set_single_op_multi_stream_enable(bool single_op_multi_stream_enable) override;
   // Only used in graph_mode with MS_DISABLE_REF_MODE, delete it when delete MS_DISABLE_REF_MODEF
@@ -250,6 +257,8 @@ class ASCEND_RES_MANAGER_EXPORT AscendResManager : public DeviceResManager {
   std::mutex device_events_mutex_;
   uint32_t device_id_{0};
   bool enable_memory_tracker_{false};
+  std::atomic<bool> enable_res_limit_ = false;
+  size_t prev_set_stream_id_ = UINT32_MAX;
 };
 }  // namespace ascend
 }  // namespace device

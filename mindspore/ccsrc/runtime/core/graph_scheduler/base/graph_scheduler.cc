@@ -2630,6 +2630,12 @@ CopyActor *GraphScheduler::CreateCopyActor(AbstractActor *const from_actor, Abst
   CopyActor *copy_actor = dynamic_cast<CopyActor *>(FetchActor(name));
   // Link between from actor and copy actor.
   if (copy_actor == nullptr) {
+    auto to_kernel = to_kernel_with_input_idx.first;
+    if ((from_kernel->isa<CNode>() && from_kernel->cast<CNodePtr>()->HasAttr(kAttrStreamId)) ||
+        (to_kernel->isa<CNode>() && to_kernel->cast<CNodePtr>()->HasAttr(kAttrStreamId))) {
+      MS_LOG(INTERNAL_EXCEPTION)
+        << "#dmsg#Runtime error info:#dmsg#Currently not supported usr set stream for heterogeneous scenarios.";
+    }
     KernelGraphPtr from_graph = nullptr;
     if (from_actor->type() == KernelTransformType::kSuperKernelActor ||
         from_actor->type() == KernelTransformType::kAnyTypeKernelActor) {

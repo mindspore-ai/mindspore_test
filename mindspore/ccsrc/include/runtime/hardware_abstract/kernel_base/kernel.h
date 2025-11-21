@@ -191,7 +191,7 @@ class RUNTIME_HARDWARE_EXPORT KernelMod {
 
  protected:
   std::string kernel_name_;
-  PrimitivePtr primitive_;
+  PrimitivePtr primitive_{nullptr};
   uint32_t device_id_ = 0;
   std::vector<size_t> input_size_list_;
   std::vector<size_t> output_size_list_;

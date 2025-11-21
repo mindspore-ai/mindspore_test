@@ -1740,6 +1740,105 @@ bool AscendResManager::DestroyAllEvents() {
   return true;
 }
 
+void AscendResManager::GetDeviceLimit(int32_t device_id, uint32_t *cube_num, uint32_t *vector_num) {
+  MS_EXCEPTION_IF_NULL(cube_num);
+  MS_EXCEPTION_IF_NULL(vector_num);
+  int32_t dev = device_id;
+  if (device_id == -1) {
+    dev = device_id_;
+  }
+  auto ret = CALL_ASCEND_API(aclrtGetDeviceResLimit, dev, aclrtDevResLimitType::ACL_RT_DEV_RES_CUBE_CORE, cube_num);
+  if (ret != ACL_SUCCESS) {
+    MS_LOG(EXCEPTION) << "Call aclrtGetDeviceResLimit failed! Error flag is " << ret;
+  }
+  ret = CALL_ASCEND_API(aclrtGetDeviceResLimit, dev, aclrtDevResLimitType::ACL_RT_DEV_RES_VECTOR_CORE, vector_num);
+  if (ret != ACL_SUCCESS) {
+    MS_LOG(EXCEPTION) << "Call aclrtGetDeviceResLimit failed! Error flag is " << ret;
+  }
+}
+
+void AscendResManager::SetDeviceLimit(int32_t device_id, int32_t cube_num, int32_t vector_num) {
+  enable_res_limit_ = true;
+  int32_t dev = device_id;
+  if (device_id != -1) {
+    dev = device_id_;
+  }
+  if (cube_num > 0) {
+    auto ret = CALL_ASCEND_API(aclrtSetDeviceResLimit, dev, aclrtDevResLimitType::ACL_RT_DEV_RES_CUBE_CORE,
+                               static_cast<uint32_t>(cube_num));
+    if (ret != ACL_SUCCESS) {
+      MS_LOG(EXCEPTION) << "Call aclrtSetDeviceResLimit failed! Error flag is " << ret;
+    }
+  }
+  if (vector_num > 0) {
+    auto ret = CALL_ASCEND_API(aclrtSetDeviceResLimit, dev, aclrtDevResLimitType::ACL_RT_DEV_RES_VECTOR_CORE,
+                               static_cast<uint32_t>(vector_num));
+    if (ret != ACL_SUCCESS) {
+      MS_LOG(EXCEPTION) << "Call aclrtSetDeviceResLimit failed! Error flag is " << ret;
+    }
+  }
+}
+
+void AscendResManager::GetStreamLimit(size_t stream_id, uint32_t *cube_num, uint32_t *vector_num) {
+  auto stream = AscendStreamMng::GetInstance().GetStream(stream_id);
+  MS_EXCEPTION_IF_NULL(cube_num);
+  MS_EXCEPTION_IF_NULL(vector_num);
+  auto ret = CALL_ASCEND_API(aclrtGetStreamResLimit, stream, aclrtDevResLimitType::ACL_RT_DEV_RES_CUBE_CORE, cube_num);
+  if (ret != ACL_SUCCESS) {
+    MS_LOG(EXCEPTION) << "Call aclrtGetStreamResLimit failed! Error flag is " << ret;
+  }
+  ret = CALL_ASCEND_API(aclrtGetStreamResLimit, stream, aclrtDevResLimitType::ACL_RT_DEV_RES_VECTOR_CORE, vector_num);
+  if (ret != ACL_SUCCESS) {
+    MS_LOG(EXCEPTION) << "Call aclrtGetStreamResLimit failed! Error flag is " << ret;
+  }
+}
+void AscendResManager::SetStreamLimit(size_t stream_id, int32_t cube_num, int32_t vector_num) {
+  enable_res_limit_ = true;
+  auto stream = AscendStreamMng::GetInstance().GetStream(stream_id);
+  if (cube_num > 0) {
+    auto ret = CALL_ASCEND_API(aclrtSetStreamResLimit, stream, aclrtDevResLimitType::ACL_RT_DEV_RES_CUBE_CORE,
+                               static_cast<uint32_t>(cube_num));
+    if (ret != ACL_SUCCESS) {
+      MS_LOG(EXCEPTION) << "Call aclrtSetStreamResLimit failed! Error flag is " << ret;
+    }
+  }
+  if (vector_num > 0) {
+    auto ret = CALL_ASCEND_API(aclrtSetStreamResLimit, stream, aclrtDevResLimitType::ACL_RT_DEV_RES_VECTOR_CORE,
+                               static_cast<uint32_t>(vector_num));
+    if (ret != ACL_SUCCESS) {
+      MS_LOG(EXCEPTION) << "Call aclrtSetStreamResLimit failed! Error flag is " << ret;
+    }
+  }
+}
+
+void AscendResManager::ResetStreamLimit(size_t stream_id) {
+  auto stream = AscendStreamMng::GetInstance().GetStream(stream_id);
+  auto ret = CALL_ASCEND_API(aclrtResetStreamResLimit, stream);
+  if (ret != ACL_SUCCESS) {
+    MS_LOG(EXCEPTION) << "Call aclrtResetStreamResLimit failed! Error flag is " << ret;
+  }
+}
+
+void AscendResManager::UseStreamResInCurrentThread(size_t stream_id) {
+  if (!enable_res_limit_) {
+    return;
+  }
+  if (prev_set_stream_id_ == stream_id) {
+    return;
+  }
+  auto stream = AscendStreamMng::GetInstance().GetStream(stream_id);
+  auto ret = CALL_ASCEND_API(aclrtUseStreamResInCurrentThread, stream);
+  if (ret != ACL_SUCCESS) {
+    MS_LOG(EXCEPTION) << "Call aclrtUseStreamResInCurrentThread failed! Error flag is " << ret;
+  }
+  prev_set_stream_id_ = stream_id;
+}
+
+void AscendResManager::SetEnableStreamLimit() {
+  MS_LOG(DEBUG) << "Enter SetEnableStreamLimit";
+  enable_res_limit_ = true;
+}
+
 bool AscendResManager::GetMemUceInfo(int32_t device_id) {
   aclrtMemUceInfo info[MAX_MEM_UCE_INFO_ARRAY_SIZE];
   size_t retSize = 0;
