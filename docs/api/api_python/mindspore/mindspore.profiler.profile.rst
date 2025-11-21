@@ -43,11 +43,12 @@ mindspore.profiler.profile
 
     .. py:method:: add_metadata_json(key, value)
 
-        上报自定义metadata键值对value为json字符串数据。
+        上报自定义metadata键值对，value为json字符串数据。
 
         参数：
             - **key** (str) - metadata键值对的key。
             - **value** (str) - metadata键值对的value，格式为json字符串。
+
     .. py:method:: start()
 
         开启profile数据采集。可以按条件开启profile。

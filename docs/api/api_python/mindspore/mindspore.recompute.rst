@@ -18,7 +18,7 @@ mindspore.recompute
         - **\*\*kwargs** - 其他参数。
 
     返回：
-        同block的返回类型相同。
+        同 `block` 的返回类型相同。
 
     异常：
         - **TypeError** - 如果 `block` 不是Cell对象。
