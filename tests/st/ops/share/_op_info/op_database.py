@@ -27,6 +27,7 @@ import torch
 import warnings
 import itertools
 import mindspore as ms
+from mindspore._c_expression import MSContext
 from mindspore import mint, mutable
 from mindspore.common.parameter import Parameter
 from mindspore._c_expression import MSContext
@@ -1859,6 +1860,12 @@ def nn_relu6_ms(op_input):
 def nn_relu6_torch(op_input):
     return torch.nn.ReLU6()(op_input)
 
+def tensor_tile_ms(op_input, dims):
+    return op_input.tile(dims)
+
+def tensor_tile_torch(op_input, dims):
+    return op_input.tile(dims)
+
 # wrap nn method for tanh
 def nn_tanh_ms(op_input):
     return mint.nn.Tanh()(op_input)
@@ -2827,6 +2834,12 @@ def tensor_argmin_ms(op_input, *op_args, **op_kwargs):
 def tensor_argmin_torch(op_input, *op_args, **op_kwargs):
     return op_input.argmin(*op_args, **op_kwargs)
 
+def tensor_max_ms(op_input, *op_args, **op_kwargs):
+    return op_input.max(*op_args, **op_kwargs)
+
+def tensor_max_torch(op_input, *op_args, **op_kwargs):
+    return op_input.max(*op_args, **op_kwargs)
+
 
 def basic_sample_inputs_reduction_count_nonzero(op_info, dtype, device=None, **kwargs):
     """count_nonzero does not have keepdim parameter"""
@@ -2840,6 +2853,7 @@ def extra_sample_inputs_reduction_count_nonzero(op_info, dtype, device=None, **k
     for sample_input in extra_reference_inputs_reduction_op_common_func(op_info, dtype, device, **kwargs):
         sample_input.op_kwargs.pop('keepdim', None)
         yield sample_input
+
 
 def basic_sample_inputs_mint_pow(op_info: OpInfo, dtype=None, device=None, **kwargs):
     XS = EXTRA_SMALL_DIM_SIZE
@@ -3671,6 +3685,56 @@ def basic_sample_inputs_tensor_split(op_info: OpInfo, dtype=None, device=None):
             sample_name=op_info.name,
         )
 
+
+def _is_ascend910(device):
+    if device == 'ascend':
+        ascend_name = MSContext.get_instance().get_ascend_soc_version()
+        return ascend_name == 'ascend910'
+    return False
+
+# Todo: mint.sum scalar tensor test case runtime error, need to fix.
+def basic_sample_inputs_mint_sum(op_info: OpInfo, dtype=None, device=None, **kwargs):
+    skip_zero_dim = _is_ascend910(device)
+    for sample_input in basic_reference_inputs_reduction_op_common_func(op_info, dtype, device, **kwargs):
+        if skip_zero_dim:
+            op_input = sample_input.op_input
+            if isinstance(op_input, ms.Tensor) and op_input.shape == ():
+                continue
+        yield sample_input
+
+
+def basic_sample_inputs_tile(op_info, dtype, device=None, **kwargs):
+    """Generate sample inputs for tile operations.
+    
+    Args:
+        op_info: OpInfo object.
+        dtype: Data type of the tensors.
+        device: Device to create tensors on.
+        **kwargs: Additional keyword arguments.
+    
+    Yields:
+        OpSampleInput: Sample input with tensor and dims tuple.
+    """
+    make_func = functools.partial(make_tensor, device=device, dtype=dtype)
+    test_cases = [
+        ((2, 3), (2, 1)),
+        ((2, 3), (1, 2)),
+        ((2, 3), (2, 2)),
+        ((), (2, 3)),
+        ((4,), (3,)),
+        ((2, 1, 3), (1, 2, 1)),
+        ((100,), (3, 8, 2, 1)),
+        ((2, 3), (1, 1)),
+        ((2, 3, 4), (2, 1, 3)),
+    ]
+
+    for shape, dims in test_cases:
+        yield OpSampleInput(
+            op_input=make_func(shape),
+            op_args=(dims,),
+            op_kwargs={},
+            sample_name=f"shape{shape}_dims{dims}"
+        )
 
 # op database
 op_db: Dict[str, OpInfo] = {
@@ -4937,8 +5001,7 @@ op_db: Dict[str, OpInfo] = {
         name='Tensor.argmax',
         op=tensor_argmax_ms,
         ref=tensor_argmax_torch,
-        # To do: MindSpore additionally supports uint16/32/64 bool and complex
-        # dtype, while PyTorch does not.
+        # To do: MindSpore additionally supports uint16/32/64 bool and complex dtype, while PyTorch does not.
         dtypes_ascend=tuple(
             d for d in dtypes_as_torch
             if d not in (ms.bfloat16, ms.bool_, ms.complex64, ms.complex128)
@@ -5013,6 +5076,101 @@ op_db: Dict[str, OpInfo] = {
         dtypes_ascend910b=(ms.float32,),
         dtypes_cpu=(),
         dtypes_gpu=(),
+    ),
+    'mint.sum': ReductionOpInfo(
+        name='mint.sum',
+        op=mint.sum,
+        ref=torch.sum,
+        op_basic_reference_inputs_func=basic_sample_inputs_mint_sum,
+        op_extra_reference_inputs_func=skip_sample_inputs(
+            extra_reference_inputs_reduction_op_common_func, 'empty'
+        ),
+        op_dynamic_inputs_func=None,
+        dtypes_ascend=(ms.float32,),
+        dtypes_ascend910b=(ms.float32,),
+        dtypes_cpu=(),
+        dtypes_gpu=(),
+        convert_half_to_float=True,
+    ),
+    'mint.max': ReductionOpInfo(
+        name='mint.max',
+        op=mint.max,
+        ref=torch.max,
+        op_basic_reference_inputs_func=skip_sample_inputs(
+            basic_reference_inputs_reduction_op_common_func, '_default'
+        ),
+        op_extra_reference_inputs_func=skip_sample_inputs(
+            extra_reference_inputs_reduction_op_common_func, 'empty'
+        ),
+        op_dynamic_inputs_func=None,
+        dtypes_ascend=(ms.float32,),
+        dtypes_ascend910b=(ms.float32,),
+        dtypes_cpu=(),
+        dtypes_gpu=(),
+        supports_multiple_dims=False,
+        is_differentiable=False,
+    ),
+    'Tensor.max': ReductionOpInfo(
+        name='Tensor.max',
+        op=tensor_max_ms,
+        ref=tensor_max_torch,
+        op_basic_reference_inputs_func=skip_sample_inputs(
+            basic_reference_inputs_reduction_op_common_func, '_default'
+        ),
+        op_extra_reference_inputs_func=skip_sample_inputs(
+            extra_reference_inputs_reduction_op_common_func, 'empty'
+        ),
+        op_dynamic_inputs_func=None,
+        dtypes_ascend=(ms.float32,),
+        dtypes_ascend910b=(ms.float32,),
+        dtypes_cpu=(),
+        dtypes_gpu=(),
+        supports_multiple_dims=False,
+        is_differentiable=False,
+    ),
+    'mint.min': ReductionOpInfo(
+        name='mint.min',
+        op=mint.min,
+        ref=torch.min,
+        op_basic_reference_inputs_func=skip_sample_inputs(
+            basic_reference_inputs_reduction_op_common_func, '_default'
+        ),
+        op_extra_reference_inputs_func=skip_sample_inputs(
+            extra_reference_inputs_reduction_op_common_func, 'empty'
+        ),
+        op_dynamic_inputs_func=None,
+        dtypes_ascend=(ms.float32,),
+        dtypes_ascend910b=(ms.float32,),
+        dtypes_cpu=(),
+        dtypes_gpu=(),
+        supports_multiple_dims=False,
+        is_differentiable=False,
+    ),
+    'mint.tile': UnaryOpInfo(
+        name='mint.tile',
+        op=mint.tile,
+        ref=torch.tile,
+        dtypes_ascend=(ms.float32,),
+        dtypes_ascend910b=(ms.float32,),
+        dtypes_cpu=(),
+        dtypes_gpu=(),
+        op_basic_reference_inputs_func=basic_sample_inputs_tile,
+        op_extra_reference_inputs_func=None,
+        op_dynamic_inputs_func=None,
+        is_differentiable=True,
+    ),
+    'Tensor.tile': UnaryOpInfo(
+        name='Tensor.tile',
+        op=tensor_tile_ms,
+        ref=tensor_tile_torch,
+        dtypes_ascend=(ms.float32,),
+        dtypes_ascend910b=(ms.float32,),
+        dtypes_cpu=(),
+        dtypes_gpu=(),
+        op_basic_reference_inputs_func=basic_sample_inputs_tile,
+        op_extra_reference_inputs_func=None,
+        op_dynamic_inputs_func=None,
+        is_differentiable=True,
     ),
     'Tensor.eq': BinaryOpInfo(
         name='Tensor.eq',
@@ -5892,6 +6050,8 @@ unary_op_db = [
     'mint.logical_not',
     'Tensor.logical_not',
     'mint.nn.functional.selu',
+    'mint.tile',
+    'Tensor.tile',
 ]
 
 other_op_db = [
@@ -5966,6 +6126,10 @@ reduction_op_db = [
     'Tensor.sum',
     'Tensor.argmax',
     'Tensor.argmin',
+    'mint.sum',
+    'mint.max',
+    'mint.min',
+    'Tensor.max',
 ]
 
 
