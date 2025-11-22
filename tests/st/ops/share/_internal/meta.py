@@ -840,11 +840,13 @@ class OpsFactory():
                         ):
                             self.compare_with_torch(sample_inputs=sample_input)
         except Exception as e:
-            print(f"\ntest_op_reference failed:"
-                  f"\nsample_name: {self.sample_name}"
-                  f"\nmode: {self._context_mode}"
-                  f"\ndtype: {dtype}"
-                  f"\n{sample_input.summary(True)}")
+            error_msg = (f"\ntest_op_reference failed:"
+                        f"\nsample_name: {self.sample_name}"
+                        f"\nmode: {self._context_mode}"
+                        f"\ndtype: {dtype}")
+            if 'sample_input' in locals():
+                error_msg += f"\n{sample_input.summary(True)}"
+            print(error_msg)
             raise e
 
     def test_op_dynamic(
@@ -895,10 +897,12 @@ class OpsFactory():
                 else:
                     self.compare_with_torch_dynamic(op_dynamic_inputs=op_dynamic_input)
         except Exception as e:
-            print(f"\ntest_op_dynamic failed:"
-                  f"\nsample_name: {self.sample_name}"
-                  f"\nmode: {self._context_mode}"
-                  f"\n{op_dynamic_input.summary()}")
+            error_msg = (f"\ntest_op_dynamic failed:"
+                        f"\nsample_name: {self.sample_name}"
+                        f"\nmode: {self._context_mode}")
+            if 'op_dynamic_input' in locals():
+                error_msg += f"\n{op_dynamic_input.summary()}"
+            print(error_msg)
             raise e
 
     def forward_cmp(

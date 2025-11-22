@@ -1,0 +1,111 @@
+# Copyright 2025 Huawei Technologies Co., Ltd
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ============================================================================
+"""
+Tests for reduction operations.
+"""
+import pytest
+from tests.mark_utils import arg_mark
+from tests.st.ops.share._internal.reduction_ops import ReductionOpsFactory
+from tests.st.ops.share._op_info.op_database import get_op_info, reduction_op_db
+import mindspore
+
+@arg_mark(plat_marks=['platform_ascend', 'platform_ascend910b',
+                      'platform_gpu',
+                      'cpu_linux', 'cpu_windows', 'cpu_macos'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
+@pytest.mark.parametrize("mode", ['pynative'])
+@pytest.mark.parametrize("op_info", reduction_op_db)
+def test_reduction_op_reference_forward(mode, op_info):
+    '''
+    Feature: Reduction operations
+    Description: Compare forward outputs.
+    Expectation: MindSpore matches Benchmark (PyTorch).
+    '''
+    mindspore.runtime.launch_blocking()
+    fact = ReductionOpsFactory(
+        op_info=get_op_info(op_info),
+    )
+    fact.set_context_mode(mode=mode)
+    fact.test_op_reference()
+
+
+@arg_mark(plat_marks=['platform_ascend', 'platform_ascend910b',
+                      'platform_gpu',
+                      'cpu_linux', 'cpu_windows', 'cpu_macos'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
+@pytest.mark.parametrize("mode", ['pynative'])
+@pytest.mark.parametrize("op_info", reduction_op_db)
+def test_reduction_op_reference_backward(mode, op_info):
+    '''
+    Feature: Reduction operations
+    Description: Compare gradients.
+    Expectation: MindSpore gradients match Benchmark.
+    '''
+    mindspore.runtime.launch_blocking()
+    fact = ReductionOpsFactory(
+        op_info=get_op_info(op_info),
+    )
+    fact.set_context_mode(mode=mode)
+    fact.test_op_reference(grad_cmp=True)
+
+
+
+@arg_mark(plat_marks=['platform_ascend', 'platform_ascend910b',
+                      'platform_gpu',
+                      'cpu_linux', 'cpu_windows', 'cpu_macos'],
+          level_mark='level1',
+          card_mark='onecard',
+          essential_mark='essential')
+@pytest.mark.parametrize("mode", ['kbk'])
+@pytest.mark.parametrize("op_info", reduction_op_db)
+def test_reduction_op_dynamic_forward(mode, op_info):
+    '''
+    Feature: Reduction operations
+    Description: Dynamic shape forward.
+    Expectation: Outputs match Benchmark.
+    '''
+    fact = ReductionOpsFactory(
+        op_info=get_op_info(op_info),
+    )
+    fact.set_context_mode(mode=mode)
+    fact.test_op_dynamic(only_dynamic_shape=True)
+    fact.test_op_dynamic(only_dynamic_rank=True)
+
+
+
+@arg_mark(plat_marks=['platform_ascend', 'platform_ascend910b',
+                      'platform_gpu',
+                      'cpu_linux', 'cpu_windows', 'cpu_macos'],
+          level_mark='level1',
+          card_mark='onecard',
+          essential_mark='essential')
+@pytest.mark.parametrize("mode", ['kbk'])
+@pytest.mark.parametrize("op_info", reduction_op_db)
+def test_reduction_op_dynamic_backward(mode, op_info):
+    '''
+    Feature: Reduction operations
+    Description: Dynamic shape backward.
+    Expectation: Gradients match Benchmark.
+    '''
+    fact = ReductionOpsFactory(
+        op_info=get_op_info(op_info),
+    )
+    fact.set_context_mode(mode=mode)
+    fact.test_op_dynamic(only_dynamic_shape=True, grad_cmp=True)
+    fact.test_op_dynamic(only_dynamic_rank=True, grad_cmp=True)

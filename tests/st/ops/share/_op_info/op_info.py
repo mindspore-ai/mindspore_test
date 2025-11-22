@@ -17,6 +17,7 @@
 This module provides:
 - OpInfo dataclass describing operator metadata for tests.
 - BinaryOpInfo convenience subclass with defaults for binary ops.
+- ReductionOpInfo convenience subclass with defaults for reduction ops.
 - basic_reference_inputs_binary_op_common_func: canonical sample input generator for binary ops.
 """
 import functools
@@ -663,7 +664,7 @@ class BinaryOpInfo(OpInfo):
       - they are elementwise operations
       - the output shape is determined by the broadcasted input shapes usually.
       - they may have keyword arguments.
-    
+
     Extra attributes:
       - support_tensor_type_promotion: Whether to support tensors' type promotion.
       - supports_left_python_scalar: Whether to support left python scalar.
@@ -954,7 +955,7 @@ def _generate_unary_op_extremal_value_tensor_inputs_func(
     device=None,
     **kwargs
 ):
-    """Generate tensor with extremal value for a unary op.  
+    """Generate tensor with extremal value for a unary op.
 
     Args:
         op_info: Operator metadata.
@@ -1138,3 +1139,437 @@ class UnaryOpInfo(OpInfo):
         self.disable_extremal_value_tensor_inputs = disable_extremal_value_tensor_inputs
         self.input_low = None if not self.domain else self.domain[0]
         self.input_high = None if not self.domain else self.domain[1]
+
+
+def basic_reference_inputs_reduction_op_common_func(
+    op_info: OpInfo,
+    dtype,
+    device=None,
+    **kwargs
+):
+    """Generate basic test inputs for reduction operators.
+
+    Generates various dim and keepdim combinations, similar to PyTorch's
+    _generate_reduction_kwargs.
+
+    Args:
+        op_info: OpInfo object for the reduction operator.
+        dtype: Data type of the tensors.
+        device: Device to create tensors on.
+        **kwargs: Additional keyword arguments.
+
+    Yields:
+        OpSampleInput: Sample input configurations.
+    """
+    S = SMALL_DIM_SIZE if kwargs.get("only_small_tensor_size", False) else EXTRA_SMALL_DIM_SIZE
+    M = SMALL_DIM_SIZE if kwargs.get("only_small_tensor_size", False) else MEDIUM_DIM_SIZE
+    L = SMALL_DIM_SIZE if kwargs.get("only_small_tensor_size", False) else LARGE_DIM_SIZE
+
+    make_func = functools.partial(
+        make_tensor,
+        device=device,
+        dtype=dtype,
+    )
+    # Generate tensors of different dimensions
+    shapes = [
+        (),
+        (S,),
+        (M, S),
+        (S, S, L),
+        (5, 3, 4, 2),
+    ]
+
+    for shape in shapes:
+        ndim = len(shape)
+
+        # Default: full reduction
+        yield OpSampleInput(
+            op_input=make_func(shape),
+            op_kwargs={},
+            sample_name=f'{op_info.name}_default'
+        )
+
+        # dim=None with keepdim=True
+        yield OpSampleInput(
+            op_input=make_func(shape),
+            op_kwargs={'dim': None, 'keepdim': True},
+            sample_name=f'{op_info.name}_default_keepdim'
+        )
+
+        yield OpSampleInput(
+            op_input=make_func(shape),
+            op_kwargs={'dim': 0, 'keepdim': True},
+            sample_name=f'{op_info.name}_dim0_keepdim'
+        )
+
+        yield OpSampleInput(
+            op_input=make_func(shape),
+            op_kwargs={'dim': -1, 'keepdim': False},
+            sample_name=f'{op_info.name}_dim_last'
+        )
+
+        if ndim > 2:
+            yield OpSampleInput(
+                op_input=make_func(shape),
+                op_kwargs={'dim': 1, 'keepdim': True},
+                sample_name=f'{op_info.name}_dim1'
+            )
+
+            if ndim >= 4:
+                yield OpSampleInput(
+                    op_input=make_func(shape),
+                    op_kwargs={'dim': 3, 'keepdim': False},
+                    sample_name=f'{op_info.name}_dim3'
+                )
+
+        if getattr(op_info, 'supports_multiple_dims', True):
+            # Test all dimensions
+            yield OpSampleInput(
+                op_input=make_func(shape),
+                op_kwargs={
+                    'dim': tuple(range(ndim)),
+                    'keepdim': False
+                },
+                sample_name=f'{op_info.name}_dim_all'
+            )
+
+            # Test partial multi-dim reduction: first and last
+            if ndim > 1:
+                yield OpSampleInput(
+                    op_input=make_func(shape),
+                    op_kwargs={'dim': (0, -1), 'keepdim': True},
+                    sample_name=f'{op_info.name}_dim_0_last'
+                )
+
+                if ndim >= 4:
+                    yield OpSampleInput(
+                        op_input=make_func(shape),
+                        op_kwargs={'dim': (0, 2), 'keepdim': False},
+                        sample_name=f'{op_info.name}_dim_0_2'
+                    )
+                    yield OpSampleInput(
+                        op_input=make_func(shape),
+                        op_kwargs={'dim': (1, 3), 'keepdim': True},
+                        sample_name=f'{op_info.name}_dim_1_3'
+                    )
+
+
+def _generate_reduction_op_discontiguous_tensor_inputs_func(
+    op_info: OpInfo,
+    dtype,
+    device=None,
+    **kwargs
+):
+    """Generate contiguous and discontiguous tensor inputs for reduction ops.
+
+    Reference: PyTorch's test_noncontiguous_* tests in test_reductions.py:
+    - test_noncontiguous_innermost: reducing along noncontiguous innermost dimension
+    - test_noncontiguous_outermost: reducing along noncontiguous outermost dimension
+    - test_noncontiguous_all: reducing all dimensions of a noncontiguous tensor
+
+    Args:
+        op_info: OpInfo object for the reduction operator.
+        dtype: Data type of the tensors.
+        device: Device to create tensors on.
+        **kwargs: Additional keyword arguments.
+
+    Yields:
+        OpSampleInput: Sample input configurations for noncontiguous tensors.
+    """
+    make_func = functools.partial(
+        make_tensor,
+        device=device,
+        dtype=dtype,
+    )
+
+    # 1. Noncontiguous innermost dimension (dim=-1)
+    yield OpSampleInput(
+        op_input=make_func((10, 10), discontiguous=True),
+        op_kwargs={'dim': -1},
+        sample_name=f'{op_info.name}_discontiguous_innermost'
+    )
+
+    # 2. Noncontiguous outermost dimension (dim=0)
+    yield OpSampleInput(
+        op_input=make_func((10, 10), discontiguous=True),
+        op_kwargs={'dim': 0},
+        sample_name=f'{op_info.name}_discontiguous_outermost'
+    )
+
+    # 3. Noncontiguous all dimensions (default reduction)
+    yield OpSampleInput(
+        op_input=make_func((5, 5, 5), discontiguous=True),
+        op_kwargs={},
+        sample_name=f'{op_info.name}_discontiguous_default'
+    )
+
+    # 4. Noncontiguous with keepdim=True
+    yield OpSampleInput(
+        op_input=make_func((10, 10), discontiguous=True),
+        op_kwargs={'dim': 1, 'keepdim': True},
+        sample_name=f'{op_info.name}_discontiguous_keepdim'
+    )
+
+    # 5. Noncontiguous with multiple dims (if supported)
+    if getattr(op_info, 'supports_multiple_dims', True):
+        yield OpSampleInput(
+            op_input=make_func((5, 5, 5), discontiguous=True),
+            op_kwargs={'dim': (0, 2), 'keepdim': False},
+            sample_name=f'{op_info.name}_discontiguous_multi_dim'
+        )
+
+
+def extra_reference_inputs_reduction_op_common_func(
+    op_info: OpInfo,
+    dtype,
+    device=None,
+    **kwargs
+):
+    """Generate additional edge-case test inputs for reduction operators.
+
+    Reference: PyTorch's test_ref_* edge case tests in test_reductions.py:
+    - test_ref_duplicate_values: numerical stability with repeated values
+    - test_ref_extremal_values: nan, inf, -inf handling
+    - test_ref_large_input_1D/2D: large tensor stability and parallelism
+    - test_noncontiguous_*: noncontiguous tensor inputs
+
+    Args:
+        op_info: OpInfo object for the reduction operator.
+        dtype: Data type of the tensors.
+        device: Device to create tensors on.
+        **kwargs: Additional keyword arguments.
+
+    Yields:
+        OpSampleInput: Sample input configurations for edge cases.
+    """
+    S = SMALL_DIM_SIZE
+    make_func = functools.partial(
+        make_tensor,
+        device=device,
+        dtype=dtype,
+    )
+
+    # Empty tensors
+    yield OpSampleInput(
+        op_input=make_func((0, S)),
+        op_kwargs={'dim': 0},
+        sample_name=f'{op_info.name}_empty_dim0'
+    )
+
+    yield OpSampleInput(
+        op_input=make_func((S, 0)),
+        op_kwargs={'dim': 1},
+        sample_name=f'{op_info.name}_empty_dim1'
+    )
+
+    # Single element tensors
+    yield OpSampleInput(
+        op_input=make_func((1,)),
+        op_kwargs={},
+        sample_name=f'{op_info.name}_single_element_1d_default'
+    )
+
+    yield OpSampleInput(
+        op_input=make_func((1, 1, 1)),
+        op_kwargs={'dim': 1},
+        sample_name=f'{op_info.name}_single_element_3d'
+    )
+
+    # Large dimension (only meaningful for operators supporting multi-dim reductions)
+    if getattr(op_info, 'supports_multiple_dims', True):
+        yield OpSampleInput(
+            op_input=make_func((S, S, S, S, S)),
+            op_kwargs={'dim': (1, 3), 'keepdim': True},
+            sample_name=f'{op_info.name}_5d_multi_dim'
+        )
+
+    # Duplicate values test - numerical stability
+    t = make_func((4, 4))
+    yield OpSampleInput(
+        op_input=t,
+        op_kwargs={},
+        sample_name=f'{op_info.name}_duplicate_values_default'
+    )
+
+    yield OpSampleInput(
+        op_input=make_func((4, 4)),
+        op_kwargs={'dim': 0},
+        sample_name=f'{op_info.name}_duplicate_values_dim0'
+    )
+
+    yield OpSampleInput(
+        op_input=make_func((4, 4)),
+        op_kwargs={'dim': 1},
+        sample_name=f'{op_info.name}_duplicate_values_dim1'
+    )
+
+    # Extremal values test - only for floating point types
+    if dtype.is_floating_point:
+        # inf and nan is unsupported on Ascend910 devices.
+        skip_inf_nan = False
+        if device == 'ascend':
+            ascend_name = MSContext.get_instance().get_ascend_soc_version()
+            if ascend_name == 'ascend910':
+                warnings.warn("Inf and NaN are unsupported on current Ascend devices.")
+                skip_inf_nan = True
+
+        # Test with different extremal values
+        extremal_cases = [
+            (0.0, 'zero'),
+            (1.0, 'one'),
+        ]
+
+        # Only add inf and nan cases if not on Ascend910
+        if not skip_inf_nan:
+            extremal_cases.extend([
+                (float('nan'), 'nan'),
+                (float('inf'), 'inf'),
+                (float('-inf'), 'neg_inf'),
+            ])
+
+        for extremal_val, name_suffix in extremal_cases:
+            t = make_func((5,))
+            t[2] = extremal_val
+            yield OpSampleInput(
+                op_input=t,
+                op_kwargs={},
+                sample_name=f'{op_info.name}_extremal_{name_suffix}'
+            )
+
+    # Large input tests - numerical stability and parallelism
+    LARGE_1D_SIZE = 2 ** 20
+    yield OpSampleInput(
+        op_input=make_func((LARGE_1D_SIZE,)),
+        op_kwargs={},
+        sample_name=f'{op_info.name}_large_1d_stability'
+    )
+
+    LARGE_2D_SIZE = 2 ** 16
+    yield OpSampleInput(
+        op_input=make_func((32, LARGE_2D_SIZE)),
+        op_kwargs={'dim': 1},
+        sample_name=f'{op_info.name}_large_2d_parallel'
+    )
+
+    # Noncontiguous tensor tests
+    if not getattr(op_info, 'disable_discontiguous_tensor_inputs', False):
+        yield from _generate_reduction_op_discontiguous_tensor_inputs_func(
+            op_info, dtype, device, **kwargs
+        )
+
+
+def dynamic_inputs_reduction_op_common_func(
+    op_info: OpInfo,
+    dtype=None,
+    device=None,
+    **kwargs
+):
+    """Generate dynamic shape/rank test inputs for reduction operators.
+
+    Args:
+        op_info: OpInfo object for the reduction operator.
+        dtype: Data type of the tensors.
+        device: Device to create tensors on.
+        **kwargs: Additional keyword arguments including:
+            - only_dynamic_shape: Only generate dynamic shape inputs.
+            - only_dynamic_rank: Only generate dynamic rank inputs.
+
+    Yields:
+        OpDynamicInput: Dynamic input configurations.
+    """
+    make_func = functools.partial(make_tensor, dtype=dtype, device=device)
+
+    if not kwargs.get("only_dynamic_rank", False):
+        # Dynamic shape
+        yield OpDynamicInput(
+            op_compile_input=OpSampleInput(
+                op_input=ms.Tensor(shape=(None, None, None), dtype=dtype),
+                op_kwargs={'dim': 1, 'keepdim': True},
+                sample_name=f'{op_info.name}_dynamic_shape_compile'
+            ),
+            op_running_inputs=(
+                OpSampleInput(
+                    op_input=make_func(shape=(5, 7, 9)),
+                    op_kwargs={'dim': 1, 'keepdim': True},
+                    sample_name=f'{op_info.name}_dynamic_shape_running_1'
+                ),
+                OpSampleInput(
+                    op_input=make_func(shape=(3, 4, 5)),
+                    op_kwargs={'dim': 1, 'keepdim': True},
+                    sample_name=f'{op_info.name}_dynamic_shape_running_2'
+                ),
+            )
+        )
+
+        # Dynamic shape with tuple dim (only for operators that support multiple dims)
+        if getattr(op_info, 'supports_multiple_dims', True):
+            yield OpDynamicInput(
+                op_compile_input=OpSampleInput(
+                    op_input=ms.Tensor(shape=(None, None, None, None), dtype=dtype),
+                    op_kwargs={'dim': (0, 2), 'keepdim': False},
+                    sample_name=f'{op_info.name}_dynamic_shape_compile_tuple_dim'
+                ),
+                op_running_inputs=(
+                    OpSampleInput(
+                        op_input=make_func(shape=(4, 5, 6, 7)),
+                        op_kwargs={'dim': (0, 2), 'keepdim': False},
+                        sample_name=f'{op_info.name}_dynamic_shape_running_tuple_1'
+                    ),
+                    OpSampleInput(
+                        op_input=make_func(shape=(2, 3, 4, 5)),
+                        op_kwargs={'dim': (0, 2), 'keepdim': False},
+                        sample_name=f'{op_info.name}_dynamic_shape_running_tuple_2'
+                    ),
+                )
+            )
+
+    if not kwargs.get("only_dynamic_shape", False):
+        # Dynamic rank
+        yield OpDynamicInput(
+            op_compile_input=OpSampleInput(
+                op_input=ms.Tensor(shape=None, dtype=dtype),
+                op_kwargs={'dim': 0},
+                sample_name=f'{op_info.name}_dynamic_rank_compile'
+            ),
+            op_running_inputs=(
+                OpSampleInput(
+                    op_input=make_func(shape=(5, 7)),
+                    op_kwargs={'dim': 0},
+                    sample_name=f'{op_info.name}_dynamic_rank_running_1'
+                ),
+                OpSampleInput(
+                    op_input=make_func(shape=(3, 4, 5)),
+                    op_kwargs={'dim': 0},
+                    sample_name=f'{op_info.name}_dynamic_rank_running_2'
+                ),
+            )
+        )
+
+
+class ReductionOpInfo(OpInfo):
+    """OpInfo for reduction operators.
+
+    Provides default values for reduction-specific attributes:
+    - supports_multiple_dims: Whether the operator supports reducing multiple dimensions (default: True)
+    - promotes_int_to_float: Whether the operator promotes integral to floating point dtypes (default: False)
+    """
+
+    def __init__(
+            self,
+            name: str,
+            *,
+            op_basic_reference_inputs_func: Optional[Callable] = basic_reference_inputs_reduction_op_common_func,
+            op_extra_reference_inputs_func: Optional[Callable] = extra_reference_inputs_reduction_op_common_func,
+            op_dynamic_inputs_func: Optional[Callable] = dynamic_inputs_reduction_op_common_func,
+            op_error_inputs_func: Optional[Callable] = None,
+            supports_multiple_dims: bool = True,
+            **kwargs,
+    ):
+        super().__init__(
+            name,
+            op_basic_reference_inputs_func=op_basic_reference_inputs_func,
+            op_extra_reference_inputs_func=op_extra_reference_inputs_func,
+            op_dynamic_inputs_func=op_dynamic_inputs_func,
+            **kwargs,
+        )
+        self.supports_multiple_dims = supports_multiple_dims
