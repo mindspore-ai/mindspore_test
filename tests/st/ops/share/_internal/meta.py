@@ -32,7 +32,9 @@ from mindspore._c_expression import MSContext
 from mindspore.common.dtype import _dtype_to_nptype
 from typing import Optional, Union, List, final
 from tests.st.utils.test_utils import single_golden_compare, double_golden_compare, OpTypes
-from tests.st.ops.share._internal.utils import OpSampleInput, OpDynamicInput, is_op_input_dynamic, make_tensor, ms_asnumpy
+from tests.st.ops.share._internal.utils import (
+    OpSampleInput, OpDynamicInput, is_op_input_dynamic, make_tensor, ms_asnumpy
+)
 from tests.st.ops.share._op_info.op_info import OpInfo
 from tests.st.ops.share._op_info.op_common import get_default_loss, dtypes_extra_uint
 

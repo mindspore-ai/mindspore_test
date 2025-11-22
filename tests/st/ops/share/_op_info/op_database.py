@@ -28,6 +28,7 @@ import warnings
 import itertools
 import mindspore as ms
 from mindspore import mint, mutable
+from mindspore.common.parameter import Parameter
 from mindspore._c_expression import MSContext
 from tests.st.ops.share._op_info.op_info import OpInfo, BinaryOpInfo, ReductionOpInfo, UnaryOpInfo
 from tests.st.ops.share._op_info.op_info import (
@@ -1088,6 +1089,530 @@ def tensor_repeat_interleave_torch(op_input, repeats, dim=None, output_size=None
 
 def tensor_repeat_interleave_func_grad(op_input, repeats, dim=None, output_size=None):
     return op_input.repeat_interleave(repeats, dim, output_size=output_size)
+
+def nn_functional_selu_ms(op_input):
+    return mint.nn.functional.selu(op_input)
+
+def nn_functional_selu_torch(op_input):
+    return torch.nn.functional.selu(op_input)
+
+def tensor_add__ms(op_input, other, alpha=1):
+    """Wrapper for Tensor.add_ (in-place operation)."""
+    cloned_input = op_input.clone()
+    result = cloned_input.add_(other, alpha=alpha)
+    return result
+
+def tensor_add__torch(op_input, other, alpha=1):
+    """Wrapper for torch.Tensor.add_ (in-place operation)."""
+    # Convert inputs to torch tensors
+    cloned_input_pt = op_input.clone()
+    result = cloned_input_pt.add_(other, alpha=alpha)
+    return result
+
+def tensor_masked_scatter_ms(op_input, mask, source):
+    return op_input.masked_scatter(mask, source)
+
+def tensor_masked_scatter_torch(op_input, mask, source):
+    # Convert inputs to torch tensors
+    return op_input.masked_scatter(mask, source)
+
+def tensor_masked_scatter__ms(op_input, mask, source):
+    """Wrapper for Tensor.masked_scatter_ (in-place operation)."""
+    # For in-place operations, we need to clone the input to avoid modifying the original
+    # in the test framework, but the actual operation modifies in-place
+    cloned_input = op_input.clone()
+    result = cloned_input.masked_scatter_(mask, source)
+    return result
+
+def tensor_masked_scatter__torch(op_input, mask, source):
+    """Wrapper for torch.Tensor.masked_scatter_ (in-place operation)."""
+    cloned_input = op_input.clone()
+    result = cloned_input.masked_scatter_(mask, source)
+    return result
+
+def basic_sample_inputs_mint_conv3d(op_info: OpInfo, dtype=None, device=None, **kwargs):
+    '''
+    Generate basic sample inputs for mint.nn.functional.conv3d.
+    Reference torch's sample_inputs_conv3d.
+    '''
+    make_arg = functools.partial(make_tensor, device=device, dtype=dtype)
+    cases = (
+        ((9, 4, 5, 2, 3), (9, 4, 4, 1, 1), (9,), {'stride': 1, 'dilation': 1, 'groups': 1, 'padding': 'same' }),
+        # With defaults
+        ((1, 1, 4, 4, 4), (1, 1, 2, 2, 2), None, {}),
+    )
+
+    for input_shape, weight_shape, bias_shape, case_kwargs in cases:
+        # Create kwargs dict with proper order: bias, stride, padding, dilation, groups
+        # This matches the interface: conv3d(input, weight, bias=None, stride=1, padding=0, dilation=1, groups=1)
+        op_kwargs = {}
+        # bias comes first
+        if bias_shape is not None:
+            op_kwargs['bias'] = make_arg(bias_shape, low=-1000, high=-0.1, random_method='uniform')
+        else:
+            op_kwargs['bias'] = None
+        # Then other parameters in order: stride, padding, dilation, groups
+        if 'stride' in case_kwargs:
+            op_kwargs['stride'] = case_kwargs['stride']
+        if 'padding' in case_kwargs:
+            op_kwargs['padding'] = case_kwargs['padding']
+        if 'dilation' in case_kwargs:
+            op_kwargs['dilation'] = case_kwargs['dilation']
+        if 'groups' in case_kwargs:
+            op_kwargs['groups'] = case_kwargs['groups']
+        # Batched input (5D: N, C, D, H, W)
+        yield OpSampleInput(
+            op_input=make_arg(input_shape, low=-1000, high=-0.1, random_method='uniform'),
+            op_args=(make_arg(weight_shape, low=-1000, high=-0.1, random_method='uniform'),),
+            op_kwargs=op_kwargs,
+            sample_name=op_info.name,
+        )
+        # Unbatched input (4D: C, D, H, W)
+        yield OpSampleInput(
+            op_input=make_arg(input_shape[1:], low=-1000, high=-0.1, random_method='uniform'),
+            op_args=(make_arg(weight_shape, low=-1000, high=-0.1, random_method='uniform'),),
+            op_kwargs=op_kwargs,
+            sample_name=op_info.name,
+        )
+
+
+# sample inputs functions for Tensor.masked_scatter
+def basic_sample_inputs_tensor_masked_scatter(op_info: OpInfo, dtype=None, device=None, **kwargs):
+    '''
+    Generate basic sample inputs for Tensor.masked_scatter.
+    Reference torch's sample_inputs_masked_scatter.
+    '''
+    make_arg = functools.partial(make_tensor, device=device, dtype=dtype)
+    make_mask = functools.partial(make_tensor, device=device, dtype=ms.bool_)
+
+    S = SMALL_DIM_SIZE
+
+    # Case 1: Same shape mask
+    yield OpSampleInput(
+        op_input=make_arg((S, S)),
+        op_args=(make_mask((S, S)), make_arg((S, S))),
+        op_kwargs={},
+        sample_name=op_info.name,
+    )
+
+    # Case 2: Broadcastable mask (1D mask for 2D input)
+    yield OpSampleInput(
+        op_input=make_arg((S, S)),
+        op_args=(make_mask((S,)), make_arg((S, S))),
+        op_kwargs={},
+        sample_name=op_info.name,
+    )
+
+    # Case 3: Different shapes
+    yield OpSampleInput(
+        op_input=make_arg((2, 3)),
+        op_args=(make_mask((2, 3)), make_arg((6,))),
+        op_kwargs={},
+        sample_name=op_info.name,
+    )
+
+    # Case 4: 1D input
+    yield OpSampleInput(
+        op_input=make_arg((8,)),
+        op_args=(make_mask((8,)), make_arg((8,))),
+        op_kwargs={},
+        sample_name=op_info.name,
+    )
+
+    yield OpSampleInput(
+        op_input=make_arg((8,)),
+        op_args=(make_mask((1,)), make_arg((8,))),
+        op_kwargs={},
+        sample_name=op_info.name,
+    )
+
+    # Case 5: 3D input
+    yield OpSampleInput(
+        op_input=make_arg((2, 3, 4)),
+        op_args=(make_mask((2, 3, 4)), make_arg((24,))),
+        op_kwargs={},
+        sample_name=op_info.name,
+    )
+
+    # Case 6: Broadcastable mask (scalar-like mask)
+    yield OpSampleInput(
+        op_input=make_arg((S, S)),
+        op_args=(make_mask((1,)), make_arg((S, S))),
+        op_kwargs={},
+        sample_name=op_info.name,
+    )
+
+
+# sample inputs functions for Tensor.masked_scatter_ (reuse masked_scatter inputs)
+def basic_sample_inputs_tensor_masked_scatter_(op_info: OpInfo, dtype=None, device=None, **kwargs):
+    '''
+    Generate basic sample inputs for Tensor.masked_scatter_.
+    Reuse the same inputs as masked_scatter since they have the same interface.
+    '''
+    # Reuse the same sample inputs as masked_scatter
+    yield from basic_sample_inputs_tensor_masked_scatter(op_info, dtype=dtype, device=device, **kwargs)
+
+
+# sample inputs functions for Tensor.add_
+def basic_sample_inputs_tensor_add_(op_info: OpInfo, dtype=None, device=None, **kwargs):
+    '''
+    Generate basic sample inputs for Tensor.add_.
+    Reference torch's sample_inputs_add_sub and basic_reference_inputs_binary_op_common_func.
+    '''
+    S = SMALL_DIM_SIZE
+    make_arg = functools.partial(make_tensor, device=device, dtype=dtype)
+
+    # Alpha kwarg cases
+    _input = make_arg((50,))
+    _other = make_arg((1,))
+    if dtype is not ms.bool_:
+        yield OpSampleInput(
+            op_input=_input,
+            op_args=(_other,),
+            op_kwargs={'alpha': -2.5},
+            sample_name=op_info.name
+        )
+    else:
+        yield OpSampleInput(
+            op_input=_input,
+            op_args=(_other,),
+            op_kwargs={'alpha': True},
+            sample_name=op_info.name
+        )
+
+    neg_alpha = -0.1415 if (dtype.is_floating_point or dtype.is_complex) else -3
+    if dtype in dtypes_extra_uint:
+        neg_alpha = abs(neg_alpha)
+
+    _input = make_arg((S, S))
+    _other = make_arg((S, S))
+    if dtype is not ms.bool_:
+        yield OpSampleInput(
+            op_input=_input,
+            op_args=(_other,),
+            op_kwargs={'alpha': neg_alpha},
+            sample_name=op_info.name
+        )
+    else:
+        yield OpSampleInput(
+            op_input=_input,
+            op_args=(_other,),
+            op_kwargs={'alpha': False},
+            sample_name=op_info.name
+        )
+
+
+# wrapper function for mindspore.mint.nn.Conv1d
+def mint_nn_conv1d_ms(op_input, in_channels, out_channels, kernel_size, stride=1, padding=0,
+                      dilation=1, groups=1, bias=True, padding_mode='zeros', dtype=None,
+                      weight_init=None, bias_init=None):
+    """Wrapper for mindspore.mint.nn.Conv1d."""
+    conv1d_layer = mint.nn.Conv1d(
+        in_channels=in_channels,
+        out_channels=out_channels,
+        kernel_size=kernel_size,
+        stride=stride,
+        padding=padding,
+        dilation=dilation,
+        groups=groups,
+        bias=bias,
+        padding_mode=padding_mode,
+        dtype=dtype
+    )
+    conv1d_layer.weight = Parameter(weight_init, name='weight')
+    if bias:
+        conv1d_layer.bias = Parameter(bias_init, name='bias')
+    return conv1d_layer(op_input)
+
+
+def nn_conv1d_torch(op_input, in_channels, out_channels, kernel_size, stride=1,
+                         padding=0, dilation=1, groups=1, bias=True, padding_mode='zeros',
+                         dtype=None, weight_init=None, bias_init=None):
+    """Wrapper for torch.nn.Conv1d."""
+    conv1d_layer = torch.nn.Conv1d(
+        in_channels=in_channels,
+        out_channels=out_channels,
+        kernel_size=kernel_size,
+        stride=stride,
+        padding=padding,
+        dilation=dilation,
+        groups=groups,
+        bias=bias,
+        padding_mode=padding_mode,
+        dtype=dtype
+    )
+    conv1d_layer.weight = torch.nn.Parameter(weight_init)
+    if bias:
+        conv1d_layer.bias = torch.nn.Parameter(bias_init)
+    return conv1d_layer(op_input)
+
+
+# sample inputs functions for mindspore.mint.nn.Conv1d
+def basic_sample_inputs_mint_nn_conv1d(op_info: OpInfo, dtype=None, device=None, **kwargs):
+    '''
+    Generate basic sample inputs for mindspore.mint.nn.Conv1d.
+    Reference torch's module tests for Conv1d.
+    '''
+    make_arg = functools.partial(make_tensor, device=device, dtype=dtype, low=-2, high=2)
+
+    # Cases: (input_shape, (in_channels, out_channels, kernel_size), kwargs_dict)
+    cases = (
+        # No batch dimension
+        ((8, 5), (8, 4, 2), {'stride': 1, 'padding': (12,), 'dilation': 3, 'groups': 2, 'bias': True,
+                              'padding_mode': 'zeros', 'dtype': dtype, 'weight_init': make_arg((4, 4, 2)),
+                              'bias_init': make_arg((4,))}),
+    )
+
+    for input_shape, (in_channels, out_channels, kernel_size), case_kwargs in cases:
+        op_kwargs = {}
+        if 'stride' in case_kwargs:
+            op_kwargs['stride'] = case_kwargs['stride']
+        if 'padding' in case_kwargs:
+            op_kwargs['padding'] = case_kwargs['padding']
+        if 'dilation' in case_kwargs:
+            op_kwargs['dilation'] = case_kwargs['dilation']
+        if 'groups' in case_kwargs:
+            op_kwargs['groups'] = case_kwargs['groups']
+        if 'bias' in case_kwargs:
+            op_kwargs['bias'] = case_kwargs['bias']
+        if 'padding_mode' in case_kwargs:
+            op_kwargs['padding_mode'] = case_kwargs['padding_mode']
+        if 'dtype' in case_kwargs:
+            op_kwargs['dtype'] = case_kwargs['dtype']
+        if 'weight_init' in case_kwargs:
+            op_kwargs['weight_init'] = case_kwargs['weight_init']
+        if 'bias_init' in case_kwargs:
+            op_kwargs['bias_init'] = case_kwargs['bias_init']
+        yield OpSampleInput(
+            op_input=make_arg(input_shape),
+            op_args=(in_channels, out_channels, kernel_size),
+            op_kwargs=op_kwargs,
+            sample_name=op_info.name,
+        )
+
+
+# wrapper function for mindspore.mint.nn.Linear
+def mint_nn_linear_ms(op_input, in_features, out_features, bias=True, weight_init=None, bias_init=None, dtype=None):
+    """Wrapper for mindspore.mint.nn.Linear."""
+    linear_layer = mint.nn.Linear(
+        in_features=in_features,
+        out_features=out_features,
+        bias=bias,
+        weight_init=weight_init,
+        bias_init=bias_init,
+        dtype=dtype
+    )
+    return linear_layer(op_input)
+
+
+def nn_linear_torch(op_input, in_features, out_features, bias=True, weight_init=None, bias_init=None, dtype=None):
+    """Wrapper for torch.nn.Linear.
+    
+    Note: weight_init, bias_init, and dtype are kept for interface consistency but not used in PyTorch.
+    """
+    linear_layer = torch.nn.Linear(
+        in_features=in_features,
+        out_features=out_features,
+        bias=bias,
+        dtype=dtype
+    )
+    linear_layer.weight = torch.nn.Parameter(weight_init)
+    if bias:
+        linear_layer.bias = torch.nn.Parameter(bias_init)
+    return linear_layer(op_input)
+
+
+# sample inputs functions for mindspore.mint.nn.Linear
+def basic_sample_inputs_mint_nn_linear(op_info: OpInfo, dtype=None, device=None, **kwargs):
+    '''
+    Generate basic sample inputs for mindspore.mint.nn.Linear.
+    Reference torch's module_inputs_torch_nn_Linear.
+    '''
+    make_arg = functools.partial(make_tensor, device=device, dtype=dtype, low=-2, high=2)
+
+    # Cases: (input_shape, (in_features, out_features), kwargs_dict)
+    cases = (
+        ((4, 10), (10, 8), {'bias': True, 'weight_init': make_arg((8, 10)),
+                             'bias_init': make_arg((8,)), 'dtype': dtype}),
+        ((4, 2), (2, 20), {
+            'bias': True, 'weight_init': make_arg((20, 2)),
+            'bias_init': make_arg((20,)), 'dtype': dtype
+        }),
+    )
+
+    for input_shape, (in_features, out_features), case_kwargs in cases:
+        # Create kwargs dict with proper order: bias, weight_init, bias_init, dtype
+        # This matches the interface: Linear(in_features, out_features, bias=True, weight_init=None,
+        # bias_init=None, dtype=None)
+        op_kwargs = {}
+        if 'bias' in case_kwargs:
+            op_kwargs['bias'] = case_kwargs['bias']
+        if 'weight_init' in case_kwargs and case_kwargs['weight_init'] is not None:
+            op_kwargs['weight_init'] = case_kwargs['weight_init']
+        if 'bias_init' in case_kwargs and case_kwargs['bias_init'] is not None:
+            op_kwargs['bias_init'] = case_kwargs['bias_init']
+        if 'dtype' in case_kwargs and case_kwargs['dtype'] is not None:
+            op_kwargs['dtype'] = case_kwargs['dtype']
+        yield OpSampleInput(
+            op_input=make_arg(input_shape),
+            op_args=(in_features, out_features),
+            op_kwargs=op_kwargs,
+            sample_name=op_info.name,
+        )
+
+
+# sample inputs functions for mint.nn.functional.linear
+def basic_sample_inputs_mint_linear(op_info: OpInfo, dtype=None, device=None, **kwargs):
+    '''
+    Generate basic sample inputs for mint.nn.functional.linear.
+    Reference torch's sample_inputs_linear.
+    '''
+    make_arg = functools.partial(make_tensor, device=device, dtype=dtype, low=-2, high=2)
+
+    # Features options: (in_features, out_features)
+    features_options = [(3, 4), (8, 8)]
+    # Batch shape options: no batch, 1D, 2D, etc.
+    batch_options = [
+        [],  # no batch
+        [2],
+        [8],
+        [2, 3],
+    ]
+
+    for has_bias, (in_feat, out_feat), batch_shape in \
+            itertools.product([True, False], features_options, batch_options):
+        input_tensor = make_arg(batch_shape + [in_feat])
+        weight = make_arg([out_feat, in_feat])
+        if not has_bias:
+            yield OpSampleInput(
+                op_input=input_tensor,
+                op_args=(weight,),
+                op_kwargs={},
+                sample_name=op_info.name,
+            )
+            continue
+
+        bias = make_arg([out_feat])
+        yield OpSampleInput(
+            op_input=input_tensor,
+            op_args=(weight,),
+            op_kwargs={'bias': bias},
+            sample_name=op_info.name,
+        )
+
+    yield OpSampleInput(
+        op_input=make_arg([2, 1, 2, 1, 2]),
+        op_args=(make_arg([4, 2]),),
+        op_kwargs={},
+        sample_name=op_info.name,
+    )
+    yield OpSampleInput(
+        op_input=make_arg([4,]),
+        op_args=(make_arg([9, 4]),),
+        op_kwargs={'bias': make_arg([9])},
+        sample_name=op_info.name,
+    )
+
+
+# sample inputs functions for mint.nn.functional.conv1d
+def basic_sample_inputs_mint_conv1d(op_info: OpInfo, dtype=None, device=None, **kwargs):
+    '''
+    Generate basic sample inputs for mint.nn.functional.conv1d.
+    Reference torch's sample_inputs_conv1d.
+    '''
+    make_arg = functools.partial(make_tensor, device=device, dtype=dtype)
+    cases = (
+        ((1, 3, 4), (3, 3, 3), (3,),
+            {'stride': (2,), 'padding': 2, 'groups': 1}),
+        ((2, 4, 8), (2, 2, 3), (2,),
+            {'stride': 3, 'padding': 1, 'groups': 2, 'dilation': 2}),
+        ((1, 4, 5), (1, 4, 3), None,
+            {'stride': (2,), 'padding': "valid"}),
+        ((3, 7), (2, 3, 1), (2,),
+            {'stride': (5,), 'padding': (2,), 'groups': 1, 'dilation': (1,)}),
+        # With defaults
+        ((1, 4, 5), (3, 4, 3), None, {}),
+    )
+
+    for input_shape, weight_shape, bias_shape, case_kwargs in cases:
+        # Create kwargs dict with proper order: bias, stride, padding, dilation, groups
+        # This matches the interface: conv1d(input, weight, bias=None, stride=1, padding=0, dilation=1, groups=1)
+        op_kwargs = {}
+        # bias comes first
+        if bias_shape is not None:
+            op_kwargs['bias'] = make_arg(bias_shape)
+        else:
+            op_kwargs['bias'] = None
+        # Then other parameters in order: stride, padding, dilation, groups
+        if 'stride' in case_kwargs:
+            op_kwargs['stride'] = case_kwargs['stride']
+        if 'padding' in case_kwargs:
+            op_kwargs['padding'] = case_kwargs['padding']
+        if 'dilation' in case_kwargs:
+            op_kwargs['dilation'] = case_kwargs['dilation']
+        if 'groups' in case_kwargs:
+            op_kwargs['groups'] = case_kwargs['groups']
+        # Batched input (3D: N, C, L)
+        yield OpSampleInput(
+            op_input=make_arg(input_shape),
+            op_args=(make_arg(weight_shape),),
+            op_kwargs=op_kwargs,
+            sample_name=op_info.name,
+        )
+
+
+# sample inputs functions for mint.nn.functional.conv2d
+def basic_sample_inputs_mint_conv2d(op_info: OpInfo, dtype=None, device=None, **kwargs):
+    '''
+    Generate basic sample inputs for mint.nn.functional.conv2d.
+    Reference torch's sample_inputs_conv2d.
+    '''
+    make_arg = functools.partial(make_tensor, device=device, dtype=dtype)
+
+    # Ordered as shapes for input, weight, bias
+    # and a dict of values of (stride, padding, groups, dilation)
+    cases = (
+        ((1, 3, 4, 4), (3, 3, 3, 3), (3,),
+            {'stride': (2, 2), 'padding': 2, 'groups': 1}),
+        ((1, 2, 4, 3), (4, 2, 3, 4), None,
+            {'stride': 2, 'padding': 1, 'groups': 1}),
+        ((12, 6, 4, 6), (8, 3, 4, 7), (8,),
+            {'stride': 1, 'padding': 1, 'dilation': 1, 'groups': 2}),
+        ((1, 4, 5, 5), (3, 4, 3, 3), None, {}),
+    )
+
+    for input_shape, weight_shape, bias_shape, case_kwargs in cases:
+        # Create kwargs dict with proper order: bias, stride, padding, dilation, groups
+        # This matches the interface: conv2d(input, weight, bias=None, stride=1, padding=0, dilation=1, groups=1)
+        op_kwargs = {}
+        # bias comes first
+        if bias_shape is not None:
+            op_kwargs['bias'] = make_arg(bias_shape)
+        else:
+            op_kwargs['bias'] = None
+        # Then other parameters in order: stride, padding, dilation, groups
+        if 'stride' in case_kwargs:
+            op_kwargs['stride'] = case_kwargs['stride']
+        if 'padding' in case_kwargs:
+            op_kwargs['padding'] = case_kwargs['padding']
+        if 'dilation' in case_kwargs:
+            op_kwargs['dilation'] = case_kwargs['dilation']
+        if 'groups' in case_kwargs:
+            op_kwargs['groups'] = case_kwargs['groups']
+        # Batched input
+        yield OpSampleInput(
+            op_input=make_arg(input_shape),
+            op_args=(make_arg(weight_shape),),
+            op_kwargs=op_kwargs,
+            sample_name=op_info.name,
+        )
+        # Unbatched input (3D: C, H, W)
+        yield OpSampleInput(
+            op_input=make_arg(input_shape[1:]),
+            op_args=(make_arg(weight_shape),),
+            op_kwargs=op_kwargs,
+            sample_name=op_info.name,
+        )
 
 # sample inputs functions for Tensor.repeat (method)
 def basic_sample_inputs_tensor_repeat(op_info: OpInfo, dtype=None, device=None, **kwargs):
@@ -3286,7 +3811,8 @@ op_db: Dict[str, OpInfo] = {
         op=mint.add,
         op_func_without_kwargs=add_ext_func_grad_without_kwargs,
         ref=torch.add,
-        tensor_variant=lambda op_input, *op_args, **op_kwargs: op_input.add(op_args[0], alpha=op_kwargs.get('alpha', 1)),
+        tensor_variant=lambda op_input, *op_args, **op_kwargs: op_input.add(
+            op_args[0], alpha=op_kwargs.get('alpha', 1)),
         dtypes_ascend=tuple(d for d in dtypes_as_torch if d != ms.bfloat16),
         dtypes_ascend910b=dtypes_as_torch,
         dtypes_cpu=tuple([d for d in dtypes_as_torch if d != ms.bfloat16 and d != ms.bool_] + list(dtypes_extra_uint)),
@@ -3652,7 +4178,8 @@ op_db: Dict[str, OpInfo] = {
         op_func_without_kwargs=sub_ext_func_grad_without_kwargs,
         ref=torch.sub,
         # tensor_variant is now a unused parameter, may be removed in the future
-        tensor_variant=lambda op_input, *op_args, **op_kwargs: op_input.sub(op_args[0], alpha=op_kwargs.get('alpha', 1)),
+        tensor_variant=lambda op_input, *op_args, **op_kwargs: op_input.sub(
+            op_args[0], alpha=op_kwargs.get('alpha', 1)),
         dtypes_ascend=tuple(d for d in dtypes_as_torch if d != ms.bfloat16 and d != ms.bool_),
         dtypes_ascend910b=tuple(d for d in dtypes_as_torch if d != ms.bool_),
         dtypes_cpu=tuple([d for d in dtypes_as_torch if d != ms.bfloat16 and d != ms.bool_] + list(dtypes_extra_uint)),
@@ -5210,6 +5737,144 @@ op_db: Dict[str, OpInfo] = {
         op_extra_reference_inputs_func=None,
         op_dynamic_inputs_func=None,
     ),
+    'mint.nn.Conv1d': OpInfo(
+        name='mint.nn.Conv1d',
+        op=mint_nn_conv1d_ms,
+        ref=nn_conv1d_torch,
+        dtypes_ascend=tuple([ms.float16,]),
+        dtypes_ascend910b=tuple([ms.float16]),
+        dtypes_cpu=(),
+        dtypes_gpu=(),
+        op_basic_reference_inputs_func=basic_sample_inputs_mint_nn_conv1d,
+        op_extra_reference_inputs_func=None,
+        op_dynamic_inputs_func=None,
+        op_error_inputs_func=None,
+        is_differentiable=True,
+    ),
+    'mint.nn.functional.conv1d': OpInfo(
+        name='mint.nn.functional.conv1d',
+        op=mint.nn.functional.conv1d,
+        ref=torch.nn.functional.conv1d,
+        dtypes_ascend=tuple([ms.float16,]),
+        dtypes_ascend910b=tuple([ms.float16]),
+        dtypes_cpu=(),
+        dtypes_gpu=(),
+        op_basic_reference_inputs_func=basic_sample_inputs_mint_conv1d,
+        op_extra_reference_inputs_func=None,
+        op_dynamic_inputs_func=None,
+        op_error_inputs_func=None,
+        is_differentiable=True,
+    ),
+    'mint.nn.functional.conv2d': OpInfo(
+        name='mint.nn.functional.conv2d',
+        op=mint.nn.functional.conv2d,
+        ref=torch.nn.functional.conv2d,
+        dtypes_ascend=tuple([ms.float16,]),
+        dtypes_ascend910b=tuple([ms.float16]),
+        dtypes_cpu=(),
+        dtypes_gpu=(),
+        op_basic_reference_inputs_func=basic_sample_inputs_mint_conv2d,
+        op_extra_reference_inputs_func=None,
+        op_dynamic_inputs_func=None,
+        op_error_inputs_func=None,
+        is_differentiable=True,
+    ),
+    'mint.nn.functional.conv3d': OpInfo(
+        name='mint.nn.functional.conv3d',
+        op=mint.nn.functional.conv3d,
+        ref=torch.nn.functional.conv3d,
+        dtypes_ascend=(),
+        dtypes_ascend910b=tuple([ms.float32]),
+        dtypes_cpu=(),
+        dtypes_gpu=(),
+        op_basic_reference_inputs_func=basic_sample_inputs_mint_conv3d,
+        op_extra_reference_inputs_func=None,
+        op_dynamic_inputs_func=None,
+        op_error_inputs_func=None,
+        is_differentiable=True,
+        default_loss_override={ms.float32: 0.001},
+    ),
+    'mint.nn.functional.linear': OpInfo(
+        name='mint.nn.functional.linear',
+        op=mint.nn.functional.linear,
+        ref=torch.nn.functional.linear,
+        dtypes_ascend=tuple([ms.float16,]),
+        dtypes_ascend910b=tuple([ms.float32]),
+        dtypes_cpu=(),
+        dtypes_gpu=(),
+        op_basic_reference_inputs_func=basic_sample_inputs_mint_linear,
+        op_extra_reference_inputs_func=None,
+        op_dynamic_inputs_func=None,
+        op_error_inputs_func=None,
+        is_differentiable=True,
+    ),
+    'mint.nn.Linear': OpInfo(
+        name='mint.nn.Linear',
+        op=mint_nn_linear_ms,
+        ref=nn_linear_torch,
+        dtypes_ascend=tuple([ms.float16,]),
+        dtypes_ascend910b=tuple([ms.float16]),
+        dtypes_cpu=(),
+        dtypes_gpu=(),
+        op_basic_reference_inputs_func=basic_sample_inputs_mint_nn_linear,
+        op_extra_reference_inputs_func=None,
+        op_dynamic_inputs_func=None,
+        op_error_inputs_func=None,
+        is_differentiable=True,
+    ),
+    'Tensor.masked_scatter': OpInfo(
+        name='Tensor.masked_scatter',
+        op=tensor_masked_scatter_ms,
+        ref=tensor_masked_scatter_torch,
+        dtypes_ascend=tuple([ms.float32,]),
+        dtypes_ascend910b=tuple([ms.float32]),
+        dtypes_cpu=(),
+        dtypes_gpu=(),
+        op_basic_reference_inputs_func=basic_sample_inputs_tensor_masked_scatter,
+        op_extra_reference_inputs_func=None,
+        op_dynamic_inputs_func=None,
+        op_error_inputs_func=None,
+        is_differentiable=True,
+    ),
+    'Tensor.masked_scatter_': OpInfo(
+        name='Tensor.masked_scatter_',
+        op=tensor_masked_scatter__ms,
+        ref=tensor_masked_scatter__torch,
+        dtypes_ascend=tuple([ms.float32,]),
+        dtypes_ascend910b=tuple([ms.float32]),
+        dtypes_cpu=(),
+        dtypes_gpu=(),
+        op_basic_reference_inputs_func=basic_sample_inputs_tensor_masked_scatter_,
+        op_extra_reference_inputs_func=None,
+        op_dynamic_inputs_func=None,
+        op_error_inputs_func=None,
+        is_differentiable=True,
+    ),
+    'Tensor.add_': OpInfo(
+        name='Tensor.add_',
+        op=tensor_add__ms,
+        ref=tensor_add__torch,
+        tensor_variant=lambda op_input, *op_args, **op_kwargs: op_input.add_(
+            op_args[0], alpha=op_kwargs.get('alpha', 1)),
+        dtypes_ascend=tuple([ms.float32,]),
+        dtypes_ascend910b=tuple([ms.float32]),
+        dtypes_cpu=(),
+        dtypes_gpu=(),
+        op_basic_reference_inputs_func=basic_sample_inputs_tensor_add_,
+        op_dynamic_inputs_func=None,
+        op_error_inputs_func=None,
+        is_differentiable=True,
+    ),
+    'mint.nn.functional.selu': UnaryOpInfo(
+        name='mint.nn.functional.selu',
+        op=nn_functional_selu_ms,
+        ref=nn_functional_selu_torch,
+        dtypes_ascend=tuple([ms.float32]),
+        dtypes_ascend910b=tuple([ms.float32,]),
+        dtypes_cpu=(),
+        dtypes_gpu=(),
+        default_loss_override={ms.float16: 0.002},
+    ),
 }
 
 all_op_db = list(op_db.keys())
@@ -5316,6 +5981,7 @@ unary_op_db = [
     'Tensor.long',
     'mint.logical_not',
     'Tensor.logical_not',
+    'mint.nn.functional.selu',
 ]
 
 other_op_db = [
@@ -5370,6 +6036,15 @@ other_op_db = [
     'mint.nn.functional.pad(mode="reflect")',
     'mint.nn.functional.pad(mode="replicate")',
     'mint.nn.functional.pad(mode="circular")'
+    'mint.nn.functional.conv1d',
+    'mint.nn.functional.conv2d',
+    'mint.nn.functional.conv3d',
+    'mint.nn.functional.linear',
+    'mint.nn.Linear',
+    'mint.nn.Conv1d',
+    'Tensor.masked_scatter',
+    'Tensor.masked_scatter_',
+    'Tensor.add_',
 ]
 
 reduction_op_db = [
