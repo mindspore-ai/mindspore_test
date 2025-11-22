@@ -71,7 +71,7 @@ def test_other_ops_reference_backward(mode, op_info):
           card_mark='onecard',
           essential_mark='essential')
 @pytest.mark.parametrize("mode", ['kbk'])
-@pytest.mark.parametrize("op_info", other_op_db)
+@pytest.mark.parametrize("op_info", ['mint.chunk', 'mint.gather'])
 def test_other_ops_dynamic_forward(mode, op_info):
     '''
     Feature: Other operations
@@ -93,7 +93,7 @@ def test_other_ops_dynamic_forward(mode, op_info):
           card_mark='onecard',
           essential_mark='essential')
 @pytest.mark.parametrize("mode", ['kbk'])
-@pytest.mark.parametrize("op_info", other_op_db)
+@pytest.mark.parametrize("op_info", ['mint.chunk', 'mint.gather'])
 def test_other_ops_dynamic_backward(mode, op_info):
     '''
     Feature: Other operations

@@ -23,7 +23,7 @@ import functools
 import pytest
 import mindspore as ms
 from mindspore.common.api import _pynative_executor
-from tests.st.ops.share._internal.meta import OpsFactory, OpCommonGradNetAllInput
+from tests.st.ops.share._internal.meta import OpsFactory
 from tests.st.ops.share._internal.utils import OpSampleInput, make_tensor
 from tests.st.ops.share._op_info.op_info import OpInfo
 from tests.st.ops.share._op_info.op_common import dtypes_as_torch, SMALL_DIM_SIZE
@@ -44,7 +44,6 @@ class BinaryOpsFactory(OpsFactory):
             op_info,
             **kwargs,
         )
-        self.update_op_net_class(op_grad_net_class=OpCommonGradNetAllInput)
         # Ensure pylint knows _douts is defined in this class.
         self._douts = None
 
