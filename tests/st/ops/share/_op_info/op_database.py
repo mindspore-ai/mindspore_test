@@ -25,16 +25,21 @@ from typing import Dict, Optional
 import torch
 import mindspore as ms
 from mindspore import mint, mutable
-from tests.st.ops.share._op_info.op_info import OpInfo, BinaryOpInfo, UnaryOpInfo
+from tests.st.ops.share._op_info.op_info import OpInfo, BinaryOpInfo, UnaryOpInfo, ReductionOpInfo
 from tests.st.ops.share._op_info.op_info import (
+    basic_reference_inputs_reduction_op_common_func,
+    extra_reference_inputs_reduction_op_common_func,
     basic_reference_inputs_binary_op_common_func,
     extra_reference_inputs_binary_op_common_func,
     dynamic_inputs_binary_op_common_func
 )
+from tests.st.ops.share._internal.utils import (
+    OpSampleInput, OpDynamicInput, OpErrorInput,
+    make_tensor, skip_sample_inputs
+)
 from tests.st.ops.share._op_info.op_common import (
     dtypes_as_torch, dtypes_extra_uint, SMALL_DIM_SIZE
 )
-from tests.st.ops.share._internal.utils import OpSampleInput, OpDynamicInput, OpErrorInput, make_tensor
 
 
 # op_basic_reference_inputs_func for ops
@@ -857,6 +862,46 @@ def dynamic_sample_inputs_mint_interpolate(op_info: OpInfo, dtype=None, device=N
                 ),
             )
 
+
+def tensor_sum_ms(op_input, *op_args, **op_kwargs):
+    return op_input.sum(*op_args, **op_kwargs)
+
+def tensor_sum_torch(op_input, *op_args, **op_kwargs):
+    return op_input.sum(*op_args, **op_kwargs)
+
+def tensor_mean_ms(op_input, *op_args, **op_kwargs):
+    return op_input.mean(*op_args, **op_kwargs)
+
+def tensor_mean_torch(op_input, *op_args, **op_kwargs):
+    return op_input.mean(*op_args, **op_kwargs)
+
+def tensor_argmax_ms(op_input, *op_args, **op_kwargs):
+    return op_input.argmax(*op_args, **op_kwargs)
+
+def tensor_argmax_torch(op_input, *op_args, **op_kwargs):
+    return op_input.argmax(*op_args, **op_kwargs)
+
+def tensor_argmin_ms(op_input, *op_args, **op_kwargs):
+    return op_input.argmin(*op_args, **op_kwargs)
+
+def tensor_argmin_torch(op_input, *op_args, **op_kwargs):
+    return op_input.argmin(*op_args, **op_kwargs)
+
+
+def basic_sample_inputs_reduction_count_nonzero(op_info, dtype, device=None, **kwargs):
+    """count_nonzero does not have keepdim parameter"""
+    for sample_input in basic_reference_inputs_reduction_op_common_func(op_info, dtype, device, **kwargs):
+        sample_input.op_kwargs.pop('keepdim', None)
+        yield sample_input
+
+
+def extra_sample_inputs_reduction_count_nonzero(op_info, dtype, device=None, **kwargs):
+    """count_nonzero does not have keepdim parameter"""
+    for sample_input in extra_reference_inputs_reduction_op_common_func(op_info, dtype, device, **kwargs):
+        sample_input.op_kwargs.pop('keepdim', None)
+        yield sample_input
+
+
 # op database
 op_db: Dict[str, OpInfo] = {
     'mint.add': BinaryOpInfo(
@@ -1172,6 +1217,180 @@ op_db: Dict[str, OpInfo] = {
         op_extra_reference_inputs_func=None,
         op_dynamic_inputs_func=functools.partial(dynamic_sample_inputs_mint_interpolate, mode="nearest3d"),
     ),
+    'mint.mean': ReductionOpInfo(
+        name='mint.mean',
+        op=mint.mean,
+        ref=torch.mean,
+        # Todo: MindSpore additionally supports int dtype, while PyTorch does not.
+        dtypes_ascend=tuple(
+            d for d in dtypes_as_torch
+            if (d.is_floating_point or d.is_complex) and d != ms.bfloat16
+        ),
+        dtypes_ascend910b=tuple(
+            d for d in dtypes_as_torch
+            if d.is_floating_point or d.is_complex
+        ),
+        dtypes_cpu=(),
+        dtypes_gpu=(),
+        # Todo: empty tensor case result not correct.
+        op_extra_reference_inputs_func=skip_sample_inputs(
+            extra_reference_inputs_reduction_op_common_func, 'empty'
+        ),
+        op_dynamic_inputs_func=None,
+    ),
+    'mint.argmax': ReductionOpInfo(
+        name='mint.argmax',
+        op=mint.argmax,
+        ref=torch.argmax,
+        # Todo: MindSpore additionally supports uint16/32/64 bool and complex
+        # dtype, while PyTorch does not.
+        dtypes_ascend=tuple(
+            d for d in dtypes_as_torch
+            if d not in (ms.bfloat16, ms.bool_, ms.complex64, ms.complex128)
+        ),
+        dtypes_ascend910b=tuple(
+            d for d in dtypes_as_torch
+            if d not in (ms.bool_, ms.complex64, ms.complex128)
+        ),
+        dtypes_cpu=(),
+        dtypes_gpu=(),
+        # Todo: When dim is default or empty tensor cases, results are not correct.
+        op_basic_reference_inputs_func=skip_sample_inputs(
+            basic_reference_inputs_reduction_op_common_func, '_default_keepdim'
+        ),
+        op_extra_reference_inputs_func=skip_sample_inputs(
+            extra_reference_inputs_reduction_op_common_func,
+            ['empty', 'discontiguous_default', '_extremal_nan']
+        ),
+        op_dynamic_inputs_func=None,
+        supports_multiple_dims=False,
+        is_differentiable=False,
+    ),
+    'mint.argmin': ReductionOpInfo(
+        name='mint.argmin',
+        op=mint.argmin,
+        ref=torch.argmin,
+        # To do: MindSpore additionally supports uint16/32/64 dtype,
+        # while PyTorch does not.
+        dtypes_ascend=tuple(
+            d for d in dtypes_as_torch
+            if d not in (ms.bfloat16, ms.bool_, ms.complex64, ms.complex128)
+        ),
+        dtypes_ascend910b=tuple(
+            d for d in dtypes_as_torch
+            if d not in (ms.bool_, ms.complex64, ms.complex128)
+        ),
+        dtypes_cpu=(),
+        dtypes_gpu=(),
+        # Todo: When dim is default or empty tensor cases,
+        # results are not correct.
+        op_basic_reference_inputs_func=skip_sample_inputs(
+            basic_reference_inputs_reduction_op_common_func,
+            '_default_keepdim'
+        ),
+        op_extra_reference_inputs_func=skip_sample_inputs(
+            extra_reference_inputs_reduction_op_common_func,
+            ['empty', 'discontiguous_default', '_extremal_nan']
+        ),
+        op_dynamic_inputs_func=None,
+        supports_multiple_dims=False,
+        is_differentiable=False,
+    ),
+    'mint.count_nonzero': ReductionOpInfo(
+        name='mint.count_nonzero',
+        op=mint.count_nonzero,
+        ref=torch.count_nonzero,
+        is_differentiable=False,
+        # To do: MindSpore additionally supports uint16/32/64 dtype, while PyTorch does not.
+        op_basic_reference_inputs_func=basic_sample_inputs_reduction_count_nonzero,
+        op_extra_reference_inputs_func=extra_sample_inputs_reduction_count_nonzero,
+        op_dynamic_inputs_func=None,
+        dtypes_ascend=tuple(d for d in dtypes_as_torch if d != ms.bfloat16),
+        dtypes_ascend910b=tuple(d for d in dtypes_as_torch),
+        dtypes_cpu=(),
+        dtypes_gpu=(),
+    ),
+    'Tensor.argmax': ReductionOpInfo(
+        name='Tensor.argmax',
+        op=tensor_argmax_ms,
+        ref=tensor_argmax_torch,
+        # To do: MindSpore additionally supports uint16/32/64 bool and complex
+        # dtype, while PyTorch does not.
+        dtypes_ascend=tuple(
+            d for d in dtypes_as_torch
+            if d not in (ms.bfloat16, ms.bool_, ms.complex64, ms.complex128)
+        ),
+        dtypes_ascend910b=tuple(
+            d for d in dtypes_as_torch
+            if d not in (ms.bool_, ms.complex64, ms.complex128)
+        ),
+        dtypes_cpu=(ms.float32,),
+        dtypes_gpu=(),
+        # Todo: When dim is default or empty tensor cases,
+        # results are not correct.
+        op_basic_reference_inputs_func=skip_sample_inputs(
+            basic_reference_inputs_reduction_op_common_func,
+            ['_default', 'dim0_keepdim', 'dim_last']
+        ),
+        op_extra_reference_inputs_func=skip_sample_inputs(
+            extra_reference_inputs_reduction_op_common_func,
+            ['empty', '_default', '_extremal_nan']
+        ),
+        op_dynamic_inputs_func=None,
+        supports_multiple_dims=False,
+        is_differentiable=False,
+    ),
+    'Tensor.argmin': ReductionOpInfo(
+        name='Tensor.argmin',
+        op=tensor_argmin_ms,
+        ref=tensor_argmin_torch,
+        # To do: MindSpore additionally supports uint16/32/64 dtype,
+        # while PyTorch does not.
+        dtypes_ascend=tuple(
+            d for d in dtypes_as_torch
+            if d not in (ms.bfloat16, ms.bool_, ms.complex64, ms.complex128)
+        ),
+        dtypes_ascend910b=tuple(
+            d for d in dtypes_as_torch
+            if d not in (ms.bool_, ms.complex64, ms.complex128)
+        ),
+        dtypes_cpu=(),
+        dtypes_gpu=(),
+        # Todo: When dim is default or empty tensor cases,
+        # results are not correct.
+        op_basic_reference_inputs_func=skip_sample_inputs(
+            basic_reference_inputs_reduction_op_common_func,
+            '_default'
+        ),
+        op_extra_reference_inputs_func=skip_sample_inputs(
+            extra_reference_inputs_reduction_op_common_func,
+            ['empty', '_default', '_extremal_nan']
+        ),
+        op_dynamic_inputs_func=None,
+        supports_multiple_dims=False,
+        is_differentiable=False,
+    ),
+    'Tensor.sum': ReductionOpInfo(
+        name='Tensor.sum',
+        op=tensor_sum_ms,
+        ref=tensor_sum_torch,
+        op_dynamic_inputs_func=None,
+        dtypes_ascend=(ms.float32,),
+        dtypes_ascend910b=(ms.float32,),
+        dtypes_cpu=(),
+        dtypes_gpu=(),
+        convert_half_to_float=True,
+    ),
+    'Tensor.mean': ReductionOpInfo(
+        name='Tensor.mean',
+        op=tensor_mean_ms,
+        ref=tensor_mean_torch,
+        op_dynamic_inputs_func=None,
+        dtypes_ascend=(ms.float32,),
+        dtypes_ascend910b=(ms.float32,),
+        dtypes_cpu=(),
+        dtypes_gpu=(),
+    ),
     'Tensor.eq': BinaryOpInfo(
         name='Tensor.eq',
         op=tensor_eq_ms,
@@ -1339,6 +1558,17 @@ other_op_db = [
     'mint.nn.functional.interpolate(mode="nearest")-1d',
     'mint.nn.functional.interpolate(mode="nearest")-2d',
     'mint.nn.functional.interpolate(mode="nearest")-3d',
+]
+
+reduction_op_db = [
+    'mint.mean',
+    'mint.argmax',
+    'mint.argmin',
+    'mint.count_nonzero',
+    'Tensor.mean',
+    'Tensor.sum',
+    'Tensor.argmax',
+    'Tensor.argmin',
 ]
 
 def get_op_info(op_name: str, *, op_database: Optional[Dict[str, OpInfo]] = None) -> OpInfo:

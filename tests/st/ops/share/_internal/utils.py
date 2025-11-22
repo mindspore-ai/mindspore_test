@@ -469,7 +469,8 @@ def make_tensor(
         result = ms.Tensor(_generate_ndarray(shape, dtype, low, high, random_method), dtype=dtype)
 
     if device is not None and device.lower() in ['ascend', 'cpu']:
-        result = result.to('Ascend' if device.lower() == 'ascend' else device)
+        device_str = 'Ascend' if device.lower() == 'ascend' else 'CPU'
+        result = result.move_to(device_str)
 
     if discontiguous:
         if device is not None and device.lower() != 'gpu':
@@ -489,7 +490,8 @@ def make_tensor_with_np_array(
     result = ms.Tensor(np_array, dtype=dtype)
 
     if device is not None and device.lower() in ['ascend', 'cpu']:
-        result = result.to('Ascend' if device.lower() == 'ascend' else device)
+        device_str = 'Ascend' if device.lower() == 'ascend' else 'CPU'
+        result = result.move_to(device_str)
     if discontiguous:
         if device is not None and device.lower() != 'gpu':
             result = _tensor_to_discontiguous(result)
@@ -508,7 +510,7 @@ def skip_sample_inputs(input_func, skip_keywords):
     if isinstance(skip_keywords, str):
         skip_keywords = [skip_keywords]
 
-    def wrapped_func(op_info: OpInfo, dtype=None, device=None, **kwargs):
+    def wrapped_func(op_info, dtype=None, device=None, **kwargs):
         for sample_input in input_func(op_info, dtype, device, **kwargs):
             if any(keyword in sample_input.sample_name for keyword in skip_keywords):
                 continue
