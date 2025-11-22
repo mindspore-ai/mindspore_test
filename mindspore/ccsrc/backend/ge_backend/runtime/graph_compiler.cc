@@ -40,7 +40,7 @@
 #ifdef ENABLE_DUMP_IR
 #include "mindspore/ccsrc/utils/ir_dump/anf_ir_dump.h"
 #endif
-#include "include/backend/optimizer/graph_optimizer.h"
+#include "include/backend/common/pass_manager/graph_optimizer.h"
 #include "tools/profiler/profiler.h"
 #include "include/utils/compile_cache_context.h"
 #include "frontend/jit/ps/base.h"

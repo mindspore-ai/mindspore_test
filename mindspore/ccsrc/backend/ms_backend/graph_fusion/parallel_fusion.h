@@ -30,7 +30,7 @@
 #include "include/utils/anfalgo.h"
 #include "include/backend/optimizer/optimizer.h"
 #include "backend/ms_backend/graph_fusion/parallel_cost_model.h"
-#include "include/backend/kernel_graph.h"
+#include "include/backend/common/kernel_graph/kernel_graph.h"
 #include "utils/ms_context.h"
 
 namespace mindspore::graphkernel {

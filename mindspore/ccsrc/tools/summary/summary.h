@@ -18,7 +18,7 @@
 
 #include <map>
 #include <string>
-#include "include/backend/kernel_graph.h"
+#include "include/backend/common/kernel_graph/kernel_graph.h"
 #include "ir/tensor.h"
 #include "tools/visible.h"
 

@@ -27,7 +27,7 @@
 #include "mindspore/ccsrc/pynative/utils/pyboost/grad_functions/pyboost_grad_functions.h"
 #include "mindspore/ccsrc/pynative/utils/pyboost/comm_handle.h"
 #include "include/backend/optimizer/helper.h"
-#include "include/backend/optimizer/op_adaptation_info_factory.h"
+#include "include/backend/common/pass_manager/op_adaptation_info_factory.h"
 #include "include/utils/pynative/common_utils.h"
 #include "pynative/utils/pynative_utils.h"
 #include "utils/core_op_utils.h"

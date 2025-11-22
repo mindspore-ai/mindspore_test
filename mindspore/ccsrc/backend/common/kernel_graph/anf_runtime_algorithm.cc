@@ -39,7 +39,7 @@
 #include "include/utils/tensor_py.h"
 #include "mindspore/ccsrc/utils/ir_dump/anf_dump_utils.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_info.h"
-#include "include/backend/kernel_graph.h"
+#include "include/backend/common/kernel_graph/kernel_graph.h"
 #include "include/utils/convert_utils.h"
 #include "device_address/device_address.h"
 #include "include/backend/optimizer/helper.h"

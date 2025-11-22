@@ -25,7 +25,7 @@
 #include <string>
 #include <vector>
 
-#include "include/backend/kernel_graph.h"
+#include "include/backend/common/kernel_graph/kernel_graph.h"
 #include "nlohmann/json.hpp"
 #include "tools/visible.h"
 #include "utils/ms_utils.h"

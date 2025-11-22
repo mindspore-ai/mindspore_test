@@ -25,7 +25,7 @@
 #include "backend/ge_backend/graph_ir/types.h"
 #include "backend/ge_backend/graph_ir/utils.h"
 #include "mindspore/ccsrc/utils/ir_dump/anf_ir_dump.h"
-#include "include/backend/kernel_graph.h"
+#include "include/backend/common/kernel_graph/kernel_graph.h"
 #include "utils/phase.h"
 #include "plugin/ascend/res_manager/hccl_adapter/hccl_adapter.h"
 #include "plugin/ascend/res_manager/device_context_conf/op_tuning_conf.h"

@@ -27,7 +27,7 @@
 #include "ir/anf.h"
 #include "ir/tensor.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel.h"
-#include "include/backend/kernel_graph.h"
+#include "include/backend/common/kernel_graph/kernel_graph.h"
 #include "include/runtime/hardware_abstract/device_context/device_context.h"
 
 namespace mindspore {

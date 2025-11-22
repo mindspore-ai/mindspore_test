@@ -38,7 +38,7 @@
 #include "device_address/device_address.h"
 #include "include/frontend/jit/ps/action_interface.h"
 #include "include/utils/pynative/grad_state.h"
-#include "include/backend/py_execute_utils.h"
+#include "include/backend/common/kernel_graph/py_execute_utils.h"
 #include "include/utils/python_adapter.h"
 #include "include/utils/anfalgo.h"
 #include "include/utils/utils.h"

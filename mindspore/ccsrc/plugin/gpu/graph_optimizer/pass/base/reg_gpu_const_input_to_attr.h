@@ -16,7 +16,7 @@
 #ifndef MINDSPORE_CCSRC_PLUGIN_GPU_OPTIMIZER_REG_GPU_CONST_INPUT_TO_ATTR_H_
 #define MINDSPORE_CCSRC_PLUGIN_GPU_OPTIMIZER_REG_GPU_CONST_INPUT_TO_ATTR_H_
 
-#include "include/backend/optimizer/op_adaptation_info_factory.h"
+#include "include/backend/common/pass_manager/op_adaptation_info_factory.h"
 #include "mindspore/ops/op_def/sparse_op_name.h"
 #include "mindspore/ops/op_def/sequence_op_name.h"
 #include "mindspore/ops/op_def/array_op_name.h"

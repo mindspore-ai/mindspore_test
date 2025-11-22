@@ -155,8 +155,6 @@ using EquivPtr = std::shared_ptr<Equiv>;
 using PrimitiveVarMap = std::unordered_map<PrimitivePtr, VarPtr>;
 using PrimitiveVarMapPtr = std::shared_ptr<PrimitiveVarMap>;
 
-inline bool DefaultTypeEq(const BaseRef &x, const BaseRef &y) { return x.type() == y.type(); }
-
 class PatternEngine {
  public:
   explicit PatternEngine(const std::shared_ptr<Visitor> &visitor) : visitor_(visitor) {}

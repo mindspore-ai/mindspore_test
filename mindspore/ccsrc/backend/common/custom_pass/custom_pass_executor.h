@@ -18,7 +18,7 @@
 #define MINDSPORE_CCSRC_BACKEND_COMMON_CUSTOM_PASS_CUSTOM_PASS_EXECUTOR_H_
 
 #include <string>
-#include "include/backend/kernel_graph.h"
+#include "include/backend/common/kernel_graph/kernel_graph.h"
 #include "include/backend/visible.h"
 
 namespace mindspore {

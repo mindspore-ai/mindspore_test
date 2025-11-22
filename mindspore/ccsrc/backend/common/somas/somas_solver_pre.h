@@ -28,7 +28,7 @@
 #include <climits>
 #include "utils/hash_map.h"
 #include "utils/somas/somas_solver_alg.h"
-#include "include/backend/kernel_graph.h"
+#include "include/backend/common/kernel_graph/kernel_graph.h"
 
 using mindspore::HashMap;
 using std::vector;

@@ -37,7 +37,7 @@
 #include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
 #include "utils/ms_context.h"
 #include "mindspore/ccsrc/utils/ir_dump/anf_ir_dump.h"
-#include "include/backend/optimizer/graph_optimizer.h"
+#include "include/backend/common/pass_manager/graph_optimizer.h"
 #include "ir/func_graph_cloner.h"
 #include "ir/dtype/tensor_type.h"
 #include "mindspore/ops/op_def/op_name.h"

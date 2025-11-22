@@ -29,7 +29,7 @@
 #include "include/runtime/hardware_abstract/kernel_base/kernel.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_tensor.h"
 #include "ir/tensor.h"
-#include "include/backend/kernel_graph.h"
+#include "include/backend/common/kernel_graph/kernel_graph.h"
 #include "runtime/hardware_abstract/visible.h"
 #ifdef __APPLE__
 #include "async/spinlock.h"

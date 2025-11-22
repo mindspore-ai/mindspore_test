@@ -15,7 +15,7 @@
  */
 #include "add_neg_fusion_pass.h"
 #include "mindspore/ccsrc/include/backend/optimizer/pass.h"
-#include "mindspore/ccsrc/include/backend/optimizer/pattern_to_pattern.h"
+#include "include/backend/common/pass_manager/pattern_to_pattern.h"
 #include "include/utils/anfalgo.h"
 #include "mindspore/core/include/utils/log_adapter.h"
 #include "mindspore/ccsrc/include/backend/anf_runtime_algorithm.h"

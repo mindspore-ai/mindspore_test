@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef MINDSPORE_CCSRC_BACKEND_OPTIMIZER_COMMON_CONST_INPUT_TO_ATTR_FACTORY_H_
-#define MINDSPORE_CCSRC_BACKEND_OPTIMIZER_COMMON_CONST_INPUT_TO_ATTR_FACTORY_H_
+#ifndef MINDSPORE_CCSRC_INCLUDE_BACKEND_COMMON_PASS_MANAGER_OP_ADAPTATION_INFO_FACTORY_H_
+#define MINDSPORE_CCSRC_INCLUDE_BACKEND_COMMON_PASS_MANAGER_OP_ADAPTATION_INFO_FACTORY_H_
 #include <string>
 #include <utility>
 #include <vector>
@@ -111,4 +111,4 @@ class BACKEND_COMMON_EXPORT RegisterHelper {
   static opt::RegisterHelper g_reg_##device_name##_##flag##_##me_op_name( \
     me_op_name, device_name, flag, std::tuple_size<decltype(std::make_tuple(__VA_ARGS__))>::value, __VA_ARGS__)
 }  // namespace mindspore::opt
-#endif  // MINDSPORE_CCSRC_BACKEND_OPTIMIZER_COMMON_CONST_INPUT_TO_ATTR_FACTORY_H_
+#endif  // MINDSPORE_CCSRC_INCLUDE_BACKEND_COMMON_PASS_MANAGER_OP_ADAPTATION_INFO_FACTORY_H_

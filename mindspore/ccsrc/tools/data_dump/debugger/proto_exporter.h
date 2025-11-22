@@ -18,7 +18,7 @@
 
 #include <string>
 
-#include "include/backend/kernel_graph.h"
+#include "include/backend/common/kernel_graph/kernel_graph.h"
 #include "tools/visible.h"
 #include "utils/symbolic.h"
 

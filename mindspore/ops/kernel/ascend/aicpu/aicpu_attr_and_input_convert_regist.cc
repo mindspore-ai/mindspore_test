@@ -20,7 +20,7 @@
 #include "op_def/math_ops.h"
 #include "op_def/array_ops.h"
 #include "include/utils/anfalgo.h"
-#include "include/backend/kernel_graph.h"
+#include "include/backend/common/kernel_graph/kernel_graph.h"
 #include "include/utils/convert_utils.h"
 #include "include/backend/optimizer/helper.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"

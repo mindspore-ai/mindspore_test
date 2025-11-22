@@ -23,7 +23,7 @@
 #include <utility>
 #include "include/runtime/hardware_abstract/kernel_base/kernel.h"
 #include "ir/device_type.h"
-#include "include/backend/kernel_graph.h"
+#include "include/backend/common/kernel_graph/kernel_graph.h"
 
 namespace mindspore {
 namespace backend {

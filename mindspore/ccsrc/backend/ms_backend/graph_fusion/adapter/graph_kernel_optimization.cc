@@ -76,7 +76,7 @@
 #include "backend/ms_backend/graph_fusion/adapter/split_model_cpu.h"
 #include "backend/ms_backend/graph_fusion/adapter/split_model_gpu.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
-#include "include/backend/optimizer/graph_optimizer.h"
+#include "include/backend/common/pass_manager/graph_optimizer.h"
 namespace mindspore::graphkernel {
 using opt::CommonSubexpressionElimination;
 using opt::GetitemTuple;

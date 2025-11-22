@@ -23,7 +23,7 @@
 #include "include/utils/callback.h"
 #include "nlohmann/json.hpp"
 #include "utils/ms_utils.h"
-#include "include/backend/kernel_graph.h"
+#include "include/backend/common/kernel_graph/kernel_graph.h"
 #undef private
 
 namespace mindspore {

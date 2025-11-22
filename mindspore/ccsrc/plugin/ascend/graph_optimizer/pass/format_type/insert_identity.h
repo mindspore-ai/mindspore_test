@@ -17,7 +17,7 @@
 #define MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_OPTIMIZER_FORMAT_TYPE_INSERT_IDENTITY_H_
 #include <string>
 #include "include/backend/optimizer/optimizer.h"
-#include "include/backend/optimizer/pattern_engine.h"
+#include "include/backend/common/pass_manager/pattern_engine.h"
 
 namespace mindspore {
 namespace opt {

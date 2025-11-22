@@ -28,7 +28,7 @@
 #include <unordered_set>
 #include <utility>
 #include <tuple>
-#include "include/backend/kernel_graph.h"
+#include "include/backend/common/kernel_graph/kernel_graph.h"
 #include "include/utils/contract.h"
 #include "include/runtime/hardware_abstract/device_context/device_context.h"
 

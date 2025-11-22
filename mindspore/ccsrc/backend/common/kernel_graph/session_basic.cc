@@ -39,7 +39,7 @@
 #include "include/utils/anfalgo.h"
 #include "backend/common/pass_manager/common_backend_optimization.h"
 #include "include/backend/optimizer/helper.h"
-#include "include/backend/optimizer/op_adaptation_info_factory.h"
+#include "include/backend/common/pass_manager/op_adaptation_info_factory.h"
 #include "pynative/utils/base.h"
 #include "utils/ms_utils.h"
 #include "ir/anf.h"

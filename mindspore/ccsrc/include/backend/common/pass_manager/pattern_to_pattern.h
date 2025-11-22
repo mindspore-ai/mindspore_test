@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_PATTERN_TO_PATTERN_H
-#define MINDSPORE_PATTERN_TO_PATTERN_H
+#ifndef MINDSPORE_CCSRC_INCLUDE_BACKEND_COMMON_PASS_MANAGER_PATTERN_TO_PATTERN_H
+#define MINDSPORE_CCSRC_INCLUDE_BACKEND_COMMON_PASS_MANAGER_PATTERN_TO_PATTERN_H
 
 #include <memory>
 #include <string>
@@ -194,4 +194,4 @@ class BACKEND_COMMON_EXPORT PatternToPatternPass : public PatternPass {
 }  // namespace opt
 }  // namespace mindspore
 
-#endif  // MINDSPORE_PATTERN_TO_PATTERN_H
+#endif  // MINDSPORE_CCSRC_INCLUDE_BACKEND_COMMON_PASS_MANAGER_PATTERN_TO_PATTERN_H

@@ -49,7 +49,7 @@
 #include "include/runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel_flags.h"
 #include "plugin/gpu/profiler/gpu_profiling.h"
 #include "plugin/gpu/profiler/gpu_profiling_utils.h"
-#include "include/backend/kernel_graph.h"
+#include "include/backend/common/kernel_graph/kernel_graph.h"
 #include "kernel/gpu/gpu_kernel.h"
 #include "kernel/gpu/gpu_kernel_factory.h"
 #include "backend/common/pass_manager/common_backend_optimization.h"
