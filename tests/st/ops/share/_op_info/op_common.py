@@ -69,7 +69,7 @@ def get_default_loss(dtype):
         return 1e-4
     if dtype in (
             ms.float64, ms.complex128, torch.float64, torch.complex128,
-            np.float64, np.complex128):
+            np.float64, np.complex128, float, complex):
         return 1e-5
     if dtype in (ms.bfloat16, torch.bfloat16):
         return 4e-3

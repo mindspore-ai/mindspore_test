@@ -423,22 +423,22 @@ def _generate_binary_op_scalar_inputs_func(
     )
     _scalar = 1.0 if dtype.is_complex else make_func(()).item()
 
-    if op_info.supports_left_python_scalar:
+    if op_info.supports_right_python_scalar:
         for shape in shapes:
             yield OpSampleInput(
                 op_input=make_func(shape, low=op_info.input_low, high=op_info.input_high),
                 op_args=(_scalar,),
                 op_kwargs={},
-                sample_name=f"{op_info.name}_scalarxtensor_inputs",
+                sample_name=f"{op_info.name}_tensorxscalar_inputs",
             )
 
-    if op_info.supports_right_python_scalar:
+    if op_info.supports_left_python_scalar:
         for shape in shapes:
             yield OpSampleInput(
                 op_input=_scalar,
                 op_args=(make_func(shape, low=op_info.other_low, high=op_info.other_high),),
                 op_kwargs={},
-                sample_name=f"{op_info.name}_tensorxscalar_inputs",
+                sample_name=f"{op_info.name}_scalarxtensor_inputs",
             )
 
     if op_info.supports_both_python_scalar:
