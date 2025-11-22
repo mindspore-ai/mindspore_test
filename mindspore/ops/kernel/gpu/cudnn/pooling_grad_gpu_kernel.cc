@@ -17,8 +17,8 @@
 #include "kernel/gpu/cudnn/pooling_grad_gpu_kernel.h"
 #include <functional>
 #include <memory>
-#include "mindspore/ops/op_def/math_ops.h"
-#include "mindspore/ops/op_def/conv_pool_op_name.h"
+#include "primitive/math_ops.h"
+#include "primitive/conv_pool_op_name.h"
 #include "mindspore/ops/infer/grad/pool_grad.h"
 #include "mindspore/ops/infer/grad/avg_pool_3d_grad.h"
 #include "mindspore/ops/infer/grad/max_pool_3d_grad.h"
@@ -27,7 +27,7 @@
 #include "ir/format_utils.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/binary_ops_impl.cuh"
 #include "kernel/gpu/cuda_impl/cuda_ops/avg_pool3d_helper_impl.cuh"
-#include "mindspore/ops/op_def/op_name.h"
+#include "primitive/op_name.h"
 
 namespace mindspore {
 namespace kernel {

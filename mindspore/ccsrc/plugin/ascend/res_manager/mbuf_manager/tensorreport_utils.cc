@@ -25,7 +25,7 @@
 #include "tools/error_handler/error_config.h"
 #include "utils/log_adapter.h"
 #include "plugin/ascend/res_manager/symbol_interface/acl_rt_symbol.h"
-#include "mindspore/ops/op_def/image_op_name.h"
+#include "primitive/image_op_name.h"
 #include "include/utils/anfalgo.h"
 #include "utils/ms_exception.h"
 #include "include/utils/python_adapter.h"

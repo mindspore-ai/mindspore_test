@@ -17,7 +17,7 @@
 #include <string>
 #include "common/common_test.h"
 
-#include "mindspore/ops/op_def/arithmetic_op_name.h"
+#include "primitive/arithmetic_op_name.h"
 #include "utils/log_adapter.h"
 #include "frontend/jit/ps/validator.h"
 #include "frontend/jit/ps/parse/parse.h"

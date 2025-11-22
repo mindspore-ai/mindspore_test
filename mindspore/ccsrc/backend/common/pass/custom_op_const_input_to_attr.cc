@@ -16,11 +16,11 @@
 #include "backend/common/pass/custom_op_const_input_to_attr.h"
 #include <vector>
 #include <string>
-#include "mindspore/ops/op_def/framework_ops.h"
+#include "primitive/framework_ops.h"
 #include "backend/common/pass/const_input_to_attr.h"
 #include "include/utils/anfalgo.h"
 #include "include/backend/optimizer/helper.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "primitive/auto_generate/gen_ops_primitive_c.h"
 
 namespace mindspore {
 namespace opt {

@@ -22,11 +22,11 @@
 #include <string>
 #include <memory>
 #include <utility>
-#include "mindspore/ops/op_def/random_ops.h"
-#include "mindspore/ops/op_def/nn_optimizer_ops.h"
-#include "mindspore/ops/op_def/math_ops.h"
-#include "mindspore/ops/op_def/array_ops.h"
-#include "mindspore/ops/op_def/framework_ops.h"
+#include "primitive/random_ops.h"
+#include "primitive/nn_optimizer_ops.h"
+#include "primitive/math_ops.h"
+#include "primitive/array_ops.h"
+#include "primitive/framework_ops.h"
 #include "include/utils/python_adapter.h"
 #include "backend/ms_backend/graph_fusion/core/split_umonad.h"
 #include "backend/ms_backend/graph_fusion/substitute_dropout.h"
@@ -40,16 +40,16 @@
 #include "include/backend/common/pass_manager/graph_optimizer.h"
 #include "ir/func_graph_cloner.h"
 #include "ir/dtype/tensor_type.h"
-#include "mindspore/ops/op_def/op_name.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_e.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_g.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
+#include "primitive/op_name.h"
+#include "primitive/auto_generate/gen_ops_primitive_a.h"
+#include "primitive/auto_generate/gen_ops_primitive_d.h"
+#include "primitive/auto_generate/gen_ops_primitive_e.h"
+#include "primitive/auto_generate/gen_ops_primitive_g.h"
+#include "primitive/auto_generate/gen_ops_primitive_l.h"
+#include "primitive/auto_generate/gen_ops_primitive_m.h"
+#include "primitive/auto_generate/gen_ops_primitive_r.h"
+#include "primitive/auto_generate/gen_ops_primitive_s.h"
+#include "primitive/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore::graphkernel {
 ExpanderPtr GetExpander(const AnfNodePtr &node, const ExpanderPtr &init) {

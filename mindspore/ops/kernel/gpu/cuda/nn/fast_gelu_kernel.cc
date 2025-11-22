@@ -18,7 +18,7 @@
 #include <algorithm>
 #include <functional>
 #include <memory>
-#include "mindspore/ops/op_def/nn_optimizer_ops.h"
+#include "primitive/nn_optimizer_ops.h"
 
 namespace mindspore {
 namespace kernel {

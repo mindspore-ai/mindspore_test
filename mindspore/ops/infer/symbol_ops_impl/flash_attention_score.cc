@@ -15,7 +15,7 @@
  */
 #include "abstract/symbolic_shape/operation_builder.h"
 #include "mindspore/ops/infer/ops_func_impl/flash_attention_score.h"
-#include "mindspore/ops/op_def/op_enum.h"
+#include "include/op_enum.h"
 #include "ops_utils/op_constants.h"
 
 namespace mindspore {

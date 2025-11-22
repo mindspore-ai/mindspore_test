@@ -25,7 +25,7 @@
 #include <list>
 #include <utility>
 #include "ops/base_operator.h"
-#include "ops/op_def.h"
+#include "include/op_def.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel.h"
 #include "include/runtime/hardware_abstract/kernel_base/ms_factory.h"
 #include "include/utils/utils.h"

@@ -17,9 +17,9 @@
 #include "backend/ms_backend/graph_fusion/common/graph_kernel_common_test_suite.h"
 #include "backend/ms_backend/graph_fusion/adapter/graph_kernel_cluster_cloud.h"
 #include "backend/ms_backend/graph_fusion/reorder_ops.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_n.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
+#include "primitive/auto_generate/gen_ops_primitive_c.h"
+#include "primitive/auto_generate/gen_ops_primitive_n.h"
+#include "primitive/auto_generate/gen_ops_primitive_t.h"
 #include "utils/anf_utils.h"
 #include "include/utils/anfalgo.h"
 

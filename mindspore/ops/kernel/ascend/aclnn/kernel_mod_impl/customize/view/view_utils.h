@@ -18,7 +18,7 @@
 #include <vector>
 #include "include/runtime/hardware_abstract/kernel_base/kernel.h"
 #include "ir/tensor_storage_info.h"
-#include "mindspore/ops/view/view_strides_calculator.h"
+#include "view/view_strides_calculator.h"
 
 namespace mindspore {
 namespace kernel {

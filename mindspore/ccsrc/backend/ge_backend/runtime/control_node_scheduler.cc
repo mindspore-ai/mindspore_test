@@ -15,12 +15,12 @@
  */
 
 #include "backend/ge_backend/runtime/control_node_scheduler.h"
-#include "mindspore/ops/op_def/sequence_ops.h"
-#include "mindspore/ops/op_def/framework_ops.h"
+#include "primitive/sequence_ops.h"
+#include "primitive/framework_ops.h"
 #include "backend/ge_backend/runtime/control_node_parser.h"
 #include "backend/ge_backend/runtime/scheduler_helper.h"
 #include "backend/ge_backend/runtime/actor/actor_dump.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_n.h"
+#include "primitive/auto_generate/gen_ops_primitive_n.h"
 #include "ir/func_graph_flag.h"
 
 namespace mindspore {

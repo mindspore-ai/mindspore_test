@@ -21,10 +21,10 @@
 #include <functional>
 #include <utility>
 #include "utils/anf_utils.h"
-#include "mindspore/ops/op_def/framework_ops.h"
-#include "mindspore/ops/op_def/sequence_ops.h"
-#include "mindspore/ops/op_def/array_ops.h"
-#include "mindspore/ops/op_def/arithmetic_ops.h"
+#include "primitive/framework_ops.h"
+#include "primitive/sequence_ops.h"
+#include "primitive/array_ops.h"
+#include "primitive/arithmetic_ops.h"
 #include "abstract/symbolic_shape/operation_builder.h"
 #include "include/utils/anfalgo.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_info.h"
@@ -35,7 +35,7 @@
 #include "include/runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel_flags.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "backend/common/pass/insert_type_transform_op.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
+#include "primitive/auto_generate/gen_ops_primitive_t.h"
 #include "ir/func_graph_flag.h"
 
 namespace mindspore::graphkernel::packet {

@@ -21,11 +21,11 @@
 #include "pybind_api/gil_scoped_long_running.h"
 #include "pynative/utils/predict_out_type_map.h"
 #include "pynative/forward/pyboost/forward_task.h"
-#include "op_def/auto_generate/gen_ops_def.h"
+#include "primitive/auto_generate/gen_ops_def.h"
 #include "mindspore/ccsrc/pynative/utils/pyboost/functions/auto_grad_guard.h"
 #include "mindspore/ccsrc/pynative/utils/pyboost/functions/base.h"
 #include "mindspore/ccsrc/pynative/utils/pyboost/auto_generate/custom_ext.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "primitive/auto_generate/gen_ops_primitive_c.h"
 
 namespace mindspore::pynative {
 py::object PYNATIVE_EXPORT PyboostCustomExtBase(const PrimitivePtr &prim, const py::list &args) {

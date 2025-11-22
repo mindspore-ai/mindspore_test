@@ -19,7 +19,7 @@
 #include <string>
 #include <memory>
 
-#include "mindspore/ops/op_def/framework_ops.h"
+#include "primitive/framework_ops.h"
 #include "backend/ms_backend/ms_backend_base.h"
 #include "common/device_common_test.h"
 #include "utils/ms_context.h"
@@ -36,7 +36,7 @@
 #include "backend/common/kernel_graph/session_factory.h"
 #include "runtime/core/graph_scheduler/base/graph_compiler.h"
 #include "backend/ms_backend/segment_runner.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "primitive/auto_generate/gen_ops_primitive_r.h"
 
 namespace mindspore {
 namespace {

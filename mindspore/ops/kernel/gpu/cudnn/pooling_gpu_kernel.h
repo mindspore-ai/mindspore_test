@@ -23,8 +23,8 @@
 #include <algorithm>
 #include <functional>
 #include "kernel/gpu/gpu_kernel.h"
-#include "mindspore/ops/op_def/math_ops.h"
-#include "mindspore/ops/op_def/conv_pool_op_name.h"
+#include "primitive/math_ops.h"
+#include "primitive/conv_pool_op_name.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
 #include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
 #include "ir/format_utils.h"

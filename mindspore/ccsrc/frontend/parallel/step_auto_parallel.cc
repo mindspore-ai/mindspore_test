@@ -47,15 +47,15 @@
 #include "ir/param_info.h"
 #include "ir/tensor.h"
 #include "ir/graph_utils.h"
-#include "mindspore/ops/op_def/array_ops.h"
-#include "mindspore/ops/op_def/framework_ops.h"
-#include "mindspore/ops/op_def/other_ops.h"
-#include "mindspore/ops/op_def/sequence_ops.h"
+#include "primitive/array_ops.h"
+#include "primitive/framework_ops.h"
+#include "primitive/other_ops.h"
+#include "primitive/sequence_ops.h"
 #include "frontend/jit/ps/pipeline_split.h"
 #include "utils/hash_map.h"
 #include "utils/ms_context.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
+#include "primitive/auto_generate/gen_ops_primitive_m.h"
+#include "primitive/auto_generate/gen_ops_primitive_s.h"
 
 namespace mindspore {
 namespace parallel {

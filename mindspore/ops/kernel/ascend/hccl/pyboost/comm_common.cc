@@ -16,7 +16,7 @@
 
 #include "kernel/ascend/hccl/pyboost/comm_common.h"
 #include "mindspore/ccsrc/pynative/utils/pyboost/pyboost_utils.h"
-#include "mindspore/ops/op_def/framework_ops.h"
+#include "primitive/framework_ops.h"
 #include "include/cluster/topology/collective_manager.h"
 #include "include/backend/debug/execute_order_tracker/execute_order_tracker.h"
 #include "include/backend/common/ms_device_shape_transfer.h"

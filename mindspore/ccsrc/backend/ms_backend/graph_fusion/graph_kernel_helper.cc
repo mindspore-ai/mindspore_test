@@ -40,7 +40,7 @@
 #include "backend/ms_backend/graph_fusion/fake_abstract_shape.h"
 #include "include/runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/graph_kernel_json_generator.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel.h"
-#include "mindspore/ops/op_def/sequence_ops.h"
+#include "primitive/sequence_ops.h"
 #include "utils/check_convert_utils.h"
 #include "ir/tensor_new.h"
 

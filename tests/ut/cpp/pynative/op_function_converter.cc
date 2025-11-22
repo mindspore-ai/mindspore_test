@@ -18,7 +18,7 @@
 #include "mockcpp/mockcpp.hpp"
 #include "common/mockcpp.h"
 #include "pynative/common.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_def.h"
+#include "primitive/auto_generate/gen_ops_def.h"
 #include "pynative/forward/pyboost/converter.h"
 #include "pynative/utils/pynative_utils.h"
 #include "ir/tensor.h"

@@ -18,7 +18,7 @@
 #include <algorithm>
 #include <functional>
 #include <memory>
-#include "mindspore/ops/op_def/nn_optimizer_ops.h"
+#include "primitive/nn_optimizer_ops.h"
 #include "mindspore/ops/infer/ops_func_impl/gelu.h"
 
 namespace mindspore {

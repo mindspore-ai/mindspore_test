@@ -24,8 +24,8 @@
 #include "mindspore/core/include/utils/ms_utils.h"
 #include "runtime/hardware_abstract/utils.h"
 #include "include/utils/comm_manager.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_i.h"
+#include "primitive/auto_generate/gen_ops_primitive_d.h"
+#include "primitive/auto_generate/gen_ops_primitive_i.h"
 #include "runtime/core/graph_executor/pre_launch/comm_execution_order_check.h"
 
 namespace mindspore {

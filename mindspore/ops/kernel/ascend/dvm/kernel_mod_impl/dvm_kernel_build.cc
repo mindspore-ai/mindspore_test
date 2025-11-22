@@ -25,16 +25,16 @@
 #include "include/backend/anf_runtime_algorithm.h"
 #include "ir/graph_utils.h"
 #include "mindspore/ccsrc/utils/ir_dump/anf_ir_dump.h"
-#include "mindspore/ops/op_def/math_ops.h"
-#include "mindspore/ops/op_def/other_ops.h"  // collective communication operations
+#include "primitive/math_ops.h"
+#include "primitive/other_ops.h"  // collective communication operations
 #include "include/runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel_flags.h"
 #include "backend/ms_backend/graph_fusion/graph_kernel_helper.h"
 #include "utils/check_convert_utils.h"
 #include "plugin/ascend/res_manager/collective/dvm_collective_comm_lib.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_g.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
+#include "primitive/auto_generate/gen_ops_primitive_b.h"
+#include "primitive/auto_generate/gen_ops_primitive_m.h"
+#include "primitive/auto_generate/gen_ops_primitive_g.h"
+#include "primitive/auto_generate/gen_ops_primitive_t.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_info.h"
 
 namespace mindspore {

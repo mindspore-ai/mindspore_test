@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 #include "common/backend_common_test.h"
-#include "mindspore/ops/op_def/nn_ops.h"
+#include "primitive/nn_ops.h"
 #include "ir/anf.h"
 #include "ir/tensor.h"
 #include "mindspore/ccsrc/utils/ir_dump/anf_ir_dump.h"
@@ -23,7 +23,7 @@
 #include "include/backend/common/pass_manager/pass_manager.h"
 #include "backend/common/pass/convert_const_input_to_tensor_input.h"
 #include "include/utils/utils.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "primitive/auto_generate/gen_ops_primitive_d.h"
 
 namespace mindspore {
 namespace opt {

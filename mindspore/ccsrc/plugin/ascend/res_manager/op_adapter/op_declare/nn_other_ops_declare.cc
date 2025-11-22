@@ -18,8 +18,8 @@
 #include <vector>
 #include <string>
 #include "plugin/ascend/res_manager/op_adapter/op_declare/op_declare_macro.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_e.h"
+#include "primitive/auto_generate/gen_ops_primitive_r.h"
+#include "primitive/auto_generate/gen_ops_primitive_e.h"
 
 namespace mindspore::device::ascend {
 // ApplyRotaryPosEmb

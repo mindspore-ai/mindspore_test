@@ -23,7 +23,7 @@
 #include <memory>
 
 #include "utils/hash_map.h"
-#include "mindspore/ops/op_def/sequence_ops.h"
+#include "primitive/sequence_ops.h"
 #include "include/frontend/optimizer/optimizer.h"
 #include "ir/func_graph_cloner.h"
 

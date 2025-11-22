@@ -20,13 +20,13 @@
 #include <vector>
 #include <string>
 #include "include/utils/anfalgo.h"
-#include "mindspore/ops/op_def/nn_op_name.h"
-#include "mindspore/ops/op_def/array_ops.h"
-#include "mindspore/ops/op_def/nn_ops.h"
+#include "primitive/nn_op_name.h"
+#include "primitive/array_ops.h"
+#include "primitive/nn_ops.h"
 #include "include/backend/optimizer/helper.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "primitive/auto_generate/gen_ops_primitive_b.h"
+#include "primitive/auto_generate/gen_ops_primitive_m.h"
+#include "primitive/auto_generate/gen_ops_primitive_r.h"
 
 namespace mindspore {
 namespace opt {

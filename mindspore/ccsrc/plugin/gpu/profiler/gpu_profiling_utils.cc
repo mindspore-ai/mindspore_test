@@ -20,8 +20,8 @@
 #include "include/utils/anfalgo.h"
 #include "utils/ms_utils.h"
 #include "utils/ms_context.h"
-#include "mindspore/ops/op_def/other_op_name.h"
-#include "mindspore/ops/op_def/structure_op_name.h"
+#include "primitive/other_op_name.h"
+#include "primitive/structure_op_name.h"
 #include "include/utils/utils.h"
 
 namespace mindspore {

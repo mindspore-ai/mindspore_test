@@ -19,7 +19,7 @@
 #include <string>
 
 #include "include/utils/anfalgo.h"
-#include "mindspore/ops/op_def/other_ops.h"  // collective communication operations
+#include "primitive/other_ops.h"  // collective communication operations
 #include "include/utils/utils.h"
 #include "ir/graph_utils.h"
 

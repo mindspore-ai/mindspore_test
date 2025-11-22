@@ -32,8 +32,8 @@
 #include "include/cluster/topology/constants.h"
 #include "include/utils/parallel_context.h"
 #include "include/utils/anfalgo.h"
-#include "mindspore/ops/op_def/ascend_op_name.h"
-#include "mindspore/ops/op_def/framework_op_name.h"
+#include "primitive/ascend_op_name.h"
+#include "primitive/framework_op_name.h"
 #include "tools/profiler/mstx/mstx_impl.h"
 #include "plugin/ascend/res_manager/stream_manager/ascend_stream_manager.h"
 

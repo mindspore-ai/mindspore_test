@@ -25,7 +25,7 @@
 #include <algorithm>
 #include "include/utils/pybind_api/api_register.h"
 #include "include/utils/frontend/primitive_utils.h"
-#include "mindspore/ops/op_def/structure_ops.h"
+#include "primitive/structure_ops.h"
 #include "ir/core_ops_primitive.h"
 #include "ir/dtype/tensor_type.h"
 #include "frontend/operator/ops.h"
@@ -37,7 +37,7 @@
 #include "frontend/jit/ps/static_analysis/prim.h"
 #include "frontend/jit/ps/static_analysis/prim_utils.h"
 #include "frontend/operator/composite/auto_generate/functional_map.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "primitive/auto_generate/gen_ops_primitive_m.h"
 
 namespace mindspore {
 void RegFunctional(const py::module *m) {

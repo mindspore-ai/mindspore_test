@@ -17,9 +17,9 @@
 #define MINDSPORE_CCSRC_BACKEND_OPTIMIZER_ASCEND_IR_FUSION_INFER_INFERENCE_QBMM_FUSION_BASE_H_
 #include <string>
 #include "include/backend/optimizer/optimizer.h"
-#include "mindspore/ops/op_def/nn_ops.h"
-#include "mindspore/ops/op_def/math_ops.h"
-#include "mindspore/ops/op_def/framework_ops.h"
+#include "primitive/nn_ops.h"
+#include "primitive/math_ops.h"
+#include "primitive/framework_ops.h"
 #include "include/backend/optimizer/helper.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/cluster/topology/collective_manager.h"

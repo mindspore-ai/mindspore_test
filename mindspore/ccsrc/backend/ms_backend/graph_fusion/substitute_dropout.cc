@@ -15,8 +15,8 @@
  */
 #include "backend/ms_backend/graph_fusion/substitute_dropout.h"
 
-#include "mindspore/ops/op_def/array_ops.h"
-#include "mindspore/ops/op_def/nn_ops.h"
+#include "primitive/array_ops.h"
+#include "primitive/nn_ops.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
 #include "include/backend/optimizer/helper.h"
 #include "backend/ms_backend/graph_fusion/graph_kernel_helper.h"
@@ -26,8 +26,8 @@
 #include "ir/tensor_new.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_build_info.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_info.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
+#include "primitive/auto_generate/gen_ops_primitive_c.h"
+#include "primitive/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore {
 namespace graphkernel {

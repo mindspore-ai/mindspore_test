@@ -32,7 +32,10 @@
 #include <stack>
 #include <tuple>
 
-#include "op_def/ascend_op_name.h"
+#include "primitive/math_ops.h"
+#include "primitive/conv_pool_op_name.h"
+#include "primitive/ascend_op_name.h"
+#include "primitive/other_op_name.h"
 #include "utils/anf_utils.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/backend/common/kernel_graph/kernel_graph.h"
@@ -50,6 +53,8 @@
 #endif
 #include "include/utils/parallel_context.h"
 #include "frontend/parallel/ops_info/ops_utils.h"
+#include "primitive/auto_generate/gen_ops_primitive_b.h"
+#include "primitive/auto_generate/gen_ops_primitive_m.h"
 
 namespace mindspore {
 namespace gpto {

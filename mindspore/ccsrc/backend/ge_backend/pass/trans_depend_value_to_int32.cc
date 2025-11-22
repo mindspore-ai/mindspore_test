@@ -19,9 +19,9 @@
 #include <vector>
 #include <memory>
 #include <set>
-#include "mindspore/ops/op_def/conv_pool_op_name.h"
-#include "mindspore/ops/op_def/array_op_name.h"
-#include "mindspore/ops/op_def/structure_op_name.h"
+#include "primitive/conv_pool_op_name.h"
+#include "primitive/array_op_name.h"
+#include "primitive/structure_op_name.h"
 #include "abstract/ops/primitive_infer_map.h"
 #include "include/utils/utils.h"
 #include "utils/anf_utils.h"

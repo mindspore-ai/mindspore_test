@@ -25,8 +25,8 @@
 #include "abstract/ops/primitive_infer_map.h"
 #include "include/backend/optimizer/helper.h"
 #include "common/common_test.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "primitive/auto_generate/gen_ops_primitive_a.h"
+#include "primitive/auto_generate/gen_ops_primitive_d.h"
 
 namespace mindspore {
 namespace opt {

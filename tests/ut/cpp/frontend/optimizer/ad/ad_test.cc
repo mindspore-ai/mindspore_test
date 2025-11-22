@@ -17,11 +17,11 @@
 #include <unordered_map>
 
 #include "frontend/optimizer/ad/grad.h"
-#include "mindspore/ops/op_def/sequence_ops.h"
-#include "mindspore/ops/op_def/comparison_ops.h"
-#include "mindspore/ops/op_def/array_ops.h"
-#include "mindspore/ops/op_def/arithmetic_ops.h"
-#include "mindspore/ops/op_def/framework_ops.h"
+#include "primitive/sequence_ops.h"
+#include "primitive/comparison_ops.h"
+#include "primitive/array_ops.h"
+#include "primitive/arithmetic_ops.h"
+#include "primitive/framework_ops.h"
 #include "common/common_test.h"
 #include "common/py_func_graph_fetcher.h"
 #include "ir/manager.h"
@@ -41,12 +41,12 @@
 #include "utils/ms_context.h"
 #include "include/frontend/jit/ps/action_interface.h"
 #include "include/frontend/optimizer/ad/grad_interface.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_i.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
+#include "primitive/auto_generate/gen_ops_primitive_a.h"
+#include "primitive/auto_generate/gen_ops_primitive_b.h"
+#include "primitive/auto_generate/gen_ops_primitive_d.h"
+#include "primitive/auto_generate/gen_ops_primitive_i.h"
+#include "primitive/auto_generate/gen_ops_primitive_s.h"
+#include "primitive/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore {
 namespace ad {

@@ -21,7 +21,7 @@
 #include "include/utils/anfalgo.h"
 #include "include/backend/optimizer/helper.h"
 #include "ops_utils/op_utils.h"
-#include "op_def/auto_generate/gen_ops_primitive_n.h"
+#include "primitive/auto_generate/gen_ops_primitive_n.h"
 
 namespace mindspore {
 namespace opt {

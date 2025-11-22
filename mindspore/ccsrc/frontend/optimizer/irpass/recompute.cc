@@ -17,12 +17,12 @@
 #include "frontend/optimizer/irpass/recompute.h"
 #include <set>
 #include <unordered_map>
-#include "mindspore/ops/op_def/array_ops.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_u.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_z.h"
+#include "primitive/array_ops.h"
+#include "primitive/auto_generate/gen_ops_primitive_d.h"
+#include "primitive/auto_generate/gen_ops_primitive_m.h"
+#include "primitive/auto_generate/gen_ops_primitive_t.h"
+#include "primitive/auto_generate/gen_ops_primitive_u.h"
+#include "primitive/auto_generate/gen_ops_primitive_z.h"
 
 namespace mindspore {
 namespace opt {

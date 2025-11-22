@@ -20,7 +20,7 @@
 #include "plugin/ascend/res_manager/data_queue/ascend_data_queue.h"
 #include "include/runtime/hardware_abstract/data_queue/data_queue_mgr.h"
 #include "kernel/ascend/acl_ir/acl_helper.h"
-#include "mindspore/ops/op_def/structure_op_name.h"
+#include "primitive/structure_op_name.h"
 #include "pybind_api/gil_scoped_long_running.h"
 #include "include/runtime/hardware_abstract/kernel_base/ms_factory.h"
 #include "tools/profiler/mstx/mstx_impl.h"

@@ -17,10 +17,10 @@
 #include "backend/ge_backend/pass/scalar_ops_output_unify_mindir.h"
 #include <memory>
 #include <vector>
-#include "mindspore/ops/op_def/array_ops.h"
-#include "mindspore/ops/op_def/other_ops.h"
-#include "mindspore/ops/op_def/arithmetic_ops.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
+#include "primitive/array_ops.h"
+#include "primitive/other_ops.h"
+#include "primitive/arithmetic_ops.h"
+#include "primitive/auto_generate/gen_ops_primitive_s.h"
 #include "include/backend/optimizer/helper.h"
 
 namespace mindspore {

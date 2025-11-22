@@ -17,12 +17,12 @@
 #include "kernel/gpu/cuda/arrays/array_reduce_gpu_kernel.h"
 #include <memory>
 #include <unordered_set>
-#include "mindspore/ops/op_def/math_ops.h"
+#include "primitive/math_ops.h"
 #include "infer/reduce.h"
 #include "kernel/gpu/gpu_common.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/complex.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/reduce_impl.cuh"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "primitive/auto_generate/gen_ops_primitive_r.h"
 #include "include/backend/anf_runtime_algorithm.h"
 
 namespace mindspore {

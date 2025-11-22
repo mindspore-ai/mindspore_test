@@ -37,7 +37,7 @@
 #include "frontend/jit/pi/utils/opcode_declare.h"
 #include "frontend/jit/pi/python_adapter/pydef.h"
 #include "include/utils/tensor_py.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_n.h"
+#include "primitive/auto_generate/gen_ops_primitive_n.h"
 
 namespace mindspore {
 namespace pijit {

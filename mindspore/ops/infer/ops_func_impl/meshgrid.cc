@@ -21,7 +21,7 @@
 #include "ops/ops_func_impl/simple_infer.h"
 
 #include "utils/check_convert_utils.h"
-#include "op_def/op_enum.h"
+#include "include/op_enum.h"
 
 namespace mindspore {
 namespace ops {

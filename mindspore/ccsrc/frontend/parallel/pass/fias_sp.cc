@@ -23,9 +23,9 @@
 #include <string>
 #include <algorithm>
 
-#include "mindspore/ops/op_def/other_ops.h"
-#include "mindspore/ops/op_def/sequence_ops.h"
-#include "mindspore/ops/op_def/nn_ops.h"
+#include "primitive/other_ops.h"
+#include "primitive/sequence_ops.h"
+#include "primitive/nn_ops.h"
 #include "infer/make_tuple.h"
 #include "ir/tensor.h"
 #include "ir/anf.h"
@@ -44,19 +44,19 @@
 #include "frontend/jit/ps/action.h"
 #include "mindspore/ccsrc/include/backend/optimizer/helper.h"
 #include "mindspore/ccsrc/frontend/parallel/graph_util/generate_graph.h"
-#include "mindspore/ops/op_def/op_enum.h"
+#include "include/op_enum.h"
 #include "mindspore/ops/infer/ops_func_impl/fused_infer_attention_score.h"
 #include "frontend/parallel/step_parallel_utils.h"
 #include "mindspore/ccsrc/frontend/parallel/ops_info/fused_infer_attention_score_info.h"
 #include "frontend/parallel/pass/fias_sp.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_f.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_n.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
+#include "primitive/auto_generate/gen_ops_primitive_c.h"
+#include "primitive/auto_generate/gen_ops_primitive_f.h"
+#include "primitive/auto_generate/gen_ops_primitive_l.h"
+#include "primitive/auto_generate/gen_ops_primitive_m.h"
+#include "primitive/auto_generate/gen_ops_primitive_n.h"
+#include "primitive/auto_generate/gen_ops_primitive_r.h"
+#include "primitive/auto_generate/gen_ops_primitive_s.h"
+#include "primitive/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore {
 using mindspore::ops::FASInputLayoutMode;

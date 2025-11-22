@@ -24,9 +24,9 @@
 #include <stack>
 #include <memory>
 #include "ir/tensor_new.h"
-#include "mindspore/ops/op_def/structure_op_name.h"
-#include "mindspore/ops/op_def/array_ops.h"
-#include "mindspore/ops/op_def/framework_ops.h"
+#include "primitive/structure_op_name.h"
+#include "primitive/array_ops.h"
+#include "primitive/framework_ops.h"
 #include "pynative/utils/pynative_utils.h"
 #include "pybind_api/gil_scoped_long_running.h"
 #include "include/utils/amp.h"
@@ -46,7 +46,7 @@ using mindspore::profiler::ProfilerManager;
 #include "pynative/backward/grad_utils.h"
 #include "mindspore/ccsrc/pynative/utils/pyboost/functions/auto_grad_reg.h"
 #include "mindspore/ccsrc/pynative/utils/pyboost/auto_generate/contiguous.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "primitive/auto_generate/gen_ops_primitive_c.h"
 #include "include/utils/tensor_py.h"
 #include "mindspore/ccsrc/frontend/expander/bprop/bprop.h"
 #include "utils/stream_guard.h"

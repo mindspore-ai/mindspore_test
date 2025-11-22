@@ -18,7 +18,7 @@
 #include <memory>
 #include <string>
 #include "utils/check_convert_utils.h"
-#include "mindspore/ops/op_def/array_op_name.h"
+#include "primitive/array_op_name.h"
 #include "view/broadcast_to_strides_calc.h"
 
 namespace mindspore::ops {

@@ -17,7 +17,7 @@
 #include "plugin/ascend/graph_optimizer/ascend_graph_optimization.h"
 #include <string>
 #include <memory>
-#include "mindspore/ops/op_def/framework_ops.h"
+#include "primitive/framework_ops.h"
 #include "include/utils/callback.h"
 #include "include/utils/anfalgo.h"
 #include "backend/common/pass_manager/common_backend_optimization.h"
@@ -29,7 +29,7 @@
 #include "ir/graph_utils.h"
 #include "tools/profiler/profiling.h"
 #include "mindspore/ccsrc/utils/ir_dump/dump_proto.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_u.h"
+#include "primitive/auto_generate/gen_ops_primitive_u.h"
 
 namespace mindspore {
 namespace device {

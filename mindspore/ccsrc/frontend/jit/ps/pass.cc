@@ -21,8 +21,8 @@
 #include <string>
 #include <algorithm>
 
-#include "mindspore/ops/op_def/other_ops.h"
-#include "mindspore/ops/op_def/framework_ops.h"
+#include "primitive/other_ops.h"
+#include "primitive/framework_ops.h"
 #include "utils/hash_map.h"
 #include "ir/func_graph_cloner.h"
 #include "include/frontend/jit/ps/pass_interface.h"
@@ -121,9 +121,9 @@
 #include "frontend/optimizer/irpass/isolate_inplace_func_replace.h"
 #include "frontend/jit/ps/pass_config.h"
 #include "frontend/jit/ps/graph_circle_handler.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_u.h"
+#include "primitive/auto_generate/gen_ops_primitive_a.h"
+#include "primitive/auto_generate/gen_ops_primitive_m.h"
+#include "primitive/auto_generate/gen_ops_primitive_u.h"
 
 #ifndef REGISTER_PASS_FUNC_IMPL
 #define REGISTER_PASS_FUNC_IMPL(name)                                                                        \

@@ -29,11 +29,11 @@
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/utils/anfalgo.h"
 #include "include/utils/utils.h"
-#include "mindspore/ops/op_def/math_ops.h"
-#include "mindspore/ops/op_def/nn_ops.h"
+#include "primitive/math_ops.h"
+#include "primitive/nn_ops.h"
 #include "utils/ms_context.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
+#include "primitive/auto_generate/gen_ops_primitive_m.h"
+#include "primitive/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore {
 namespace opt {

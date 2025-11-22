@@ -20,7 +20,7 @@
 #include <utility>
 #include <memory>
 #include <string>
-#include "mindspore/ops/op_def/sequence_ops.h"
+#include "primitive/sequence_ops.h"
 #include "utils/ms_context.h"
 #include "utils/anf_utils.h"
 #include "include/backend/anf_runtime_algorithm.h"
@@ -32,8 +32,8 @@
 #include "backend/ms_backend/graph_fusion/convert_input_and_attr.h"
 #include "include/runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel_info.h"
 #include "backend/common/pass/insert_type_transform_op.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "primitive/auto_generate/gen_ops_primitive_m.h"
+#include "primitive/auto_generate/gen_ops_primitive_r.h"
 #include "backend/ms_backend/graph_fusion/graph_kernel_helper.h"
 
 namespace mindspore::graphkernel {

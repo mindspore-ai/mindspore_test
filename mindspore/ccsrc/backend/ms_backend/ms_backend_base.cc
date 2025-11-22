@@ -32,7 +32,7 @@
 #endif
 
 #include "ir/tensor_new.h"
-#include "mindspore/ops/op_def/array_ops.h"
+#include "primitive/array_ops.h"
 #include "backend/ms_backend/segment_runner.h"
 #include "frontend/jit/ps/parse/data_converter.h"
 #include "backend/common/pass/erase_invalid_micro_depend.h"
@@ -46,10 +46,10 @@
 #include "include/runtime/utils/runtime_conf/runtime_env.h"
 #include "include/runtime/memory/mem_pool/mem_tracker.h"
 #include "ir/anf.h"
-#include "mindspore/ops/op_def/framework_ops.h"
-#include "mindspore/ops/op_def/sequence_ops.h"
-#include "mindspore/ops/op_def/sparse_tensor_ops.h"
-#include "mindspore/ops/op_def/nn_ops.h"
+#include "primitive/framework_ops.h"
+#include "primitive/sequence_ops.h"
+#include "primitive/sparse_tensor_ops.h"
+#include "primitive/nn_ops.h"
 #include "backend/common/device_address_utils.h"
 #include "runtime/core/graph_executor/pre_launch/pre_launch_comm.h"
 #include "include/runtime/hardware_abstract/stream/multi_stream_controller.h"

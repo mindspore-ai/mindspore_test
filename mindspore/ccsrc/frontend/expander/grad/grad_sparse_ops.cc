@@ -18,7 +18,7 @@
 #include "frontend/expander/bprop/bprop_irbuilder.h"
 #include "frontend/expander/grad/grad_utils.h"
 #include "utils/ms_context.h"
-#include "mindspore/ops/op_def/array_op_name.h"
+#include "primitive/array_op_name.h"
 #include "ops_utils/op_constants.h"
 
 namespace mindspore::expander::bprop {

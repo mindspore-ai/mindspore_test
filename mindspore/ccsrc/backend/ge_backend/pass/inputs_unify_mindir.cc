@@ -19,8 +19,8 @@
 #include <vector>
 #include <memory>
 #include "ir/tensor_new.h"
-#include "mindspore/ops/op_def/arithmetic_ops.h"
-#include "mindspore/ops/op_def/nn_ops.h"
+#include "primitive/arithmetic_ops.h"
+#include "primitive/nn_ops.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/backend/optimizer/helper.h"
 #include "include/utils/anfalgo.h"

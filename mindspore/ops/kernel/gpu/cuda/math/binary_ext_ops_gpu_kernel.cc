@@ -16,8 +16,8 @@
 
 #include "kernel/gpu/cuda/math/binary_ext_ops_gpu_kernel.h"
 #include <memory>
-#include "mindspore/ops/op_def/math_ops.h"
-#include "mindspore/ops/op_def/comparison_ops.h"
+#include "primitive/math_ops.h"
+#include "primitive/comparison_ops.h"
 #include "kernel/gpu/cuda/math/broadcast_public.h"
 
 namespace mindspore {
@@ -104,11 +104,9 @@ std::vector<KernelAttr> BroadcastExtOptGpuKernelMod::GetOpSupport() {
   }
   return support_list;
 }
-#define MS_REG_BROADCAST_OP_SAME_TYPE_EXT(OP_TYPE, NUM_TYPE, TYPE, ALPHA_TYPE, ALPHA_NUM_TYPE)                       \
-  {                                                                                                                  \
-    KernelAttr().AddInputAttr(NUM_TYPE).AddInputAttr(NUM_TYPE).AddInputAttr(ALPHA_NUM_TYPE).AddOutputAttr(NUM_TYPE), \
-      &BroadcastExtOptGpuKernelMod::LaunchKernel<OP_TYPE, TYPE, TYPE, ALPHA_TYPE, TYPE>                              \
-  }
+#define MS_REG_BROADCAST_OP_SAME_TYPE_EXT(OP_TYPE, NUM_TYPE, TYPE, ALPHA_TYPE, ALPHA_NUM_TYPE)                      \
+  {KernelAttr().AddInputAttr(NUM_TYPE).AddInputAttr(NUM_TYPE).AddInputAttr(ALPHA_NUM_TYPE).AddOutputAttr(NUM_TYPE), \
+   &BroadcastExtOptGpuKernelMod::LaunchKernel<OP_TYPE, TYPE, TYPE, ALPHA_TYPE, TYPE>}
 
 #define MS_REG_BROADCAST_OP_ALL_TYPE_EXT(OP_TYPE)                                                                  \
   MS_REG_BROADCAST_OP_SAME_TYPE_EXT(OP_TYPE, kNumberTypeBool, bool, int64_t, kNumberTypeInt64),                    \

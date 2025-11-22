@@ -15,7 +15,7 @@
  */
 
 #include "include/utils/comm_manager.h"
-#include "mindspore/ops/op_def/ascend_op_name.h"
+#include "primitive/ascend_op_name.h"
 #include "include/utils/convert_utils.h"
 #include "utils/ms_context.h"
 #include "include/utils/parallel_context.h"

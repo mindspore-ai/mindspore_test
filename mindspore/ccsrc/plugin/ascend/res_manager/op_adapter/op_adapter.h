@@ -28,9 +28,9 @@
 #include "plugin/ascend/res_manager/op_adapter/op_adapter_util.h"
 #include "plugin/ascend/res_manager/op_adapter/op_adapter_base.h"
 #include "include/utils/anfalgo.h"
-#include "mindspore/ops/op_def/other_ops.h"
-#include "mindspore/ops/op_def/sequence_ops.h"
-#include "mindspore/ops/op_def/framework_ops.h"
+#include "primitive/other_ops.h"
+#include "primitive/sequence_ops.h"
+#include "primitive/framework_ops.h"
 #include "ops_utils/op_utils.h"
 namespace mindspore::device::ascend {
 class OpAdapterImpl {

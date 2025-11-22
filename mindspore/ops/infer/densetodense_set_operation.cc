@@ -25,11 +25,11 @@
 
 #include "abstract/ops/primitive_infer_map.h"
 #include "mindapi/helper.h"
-#include "mindspore/ops/op_def/sparse_ops.h"
+#include "primitive/sparse_ops.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
 #include "utils/check_convert_utils.h"
 #include "utils/tensor_construct_utils.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "primitive/auto_generate/gen_ops_primitive_d.h"
 
 namespace mindspore {
 namespace ops {

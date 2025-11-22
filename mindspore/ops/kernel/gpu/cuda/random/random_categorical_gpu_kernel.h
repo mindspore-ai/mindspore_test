@@ -23,7 +23,7 @@
 #include <map>
 #include <string>
 #include "kernel/gpu/gpu_kernel.h"
-#include "mindspore/ops/op_def/random_ops.h"
+#include "primitive/random_ops.h"
 #include "kernel/gpu/gpu_kernel_factory.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/random_categorical.cuh"
 #include "mindspore/ops/infer/random_categorical.h"

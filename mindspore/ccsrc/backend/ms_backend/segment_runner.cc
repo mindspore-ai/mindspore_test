@@ -26,9 +26,9 @@
 #include <utility>
 #include <string>
 
-#include "mindspore/ops/op_def/sequence_ops.h"
-#include "mindspore/ops/op_def/nn_ops.h"
-#include "mindspore/ops/op_def/framework_ops.h"
+#include "primitive/sequence_ops.h"
+#include "primitive/nn_ops.h"
+#include "primitive/framework_ops.h"
 #include "utils/ms_context.h"
 #include "utils/hash_map.h"
 #include "utils/log_adapter.h"
@@ -38,8 +38,8 @@
 #include "ir/manager.h"
 #include "ir/func_graph_cloner.h"
 #include "frontend/operator/ops.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "primitive/auto_generate/gen_ops_primitive_d.h"
+#include "primitive/auto_generate/gen_ops_primitive_m.h"
 #include "ir/func_graph_flag.h"
 
 namespace mindspore {

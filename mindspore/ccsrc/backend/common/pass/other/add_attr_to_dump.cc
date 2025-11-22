@@ -20,16 +20,16 @@
 #include <cstdint>
 #include <memory>
 #include <vector>
-#include "op_def/framework_ops.h"
-#include "op_def/sequence_ops.h"
+#include "primitive/framework_ops.h"
+#include "primitive/sequence_ops.h"
 #include "include/utils/env_vars.h"
-#include "mindspore/ops/op_def/structure_ops.h"
+#include "primitive/structure_ops.h"
 #include "include/backend/anf_runtime_algorithm.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_h.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_i.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_p.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
+#include "primitive/auto_generate/gen_ops_primitive_h.h"
+#include "primitive/auto_generate/gen_ops_primitive_i.h"
+#include "primitive/auto_generate/gen_ops_primitive_p.h"
+#include "primitive/auto_generate/gen_ops_primitive_s.h"
+#include "primitive/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore {
 namespace opt {

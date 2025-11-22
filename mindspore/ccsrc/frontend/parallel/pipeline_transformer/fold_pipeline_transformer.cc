@@ -35,14 +35,14 @@
 #include "frontend/parallel/graph_util/graph_utils.h"
 #include "ir/anf.h"
 #include "ir/graph_utils.h"
-#include "mindspore/ops/op_def/other_ops.h"
-#include "mindspore/ops/op_def/array_ops.h"
-#include "mindspore/ops/op_def/framework_ops.h"
+#include "primitive/other_ops.h"
+#include "primitive/array_ops.h"
+#include "primitive/framework_ops.h"
 #include "include/utils/comm_manager.h"
 #include "utils/ms_context.h"
 #include "frontend/parallel/parallel_node_check.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_u.h"
+#include "primitive/auto_generate/gen_ops_primitive_d.h"
+#include "primitive/auto_generate/gen_ops_primitive_u.h"
 
 namespace mindspore {
 namespace parallel {

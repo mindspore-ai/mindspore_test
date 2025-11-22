@@ -20,12 +20,12 @@
 
 #include "include/utils/convert_utils_py.h"
 #include "include/utils/fallback.h"
-#include "mindspore/ops/op_def/math_ops.h"
-#include "mindspore/ops/op_def/sequence_ops.h"
+#include "primitive/math_ops.h"
+#include "primitive/sequence_ops.h"
 #include "frontend/jit/ps/fallback.h"
 #include "frontend/jit/ps/parse/data_converter.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "primitive/auto_generate/gen_ops_primitive_a.h"
+#include "primitive/auto_generate/gen_ops_primitive_r.h"
 
 namespace mindspore {
 namespace abstract {

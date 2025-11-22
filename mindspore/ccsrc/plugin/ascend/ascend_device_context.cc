@@ -27,7 +27,7 @@
 #include "include/utils/parallel_context.h"
 #include "include/utils/scoped_long_running.h"
 #include "include/cluster/topology/constants.h"
-#include "mindspore/ops/op_def/framework_ops.h"
+#include "primitive/framework_ops.h"
 #include "plugin/ascend/res_manager/device_context_conf/op_debug_conf.h"
 #include "plugin/ascend/res_manager/device_context_conf/op_precision_conf.h"
 #include "plugin/ascend/res_manager/device_context_conf/op_tuning_conf.h"
@@ -49,7 +49,7 @@
 #include "plugin/ascend/res_manager/error_manager/ascend_error_manager.h"
 #include "plugin/ascend/res_manager/hal_manager/ascend_hal_manager.h"
 #include "plugin/ascend/res_manager/mbuf_manager/tdt_manager.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "primitive/auto_generate/gen_ops_primitive_c.h"
 #include "kernel/ascend/acl_ir/op_api_exec.h"
 #include "acl/acl_dump.h"
 

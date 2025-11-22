@@ -18,7 +18,7 @@
 #include "ir/tensor_new.h"
 #include "common/common_test.h"
 #include "infer/ops_func_impl/repeat_interleave_grad.h"
-#include "mindspore/ops/op_def/op_name.h"
+#include "primitive/op_name.h"
 #include "ir/dtype/type.h"
 #include "abstract/dshape.h"
 #include "utils/tensor_construct_utils.h"

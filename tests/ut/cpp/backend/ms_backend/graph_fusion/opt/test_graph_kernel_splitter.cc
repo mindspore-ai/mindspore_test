@@ -27,11 +27,11 @@
 #include "backend/ms_backend/graph_fusion/adapter/graph_kernel_splitter_with_py.h"
 #include "backend/ms_backend/graph_fusion/adapter/split_model_ascend.h"
 #include "backend/ms_backend/graph_fusion/split_model/split_model_factory.h"
-#include "mindspore/ops/op_def/sequence_ops.h"
-#include "mindspore/ops/op_def/framework_ops.h"
+#include "primitive/sequence_ops.h"
+#include "primitive/framework_ops.h"
 #include "common/mockcpp.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
+#include "primitive/auto_generate/gen_ops_primitive_m.h"
+#include "primitive/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore::graphkernel {
 void SetKernelInfo(const FuncGraphPtr &func_graph);

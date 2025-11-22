@@ -21,12 +21,12 @@
 #include "include/backend/common/kernel_graph/kernel_graph.h"
 #include "include/utils/utils.h"
 #include "ir/graph_utils.h"
-#include "mindspore/ops/op_def/math_ops.h"
-#include "mindspore/ops/op_def/sequence_ops.h"
-#include "mindspore/ops/op_def/sparse_ops.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "primitive/math_ops.h"
+#include "primitive/sequence_ops.h"
+#include "primitive/sparse_ops.h"
+#include "primitive/auto_generate/gen_ops_primitive_c.h"
+#include "primitive/auto_generate/gen_ops_primitive_m.h"
+#include "primitive/auto_generate/gen_ops_primitive_r.h"
 
 namespace mindspore::graphkernel {
 class ReduceSumCsrChecker : public AtomicAddChecker {

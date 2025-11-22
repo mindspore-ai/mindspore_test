@@ -20,9 +20,9 @@
 #include <map>
 #include <stack>
 #include <unordered_map>
-#include "mindspore/ops/op_def/sequence_ops.h"
-#include "mindspore/ops/op_def/nn_op_name.h"
-#include "mindspore/ops/op_def/structure_op_name.h"
+#include "primitive/sequence_ops.h"
+#include "primitive/nn_op_name.h"
+#include "primitive/structure_op_name.h"
 #include "include/utils/parallel_context.h"
 #include "backend/common/kernel_graph/session_factory.h"
 #include "include/backend/optimizer/helper.h"

@@ -16,11 +16,11 @@
 
 #include "tests/ut/cpp/common/device_common_test.h"
 
-#include "mindspore/ops/op_def/comparison_ops.h"
-#include "mindspore/ops/op_def/framework_ops.h"
-#include "mindspore/ops/op_def/math_ops.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "primitive/comparison_ops.h"
+#include "primitive/framework_ops.h"
+#include "primitive/math_ops.h"
+#include "primitive/auto_generate/gen_ops_primitive_a.h"
+#include "primitive/auto_generate/gen_ops_primitive_r.h"
 #include "runtime/core/actors/dynamic_type/any_type_kernel_actor.h"
 #include "runtime/core/actors/base/memory_manager_actor.h"
 

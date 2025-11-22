@@ -23,11 +23,11 @@
 #include "include/utils/anfalgo.h"
 #include "include/runtime/hardware_abstract/kernel_base/ms_factory.h"
 #include "include/runtime/hardware_abstract/kernel_base/graph_fusion/framework_utils.h"
-#include "ops/op_def.h"
+#include "include/op_def.h"
 #include "utils/trace_base.h"
-#include "mindspore/ops/op_def/framework_ops.h"
+#include "primitive/framework_ops.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "primitive/auto_generate/gen_ops_primitive_c.h"
 
 namespace mindspore {
 namespace kernel {

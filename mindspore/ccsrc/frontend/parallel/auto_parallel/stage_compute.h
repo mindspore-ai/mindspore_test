@@ -22,7 +22,7 @@
 
 #include "frontend/parallel/step_parallel_utils.h"
 #include "include/utils/parallel_context.h"
-#include "mindspore/ops/op_def/other_ops.h"
+#include "primitive/other_ops.h"
 #include "frontend/parallel/auto_parallel/rec_core/rec_graph.h"
 #include "frontend/parallel/auto_parallel/rec_core/rec_strategy.h"
 

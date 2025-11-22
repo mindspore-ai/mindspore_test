@@ -19,8 +19,8 @@
 #include <functional>
 #include <memory>
 #include "include/runtime/hardware_abstract/kernel_base/kernel_utils.h"
-#include "mindspore/ops/op_def/math_ops.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "primitive/math_ops.h"
+#include "primitive/auto_generate/gen_ops_primitive_m.h"
 #include "include/utils/anfalgo.h"
 
 namespace mindspore {

@@ -21,11 +21,11 @@
 #include <algorithm>
 #include <memory>
 #include <complex>
-#include "mindspore/ops/op_def/structure_ops.h"
+#include "primitive/structure_ops.h"
 #include "mindspore/ops/infer/vmap_assign.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/pack.cuh"
 #include "kernel/gpu/cuda_impl/cuda_ops/unpack.cuh"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_v.h"
+#include "primitive/auto_generate/gen_ops_primitive_v.h"
 
 namespace mindspore {
 namespace kernel {

@@ -22,7 +22,7 @@
 
 #include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/adjust_contrast_v2_impl.cuh"
-#include "mindspore/ops/op_def/op_name.h"
+#include "primitive/op_name.h"
 
 namespace mindspore {
 namespace kernel {

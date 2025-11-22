@@ -21,7 +21,7 @@
 
 #include "utils/ms_utils.h"
 #include "include/utils/thread_pool.h"
-#include "mindspore/ops/op_def/op_name.h"
+#include "primitive/op_name.h"
 #include "mindspore/ops/infer/get_tuple_index_info.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
 

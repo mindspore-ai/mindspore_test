@@ -23,7 +23,7 @@
 #include "ir/graph_utils.h"
 #include "utils/ms_context.h"
 #include "include/runtime/utils/runtime_conf/runtime_conf.h"
-#include "mindspore/ops/op_def/other_ops.h"
+#include "primitive/other_ops.h"
 
 namespace mindspore {
 namespace opt {

@@ -21,17 +21,17 @@
 #include "ir/tensor_new.h"
 #include "plugin/ascend/res_manager/collective/multi_ascend_collective_comm_lib.h"
 #include "include/cluster/topology/collective_manager.h"
-#include "mindspore/ops/op_def/other_ops.h"
+#include "primitive/other_ops.h"
 #include "backend/common/pass/common/gllo_utils.h"
 #include "plugin/ascend/res_manager/hal_manager/ascend_hal_manager.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/utils/anfalgo.h"
 #include "include/backend/optimizer/helper.h"
 #include "utils/ms_context.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
+#include "primitive/auto_generate/gen_ops_primitive_a.h"
+#include "primitive/auto_generate/gen_ops_primitive_m.h"
+#include "primitive/auto_generate/gen_ops_primitive_r.h"
+#include "primitive/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore {
 namespace opt {

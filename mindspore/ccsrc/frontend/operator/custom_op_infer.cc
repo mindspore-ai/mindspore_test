@@ -19,7 +19,7 @@
 
 #include "include/utils/utils.h"
 #include "include/frontend/jit/ps/static_analysis/py_infer_convert.h"
-#include "mindspore/ops/op_def/framework_ops.h"
+#include "primitive/framework_ops.h"
 #include "include/frontend/operator/primitive_py.h"
 #include "frontend/jit/ps/static_analysis/prim.h"
 #include "frontend/jit/ps/static_analysis/prim_utils.h"
@@ -29,7 +29,7 @@
 #include "utils/custom_aot_extra.h"
 #include "mindspore/ops/infer/custom.h"
 #include "infer/ops_func_impl/custom_ext.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "primitive/auto_generate/gen_ops_primitive_c.h"
 
 namespace mindspore {
 namespace ops {

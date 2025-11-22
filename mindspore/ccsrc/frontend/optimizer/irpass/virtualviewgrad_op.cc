@@ -22,7 +22,7 @@
 #include <vector>
 #include <utility>
 #include "frontend/optimizer/irpass/view_inplace_utils.h"
-#include "mindspore/ops/op_def/other_ops.h"
+#include "primitive/other_ops.h"
 #include "ir/graph_utils.h"
 
 namespace mindspore {

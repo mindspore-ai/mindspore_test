@@ -32,7 +32,7 @@
 #include <sstream>
 
 #include "include/utils/config_manager.h"
-#include "mindspore/ops/op_def/structure_ops.h"
+#include "primitive/structure_ops.h"
 #include "utils/hash_map.h"
 #include "utils/ms_context.h"
 #include "utils/phase.h"

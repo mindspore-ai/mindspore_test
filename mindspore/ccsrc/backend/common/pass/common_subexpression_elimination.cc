@@ -24,12 +24,12 @@
 #include "include/utils/anfalgo.h"
 #include "include/utils/utils.h"
 #include "ir/graph_utils.h"
-#include "mindspore/ops/op_def/array_op_name.h"
-#include "mindspore/ops/op_def/framework_ops.h"
-#include "mindspore/ops/op_def/sequence_ops.h"
+#include "primitive/array_op_name.h"
+#include "primitive/framework_ops.h"
+#include "primitive/sequence_ops.h"
 #include "utils/ms_context.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
+#include "primitive/auto_generate/gen_ops_primitive_m.h"
+#include "primitive/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore {
 namespace opt {

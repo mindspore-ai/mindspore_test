@@ -38,7 +38,7 @@
 #include "ir/value.h"
 #include "ir/graph_utils.h"
 #include "mindspore/ops/infer/ops_func_impl/flash_attention_score.h"
-#include "mindspore/ops/op_def/op_enum.h"
+#include "include/op_enum.h"
 
 namespace mindspore {
 namespace parallel {

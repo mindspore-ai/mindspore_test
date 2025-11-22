@@ -23,7 +23,7 @@
 #include <algorithm>
 #include <map>
 #include "kernel/gpu/cuda_impl/cuda_ops/eye_impl.cuh"
-#include "mindspore/ops/op_def/framework_ops.h"
+#include "primitive/framework_ops.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/matrix_split_impl.cuh"
 #include "kernel/gpu/cuda_impl/cuda_ops/triangle_matrix_copy_impl.cuh"
 #include "kernel/gpu/gpu_kernel.h"

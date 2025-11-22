@@ -38,8 +38,8 @@
 #include "backend/ge_backend/utils/device_address_utils.h"
 #include "include/runtime/memory/mem_pool/mem_dynamic_allocator.h"
 #include "tools/profiler/profiler.h"
-#include "mindspore/ops/op_def/structure_op_name.h"
-#include "mindspore/ops/op_def/framework_op_name.h"
+#include "primitive/structure_op_name.h"
+#include "primitive/framework_op_name.h"
 #include "utils/ms_utils.h"
 
 namespace mindspore {

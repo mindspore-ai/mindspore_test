@@ -27,7 +27,7 @@
 #include "oneapi/dnnl/dnnl.hpp"
 #include "oneapi/dnnl/dnnl_types.h"
 #include "utils/log_adapter.h"
-#include "mindspore/ops/op_def/math_op_name.h"
+#include "primitive/math_op_name.h"
 
 namespace mindspore {
 namespace kernel {

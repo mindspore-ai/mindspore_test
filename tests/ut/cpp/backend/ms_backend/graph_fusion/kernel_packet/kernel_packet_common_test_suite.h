@@ -18,7 +18,7 @@
 #define TESTS_UT_CPP_GRAPH_KERNEL_KERNEL_PACKET_KERNEL_PACKET_COMMON_TEST_SUITE_H_
 
 #include "backend/ms_backend/graph_fusion/common/graph_kernel_common_test_suite.h"
-#include "mindspore/ops/op_def/framework_ops.h"
+#include "primitive/framework_ops.h"
 #include "backend/ms_backend/graph_fusion/kernel_packet/symbol_engine_extender.h"
 #include "backend/ms_backend/graph_fusion/convert_call_to_prim.h"
 #include "include/utils/anfalgo.h"

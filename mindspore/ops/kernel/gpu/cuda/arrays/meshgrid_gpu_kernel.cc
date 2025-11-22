@@ -15,12 +15,12 @@
  */
 #include "kernel/gpu/cuda/arrays/meshgrid_gpu_kernel.h"
 #include <algorithm>
-#include "mindspore/ops/op_def/math_ops.h"
+#include "primitive/math_ops.h"
 #include "infer/ops_func_impl/meshgrid.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/binary_ops_impl.cuh"
 #include "kernel/gpu/cuda/math/broadcast_public.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/elementwise/eltwise_ops_impl.cuh"
-#include "op_def/op_enum.h"
+#include "include/op_enum.h"
 
 namespace mindspore {
 namespace kernel {

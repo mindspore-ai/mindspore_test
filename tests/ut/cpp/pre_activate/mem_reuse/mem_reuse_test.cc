@@ -17,7 +17,7 @@
 #include <vector>
 #include <string>
 #include "include/backend/common/kernel_graph/kernel_graph.h"
-#include "mindspore/ops/op_def/math_ops.h"
+#include "primitive/math_ops.h"
 #include "backend/common/kernel_graph/session_basic.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_info.h"
 #include "frontend/operator/ops.h"
@@ -30,8 +30,8 @@
 #include "common/common_test.h"
 #include "common/resource.h"
 #include "common/py_func_graph_fetcher.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "primitive/auto_generate/gen_ops_primitive_a.h"
+#include "primitive/auto_generate/gen_ops_primitive_m.h"
 #include "ir/tensor_new.h"
 
 namespace mindspore {

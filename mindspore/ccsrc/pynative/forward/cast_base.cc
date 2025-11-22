@@ -17,7 +17,7 @@
 #include "pynative/forward/cast_base.h"
 #include <memory>
 #include <algorithm>
-#include "mindspore/ops/op_def/array_ops.h"
+#include "primitive/array_ops.h"
 #include "frontend/operator/composite/do_signature.h"
 
 namespace mindspore {

@@ -21,8 +21,8 @@
 #include <algorithm>
 #include <string>
 #include "frontend/optimizer/irpass.h"
-#include "mindspore/ops/op_def/sequence_ops.h"
-#include "mindspore/ops/op_def/array_ops.h"
+#include "primitive/sequence_ops.h"
+#include "primitive/array_ops.h"
 #include "include/frontend/optimizer/optimizer.h"
 #include "frontend/optimizer/anf_visitor.h"
 #include "frontend/operator/ops.h"

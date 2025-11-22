@@ -38,9 +38,9 @@
 #include "frontend/jit/pi/utils/utils.h"
 #include "include/utils/pynative/variable.h"
 #include "frontend/operator/composite/auto_generate/functional_map.h"
-#include "mindspore/ops/op_def/framework_ops.h"
-#include "mindspore/ops/op_def/sequence_ops.h"
-#include "mindspore/ops/op_def/structure_ops.h"
+#include "primitive/framework_ops.h"
+#include "primitive/sequence_ops.h"
+#include "primitive/structure_ops.h"
 #include "ir/func_graph_flag.h"
 
 namespace mindspore {

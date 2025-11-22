@@ -21,8 +21,8 @@
 #include <utility>
 #include <map>
 #include "kernel/gpu/gpu_kernel_factory.h"
-#include "mindspore/ops/op_def/sparse_ops.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
+#include "primitive/sparse_ops.h"
+#include "primitive/auto_generate/gen_ops_primitive_s.h"
 namespace mindspore {
 namespace kernel {
 constexpr size_t kRankWithoutBatch = 2;

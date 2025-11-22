@@ -27,13 +27,13 @@
 #include "frontend/expander/grad/grad_utils.h"
 #include "mindspore/ccsrc/include/utils/expander/node.h"
 #include "ir/functor.h"
-#include "op_def/op_enum.h"
-#include "op_def/math_ops.h"
+#include "include/op_enum.h"
+#include "primitive/math_ops.h"
 #include "ops_utils/op_utils.h"
 #include "abstract/dshape.h"
 #include "utils/ms_context.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_i.h"
+#include "primitive/auto_generate/gen_ops_primitive_b.h"
+#include "primitive/auto_generate/gen_ops_primitive_i.h"
 
 namespace mindspore::expander::bprop {
 namespace {

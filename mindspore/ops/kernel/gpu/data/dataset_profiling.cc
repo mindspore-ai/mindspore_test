@@ -16,7 +16,7 @@
 #include "kernel/gpu/data/dataset_profiling.h"
 
 #include <fstream>
-#include "mindspore/ops/op_def/structure_op_name.h"
+#include "primitive/structure_op_name.h"
 #include "utils/log_adapter.h"
 #include "utils/ms_utils.h"
 #include "include/utils/utils.h"

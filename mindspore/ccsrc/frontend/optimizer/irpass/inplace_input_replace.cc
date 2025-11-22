@@ -20,8 +20,8 @@
 #include <string>
 #include <vector>
 #include <utility>
-#include "mindspore/ops/op_def/other_ops.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
+#include "primitive/other_ops.h"
+#include "primitive/auto_generate/gen_ops_primitive_a.h"
 #include "frontend/optimizer/irpass/view_inplace_utils.h"
 #include "ir/graph_utils.h"
 

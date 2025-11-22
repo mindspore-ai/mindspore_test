@@ -20,8 +20,8 @@
 #include <string>
 #include <vector>
 
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_n.h"
+#include "primitive/auto_generate/gen_ops_primitive_m.h"
+#include "primitive/auto_generate/gen_ops_primitive_n.h"
 #include "tools/data_dump/device_statistic/statistic_kernel.h"
 
 namespace mindspore {

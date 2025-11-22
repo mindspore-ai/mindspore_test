@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 #include "mindspore/ccsrc/pynative/utils/pyboost/pyboost_utils.h"
-#include "mindspore/ops/op_def/framework_ops.h"
-#include "mindspore/ops/op_def/math_ops.h"
+#include "primitive/framework_ops.h"
+#include "primitive/math_ops.h"
 #include "mindspore/ccsrc/pynative/utils/pyboost/customize/divmod.h"
 #include "mindspore/ccsrc/pynative/utils/pyboost/auto_generate/div.h"
-#include "mindspore/ops/op_def/op_enum.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_f.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
+#include "include/op_enum.h"
+#include "primitive/auto_generate/gen_ops_primitive_f.h"
+#include "primitive/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore {
 namespace kernel {

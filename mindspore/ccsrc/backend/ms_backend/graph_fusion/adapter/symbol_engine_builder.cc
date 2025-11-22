@@ -22,8 +22,8 @@
 #include "include/utils/anfalgo.h"
 #include "backend/ms_backend/graph_fusion/multi_symbol_engine.h"
 #include "backend/ms_backend/graph_fusion/core/graph_kernel_utils.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "primitive/auto_generate/gen_ops_primitive_a.h"
+#include "primitive/auto_generate/gen_ops_primitive_m.h"
 #include "ir/graph_utils.h"
 
 namespace mindspore::graphkernel {

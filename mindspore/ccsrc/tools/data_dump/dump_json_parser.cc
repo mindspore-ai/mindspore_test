@@ -30,7 +30,7 @@
 #include "include/utils/comm_manager.h"
 #include "include/utils/common.h"
 #include "mindspore/ccsrc/utils/ir_dump/anf_dump_utils.h"
-#include "mindspore/ops/op_def/ascend_op_name.h"
+#include "primitive/ascend_op_name.h"
 #include "tools/data_dump/dump_control.h"
 #include "tools/data_dump/npy_header.h"
 #include "tools/data_dump/utils.h"

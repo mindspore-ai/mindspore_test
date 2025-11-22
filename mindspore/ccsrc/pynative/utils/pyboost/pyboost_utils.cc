@@ -35,10 +35,10 @@
 #include "include/runtime/pipeline/pipeline.h"
 #include "pybind_api/gil_scoped_long_running.h"
 #include "mindspore/ccsrc/pynative/utils/pyboost/auto_generate/cast.h"
-#include "mindspore/ops/op_def/array_ops.h"
+#include "primitive/array_ops.h"
 #include "include/runtime/utils/runtime_conf/runtime_conf.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
-#include "mindspore/ops/op_def/framework_ops.h"
+#include "primitive/auto_generate/gen_ops_primitive_c.h"
+#include "primitive/framework_ops.h"
 #include "mindspore/ccsrc/include/backend/optimizer/helper.h"
 #include "mindspore/ccsrc/include/backend/common/pass_manager/op_adaptation_info_factory.h"
 

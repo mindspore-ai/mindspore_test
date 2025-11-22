@@ -17,7 +17,7 @@
 #include <algorithm>
 #include <queue>
 #include <unordered_map>
-#include "mindspore/ops/op_def/framework_ops.h"
+#include "primitive/framework_ops.h"
 #include "mindspore/ccsrc/include/utils/expander/infer.h"
 #include "include/backend/common/kernel_graph/kernel_graph.h"
 #include "ir/graph_utils.h"

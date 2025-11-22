@@ -23,7 +23,7 @@
 #include <map>
 #include <set>
 #include <nlohmann/json.hpp>
-#include "mindspore/ops/op_def/sequence_ops.h"
+#include "primitive/sequence_ops.h"
 #include "utils/ms_context.h"
 #include "utils/trace_info.h"
 #include "include/utils/python_adapter.h"
@@ -33,7 +33,7 @@
 #include "backend/ms_backend/graph_fusion/core/graph_kernel_utils.h"
 #include "backend/ms_backend/graph_fusion/graph_kernel_helper.h"
 #include "include/runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel_flags.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "primitive/auto_generate/gen_ops_primitive_m.h"
 #include "ir/graph_utils.h"
 
 namespace mindspore::graphkernel {

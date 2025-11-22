@@ -24,9 +24,9 @@
 #include <set>
 #include <string>
 #include "include/utils/kernel_base/kernel.h"
-#include "op_def/structure_op_name.h"
-#include "op_def/nn_op_name.h"
-#include "op_def/framework_op_name.h"
+#include "primitive/structure_op_name.h"
+#include "primitive/nn_op_name.h"
+#include "primitive/framework_op_name.h"
 namespace mindspore {
 namespace kernel {
 constexpr auto kLibAicpuKernelSoName = "libaicpu_kernels.so";

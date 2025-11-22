@@ -20,9 +20,9 @@
 #include <vector>
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/utils/anfalgo.h"
-#include "mindspore/ops/op_def/framework_ops.h"
+#include "primitive/framework_ops.h"
 #include "utils/ms_context.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_p.h"
+#include "primitive/auto_generate/gen_ops_primitive_p.h"
 
 namespace mindspore {
 namespace opt {

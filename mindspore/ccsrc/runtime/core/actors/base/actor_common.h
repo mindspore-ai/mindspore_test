@@ -39,8 +39,8 @@
 #include "include/runtime/memory/mem_pool/mem_dynamic_allocator.h"
 #include "include/runtime/memory/mem_pool/mem_tracker.h"
 #include "tools/profiler/profiler.h"
-#include "mindspore/ops/op_def/structure_op_name.h"
-#include "mindspore/ops/op_def/framework_op_name.h"
+#include "primitive/structure_op_name.h"
+#include "primitive/framework_op_name.h"
 namespace mindspore {
 namespace runtime {
 using mindspore::session::KernelWithIndex;

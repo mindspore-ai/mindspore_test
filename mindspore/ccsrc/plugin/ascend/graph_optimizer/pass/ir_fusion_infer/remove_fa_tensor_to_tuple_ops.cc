@@ -24,14 +24,14 @@
 #include "include/utils/anfalgo.h"
 #include "include/utils/comm_manager.h"
 #include "include/backend/optimizer/helper.h"
-#include "mindspore/ops/op_def/array_ops.h"
-#include "mindspore/ops/op_def/other_ops.h"
-#include "mindspore/ops/op_def/arithmetic_ops.h"
+#include "primitive/array_ops.h"
+#include "primitive/other_ops.h"
+#include "primitive/arithmetic_ops.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "utils/ms_context.h"
 #include "mindspore/ops/infer/ops_func_impl/flash_attention_score.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_f.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
+#include "primitive/auto_generate/gen_ops_primitive_f.h"
+#include "primitive/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore {
 namespace opt {

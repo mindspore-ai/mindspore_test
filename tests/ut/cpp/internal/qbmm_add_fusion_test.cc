@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 #include "backend/graph_optimizer_test_framework.h"
-#include "mindspore/ops/op_def/sequence_ops.h"
+#include "primitive/sequence_ops.h"
 #include "common/common_test.h"
 #include "plugin/ascend/graph_optimizer/pass/ir_fusion_infer/inference_qbmm_add_fusion.h"
 #include "include/utils/anfalgo.h"

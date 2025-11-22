@@ -26,7 +26,7 @@
 #include <memory>
 #include <algorithm>
 #include <functional>
-#include "mindspore/ops/op_def/op_enum.h"
+#include "include/op_enum.h"
 #include "kernel/gpu/gpu_kernel.h"
 #include "kernel/gpu/gpu_kernel_factory.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/fft_with_size_impl.cuh"

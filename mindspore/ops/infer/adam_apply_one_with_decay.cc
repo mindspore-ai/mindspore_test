@@ -31,9 +31,9 @@
 #include "infer/ops_func_impl/add.h"
 #include "infer/ops_func_impl/sub.h"
 #include "infer/ops_func_impl/sqrt.h"
-#include "mindspore/ops/op_def/nn_optimizer_ops.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
+#include "primitive/nn_optimizer_ops.h"
+#include "primitive/auto_generate/gen_ops_primitive_a.h"
+#include "primitive/auto_generate/gen_ops_primitive_s.h"
 
 namespace mindspore {
 namespace ops {

@@ -34,7 +34,7 @@
 #include "backend/ms_backend/graph_fusion/model/node.h"
 #include "backend/ms_backend/graph_fusion/model/op_node.h"
 #include "backend/ms_backend/graph_fusion/model/graph_builder.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "primitive/auto_generate/gen_ops_primitive_r.h"
 #include "ir/func_graph_flag.h"
 
 namespace mindspore::graphkernel {

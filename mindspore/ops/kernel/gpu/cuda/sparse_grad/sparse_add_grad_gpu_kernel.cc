@@ -17,7 +17,7 @@
 #include <algorithm>
 #include <functional>
 #include <memory>
-#include "mindspore/ops/op_def/sparse_ops.h"
+#include "primitive/sparse_ops.h"
 #include "mindspore/ops/infer/grad/sparse_add_grad.h"
 
 namespace mindspore {
@@ -37,16 +37,14 @@ std::unique_ptr<cukernel::GpuKernelHelperBase> CreateSparseAddGradKernelPtr(cons
 }
 
 #define GPU_SPARSE_ADD_GRAD_KERNEL_REGISTER(ms_index_type, ms_value_type, index_type, value_type) \
-  {                                                                                               \
-    KernelAttr()                                                                                  \
-      .AddInputAttr(ms_value_type)                                                                \
-      .AddInputAttr(ms_index_type)                                                                \
-      .AddInputAttr(ms_index_type)                                                                \
-      .AddInputAttr(ms_index_type)                                                                \
-      .AddOutputAttr(ms_value_type)                                                               \
-      .AddOutputAttr(ms_value_type),                                                              \
-      CreateSparseAddGradKernelPtr<index_type, value_type>                                        \
-  }
+  {KernelAttr()                                                                                   \
+     .AddInputAttr(ms_value_type)                                                                 \
+     .AddInputAttr(ms_index_type)                                                                 \
+     .AddInputAttr(ms_index_type)                                                                 \
+     .AddInputAttr(ms_index_type)                                                                 \
+     .AddOutputAttr(ms_value_type)                                                                \
+     .AddOutputAttr(ms_value_type),                                                               \
+   CreateSparseAddGradKernelPtr<index_type, value_type>}
 
 using SparseAddGradPtrCreatorFunc =
   std::function<std::unique_ptr<cukernel::GpuKernelHelperBase>(const std::string &, const uint32_t &)>;

@@ -3,6 +3,7 @@ include_directories(${CMAKE_SOURCE_DIR}/mindspore/core/include)
 include_directories(${CMAKE_SOURCE_DIR}/mindspore/core/mindrt)
 include_directories(${CMAKE_SOURCE_DIR}/mindspore/core/mindrt/include)
 include_directories(${CMAKE_SOURCE_DIR}/mindspore/ops)
+include_directories(${CMAKE_SOURCE_DIR}/mindspore/ops/include)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 include_directories(${CMAKE_BINARY_DIR})
 

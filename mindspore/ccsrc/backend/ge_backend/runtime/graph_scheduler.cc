@@ -16,8 +16,8 @@
 
 #include <algorithm>
 #include <queue>
-#include "mindspore/ops/op_def/sequence_ops.h"
-#include "mindspore/ops/op_def/framework_ops.h"
+#include "primitive/sequence_ops.h"
+#include "primitive/framework_ops.h"
 #include "backend/ge_backend/runtime/scheduler_helper.h"
 #include "backend/ge_backend/runtime/actor/memory_manager_actor.h"
 #include "backend/ge_backend/runtime/actor/debug_actor.h"

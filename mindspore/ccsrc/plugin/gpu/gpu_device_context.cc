@@ -62,7 +62,7 @@
 #include "backend/common/pass/value_graph_binder.h"
 #include "kernel/cpu/cpu_kernel.h"
 #include "tools/profiler/profiler.h"
-#include "mindspore/ops/op_def/ascend_op_name.h"
+#include "primitive/ascend_op_name.h"
 #include "backend/common/device_address_utils.h"
 #include "runtime/pipeline/task/kernel_task.h"
 #include "include/runtime/memory/mem_pool/mem_tracker.h"

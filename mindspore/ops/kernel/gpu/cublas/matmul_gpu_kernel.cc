@@ -20,7 +20,7 @@
 #include <utility>
 #include <memory>
 #include "kernel/gpu/cuda_impl/cuda_ops/complex.h"
-#include "mindspore/ops/op_def/math_op_name.h"
+#include "primitive/math_op_name.h"
 #include "utils/ms_context.h"
 #include "kernel/gpu/cublas/matmul/matmul_wrapper.h"
 

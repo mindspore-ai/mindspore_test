@@ -29,9 +29,9 @@
 #include "frontend/jit/ps/parse/data_converter.h"
 #include "frontend/jit/pi/pi_jit_config.h"
 #include "frontend/jit/ps/parse/parse.h"
-#include "mindspore/ops/op_def/arithmetic_ops.h"
-#include "mindspore/ops/op_def/framework_ops.h"
-#include "mindspore/ops/op_def/structure_ops.h"
+#include "primitive/arithmetic_ops.h"
+#include "primitive/framework_ops.h"
+#include "primitive/structure_ops.h"
 #include "include/utils/convert_utils_py.h"
 #include "ir/tensor.h"
 #include "ir/anf.h"
@@ -41,7 +41,7 @@
 #include "include/utils/tensor_py.h"
 #include "frontend/jit/pi/graph_build/build_graph_utils.h"
 #include "frontend/jit/pi/graph_build/parameter_manager.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "primitive/auto_generate/gen_ops_primitive_m.h"
 
 namespace mindspore {
 namespace pijit {

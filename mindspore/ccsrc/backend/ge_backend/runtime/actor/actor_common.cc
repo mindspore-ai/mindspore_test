@@ -17,9 +17,9 @@
 #include "backend/ge_backend/runtime/actor/actor_common.h"
 #include <memory>
 #include <unordered_map>
-#include "mindspore/ops/op_def/framework_op_name.h"
-#include "mindspore/ops/op_def/framework_ops.h"
-#include "mindspore/ops/op_def/structure_op_name.h"
+#include "primitive/framework_op_name.h"
+#include "primitive/framework_ops.h"
+#include "primitive/structure_op_name.h"
 #include "backend/ge_backend/runtime/device_tensor_store.h"
 #include "utils/ms_context.h"
 #include "utils/ms_utils.h"

@@ -20,7 +20,7 @@
 #include "mindspore/ccsrc/pynative/utils/pyboost/pyboost_utils.h"
 #include "kernel/ascend/aclnn/pyboost_impl/aclnn_utils.h"
 #include "plugin/ascend/res_manager/op_adapter/op_adapter_base.h"
-#include "mindspore/ops/op_def/op_enum.h"
+#include "include/op_enum.h"
 
 namespace mindspore {
 namespace kernel {

@@ -16,7 +16,7 @@
 
 #include "kernel/gpu/cuda/arrays/gather_d_grad_gpu_kernel.h"
 #include <functional>
-#include "mindspore/ops/op_def/array_ops.h"
+#include "primitive/array_ops.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/complex.h"
 
 namespace mindspore {
@@ -80,16 +80,14 @@ int GatherDGradGpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs,
   return static_cast<int>(ret);
 }
 
-#define REG_INDEX(INPUT_DT, INDEX_DT, INPUT_T, INDEX_T)        \
-  {                                                            \
-    KernelAttr()                                               \
-      .AddInputAttr(INPUT_DT)                                  \
-      .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)       \
-      .AddInputAttr(INDEX_DT)                                  \
-      .AddInputAttr(INPUT_DT)                                  \
-      .AddOutputAttr(INPUT_DT),                                \
-      &GatherDGradGpuKernelMod::LaunchKernel<INDEX_T, INPUT_T> \
-  }
+#define REG_INDEX(INPUT_DT, INDEX_DT, INPUT_T, INDEX_T) \
+  {KernelAttr()                                         \
+     .AddInputAttr(INPUT_DT)                            \
+     .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64) \
+     .AddInputAttr(INDEX_DT)                            \
+     .AddInputAttr(INPUT_DT)                            \
+     .AddOutputAttr(INPUT_DT),                          \
+   &GatherDGradGpuKernelMod::LaunchKernel<INDEX_T, INPUT_T>}
 
 #define GATHER_D_GRAD_V2_GPU_REGISTER(DT, T) \
   REG_INDEX(DT, kNumberTypeInt64, T, int64_t), REG_INDEX(DT, kNumberTypeInt32, T, int32_t)

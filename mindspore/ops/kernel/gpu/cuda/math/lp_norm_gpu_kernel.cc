@@ -20,13 +20,13 @@
 #include <string>
 #include <algorithm>
 #include <set>
-#include "mindspore/ops/op_def/math_ops.h"
+#include "primitive/math_ops.h"
 #include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
 #include "mindspore/ops/infer/lp_norm.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/lp_norm_impl.cuh"
 #include "kernel/gpu/cuda_impl/cuda_ops/elementwise/eltwise_ops_impl.cuh"
 #include "kernel/gpu/cuda_impl/cuda_ops/elementwise/eltwise_ops_type.cuh"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
+#include "primitive/auto_generate/gen_ops_primitive_l.h"
 namespace mindspore {
 namespace kernel {
 bool LpNormGpuKernelMod::GetLpNormAttr() {

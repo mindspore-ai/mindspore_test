@@ -20,9 +20,9 @@
 #include <map>
 #include <memory>
 #include "base/base.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_i.h"
-#include "mindspore/ops/op_def/op_name.h"
+#include "primitive/op_name.h"
+#include "primitive/auto_generate/gen_ops_primitive_a.h"
+#include "primitive/auto_generate/gen_ops_primitive_i.h"
 #include "utils/ms_utils.h"
 #include "utils/anf_utils.h"
 #include "utils/compile_config.h"

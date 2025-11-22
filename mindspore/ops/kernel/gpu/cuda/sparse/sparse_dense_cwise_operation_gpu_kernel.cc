@@ -19,12 +19,12 @@
 #include <functional>
 #include <vector>
 
-#include "mindspore/ops/op_def/sparse_ops.h"
+#include "primitive/sparse_ops.h"
 #include "mindspore/ops/infer/sparse_dense_cwise_add.h"
 #include "mindspore/ops/infer/sparse_dense_cwise_div.h"
 #include "mindspore/ops/infer/sparse_dense_cwise_mul.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/complex.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
+#include "primitive/auto_generate/gen_ops_primitive_s.h"
 
 namespace mindspore {
 namespace kernel {

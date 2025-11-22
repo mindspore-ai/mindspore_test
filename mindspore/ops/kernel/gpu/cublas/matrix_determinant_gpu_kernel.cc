@@ -19,13 +19,13 @@
 #include <utility>
 #include <string>
 #include <algorithm>
-#include "mindspore/ops/op_def/math_ops.h"
+#include "primitive/math_ops.h"
 #include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/complex.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/determinant_by_lu_impl.cuh"
 #include "kernel/gpu/cuda_impl/cuda_ops/matrix_transpose_impl.cuh"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "primitive/auto_generate/gen_ops_primitive_l.h"
+#include "primitive/auto_generate/gen_ops_primitive_m.h"
 
 namespace mindspore {
 namespace kernel {

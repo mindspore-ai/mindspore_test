@@ -23,7 +23,7 @@
 #include <unordered_set>
 #include <algorithm>
 #include <vector>
-#include "mindspore/ops/op_def/framework_ops.h"
+#include "primitive/framework_ops.h"
 #include "include/utils/anfalgo.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "ir/graph_utils.h"

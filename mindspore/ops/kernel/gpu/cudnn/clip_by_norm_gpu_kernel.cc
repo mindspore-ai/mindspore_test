@@ -18,7 +18,7 @@
 #include <memory>
 #include <algorithm>
 #include <functional>
-#include "mindspore/ops/op_def/math_ops.h"
+#include "primitive/math_ops.h"
 #include "kernel/gpu/gpu_kernel_factory.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/cast_impl.cuh"
 #include "kernel/gpu/cuda_impl/cuda_ops/binary_ops_impl.cuh"

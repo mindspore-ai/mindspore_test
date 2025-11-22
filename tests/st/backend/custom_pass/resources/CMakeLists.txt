@@ -72,6 +72,7 @@ if(MINDSPORE_INCLUDE_DIRS)
         include_directories(${include_dir}/mindspore/ccsrc/backend/common/custom_pass/)
         # Add MindSpore ops path, contains common/device_type.h
         include_directories(${include_dir}/mindspore/ops)
+        include_directories(${include_dir}/mindspore/ops/include)
         include_directories(${include_dir}/mindspore/ops/kernel/include)
         # Copy required header files for pattern_to_pattern.h
         if(EXISTS "${include_dir}/mindspore/ccsrc/include/backend/optimizer")

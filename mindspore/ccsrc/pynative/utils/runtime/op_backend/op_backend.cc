@@ -21,7 +21,7 @@
 #include <algorithm>
 #include <memory>
 
-#include "op_def/structure_op_name.h"
+#include "primitive/structure_op_name.h"
 #include "pynative/utils/runtime/op_executor.h"
 #include "pynative/utils/runtime/op_runner.h"
 #include "include/runtime/utils/runtime_conf/runtime_conf.h"

@@ -16,11 +16,11 @@
 
 #include "kernel/gpu/cudnn/activation_gpu_kernel.h"
 #include <memory>
-#include "mindspore/ops/op_def/nn_optimizer_ops.h"
-#include "mindspore/ops/op_def/math_ops.h"
+#include "primitive/nn_optimizer_ops.h"
+#include "primitive/math_ops.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_e.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "primitive/auto_generate/gen_ops_primitive_e.h"
+#include "primitive/auto_generate/gen_ops_primitive_r.h"
 
 namespace mindspore {
 namespace kernel {

@@ -25,7 +25,7 @@
 #include "ir/tensor_new.h"
 #include "ir/dtype/tensor_type.h"
 #include "include/cluster/topology/collective_manager.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
+#include "primitive/auto_generate/gen_ops_primitive_l.h"
 
 namespace mindspore {
 namespace opt {

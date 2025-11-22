@@ -18,11 +18,11 @@
 #include <vector>
 #include <memory>
 #include "mindspore/ccsrc/pynative/utils/pyboost/pyboost_utils.h"
-#include "mindspore/ops/op_def/framework_ops.h"
+#include "primitive/framework_ops.h"
 #include "mindspore/ccsrc/pynative/utils/pyboost/auto_generate/maximum.h"
 #include "mindspore/ccsrc/pynative/utils/pyboost/auto_generate/minimum.h"
 #include "include/runtime/pipeline/pipeline.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
+#include "primitive/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore {
 namespace kernel {

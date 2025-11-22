@@ -36,10 +36,10 @@
 #include "include/runtime/hardware_abstract/kernel_base/kernel.h"
 #include "utils/log_adapter.h"
 #include "include/runtime/hardware_abstract/kernel_base/graph_fusion/framework_utils.h"
-#include "mindspore/ops/op_def/math_ops.h"
-#include "mindspore/ops/op_def/sequence_ops.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "primitive/math_ops.h"
+#include "primitive/sequence_ops.h"
+#include "primitive/auto_generate/gen_ops_primitive_m.h"
+#include "primitive/auto_generate/gen_ops_primitive_r.h"
 #include "ir/graph_utils.h"
 
 namespace mindspore::graphkernel {

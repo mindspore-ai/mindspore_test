@@ -18,9 +18,9 @@
 #include <string>
 #include <vector>
 #include <memory>
-#include "mindspore/ops/op_def/ascend_op_name.h"
-#include "mindspore/ops/op_def/random_op_name.h"
-#include "mindspore/ops/op_def/nn_op_name.h"
+#include "primitive/ascend_op_name.h"
+#include "primitive/random_op_name.h"
+#include "primitive/nn_op_name.h"
 #include "include/backend/optimizer/helper.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_build_info.h"
 #include "utils/trace_base.h"

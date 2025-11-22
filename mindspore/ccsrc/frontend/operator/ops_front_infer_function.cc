@@ -22,11 +22,11 @@
 #include <algorithm>
 #include <map>
 
-#include "mindspore/ops/op_def/structure_ops.h"
-#include "mindspore/ops/op_def/sequence_ops.h"
-#include "mindspore/ops/op_def/math_ops.h"
-#include "mindspore/ops/op_def/array_ops.h"
-#include "mindspore/ops/op_def/framework_ops.h"
+#include "primitive/structure_ops.h"
+#include "primitive/sequence_ops.h"
+#include "primitive/math_ops.h"
+#include "primitive/array_ops.h"
+#include "primitive/framework_ops.h"
 #include "abstract/abstract_value.h"
 #include "frontend/jit/ps/parse/resolve.h"
 #include "frontend/jit/ps/static_analysis/prim.h"
@@ -43,15 +43,15 @@
 #include "infer/mod.h"
 #include "abstract/abstract_function.h"
 #include "utils/ms_context.h"
-#include "mindspore/ops/op_def/op_name.h"
+#include "primitive/op_name.h"
 #ifdef _MSC_VER
 #include "include/utils/pybind_api/api_register.h"
 #endif
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
+#include "primitive/auto_generate/gen_ops_primitive_a.h"
+#include "primitive/auto_generate/gen_ops_primitive_m.h"
+#include "primitive/auto_generate/gen_ops_primitive_r.h"
+#include "primitive/auto_generate/gen_ops_primitive_s.h"
+#include "primitive/auto_generate/gen_ops_primitive_t.h"
 #include "ir/func_graph_flag.h"
 
 namespace mindspore {

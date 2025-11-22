@@ -22,7 +22,7 @@
 #include <vector>
 
 #include "include/runtime/memory/mem_pool/mem_tracker.h"
-#include "op_def/nn_op_name.h"
+#include "primitive/nn_op_name.h"
 #include "tools/data_dump/device_statistic/statistic_kernel.h"
 #include "tools/visible.h"
 

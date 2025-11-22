@@ -25,10 +25,10 @@
 #include <string>
 #include <memory>
 
-#include "mindspore/ops/op_def/ascend_op_name.h"
-#include "mindspore/ops/op_def/structure_op_name.h"
-#include "mindspore/ops/op_def/framework_op_name.h"
-#include "mindspore/ops/op_def/sequence_ops.h"
+#include "primitive/ascend_op_name.h"
+#include "primitive/structure_op_name.h"
+#include "primitive/framework_op_name.h"
+#include "primitive/sequence_ops.h"
 #include "ir/manager.h"
 #include "ir/map_tensor.h"
 #include "ir/tensor_new.h"
@@ -57,8 +57,8 @@
 #include "include/runtime/hardware_abstract/device_context/device_context_manager.h"
 #endif
 #include "include/utils/callback.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
+#include "primitive/auto_generate/gen_ops_primitive_m.h"
+#include "primitive/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore {
 namespace session {

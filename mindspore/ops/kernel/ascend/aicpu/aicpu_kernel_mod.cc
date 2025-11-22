@@ -22,10 +22,10 @@
 #include <algorithm>
 #include <functional>
 
-#include "op_def/structure_op_name.h"
-#include "op_def/array_ops.h"
-#include "op_def/math_op_name.h"
-#include "op_def/lite_op_name.h"
+#include "primitive/structure_op_name.h"
+#include "primitive/array_ops.h"
+#include "primitive/math_op_name.h"
+#include "primitive/lite_op_name.h"
 #include "kernel/ascend/aicpu/aicpu_util.h"
 #include "kernel/ascend/aicpu/aicpu_proto_util.h"
 #include "kernel/ascend/acl_ir/op_api_util.h"
@@ -37,7 +37,7 @@
 #include "external/graph/types.h"
 #include "plugin/ascend/res_manager/symbol_interface/acl_rt_symbol.h"
 #include "plugin/ascend/res_manager/symbol_interface/symbol_utils.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
+#include "primitive/auto_generate/gen_ops_primitive_t.h"
 #include "kernel/ascend/aclop/kernel_mod_impl/acl_kernel/getnext_kernel_mod.h"
 
 namespace mindspore {

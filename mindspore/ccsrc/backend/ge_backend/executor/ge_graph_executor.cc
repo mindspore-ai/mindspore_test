@@ -42,7 +42,7 @@
 #include "include/runtime/memory/mem_pool/mem_tracker.h"
 #include "ge/ge_graph_compile_summary.h"
 #include "op_proto/inc/array_ops.h"
-#include "mindspore/ops/op_def/nn_op_name.h"
+#include "primitive/nn_op_name.h"
 #include "pybind_api/gil_scoped_long_running.h"
 #include "include/utils/compile_cache_context.h"
 #include "utils/singleton.h"

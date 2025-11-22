@@ -25,12 +25,12 @@
 #include "include/utils/utils.h"
 #include "ir/anf.h"
 #include "ir/scope.h"
-#include "mindspore/ops/op_def/array_ops.h"
-#include "mindspore/ops/op_def/sequence_op_name.h"
+#include "primitive/array_ops.h"
+#include "primitive/sequence_op_name.h"
 #include "infer/tensor_to_scalar.h"
 #include "utils/log_adapter.h"
 #include "utils/ms_context.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
+#include "primitive/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore {
 namespace expander {

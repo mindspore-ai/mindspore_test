@@ -23,7 +23,7 @@
 #include <string>
 
 #include "frontend/optimizer/optimizer_caller.h"
-#include "mindspore/ops/op_def/framework_ops.h"
+#include "primitive/framework_ops.h"
 #include "frontend/optimizer/anf_visitor.h"
 #include "frontend/operator/ops.h"
 #include "frontend/optimizer/irpass.h"

@@ -16,12 +16,12 @@
 
 #include "backend/common/pass/adjust_depend_for_parallel_optimizer_recompute_all_gather.h"
 #include <algorithm>
-#include "mindspore/ops/op_def/array_ops.h"
-#include "mindspore/ops/op_def/framework_ops.h"
+#include "primitive/array_ops.h"
+#include "primitive/framework_ops.h"
 #include "include/utils/anfalgo.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
+#include "primitive/auto_generate/gen_ops_primitive_c.h"
+#include "primitive/auto_generate/gen_ops_primitive_d.h"
+#include "primitive/auto_generate/gen_ops_primitive_t.h"
 #include "include/utils/utils.h"
 #include "ir/graph_utils.h"
 

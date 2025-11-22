@@ -25,15 +25,15 @@
 #include "include/utils/utils.h"
 #include "ir/primitive.h"
 #include "include/runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel_info.h"
-#include "mindspore/ops/op_def/nn_ops.h"
-#include "mindspore/ops/op_def/nn_optimizer_ops.h"
-#include "mindspore/ops/op_def/sequence_ops.h"
-#include "mindspore/ops/op_def/op_name.h"
+#include "primitive/nn_ops.h"
+#include "primitive/nn_optimizer_ops.h"
+#include "primitive/sequence_ops.h"
+#include "primitive/op_name.h"
 #include "ops_utils/op_utils.h"
 #include "plugin/gpu/graph_optimizer/pass/base/kernel_info_setter.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
+#include "primitive/auto_generate/gen_ops_primitive_b.h"
+#include "primitive/auto_generate/gen_ops_primitive_r.h"
+#include "primitive/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore {
 namespace opt {

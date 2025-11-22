@@ -16,9 +16,9 @@
 
 #include "plugin/ascend/res_manager/op_adapter/op_declare/reduce_ops_declare.h"
 #include <vector>
-#include "mindspore/ops/op_def/lite_ops.h"
-#include "mindspore/ops/op_def/math_ops.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "primitive/lite_ops.h"
+#include "primitive/math_ops.h"
+#include "primitive/auto_generate/gen_ops_primitive_r.h"
 
 namespace mindspore::device::ascend {
 // BNTrainingReduce

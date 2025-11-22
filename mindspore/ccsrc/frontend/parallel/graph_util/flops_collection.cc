@@ -23,21 +23,21 @@
 #include <vector>
 #include <string>
 #include <unordered_map>
-#include "mindspore/ops/op_def/framework_ops.h"
+#include "primitive/framework_ops.h"
 #include "frontend/parallel/ops_info/ops_utils.h"
 #include "frontend/parallel/step_parallel_utils.h"
 #include "abstract/abstract_function.h"
 #include "ir/func_graph_cloner.h"
 #include "frontend/parallel/pass/pass_utils.h"
 #include "include/utils/anfalgo.h"
-#include "mindspore/ops/op_def/conv_pool_ops.h"
+#include "primitive/conv_pool_ops.h"
 #include "utils/check_convert_utils.h"
 #include "infer/ops_func_impl/flash_attention_score.h"
-#include "mindspore/ops/op_def/op_enum.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_f.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "include/op_enum.h"
+#include "primitive/auto_generate/gen_ops_primitive_b.h"
+#include "primitive/auto_generate/gen_ops_primitive_c.h"
+#include "primitive/auto_generate/gen_ops_primitive_f.h"
+#include "primitive/auto_generate/gen_ops_primitive_m.h"
 #include "include/utils/utils.h"
 
 namespace mindspore {

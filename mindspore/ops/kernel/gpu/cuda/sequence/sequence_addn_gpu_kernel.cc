@@ -19,7 +19,7 @@
 #include <complex>
 #include <functional>
 #include <utility>
-#include "mindspore/ops/op_def/math_ops.h"
+#include "primitive/math_ops.h"
 
 namespace mindspore {
 namespace kernel {

@@ -31,7 +31,7 @@
 #include "ir/func_graph.h"
 #include "include/runtime/hardware_abstract/kernel_base/graph_fusion/framework_utils.h"
 #include "include/runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/graph_kernel_json_generator.h"
-#include "mindspore/ops/op_def/framework_ops.h"
+#include "primitive/framework_ops.h"
 #include "utils/file_utils.h"
 #include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/kernel_pool.h"
 

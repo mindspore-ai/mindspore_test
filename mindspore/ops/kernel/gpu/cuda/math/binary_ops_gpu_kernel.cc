@@ -16,8 +16,8 @@
 
 #include "kernel/gpu/cuda/math/binary_ops_gpu_kernel.h"
 #include <memory>
-#include "mindspore/ops/op_def/math_ops.h"
-#include "mindspore/ops/op_def/comparison_ops.h"
+#include "primitive/math_ops.h"
+#include "primitive/comparison_ops.h"
 #include "kernel/gpu/cuda/math/broadcast_public.h"
 
 namespace mindspore {
@@ -103,18 +103,14 @@ std::vector<KernelAttr> BroadcastOptGpuKernelMod::GetOpSupport() {
   }
   return support_list;
 }
-#define MS_REG_BROADCAST_OP_SAME_TYPE(OP_TYPE, NUM_TYPE, TYPE)                          \
-  {                                                                                     \
-    KernelAttr().AddInputAttr(NUM_TYPE).AddInputAttr(NUM_TYPE).AddOutputAttr(NUM_TYPE), \
-      &BroadcastOptGpuKernelMod::LaunchKernel<OP_TYPE, TYPE, TYPE, TYPE>                \
-  }
+#define MS_REG_BROADCAST_OP_SAME_TYPE(OP_TYPE, NUM_TYPE, TYPE)                         \
+  {KernelAttr().AddInputAttr(NUM_TYPE).AddInputAttr(NUM_TYPE).AddOutputAttr(NUM_TYPE), \
+   &BroadcastOptGpuKernelMod::LaunchKernel<OP_TYPE, TYPE, TYPE, TYPE>}
 
 #define MS_REG_BROADCAST_OP_DIFF_TYPE(OP_TYPE, In0_t_NUM_TYPE, In1_t_NUM_TYPE, OUT_NUM_TYPE, In0_t_TYPE, In1_t_TYPE, \
                                       OUT_TYPE)                                                                      \
-  {                                                                                                                  \
-    KernelAttr().AddInputAttr(In0_t_NUM_TYPE).AddInputAttr(In1_t_NUM_TYPE).AddOutputAttr(OUT_NUM_TYPE),              \
-      &BroadcastOptGpuKernelMod::LaunchKernel<OP_TYPE, In0_t_TYPE, In1_t_TYPE, OUT_TYPE>                             \
-  }
+  {KernelAttr().AddInputAttr(In0_t_NUM_TYPE).AddInputAttr(In1_t_NUM_TYPE).AddOutputAttr(OUT_NUM_TYPE),               \
+   &BroadcastOptGpuKernelMod::LaunchKernel<OP_TYPE, In0_t_TYPE, In1_t_TYPE, OUT_TYPE>}
 
 #define MS_REG_BROADCAST_OP_BOOL_TYPE(OP_TYPE) MS_REG_BROADCAST_OP_SAME_TYPE(OP_TYPE, kNumberTypeBool, bool)
 

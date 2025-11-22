@@ -17,7 +17,7 @@
 #include <algorithm>
 #include <iterator>
 #include "mindspore/ccsrc/pynative/utils/pyboost/functions/customize/view_impl.h"
-#include "mindspore/ops/op_def/op_enum.h"
+#include "include/op_enum.h"
 #include "mindspore/core/include/utils/core_op_utils.h"
 #include "mindspore/ccsrc/pynative/utils/pyboost/pyboost_utils.h"
 #include "mindspore/ccsrc/pynative/utils/pyboost/functions/auto_generate/functions.h"

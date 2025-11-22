@@ -23,8 +23,8 @@
 #include <algorithm>
 #include "include/utils/anfalgo.h"
 #include "include/backend/optimizer/helper.h"
-#include "mindspore/ops/op_def/array_ops.h"
-#include "mindspore/ops/op_def/arithmetic_ops.h"
+#include "primitive/array_ops.h"
+#include "primitive/arithmetic_ops.h"
 
 namespace mindspore {
 namespace opt {

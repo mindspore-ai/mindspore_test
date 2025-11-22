@@ -22,7 +22,7 @@
 #include <algorithm>
 #include <string>
 #include "abstract/dshape.h"
-#include "mindspore/ops/op_def/framework_ops.h"
+#include "primitive/framework_ops.h"
 #include "ir/func_graph.h"
 #include "utils/anf_utils.h"
 #include "utils/ms_context.h"
@@ -33,7 +33,7 @@
 #include "mindspore/ccsrc/include/utils/symbol_engine/symbol_engine_impl.h"
 #include "include/runtime/hardware_abstract/kernel_base/oplib/oplib.h"
 #include "include/runtime/hardware_abstract/device_context/device_context_manager.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "primitive/auto_generate/gen_ops_primitive_c.h"
 #include "ir/func_graph_flag.h"
 
 namespace mindspore::graphkernel {

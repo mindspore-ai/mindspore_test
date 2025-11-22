@@ -32,9 +32,9 @@
 #include "include/utils/visible.h"
 #include "ir/anf.h"
 #include "ir/func_graph.h"
-#include "mindspore/ops/op_def/array_op_name.h"
-#include "mindspore/ops/op_def/other_op_name.h"
-#include "mindspore/ops/op_def/sequence_ops.h"
+#include "primitive/array_op_name.h"
+#include "primitive/other_op_name.h"
+#include "primitive/sequence_ops.h"
 #include "utils/anf_utils.h"
 
 namespace mindspore {
