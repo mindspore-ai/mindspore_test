@@ -2179,7 +2179,8 @@ class Dataset:
                 current Rank ID or contain the current Rank ID. Default: ``0`` ,
                 which indicates send data to dst rank 0.
             group (str, optional): The communication group to work on. The group is created
-                by :func:`mindspore.communication.create_group` . Default: ``None``,
+                by :func:`mindspore.mint.distributed.init_process_group` or
+                :func:`mindspore.mint.distributed.new_group` . Default: ``None``,
                 which indicates ``GlobalComm.WORLD_COMM_GROUP`` .
 
         Examples:
@@ -2308,7 +2309,8 @@ class Dataset:
                 current process is specified, data will be obtained directly from itself. Default: ``0`` ,
                 which indicates receive data from src rank 0.
             group (str, optional): The communication group to work on. The group is created
-                by :func:`mindspore.communication.create_group` . Default: ``None``,
+                by :func:`mindspore.mint.distributed.init_process_group` or
+                :func:`mindspore.mint.distributed.new_group` . Default: ``None``,
                 which indicates ``GlobalComm.WORLD_COMM_GROUP`` .
 
         Returns:
