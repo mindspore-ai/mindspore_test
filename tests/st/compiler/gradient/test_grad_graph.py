@@ -1492,3 +1492,87 @@ def test_grad_complex_inputs_complex_outputs():
     output = GradNetWrtX(ImagNet())(x)
     expect = np.asarray(complex(1j), dtype=np.complex64)
     assert np.allclose(output.asnumpy(), expect)
+
+
+class GradNet21(nn.Cell):
+    def __init__(self):
+        super().__init__()
+        self.add = ops.add
+        self.relu = ops.relu
+        self.div = ops.div
+        self.y1 = Parameter(Tensor([1.0, -2.0, 3.0]), name="b")
+
+    def construct(self, x1, x2):
+        out = self.add(x1, self.y1)
+        out = self.relu(out)
+        out = self.div(out, x2)
+        return out
+
+
+class GradNetWrtWeight(nn.Cell):
+    def __init__(self, net, grad_position=0, weight=None):
+        super().__init__()
+        self.grad_func = grad(net, grad_position, weight)
+
+    def construct(self, *args):
+        return self.grad_func(*args)
+
+
+class GradOperationNet(nn.Cell):
+    def __init__(self, net, get_all=False, get_by_list=False):
+        super().__init__()
+        self.net = net
+        self.grad_op = C.GradOperation(get_all=get_all, get_by_list=get_by_list)
+
+    def construct(self, *args):
+        gradient_function = self.grad_op(self.net)
+        return gradient_function(*args)
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+def test_grad_grad_attr_illegal():
+    """
+    Features: Test grad.
+    Description: Test calling grad with illegal arguments in graph mode.
+    Expectation: Raise exception.
+    """
+    class GradNet(nn.Cell):
+        def __init__(self, net, grad_position=0):
+            super().__init__()
+            self.grad_func = grad(net, grad_position)
+
+        def construct(self, *args):
+            return self.grad_func(*args)
+
+    net = GradNet21()
+    with pytest.raises(ValueError) as e:
+        GradNetWrtWeight(net, grad_position=None, weight=None)
+        _pynative_executor.sync()
+    assert "can not be None at the same time" in str(e.value)
+    with pytest.raises(TypeError) as e:
+        GradNet(net, grad_position="True")
+        _pynative_executor.sync()
+    assert "For 'F.grad', the 'grad_position' must be int or tuple" in str(e.value)
+    x1 = np.random.randn(3, 3, 3).astype(np.float32)
+    x2 = np.random.randn(3, 3, 3).astype(np.float32)
+    with pytest.raises(ValueError):
+        GradNetWrtWeight(net, grad_position=(0, 1), weight=0)(Tensor(x1), Tensor(x2))
+        _pynative_executor.sync()
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+def test_grad_grad_operation_attr_illegal():
+    """
+    Features: Test GradOperation.
+    Description: Test calling GradOperation with illegal arguments in graph mode.
+    Expectation: Raise exception.
+    """
+    net = GradNet21()
+    with pytest.raises(TypeError) as e:
+        GradOperationNet(net, get_all=None, get_by_list=False)
+        _pynative_executor.sync()
+    assert "the 'get_all' should be bool, but got NoneType" in str(e.value)
+    with pytest.raises(TypeError) as e:
+        GradOperationNet(net, get_all=False, get_by_list="True")
+        _pynative_executor.sync()
+    assert "the 'get_by_list' should be bool, but got str" in str(e.value)

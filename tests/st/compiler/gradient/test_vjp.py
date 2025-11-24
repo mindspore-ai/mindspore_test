@@ -19,6 +19,8 @@ import torch
 from torch.autograd.functional import vjp
 from mindspore import nn, context, ops, Tensor
 from mindspore.nn.grad import Vjp
+from mindspore.common import dtype
+from mindspore.common.api import _pynative_executor
 from tests.mark_utils import arg_mark
 
 
@@ -147,3 +149,166 @@ def test_vjp_in2_out2_param():
             assert np.allclose(m.asnumpy(), t.detach().numpy(), 0.001, 0.001)
     else:
         assert np.allclose(ms_grad.asnumpy(), tc_grad[0].detach().numpy(), 0.001, 0.001)
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level2', card_mark='onecard', essential_mark='unessential')
+@pytest.mark.parametrize('mode', [context.GRAPH_MODE, context.PYNATIVE_MODE])
+def test_vjp_0d_no_sens(mode):
+    """
+    Feature: vjp
+    Description: Test vjp input 0d sense is not given.
+    Expectation: Raise exception.
+    """
+    class Net(nn.Cell):
+        def construct(self, x):
+            out = x * x
+            return out
+
+    context.set_context(mode=mode)
+    net = Net()
+    grad_net = Vjp(net)
+    x = Tensor([1.0], dtype.float32)
+    with pytest.raises(TypeError):
+        grad_net(x)
+        _pynative_executor.sync()
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level2', card_mark='onecard', essential_mark='unessential')
+@pytest.mark.parametrize('mode', [context.GRAPH_MODE, context.PYNATIVE_MODE])
+def test_vjp_in2_out1_less_sens(mode):
+    """
+    Feature: vjp
+    Description: Test vjp sense number less than output
+    Expectation: Raise exception.
+    """
+    class Net(nn.Cell):
+        def construct(self, x, y):
+            return x + y
+
+    context.set_context(mode=mode)
+    net = Net()
+    x = Tensor(1, dtype.float32)
+    with pytest.raises(TypeError):
+        Vjp(net)(x)
+        _pynative_executor.sync()
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@pytest.mark.parametrize('mode', [context.GRAPH_MODE, context.PYNATIVE_MODE])
+def test_vjp_highgrad_in1_out1(mode):
+    """
+    Feature: vjp
+    Description: Test vjp highgrad
+    Expectation: No exception.
+    """
+    class VjpNet1(nn.Cell):
+        def __init__(self, net):
+            super().__init__()
+            self.net = Vjp(net)
+            self.sens = Tensor([1, 1], dtype.float32)
+
+        def construct(self, x):
+            _, grad = self.net(x, self.sens)
+            return grad
+
+    class MsIn1Out1(nn.Cell):
+        def construct(self, x):
+            return x * x * x
+
+    context.set_context(mode=mode)
+    x = Tensor([1, 1], dtype.float32)
+    net = MsIn1Out1()
+    first_grad_net = VjpNet1(net)
+    second_grad_net = VjpNet1(first_grad_net)
+    third_grad_net = VjpNet1(second_grad_net)
+    g = third_grad_net(x)
+    assert (g == x * 6).all()
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@pytest.mark.parametrize('mode', [context.GRAPH_MODE, context.PYNATIVE_MODE])
+def test_vjp_highgrad_in2_out2(mode):
+    """
+    Feature: vjp
+    Description: Test vjp highgrad
+    Expectation: No exception.
+    """
+    class MsIn2Out2(nn.Cell):
+        def construct(self, x, y):
+            xyy = x * y * y
+            xxy = x * x * y
+            return xyy, xxy
+
+    class VjpNet4(nn.Cell):
+        def __init__(self, net):
+            super().__init__()
+            self.net = Vjp(net)
+            self.sens = Tensor([1, 1], dtype.float32)
+
+        def construct(self, x, y):
+            _, grad = self.net(x, y, (self.sens, self.sens))
+            return grad
+
+    context.set_context(mode=mode)
+    net = MsIn2Out2()
+    x = Tensor([1, 1], dtype.float32)
+    y = Tensor([1, 1], dtype.float32)
+    first_grad_net = VjpNet4(net)
+    second_grad_net = VjpNet4(first_grad_net)
+    g = second_grad_net(x, y)
+    assert (g[0] == 6 * x).all()
+    assert (g[1] == 6 * x).all()
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@pytest.mark.parametrize('mode', [context.GRAPH_MODE, context.PYNATIVE_MODE])
+def test_vjp_bprop_in1_out1(mode):
+    """
+    Feature: vjp
+    Description: Test vjp highgrad, input1 output1 net has bprop
+    Expectation: No exception.
+    """
+    class BpropIn1Out1(nn.Cell):
+        def construct(self, x):
+            return x
+
+        def bprop(self, x, out, dout):
+            return (5 * x * dout,)
+
+    context.set_context(mode=mode)
+    net = BpropIn1Out1()
+    x = Tensor([2, 4, 5], dtype.float32)
+    vx = Tensor([1, 1, 1], dtype.float32)
+    out, grad = Vjp(net)(x, vx)
+    assert (out == x).all()
+    assert (grad == x * 5).all()
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@pytest.mark.parametrize('mode', [context.GRAPH_MODE, context.PYNATIVE_MODE])
+def test_vjp_bprop_in2_out2(mode):
+    """
+    Feature: vjp
+    Description: Test vjp highgrad, input2 output2 net defines bprop
+    Expectation: No exception.
+    """
+    class BpropIn2Out2(nn.Cell):
+        def construct(self, x, y):
+            a = x * x + y * y
+            b = 2 * x * y
+            return a, b
+
+        def bprop(self, x, y, out, dout):
+            return (3 * x + 2 * y) * dout[0], 4 * x * dout[1]
+
+    context.set_context(mode=mode)
+    net = BpropIn2Out2()
+    x = Tensor([2, 4, 5], dtype.float32)
+    y = Tensor([5, 4, 3], dtype.float32)
+    vx = Tensor([1, 2, 1], dtype.float32)
+    vy = Tensor([2, 1, 1], dtype.float32)
+    out, grad = Vjp(net)(x, y, (vx, vy))
+    assert (out[0] == x * x + y * y).all()
+    assert (out[1] == 2 * x * y).all()
+    assert (grad[0] == (3 * x + 2 * y) * vx).all()
+    assert (grad[1] == 4 * x * vy).all()

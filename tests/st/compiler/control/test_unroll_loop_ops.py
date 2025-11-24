@@ -1,4 +1,4 @@
-# Copyright 2024 Huawei Technologies Co., Ltd
+# Copyright 2024-2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,10 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+""" test whileloop, scan, foriloop """
 import numpy as np
 import pytest
 import mindspore as ms
-from mindspore import Tensor, jit, context, ops, nn
+from mindspore import Tensor, jit, context, ops, nn, Parameter
 from mindspore.common import dtype as mstype
 from tests.mark_utils import arg_mark
 
@@ -66,7 +67,7 @@ def test_while_loop2():
 
     class Net(nn.Cell):
         def __init__(self):
-            super(Net, self).__init__()
+            super().__init__()
             self.whileop = ops.WhileLoop()
             self.activation = ops.ReLU()
 
@@ -124,6 +125,64 @@ def test_while_loop3():
     net = WhileLoopNet()
     out = net(Tensor([2]))
     assert out == 7
+
+
+def generator_dataset(size, x_shape=(32, 1), y_shape=(32, 1)):
+    for _ in range(size):
+        x = np.full(x_shape, 0.1, dtype=np.float32)
+        y = np.full(y_shape, 0.2, dtype=np.float32)
+        yield (x, y)
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+def test_while_loop_with_nested_for():
+    """
+    Feature: control flow
+    Description: Using WhileLoopEvaluator to handle ops.WhileLoop operation
+    Expectation: No exception.
+    """
+    def cond_func(init_value):
+        return init_value[1] > 1
+
+    def for_in_while_function(init_value):
+        input_tensor, init = init_value
+        add = ops.Add()
+        out = add(input_tensor, init)
+        for _ in range(3):
+            out = add(out, init)
+        init = init - 1
+        return [out, init]
+
+    class WhileForNet(nn.Cell):
+        def __init__(self, loop_op=False, size_1=(1, 1)):
+            super().__init__()
+            self.loop_op = loop_op
+            self.add = ops.Add()
+            self.whileop = ops.WhileLoop()
+
+            self.weight_1 = Parameter(Tensor(np.full(size_1, 0.5, dtype=np.float32)), name="weight_1")
+
+        def construct(self, inputs, loop_times=3):
+            out = inputs
+            if self.loop_op:
+                res = self.whileop(cond_func, for_in_while_function, [out, loop_times])
+                out = res[0]
+            else:
+                while loop_times > 1:
+                    out = self.add(out, loop_times)
+                    for _ in range(3):
+                        out = self.add(out, loop_times)
+                    loop_times = loop_times - 1
+            out = self.add(out, self.weight_1)
+            return out
+
+    input_x = np.random.rand(2)
+    net_1 = WhileForNet(loop_op=False)
+    out1 = net_1(Tensor(input_x))
+
+    net_2 = WhileForNet(loop_op=True)
+    out2 = net_2(Tensor(input_x))
+    np.allclose(out1.asnumpy(), out2.asnumpy(), 0.001, 0.001)
 
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
@@ -210,6 +269,57 @@ def test_scan_simple_loop():
     assert result == (10, [1, 3, 6, 10])
 
 
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+def test_scan_with_nested_foriloop():
+    """
+    Feature: control flow
+    Description: Using ScanEvaluator to handle ops.Scan operation
+    Expectation: No exception.
+    """
+    def fori_loop_func(_, init_value):
+        input_tensor, init = init_value
+        add = ops.Add()
+        out = add(input_tensor, init)
+        return [out, init]
+
+    def foriloop_in_scan_function(input_tensor, el):
+        add = ops.Add()
+        out = add(input_tensor, 1)
+        fori_loop = ops.ForiLoop()
+        res = fori_loop(0, 3, fori_loop_func, [out, el])
+        return res[0], el
+
+    class ScanForiLoopNet(nn.Cell):
+        def __init__(self, loop_op=False, size_1=(1, 1)):
+            super().__init__()
+            self.loop_op = loop_op
+            self.add = ops.Add()
+            self.scanop = ops.Scan()
+
+            self.weight_1 = Parameter(Tensor(np.full(size_1, 0.5, dtype=np.float32)), name="weight_1")
+
+        def construct(self, inputs, x=3, y=10):
+            out = inputs
+            if self.loop_op:
+                res = self.scanop(foriloop_in_scan_function, inputs, [x, y], 2, False)
+                out = res[0]
+            else:
+                for i in [x, y]:
+                    out = self.add(out, 1)
+                    for _ in range(3):
+                        out = self.add(out, i)
+            out = self.add(out, self.weight_1)
+            return out
+
+    input_x = np.random.rand(2)
+    net_1 = ScanForiLoopNet(loop_op=False)
+    out1 = net_1(Tensor(input_x))
+
+    net_2 = ScanForiLoopNet(loop_op=True)
+    out2 = net_2(Tensor(input_x))
+    np.allclose(out1.asnumpy(), out2.asnumpy(), 0.001, 0.001)
+
+
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_foriloop_unroll():
@@ -232,6 +342,57 @@ def test_foriloop_unroll():
     result = test_fori_loop_inner(result_init)
     print(result)
     assert result == 45
+
+
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='essential')
+def test_foriloop_with_nested_foriloop():
+    """
+    Feature: control flow
+    Description: Using ForiLoopEvaluator to handle ops.ForiLoop operation
+    Expectation: No exception.
+    """
+    def fori_loop_func(_, init_value):
+        input_tensor, init = init_value
+        add = ops.Add()
+        out = add(input_tensor, init)
+        return [out, init]
+
+    def foriloop_in_foriloop_function(index, input_tensor):
+        add = ops.Add()
+        out = add(input_tensor, 1)
+        fori_loop = ops.ForiLoop()
+        res = fori_loop(0, 3, fori_loop_func, [out, index])
+        return res[0]
+
+    class ForiLoopForiLoopNet(nn.Cell):
+        def __init__(self, loop_op=False, size_1=(32, 1)):
+            super().__init__()
+            self.loop_op = loop_op
+            self.add = ops.Add()
+            self.fori_loop = ops.ForiLoop()
+
+            self.weight_1 = Parameter(Tensor(np.full(size_1, 0.5, dtype=np.float32)), name="weight_1")
+
+        def construct(self, inputs, x=3, y=10):
+            out = inputs
+            if self.loop_op:
+                out = self.fori_loop(x, y, foriloop_in_foriloop_function, out, False)
+            else:
+                for i in range(x, y):
+                    out = self.add(out, 1)
+                    for _ in range(3):
+                        out = self.add(out, i)
+            out = self.add(out, self.weight_1)
+            return out
+
+    input_x = np.random.rand(2)
+    net_1 = ForiLoopForiLoopNet(loop_op=False)
+    out1 = net_1(Tensor(input_x))
+
+    net_2 = ForiLoopForiLoopNet(loop_op=True)
+    out2 = net_2(Tensor(input_x))
+    np.allclose(out1.asnumpy(), out2.asnumpy(), 0.001, 0.001)
 
 
 @arg_mark(plat_marks=["cpu_linux"], level_mark="level1", card_mark="onecard", essential_mark="unessential")

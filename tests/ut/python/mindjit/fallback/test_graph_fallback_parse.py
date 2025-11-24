@@ -17,7 +17,7 @@ import os
 import math
 import pytest
 import numpy as np
-import mindspore.nn as nn
+from mindspore import nn
 from mindspore import context, Tensor, jit
 from mindspore.ops import Primitive
 
@@ -33,7 +33,7 @@ def test_parse_return():
 
     class Network(nn.Cell):
         def __init__(self):
-            super(Network, self).__init__()
+            super().__init__()
             self.x = np.array([1, 2, 3])
 
         def construct(self):
@@ -53,7 +53,7 @@ def test_parse_def_function():
 
     class Network(nn.Cell):
         def __init__(self):
-            super(Network, self).__init__()
+            super().__init__()
             self.x = np.array([1, 2, 3])
 
         def construct(self, y=np.array([2, 3, 4])):
@@ -73,11 +73,11 @@ def test_parse_lambda():
 
     class Network(nn.Cell):
         def __init__(self):
-            super(Network, self).__init__()
+            super().__init__()
             self.x = np.array([1, 2, 3])
 
         def construct(self):
-            new_x = lambda x: 2 * x + self.x
+            new_x = lambda x: 2 * x + self.x  #pylint: disable=unnecessary-lambda-assignment
             y = new_x(1)
             return Tensor(y)
 
@@ -96,11 +96,11 @@ def test_parse_lambda_2():
 
     class Network(nn.Cell):
         def __init__(self):
-            super(Network, self).__init__()
+            super().__init__()
             self.x = np.array([1, 2, 3])
 
         def construct(self):
-            new_x = lambda x: 2 * x + self.x
+            new_x = lambda x: 2 * x + self.x  #pylint: disable=unnecessary-lambda-assignment
             return Tensor(new_x(1))
 
     net = Network()
@@ -117,7 +117,7 @@ def test_parse_bool_op():
 
     class Network(nn.Cell):
         def __init__(self):
-            super(Network, self).__init__()
+            super().__init__()
             self.x = np.array([1, 2, 3])
 
         def construct(self):
@@ -227,7 +227,7 @@ def test_parse_subscript_2():
     class Network(nn.Cell):
         def construct(self):
             x = [Tensor([11]), Tensor([22]), Tensor([33])]
-            y = x[np.array(0)]
+            y = x[np.array(0)] #pylint: disable=invalid-sequence-index
             return y
 
     os.environ['MS_DEV_JIT_SYNTAX_LEVEL'] = '0'

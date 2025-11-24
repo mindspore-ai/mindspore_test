@@ -19,7 +19,7 @@ from mindspore import nn
 from mindspore import context
 from mindspore import ops
 from mindspore import Tensor, jit, Parameter
-from mindspore.ops.functional import jet, derivative
+from mindspore.ops.functional import jet, derivative, grad
 from mindspore.common import dtype
 from mindspore.common.api import _pynative_executor
 from tests.mark_utils import arg_mark
@@ -423,8 +423,8 @@ def test_derivative_derivative_grad(mode):
                 return derivative(self.net, x, y)
 
             grad_net = ops.grad(get_der)
-            grad = grad_net(a, b)
-            return grad
+            grad_result = grad_net(a, b)
+            return grad_result
 
     context.set_context(mode=mode)
     net = SinNet()
@@ -721,13 +721,74 @@ def test_jet_function_graph_mode(mode):
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux'], level_mark='level1', card_mark='onecard',
           essential_mark='unessential')
 @pytest.mark.parametrize('mode', [context.GRAPH_MODE, context.PYNATIVE_MODE])
-def test_jet_jet_grad(mode):
+def test_jet_add_2_inputs_float32_not_cell_or_function(mode):
     """
-    Features: high grad jet
-    Description: Test high grad jet.
+    Features: Function jet
+    Description: Test jet, with fn not cell or function, dtype float32
     Expectation: No exception.
     """
+    context.set_context(mode=mode)
+    x = Tensor([1, 1], dtype.float32)
+    y = Tensor([[1, 1], [0, 0]], dtype.float32)
+    with pytest.raises(RuntimeError):
+        jet(ops.Add(), (x, x), (y, y))
+        _pynative_executor.sync()
 
+
+
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
+@pytest.mark.parametrize('mode', [context.GRAPH_MODE, context.PYNATIVE_MODE])
+def test_jet_double_alpha(mode):
+    """
+    Features: Function jet
+    Description: Test jet with double alpha
+    Expectation: No exception.
+    """
+    class Net3(nn.Cell):
+        def __init__(self):
+            super().__init__()
+            self.sin = ops.Sin()
+            self.cos = ops.Cos()
+
+        def construct(self, x, y):
+            s = self.sin(x)
+            c = self.cos(y)
+            return s * c, c * c
+
+    class Net(nn.Cell):
+        def __init__(self, net):
+            super().__init__()
+            self.net = net
+
+        def construct(self, x, y):
+            out, prime = jet(self.net, (x, x), (y, y))
+            return out, prime
+
+    context.set_context(mode=mode)
+    net = Net3()
+    x = Tensor([1, 1], dtype.float32)
+    y = Tensor([[1, 1], [0, 0]], dtype.float32)
+    ms_net = Net(net)
+    ms_out, ms_prime = ms_net(x, y)
+    assert np.allclose((ms_out[0].asnumpy(), ms_out[1].asnumpy()),
+                                ([0.45464844, 0.45464844], [0.29192644, 0.29192644]), 0.0001,
+                                0.0001)
+    assert np.allclose((ms_prime[0].asnumpy(), ms_prime[1].asnumpy()),
+                                ([[-0.4161465, -0.4161465], [-1.818592, -1.818592]
+                                  ], [[-0.9092965, -0.9092965], [0.8322927, 0.8322927]]), 0.0001,
+                                0.0001)
+
+
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
+@pytest.mark.parametrize('mode', [context.GRAPH_MODE, context.PYNATIVE_MODE])
+def test_jet_jet_grad(mode):
+    """
+    Features: Function jet
+    Description: Test jet jet grad
+    Expectation: No exception.
+    """
     class Grad(nn.Cell):
         def __init__(self, net):
             super().__init__()
@@ -737,14 +798,246 @@ def test_jet_jet_grad(mode):
             def get_jet(x, y):
                 return jet(self.net, x, y)
 
-            grad_net = ops.grad(get_jet)
-            grad_ret = grad_net(a, b)
-            return grad_ret
+            grad_net = grad(get_jet)
+            grad_result = grad_net(a, b)
+            return grad_result
 
     context.set_context(mode=mode)
     net = SinNet()
-    x = Tensor([1., 1.])
-    y = Tensor([[1., 1.], [0., 0.]])
+    x = Tensor([1, 1], dtype.float32)
+    y = Tensor([[1, 1], [0, 0]], dtype.float32)
     ms_net = Grad(net)
     jet_grad = ms_net(x, y)
-    assert np.allclose(jet_grad.asnumpy(), np.array([-8.41470957e-01, -8.41470957e-01]), 0.001, 0.001)
+    assert np.allclose(jet_grad.asnumpy(),\
+        np.array([-8.41470957e-01, -8.41470957e-01]), 0.001, 0.001)
+
+
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
+def test_jet_grad_jet_0_graph_mode():
+    """
+    Features: Function jet
+    Description: Test jet grad_jet_0_graph_mode
+    Expectation: No exception.
+    """
+    context.set_context(mode=context.GRAPH_MODE)
+    net = SinNet()
+    x = Tensor([1,], dtype.float32)
+    y = Tensor([[1,], [0,]], dtype.float32)
+    ms_out = jet(grad(net), x, y)
+    assert np.allclose(ms_out[0].asnumpy(), (0.540302, ), 0.0001, 0.0001)
+    assert np.allclose(ms_out[1].asnumpy(), ([-0.8414702], [-0.5403015]), 0.0001, 0.0001)
+
+
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
+@pytest.mark.parametrize('mode', [context.GRAPH_MODE, context.PYNATIVE_MODE])
+def test_jet_jet_jet(mode):
+    """
+    Features: Function jet
+    Description: Test jet jet jet
+    Expectation: No exception.
+    """
+    class Net(nn.Cell):
+        def __init__(self, net):
+            super().__init__()
+            _, self.seljet_net = jet(net, x, y)
+
+        def construct(self, x, y):
+            out, prime = jet(self.seljet_net, x, y)
+            return out, prime
+
+    context.set_context(mode=mode)
+    net = SinNet()
+    x = Tensor([1, 1], dtype.float32)
+    y = Tensor([[1, 1], [0, 0]], dtype.float32)
+    ms_net = Net(net)
+    with pytest.raises(RuntimeError):
+        ms_net(x, y)
+        _pynative_executor.sync()
+
+
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
+@pytest.mark.parametrize('mode', [context.GRAPH_MODE, context.PYNATIVE_MODE])
+def test_jet_fn_ms_function(mode):
+    """
+    Features: Function jet
+    Description: Test jet with jit
+    Expectation: No exception.
+    """
+    class Net(nn.Cell):
+        def __init__(self, net):
+            super().__init__()
+            self.net = net
+
+        def construct(self, x, y):
+            out, prime = jet(self.net, x, y)
+            return out, prime
+
+    @jit
+    def cos_exp(x):
+        return ops.Cos()(ops.Exp()(x))
+
+    context.set_context(mode=mode)
+    net = cos_exp
+    x = Tensor([1, 1], dtype.float32)
+    y = Tensor([[1, 1], [0, 0]], dtype.float32)
+    ms_net = Net(net)
+    ms_out = ms_net(x, y)
+    assert np.allclose(ms_out[0].asnumpy(), [-0.91173387, -0.91173387], 0.0001, 0.0001)
+    assert np.allclose(ms_out[1].asnumpy(),
+                       [[-1.1166183, -1.1166183], [5.620221, 5.620221]], 0.0001, 0.0001)
+
+
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
+@pytest.mark.parametrize('mode', [context.GRAPH_MODE, context.PYNATIVE_MODE])
+def test_jet_primitive(mode):
+    """
+    Features: Function jet
+    Description: Test jet with primitive
+    Expectation: No exception.
+    """
+    class Net(nn.Cell):
+        def __init__(self, net):
+            super().__init__()
+            self.net = net
+
+        def construct(self, x, y):
+            out, prime = jet(self.net, x, y)
+            return out, prime
+
+    context.set_context(mode=mode)
+    net = ops.Sin()
+    x = Tensor([1, 1], dtype.float32)
+    y = Tensor([[1, 1], [0, 0]], dtype.float32)
+    ms_net = Net(net)
+    with pytest.raises(RuntimeError):
+        ms_net(x, y)
+        _pynative_executor.sync()
+
+
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
+@pytest.mark.parametrize('mode', [context.GRAPH_MODE, context.PYNATIVE_MODE])
+def test_jet_lambda(mode):
+    """
+    Features: Function jet
+    Description: Test jet with lambda
+    Expectation: No exception.
+    """
+    class Net(nn.Cell):
+        def __init__(self, net):
+            super().__init__()
+            self.net = net
+
+        def construct(self, x, y):
+            out, prime = jet(self.net, x, y)
+            return out, prime
+
+    context.set_context(mode=mode)
+    net = lambda x: x * x * x     #pylint: disable=unnecessary-lambda-assignment
+    x = Tensor([1, 1], dtype.float32)
+    y = Tensor([[1, 1], [0, 0]], dtype.float32)
+    ms_net = Net(net)
+    ms_out = ms_net(x, y)
+    assert np.allclose(ms_out[0].asnumpy(), [0.99999905, 0.99999905], 0.0001, 0.0001)
+    assert np.allclose(ms_out[1].asnumpy(),
+                                [[2.9999971, 2.9999971], [5.9999943, 5.9999943]], 0.0001, 0.0001)
+
+
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
+@pytest.mark.parametrize('mode', [context.GRAPH_MODE, context.PYNATIVE_MODE])
+def test_jet_parameter(mode):
+    """
+    Features: Function jet
+    Description: Test jet with parameter
+    Expectation: No exception.
+    """
+    class Net(nn.Cell):
+        def __init__(self, net):
+            super().__init__()
+            self.net = net
+
+        def construct(self, x, y):
+            out, prime = jet(self.net, x, y)
+            return out, prime
+
+    class Net6(nn.Cell):
+        def __init__(self):
+            super().__init__()
+            self.param = Parameter(Tensor([1, 2], dtype.float32), name="p")
+
+        def construct(self, x):
+            return self.param * x
+
+    context.set_context(mode=mode)
+    net = Net6()
+    x = Tensor([1, 1], dtype.float32)
+    y = Tensor([[1, 1], [0, 0]], dtype.float32)
+    ms_net = Net(net)
+    with pytest.raises(RuntimeError):
+        ms_net(x, y)
+        _pynative_executor.sync()
+
+
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
+@pytest.mark.parametrize('mode', [context.GRAPH_MODE, context.PYNATIVE_MODE])
+def test_jet_dyn(mode):
+    """
+    Features: Function jet
+    Description: Test jet with dynamic shape
+    Expectation: No exception.
+    """
+    class Net(nn.Cell):
+        def __init__(self, net):
+            super().__init__()
+            self.net = net
+
+        def construct(self, x, y):
+            out_1, out_2 = jet(self.net, x, y)
+            return out_1, out_2
+
+    context.set_context(mode=mode)
+    net = SinNet()
+    dyn = Tensor(shape=[None], dtype=dtype.float32)
+    net.set_inputs(dyn)
+    x = Tensor([2], dtype.float32)
+    y = Tensor([[1], [0]], dtype.float32)
+    ms_net = Net(net)
+    ms_out = ms_net(x, y)
+    assert np.allclose(ms_out[0].asnumpy(), [0.9092974], 0.0001, 0.0001)
+    assert np.allclose(ms_out[1].asnumpy(), [[-0.41614667], [-0.9092965]], 0.0001, 0.0001)
+
+
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
+@pytest.mark.parametrize('mode', [context.GRAPH_MODE, context.PYNATIVE_MODE])
+def test_jet_dyn_series_shape_not_same_as_primals(mode):
+    """
+    Features: Function jet
+    Description: Test jet with dynamic shape not same as primals
+    Expectation: Raise exception.
+    """
+    class Net(nn.Cell):
+        def __init__(self, net):
+            super().__init__()
+            self.net = net
+
+        def construct(self, x, y):
+            out_1, out_2 = jet(self.net, x, y)
+            return out_1, out_2
+
+    context.set_context(mode=mode)
+    net = SinNet()
+    dyn = Tensor(shape=[None], dtype=dtype.float32)
+    net.set_inputs(dyn)
+    x = Tensor([2], dtype.float32)
+    y = Tensor([[1, 1], [0, 0]], dtype.float32)
+    ms_net = Net(net)
+    with pytest.raises(ValueError):
+        ms_net(x, y)
+        _pynative_executor.sync()
