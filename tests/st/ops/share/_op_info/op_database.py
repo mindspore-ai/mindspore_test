@@ -55,14 +55,6 @@ from tests.st.ops.share._op_info.op_common import  (
     dtypes_integral,
     dtypes_extra_uint,
 )
-from tests.st.ops.share._internal.utils import (
-    OpSampleInput,
-    OpDynamicInput,
-    OpErrorInput,
-    make_tensor,
-    make_tensor_with_np_array,
-    skip_sample_inputs,
-)
 
 # op_basic_reference_inputs_func for ops
 def basic_sample_inputs_add_sub_ext(
@@ -356,55 +348,18 @@ def basic_sample_inputs_mint_arange(
             sample_name=op_info.name,
         )
 
-# op_func_without_kwargs, used by gradient comparison if there are kwargs in op
+# NOTE: op_func_without_kwargs, used by gradient comparison only when there are kwargs in op!
 def add_ext_func_grad_without_kwargs(x, y, alpha=1):
     return mint.add(x, y, alpha=alpha)
 
 def sub_ext_func_grad_without_kwargs(x, y, alpha=1):
     return mint.sub(x, y, alpha=alpha)
 
-def equal_func_grad(x, other):
-    return mint.equal(x, other)
-
-def eq_func_grad(x, other):
-    return mint.eq(x, other)
-
-def greater_equal_func_grad(x, other):
-    return mint.greater_equal(x, other)
-
-def greater_func_grad(x, other):
-    return mint.greater(x, other)
-
-def less_equal_func_grad(x, other):
-    return mint.less_equal(x, other)
-
-def less_func_grad(x, other):
-    return mint.less(x, other)
-
-def ne_func_grad(x, other):
-    return mint.ne(x, other)
-
-def maximum_func_grad(op_input, other):
-    return mint.maximum(op_input, other)
-
-def minimum_func_grad(op_input, other):
-    return mint.minimum(op_input, other)
-
 def div_func_grad(op_input, other):
     return mint.div(op_input, other)
 
-def mul_func_grad(op_input, other):
-    return mint.mul(op_input, other)
-
 def repeat_interleave_func_grad(input_x, repeats, dim=None, output_size=None):
     return mint.repeat_interleave(input_x, repeats, dim, output_size=output_size)
-
-def pow_ext_func_grad_without_kwargs(op_input, exponent):
-    return mint.pow(op_input, exponent)
-
-
-def floor_divide_ext_func_grad_without_kwargs(op_input, other):
-    return mint.floor_divide(op_input, other)
 
 def sample_inputs_broadcast_to(op_info, dtype, device, **kwargs):
     S = SMALL_DIM_SIZE
@@ -2210,7 +2165,7 @@ def basic_sample_inputs_mint_unique(op_info: OpInfo, dtype=None, device=None, **
     flag_cases = [(sorted_flag, ret_inv, ret_cnt) for sorted_flag in (False, True)
                   for ret_inv in (False, True) for ret_cnt in (False, True)]
     #TODO: mint.unique has different behavior when dim is None or -1, skip it temporarily.
-    dim_cases = (-2, 0, 2) 
+    dim_cases = (-2, 0, 2)
 
     for shape in sizes:
         rank = len(shape)
@@ -3452,6 +3407,7 @@ def basic_sample_inputs_mint_dropout(op_info: OpInfo, dtype=None, device=None, *
     S = SMALL_DIM_SIZE if kwargs.get("only_small_tensor_size", False) else EXTRA_SMALL_DIM_SIZE
 
     cases = ((S, S), (S,), ())
+    # Other values will bring random number of output, skip it.
     p_vals = [0.0, 1.0]
     # This is to handle special case for feature_alpha_dropout which has different
     # supported dtypes depending on `train` parameter
@@ -3811,8 +3767,6 @@ op_db: Dict[str, OpInfo] = {
         op=mint.add,
         op_func_without_kwargs=add_ext_func_grad_without_kwargs,
         ref=torch.add,
-        tensor_variant=lambda op_input, *op_args, **op_kwargs: op_input.add(
-            op_args[0], alpha=op_kwargs.get('alpha', 1)),
         dtypes_ascend=tuple(d for d in dtypes_as_torch if d != ms.bfloat16),
         dtypes_ascend910b=dtypes_as_torch,
         dtypes_cpu=tuple([d for d in dtypes_as_torch if d != ms.bfloat16 and d != ms.bool_] + list(dtypes_extra_uint)),
@@ -4177,9 +4131,6 @@ op_db: Dict[str, OpInfo] = {
         op=mint.sub,
         op_func_without_kwargs=sub_ext_func_grad_without_kwargs,
         ref=torch.sub,
-        # tensor_variant is now a unused parameter, may be removed in the future
-        tensor_variant=lambda op_input, *op_args, **op_kwargs: op_input.sub(
-            op_args[0], alpha=op_kwargs.get('alpha', 1)),
         dtypes_ascend=tuple(d for d in dtypes_as_torch if d != ms.bfloat16 and d != ms.bool_),
         dtypes_ascend910b=tuple(d for d in dtypes_as_torch if d != ms.bool_),
         dtypes_cpu=tuple([d for d in dtypes_as_torch if d != ms.bfloat16 and d != ms.bool_] + list(dtypes_extra_uint)),
@@ -4194,9 +4145,7 @@ op_db: Dict[str, OpInfo] = {
     'mint.equal': BinaryOpInfo(
         name='mint.equal',
         op=mint.equal,
-        op_func_without_kwargs=equal_func_grad,
         ref=torch.equal,
-        tensor_variant=lambda op_input, *op_args, **op_kwargs: op_input.equal(op_args[0]),
         dtypes_ascend=tuple(d for d in dtypes_as_torch if not d.is_complex and d != ms.bfloat16),
         dtypes_ascend910b=tuple(d for d in dtypes_as_torch if not d.is_complex),
         dtypes_cpu=tuple(),
@@ -4213,9 +4162,7 @@ op_db: Dict[str, OpInfo] = {
     'mint.eq': BinaryOpInfo(
         name='mint.eq',
         op=mint.eq,
-        op_func_without_kwargs=eq_func_grad,
         ref=torch.eq,
-        tensor_variant=lambda op_input, *op_args, **op_kwargs: op_input.eq(op_args[0]),
         dtypes_ascend=tuple(d for d in dtypes_as_torch if d != ms.bfloat16),
         dtypes_ascend910b=dtypes_as_torch,
         dtypes_cpu=tuple(),
@@ -4232,9 +4179,7 @@ op_db: Dict[str, OpInfo] = {
     'mint.greater_equal': BinaryOpInfo(
         name='mint.greater_equal',
         op=mint.greater_equal,
-        op_func_without_kwargs=greater_equal_func_grad,
         ref=torch.greater_equal,
-        tensor_variant=lambda op_input, *op_args, **op_kwargs: op_input.greater_equal(op_args[0]),
         dtypes_ascend=tuple(d for d in dtypes_as_torch if not d.is_complex and d != ms.bfloat16),
         dtypes_ascend910b=tuple(d for d in dtypes_as_torch if not d.is_complex),
         dtypes_cpu=tuple(),
@@ -4251,9 +4196,7 @@ op_db: Dict[str, OpInfo] = {
     'mint.greater': BinaryOpInfo(
         name='mint.greater',
         op=mint.greater,
-        op_func_without_kwargs=greater_func_grad,
         ref=torch.greater,
-        tensor_variant=lambda op_input, *op_args, **op_kwargs: op_input.greater(op_args[0]),
         dtypes_ascend=tuple(d for d in dtypes_as_torch if not d.is_complex and d != ms.bfloat16),
         dtypes_ascend910b=tuple(d for d in dtypes_as_torch if not d.is_complex),
         dtypes_cpu=tuple(),
@@ -4270,9 +4213,7 @@ op_db: Dict[str, OpInfo] = {
     'mint.less_equal': BinaryOpInfo(
         name='mint.less_equal',
         op=mint.less_equal,
-        op_func_without_kwargs=less_equal_func_grad,
         ref=torch.less_equal,
-        tensor_variant=lambda op_input, *op_args, **op_kwargs: op_input.less_equal(op_args[0]),
         dtypes_ascend=tuple(d for d in dtypes_as_torch if not d.is_complex and d != ms.bfloat16),
         dtypes_ascend910b=tuple(d for d in dtypes_as_torch if not d.is_complex),
         dtypes_cpu=tuple(),
@@ -4289,9 +4230,7 @@ op_db: Dict[str, OpInfo] = {
     'mint.less': BinaryOpInfo(
         name='mint.less',
         op=mint.less,
-        op_func_without_kwargs=less_func_grad,
         ref=torch.less,
-        tensor_variant=lambda op_input, *op_args, **op_kwargs: op_input.less(op_args[0]),
         dtypes_ascend=tuple(d for d in dtypes_as_torch if not d.is_complex and d != ms.bfloat16),
         dtypes_ascend910b=tuple(d for d in dtypes_as_torch if not d.is_complex),
         dtypes_cpu=tuple(),
@@ -4308,9 +4247,7 @@ op_db: Dict[str, OpInfo] = {
     'mint.ne': BinaryOpInfo(
         name='mint.ne',
         op=mint.ne,
-        op_func_without_kwargs=ne_func_grad,
         ref=torch.ne,
-        tensor_variant=lambda op_input, *op_args, **op_kwargs: op_input.ne(op_args[0]),
         dtypes_ascend=tuple(d for d in dtypes_as_torch if d != ms.bfloat16),
         dtypes_ascend910b=dtypes_as_torch,
         dtypes_cpu=tuple(),
@@ -4327,9 +4264,7 @@ op_db: Dict[str, OpInfo] = {
     'mint.maximum': BinaryOpInfo(
         name='mint.maximum',
         op=mint.maximum,
-        op_func_without_kwargs=maximum_func_grad,
         ref=torch.maximum,
-        tensor_variant=lambda op_input, *op_args, **op_kwargs: op_input.equal(op_args[0]),
         #On Ascend 910A and 910B, float64 is not supported due to backward compatibility, so we need to exclude it.
         dtypes_ascend=tuple(d for d in dtypes_as_torch if not d.is_complex and d != ms.bfloat16 and d != ms.float64),
         dtypes_ascend910b=tuple(d for d in dtypes_as_torch if not d.is_complex and d != ms.float64),
@@ -4344,9 +4279,7 @@ op_db: Dict[str, OpInfo] = {
     'mint.minimum': BinaryOpInfo(
         name='mint.minimum',
         op=mint.minimum,
-        op_func_without_kwargs=minimum_func_grad,
         ref=torch.minimum,
-        tensor_variant=lambda op_input, *op_args, **op_kwargs: op_input.minimum(op_args[0]),
         #On Ascend 910A and 910B, float64 is not supported due to backward compatibility, so we need to exclude it.
         dtypes_ascend=tuple(d for d in dtypes_as_torch if not d.is_complex and d != ms.bfloat16 and d != ms.float64),
         dtypes_ascend910b=tuple(d for d in dtypes_as_torch if not d.is_complex and d != ms.float64),
@@ -4363,7 +4296,6 @@ op_db: Dict[str, OpInfo] = {
         op=mint.div,
         op_func_without_kwargs=div_func_grad,
         ref=torch.div,
-        tensor_variant=lambda op_input, *op_args, **op_kwargs: op_input.div(op_args[0]),
         # Skip FP16 fwd/bwd on Ascend 910A/910B due to out-of-tolerance numerics vs PyTorch-CPU.
         dtypes_ascend=tuple(d for d in dtypes_as_torch if not d.is_complex and d != ms.bfloat16 and d != ms.float16),
         dtypes_ascend910b=tuple(d for d in dtypes_as_torch if not d.is_complex and d != ms.float16),
@@ -4378,9 +4310,7 @@ op_db: Dict[str, OpInfo] = {
     'mint.mul': BinaryOpInfo(
         name='mint.mul',
         op=mint.mul,
-        op_func_without_kwargs=mul_func_grad,
         ref=torch.mul,
-        tensor_variant=lambda op_input, *op_args, **op_kwargs: op_input.mul(op_args[0]),
         # Skip FP16 fwd/bwd on Ascend 910A/910B due to out-of-tolerance numerics vs PyTorch-CPU.
         dtypes_ascend=tuple(d for d in dtypes_as_torch if not d.is_complex and d != ms.bfloat16 and d != ms.float16),
         dtypes_ascend910b=tuple(d for d in dtypes_as_torch if not d.is_complex and d != ms.float16),
@@ -4449,7 +4379,6 @@ op_db: Dict[str, OpInfo] = {
         name='Tensor.maximum',
         op=tensor_maximum_ms,
         ref=tensor_maximum_torch,
-        tensor_variant=lambda op_input, *op_args, **op_kwargs: op_input.maximum(op_args[0]),
         #On Ascend 910A and 910B, float64 is not supported due to backward compatibility, so we need to exclude it.
         dtypes_ascend=tuple(d for d in dtypes_as_torch if not d.is_complex and d != ms.bfloat16 and d != ms.float64),
         dtypes_ascend910b=tuple(d for d in dtypes_as_torch if not d.is_complex and d != ms.float64),
@@ -4465,7 +4394,6 @@ op_db: Dict[str, OpInfo] = {
         name='Tensor.minimum',
         op=tensor_minimum_ms,
         ref=tensor_minimum_torch,
-        tensor_variant=lambda op_input, *op_args, **op_kwargs: op_input.minimum(op_args[0]),
         #On Ascend 910A and 910B, float64 is not supported due to backward compatibility, so we need to exclude it.
         dtypes_ascend=tuple(d for d in dtypes_as_torch if not d.is_complex and d != ms.bfloat16 and d != ms.float64),
         dtypes_ascend910b=tuple(d for d in dtypes_as_torch if not d.is_complex and d != ms.float64),
@@ -4481,7 +4409,6 @@ op_db: Dict[str, OpInfo] = {
         name='Tensor.mul',
         op=tensor_mul_ms,
         ref=tensor_mul_torch,
-        tensor_variant=lambda op_input, *op_args, **op_kwargs: op_input.mul(op_args[0]),
         # Skip FP16 fwd/bwd on Ascend 910A/910B due to out-of-tolerance numerics vs PyTorch-CPU.
         dtypes_ascend=tuple(d for d in dtypes_as_torch if not d.is_complex and d != ms.bfloat16 and d != ms.float16),
         dtypes_ascend910b=tuple(d for d in dtypes_as_torch if not d.is_complex and d != ms.float16),
@@ -4497,10 +4424,8 @@ op_db: Dict[str, OpInfo] = {
     'mint.floor_divide': BinaryOpInfo(
         name='mint.floor_divide',
         op=mint.floor_divide,
-        op_func_without_kwargs=floor_divide_ext_func_grad_without_kwargs,
         ref=torch.floor_divide,
         is_differentiable=False,
-        tensor_variant=lambda op_input, *op_args, **op_kwargs: op_input.add(op_args[0]),
         # torch donen't support bool
         # ms.float16: Precision assertion failed.
         # ms.uint8: Error message EH9999.
@@ -4515,9 +4440,7 @@ op_db: Dict[str, OpInfo] = {
     'mint.pow': BinaryOpInfo(
         name='mint.pow',
         op=mint.pow,
-        op_func_without_kwargs=pow_ext_func_grad_without_kwargs,
         ref=torch.pow,
-        tensor_variant=lambda op_input, *op_args, **op_kwargs: op_input.add(op_args[0]),
         dtypes_ascend=tuple((ms.int8, ms.int16, ms.int32, ms.int64, ms.float32, ms.float64,)),
         dtypes_ascend910b=tuple((ms.int8, ms.int16, ms.int32, ms.int64, ms.float32, ms.float64, ms.bfloat16)),
         op_basic_reference_inputs_func=basic_sample_inputs_mint_pow,
@@ -5095,7 +5018,6 @@ op_db: Dict[str, OpInfo] = {
         name='Tensor.eq',
         op=tensor_eq_ms,
         ref=tensor_eq_torch,
-        tensor_variant=lambda op_input, *op_args, **op_kwargs: op_input.eq(op_args[0]),
         dtypes_ascend=tuple(d for d in dtypes_as_torch if d != ms.bfloat16),
         dtypes_ascend910b=dtypes_as_torch,
         dtypes_cpu=tuple(),
@@ -5109,7 +5031,6 @@ op_db: Dict[str, OpInfo] = {
         name='Tensor.greater_equal',
         op=tensor_greater_equal_ms,
         ref=tensor_greater_equal_torch,
-        tensor_variant=lambda op_input, *op_args, **op_kwargs: op_input.greater_equal(op_args[0]),
         dtypes_ascend=tuple(d for d in dtypes_as_torch if not d.is_complex and d != ms.bfloat16),
         dtypes_ascend910b=tuple(d for d in dtypes_as_torch if not d.is_complex),
         dtypes_cpu=tuple(),
@@ -5123,7 +5044,6 @@ op_db: Dict[str, OpInfo] = {
         name='Tensor.greater',
         op=tensor_greater_ms,
         ref=tensor_greater_torch,
-        tensor_variant=lambda op_input, *op_args, **op_kwargs: op_input.greater(op_args[0]),
         dtypes_ascend=tuple(d for d in dtypes_as_torch if not d.is_complex and d != ms.bfloat16),
         dtypes_ascend910b=tuple(d for d in dtypes_as_torch if not d.is_complex),
         dtypes_cpu=tuple(),
@@ -5137,7 +5057,6 @@ op_db: Dict[str, OpInfo] = {
         name='Tensor.less_equal',
         op=tensor_less_equal_ms,
         ref=tensor_less_equal_torch,
-        tensor_variant=lambda op_input, *op_args, **op_kwargs: op_input.less_equal(op_args[0]),
         dtypes_ascend=tuple(d for d in dtypes_as_torch if not d.is_complex and d != ms.bfloat16),
         dtypes_ascend910b=tuple(d for d in dtypes_as_torch if not d.is_complex),
         dtypes_cpu=tuple(),
@@ -5151,7 +5070,6 @@ op_db: Dict[str, OpInfo] = {
         name='Tensor.less',
         op=tensor_less_ms,
         ref=tensor_less_torch,
-        tensor_variant=lambda op_input, *op_args, **op_kwargs: op_input.less(op_args[0]),
         dtypes_ascend=tuple(d for d in dtypes_as_torch if not d.is_complex and d != ms.bfloat16),
         dtypes_ascend910b=tuple(d for d in dtypes_as_torch if not d.is_complex),
         dtypes_cpu=tuple(),
@@ -5165,7 +5083,6 @@ op_db: Dict[str, OpInfo] = {
         name='Tensor.ne',
         op=tensor_ne_ms,
         ref=tensor_ne_torch,
-        tensor_variant=lambda op_input, *op_args, **op_kwargs: op_input.ne(op_args[0]),
         dtypes_ascend=tuple(d for d in dtypes_as_torch if d != ms.bfloat16),
         dtypes_ascend910b=dtypes_as_torch,
         dtypes_cpu=tuple(),
@@ -5179,7 +5096,6 @@ op_db: Dict[str, OpInfo] = {
         name='Tensor.gt',
         op=tensor_gt_ms,
         ref=tensor_gt_torch,
-        tensor_variant=lambda op_input, *op_args, **op_kwargs: op_input.gt(op_args[0]),
         dtypes_ascend=tuple(d for d in dtypes_as_torch if not d.is_complex and d != ms.bfloat16),
         dtypes_ascend910b=tuple(d for d in dtypes_as_torch if not d.is_complex),
         dtypes_cpu=tuple(),
@@ -5193,7 +5109,6 @@ op_db: Dict[str, OpInfo] = {
         name='Tensor.le',
         op=tensor_le_ms,
         ref=tensor_le_torch,
-        tensor_variant=lambda op_input, *op_args, **op_kwargs: op_input.le(op_args[0]),
         dtypes_ascend=tuple(d for d in dtypes_as_torch if not d.is_complex and d != ms.bfloat16),
         dtypes_ascend910b=tuple(d for d in dtypes_as_torch if not d.is_complex),
         dtypes_cpu=tuple(),
@@ -5207,7 +5122,6 @@ op_db: Dict[str, OpInfo] = {
         name='Tensor.lt',
         op=tensor_lt_ms,
         ref=tensor_lt_torch,
-        tensor_variant=lambda op_input, *op_args, **op_kwargs: op_input.lt(op_args[0]),
         dtypes_ascend=tuple(d for d in dtypes_as_torch if not d.is_complex and d != ms.bfloat16),
         dtypes_ascend910b=tuple(d for d in dtypes_as_torch if not d.is_complex),
         dtypes_cpu=tuple(),
@@ -5420,10 +5334,8 @@ op_db: Dict[str, OpInfo] = {
     'Tensor.floor_divide': BinaryOpInfo(
         name='Tensor.floor_divide',
         op=tensor_floor_divide_ms,
-        op_func_without_kwargs=tensor_floor_divide_ms,
         ref=tensor_floor_divide_torch,
         is_differentiable=False,
-        tensor_variant=lambda op_input, *op_args, **op_kwargs: op_input.add(op_args[0]),
         # torch donen't support bool
         # ms.float16: Precision assertion failed.
         # ms.uint8: Error message EH9999.
@@ -5854,8 +5766,6 @@ op_db: Dict[str, OpInfo] = {
         name='Tensor.add_',
         op=tensor_add__ms,
         ref=tensor_add__torch,
-        tensor_variant=lambda op_input, *op_args, **op_kwargs: op_input.add_(
-            op_args[0], alpha=op_kwargs.get('alpha', 1)),
         dtypes_ascend=tuple([ms.float32,]),
         dtypes_ascend910b=tuple([ms.float32]),
         dtypes_cpu=(),
