@@ -73,7 +73,7 @@ from mindspore.parallel.checkpoint_transform import load_distributed_checkpoint 
 from mindspore.parallel.checkpoint_transform import merge_sliced_parameter as new_merge_sliced_parameter
 from mindspore.parallel.checkpoint_transform import build_searched_strategy as new_build_searched_strategy
 from mindspore.parallel.transform_safetensors import _fast_safe_open
-from mindspore.train._utils import get_parameter_redundancy, _progress_bar, _load_and_transform
+from mindspore.train._utils import get_parameter_redundancy, _progress_bar, _load_and_transform, _mstx_range_decorator
 from mindspore._c_expression import load_mindir, _encrypt, _decrypt, _is_cipher_file, \
     split_mindir, split_dynamic_mindir, _get_snapshot_params
 from mindspore.common.generator import Generator
@@ -370,6 +370,7 @@ def _save_weight(checkpoint_dir, model_name, iteration, params):
         logger.warning(f"Checkpoint dir: '{checkpoint_dir}' is not existed.")
 
 
+@_mstx_range_decorator("_exec_save", domain="model_preparation")
 def _exec_save(ckpt_file_name, data_list, enc_key=None, enc_mode="AES-GCM", map_param_inc=False, crc_check=False,
                format="ckpt", remove_redundancy=None):
     """Execute the process of saving checkpoint into file."""
@@ -629,6 +630,7 @@ def _async_process_save(ckpt_file_name, data_list, enc_key=None, enc_mode="AES-G
     _exec_save(ckpt_file_name, data_list, enc_key, enc_mode, map_param_inc, crc_check, format, remove_redundancy)
 
 
+@_mstx_range_decorator("save_checkpoint", domain="model_preparation")
 def save_checkpoint(save_obj, ckpt_file_name, integrated_save=True,
                     async_save=False, append_dict=None, enc_key=None, enc_mode="AES-GCM", choice_func=None,
                     crc_check=False, format="ckpt", **kwargs):
@@ -1287,6 +1289,7 @@ def _load_into_param_dict(ckpt_file_name, parameter_dict, specify_prefix, filter
                                        "failed to load the checkpoint file {}.".format(ckpt_file_name)) from e
 
 
+@_mstx_range_decorator("load_checkpoint", domain="model_preparation")
 def load_checkpoint(ckpt_file_name, net=None, strict_load=False, filter_prefix=None,
                     dec_key=None, dec_mode="AES-GCM", specify_prefix=None, choice_func=None,
                     crc_check=False, remove_redundancy=False, format="ckpt"):
@@ -1428,6 +1431,7 @@ def load_checkpoint(ckpt_file_name, net=None, strict_load=False, filter_prefix=N
     return parameter_dict
 
 
+@_mstx_range_decorator("load_checkpoint_async", domain="model_preparation")
 def load_checkpoint_async(ckpt_file_name, net=None, strict_load=False, filter_prefix=None, dec_key=None,
                           dec_mode="AES-GCM", specify_prefix=None, choice_func=None):
     """
@@ -1673,6 +1677,7 @@ def _check_remove_redundancy_net(net):
                          "the network should be compiled.")
 
 
+@_mstx_range_decorator("load_param_into_net", domain="model_preparation")
 def load_param_into_net(net, parameter_dict, strict_load=False, remove_redundancy=False):
     """
     Load parameters into network, return parameter list that are not loaded in the network.
@@ -2633,6 +2638,7 @@ def _convert_checkpoint_file(file_path, save_path=None, name_map=None, file_name
         mindspore.save_checkpoint(param_dict, dst_file, format=dst_format)
 
 
+@_mstx_range_decorator("ckpt_to_safetensors", domain="model_preparation")
 def ckpt_to_safetensors(file_path, save_path=None, name_map=None, file_name_regex=None, processes_num=1):
     """
     Converts MindSpore checkpoint files into safetensors format and saves them to `save_path`.
@@ -2673,6 +2679,7 @@ def ckpt_to_safetensors(file_path, save_path=None, name_map=None, file_name_rege
                              file_name_regex, processes_num, "safetensors")
 
 
+@_mstx_range_decorator("safetensors_to_ckpt", domain="model_preparation")
 def safetensors_to_ckpt(file_path, save_path=None, name_map=None, file_name_regex=None, processes_num=1):
     """
     Converts safetensors files into MindSpore checkpoint format and saves them to `save_path`.
@@ -2719,6 +2726,7 @@ def restore_group_info_list(group_info_file_name):
     return new_restore_group_info_list(group_info_file_name)
 
 
+@_mstx_range_decorator("load_distributed_checkpoint", domain="model_preparation")
 def load_distributed_checkpoint(network, checkpoint_filenames=None, predict_strategy=None,
                                 train_strategy_filename=None, strict_load=False, dec_key=None, dec_mode='AES-GCM',
                                 format='ckpt', unified_safetensors_dir=None, dst_safetensors_dir=None, rank_id=None,

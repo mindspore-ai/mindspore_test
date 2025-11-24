@@ -60,6 +60,7 @@
 #include "include/cluster/init.h"
 #include "tools/profiler/profiling.h"
 #include "tools/profiler/profiler.h"
+#include "tools/profiler/mstx/mstx_guard.h"
 
 namespace mindspore {
 // namespace to support intermediate representation definition
@@ -398,6 +399,7 @@ void Pipeline::Run() {
     size_t i = 0;
     for (auto &action : actions_) {
       std::string action_name = action.first;
+      profiler::MstxRangeGuard guard(action_name.c_str(), profiler::MSTX_DOMAIN_MODEL_PREPARATION);
       MsProfileStatGuard stat_guard(std::move(action_name), "compile_action", true);
 #ifdef ENABLE_TIMELINE
       DumpTime &dump_time = DumpTime::GetInstance();

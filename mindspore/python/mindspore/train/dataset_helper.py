@@ -28,7 +28,7 @@ from mindspore.dataset.core import config as dataset_config
 from mindspore.dataset.engine import offload
 from mindspore import context, nn
 from mindspore.train._utils import _exec_datagraph, _get_types_and_shapes, \
-    _construct_tensor_list, enable_data_broadcast
+    _construct_tensor_list, enable_data_broadcast, _mstx_range_decorator
 from mindspore.parallel._utils import _get_device_num, _get_global_rank, _need_to_full, \
     _to_full_shapes, _get_pipeline_stages, _change_symbols_for_parallel, _is_in_auto_parallel_mode, \
     _origin_shapes, _dynamic_shape_for_dataset
@@ -212,6 +212,7 @@ def _get_dataset_aux(dataset):
     return dataset.__network_aux__
 
 
+@_mstx_range_decorator("connect_network_with_dataset", domain="model_preparation")
 def connect_network_with_dataset(network, dataset_helper):
     """
     Connect the `network` with dataset in `dataset_helper`. Only supported in sink mode,

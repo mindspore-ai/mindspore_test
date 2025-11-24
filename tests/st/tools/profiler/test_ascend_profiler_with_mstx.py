@@ -63,7 +63,7 @@ def check_result(result_path: str):
     msprof_path = glob.glob(f'{result_path}/*_ascend_ms/PROF_*')[0]
     msproftx_csv_path = glob.glob(f'{msprof_path}/mindstudio_profiler_output/msprof_tx_*.csv')[0]
     current_result = []
-    with open(msproftx_csv_path, 'r') as f:
+    with open(msproftx_csv_path, 'r', encoding='utf-8') as f:
         reader = csv.reader(f)
         for row in reader:
             current_result.append(row)
@@ -93,7 +93,8 @@ def test_mstx_profiler():
                         mstx=True,
                         profiler_level=ProfilerLevel.LevelNone,
                         output_path=tmpdir,
-                        data_simplification=False)
+                        data_simplification=False,
+                        mstx_domain_exclude=["model_preparation"])
 
         ms.save_checkpoint(net, "./add.ckpt") # to get save checkpoint tx data
 
@@ -179,7 +180,7 @@ def test_mstx_profiler_with_domain_exclude():
         experimental_config = ms.profiler._ExperimentalConfig(
             profiler_level=ProfilerLevel.LevelNone,
             mstx=True,
-            mstx_domain_exclude=["default"]
+            mstx_domain_exclude=["default", "model_preparation"]
         )
         with ms.profiler.profile(activities=[ProfilerActivity.NPU],
                                  schedule=ms.profiler.schedule(wait=0, warmup=0, active=1, repeat=1, skip_first=0),

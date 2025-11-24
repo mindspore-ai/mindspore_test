@@ -37,6 +37,10 @@
 #include "ir/dtype/type_id.h"
 #include "utils/log_adapter.h"
 
+#if !defined(_WIN32) && !defined(_WIN64)
+#include "tools/profiler/mstx/mstx_impl.h"
+#endif
+
 #include "ops_utils/op_constants.h"
 
 #ifndef MS_UNLIKELY
@@ -401,6 +405,31 @@ static inline double GetCurrentUSec() {
   return static_cast<double>(tv_usec);
 }
 
+#if !defined(_WIN32) && !defined(_WIN64)
+#define PROF_START(stage)                                                                                   \
+  uint64_t mstx_range_id_##stage = 0;                                                                       \
+  double start_usec_##stage = mindspore::GetCurrentUSec();                                                  \
+  if (mindspore::profiler::MstxImpl::GetInstance().IsEnable()) {                                            \
+    MSTX_START(mstx_range_id_##stage, #stage, nullptr, mindspore::profiler::MSTX_DOMAIN_MODEL_PREPARATION); \
+  }
+
+#define PROF_END(stage)                                                                                        \
+  do {                                                                                                         \
+    if (mindspore::profiler::MstxImpl::GetInstance().IsEnable()) {                                             \
+      MSTX_END(mstx_range_id_##stage, mindspore::profiler::MSTX_DOMAIN_MODEL_PREPARATION);                     \
+    }                                                                                                          \
+    double end_usec_##stage = mindspore::GetCurrentUSec();                                                     \
+    std::ostringstream oss;                                                                                    \
+    oss << "[PROF]" << #stage << " costs " << (end_usec_##stage - start_usec_##stage) / kBasicTimeTransferUnit \
+        << " msec.";                                                                                           \
+    const auto &value = common::GetConfigValue("MS_DEV_RUNTIME_CONF", "compile_statistics");                   \
+    if ((value == "True") || (value == "true")) {                                                              \
+      std::cout << oss.str() << std::endl;                                                                     \
+    }                                                                                                          \
+    MS_LOG(INFO) << oss.str();                                                                                 \
+    MS_VLOG(VL_FLOW) << oss.str();                                                                             \
+  } while (0)
+#else
 #define PROF_START(stage) double start_usec_##stage = mindspore::GetCurrentUSec()
 #define PROF_END(stage)                                                                                        \
   do {                                                                                                         \
@@ -415,6 +444,7 @@ static inline double GetCurrentUSec() {
     MS_LOG(INFO) << oss.str();                                                                                 \
     MS_VLOG(VL_FLOW) << oss.str();                                                                             \
   } while (0)
+#endif
 
 #define PROF_MULTI_DEFINE(stage)       \
   do {                                 \

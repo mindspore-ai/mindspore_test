@@ -57,6 +57,7 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
+#include "tools/profiler/mstx/mstx_guard.h"
 
 namespace mindspore {
 namespace parallel {
@@ -652,6 +653,7 @@ void AutoParallelPostProcess(const FuncGraphPtr &root) {
     }
     auto layout = param->user_data<TensorLayout>();
     auto param_ptr = param->cast<ParameterPtr>();
+    profiler::MstxRangeGuard guard(param_ptr->name().c_str(), profiler::MSTX_DOMAIN_MODEL_PREPARATION);
     MS_EXCEPTION_IF_NULL(param_ptr);
     if (!param_ptr->has_default()) {
       continue;

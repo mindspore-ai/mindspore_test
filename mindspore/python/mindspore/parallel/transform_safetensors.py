@@ -47,6 +47,7 @@ from mindspore.parallel._tensor import _get_tensor_strategy, _construct_from_to_
     _extract_layout_item, _apply_operator
 from mindspore.parallel._parallel_serialization import _build_searched_strategy, _load_protobuf_strategy, \
     _convert_to_list
+from mindspore.parallel._utils import _mstx_range_decorator
 from mindspore.common import dtype as mstype
 
 safetensors_to_mstype = {'Int4': mstype.qint4x2}
@@ -1195,6 +1196,7 @@ def _validate_safetensors_files(target_directory, expected_file_ids):
         )
 
 
+@_mstx_range_decorator("unified_safetensors", domain="model_preparation")
 def unified_safetensors(src_dir, src_strategy_file, dst_dir, merge_with_redundancy=True, file_suffix=None,
                         max_process_num=64, choice_func=None, split_dst_file=()):
     """
