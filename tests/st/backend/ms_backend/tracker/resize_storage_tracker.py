@@ -1,4 +1,3 @@
-#!/bin/bash
 # Copyright 2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,14 +12,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-set -e
-BASE_PATH=$(cd "$(dirname $0)"; pwd)
-export MS_SIMULATION_LEVEL=1
-export RANK_SIZE=2
-export RANK_ID=0
-export GLOG_v=1
-export MS_ALLOC_CONF="memory_tracker:True"
-TEST_FILE=$1
-LOG_FILE=$2
+"""
+Test for tracker.
+"""
+import mindspore
+from mindspore import Tensor
 
-python ${BASE_PATH}/${TEST_FILE} > ${BASE_PATH}/${LOG_FILE} 2>&1
+a = Tensor(1.0)
+b = Tensor([1.0, 2.0, 3.0])
+
+s1 = mindspore.hal.Stream()
+e1 = mindspore.hal.Event()
+
+a.storage().resize_(12)
+with mindspore.hal.StreamCtx(s1):
+    a.copy_(b)
+    e1.record()
+
+e1.wait()
+c = a + 1
+print(c, flush=True)
