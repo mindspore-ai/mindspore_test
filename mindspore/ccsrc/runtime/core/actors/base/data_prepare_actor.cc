@@ -34,7 +34,7 @@
 #include "runtime/core/graph_executor/kernel_capture/graph_capture_manager.h"
 #include "async/async.h"
 #include "tools/error_handler/error_handler.h"
-#include "tools/profiler/mstx/mstx_guard.h"
+#include "tools/profiler/mstx/mstx_impl.h"
 #include "utils/log_adapter.h"
 #include "utils/ms_exception.h"
 #include "utils/llm_manager.h"
@@ -391,7 +391,7 @@ void DataPrepareActor::UpdateDeviceAddressForDataNode(const AnfNodePtr &input_no
 }
 
 void DataPrepareActor::RecordGraphInputsForInputOptimize(const VectorRef &args) {
-  profiler::MstxRangeGuard guard("RecordGraphInputsForInputOptimize", profiler::MSTX_DOMAIN_MODEL_PREPARATION);
+  MSTX_RANGE_GUARD("RecordGraphInputsForInputOptimize", nullptr, profiler::MSTX_DOMAIN_MODEL_PREPARATION);
   ProfilerRecorder profiler(ProfilerModule::kRuntime, ProfilerEvent::kPreLaunch, "RecordGraphInputsForInputOptimize",
                             true);
   auto graph_parameter_store = ParameterStore::GetInstance().GetGraphParameterStore();
@@ -665,7 +665,7 @@ TensorPtr DataPrepareActor::FetchInputTensor(const std::vector<TensorPtr> &tenso
 void DataPrepareActor::PrepareDataForDeviceTensorStore(const std::vector<std::vector<TensorPtr>> &input_tensors,
                                                        const VectorRef &args, OpContext<KernelTensor> *const context) {
   MS_LOG(INFO) << "Prepare store data, input tensor size: " << input_tensors.size() << ", arg size: " << args.size();
-  profiler::MstxRangeGuard guard("PrepareStoreData", profiler::MSTX_DOMAIN_MODEL_PREPARATION);
+  MSTX_RANGE_GUARD("PrepareStoreData", nullptr, profiler::MSTX_DOMAIN_MODEL_PREPARATION);
   ProfilerRecorder profiler(ProfilerModule::kRuntime, ProfilerEvent::kPreLaunch, "PrepareStoreData", true);
   MS_EXCEPTION_IF_NULL(graph_compiler_info_);
   const auto &parser = graph_compiler_info_->control_node_parser_;
@@ -749,7 +749,7 @@ void DataPrepareActor::RaiseARFError(const VectorRef &args) {
 void DataPrepareActor::PrepareDataForHostTensorQueue(const std::vector<std::vector<TensorPtr>> &input_tensors,
                                                      const VectorRef &args, OpContext<KernelTensor> *const context) {
   MS_LOG(INFO) << "Prepare host data, input tensor size: " << input_tensors.size() << ", arg size: " << args.size();
-  profiler::MstxRangeGuard guard("PrepareHostData", profiler::MSTX_DOMAIN_MODEL_PREPARATION);
+  MSTX_RANGE_GUARD("PrepareHostData", nullptr, profiler::MSTX_DOMAIN_MODEL_PREPARATION);
   ProfilerRecorder profiler(ProfilerModule::kRuntime, ProfilerEvent::kPreLaunch, "PrepareHostData", true);
   MS_EXCEPTION_IF_NULL(context);
   MS_EXCEPTION_IF_NULL(graph_compiler_info_);

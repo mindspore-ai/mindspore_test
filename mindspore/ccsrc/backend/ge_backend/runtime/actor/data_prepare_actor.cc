@@ -33,7 +33,7 @@
 #include "include/runtime/memory/mem_pool/mem_tracker.h"
 #include "include/runtime/hardware_abstract/device_context/device_context.h"
 #include "include/runtime/hardware_abstract/device_context/device_context_manager.h"
-#include "tools/profiler/mstx/mstx_guard.h"
+#include "tools/profiler/mstx/mstx_impl.h"
 
 namespace mindspore {
 namespace ge_backend {
@@ -405,7 +405,7 @@ TensorPtr DataPrepareActor::FetchInputTensor(const std::vector<TensorPtr> &tenso
 void DataPrepareActor::PrepareDataForDeviceTensorStore(const std::vector<std::vector<TensorPtr>> &input_tensors,
                                                        const VectorRef &args, OpContext<KernelTensor> *const context) {
   MS_LOG(INFO) << "Prepare store data, input tensor size: " << input_tensors.size() << ", arg size: " << args.size();
-  profiler::MstxRangeGuard guard("PrepareStoreData", profiler::MSTX_DOMAIN_MODEL_PREPARATION);
+  MSTX_RANGE_GUARD("PrepareStoreData", nullptr, profiler::MSTX_DOMAIN_MODEL_PREPARATION);
   ProfilerRecorder profiler(ProfilerModule::kRuntime, ProfilerEvent::kPreLaunch, "PrepareStoreData", true);
   MS_EXCEPTION_IF_NULL(graph_compiler_info_);
   const auto &parser = graph_compiler_info_->control_node_parser_;
@@ -468,7 +468,7 @@ void DataPrepareActor::PrepareDataForDeviceTensorStore(const std::vector<std::ve
 void DataPrepareActor::PrepareDataForHostTensorQueue(const std::vector<std::vector<TensorPtr>> &input_tensors,
                                                      const VectorRef &args, OpContext<KernelTensor> *const context) {
   MS_LOG(INFO) << "Prepare host data, input tensor size: " << input_tensors.size() << ", arg size: " << args.size();
-  profiler::MstxRangeGuard guard("PrepareHostData", profiler::MSTX_DOMAIN_MODEL_PREPARATION);
+  MSTX_RANGE_GUARD("PrepareHostData", nullptr, profiler::MSTX_DOMAIN_MODEL_PREPARATION);
   ProfilerRecorder profiler(ProfilerModule::kRuntime, ProfilerEvent::kPreLaunch, "PrepareHostData", true);
   MS_EXCEPTION_IF_NULL(context);
   MS_EXCEPTION_IF_NULL(graph_compiler_info_);
