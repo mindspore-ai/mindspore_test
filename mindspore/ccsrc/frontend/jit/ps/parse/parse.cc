@@ -205,15 +205,11 @@ void Parser::CleanParserResource() {
   parse::CleanParameterNameCache();
 }
 
-void Parser::CheckFuncReturn() {
+void Parser::CheckFuncReturn(const FuncGraphManagerPtr &manager, const FuncGraphPtr &fn) {
   // Check whether the functions referred by this function and itself are missing 'return' statement
+  MS_EXCEPTION_IF_NULL(manager);
   MS_EXCEPTION_IF_NULL(ast_);
-  for (const auto &block : func_block_list_) {
-    MS_EXCEPTION_IF_NULL(block);
-    if (block->is_dead_block()) {
-      continue;
-    }
-    const auto &func_graph = block->func_graph();
+  for (const auto &func_graph : manager->func_graphs()) {
     MS_EXCEPTION_IF_NULL(func_graph);
     if (func_graph->get_return() != nullptr) {
       continue;
@@ -608,8 +604,9 @@ FuncGraphPtr Parser::ParseFuncGraph() {
     }
   }
   MS_EXCEPTION_IF_NULL(fn_block);
-  RemoveUnnecessaryPhis(fn_block);
-  CheckFuncReturn();
+  auto manager = Manage(fn_block->func_graph(), false);
+  RemoveUnnecessaryPhis(manager);
+  CheckFuncReturn(manager, fn_block->func_graph());
   TransformParallelCall();
   return fn_block->func_graph();
 }
@@ -4793,14 +4790,15 @@ mindspore::HashMap<ParameterPtr, AnfNodePtr> CollectRemovablePhiArgs(
   return need_remove_phi_args;
 }
 
-void ReplacePhiAsArg(const FunctionBlockPtr &block,
-                     const mindspore::HashMap<ParameterPtr, AnfNodePtr> &removable_phis) {
+void ReplacePhiAsArg(const mindspore::HashMap<ParameterPtr, AnfNodePtr> &removable_phis,
+                     const FuncGraphManagerPtr &manager) {
+  MS_EXCEPTION_IF_NULL(manager);
   MS_LOG(DEBUG) << "Removable phi size: " << removable_phis.size();
   for (const auto &[phi, arg] : removable_phis) {
     MS_LOG(DEBUG) << "Removable phi: " << phi->DebugString()
                   << ", arg: " << (arg == nullptr ? "null" : arg->DebugString());
     if (arg != nullptr) {
-      ud_chain::Replace(phi, arg);
+      (void)manager->Replace(phi, arg);
     }
   }
 }
@@ -4836,8 +4834,10 @@ HashSet<size_t> RemovePhiParametersAndGetRemoveIndex(
 }
 
 // If phi parameter is removable, then the corresponding arg should be removed.
-void RemoveJumpNodeArgs(const FunctionBlockPtr &block, const HashSet<size_t> &need_removed_indexes) {
+void RemoveJumpNodeArgs(const FunctionBlockPtr &block, const HashSet<size_t> &need_removed_indexes,
+                        const FuncGraphManagerPtr &manager) {
   MS_EXCEPTION_IF_NULL(block);
+  MS_EXCEPTION_IF_NULL(manager);
   if (need_removed_indexes.empty()) {
     return;
   }
@@ -4859,7 +4859,7 @@ void RemoveJumpNodeArgs(const FunctionBlockPtr &block, const HashSet<size_t> &ne
     MS_LOG(DEBUG) << "Replace old jump node: " << jump_node->DebugString()
                   << " as new jump node: " << new_jump_node->DebugString()
                   << ", jump node block: " << prev_block->ToString();
-    ud_chain::Replace(jump_node, new_jump_node);
+    (void)manager->Replace(jump_node, new_jump_node);
   }
 }
 }  // namespace
@@ -4874,16 +4874,15 @@ const mindspore::HashMap<ParameterPtr, AnfNodePtr> Parser::CalRemovablePhis() {
   return CollectRemovablePhiArgs(phi_to_args);
 }
 
-void Parser::RemoveUnnecessaryPhis(const FunctionBlockPtr &fn_block) {
+void Parser::RemoveUnnecessaryPhis(const FuncGraphManagerPtr &manager) {
   // Merge all removable phis to one map;
   const auto &removable_phis = CalRemovablePhis();
   if (removable_phis.empty()) {
     return;
   }
-  // Build node users info.
-  ud_chain::Preprocess(fn_block->func_graph());
+  MS_EXCEPTION_IF_NULL(manager);
   // Replace all phi node as arg.
-  ReplacePhiAsArg(fn_block, removable_phis);
+  ReplacePhiAsArg(removable_phis, manager);
   // Remove the unnecessary phi parameters.
   for (const auto &block : func_block_list_) {
     MS_EXCEPTION_IF_NULL(block);
@@ -4891,7 +4890,7 @@ void Parser::RemoveUnnecessaryPhis(const FunctionBlockPtr &fn_block) {
     // Remove the unnecessary phi parameters.
     const auto &need_removed_indexes = RemovePhiParametersAndGetRemoveIndex(block, removable_phis);
     // Remove all block->prev_blocks()'s jump node corresponding args.
-    RemoveJumpNodeArgs(block, need_removed_indexes);
+    RemoveJumpNodeArgs(block, need_removed_indexes, manager);
   }
 }
 
