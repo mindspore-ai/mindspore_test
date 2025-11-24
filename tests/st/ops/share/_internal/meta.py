@@ -93,7 +93,7 @@ class OpsFactory():
         self.op = op_info.op
         self.op_func_without_kwargs = op_info.op_func_without_kwargs
         self.ref = op_info.ref
-        self.sample_name = op_info.name
+        self.op_name = op_info.name
         self.op_basic_reference_inputs_func = op_info.op_basic_reference_inputs_func
         self.op_extra_reference_inputs_func = op_info.op_extra_reference_inputs_func
         self.op_dynamic_inputs_func = op_info.op_dynamic_inputs_func
@@ -839,11 +839,11 @@ class OpsFactory():
             grad_cmp: When True, restrict to floating dtypes and compare first-order gradients.
         """
         if self.op_basic_reference_inputs_func is None:
-            print(f"\nsample_name: {self.sample_name} has no op_basic_reference_inputs_func, skip test_op_reference.")
+            print(f"\nop_name: {self.op_name} has no op_basic_reference_inputs_func, skip test_op_reference.")
             return
 
         try:
-            print(f"\nsample_name: {self.sample_name}, mode:{self._context_mode}, test_op_reference...")
+            print(f"\nop_name: {self.op_name}, mode:{self._context_mode}, test_op_reference...")
             if grad_cmp:
                 self.supported_dtypes = tuple(d for d in self.supported_dtypes if d.is_floating_point)
             for dtype in self.supported_dtypes:
@@ -862,7 +862,7 @@ class OpsFactory():
                             self.compare_with_torch(sample_inputs=sample_input)
         except Exception as e:
             error_msg = (f"\ntest_op_reference failed:"
-                        f"\nsample_name: {self.sample_name}"
+                        f"\nop_name: {self.op_name}"
                         f"\nmode: {self._context_mode}"
                         f"\ndtype: {dtype}")
             if 'sample_input' in locals():
@@ -887,26 +887,26 @@ class OpsFactory():
             dtype: Dtype used by dynamic input generator; default float32.
         """
         if self.op_info.op_dynamic_inputs_func is None:
-            print(f"\nsample_name: {self.sample_name} has no op_dynamic_inputs_func, skip test_op_dynamic.")
+            print(f"\nop_name: {self.op_name} has no op_dynamic_inputs_func, skip test_op_dynamic.")
             return
 
         if self._device == 'ascend':
             ascend_name = MSContext.get_instance().get_ascend_soc_version()
             if ascend_name == 'ascend910' and not self.op_info.dtypes_ascend:
-                warnings.warn(f"sample_name: {self.sample_name} has no dtypes_ascend, skip test_op_dynamic.")
+                warnings.warn(f"op_name: {self.op_name} has no dtypes_ascend, skip test_op_dynamic.")
                 return
             if ascend_name == 'ascend910b' and not self.op_info.dtypes_ascend910b:
-                warnings.warn(f"sample_name: {self.sample_name} has no dtypes_ascend910b, skip test_op_dynamic.")
+                warnings.warn(f"op_name: {self.op_name} has no dtypes_ascend910b, skip test_op_dynamic.")
                 return
         if self._device == 'cpu' and not self.op_info.dtypes_cpu:
-            warnings.warn(f"sample_name: {self.sample_name} has no dtypes_cpu, skip test_op_dynamic.")
+            warnings.warn(f"op_name: {self.op_name} has no dtypes_cpu, skip test_op_dynamic.")
             return
         if self._device == 'gpu' and not self.op_info.dtypes_gpu:
-            warnings.warn(f"sample_name: {self.sample_name} has no dtypes_gpu, skip test_op_dynamic.")
+            warnings.warn(f"op_name: {self.op_name} has no dtypes_gpu, skip test_op_dynamic.")
             return
 
         try:
-            print(f"\nsample_name: {self.sample_name}, mode:{self._context_mode}, test_op_dynamic...")
+            print(f"\nop_name: {self.op_name}, mode:{self._context_mode}, test_op_dynamic...")
             if grad_cmp:
                 self.supported_dtypes = tuple(d for d in self.supported_dtypes if d.is_floating_point)
                 if not self.supported_dtypes:

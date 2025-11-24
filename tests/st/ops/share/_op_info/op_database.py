@@ -1990,6 +1990,27 @@ def tensor_cos_ms(op_input):
 def tensor_cos_torch(op_input):
     return op_input.cos()
 
+def nn_group_norm_ms(op_input, num_groups, num_channels, eps=1e-5, affine=True):
+    dtype = op_input.dtype if hasattr(op_input, 'dtype') else None
+    module = mint.nn.GroupNorm(num_groups, num_channels, eps=eps, affine=affine, dtype=dtype)
+    return module(op_input)
+
+def nn_group_norm_torch(op_input, num_groups, num_channels, eps=1e-5, affine=True):
+    dtype = op_input.dtype if hasattr(op_input, 'dtype') else None
+    module = torch.nn.GroupNorm(num_groups, num_channels, eps=eps, affine=affine, dtype=dtype)
+    return module(op_input)
+
+def nn_layer_norm_ms(op_input, normalized_shape, eps=1e-5, elementwise_affine=True, bias=True):
+    dtype = op_input.dtype if hasattr(op_input, 'dtype') else None
+    module = mint.nn.LayerNorm(normalized_shape, eps=eps, elementwise_affine=elementwise_affine, bias=bias, dtype=dtype)
+    return module(op_input)
+
+def nn_layer_norm_torch(op_input, normalized_shape, eps=1e-5, elementwise_affine=True, bias=True):
+    dtype = op_input.dtype if hasattr(op_input, 'dtype') else None
+    module = torch.nn.LayerNorm(
+            normalized_shape, eps=eps, elementwise_affine=elementwise_affine, bias=bias, dtype=dtype)
+    return module(op_input)
+
 # sample inputs functions for chunk
 def basic_sample_inputs_mint_chunk(op_info: OpInfo, dtype=None, device=None, **kwargs):
     '''
@@ -3732,6 +3753,177 @@ def basic_sample_inputs_tile(op_info, dtype, device=None, **kwargs):
             sample_name=f"shape{shape}_dims{dims}"
         )
 
+def basic_sample_inputs_GroupNorm(
+    op_info: OpInfo,
+    dtype,
+    device=None,
+    **kwargs
+):
+    '''
+    Generate basic sample inputs for mint.nn.GroupNorm.
+    Args:
+        op_info: OpInfo object.
+        dtype: Data type of the tensors.
+        device: Device of the tensors.
+        kwargs: Additional keyword arguments.
+    Returns:
+        Generator of OpSampleInput objects.
+    '''
+    make_arg = functools.partial(make_tensor, device=device, dtype=dtype)
+
+    # Test cases: (input_shape, num_groups, num_channels, eps, affine, desc)
+    test_cases = [
+        ((4, 6), 2, 6, 2.0, None, 'redline test case'),
+        ((4, 6, 5), 3, 6, 1e-3, None, '1d_affine'),
+        ((4, 12), 3, 12, 1e-3, None, '1d_affine_GN'),
+        ((150, 6), 1, 6, 1e-3, None, '1d_affine_large_batch'),
+        ((4, 5, 5), 5, 5, 1e-3, False, '1d_no_affine_IN'),
+        ((4, 10), 1, 10, 1e-3, False, '1d_no_affine_LN'),
+        ((4, 6, 2, 3), 3, 6, 1e-3, None, '2d_affine'),
+        ((4, 3, 2, 3), 3, 3, 1e-3, False, '2d_no_affine_IN'),
+        ((4, 3, 2, 3), 1, 3, 1e-3, False, '2d_no_affine_LN'),
+    ]
+
+    for input_shape, num_groups, num_channels, eps, affine, desc in test_cases:
+        op_kwargs = {'eps': eps}
+        if affine is not None:
+            op_kwargs['affine'] = affine
+        yield OpSampleInput(
+            op_input=make_arg(input_shape),
+            op_args=(num_groups, num_channels),
+            op_kwargs=op_kwargs,
+            sample_name=f'{op_info.name}_{desc}'
+        )
+
+
+def basic_sample_inputs_LayerNorm(
+    op_info: OpInfo,
+    dtype,
+    device=None,
+    **kwargs
+):
+    '''
+    Generate basic sample inputs for mint.nn.LayerNorm.
+    Args:
+        op_info: OpInfo object.
+        dtype: Data type of the tensors.
+        device: Device of the tensors.
+        kwargs: Additional keyword arguments.
+    Returns:
+        Generator of OpSampleInput objects.
+    '''
+    make_arg = functools.partial(make_tensor, device=device, dtype=dtype)
+
+    # Test cases: (input_shape, normalized_shape, eps, elementwise_affine, bias, desc)
+    test_cases = [
+        ((9,), [9], 3.7642600490219508e-06, False, True, 'redline test case'),
+        ((4, 5, 5), [5], 1e-3, None, None, '1d_elementwise_affine'),
+        ((128, 5, 5), [5], 1e-3, None, None, '1d_elementwise_affine_large_batch'),
+        ((4, 5, 5), [5], 1e-3, False, False, '1d_no_elementwise_affine'),
+        ((4, 2, 2, 5), [2, 2, 5], 1e-3, None, None, '3d_elementwise_affine'),
+        ((4, 2, 2, 5), [2, 2, 5], 1e-3, False, False, '3d_no_elementwise_affine'),
+        ((0, 5), [5], 1e-3, None, None, '1d_empty_elementwise_affine'),
+        ((4, 2, 2, 5), [2, 2, 5], 1e-3, True, False, '3d_elementwise_affine_no_bias'),
+    ]
+
+    for input_shape, normalized_shape, eps, elementwise_affine, bias, desc in test_cases:
+        op_kwargs = {'eps': eps}
+        if elementwise_affine is not None:
+            op_kwargs['elementwise_affine'] = elementwise_affine
+        if bias is not None:
+            op_kwargs['bias'] = bias
+        yield OpSampleInput(
+            op_input=make_arg(input_shape),
+            op_args=(normalized_shape,),
+            op_kwargs=op_kwargs,
+            sample_name=f'{op_info.name}_{desc}'
+        )
+
+
+def basic_sample_inputs_layer_norm(
+    op_info: OpInfo,
+    dtype,
+    device=None,
+    **kwargs
+):
+    '''
+    Generate basic sample inputs for mint.nn.functional.layer_norm.
+    Args:
+        op_info: OpInfo object.
+        dtype: Data type of the tensors.
+        device: Device of the tensors.
+        kwargs: Additional keyword arguments.
+    Returns:
+        Generator of OpSampleInput objects.
+    '''
+    make_arg = functools.partial(make_tensor, device=device, dtype=dtype)
+
+    # Basic shape test cases: (input_shape, normalized_shape, eps, desc)
+    shape_cases = [
+        ((1, 2, 3), (1, 2, 3), 0.5, 'eps_0.5'),
+        ((2, 2, 3), (2, 3), -0.5, 'eps_neg0.5'),
+        # ((1,), (1,), None, '1d_default'), # Todo: to fix forward precision issue
+        ((7,), (7,), 3.7642600490219508e-06, 'redline_eps'),
+        ((1, 2), (2,), None, '2d_default'),
+        ((0, 1), (1,), None, 'empty_batch'),
+    ]
+
+    for input_shape, normalized_shape, eps, desc in shape_cases:
+        # Test 1: no weight, no bias
+        if eps is not None:
+            op_args = (normalized_shape, None, None, eps)
+        else:
+            op_args = (normalized_shape,)  # Use all defaults
+        yield OpSampleInput(
+            op_input=make_arg(input_shape),
+            op_args=op_args,
+            op_kwargs={},
+            sample_name=f'{op_info.name}_{desc}_no_weight_bias'
+        )
+
+        # Test 2: with only weight
+        if eps is not None:
+            op_args = (normalized_shape, make_arg(normalized_shape), None, eps)
+        else:
+            op_args = (normalized_shape, make_arg(normalized_shape))
+        yield OpSampleInput(
+            op_input=make_arg(input_shape),
+            op_args=op_args,
+            op_kwargs={},
+            sample_name=f'{op_info.name}_{desc}_weight_only'
+        )
+
+        # Test 3: with only bias
+        if eps is not None:
+            op_args = (normalized_shape, None, make_arg(normalized_shape), eps)
+        else:
+            op_args = (normalized_shape, None, make_arg(normalized_shape))
+        yield OpSampleInput(
+            op_input=make_arg(input_shape),
+            op_args=op_args,
+            op_kwargs={},
+            sample_name=f'{op_info.name}_{desc}_bias_only'
+        )
+
+        # Test 4: with both weight and bias
+        if eps is not None:
+            op_args = (normalized_shape, make_arg(normalized_shape), make_arg(normalized_shape), eps)
+        else:
+            op_args = (normalized_shape, make_arg(normalized_shape), make_arg(normalized_shape))
+        yield OpSampleInput(
+            op_input=make_arg(input_shape),
+            op_args=op_args,
+            op_kwargs={},
+            sample_name=f'{op_info.name}_{desc}_weight_bias'
+        )
+
+    # Minimal test case without optional args
+    yield OpSampleInput(
+        op_input=make_arg((1, 2)),
+        op_args=((2,),),
+        op_kwargs={},
+        sample_name=f'{op_info.name}_minimal'
+    )
 
 # op database
 op_db: Dict[str, OpInfo] = {
@@ -6095,6 +6287,44 @@ op_db: Dict[str, OpInfo] = {
         dtypes_cpu=(),
         dtypes_gpu=(),
     ),
+    'mint.nn.functional.layer_norm': OpInfo(
+        name='mint.nn.functional.layer_norm',
+        op=mint.nn.functional.layer_norm,
+        ref=torch.nn.functional.layer_norm,
+        dtypes_ascend=(ms.float32,),
+        dtypes_ascend910b=(ms.float32,),
+        dtypes_cpu=(),
+        dtypes_gpu=(),
+        op_basic_reference_inputs_func=basic_sample_inputs_layer_norm,
+        op_extra_reference_inputs_func=None,
+        op_dynamic_inputs_func=None,
+    ),
+    'mint.nn.GroupNorm': OpInfo(
+        name='mint.nn.GroupNorm',
+        op=nn_group_norm_ms,
+        ref=nn_group_norm_torch,
+        dtypes_ascend=(ms.float16,),
+        dtypes_ascend910b=(ms.float16,),
+        dtypes_cpu=(),
+        dtypes_gpu=(),
+        op_basic_reference_inputs_func=basic_sample_inputs_GroupNorm,
+        op_extra_reference_inputs_func=None,
+        op_dynamic_inputs_func=None,
+        # IBHXMW: on 910A, special shape may has precision difference, HiSilicon confirmed.
+        default_loss_override={ms.float16: 0.009},
+    ),
+    'mint.nn.LayerNorm': OpInfo(
+        name='mint.nn.LayerNorm',
+        op=nn_layer_norm_ms,
+        ref=nn_layer_norm_torch,
+        dtypes_ascend=(ms.float32,),
+        dtypes_ascend910b=(ms.float32,),
+        dtypes_cpu=(),
+        dtypes_gpu=(),
+        op_basic_reference_inputs_func=basic_sample_inputs_LayerNorm,
+        op_extra_reference_inputs_func=None,
+        op_dynamic_inputs_func=None,
+    ),
 }
 
 all_op_db = list(op_db.keys())
@@ -6277,6 +6507,9 @@ other_op_db = [
     'Tensor.masked_scatter',
     'Tensor.masked_scatter_',
     'Tensor.add_',
+    'mint.nn.functional.layer_norm',
+    'mint.nn.GroupNorm',
+    'mint.nn.LayerNorm',
 ]
 
 reduction_op_db = [
