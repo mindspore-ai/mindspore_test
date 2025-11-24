@@ -43,6 +43,8 @@ from mindspore.common import dtype as mstype
 from mindspore.common.parameter import Parameter
 from mindspore.common import mutable
 from mindspore._extends.ast_checker import AstChecker
+from mindspore.runtime.ms_jit_stream_ctx import MsJitStreamCtx
+from mindspore.runtime.event import Event
 from .namespace import Namespace, ModuleNamespace, ClosureNamespace, ClassMemberNamespace
 from .resources import (parse_object_map, parse_augassign_object_map, ops_symbol_map, convert_object_map,
                         convert_class_to_function_map, trope_ns)
@@ -63,6 +65,7 @@ RESOLVE_TYPE_NUMPY_BOOL_NUMBER = 8      # Resolve numpy bool number.
 RESOLVE_TYPE_TUPLE = 9                  # Resolve builtin tuple type.
 RESOLVE_TYPE_LIST = 10                  # Resolve builtin list type.
 RESOLVE_TYPE_BUILTIN_METHOD = 11        # Resolve builtin type.
+RESOLVE_TYPE_EVENT = 12
 RESOLVE_TYPE_INVALID = 0xFF             # Resolve invalid.
 
 # Define the class instance detail type
@@ -364,6 +367,8 @@ def get_obj_type(obj):
         obj_type = RESOLVE_TYPE_NUMPY_BOOL_NUMBER
     elif isinstance(obj, types.BuiltinMethodType) and obj.__qualname__.split('.')[0] == Tensor.__name__:
         obj_type = RESOLVE_TYPE_BUILTIN_METHOD
+    elif isinstance(obj, Event):
+        obj_type = RESOLVE_TYPE_EVENT
     else:
         obj_type = RESOLVE_TYPE_INVALID
     return obj_type
@@ -1141,6 +1146,29 @@ class Parser:
 
         logger.debug(f"The name '{var}' is an undefined symbol.")
         return None, None, None
+
+    def check_is_jit_stream_ctx(self, var: str):
+        """Check if is jit_stream_ctx."""
+        logger.debug(f"global_namespace {self.global_namespace.__str__()}.")
+        logger.debug(f"self.global_namespace.__dict__:{self.global_namespace.__dict__}")
+
+        if var in self.global_namespace:
+            logger.debug(f"Found '{var}' in global_namespace {self.global_namespace.__str__()}.")
+            value = self.global_namespace[var]
+            logger.debug(f"value: '{value}'.")
+            if value == MsJitStreamCtx or issubclass(type(value), type(MsJitStreamCtx)):
+                logger.debug(f"Found '{value}' is MsJitStreamCtx.")
+                return True
+        return False
+
+    def get_stream_obj(self, stream_name: str):
+        """Get the object of stream."""
+        if stream_name in self.global_namespace:
+            logger.debug(f"Found '{stream_name}' in global_namespace {self.global_namespace.__str__()}.")
+            stream_obj = self.global_namespace[stream_name]
+            logger.debug(f"stream_obj: '{stream_obj}'.")
+            return stream_obj
+        return None
 
     def check_third_party_library_side_effect(self, var, attr):
         """Check if value is from a third-party library."""

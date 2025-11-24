@@ -4976,6 +4976,32 @@ class TraceGraphEvaluator final : public TransitionPrimEvaluator {
   }
 };
 
+class StreamSendEvaluator final : public TransitionPrimEvaluator {
+ public:
+  StreamSendEvaluator() : TransitionPrimEvaluator("StreamSendEvaluator") {}
+  ~StreamSendEvaluator() override = default;
+  MS_DECLARE_PARENT(StreamSendEvaluator, TransitionPrimEvaluator);
+  EvalResultPtr EvalPrim(const AnalysisEnginePtr &, const AbstractBasePtrList &args_abs_list, const ConfigPtr &,
+                         const AnfNodeConfigPtr &out_conf) override {
+    auto infer_result = std::make_shared<EvalResult>(args_abs_list[0], std::make_shared<AttrValueMap>());
+    evaluator_cache_mgr_->SetValue(args_abs_list, infer_result);
+    return infer_result;
+  }
+};
+
+class StreamRecvEvaluator final : public TransitionPrimEvaluator {
+ public:
+  StreamRecvEvaluator() : TransitionPrimEvaluator("StreamRecvEvaluator") {}
+  ~StreamRecvEvaluator() override = default;
+  MS_DECLARE_PARENT(StreamRecvEvaluator, TransitionPrimEvaluator);
+  EvalResultPtr EvalPrim(const AnalysisEnginePtr &, const AbstractBasePtrList &args_abs_list, const ConfigPtr &,
+                         const AnfNodeConfigPtr &out_conf) override {
+    auto infer_result = std::make_shared<EvalResult>(args_abs_list[0], std::make_shared<AttrValueMap>());
+    evaluator_cache_mgr_->SetValue(args_abs_list, infer_result);
+    return infer_result;
+  }
+};
+
 struct PrimitiveImplInferValue {
   PrimitiveImpl impl_;        // implement function of primitive
   bool eval_value_;           // whether evaluate value
@@ -5043,6 +5069,8 @@ void InitPrimEvaluatorConstructors() {
   constructor[prim::kPrimScan] = std::make_shared<ScanEvaluator>();
   constructor[prim::kPrimForiLoop] = std::make_shared<ForiLoopEvaluator>();
   constructor[prim::kPrimTraceGraph] = std::make_shared<TraceGraphEvaluator>();
+  constructor[prim::kPrimStreamSend] = std::make_shared<StreamSendEvaluator>();
+  constructor[prim::kPrimStreamRecv] = std::make_shared<StreamRecvEvaluator>();
 }
 
 void InitBuiltinPrimEvaluatorConstructors() {

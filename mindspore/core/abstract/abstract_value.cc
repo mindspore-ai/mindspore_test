@@ -2960,6 +2960,36 @@ AbstractBasePtr AbstractIOMonad::Join(const AbstractBasePtr &other) {
 
 bool AbstractIOMonad::operator==(const AbstractBase &other) const { return other.isa<AbstractIOMonad>(); }
 
+AbstractEvent::AbstractEvent(const ValuePtr &value, const TypePtr &type, uint32_t event_id) {
+  value_ = value;
+  set_type(type);
+  set_event_id(event_id);
+}
+
+std::size_t AbstractEvent::hash() const { return hash_combine({tid(), GetTypeTrack()->hash()}); }
+
+TypePtr AbstractEvent::BuildType() const { return GetTypeTrack(); }
+
+AbstractBasePtr AbstractEvent::Clone() const {
+  return std::make_shared<AbstractEvent>(GetValueTrack(), GetTypeTrack()->Clone(), event_id());
+}
+
+AbstractBasePtr AbstractEvent::Broaden() const { return Clone(); }
+
+AbstractBasePtr AbstractEvent::Join(const AbstractBasePtr &other) {
+  MS_EXCEPTION_IF_NULL(other);
+  if (*this == *other) {
+    return shared_from_base<AbstractBase>();
+  }
+  const auto &this_type = GetTypeTrack();
+  const auto &other_type = other->GetTypeTrack();
+  TypePtr res_type = TypeJoin(this_type, other_type);
+  if (res_type == kTypeAny) {
+    TypeJoinLogging(this_type, other_type, shared_from_base<AbstractBase>(), other);
+  }
+  return Clone();
+}
+
 ValuePtr GetRefKeyValue(const AbstractBasePtr &abs) {
   auto abs_ref = abs->cast_ptr<AbstractRefTensor>();
   if (abs_ref != nullptr) {

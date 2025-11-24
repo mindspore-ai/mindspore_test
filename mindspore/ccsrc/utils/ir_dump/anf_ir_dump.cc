@@ -1194,6 +1194,12 @@ void GetSubgraphAttrAsString(const FuncGraphPtr &func_graph, std::ostringstream 
       oss << GetValue<bool>(attr.second);
     } else if (attr.second->isa<StringImm>()) {
       oss << (GetValue<std::string>(attr.second));
+    } else if (attr.second->isa<parse::InterpretedObject>()) {
+      auto val = attr.second->cast<parse::InterpretedObjectPtr>();
+      auto obj = py::cast<py::object>(val->obj());
+      oss << py::str(obj);
+    } else if (attr.second->isa<Int64Imm>()) {
+      oss << (GetValue<int64_t>(attr.second));
     }
     oss << std::endl;
   }

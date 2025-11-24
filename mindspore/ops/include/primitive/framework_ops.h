@@ -141,8 +141,12 @@ GVAR_DEF(PrimitivePtr, kPrimDoUnpackCall, std::make_shared<Primitive>("DoUnpackC
 GVAR_DEF(PrimitivePtr, kPrimAngleAtomEnergy, std::make_shared<Primitive>("AngleAtomEnergy"));
 
 // Framework ops
-GVAR_DEF(PrimitivePtr, kPrimStreamSend, std::make_shared<Primitive>(kStreamSendOpName));
-GVAR_DEF(PrimitivePtr, kPrimStreamRecv, std::make_shared<Primitive>(kStreamRecvOpName));
+GVAR_DEF(PrimitivePtr, kPrimStreamSend,
+         std::make_shared<Primitive>(kStreamSendOpName, mindspore::HashMap<std::string, ValuePtr>(
+                                                          {{std::string(ATTR_NO_ELIMINATE), MakeValue(true)}})));
+GVAR_DEF(PrimitivePtr, kPrimStreamRecv,
+         std::make_shared<Primitive>(kStreamRecvOpName, mindspore::HashMap<std::string, ValuePtr>(
+                                                          {{std::string(ATTR_NO_ELIMINATE), MakeValue(true)}})));
 GVAR_DEF(PrimitivePtr, kPrimResLimit, std::make_shared<Primitive>("ResLimit"));
 GVAR_DEF(PrimitivePtr, kPrimSliceToIndices, std::make_shared<Primitive>("SliceToIndices"));
 GVAR_DEF(PrimitivePtr, kPrimTensorMove, std::make_shared<Primitive>("TensorMove"));

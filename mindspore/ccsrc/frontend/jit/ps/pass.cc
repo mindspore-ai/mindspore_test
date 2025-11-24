@@ -119,6 +119,7 @@
 #include "frontend/optimizer/irpass/virtualview_op.h"
 #include "frontend/optimizer/irpass/inplace_input_replace.h"
 #include "frontend/optimizer/irpass/isolate_inplace_func_replace.h"
+#include "frontend/optimizer/irpass/with_stream_mark.h"
 #include "frontend/jit/ps/pass_config.h"
 #include "frontend/jit/ps/graph_circle_handler.h"
 #include "primitive/auto_generate/gen_ops_primitive_a.h"
@@ -625,6 +626,7 @@ OptPassGroupMap GetOptPassesA(const opt::irpass::OptimizeIRPassLib &irpass, cons
      {kSwitchSimplifyFlag, opt::OptPassConfig({irpass.switch_simplify_})},
      {"loop_unroll", opt::OptPassConfig({irpass.loop_unroll_before_grad_})},
      {"a_1", a_1},
+     {"with_stream_mark", opt::OptPassConfig(opt::OptPassConfig(opt::irpass::WithStreamMark))},
      {"recompute_prepare", recompute_prepare},
      {"updatestate_depend_eliminate", updatestate_depend_eliminate},
      {"updatestate_assign_eliminate", updatestate_assign_eliminate},

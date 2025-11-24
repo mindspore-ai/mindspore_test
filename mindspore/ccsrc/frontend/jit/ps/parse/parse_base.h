@@ -69,6 +69,8 @@ const char PYTHON_MOD_PRIMITIVE_OP_LABELS_DICT[] = "op_labels";
 const char PYTHON_MOD_PRIMITIVE_OP_DEFAULT_VALUE_DICT[] = "op_args_default_value";
 const char PYTHON_MOD_PARSE_OBJECT_FUNCTION[] = "parse_cb";
 const char PYTHON_MOD_RESOLVE_FUNCTION[] = "resolve_symbol";
+const char PYTHON_MOD_CHECK_IS_MS_JIT_STREAM_CTX[] = "check_is_jit_stream_ctx";
+const char PYTHON_MOD_GET_MS_JIT_STREAM_OBJ[] = "get_stream_obj";
 const char PYTHON_MOD_RESOLVE_GET_OBJ_KEY[] = "get_object_key";
 const char PYTHON_MOD_PARSE_CHECK_IS_CLASS_MEMBER_OF_SELF[] = "is_class_member_of_self";
 const char PYTHON_MOD_PARSE_CHECK_IS_CLASS_MEMBER_RECURSIVE[] = "is_class_member_recursive";
@@ -242,6 +244,7 @@ enum ResolveType : int64_t {
   RESOLVE_TYPE_TUPLE = 9,               // Resolve builtin tuple type.
   RESOLVE_TYPE_LIST = 10,               // Resolve builtin list type.
   RESOLVE_TYPE_BUILTIN_METHOD = 11,     // Resolve builtin method.
+  RESOLVE_TYPE_EVENT = 12,              // Resolve event.
   RESOLVE_TYPE_INVALID = 0xFF           // Resolve invalid.
 };
 

@@ -159,12 +159,13 @@ EvalResultPtr GetEvalResult(const AnfNodeConfigPtr &conf) {
   }
 }
 
-bool ExistInplaceAbsInSequence(const AbstractBasePtr &abs_base) {
+bool ExistInplaceAbsOrEventInSequence(const AbstractBasePtr &abs_base) {
   if (abs_base->isa<abstract::AbstractTuple>() || abs_base->isa<abstract::AbstractList>()) {
     const auto &tuple_elements = abs_base->cast<abstract::AbstractSequencePtr>()->elements();
     return std::any_of(tuple_elements.begin(), tuple_elements.end(), [](const auto &ele) {
-      if (ele->inplace_abstract() != nullptr) {
-        MS_LOG(DEBUG) << "Exist inplace_abstract in Sequence: " << ele->inplace_abstract()->ToString();
+      AbstractBasePtr ele_abs = ele;
+      if (ele->inplace_abstract() != nullptr || ele_abs->isa<abstract::AbstractEvent>()) {
+        MS_LOG(DEBUG) << "Exist inplace_abstract or event in Sequence: " << ele->inplace_abstract()->ToString();
         return true;
       }
       return false;
@@ -175,10 +176,10 @@ bool ExistInplaceAbsInSequence(const AbstractBasePtr &abs_base) {
 
 AnfNodePtr BuildValueNode(const ValuePtr &v, const AnfNodePtr &origin_node, const AbstractBasePtr &abs_base) {
   MS_EXCEPTION_IF_NULL(abs_base);
-  if (ExistInplaceAbsInSequence(abs_base)) {
-    MS_LOG(DEBUG)
-      << "Do not perform constant folding on sequences whose inputs contain inplace_abstract. The Sequence node is: "
-      << origin_node->DebugString();
+  if (ExistInplaceAbsOrEventInSequence(abs_base)) {
+    MS_LOG(DEBUG) << "Do not perform constant folding on sequences whose inputs contain inplace_abstract or event. The "
+                     "Sequence node is: "
+                  << origin_node->DebugString();
     return origin_node;
   }
   AnfNodePtr value_node = NewValueNode(v);
@@ -2169,6 +2170,9 @@ AnfNodePtr FuncGraphSpecializer::BuildPossibleValueNode(const AnfNodePtr &origin
     }
     // If node is an AutoMonad node, don't convert the node to value node `U` or `IO` to avoid side-effect op miss.
     if (val->isa<Monad>()) {
+      return nullptr;
+    }
+    if (val->isa<Event>()) {
       return nullptr;
     }
     // Keep primitive 'depend' not to be optimized
