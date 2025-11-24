@@ -209,8 +209,9 @@ bool CPUResManager::Copy(void *dst, const void *src, uint64_t size, CopyType kin
   return true;
 }
 
-bool CPUResManager::CopyDirectly(void *dst, uint64_t size, const void *src, size_t stream_id, CopyType kind) const {
-  return Copy(dst, src, size, kind, stream_id);
+bool CPUResManager::CopyDirectly(void *dst, size_t size, const void *src, size_t stream_id, CopyType kind) const {
+  uint64_t size_u64 = static_cast<uint64_t>(size);
+  return Copy(dst, src, size_u64, kind, stream_id);
 }
 
 bool CPUResManager::LoadCollectiveCommLib() {
