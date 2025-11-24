@@ -230,7 +230,7 @@ def test_dict_getitem_by_user_defined_class_object():
     assert_executed_by_graph_mode(compiled_fn)
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_dict_getitem_in_cell_attribute_branch():
     """
     Feature: dict getitem.
@@ -273,7 +273,7 @@ def test_dict_getitem_in_cell_attribute_branch():
     assert_executed_by_graph_mode(jit_net.construct)
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_dict_setitem_on_cell_attribute():
     """
     Feature: dict setitem.
@@ -315,7 +315,7 @@ def test_dict_setitem_on_cell_attribute():
     assert_executed_by_graph_mode(jit_net.construct)
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_dict_setitem_with_dict_argument():
     """
     Feature: dict setitem.

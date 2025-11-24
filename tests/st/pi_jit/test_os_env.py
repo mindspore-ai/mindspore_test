@@ -74,7 +74,7 @@ def test_os_env_mapping_get_with_tensor(a, b):
     assert jcr["break_count_"] == 0
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_os_env_branch_when_env_set():
     """
     Feature: @jit bytecode env branch.
@@ -117,7 +117,7 @@ def test_os_env_branch_when_env_set():
     match_array(pynative_result, jit_result)
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_os_env_branch_when_env_unset():
     """
     Feature: @jit bytecode env branch.

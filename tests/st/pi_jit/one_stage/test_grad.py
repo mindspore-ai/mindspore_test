@@ -1185,7 +1185,7 @@ def test_create_grad_operation_and_has_graph_break():
     match_array(o1, o2)
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_grad_operation_first_input_matches_pynative():
     """
     Feature: ops.GradOperation single input.
@@ -1225,7 +1225,7 @@ def test_grad_operation_first_input_matches_pynative():
     match_array(pynative_grad, pijit_grad)
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_grad_operation_all_inputs_stack():
     """
     Feature: ops.GradOperation for all inputs.
@@ -1290,7 +1290,7 @@ class GradS(nn.Cell):
         return grad
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_grad_operation_weight_parameter():
     """
     Feature: ops.GradOperation for weights.
@@ -1326,7 +1326,7 @@ def test_grad_operation_weight_parameter():
     match_array(pynative_grad[0], Tensor(np.ones((2, 3), np.float32)))
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_grad_operation_sensitivity_parameter():
     """
     Feature: ops.GradOperation with sensitivity.
@@ -1365,7 +1365,7 @@ def test_grad_operation_sensitivity_parameter():
     match_array(pynative_grad[1], Tensor(np.zeros((2, 3), np.float32)))
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_grad_operation_multiple_segments():
     """
     Feature: ops.GradOperation with mixed segments.
@@ -1400,7 +1400,7 @@ def test_grad_operation_multiple_segments():
     match_array(pynative_grad[0], pijit_grad[0])
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_grad_functional_input_gradient():
     """
     Feature: ops.grad for input gradient.
@@ -1440,7 +1440,7 @@ def test_grad_functional_input_gradient():
     match_array(pynative_grad, pijit_grad)
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_grad_functional_weights_parameter():
     """
     Feature: ops.grad for weights.
@@ -1479,7 +1479,7 @@ def test_grad_functional_weights_parameter():
     match_array(pynative_grad, pijit_grad)
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_grad_functional_high_order():
     """
     Feature: Higher-order gradients.
@@ -1519,7 +1519,7 @@ def test_grad_functional_high_order():
     match_array(pynative_grad, pijit_grad)
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_value_and_grad_with_aux_for_weights():
     """
     Feature: ops.value_and_grad with has_aux.
@@ -1563,7 +1563,7 @@ def test_value_and_grad_with_aux_for_weights():
 
 
 @pytest.mark.skip(reason="fix later: AttributeError: 'Tensor' object has no attribute 'name'")
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_value_and_grad_return_ids_for_weights():
     """
     Feature: ops.value_and_grad with return_ids.
