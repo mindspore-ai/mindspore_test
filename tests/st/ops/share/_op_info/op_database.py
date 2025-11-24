@@ -41,6 +41,10 @@ from tests.st.ops.share._op_info.op_info import (
     extra_reference_inputs_binary_op_common_func,
     extra_reference_inputs_reduction_op_common_func,
 )
+from tests.st.ops.share._internal.utils import (
+    OpSampleInput, OpDynamicInput, OpErrorInput,
+    make_tensor, skip_sample_inputs, make_tensor_with_np_array
+)
 from tests.st.ops.share._op_info.op_common import (
     EXTRA_SMALL_DIM_SIZE,
     LARGE_DIM_SIZE,
@@ -1487,6 +1491,31 @@ def dynamic_sample_inputs_mint_chunk(op_info: OpInfo, dtype=None, device=None, *
             ),
         )
 
+
+# wrap tensor method for gather
+def tensor_gather_ms(input, dim, index):
+    return input.gather(dim, index)
+
+def tensor_gather_overload_ms(input, input_indices, axis):
+    return input.gather(input_indices, axis)
+
+def tensor_gather_torch(input, dim, index):
+    return input.gather(dim, index)
+
+# wrap tensor method for unique
+def tensor_unique_ms(op_input, *op_args, **op_kwargs):
+    return op_input.unique(*op_args, **op_kwargs)
+
+def tensor_unique_torch(op_input, *op_args, **op_kwargs):
+    return op_input.unique(*op_args, **op_kwargs)
+
+# wrap tensor method for clamp
+def tensor_clamp_ms(op_input, *op_args, **op_kwargs):
+    return op_input.clamp(*op_args, **op_kwargs)
+
+def tensor_clamp_torch(op_input, *op_args, **op_kwargs):
+    return op_input.clamp(*op_args, **op_kwargs)
+
 # sample inputs functions for gather
 def basic_sample_inputs_mint_gather(op_info: OpInfo, dtype=None, device=None, **kwargs):
     '''
@@ -1523,6 +1552,180 @@ def basic_sample_inputs_mint_gather(op_info: OpInfo, dtype=None, device=None, **
         sample_name=op_info.name,
     )
 
+
+def basic_sample_inputs_mint_unique(op_info: OpInfo, dtype=None, device=None, **kwargs):
+    '''
+    Generate basic sample inputs for mint.unique op.
+    Reference torch's sample_inputs_unique:
+      - sizes: (), (S,), (S, S), (S, S, S), (S, 1, S), (S, 0, S)
+      - flags: sorted/return_inverse/return_counts in {False, True}
+      - dims: None, -2, -1, 0, 1, 2 with validity checks
+      - inputs: all-zeros, mixed 0/1, random values
+    '''
+    S = SMALL_DIM_SIZE
+    make_x = functools.partial(make_tensor, device=device, dtype=dtype)
+
+    sizes = ((), (S,), (S, S, S), (S, 1, S), (S, 0, S))
+    flag_cases = [(sorted_flag, ret_inv, ret_cnt) for sorted_flag in (False, True)
+                  for ret_inv in (False, True) for ret_cnt in (False, True)]
+    #TODO: mint.unique has different behavior when dim is None or -1, skip it temporarily.
+    dim_cases = (-2, 0, 2) 
+
+    for shape in sizes:
+        rank = len(shape)
+        for sorted_flag, ret_inv, ret_cnt in flag_cases:
+            for dim in dim_cases:
+                # skip invalid dim per rank
+                if rank == 0 and dim is not None:
+                    continue
+                if dim is not None and (dim < -rank or dim >= rank):
+                    continue
+                # for shapes with a zero dimension, if dim selects a different axis than the zero axis, skip
+                if 0 in shape and dim is not None:
+                    zero_axis = shape.index(0)
+                    dim_norm = dim if dim >= 0 else dim + rank
+                    if dim_norm != zero_axis:
+                        continue
+
+                # Use positional args as per API (no keyword args for unique)
+                # Order: (sorted, return_inverse, return_counts, dim)
+                unique_args = (sorted_flag, ret_inv, ret_cnt, dim)
+
+                # (1) all-zero tensor
+                zero_np_dtype = {
+                    ms.bool_: np.bool_,
+                    ms.int8: np.int8,
+                    ms.int16: np.int16,
+                    ms.int32: np.int32,
+                    ms.int64: np.int64,
+                    ms.uint8: np.uint8,
+                    ms.float16: np.float16,
+                    ms.float32: np.float32,
+                    ms.float64: np.float64,
+                    ms.bfloat16: np.float32,  # construct in fp32 then to bfloat16 by dtype=
+                    ms.complex64: np.complex64,
+                    ms.complex128: np.complex128,
+                }[dtype]
+                zeros_np = np.zeros(shape, dtype=zero_np_dtype)
+                zeros_ms = make_tensor_with_np_array(zeros_np, dtype=dtype, device=device)
+                yield OpSampleInput(
+                    op_input=zeros_ms,
+                    op_args=unique_args,
+                    op_kwargs={},
+                    sample_name=op_info.name,
+                )
+
+                # (2) mixed 0/1 values (then cast to dtype)
+                ones_zeros_np = np.random.randint(0, 2, size=shape).astype(zero_np_dtype)
+                mixed_ms = make_tensor_with_np_array(ones_zeros_np, dtype=dtype, device=device)
+                yield OpSampleInput(
+                    op_input=mixed_ms,
+                    op_args=unique_args,
+                    op_kwargs={},
+                    sample_name=op_info.name,
+                )
+
+                # (3) many random values
+                yield OpSampleInput(
+                    op_input=make_x(shape),
+                    op_args=unique_args,
+                    op_kwargs={},
+                    sample_name=op_info.name,
+                )
+
+
+def basic_sample_inputs_mint_clamp(op_info: OpInfo, dtype=None, device=None, **kwargs):
+    '''
+    Generate basic sample inputs for mint.clamp op.
+    Follow torch's sample_inputs_clamp: use (S, M, S) and five representative cases.
+    '''
+    S, M = SMALL_DIM_SIZE, MEDIUM_DIM_SIZE
+    make_arg = functools.partial(make_tensor, device=device, dtype=dtype, low=None, high=None)
+
+    shape = (S, M, S)
+    # case 1: min and max are tensors with same shape as input
+    yield OpSampleInput(
+        op_input=make_arg(shape),
+        op_args=(make_arg(shape), make_arg(shape)),
+        op_kwargs={},
+        sample_name=op_info.name,
+    )
+    # case 2: min and max broadcastable (drop first dim)
+    yield OpSampleInput(
+        op_input=make_arg(shape),
+        op_args=(make_arg(shape[1:]), make_arg(shape[1:])),
+        op_kwargs={},
+        sample_name=op_info.name,
+    )
+    # case 3: only min is tensor with broadcastable shape
+    yield OpSampleInput(
+        op_input=make_arg(shape),
+        op_args=(make_arg((S, 1, S)),),
+        op_kwargs={},
+        sample_name=op_info.name,
+    )
+    # case 4: min is None, max is tensor
+    yield OpSampleInput(
+        op_input=make_arg(shape),
+        op_args=(None, make_arg(shape)),
+        op_kwargs={},
+        sample_name=op_info.name,
+    )
+    # case 5: min is tensor, max is None
+    yield OpSampleInput(
+        op_input=make_arg(shape),
+        op_args=(make_arg(shape), None),
+        op_kwargs={},
+        sample_name=op_info.name,
+    )
+
+
+def basic_sample_inputs_mint_stack(op_info: OpInfo, dtype=None, device=None, **kwargs):
+    '''
+    Generate basic sample inputs for mint.stack op.
+    Follow torch cases: different shapes and number of tensors, multiple dims.
+    '''
+    make_arg = functools.partial(make_tensor, device=device, dtype=dtype)
+
+    # shape x number of tensors (kept small)
+    cases = (
+        ((3, 4), 1),
+        ((1, 2, 1, 4), 3),
+        ((0, 1, 0), 2),
+    )
+
+    for shape, num_tensors in cases:
+        tensors = [make_arg(shape) for _ in range(num_tensors)]
+        # dim range similar to torch sample: from -1 to len(shape)-1
+        for dim in range(-1, len(shape)):
+            yield OpSampleInput(
+                op_input=tensors,
+                op_args=(dim,),
+                op_kwargs={},
+                sample_name=op_info.name,
+            )
+
+
+def extra_sample_inputs_mint_stack(op_info: OpInfo, dtype=None, device=None, **kwargs):
+    '''
+    Generate extra sample inputs for mint.stack op where input tensor dtypes differ.
+    This tests mixed dtypes inside the input sequence.
+    '''
+    S = SMALL_DIM_SIZE
+    shape = (S,)
+    # Build a list of tensors with different dtypes while keeping same shape
+    # Choose a small, representative set of dtypes
+    mixed_dtypes = [ms.float32, ms.int64] if dtype != ms.float32 else [ms.float16, ms.int64]
+    tensors = [make_tensor(shape=shape, dtype=dt, device=device) for dt in mixed_dtypes]
+
+    # Use a valid dim for 1D inputs: dim can be 0 or -1
+    for dim in (0, -1):
+        yield OpSampleInput(
+            op_input=tensors,
+            op_args=(dim,),
+            op_kwargs={},
+            sample_name=op_info.name,
+        )
 
 def extra_sample_inputs_mint_gather(op_info: OpInfo, dtype=None, device=None, **kwargs):
     '''
@@ -3324,6 +3527,18 @@ op_db: Dict[str, OpInfo] = {
         op_extra_reference_inputs_func=extra_sample_inputs_mint_gather,
         op_dynamic_inputs_func=dynamic_sample_inputs_mint_gather,
     ),
+    'Tensor.gather': OpInfo(
+        name='Tensor.gather',
+        op=tensor_gather_ms,
+        ref=tensor_gather_torch,
+        dtypes_ascend=tuple(d for d in dtypes_as_torch if (not d.is_complex and d != ms.bfloat16)),
+        dtypes_ascend910b=tuple(d for d in dtypes_as_torch if not d.is_complex),
+        dtypes_cpu=(),
+        dtypes_gpu=(),
+        op_basic_reference_inputs_func=basic_sample_inputs_mint_gather,
+        op_extra_reference_inputs_func=extra_sample_inputs_mint_gather,
+        op_dynamic_inputs_func=dynamic_sample_inputs_mint_gather,
+    ),
     'mint.nn.functional.interpolate(mode="bilinear")': OpInfo(
         name='mint.nn.functional.interpolate(mode="bilinear")',
         op=mint.nn.functional.interpolate,
@@ -4001,6 +4216,70 @@ op_db: Dict[str, OpInfo] = {
         dtypes_cpu=(),
         dtypes_gpu=(),
     ),
+    'mint.unique': OpInfo(
+        name='mint.unique',
+        op=mint.unique,
+        ref=torch.unique,
+        dtypes_ascend=(ms.float32, ms.float16),
+        dtypes_ascend910b=(ms.float32, ms.float16, ms.bfloat16),
+        dtypes_cpu=(),
+        dtypes_gpu=(),
+        op_basic_reference_inputs_func=basic_sample_inputs_mint_unique,
+        op_extra_reference_inputs_func=None,
+        op_dynamic_inputs_func=None,
+        is_differentiable=False,
+    ),
+    'Tensor.unique': OpInfo(
+        name='Tensor.unique',
+        op=tensor_unique_ms,
+        ref=tensor_unique_torch,
+        dtypes_ascend=(ms.float32, ms.float16),
+        dtypes_ascend910b=(ms.float32, ms.float16, ms.bfloat16),
+        dtypes_cpu=(),
+        dtypes_gpu=(),
+        op_basic_reference_inputs_func=basic_sample_inputs_mint_unique,
+        op_extra_reference_inputs_func=None,
+        op_dynamic_inputs_func=None,
+        is_differentiable=False,
+    ),
+    'mint.clamp': OpInfo(
+        name='mint.clamp',
+        op=mint.clamp,
+        ref=torch.clamp,
+        dtypes_ascend=(ms.float32, ms.float16),
+        dtypes_ascend910b=(ms.float32, ms.float16, ms.bfloat16),
+        dtypes_cpu=(),
+        dtypes_gpu=(),
+        op_basic_reference_inputs_func=basic_sample_inputs_mint_clamp,
+        op_extra_reference_inputs_func=None,
+        op_dynamic_inputs_func=None,
+    ),
+    'Tensor.clamp': OpInfo(
+        name='Tensor.clamp',
+        op=tensor_clamp_ms,
+        ref=tensor_clamp_torch,
+        dtypes_ascend=(ms.float32, ms.float16),
+        dtypes_ascend910b=(ms.float32, ms.float16, ms.bfloat16),
+        dtypes_cpu=(),
+        dtypes_gpu=(),
+        op_basic_reference_inputs_func=basic_sample_inputs_mint_clamp,
+        op_extra_reference_inputs_func=None,
+        op_dynamic_inputs_func=None,
+    ),
+    'mint.stack': OpInfo(
+        name='mint.stack',
+        op=mint.stack,
+        ref=torch.stack,
+        dtypes_ascend=(ms.float32, ms.float16),
+        dtypes_ascend910b=(ms.float32, ms.float16, ms.bfloat16),
+        dtypes_cpu=(),
+        dtypes_gpu=(),
+        op_basic_reference_inputs_func=basic_sample_inputs_mint_stack,
+        op_extra_reference_inputs_func=extra_sample_inputs_mint_stack,
+        op_dynamic_inputs_func=None,
+        #TODO: the test framework dose not support the backward of tuple input for now
+        is_differentiable=False,
+    ),
 }
 
 all_op_db = list(op_db.keys())
@@ -4118,6 +4397,12 @@ other_op_db = [
     'mint.nn.functional.log_softmax',
     'mint.nn.functional.mse_loss',
     'mint.nn.functional.softmax',
+    'mint.unique',
+    'Tensor.unique',
+    'mint.clamp',
+    'Tensor.clamp',
+    'mint.stack',
+    'Tensor.gather',
 ]
 
 reduction_op_db = [
