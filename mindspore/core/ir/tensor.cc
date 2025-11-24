@@ -196,6 +196,7 @@ void Tensor::shallow_copy_from(const Tensor &other) {
     MetaTensor::operator=(other);
     device_sync_ = other.device_address();
     device_info_ = CopyDeviceInfo(other.device_info_);
+    need_pipeline_sync_ = other.need_pipeline_sync();
   }
 }
 
