@@ -21,6 +21,7 @@ This module provides:
 - The operator database (op_db) and get_op_info accessor.
 """
 import functools
+import numpy as np
 from typing import Dict, Optional
 import torch
 import mindspore as ms
@@ -197,6 +198,143 @@ def error_inputs_add_sub_ext_func(op_info: OpInfo, dtype=None, device=None, **kw
         op_error_info='other is not tensor or number',
     )
 
+def basic_sample_inputs_mint_repeat_interleave(
+    op_info: OpInfo,
+    dtype,
+    device=None,
+    **kwargs
+):
+    '''
+    Generate basic sample inputs for mint.repeat_interleave.
+
+    Cases covered (aligned with PyTorch repeat_interleave samples, adapted to MindSpore):
+      - scalar tensor with repeats as Python int
+      - 3D tensor with repeats as Python int (no dim / with dim)
+      - 3D tensor with repeats as Tensor (per-index repeats) with dim
+      - 2D tensor with repeats as Tensor and explicit output_size
+    '''
+    make_input = functools.partial(make_tensor, device=device, dtype=dtype)
+
+    # () with repeats=2
+    yield OpSampleInput(
+        op_input=make_input(()),
+        op_args=(2,),
+        op_kwargs={},
+        sample_name=f"{op_info.name}_scalar_repeats_int"
+    )
+
+    # (2, 3, 4) with repeats=2 (no dim)
+    yield OpSampleInput(
+        op_input=make_input((2, 3, 4)),
+        op_args=(2,),
+        op_kwargs={},
+        sample_name=f"{op_info.name}_nd_repeats_int_nodim"
+    )
+
+    # (2, 3, 4) with repeats=2, dim=1
+    yield OpSampleInput(
+        op_input=make_input((2, 3, 4)),
+        op_args=(2,),
+        op_kwargs={'dim': 1},
+        sample_name=f"{op_info.name}_nd_repeats_int_dim1"
+    )
+
+    # (2, 3, 4) with repeats as Tensor([0, 1, 2]), dim=1
+    repeats_tensor_dim1 = ms.Tensor([0, 1, 2], dtype=ms.int32)
+    yield OpSampleInput(
+        op_input=make_input((2, 3, 4)),
+        op_args=(repeats_tensor_dim1,),
+        op_kwargs={'dim': 1},
+        sample_name=f"{op_info.name}_nd_repeats_tensor_dim1"
+    )
+
+    # (4, 1) with repeats as Tensor([0,1,2,3]), dim=0, output_size=6
+    repeats_tensor_dim0 = ms.Tensor([0, 1, 2, 3], dtype=ms.int32)
+    yield OpSampleInput(
+        op_input=make_input((4, 1)),
+        op_args=(repeats_tensor_dim0,),
+        op_kwargs={'dim': 0, 'output_size': 6},
+        sample_name=f"{op_info.name}_nd_repeats_tensor_dim0_output_size"
+    )
+
+    # (3,) with repeats as random Tensor([...]), dim=0
+    rand_repeats = ms.Tensor(np.random.randint(1, 10, (3,)), dtype=ms.int32)
+    yield OpSampleInput(
+        op_input=make_input((3,)),
+        op_args=(rand_repeats,),
+        op_kwargs={'dim': 0},
+        sample_name=f"{op_info.name}_1d_rand_repeats_tensor_dim0"
+    )
+
+def basic_sample_inputs_mint_arange(
+    op_info: OpInfo,
+    dtype=None,
+    device=None,
+    **kwargs
+):
+    '''
+    Generate basic sample inputs for mint.arange, aligned with PyTorch's sample_inputs_arange.
+    Each tuple is (start, end, step), where None means "omit that positional".
+    The outer dtype is forwarded via op_kwargs['dtype'] to fix output dtype (like PyTorch does).
+    '''
+    int_samples = (
+        (-1, 2, 2),          # positive direction
+        (2, -3, -1),         # negative direction
+        (-3, -10, -2),       # additional negative direction with even step
+        (1, 1, 1),           # start == end
+        (1, 1, -1),          # start == end with negative step
+        (0, -8, -4),         # divides evenly (negative)
+        (1, 5, 2),           # divides evenly (positive)
+        (False, True, True), # bool inputs
+        (0, 1, None),        # default step
+        (None, 3, None),     # default start (single-arg form)
+    )
+
+    def to_float(start, end, step):
+        start = (start + 0.1) if start is not None else None
+        end = end + 0.1
+        step = float(step) if step is not None else None
+        return start, end, step
+
+    float_samples = (
+        (0.0, -8.0 - 1e-6, -4.0),  # includes endpoint
+        (1.0, 5.0 + 1e-6,  2.0),   # includes endpoint
+        (0.0, -8.0,       -4.0),
+        (1.0, 5.0,         2.0),
+        *(to_float(s, e, t) for (s, e, t) in int_samples),
+    )
+
+    large_samples = (
+        (0, 10000, None),
+    )
+
+    samples = int_samples
+    # Only add float_samples when output dtype is floating-point;
+    # for integer dtypes, mixing float ranges can cause length mismatches vs MindSpore behavior.
+    if dtype is not None and getattr(dtype, "is_floating_point", False):
+        samples += float_samples
+    if dtype not in (ms.int8, ms.uint8):
+        samples += large_samples
+
+    for start, end, step in samples:
+        if start is None:
+            op_input = end
+            op_args = ()
+        else:
+            op_input = start
+            op_args = (end,) if step is None else (end, step)
+
+        op_kwargs = {}
+        if dtype is not None:
+            op_kwargs['dtype'] = dtype
+
+        yield OpSampleInput(
+            op_input=op_input,
+            op_args=op_args,
+            op_kwargs=op_kwargs,
+            sample_name=op_info.name,
+        )
+
 # op_func_without_kwargs, used by gradient comparison if there are kwargs in op
 def add_ext_func_grad_without_kwargs(x, y, alpha=1):
     return mint.add(x, y, alpha=alpha)
@@ -225,6 +363,21 @@ def less_func_grad(x, other):
 def ne_func_grad(x, other):
     return mint.ne(x, other)
 
+def maximum_func_grad(op_input, other):
+    return mint.maximum(op_input, other)
+
+def minimum_func_grad(op_input, other):
+    return mint.minimum(op_input, other)
+
+def div_func_grad(op_input, other):
+    return mint.div(op_input, other)
+
+def mul_func_grad(op_input, other):
+    return mint.mul(op_input, other)
+
+def repeat_interleave_func_grad(input_x, repeats, dim=None, output_size=None):
+    return mint.repeat_interleave(input_x, repeats, dim, output_size=output_size)
+
 # wrap tensor method for tanh
 def tensor_tanh_ms(op_input):
     return op_input.tanh()
@@ -234,6 +387,89 @@ def tensor_tanh_torch(op_input):
 
 def tensor_eq_ms(op_input, x):
     return op_input.eq(x)
+
+def tensor_repeat_interleave_ms(op_input, repeats, dim=None, output_size=None):
+    return op_input.repeat_interleave(repeats, dim, output_size=output_size)
+
+def tensor_repeat_interleave_torch(op_input, repeats, dim=None, output_size=None):
+    return op_input.repeat_interleave(repeats, dim=dim, output_size=output_size)
+
+def tensor_repeat_interleave_func_grad(op_input, repeats, dim=None, output_size=None):
+    return op_input.repeat_interleave(repeats, dim, output_size=output_size)
+
+# sample inputs functions for Tensor.repeat (method)
+def basic_sample_inputs_tensor_repeat(op_info: OpInfo, dtype=None, device=None, **kwargs):
+    '''
+    Generate basic sample inputs for Tensor.repeat (method), aligned to torch's coverage:
+      - scalar tensor with 1D repeat
+      - 1D tensor with zero and positive repeats
+      - 2D/3D tensors with per-dimension repeats
+      - keep sizes length equal to input.ndim for MindSpore compatibility
+    '''
+    S = SMALL_DIM_SIZE
+    make_x = functools.partial(make_tensor, device=device, dtype=dtype)
+
+    # Scalar () with repeat(2) -> shape (2,)
+    yield OpSampleInput(
+        op_input=make_x(()),
+        op_args=(2,),
+        op_kwargs={},
+        sample_name=f"{op_info.name}_scalar_repeat_2",
+    )
+
+    # Scalar () with repeat(0, 0) -> shape (0, 0)
+    yield OpSampleInput(
+        op_input=make_x(()),
+        op_args=(0, 0),
+        op_kwargs={},
+        sample_name=f"{op_info.name}_scalar_repeat_0x0",
+    )
+
+    # 1D (S,) with repeat(0) -> empty
+    yield OpSampleInput(
+        op_input=make_x((S,)),
+        op_args=(0,),
+        op_kwargs={},
+        sample_name=f"{op_info.name}_1d_repeat_0",
+    )
+
+    # 1D (S,) with repeat(3) -> shape (S*3,)
+    yield OpSampleInput(
+        op_input=make_x((S,)),
+        op_args=(3,),
+        op_kwargs={},
+        sample_name=f"{op_info.name}_1d_repeat_3",
+    )
+
+    # 2D (S, S) with repeat(1, 2) -> (S, 2S)
+    yield OpSampleInput(
+        op_input=make_x((S, S)),
+        op_args=(1, 2),
+        op_kwargs={},
+        sample_name=f"{op_info.name}_2d_repeat_1x2",
+    )
+
+    # 2D (S, S) with repeat(2, 1) -> (2S, S)
+    yield OpSampleInput(
+        op_input=make_x((S, S)),
+        op_args=(2, 1),
+        op_kwargs={},
+        sample_name=f"{op_info.name}_2d_repeat_2x1",
+    )
+
+    # 3D (2, 1, S) with repeat(2, 3, 1) -> (4, 3, S)
+    yield OpSampleInput(
+        op_input=make_x((2, 1, S)),
+        op_args=(2, 3, 1),
+        op_kwargs={},
+        sample_name=f"{op_info.name}_3d_repeat_2x3x1",
+    )
+
+def tensor_repeat_ms(op_input, *sizes):
+    return op_input.repeat(*sizes)
+
+def tensor_repeat_torch(op_input, *sizes):
+    return op_input.repeat(*sizes)
 
 def tensor_eq_torch(op_input, x):
     return op_input.eq(x)
@@ -285,6 +521,24 @@ def tensor_lt_ms(op_input, x):
 
 def tensor_lt_torch(op_input, x):
     return op_input.lt(x)
+
+def tensor_maximum_ms(op_input, other):
+    return op_input.maximum(other)
+
+def tensor_maximum_torch(op_input, other):
+    return op_input.maximum(other)
+
+def tensor_minimum_ms(op_input, other):
+    return op_input.minimum(other)
+
+def tensor_minimum_torch(op_input, other):
+    return op_input.minimum(other)
+
+def tensor_mul_ms(op_input, other):
+    return op_input.mul(other)
+
+def tensor_mul_torch(op_input, other):
+    return op_input.mul(other)
 
 # wrap nn method for tanh
 def nn_tanh_ms(op_input):
@@ -1069,6 +1323,176 @@ op_db: Dict[str, OpInfo] = {
         supports_right_python_scalar=True,
         supports_both_python_scalar=False,
     ),
+    'mint.maximum': BinaryOpInfo(
+        name='mint.maximum',
+        op=mint.maximum,
+        op_func_without_kwargs=maximum_func_grad,
+        ref=torch.maximum,
+        tensor_variant=lambda op_input, *op_args, **op_kwargs: op_input.equal(op_args[0]),
+        #On Ascend 910A and 910B, float64 is not supported due to backward compatibility, so we need to exclude it.
+        dtypes_ascend=tuple(d for d in dtypes_as_torch if not d.is_complex and d != ms.bfloat16 and d != ms.float64),
+        dtypes_ascend910b=tuple(d for d in dtypes_as_torch if not d.is_complex and d != ms.float64),
+        dtypes_cpu=tuple(),
+        dtypes_gpu=tuple(),
+        op_dynamic_inputs_func=None,
+        op_error_inputs_func=None,
+        supports_left_python_scalar=False,
+        supports_right_python_scalar=False,
+        supports_both_python_scalar=False,
+    ),
+    'mint.minimum': BinaryOpInfo(
+        name='mint.minimum',
+        op=mint.minimum,
+        op_func_without_kwargs=minimum_func_grad,
+        ref=torch.minimum,
+        tensor_variant=lambda op_input, *op_args, **op_kwargs: op_input.minimum(op_args[0]),
+        #On Ascend 910A and 910B, float64 is not supported due to backward compatibility, so we need to exclude it.
+        dtypes_ascend=tuple(d for d in dtypes_as_torch if not d.is_complex and d != ms.bfloat16 and d != ms.float64),
+        dtypes_ascend910b=tuple(d for d in dtypes_as_torch if not d.is_complex and d != ms.float64),
+        dtypes_cpu=tuple(),
+        dtypes_gpu=tuple(),
+        op_dynamic_inputs_func=None,
+        op_error_inputs_func=None,
+        supports_left_python_scalar=False,
+        supports_right_python_scalar=False,
+        supports_both_python_scalar=False,
+    ),
+    'mint.div': BinaryOpInfo(
+        name='mint.div',
+        op=mint.div,
+        op_func_without_kwargs=div_func_grad,
+        ref=torch.div,
+        tensor_variant=lambda op_input, *op_args, **op_kwargs: op_input.div(op_args[0]),
+        # Skip FP16 fwd/bwd on Ascend 910A/910B due to out-of-tolerance numerics vs PyTorch-CPU.
+        dtypes_ascend=tuple(d for d in dtypes_as_torch if not d.is_complex and d != ms.bfloat16 and d != ms.float16),
+        dtypes_ascend910b=tuple(d for d in dtypes_as_torch if not d.is_complex and d != ms.float16),
+        dtypes_cpu=tuple(),
+        dtypes_gpu=tuple(),
+        op_dynamic_inputs_func=None,
+        op_error_inputs_func=None,
+        supports_left_python_scalar=True,
+        supports_right_python_scalar=True,
+        supports_both_python_scalar=False,
+    ),
+    'mint.mul': BinaryOpInfo(
+        name='mint.mul',
+        op=mint.mul,
+        op_func_without_kwargs=mul_func_grad,
+        ref=torch.mul,
+        tensor_variant=lambda op_input, *op_args, **op_kwargs: op_input.mul(op_args[0]),
+        # Skip FP16 fwd/bwd on Ascend 910A/910B due to out-of-tolerance numerics vs PyTorch-CPU.
+        dtypes_ascend=tuple(d for d in dtypes_as_torch if not d.is_complex and d != ms.bfloat16 and d != ms.float16),
+        dtypes_ascend910b=tuple(d for d in dtypes_as_torch if not d.is_complex and d != ms.float16),
+        dtypes_cpu=tuple(),
+        dtypes_gpu=tuple(),
+        op_dynamic_inputs_func=None,
+        op_error_inputs_func=None,
+        supports_left_python_scalar=True,
+        supports_right_python_scalar=True,
+        supports_both_python_scalar=False,
+        disable_large_value_tensor_inputs=True,
+    ),
+    'mint.repeat_interleave': OpInfo(
+        name='mint.repeat_interleave',
+        op=mint.repeat_interleave,
+        op_func_without_kwargs=repeat_interleave_func_grad,
+        ref=torch.repeat_interleave,
+        dtypes_ascend=tuple(),
+        dtypes_ascend910b=tuple(d for d in dtypes_as_torch if not d.is_complex and d != ms.float64),
+        dtypes_cpu=tuple(),
+        dtypes_gpu=tuple(),
+        op_basic_reference_inputs_func=basic_sample_inputs_mint_repeat_interleave,
+        op_dynamic_inputs_func=None,
+        op_error_inputs_func=None,
+    ),
+    'mint.arange': OpInfo(
+        name='mint.arange',
+        op=mint.arange,
+        ref=torch.arange,
+        dtypes_ascend=tuple([ms.float32, ms.int32]),
+        dtypes_ascend910b=tuple([ms.float32, ms.int32]),
+        dtypes_cpu=tuple(),
+        dtypes_gpu=tuple(),
+        op_basic_reference_inputs_func=basic_sample_inputs_mint_arange,
+        op_dynamic_inputs_func=None,
+        op_error_inputs_func=None,
+        is_differentiable=False,
+    ),
+    'Tensor.repeat_interleave': OpInfo(
+        name='Tensor.repeat_interleave',
+        op=tensor_repeat_interleave_ms,
+        op_func_without_kwargs=tensor_repeat_interleave_func_grad,
+        ref=tensor_repeat_interleave_torch,
+        dtypes_ascend=tuple(),
+        dtypes_ascend910b=tuple(d for d in dtypes_as_torch if not d.is_complex and d != ms.float64),
+        dtypes_cpu=tuple(),
+        dtypes_gpu=tuple(),
+        op_basic_reference_inputs_func=basic_sample_inputs_mint_repeat_interleave,
+        op_dynamic_inputs_func=None,
+        op_error_inputs_func=None,
+    ),
+    'Tensor.repeat': OpInfo(
+        name='Tensor.repeat',
+        op=tensor_repeat_ms,
+        ref=tensor_repeat_torch,
+        # Repeat is shape-only; allow wide dtype sets. Exclude bf16 on generic Ascend for compatibility.
+        dtypes_ascend=tuple(d for d in dtypes_as_torch if d != ms.bfloat16),
+        dtypes_ascend910b=tuple(d for d in dtypes_as_torch),
+        dtypes_cpu=tuple(),
+        dtypes_gpu=tuple(),
+        op_basic_reference_inputs_func=basic_sample_inputs_tensor_repeat,
+        op_dynamic_inputs_func=None,
+        op_error_inputs_func=None,
+    ),
+    'Tensor.maximum': BinaryOpInfo(
+        name='Tensor.maximum',
+        op=tensor_maximum_ms,
+        ref=tensor_maximum_torch,
+        tensor_variant=lambda op_input, *op_args, **op_kwargs: op_input.maximum(op_args[0]),
+        #On Ascend 910A and 910B, float64 is not supported due to backward compatibility, so we need to exclude it.
+        dtypes_ascend=tuple(d for d in dtypes_as_torch if not d.is_complex and d != ms.bfloat16 and d != ms.float64),
+        dtypes_ascend910b=tuple(d for d in dtypes_as_torch if not d.is_complex and d != ms.float64),
+        dtypes_cpu=tuple(),
+        dtypes_gpu=tuple(),
+        op_dynamic_inputs_func=None,
+        op_error_inputs_func=None,
+        supports_left_python_scalar=False,
+        supports_right_python_scalar=False,
+        supports_both_python_scalar=False,
+    ),
+    'Tensor.minimum': BinaryOpInfo(
+        name='Tensor.minimum',
+        op=tensor_minimum_ms,
+        ref=tensor_minimum_torch,
+        tensor_variant=lambda op_input, *op_args, **op_kwargs: op_input.minimum(op_args[0]),
+        #On Ascend 910A and 910B, float64 is not supported due to backward compatibility, so we need to exclude it.
+        dtypes_ascend=tuple(d for d in dtypes_as_torch if not d.is_complex and d != ms.bfloat16 and d != ms.float64),
+        dtypes_ascend910b=tuple(d for d in dtypes_as_torch if not d.is_complex and d != ms.float64),
+        dtypes_cpu=tuple(),
+        dtypes_gpu=tuple(),
+        op_dynamic_inputs_func=None,
+        op_error_inputs_func=None,
+        supports_left_python_scalar=False,
+        supports_right_python_scalar=False,
+        supports_both_python_scalar=False,
+    ),
+    'Tensor.mul': BinaryOpInfo(
+        name='Tensor.mul',
+        op=tensor_mul_ms,
+        ref=tensor_mul_torch,
+        tensor_variant=lambda op_input, *op_args, **op_kwargs: op_input.mul(op_args[0]),
+        # Skip FP16 fwd/bwd on Ascend 910A/910B due to out-of-tolerance numerics vs PyTorch-CPU.
+        dtypes_ascend=tuple(d for d in dtypes_as_torch if not d.is_complex and d != ms.bfloat16 and d != ms.float16),
+        dtypes_ascend910b=tuple(d for d in dtypes_as_torch if not d.is_complex and d != ms.float16),
+        dtypes_cpu=tuple(),
+        dtypes_gpu=tuple(),
+        op_dynamic_inputs_func=None,
+        op_error_inputs_func=None,
+        supports_left_python_scalar=False,
+        supports_right_python_scalar=True,
+        supports_both_python_scalar=False,
+        disable_large_value_tensor_inputs=True,
+    ),
     'mint.tanh': UnaryOpInfo(
         name='mint.tanh',
         op=mint.tanh,
@@ -1531,6 +1955,10 @@ binary_op_db = [
     'mint.less_equal',
     'mint.less',
     'mint.ne',
+    'mint.maximum',
+    'mint.minimum',
+    'mint.div',
+    'mint.mul',
     'Tensor.eq',
     'Tensor.greater_equal',
     'Tensor.greater',
@@ -1540,6 +1968,9 @@ binary_op_db = [
     'Tensor.gt',
     'Tensor.le',
     'Tensor.lt',
+    'Tensor.maximum',
+    'Tensor.minimum',
+    'Tensor.mul',
 ]
 
 unary_op_db = [
@@ -1558,6 +1989,10 @@ other_op_db = [
     'mint.nn.functional.interpolate(mode="nearest")-1d',
     'mint.nn.functional.interpolate(mode="nearest")-2d',
     'mint.nn.functional.interpolate(mode="nearest")-3d',
+    'mint.repeat_interleave',
+    'Tensor.repeat_interleave',
+    'Tensor.repeat',
+    'mint.arange',
 ]
 
 reduction_op_db = [
