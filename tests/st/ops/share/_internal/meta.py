@@ -281,7 +281,8 @@ class OpsFactory():
         def default_golden_compare(expect, actual, rtol, atol):
             def convert_tensor_to_nparray(tensor):
                 if isinstance(tensor, torch.Tensor):
-                    return tensor.float().cpu().numpy() if tensor.dtype == torch.bfloat16 else tensor.cpu().numpy()
+                    return tensor.float().cpu().detach().numpy() \
+                        if tensor.dtype == torch.bfloat16 else tensor.cpu().detach().numpy()
                 if isinstance(tensor, ms.Tensor):
                     return ms_asnumpy(tensor)
                 return tensor
@@ -475,6 +476,8 @@ class OpsFactory():
 
             # get grad_position (must be int or tuple) and instantiate grad_func
             tensor_indices = tuple(i for i, v in enumerate(args_no_dout) if _ms_tensor_supports_grad(v))
+            if self.ref == torch.nn.functional.batch_norm:
+                tensor_indices = (tensor_indices[0],) + tensor_indices[3:]
             if not tensor_indices:
                 grads.append(tuple())
                 warnings.warn("No tensor inputs to compute gradients for sample input {idx}")
@@ -524,6 +527,11 @@ class OpsFactory():
                 if isinstance(arg, torch.Tensor) and _torch_dtype_supports_grad(arg):
                     arg.requires_grad = True
                     arg_tensors.append(arg)
+            # `running_mean` and `running_variance` in  batch_norm cannot have requires_grad True.
+            if self.ref == torch.nn.functional.batch_norm:
+                arg_tensors[0].requires_grad = False
+                arg_tensors[1].requires_grad = False
+                arg_tensors = arg_tensors[2:]
             tensor_inputs.extend(('arg', t) for t in arg_tensors)
 
             outi = torch_fn(op_input, *op_args, **op_kwargs)
@@ -749,10 +757,14 @@ class OpsFactory():
             if isinstance(ms_outi, (tuple, list)) and isinstance(pt_outi, (tuple, list)):
                 # The output of the op maybe a tuple or list for some multi-output ops.
                 for ms_outi_tensor, pt_outi_tensor in zip(ms_outi, pt_outi):
-                    if self._default_loss_override and ms_outi_tensor.dtype in self._default_loss_override:
-                        loss = self._default_loss_override[ms_outi_tensor.dtype]
+                    if isinstance(ms_outi_tensor, (ms.Tensor, torch.Tensor, np.ndarray)):
+                        ms_outi_tensor_dtype = ms_outi_tensor.dtype
                     else:
-                        loss = self._default_golden_loss_func(ms_outi_tensor.dtype)
+                        ms_outi_tensor_dtype = type(ms_outi_tensor)
+                    if self._default_loss_override and ms_outi_tensor_dtype in self._default_loss_override:
+                        loss = self._default_loss_override[ms_outi_tensor_dtype]
+                    else:
+                        loss = self._default_golden_loss_func(ms_outi_tensor_dtype)
                     self.assert_equal(
                         ms_outi_tensor,
                         pt_outi_tensor,
