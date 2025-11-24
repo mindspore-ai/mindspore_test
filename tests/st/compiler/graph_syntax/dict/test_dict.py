@@ -16,7 +16,7 @@
 from mindspore import Tensor, jit
 from mindspore.common.api import _pynative_executor
 import mindspore
-import mindspore.nn as nn
+from mindspore import nn
 from mindspore.ops import operations as P
 import numpy as np
 import pytest
@@ -38,9 +38,6 @@ class GradNet(nn.Cell):
 
 class JitGradNet(GradNet):
 
-    def __init__(self, net, grad_position=0):
-        super().__init__(net, grad_position)
-
     @jit
     def construct(self, *inputs):
         return self.grad(self.net, self.grad_position)(*inputs)
@@ -61,7 +58,7 @@ def compare_dict(target, got):
     if not isinstance(got, dict):
         raise ValueError("got is not dict")
     if len(target) != len(got):
-        raise ValueError("got lenth error")
+        raise ValueError("got length error")
     for (k1, v1), (k2, v2) in zip(target.items(), got.items()):
         if not compare_kv(k1, k2) and compare_kv(v1, v2):
             raise ValueError("target don't equal to got where target={}:{} got={}:{}".format(v1, k1, v2, k2))
@@ -304,8 +301,6 @@ def test_dict_tensor_key_gradient_alignment():
     """
 
     class DictNet(nn.Cell):
-        def __init__(self):
-            super().__init__()
 
         def construct(self, x):
             y = {1: Tensor([[10, 10], [10, 10], [10, 10]]) * x, 2: Tensor(([[10, 10], [10, 10]])) * x}
@@ -333,14 +328,11 @@ def test_dict_construct_with_builtin_helpers():
     """
 
     class DictNet(nn.Cell):
-        def __init__(self):
-            super().__init__()
-
         @jit
         def construct(self):
             x = {}
             y = dict([('a', 10), ('b', 20)])
-            z = dict(a=10, b=5)
+            z = dict(a=10, b=5)  # pylint: disable=use-dict-literal
 
             p = [Tensor([0]), Tensor([1])]
             q = [(0, 1), (1, 2)]
@@ -355,7 +347,7 @@ def test_dict_construct_with_builtin_helpers():
 
     assert x == {}
     assert y == dict([('a', 10), ('b', 20)])
-    assert z == dict(a=10, b=5)
+    assert z == dict(a=10, b=5)  # pylint: disable=use-dict-literal
     compare_dict({Tensor([0]): (0, 1), Tensor([1]): (1, 2)}, u)
 
 
@@ -386,16 +378,14 @@ def test_dict_python_functions_inside_cell():
     Expectation: JIT execution returns the expected tuple/list views and mutations.
     Migrated from: test_parser_dict.py::test_parser_dict_create_inner_functions
     """
+    # pylint: disable=use-dict-literal
 
     class DictNet(nn.Cell):
-        def __init__(self):
-            super().__init__()
-
         @jit
         def construct(self):
             x = {}
             y = dict([('a', 10), ('b', 20)])
-            z = dict(a=10, b=5)
+            z = dict(a=10, b=5)  # pylint: disable=use-dict-literal
 
             p = [Tensor([0]), Tensor([1])]
             q = [(0, 1), (1, 2)]
@@ -409,7 +399,7 @@ def test_dict_python_functions_inside_cell():
 
     assert x == {}
     assert y == dict([('a', 10), ('b', 20)])
-    assert z == dict(a=10, b=5)
+    assert z == dict(a=10, b=5)  # pylint: disable=use-dict-literal
     compare_dict({Tensor([0]): (0, 1), Tensor([1]): (1, 2)}, u)
 
 
@@ -424,11 +414,9 @@ def test_dict_python_create_inner_heterogeneous_keys():
     """
 
     class DictNet(nn.Cell):
-        def __init__(self):
-            super().__init__()
-
         @jit
         def construct(self, x):
+            # pylint: disable=duplicate-key
             y = {'a': None, 1: "15", 1.0: 20.0, False: True, Tensor([1, 2, 3]): x, 'b': Tensor(10)}
             p = y[1]
             q = y[1.0]
@@ -454,12 +442,9 @@ def test_dict_python_create_inner_none_keys():
     """
 
     class DictNet2(nn.Cell):
-        def __init__(self):
-            super().__init__()
-
         @jit
         def construct(self, x):
-            y = {None: 15, (None): 20, x: 10, (x): 10, 1 + 5j: 1 + 5j}
+            y = {None: 15, (None): 20, x: 10, (x): 10, 1 + 5j: 1 + 5j}  # pylint: disable=duplicate-key
             return y
 
     net = DictNet2()
@@ -478,9 +463,6 @@ def test_dict_python_create_outer_helper():
     """
 
     class DictNet(nn.Cell):
-
-        def __init__(self):
-            super().__init__()
 
         @jit
         def construct(self, x):
@@ -505,9 +487,6 @@ def test_dict_accessors_and_collection_behavior():
     """
 
     class DictNet(nn.Cell):
-        def __init__(self):
-            super().__init__()
-
         @jit
         def construct(self, x, key):
             if key < 0:
@@ -539,7 +518,7 @@ def test_dict_tuple_keys_and_getters():
         x[3.14] = Tensor([3.14])
         x[index] = Tensor([1, 2])
         y = x.get(index)
-        z = dict(y=y)
+        z = dict(y=y)  # pylint: disable=use-dict-literal
         return x, z
 
     x, z = dict_net()
@@ -558,9 +537,6 @@ def test_dict_input_gradient_of_dict():
     """
 
     class DictNet(nn.Cell):
-
-        def __init__(self):
-            super().__init__()
 
         @jit
         def construct(self, x):
@@ -588,7 +564,7 @@ def test_dict_generate_from_list():
     @jit
     def dict_generate():
         x = [('a', 1), ('b', 2), ('c', 3)]
-        res = {k: (lambda i: i + 1)(v) for (k, v) in x if v > 1}
+        res = {k: (lambda i: i + 1)(v) for (k, v) in x if v > 1}  # pylint: disable=unnecessary-direct-lambda-call
         return res
 
     out = dict_generate()
@@ -659,7 +635,7 @@ def test_dict_flatten_yield_prevents_graph():
 
         @jit
         def construct(self):
-            res = {k: v for k, v in self.flat(self.x)}
+            res = {k: v for k, v in self.flat(self.x)}  # pylint: disable=unnecessary-comprehension
             return res
 
     net = YieldNet()
@@ -706,7 +682,7 @@ def test_dict_generate_multiple_nesting_layers():
     def dict_generate():
         d = {'a': 1, 'b': 2, 'c': 3, 'A': 4, 'B': 5, 'D': 0}
         d2 = [['x', 'y', 'z']] * 6
-        res = {i: {0: [y for y in d2[v]]} for i, v in d.items()}
+        res = {i: {0: [y for y in d2[v]]} for i, v in d.items()}  # pylint: disable=unnecessary-comprehension
         return res
 
     out = dict_generate()
@@ -750,13 +726,10 @@ def test_dict_build_from_tensor_shape():
     """
 
     class DictNet(nn.Cell):
-        def __init__(self):
-            super().__init__()
-
         @jit
         def construct(self, x):
             y = list(x.shape)
-            ret = {index: v for index, v in enumerate(y)}
+            ret = {index: v for index, v in enumerate(y)}  # pylint: disable=unnecessary-comprehension
             return ret
 
     x = Tensor(np.random.randn(3, 2, 3), dtype=mindspore.float32)
@@ -779,13 +752,10 @@ def test_dict_build_from_tensor_dynamic_rank_raises():
     """
 
     class DictNet(nn.Cell):
-        def __init__(self):
-            super().__init__()
-
         @jit
         def construct(self, x):
             y = list(x.shape)
-            ret = {index: v for index, v in enumerate(y)}
+            ret = {index: v for index, v in enumerate(y)}  # pylint: disable=unnecessary-comprehension
             return ret
 
     x = Tensor(np.random.randn(3, 2, 3), dtype=mindspore.float32)
@@ -807,9 +777,6 @@ def test_dict_control_flow_with_comprehension():
     """
 
     class InnerNet(nn.Cell):
-        def __init__(self):
-            super().__init__()
-
         def construct(self, x, y):
             return [x, y]
 
@@ -823,10 +790,10 @@ def test_dict_control_flow_with_comprehension():
             x = [1, 2, 3]
             y = [4, 5, 6]
             if z >= 0:
-                ret = {k: v for k, v in zip(x, y)}
+                ret = {k: v for k, v in zip(x, y)}  # pylint: disable=unnecessary-comprehension
             else:
                 d = [[i, sum(self.obj(x, y)[i])] for i in range(2)]
-                ret = {k: v for k, v in d}
+                ret = {k: v for k, v in d}  # pylint: disable=unnecessary-comprehension
             return ret
 
     ms_net = DictNet()

@@ -548,6 +548,7 @@ def test_list_minus_index_in_construct_multiple_types():
 
         @jit
         def construct(self):
+            # pylint: disable=unsupported-assignment-operation
             list_x = [1, [2, 2], [[4, 4, 4], [[5, 5, 5]]]]
             list_x[-3] = self.input_1
             list_x[-2][-1] = self.input_2

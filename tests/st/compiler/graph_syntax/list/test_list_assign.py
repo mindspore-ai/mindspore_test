@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+"""Test list assignment"""
 import pytest
 from mindspore.nn import Cell
 
@@ -99,6 +100,7 @@ def test_graph_list_slice_assign_extended_number():
     context.set_context(mode=context.GRAPH_MODE)
     with pytest.raises(TypeError) as err:
         net(a, b, 0, None, 2)
+    # pylint: disable=condition-evals-to-constant
     assert "None object is not iterable" or \
            "must assign iterable to extended slice" in str(err.value)
 
@@ -121,6 +123,7 @@ def test_graph_list_slice_assign_number():
     context.set_context(mode=context.GRAPH_MODE)
     with pytest.raises(TypeError) as err:
         net(a, b, 0, None, 1)
+    # pylint: disable=condition-evals-to-constant
     assert "None object is not iterable" or \
            "can only assign an iterable" in str(err.value)
 
@@ -535,7 +538,7 @@ def test_variable_list_assign_tensor_with_list():
     """
     class Net(Cell):
         def __init__(self, b, start=None, end=None, step=None):
-            super(Net, self).__init__()
+            super().__init__()
             self.b = b
             self.start = start
             self.end = end
@@ -888,6 +891,7 @@ def test_list_assign_number_or_variable_list():
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_nested_list_element_assignment():
+    # pylint: disable=line-too-long
     """
     Feature: List slice assignment.
     Description: Test list slice assignment on nested list element.
@@ -901,6 +905,7 @@ def test_nested_list_element_assignment():
             b[index[1]] = c
             return a
 
+    # pylint: disable=redefined-outer-name
     class Net2(Cell):
         @jit
         def construct(self, a, c, index, start, end, step):

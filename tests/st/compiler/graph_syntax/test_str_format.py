@@ -59,7 +59,7 @@ def test_str_format_base_add_sub():
 
     class Innernet(Cell):
         def __init__(self, weight):
-            super(Innernet, self).__init__()
+            super().__init__()
             weight_np = np.random.randn(*weight).astype(np.float32)
             self.weight = Parameter(Tensor(weight_np), name="Mul_weight")
             self.mul = P.Mul()
@@ -70,7 +70,7 @@ def test_str_format_base_add_sub():
 
     class Formatnet(Cell):
         def __init__(self, weight):
-            super(Formatnet, self).__init__()
+            super().__init__()
             self.net = Innernet(weight)
 
         @jit
@@ -180,7 +180,7 @@ def test_str_format_base_init_int():
 
     class Formatnet(Cell):
         def __init__(self, x):
-            super(Formatnet, self).__init__()
+            super().__init__()
             self.x = x
 
         @jit
@@ -289,7 +289,8 @@ def test_str_format_input():
 def test_str_format_int_float():
     """
     Feature: str.format() method with numeric formatting.
-    Description: Test str.format() with int and float number formatting including precision, percentage, and scientific notation.
+    Description: Test str.format() with int and float number formatting
+    including precision, percentage, and scientific notation.
     Expectation: The formatted string list matches expected values.
     Migrated from: test_str_format.py::test_str_format_int_float
     """

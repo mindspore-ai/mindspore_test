@@ -68,7 +68,7 @@ def test_train_with_param_in_different_ways():
 
     class ParamNet(nn.Cell):
         def __init__(self):
-            super(ParamNet, self).__init__()
+            super().__init__()
             self.param = ms.Parameter(Tensor(2, ms.float32), name="myname")
 
         @ms.jit

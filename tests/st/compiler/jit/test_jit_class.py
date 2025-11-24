@@ -42,7 +42,7 @@ def test_jit_class_with_jit_decorator():
 
     class Net(nn.Cell):
         def __init__(self):
-            super(Net, self).__init__()
+            super().__init__()
             self.inner_net = InnerNet()
 
         @jit

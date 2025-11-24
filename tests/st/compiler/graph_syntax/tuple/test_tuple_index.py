@@ -17,7 +17,7 @@
 import pytest
 import numpy as np
 import mindspore as ms
-import mindspore.nn as nn
+from mindspore import nn
 from mindspore import Tensor, jit, context
 from mindspore.ops import operations as ops
 from mindspore.common.api import _pynative_executor
@@ -164,7 +164,8 @@ def test_tuple_minus_index_in_construct_with_control_flow():
 def test_tuple_minus_index_from_construct_input_with_control_flow():
     """
     Feature: Tuple negative index from construct input with control flow.
-    Description: Tuple passed from construct input, negative index (single/multi-layer, int/slice) with control flow and non-tensor input.
+    Description: Tuple passed from construct input, negative index (single/multi-layer, int/slice)
+    with control flow and non-tensor input.
     Expectation: JIT result matches pynative result.
     Migrated from: test_parser_tuple_index.py::test_parser_tuple_minus_index_003
     """
@@ -419,7 +420,8 @@ def test_tuple_minus_index_from_custom_cell_output():
 def test_tuple_minus_index_slice_from_custom_cell_output_with_control_flow():
     """
     Feature: Tuple negative index slice from custom cell output with control flow.
-    Description: Custom cell returns tensor and bool forming a tuple, negative index (slice) on the tuple with control flow.
+    Description: Custom cell returns tensor and bool forming a tuple, negative
+    index (slice) on the tuple with control flow.
     Expectation: JIT result matches pynative result.
     Migrated from: test_parser_tuple_index.py::test_parser_tuple_minus_index_008
     """
@@ -575,7 +577,8 @@ def test_tuple_minus_index_slice_from_split_output():
 def test_tuple_minus_index_from_batchnorm_split_with_control_flow():
     """
     Feature: Tuple negative index from BatchNorm and Split with control flow.
-    Description: BatchNorm and Split multi-output operators return tuples, negative index (int/slice) on tuples with control flow.
+    Description: BatchNorm and Split multi-output operators return tuples,
+    negative index (int/slice) on tuples with control flow.
     Expectation: JIT result matches pynative result.
     Migrated from: test_parser_tuple_index.py::test_parser_tuple_minus_index_011
     """

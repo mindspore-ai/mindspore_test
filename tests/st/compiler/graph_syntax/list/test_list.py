@@ -22,7 +22,7 @@ from mindspore.nn import Cell, ReLU
 from mindspore.ops import operations as P
 from mindspore.train.model import Model
 from tests.mark_utils import arg_mark
-from tests.st.compiler.utils import assert_equal, allclose_nparray
+from tests.st.compiler.utils import assert_equal
 from tests.st.pi_jit.share.grad import compute_grad_of_net_inputs
 
 
@@ -264,9 +264,6 @@ def test_list_get_0002():
 
 
 class NetGet0003(Cell):
-    def __init__(self):
-        super().__init__()
-
     @jit
     def construct(self):
         l = [1, [20, 30], 3, 4, 5, 6]
@@ -371,7 +368,8 @@ class NetGet0006(Cell):
 def test_list_get_0006():
     """
     Feature: List element access with mixed type comparison.
-    Description: Test accessing list element that contains a nested list with mixed types (string, int, float) and comparing it.
+    Description: Test accessing list element that contains a nested list with
+    mixed types (string, int, float) and comparing it.
     Expectation: JIT result and gradient match pynative result.
     Migrated from: test_parser_list.py::test_parser_list_get_0006
     """
@@ -507,7 +505,8 @@ def test_list_get_0009():
 def test_list_get_0010():
     """
     Feature: Nested list element access with mixed tensor types.
-    Description: Test accessing nested list element where list contains mixed tensor types (float32 and int32) appended at runtime.
+    Description: Test accessing nested list element where list contains mixed
+    tensor types (float32 and int32) appended at runtime.
     Expectation: The network executes successfully.
     Migrated from: test_parser_list.py::test_parser_list_get_0010
     """
@@ -3583,9 +3582,6 @@ def test_list_assign_0002():
 
 
 class NetAssign0003(Cell):
-    def __init__(self):
-        super().__init__()
-
     @jit
     def construct(self):
         l = [1, 2, 3]
