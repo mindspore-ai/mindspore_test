@@ -156,9 +156,8 @@ class DvmSupportChecker {
                                  return Callback::Instance()->GetInputType(node, 0) != kNumberTypeInt32;
                                }};
     // select op
-    check_func_["Select"] = {DvmSupportChecker::DvmSelectSupported, [](const AnfNodePtr &node) {
-                               return InputCheck(node, {2, 3});
-                             }};
+    check_func_["Select"] = {DvmSupportChecker::DvmSelectSupported,
+                             [](const AnfNodePtr &node) { return InputCheck(node, {2, 3}); }};
     // int op
     check_func_["Add"] = {int_op_check, input_check_all};
     check_func_["Sub"] = {int_op_check, input_check_all};
@@ -294,8 +293,13 @@ class DvmSupportChecker {
     }
     auto cnode = node->cast<CNodePtr>();
     MS_EXCEPTION_IF_NULL(cnode);
-    auto a_shape = GetShape(cnode->input(kIndex1));
-    auto b_shape = GetShape(cnode->input(kIndex2));
+    auto a_node = cnode->input(kIndex1);
+    auto b_node = cnode->input(kIndex2);
+    if (a_node == b_node) {
+      return false;
+    }
+    auto a_shape = GetShape(a_node);
+    auto b_shape = GetShape(b_node);
     auto c_shape = GetShape(node);
     if (a_shape.back() > kMaxDimSize || b_shape.back() > kMaxDimSize) {
       return false;
