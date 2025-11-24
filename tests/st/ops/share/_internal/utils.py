@@ -75,7 +75,7 @@ class OpSampleInput:
                 return _transform_to(x.__ms_origin_object__)
             elif isinstance(x, ms.Tensor):
                 return _transform_to(x)
-            elif x in ms.dtype.number_type:
+            elif x in ms.dtype.all_types:
                 return _transform_to(x)
             elif isinstance(x, list):
                 return list(map(_transform, x))
@@ -143,7 +143,7 @@ class OpSampleInput:
         def _copy(x):
             if isinstance(x, ms.Tensor):
                 return x.copy()
-            elif x in ms.dtype.number_type:
+            elif x in ms.dtype.all_types:
                 return x
             elif isinstance(x, list):
                 return list(map(_copy, x))
@@ -160,7 +160,7 @@ class OpSampleInput:
         def _asnumpy(x):
             if isinstance(x, ms.Tensor):
                 return ms_asnumpy(x).copy()
-            elif x in ms.dtype.number_type:
+            elif x in ms.dtype.all_types:
                 return _dtype_to_nptype(x)
 
             return x
@@ -205,7 +205,7 @@ class OpSampleInput:
                                     convert_half_to_float=convert_half_to_float,
                                     convert_extra_uint=convert_extra_uint)
                 return torch.tensor(np_arr, dtype=torch.bfloat16) if x.dtype == ms.bfloat16 else torch.tensor(np_arr)
-            elif x in ms.dtype.number_type:
+            elif x in ms.dtype.all_types:
                 return _dtype_to_torch_dtype(x)
 
             return x

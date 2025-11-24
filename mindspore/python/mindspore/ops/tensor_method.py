@@ -13,7 +13,8 @@
 # limitations under the License.
 # ============================================================================
 """Tensor method for overload."""
-
+# pylint: disable=C0413
+# pylint: disable=W1309
 from mindspore import _checkparam as validator
 from mindspore import log as logger
 from mindspore import ops
@@ -292,7 +293,7 @@ from mindspore.ops.auto_generate import UniqueDim, Unique2
 
 # 120 view
 def tensor_view_dtype(input, dtype):
-    raise NotImplementedError("Currently not support.")
+    raise NotImplementedError("Currently not supported.")
 
 # 121 contiguous
 

@@ -134,7 +134,7 @@ def test_binary_op_dynamic_backward(mode, op_info):
           level_mark='level1',
           card_mark='onecard',
           essential_mark='essential')
-@pytest.mark.parametrize("mode", ['kbk'])
+@pytest.mark.parametrize("mode", ['pynative', 'kbk'])
 @pytest.mark.parametrize("op_info", ['mint.add', 'mint.sub'])
 def test_binary_op_error(mode, op_info):
     '''

@@ -2863,6 +2863,8 @@ def tensor_max_ms(op_input, *op_args, **op_kwargs):
 def tensor_max_torch(op_input, *op_args, **op_kwargs):
     return op_input.max(*op_args, **op_kwargs)
 
+def tensor_view_dtype_ms(op_input, dtype):
+    return op_input.view(dtype)
 
 def basic_sample_inputs_reduction_count_nonzero(op_info, dtype, device=None, **kwargs):
     """count_nonzero does not have keepdim parameter"""
@@ -6276,6 +6278,17 @@ op_db: Dict[str, OpInfo] = {
         op_dynamic_inputs_func=None,
         op_error_inputs_func=None,
         is_differentiable=True,
+    ),
+    'Tensor.view(dtype)': OpInfo(
+        name='Tensor.view(dtype)',
+        op=tensor_view_dtype_ms,
+        ref=lambda op_input, *op_args, **op_kwargs: op_input.view(op_args[0]),
+        dtypes_ascend=tuple(d for d in dtypes_as_torch if d != ms.bfloat16),
+        dtypes_ascend910b=dtypes_as_torch,
+        dtypes_cpu=dtypes_as_torch,
+        dtypes_gpu=(),
+        default_golden_loss_func=lambda dtype: 0,
+        convert_half_to_float=False,
     ),
     'mint.nn.functional.selu': UnaryOpInfo(
         name='mint.nn.functional.selu',
