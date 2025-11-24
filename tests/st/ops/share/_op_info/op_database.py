@@ -565,6 +565,36 @@ def sample_inputs_matmul(op_info, dtype, device, is_rmatmul=False, **kwargs):
         else:
             yield OpSampleInput(rhs, op_args=(lhs,), sample_name=op_info.name)
 
+def sample_inputs_batchnorm1d(op_info, dtype, device, **kwargs):
+    make_func = functools.partial(make_tensor, device=device, dtype=dtype)
+    input_shape = (5, 9)
+
+    yield OpSampleInput(
+        make_func(input_shape),
+        op_args=(),
+        sample_name=op_info.name,
+    )
+
+def sample_inputs_batchnorm2d(op_info, dtype, device, **kwargs):
+    make_func = functools.partial(make_tensor, device=device, dtype=dtype)
+    input_shape = (8, 3, 5, 4)
+
+    yield OpSampleInput(
+        make_func(input_shape),
+        op_args=(),
+        sample_name=op_info.name,
+    )
+
+def sample_inputs_batchnorm3d(op_info, dtype, device, **kwargs):
+    make_func = functools.partial(make_tensor, device=device, dtype=dtype)
+    input_shape = (8, 3, 4, 8, 5)
+
+    yield OpSampleInput(
+        make_func(input_shape),
+        op_args=(),
+        sample_name=op_info.name,
+    )
+
 def sample_inputs_batch_norm(op_info, dtype, device, **kwargs):
     S = SMALL_DIM_SIZE
 
@@ -1250,6 +1280,50 @@ def empty_like_ms(op_input):
 
 def empty_like_torch(op_input):
     return torch.empty_like(op_input).shape
+
+# wrap nn method for batchnorm1d
+def nn_batchnorm1d_ms(op_input):
+    op = mint.nn.BatchNorm1d(
+        num_features=9, eps=2.0, momentum=-2.0, affine=True, track_running_stats=False, dtype=ms.float32
+    )
+    op.set_train()
+    return op(op_input)
+
+def nn_batchnorm1d_torch(op_input):
+    return torch.nn.BatchNorm1d(
+        num_features=9, eps=2.0, momentum=-2.0, affine=True, track_running_stats=False, dtype=torch.float32
+    )(op_input)
+
+# wrap nn method for batchnorm2d
+def nn_batchnorm2d_ms(op_input):
+    op = mint.nn.BatchNorm2d(
+        num_features=3, eps=565.73012560178, momentum=-2.0, affine=False, track_running_stats=True, dtype=ms.float32
+    )
+    op.set_train()
+    return op(op_input)
+
+def nn_batchnorm2d_torch(op_input):
+    return torch.nn.BatchNorm2d(
+        num_features=3, eps=565.73012560178, momentum=-2.0, affine=False, track_running_stats=True, dtype=torch.float32
+    )(op_input)
+
+# wrap nn method for batchnorm3d
+def nn_batchnorm3d_ms(op_input):
+    op = mint.nn.BatchNorm3d(
+        num_features=3, eps=121.30250066286163, momentum=-2.0, affine=False, track_running_stats=True, dtype=ms.float32
+    )
+    op.set_train()
+    return op(op_input)
+
+def nn_batchnorm3d_torch(op_input):
+    return torch.nn.BatchNorm3d(
+        num_features=3,
+        eps=121.30250066286163,
+        momentum=-2.0,
+        affine=False,
+        track_running_stats=True,
+        dtype=torch.float32,
+    )(op_input)
 
 # wrap nn method for gelu
 def nn_gelu_ms(op_input):
@@ -2554,6 +2628,42 @@ op_db: Dict[str, OpInfo] = {
         dtypes_cpu=(),
         dtypes_gpu=(),
         op_basic_reference_inputs_func=sample_inputs_matmul,
+        op_extra_reference_inputs_func=None,
+        op_dynamic_inputs_func=None,
+    ),
+    'mint.nn.BatchNorm1d': OpInfo(
+        name='mint.nn.BatchNorm1d',
+        op=nn_batchnorm1d_ms,
+        ref=nn_batchnorm1d_torch,
+        dtypes_ascend=(ms.float32,),
+        dtypes_ascend910b=(ms.float32,),
+        dtypes_cpu=(),
+        dtypes_gpu=(),
+        op_basic_reference_inputs_func=sample_inputs_batchnorm1d,
+        op_extra_reference_inputs_func=None,
+        op_dynamic_inputs_func=None,
+    ),
+    'mint.nn.BatchNorm2d': OpInfo(
+        name='mint.nn.BatchNorm2d',
+        op=nn_batchnorm2d_ms,
+        ref=nn_batchnorm2d_torch,
+        dtypes_ascend=(ms.float32,),
+        dtypes_ascend910b=(ms.float32,),
+        dtypes_cpu=(),
+        dtypes_gpu=(),
+        op_basic_reference_inputs_func=sample_inputs_batchnorm2d,
+        op_extra_reference_inputs_func=None,
+        op_dynamic_inputs_func=None,
+    ),
+    'mint.nn.BatchNorm3d': OpInfo(
+        name='mint.nn.BatchNorm3d',
+        op=nn_batchnorm3d_ms,
+        ref=nn_batchnorm3d_torch,
+        dtypes_ascend=(ms.float32,),
+        dtypes_ascend910b=(ms.float32,),
+        dtypes_cpu=(),
+        dtypes_gpu=(),
+        op_basic_reference_inputs_func=sample_inputs_batchnorm3d,
         op_extra_reference_inputs_func=None,
         op_dynamic_inputs_func=None,
     ),
@@ -3998,6 +4108,9 @@ other_op_db = [
     'Tensor.matmul',
     'mint.broadcast_to',
     'mint.matmul',
+    'mint.nn.BatchNorm1d',
+    'mint.nn.BatchNorm2d',
+    'mint.nn.BatchNorm3d',
     'mint.nn.functional.batch_norm',
     'mint.nn.functional.binary_cross_entropy',
     'mint.nn.functional.binary_cross_entropy_with_logits',
