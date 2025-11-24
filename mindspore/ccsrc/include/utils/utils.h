@@ -37,7 +37,7 @@
 #include "ir/dtype/type_id.h"
 #include "utils/log_adapter.h"
 
-#if !defined(_WIN32) && !defined(_WIN64)
+#if !defined(_WIN32) && !defined(_WIN64) && !defined(__APPLE__) && !defined(ENABLE_ANDROID)
 #include "tools/profiler/mstx/mstx_impl.h"
 #endif
 
@@ -405,7 +405,7 @@ static inline double GetCurrentUSec() {
   return static_cast<double>(tv_usec);
 }
 
-#if !defined(_WIN32) && !defined(_WIN64)
+#if !defined(_WIN32) && !defined(_WIN64) && !defined(__APPLE__) && !defined(ENABLE_ANDROID)
 #define PROF_START(stage)                                                                                   \
   uint64_t mstx_range_id_##stage = 0;                                                                       \
   double start_usec_##stage = mindspore::GetCurrentUSec();                                                  \

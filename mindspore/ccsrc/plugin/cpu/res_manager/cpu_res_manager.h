@@ -50,7 +50,7 @@ class CPUResManager : public DeviceResManager {
                  bool keep_src, const DeviceAddressExtPtr &src_ext = nullptr,
                  const DeviceAddressExtPtr &dst_ext = nullptr) const override;
   bool Copy(void *dst, const void *src, uint64_t size, CopyType kind, size_t stream_id) const override;
-  bool CopyDirectly(void *dst, uint64_t size, const void *src, size_t stream_id, CopyType kind) const override;
+  bool CopyDirectly(void *dst, size_t size, const void *src, size_t stream_id, CopyType kind) const override;
 
   std::pair<std::vector<size_t>, std::vector<size_t>> AllocDeviceMemoryForTensorList(
     const std::vector<tensor::TensorPtr> &tensor_list, bool enable_mem_align) override;
