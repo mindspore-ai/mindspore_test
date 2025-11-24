@@ -18,7 +18,7 @@ mindspore.jit
         - **capture_mode** (str, 可选) - 创建一张可调用的MindSpore图的方式，可选值有 ``"ast"`` 、 ``"bytecode"`` 和 ``"trace"`` 。默认值： ``"ast"``。
 
           - ast：解析Python的ast以构建静态图。
-          - bytecode：在运行时解析Python字节码以构建静态图。这是一个实验特性，可能会被更改或者删除。
+          - bytecode：在运行时解析Python字节码以构建静态图。这是一个实验特性，可能会被更改或者删除。暂不支持 Python 3.12 及更高版本。
           - trace：追踪Python代码的执行以构建静态图。这是一个实验特性，可能会被更改或者删除。
 
         - **jit_level** (str, 可选) - 控制编译优化的级别。目前仅在使用ms_backend后端时生效。可选值有 ``"O0"`` 和 ``"O1"`` 。默认值： ``"O0"``。
