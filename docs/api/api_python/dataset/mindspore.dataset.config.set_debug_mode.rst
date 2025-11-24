@@ -23,7 +23,7 @@ mindspore.dataset.config.set_debug_mode
 
     参数：
         - **debug_mode_flag** (bool) - 是否开启数据集管道调试模式。该模式会强制数据集管道以单线程同步的方式运行。
-        - **debug_hook_list** (list[:class:`~.dataset.debug.DebugHook`]) - 调试钩子列表，用于启用调试模式时插入到 `map` 操作中各个变换操作的前后。
+        - **debug_hook_list** (list[:class:`~.dataset.debug.DebugHook`], 可选) - 调试钩子列表，用于启用调试模式时插入到 `map` 操作中各个变换操作的前后。
           默认值： ``None`` ，仅插入基础的信息打印钩子，用于打印各个变换操作输入/输出数据的形状/大小/类型信息。
 
     异常：

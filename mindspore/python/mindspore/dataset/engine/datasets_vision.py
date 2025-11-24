@@ -1456,7 +1456,7 @@ class FakeImageDataset(MappableDataset, VisionBaseDataset):
 
     Args:
         num_images (int, optional): Number of images to generate in the dataset. Default: ``1000``.
-        image_size (tuple, optional):  Size of the fake image. Default: ``(224, 224, 3)``.
+        image_size (tuple, optional): Size of the fake image. Default: ``(224, 224, 3)``.
         num_classes (int, optional): Number of classes in the dataset. Default: ``10``.
         base_seed (int, optional): Offsets the index-based random seed used to generate each image.
             Default: ``0``.
@@ -1856,7 +1856,7 @@ class _Flowers102Dataset:
 
 class Flowers102Dataset(GeneratorDataset):
     """
-    Oxfird 102 Flower dataset.
+    Oxford 102 Flower dataset.
 
     According to the given `task` configuration, the generated dataset has different output columns:
     - `task` = 'Classification', output columns: `[image, dtype=uint8]` , `[label, dtype=uint32]` .
@@ -1925,7 +1925,7 @@ class Flowers102Dataset(GeneratorDataset):
     .. code-block::
 
         .
-        └── flowes102_dataset_dir
+        └── flowers102_dataset_dir
              ├── imagelabels.mat
              ├── setid.mat
              ├── jpg
@@ -2053,8 +2053,8 @@ class Food101Dataset(MappableDataset, VisionBaseDataset):
           <https://www.mindspore.cn/docs/en/master/api_python/samples/dataset/dataset_gallery.html>`_
 
     Note:
-        - The parameters `num_samples` , `shuffle` , `num_shards` , `shard_id` can be used to control the sampler
-          used in the dataset, and their effects when combined with parameter `sampler` are as follows.
+        The parameters `num_samples` , `shuffle` , `num_shards` , `shard_id` can be used to control the sampler
+        used in the dataset, and their effects when combined with parameter `sampler` are as follows.
 
     .. include:: mindspore.dataset.sampler.txt
 

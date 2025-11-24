@@ -504,7 +504,7 @@ class CoNLL2000Dataset(SourceDataset, TextBaseDataset):
         usage (str, optional): Usage of dataset, can be ``'train'`` , ``'test'`` , or ``'all'`` .
             For dataset, ``'train'`` will read from 8,936 train samples,
             ``'test'`` will read from 2,012 test samples,
-            ``'all'`` will read from all 1,0948 samples. Default: ``None`` , read all samples.
+            ``'all'`` will read from all 10,948 samples. Default: ``None`` , read all samples.
         num_samples (int, optional): Number of samples (rows) to be read. Default: ``None`` ,
             read the full dataset.
         shuffle (Union[bool, Shuffle], optional): Perform reshuffling of the data every epoch.
