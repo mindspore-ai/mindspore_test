@@ -359,6 +359,11 @@ class OpsFactory():
             if self._inplace_op:
                 sample_input = sample_input.copy()
             op_input, op_args, op_kwargs = sample_input.op_input, sample_input.op_args, sample_input.op_kwargs
+            if isinstance(op_input, ms.Tensor) and not op_input.dtype.is_complex:
+                op_input = op_input.copy()
+            op_args = [op_arg.copy() if isinstance(op_arg, ms.Tensor) and not op_arg.dtype.is_complex else op_arg \
+                       for op_arg in op_args]
+
             if self._context_mode == 'pynative':
                 outi = self.op(op_input, *op_args, **op_kwargs)
             else:
