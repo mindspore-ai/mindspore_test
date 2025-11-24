@@ -2374,12 +2374,6 @@ FuncGraphPtr MSANFModelParser::Parse(const mind_ir::ModelProto &model_proto,
     return nullptr;
   }
 
-  if (!weights.empty()) {
-    if (!SetValueForTopGraphParameter(dstGraph, weights)) {
-      MS_LOG(ERROR) << "Set value for top graph fail.";
-      return nullptr;
-    }
-  }
   bool generated_from_mindir_with_prim_func = CheckMindIRVseriosn(model_proto);
   dstGraph->set_flag("generated_from_mindir_with_prim_func", generated_from_mindir_with_prim_func);
   MS_LOG(DEBUG) << "Parse pb to build FuncGraph Success! graph: " << graphBuild.name() << ": " << dstGraph.get();
@@ -2395,6 +2389,10 @@ FuncGraphPtr MSANFModelParser::Parse(const mind_ir::ModelProto &model_proto,
     MS_LOG(DEBUG) << "Parse pb to build FuncGraph Success! graph: " << graph_proto.name() << ": " << graph.get();
   }
   TrytoBuildCNodeAbstract();
+  if (!weights.empty() && !SetValueForTopGraphParameter(dstGraph, weights)) {
+    MS_LOG(ERROR) << "Set value for top graph fail.";
+    return nullptr;
+  }
   if (name_to_node) {
     *name_to_node = anfnode_build_map_;
   }

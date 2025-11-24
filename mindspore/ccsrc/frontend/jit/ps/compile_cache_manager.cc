@@ -125,8 +125,8 @@ std::string GetCompileCachePath(const std::string &id_extension, size_t idx) {
   return oss.str();
 }
 
-std::string GetBackendCompileCachePathWithoutExtension(size_t idx) {
-  return GetGraphCacheDir() + "/" + GetRole() + kBackendCompileCacheFileName + "_" + std::to_string(idx);
+std::string GetBackendCompileCachePathWithoutExtension(const std::string &id_extension, size_t idx) {
+  return GetGraphCacheDir() + "/" + GetRole() + kBackendCompileCacheFileName + "_" + std::to_string(idx) + id_extension;
 }
 
 std::string GetDepFilesHashPath() {
@@ -202,7 +202,7 @@ std::pair<FuncGraphPtr, LayoutMap> LoadFuncGraphFromMindIR(const py::dict &weigh
   auto &context = CompileCacheContext::GetInstance();
   context.SetFrontNameToFrontNode(name_to_node);
   context.SetFrontGraph(fg);
-  context.InsertBackendGraphCachePath(fg, GetBackendCompileCachePathWithoutExtension(idx));
+  context.InsertBackendGraphCachePath(fg, GetBackendCompileCachePathWithoutExtension(id_extension, idx));
 
   if (ms_context->CellReuseLevel() != CellReuseLevel::kNoCellReuse) {
     MS_LOG(INFO) << "Cell reuse(@lazy_inline) actually takes effect.";
@@ -231,7 +231,7 @@ bool ExportFuncGraphToMindIR(const FuncGraphPtr &fg, const FuncGraphPtr &layout_
 #endif
   auto &context = CompileCacheContext::GetInstance();
   context.SetFrontGraph(fg);
-  context.InsertBackendGraphCachePath(fg, GetBackendCompileCachePathWithoutExtension(idx));
+  context.InsertBackendGraphCachePath(fg, GetBackendCompileCachePathWithoutExtension(id_extension, idx));
 #if defined(__linux__) && defined(WITH_BACKEND)
   // compile cache does not support host collective or graph kernel.
   auto ms_context = MsContext::GetInstance();

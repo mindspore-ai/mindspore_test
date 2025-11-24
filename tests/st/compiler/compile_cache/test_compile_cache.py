@@ -480,3 +480,15 @@ def test_compile_cache_high_grad_jit():
     """
     run_twice_with_same_network("run_high_grad_jit.py", "./compile_cache_high_grad_jit",
                                 "compile_cache_high_grad_jit_first.txt", "compile_cache_high_grad_jit_second.txt")
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_compile_cache_jit_with_weight():
+    """
+    Feature: Compile cache.
+    Description: Test compile cache with grad jit on net with weight.
+    Expectation: success.
+    """
+    run_twice_with_same_network("run_jit_net_with_weight.py", "./compile_cache_jit_net_with_weight",
+                                "compile_cache_jit_net_with_weight_first.txt",
+                                "compile_cache_jit_net_with_weight_second.txt")

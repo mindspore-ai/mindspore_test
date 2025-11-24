@@ -53,14 +53,29 @@ void CacheFuncGraph(const ResourcePtr &resource) {
   }
 }
 
+void PostPassProcess(const ResourcePtr &resource, const std::string &current_pass) {
+  static const std::string last_compile_action = kValidate;
+  const std::string last_compile_action_for_compile_cache = kBackendPass;
+  static const std::string jit_grad_last_compile_action = kGetJitBpropGraph;
+  bool is_jit_grad = pynative::GradState::Get().RequiresGrad();
+  bool jit_grad_cache_check = (current_pass == jit_grad_last_compile_action && is_jit_grad && !resource->is_load());
+  bool forward_cache_check = (current_pass == last_compile_action_for_compile_cache && !is_jit_grad);
+  if (current_pass == kTaskEmit) {
+    SetLoopCount(resource);
+  } else if (current_pass == last_compile_action) {
+    CheckInterpretNodeLineInfos();
+    ResetId(resource);
+  } else if (current_pass == kAutoMonadReorder) {
+    resource->set_optimize_graph(resource->func_graph());
+  } else if (jit_grad_cache_check || forward_cache_check) {
+    CacheFuncGraph(resource);
+  }
+}
+
 void Optimize(const ResourcePtr &resource, const std::vector<PassItem> &passes) {
   MS_EXCEPTION_IF_NULL(resource);
   bool already_print_profile = false;
   ProfileExecute(MsProfile::GetProfile(), [&resource, &passes, &already_print_profile]() {
-    static const std::string last_compile_action = kValidate;
-    const std::string last_compile_action_for_compile_cache = kBackendPass;
-    static const std::string jit_grad_last_compile_action = kGetJitBpropGraph;
-    bool is_jit_grad = pynative::GradState::Get().RequiresGrad();
     static const auto compile_profile_finish_action = common::GetCompileConfig("COMPILE_PROFILE_FINISH_ACTION");
     size_t counter = 0;
     for (auto &pass : passes) {
@@ -96,19 +111,7 @@ void Optimize(const ResourcePtr &resource, const std::vector<PassItem> &passes) 
       };
       ProfileExecute(profile_context, pass_func);
       ProcessStatus::GetInstance().RecordEnd();
-      if (pass.first == jit_grad_last_compile_action && is_jit_grad) {
-        CacheFuncGraph(resource);
-      } else if (pass.first == last_compile_action_for_compile_cache && !is_jit_grad) {
-        CacheFuncGraph(resource);
-      }
-      if (pass.first == kTaskEmit) {
-        SetLoopCount(resource);
-      } else if (pass.first == last_compile_action) {
-        CheckInterpretNodeLineInfos();
-        ResetId(resource);
-      } else if (pass.first == kAutoMonadReorder) {
-        resource->set_optimize_graph(resource->func_graph());
-      }
+      PostPassProcess(resource, pass.first);
 
       if (EnabledProfile() && compile_profile_finish_action == pass.first) {
         ProfileExecuteBreak(MsProfile::GetProfile());
