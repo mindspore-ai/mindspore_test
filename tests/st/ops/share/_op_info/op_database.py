@@ -1385,6 +1385,12 @@ def nn_tanh_ms(op_input):
 def nn_tanh_torch(op_input):
     return torch.nn.Tanh()(op_input)
 
+def tensor_expand_as_ms(op_input, other):
+    return op_input.expand_as(other)
+
+def tensor_expand_as_torch(op_input, other):
+    return op_input.expand_as(other)
+
 # sample inputs functions for chunk
 def basic_sample_inputs_mint_chunk(op_info: OpInfo, dtype=None, device=None, **kwargs):
     '''
@@ -2664,6 +2670,179 @@ def extra_sample_inputs_mint_reshape(op_info: OpInfo, dtype=None, device=None, *
         yield OpSampleInput(
             op_input=make_arg(a),
             op_args=(b,),
+            op_kwargs={},
+            sample_name=op_info.name,
+        )
+
+def basic_sample_inputs_mint_pad(op_info: OpInfo, dtype=None, device=None, mode=None, **kwargs):
+    assert mode in ('constant', 'reflect', 'replicate', 'circular')
+    if mode in ['reflect', 'replicate']:
+        cases: tuple = (  # ignore
+            ((1, 3), (1, 2)),
+            ((1, 3), (0, 1)),
+            ((0, 3, 3), (1, 2)),
+            ((0, 3, 3), (0, 1)),
+            ((1, 3, 3), (1, 2)),
+            ((1, 3, 3), (0, 1)),
+            ((1, 3, 3), (0, 2, 0, 1)),
+            ((0, 3, 3, 3), (0, 2, 0, 1)),
+            ((3, 3, 5, 5), (0, 2, 0, 1)),
+            ((3, 3, 5, 5), (1, 1, 1, 1, 1, 1)),
+            ((1, 3, 3, 3, 3), (1, 1, 1, 1, 1, 1)),
+            # ((1, 3, 4, 4), (-1, 1, -2, 1)),
+        )
+    elif mode == 'constant':
+        cases = (
+            ((1, 3), (1, 2)),
+            ((1, 3), (0, 1)),
+            ((1, 3), (0, 2, 0, 1)),
+            ((5, 4), (-1, -2, 1, 1)),
+            ((0, 3, 3), (1, 2)),
+            ((0, 3, 3), (0, 1)),
+            ((0, 3, 3), (0, 2, 0, 1)),
+            ((0, 3, 3), (1, 1, 1, 1, 1, 1)),
+            ((1, 3, 3), (1, 2)),
+            ((1, 3, 3), (0, 1)),
+            ((1, 3, 3), (0, 2, 0, 1)),
+            ((1, 3, 3), (1, 1, 1, 1, 1, 1)),
+            ((0, 3, 3, 3), (1, 2)),
+            ((0, 3, 3, 3), (0, 1)),
+            ((0, 3, 3, 3), (0, 2, 0, 1)),
+            ((0, 3, 3, 3), (1, 1, 1, 1, 1, 1)),
+            ((3, 3, 5, 5), (1, 2)),
+            ((3, 3, 5, 5), (0, 1)),
+            ((3, 3, 5, 5), (0, 2, 0, 1)),
+            ((3, 3, 5, 5), (1, 1, 1, 1, 1, 1)),
+            ((1, 3, 3, 3, 3), (1, 2)),
+            ((1, 3, 3, 3, 3), (0, 1)),
+            ((1, 3, 3, 3, 3), (0, 2, 0, 1)),
+            ((1, 3, 3, 3, 3), (1, 1, 1, 1, 1, 1)),
+            ((1, 3, 4, 4), (-1, 1, -2, 1)),
+        )
+    else:  # mode == 'circular'
+        if dtype == ms.bool_:
+            cases = (
+                ((2, 3, 3), (1, 2)),
+                ((1, 3, 3), (1, 2)),
+            )
+        else:
+            cases = (
+                ((1, 3, 3), (1, 2)),
+                ((1, 3, 3), (0, 1)),
+                ((1, 3, 3), (1, 2)),
+                ((1, 3, 3), (0, 1)),
+                ((1, 3, 3, 3), (0, 2, 0, 1)),
+                ((3, 3, 5, 5), (0, 2, 0, 1)),
+                ((1, 3, 3, 3, 3), (1, 1, 1, 1, 1, 1)),
+                # ((1, 3, 4, 4), (-1, 1, -2, 1)),
+            )
+
+    make_inp = functools.partial(make_tensor, device=device, dtype=dtype)
+
+    if mode == 'constant':
+        # Default args
+        yield OpSampleInput(
+            op_input=make_inp((1, 3, 3)),
+            op_args=((2, 2),),
+            op_kwargs={},
+            sample_name=op_info.name,
+        )
+
+    if mode in ['reflect', 'replicate', 'circular']:
+        for shape, pad in cases:
+            yield OpSampleInput(
+                op_input=make_inp(shape),
+                op_args=(pad, mode),
+                op_kwargs={},
+                sample_name=op_info.name,
+            )
+    else:  # mode == 'constant'
+        for pad_value in (1., 2.):
+            for shape, pad in cases:
+                yield OpSampleInput(
+                    op_input=make_inp(shape),
+                    op_args=(pad, mode, pad_value),
+                    op_kwargs={},
+                    sample_name=op_info.name,
+                )
+
+
+def gather_variable(shape, index_dim, max_indices, duplicate=False):
+    assert len(shape) == 2
+    assert index_dim < 2
+    batch_dim = 1 - index_dim
+    index = mint.zeros(shape, dtype=ms.int64)
+    for i in range(shape[index_dim]):
+        index.select(index_dim, i).copy_(
+            mint.randperm(max_indices)[:shape[batch_dim]])
+    if duplicate:
+        index.select(batch_dim, 0).copy_(index.select(batch_dim, 1))
+    return index
+
+
+def basic_sample_inputs_mint_scatter(op_info: OpInfo, dtype=None, device=None, **kwargs):
+    S = SMALL_DIM_SIZE if kwargs.get("only_small_tensor_size", False) else EXTRA_SMALL_DIM_SIZE
+    M = SMALL_DIM_SIZE if kwargs.get("only_small_tensor_size", False) else MEDIUM_DIM_SIZE
+
+    def _tensor(shape, dtype=dtype, low=None, high=None):
+        return make_tensor(shape, dtype=dtype, device=device, low=low, high=high)
+
+    def _gather(shape, index_dim, max_indices):
+        return gather_variable(shape, index_dim, max_indices)
+
+    zero = ms.tensor(0, dtype=ms.int64)
+    test_cases = (
+        (_tensor((M, S)), (0, _gather((S, S), 1, M), _tensor((S, S)))),
+        (_tensor((M, S)), (0, _gather((S, S), 1, M).to(ms.int64), _tensor((S, S)))),
+        (_tensor((M, S)), (1, _gather((S, S), 0, S), _tensor((S, S)))),
+        (_tensor((M, S)), (-1, _gather((S, S), 0, S), _tensor((S, S)))),
+        (_tensor((M, S)), (0, _gather((M, S // 2), 1, M), _tensor((M, S // 2)))),
+        (_tensor((M, S)), (1, _gather((M, S // 2), 0, S), _tensor((M, S // 2)))),
+        (_tensor((M, S)), (-1, _gather((M, S // 2), 0, S), _tensor((M, S // 2)))),
+        (_tensor(()), (0, zero.copy(), _tensor(()))),
+        (_tensor(()), (0, zero.copy(), ms.tensor(2.5).to(dtype))),
+    )
+
+    for tensor, args in test_cases:
+        yield OpSampleInput(
+            op_input=tensor,
+            op_args=args,
+            op_kwargs={},
+            sample_name=op_info.name,
+        )
+
+
+def basic_sample_inputs_mint_dropout(op_info: OpInfo, dtype=None, device=None, **kwargs):
+    make_arg = functools.partial(make_tensor, device=device, dtype=dtype)
+    S = SMALL_DIM_SIZE if kwargs.get("only_small_tensor_size", False) else EXTRA_SMALL_DIM_SIZE
+
+    cases = ((S, S), (S,), ())
+    p_vals = [0.0, 1.0]
+    # This is to handle special case for feature_alpha_dropout which has different
+    # supported dtypes depending on `train` parameter
+    training_vals = [True, False]
+
+    for case, p, training in itertools.product(cases, p_vals, training_vals):
+        yield OpSampleInput(
+            op_input=make_arg(case),
+            op_args=(p, training),
+            op_kwargs={},
+            sample_name=op_info.name,
+        )
+
+def basic_sample_inputs_mint_expand_as(op_info: OpInfo, dtype=None, device=None, **kwargs):
+    S = SMALL_DIM_SIZE if kwargs.get("only_small_tensor_size", False) else EXTRA_SMALL_DIM_SIZE
+    make_arg = functools.partial(make_tensor, dtype=dtype, device=device)
+
+    cases = (((S, 1, 1), (S, S, S)),
+             ((), ()),
+             ((), (1, 1)),
+             )
+
+    for shape, shape_other in cases:
+        yield OpSampleInput(
+            op_input=make_arg(shape),
+            op_args=(make_arg(shape_other),),
             op_kwargs={},
             sample_name=op_info.name,
         )
@@ -4192,6 +4371,18 @@ op_db: Dict[str, OpInfo] = {
         dtypes_cpu=(),
         dtypes_gpu=(),
     ),
+    'Tensor.expand_as': OpInfo(
+        name='Tensor.expand_as',
+        op=tensor_expand_as_ms,
+        ref=tensor_expand_as_torch,
+        dtypes_ascend=tuple(d for d in dtypes_as_torch if d != ms.bfloat16),
+        dtypes_ascend910b=tuple(d for d in dtypes_as_torch),
+        op_basic_reference_inputs_func=basic_sample_inputs_mint_expand_as,
+        op_extra_reference_inputs_func=None,
+        op_dynamic_inputs_func=None,
+        dtypes_cpu=(),
+        dtypes_gpu=(),
+    ),
     'mint.reshape': OpInfo(
         name='mint.reshape',
         op=mint.reshape,
@@ -4200,6 +4391,18 @@ op_db: Dict[str, OpInfo] = {
         dtypes_ascend910b=tuple(d for d in dtypes_as_torch),
         op_basic_reference_inputs_func=basic_sample_inputs_mint_reshape,
         op_extra_reference_inputs_func=extra_sample_inputs_mint_reshape,
+        op_dynamic_inputs_func=None,
+        dtypes_cpu=(),
+        dtypes_gpu=(),
+    ),
+    'mint.scatter': OpInfo(
+        name='mint.scatter',
+        op=mint.scatter,
+        ref=torch.scatter,
+        dtypes_ascend=tuple(d for d in dtypes_as_torch if d != ms.bfloat16),
+        dtypes_ascend910b=tuple(d for d in dtypes_as_torch),
+        op_basic_reference_inputs_func=basic_sample_inputs_mint_scatter,
+        op_extra_reference_inputs_func=None,
         op_dynamic_inputs_func=None,
         dtypes_cpu=(),
         dtypes_gpu=(),
@@ -4279,6 +4482,66 @@ op_db: Dict[str, OpInfo] = {
         op_dynamic_inputs_func=None,
         #TODO: the test framework dose not support the backward of tuple input for now
         is_differentiable=False,
+    ),
+    'mint.nn.functional.dropout': OpInfo(
+        name='mint.nn.functional.dropout',
+        op=mint.nn.functional.dropout,
+        ref=torch.nn.functional.dropout,
+        dtypes_ascend=tuple((ms.float32,)),
+        dtypes_ascend910b=tuple((ms.float32,)),
+        op_basic_reference_inputs_func=basic_sample_inputs_mint_dropout,
+        op_extra_reference_inputs_func=None,
+        op_dynamic_inputs_func=None,
+        dtypes_cpu=(),
+        dtypes_gpu=(),
+    ),
+    'mint.nn.functional.pad(mode="constant")': OpInfo(
+        name='mint.nn.functional.pad(mode="constant")',
+        op=mint.nn.functional.pad,
+        ref=torch.nn.functional.pad,
+        dtypes_ascend=tuple(d for d in dtypes_as_torch if d != ms.bfloat16),
+        dtypes_ascend910b=tuple(d for d in dtypes_as_torch),
+        op_basic_reference_inputs_func=functools.partial(basic_sample_inputs_mint_pad, mode="constant"),
+        op_extra_reference_inputs_func=None,
+        op_dynamic_inputs_func=None,
+        dtypes_cpu=(),
+        dtypes_gpu=(),
+    ),
+    'mint.nn.functional.pad(mode="reflect")': OpInfo(
+        name='mint.nn.functional.pad(mode="reflect")',
+        op=mint.nn.functional.pad,
+        ref=torch.nn.functional.pad,
+        dtypes_ascend=tuple((ms.float32,)),
+        dtypes_ascend910b=tuple((ms.float32,)),
+        op_basic_reference_inputs_func=functools.partial(basic_sample_inputs_mint_pad, mode="reflect"),
+        op_extra_reference_inputs_func=None,
+        op_dynamic_inputs_func=None,
+        dtypes_cpu=(),
+        dtypes_gpu=(),
+    ),
+    'mint.nn.functional.pad(mode="replicate")': OpInfo(
+        name='mint.nn.functional.pad(mode="replicate")',
+        op=mint.nn.functional.pad,
+        ref=torch.nn.functional.pad,
+        dtypes_ascend=tuple((ms.float32,)),
+        dtypes_ascend910b=tuple((ms.float32,)),
+        op_basic_reference_inputs_func=functools.partial(basic_sample_inputs_mint_pad, mode="replicate"),
+        op_extra_reference_inputs_func=None,
+        op_dynamic_inputs_func=None,
+        dtypes_cpu=(),
+        dtypes_gpu=(),
+    ),
+    'mint.nn.functional.pad(mode="circular")': OpInfo(
+        name='mint.nn.functional.pad(mode="circular")',
+        op=mint.nn.functional.pad,
+        ref=torch.nn.functional.pad,
+        dtypes_ascend=tuple((ms.int64,)),
+        dtypes_ascend910b=tuple((ms.int64,)),
+        op_basic_reference_inputs_func=functools.partial(basic_sample_inputs_mint_pad, mode="circular"),
+        op_extra_reference_inputs_func=None,
+        op_dynamic_inputs_func=None,
+        dtypes_cpu=(),
+        dtypes_gpu=(),
     ),
 }
 
@@ -4403,6 +4666,13 @@ other_op_db = [
     'Tensor.clamp',
     'mint.stack',
     'Tensor.gather',
+    'Tensor.expand_as',
+    'mint.scatter',
+    'mint.nn.functional.dropout',
+    'mint.nn.functional.pad(mode="constant")',
+    'mint.nn.functional.pad(mode="reflect")',
+    'mint.nn.functional.pad(mode="replicate")',
+    'mint.nn.functional.pad(mode="circular")'
 ]
 
 reduction_op_db = [
@@ -4415,6 +4685,7 @@ reduction_op_db = [
     'Tensor.argmax',
     'Tensor.argmin',
 ]
+
 
 def get_op_info(op_name: str, *, op_database: Optional[Dict[str, OpInfo]] = None) -> OpInfo:
     """Return `OpInfo` by name from the provided or default database."""

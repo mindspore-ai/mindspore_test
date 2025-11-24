@@ -550,7 +550,9 @@ class OpsFactory():
 
             grad_tuple = []
             for _, tin in tensor_inputs:
-                grad_tuple.append(tin.grad.detach())
+                grad = tin.grad
+                if grad is not None:
+                    grad_tuple.append(grad.detach())
             grads.append(tuple(grad_tuple))
 
         return grads
