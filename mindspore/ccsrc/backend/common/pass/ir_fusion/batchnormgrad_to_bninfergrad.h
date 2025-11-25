@@ -34,6 +34,7 @@ class BACKEND_COMMON_EXPORT BatchNormGrad2BNInferGrad : public PatternProcessPas
 
  private:
   std::vector<std::string> MustExistPrimitiveName() const override;
+  CNodePtr CreateBNInferGrad(const FuncGraphPtr &graph, const CNodePtr &batchnormgrad, const AnfNodePtr &node) const;
 };
 }  // namespace opt
 }  // namespace mindspore

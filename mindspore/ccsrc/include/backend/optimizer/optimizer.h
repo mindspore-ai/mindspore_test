@@ -45,11 +45,13 @@ class BACKEND_COMMON_EXPORT PatternPass : public NodePass {
   CNodePtr NewCNode(const CNodePtr &cnode, const KernelGraphPtr &fg) const;
 
  protected:
-  virtual std::vector<AnfNodePtr> GetOrigNodes() const;
+  void GetOrigNodes();
+  bool CheckNodeStreamAndCoreAttrs(const FuncGraphPtr &func_graph) const;
   bool multigraph_ = true;
   PatternEngine pattern_engine_;
   PrimitiveVarMapPtr primitive_vars_;
   EquivPtr equiv_;
+  std::vector<AnfNodePtr> orig_nodes_;
 };
 
 class BACKEND_COMMON_EXPORT PatternProcessPass : public PatternPass {

@@ -181,7 +181,9 @@ CNodePtr MatmulSplitBase::GetMatmulSplitCNode(const PrimitivePtr &matmul_split_p
   MS_EXCEPTION_IF_NULL(graph);
   MS_EXCEPTION_IF_NULL(matmul_cnode);
   MS_EXCEPTION_IF_NULL(split_cnode);
-  auto matmul_split_cnode = graph->NewCNode(matmul_split_prim, matmul_split_inputs);
+  auto inputs = matmul_split_inputs;
+  (void)inputs.insert(inputs.begin(), std::make_shared<ValueNode>(matmul_split_prim));
+  auto matmul_split_cnode = NewCNode(inputs, graph);
   MS_EXCEPTION_IF_NULL(matmul_split_cnode);
   matmul_split_cnode->set_scope(matmul_cnode->scope());
   if (split_cnode->abstract() != nullptr) {

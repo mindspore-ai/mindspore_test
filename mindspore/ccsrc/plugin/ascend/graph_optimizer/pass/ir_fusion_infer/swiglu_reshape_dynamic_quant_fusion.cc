@@ -99,8 +99,8 @@ CNodePtr SwiGLUReshapeDynamicQuantFusion::CreateSwiGLUReshapeDynamicQuantNode(co
   dyn_quant_prim->AddAttr("FusionType", attr_value);
   dyn_quant_prim->AddAttr("HasReshape", MakeValue<bool>(true));
 
-  std::vector<AnfNodePtr> quant_inputs = {x_node, smooth_scale_node};
-  auto swiglu_dyn_quant = func_graph->NewCNode(dyn_quant_prim, quant_inputs);
+  std::vector<AnfNodePtr> quant_inputs = {std::make_shared<ValueNode>(dyn_quant_prim), x_node, smooth_scale_node};
+  auto swiglu_dyn_quant = NewCNode(quant_inputs, func_graph);
   MS_EXCEPTION_IF_NULL(swiglu_dyn_quant);
 
   std::vector<TypeId> swiglu_dyn_quant_out_types;

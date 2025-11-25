@@ -104,6 +104,7 @@ CNodePtr ConstructGraph::NewCNodeWithoutInfer(const std::string &prim_name, cons
   std::vector<AnfNodePtr> new_inputs = {value_node};
   new_inputs.insert(new_inputs.end(), inputs.begin(), inputs.end());
   auto cnode = graph_->NewCNode(new_inputs);
+  cnode->set_attrs(attrs);
   return cnode;
 }
 

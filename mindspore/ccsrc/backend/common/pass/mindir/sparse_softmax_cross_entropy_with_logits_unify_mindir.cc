@@ -644,7 +644,7 @@ const AnfNodePtr GradSparseSoftmaxCrossEntropyWithLogitsUnifyMindIR::Process(con
   (void)manager->Replace(mul_node, new_mul_node);
   std::vector<AnfNodePtr> inputs = {NewValueNode(std::make_shared<Primitive>(prim::kPrimDepend->name())),
                                     NewValueNode(MakeValue<bool>(true)), NewValueNode(MakeValue<bool>(true))};
-  auto new_depend = graph->NewCNode(inputs);
+  auto new_depend = NewCNode(inputs, graph);
   new_depend->set_scope(depend_node->scope());
   (void)manager->Replace(sparse_softmax_node_grad, new_depend);
 

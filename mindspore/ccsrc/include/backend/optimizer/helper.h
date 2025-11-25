@@ -228,6 +228,11 @@ BACKEND_COMMON_EXPORT AbstractBasePtr InferAbstract(const PrimitivePtr &primitiv
                                                     const std::vector<AnfNodePtr> &input_list);
 
 BACKEND_COMMON_EXPORT AnfNodePtr CreateValueNodeWithKernelInfo(const FuncGraphPtr &graph, const ValuePtr &value);
+
+BACKEND_COMMON_EXPORT bool CheckStreamAndCoreAttrWithOrigNodes(const FuncGraphPtr &func_graph,
+                                                               const std::vector<AnfNodePtr> &orig_nodes);
+
+BACKEND_COMMON_EXPORT void UpdateStreamAndCoreAttrs(const CNodePtr &node, const std::vector<AnfNodePtr> &orig_nodes);
 }  // namespace opt
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_OPTIMIZER_COMMON_HELPER_H_

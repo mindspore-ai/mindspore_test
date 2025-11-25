@@ -55,6 +55,8 @@ class MatMulAllReduceAddRmsNormFusion : public MatMulAllReduceAddRmsNormBaseFusi
  private:
   virtual CNodePtr CreateMatMulAllReduceAddRmsNormNode(const FuncGraphPtr &func_graph, const AnfNodePtr &node,
                                                        const EquivPtr &equiv, const TypeId &add_result_type) const;
+  AnfNodePtr NewTransposeNode(const FuncGraphPtr &func_graph, const AnfNodePtr &x2, const AnfNodePtr &node,
+                              const TypeId &add_result_type) const;
   bool IsSupport(const AnfNodePtr &node, const FuncGraphPtr &graph) const;
 
   // currently, reduction only support "sum"

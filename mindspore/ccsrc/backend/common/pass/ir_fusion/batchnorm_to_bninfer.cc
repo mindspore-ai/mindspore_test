@@ -163,7 +163,7 @@ const AnfNodePtr BatchNorm2BNInfer::Process(const FuncGraphPtr &graph, const Anf
     auto bias = CreateTensorMoveOp(graph, ori_inputs[kIdxBias]);
     std::vector<AnfNodePtr> make_tuple_inputs = {
       NewValueNode(prim::kPrimMakeTuple), bn_infer, mean, variance, scale, bias};
-    auto make_tuple = graph->NewCNode(make_tuple_inputs);
+    auto make_tuple = NewCNode(make_tuple_inputs, graph);
     make_tuple->set_scope(node->scope());
     return make_tuple;
   } else {

@@ -53,41 +53,6 @@ std::optional<T> GetScalarAnfNodeValue(const AnfNodePtr &anf_node) {
   return value_opt.value();
 }
 
-CNodePtr CreateBNInferGrad(const FuncGraphPtr &graph, const CNodePtr &batchnormgrad, const AnfNodePtr &node) {
-  MS_EXCEPTION_IF_NULL(graph);
-  MS_EXCEPTION_IF_NULL(batchnormgrad);
-  MS_EXCEPTION_IF_NULL(node);
-  auto prim = std::make_shared<Primitive>(kBNInferGradOpName);
-  std::vector<AnfNodePtr> inputs = {NewValueNode(prim)};
-  inputs.push_back(batchnormgrad->input(kIdxGrads));
-  inputs.push_back(batchnormgrad->input(kIdxScale));
-  inputs.push_back(batchnormgrad->input(kIdxVariance));
-  inputs.push_back(batchnormgrad->input(kIdxEpsilon));
-  auto new_node = graph->NewCNode(inputs);
-  MS_EXCEPTION_IF_NULL(new_node);
-  new_node->set_scope(batchnormgrad->scope());
-  new_node->set_abstract(node->abstract());
-
-  auto is_training_opt = GetScalarAnfNodeValue<bool>(batchnormgrad->input(kIdxIsTraining));
-  if (is_training_opt.has_value()) {
-    auto is_training = is_training_opt.value();
-    common::AnfAlgo::SetNodeAttr(kAttrIsTraining, MakeValue(is_training), new_node);
-  } else {
-    MS_LOG(ERROR) << "For BNInferGrad pass, failed to get attr is_training.";
-  }
-
-  auto epsilon_opt = GetScalarAnfNodeValue<pyfloat>(batchnormgrad->input(kIdxEpsilon));
-  float epsilon{1e-5};
-  if (epsilon_opt.has_value()) {
-    epsilon = epsilon_opt.has_value() ? epsilon_opt.value() : 1e-5;
-  } else {
-    MS_LOG(ERROR) << "For BNInferGrad pass, failed to get attr epsilon, use default epsilon: 1e-5.";
-  }
-  common::AnfAlgo::SetNodeAttr(kAttrEpsilon, MakeValue(epsilon), new_node);
-
-  return new_node;
-}
-
 bool CheckIndex(const AnfNodePtr &index_node) {
   MS_EXCEPTION_IF_NULL(index_node);
   if (!IsValueNode<Int64Imm>(index_node)) {
@@ -150,6 +115,42 @@ bool NeedFusion(const FuncGraphPtr &graph, const AnfNodePtr &node, CNodePtr *bat
   return CheckBatchNormGrad(graph, *batchnorm_grad);
 }
 }  // namespace
+
+CNodePtr BatchNormGrad2BNInferGrad::CreateBNInferGrad(const FuncGraphPtr &graph, const CNodePtr &batchnormgrad,
+                                                      const AnfNodePtr &node) const {
+  MS_EXCEPTION_IF_NULL(graph);
+  MS_EXCEPTION_IF_NULL(batchnormgrad);
+  MS_EXCEPTION_IF_NULL(node);
+  auto prim = std::make_shared<Primitive>(kBNInferGradOpName);
+  std::vector<AnfNodePtr> inputs = {NewValueNode(prim)};
+  inputs.push_back(batchnormgrad->input(kIdxGrads));
+  inputs.push_back(batchnormgrad->input(kIdxScale));
+  inputs.push_back(batchnormgrad->input(kIdxVariance));
+  inputs.push_back(batchnormgrad->input(kIdxEpsilon));
+  auto new_node = NewCNode(inputs, graph);
+  MS_EXCEPTION_IF_NULL(new_node);
+  new_node->set_scope(batchnormgrad->scope());
+  new_node->set_abstract(node->abstract());
+
+  auto is_training_opt = GetScalarAnfNodeValue<bool>(batchnormgrad->input(kIdxIsTraining));
+  if (is_training_opt.has_value()) {
+    auto is_training = is_training_opt.value();
+    common::AnfAlgo::SetNodeAttr(kAttrIsTraining, MakeValue(is_training), new_node);
+  } else {
+    MS_LOG(ERROR) << "For BNInferGrad pass, failed to get attr is_training.";
+  }
+
+  auto epsilon_opt = GetScalarAnfNodeValue<pyfloat>(batchnormgrad->input(kIdxEpsilon));
+  float epsilon{1e-5};
+  if (epsilon_opt.has_value()) {
+    epsilon = epsilon_opt.has_value() ? epsilon_opt.value() : 1e-5;
+  } else {
+    MS_LOG(ERROR) << "For BNInferGrad pass, failed to get attr epsilon, use default epsilon: 1e-5.";
+  }
+  common::AnfAlgo::SetNodeAttr(kAttrEpsilon, MakeValue(epsilon), new_node);
+
+  return new_node;
+}
 
 std::vector<std::string> BatchNormGrad2BNInferGrad::MustExistPrimitiveName() const {
   std::vector<std::string> ret;

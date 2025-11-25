@@ -91,7 +91,7 @@ const AnfNodePtr AddRmsNormFusion::Process(const FuncGraphPtr &graph, const AnfN
 
   auto prim = std::make_shared<Primitive>(fusion_op_name);
   std::vector<AnfNodePtr> inputs = {NewValueNode(prim), x1, x2, gamma, eps};
-  auto add_rms_norm = graph->NewCNode(inputs);
+  auto add_rms_norm = NewCNode(inputs, graph);
   MS_EXCEPTION_IF_NULL(add_rms_norm);
 
   std::vector<TypeId> types;
@@ -116,7 +116,7 @@ const AnfNodePtr AddRmsNormFusion::Process(const FuncGraphPtr &graph, const AnfN
   auto prim_getitem = std::make_shared<Primitive>("TupleGetItem");
   std::vector<AnfNodePtr> add_result_inputs = {NewValueNode(prim_getitem), add_rms_norm,
                                                NewValueNode(static_cast<int64_t>(2))};
-  auto add_result = graph->NewCNode(add_result_inputs);
+  auto add_result = NewCNode(add_result_inputs, graph);
 
   common::AnfAlgo::SetOutputTypeAndDetailShape(add_result_types, add_result_shapes, add_result.get());
   add_result->set_scope(tensor_add->scope());

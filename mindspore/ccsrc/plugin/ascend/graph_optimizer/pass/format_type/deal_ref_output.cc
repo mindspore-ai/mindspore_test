@@ -219,7 +219,7 @@ CNodePtr DealRefOutput::MakeDependency(const AnfNodePtr &get_item, const AnfNode
   } else {
     depend_nodes = std::vector<AnfNodePtr>{NewValueNode(prim::kPrimDepend), cnode, final_node};
   }
-  return func_graph->NewCNode(depend_nodes);
+  return NewCNode(depend_nodes, func_graph);
 }
 
 AnfNodePtr DealRefOutput::DealRefForMultipleOutput(const FuncGraphPtr &func_graph, const CNodePtr &orig_cnode,
@@ -262,7 +262,7 @@ AnfNodePtr DealRefOutput::DealRefForMultipleOutput(const FuncGraphPtr &func_grap
     make_tuple_inputs.push_back(final_node);
   }
   MS_EXCEPTION_IF_NULL(func_graph);
-  CNodePtr make_tuple = func_graph->NewCNode(make_tuple_inputs);
+  CNodePtr make_tuple = NewCNode(make_tuple_inputs, func_graph);
   MS_EXCEPTION_IF_NULL(make_tuple);
   make_tuple->set_abstract(std::make_shared<abstract::AbstractTuple>(abstract_list));
   return make_tuple;

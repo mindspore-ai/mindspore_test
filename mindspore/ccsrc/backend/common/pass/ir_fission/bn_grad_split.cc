@@ -151,7 +151,7 @@ CNodePtr BnGradSplit::BNGradSplitForTBE(const FuncGraphPtr &func_graph, const CN
     make_tuple_abstract.push_back(none1->abstract());
     make_tuple_abstract.push_back(none2->abstract());
   }
-  auto make_tuple = func_graph->NewCNode(make_tuple_inputs);
+  auto make_tuple = NewCNode(make_tuple_inputs, func_graph);
   MS_EXCEPTION_IF_NULL(make_tuple);
   make_tuple->set_scope(cnode->scope());
   make_tuple->set_abstract(std::make_shared<abstract::AbstractTuple>(make_tuple_abstract));
