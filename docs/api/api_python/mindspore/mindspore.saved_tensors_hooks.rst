@@ -22,7 +22,7 @@ mindspore.saved_tensors_hooks
         当前该上下文管理器在Graph模式与Jit模式下不支持。
 
     .. warning::
-        - 不允许在 `pack_hook` 中对传入的原始张量进行原地（in-place）修改。
+        - 为防止未定义行为，对传入 `pack_hook` 的原始张量进行原地修改会抛出异常。
         - 为避免产生循环引用， `pack_hook` 返回的对象不能直接持有原始张量的引用。
 
     参数：

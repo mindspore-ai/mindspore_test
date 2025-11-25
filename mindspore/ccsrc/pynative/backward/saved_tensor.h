@@ -46,6 +46,7 @@ class SavedTensor final : public Value {
   bool is_view_inplace_;
   bool is_leaf_;
   bool is_custom_;
+  bool requires_grad_{false};
   bool saved_original_{false};
   bool is_from_recompute_{false};
 

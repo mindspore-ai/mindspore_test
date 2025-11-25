@@ -1643,17 +1643,18 @@ class saved_tensors_hooks:
 
     The hooks should have the following signatures:
 
-    - pack_hook(tensor: Tensor) -> Any
+    - pack_hook(tensor: Tensor) -> Any:
       Accepts a tensor and returns an arbitrary object that represents the stored form of the tensor.
 
-    - unpack_hook(packed: Any) -> Tensor
-      Accepts the object returned by ``pack_hook`` and restores the corresponding tensor.
+    - unpack_hook(packed: Any) -> Tensor:
+      Accepts the object returned by `pack_hook` and restores the corresponding tensor.
 
     .. note::
         This context manager is currently not supported in Graph and Jit mode.
 
     .. warning ::
-        - Performing in-place modifications on the tensor passed into a `pack_hook` is not allowed.
+        - To prevent undefined behavior, in-place modification of the original tensor passed to the `pack_hook`
+          will throw an exception.
         - To prevent reference cycles, the object returned by `pack_hook` cannot hold a direct reference
           to the original tensor.
 
