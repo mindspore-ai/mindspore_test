@@ -302,7 +302,6 @@ class Caltech256Dataset(MappableDataset, VisionBaseDataset):
         RuntimeError: If `num_shards` is specified but `shard_id` is None.
         RuntimeError: If `shard_id` is specified but `num_shards` is None.
         ValueError: If `shard_id` is not in range of [0, `num_shards` ).
-        ValueError: If `target_type` is not ``'category'``, ``'annotation'`` or ``'all'``.
         ValueError: If `num_parallel_workers` exceeds the max thread numbers.
 
     Tutorial Examples:
@@ -653,7 +652,7 @@ class Cifar100Dataset(MappableDataset, VisionBaseDataset):
 
     The generated dataset has three columns :py:obj:`[image, coarse_label, fine_label]` .
     The tensor of column :py:obj:`image` is of the uint8 type.
-    The tensor of column :py:obj:`coarse_label` and :py:obj:`fine_labels` are each a scalar of uint32 type.
+    The tensor of column :py:obj:`coarse_label` and :py:obj:`fine_label` are each a scalar of uint32 type.
 
     Args:
         dataset_dir (str): Path to the root directory that contains the dataset.
@@ -949,7 +948,7 @@ class CocoDataset(MappableDataset, VisionBaseDataset):
         cache (DatasetCache, optional): Use tensor caching service to speed up dataset processing. More details:
             `Single-Node Data Cache <https://www.mindspore.cn/tutorials/en/master/dataset/cache.html>`_ .
             Default: ``None`` , which means no cache is used.
-        extra_metadata(bool, optional): Flag to add extra meta-data to row. If True, an additional column will be
+        extra_metadata (bool, optional): Flag to add extra meta-data to row. If True, an additional column will be
             output at the end :py:obj:`[_meta-filename, dtype=string]` . Default: ``False``.
         decrypt (callable, optional): Image decryption function, which accepts the path of the encrypted image file
             and returns the decrypted bytes data. Default: ``None`` , no decryption.
@@ -1013,8 +1012,8 @@ class CocoDataset(MappableDataset, VisionBaseDataset):
           <https://www.mindspore.cn/docs/en/master/api_python/samples/dataset/dataset_gallery.html>`_
 
     Note:
-        - Column '[_meta-filename, dtype=string]' won't be output unless an explicit rename dataset op is added
-          to remove the prefix('_meta-').
+        - When the parameter `extra_metadata` is set to ``True``, use the rename operation to remove the prefix
+          `_meta-` from the additional data column `_meta-filename`.
         - Not support :class:`mindspore.dataset.PKSampler` for `sampler` parameter yet.
         - The parameters `num_samples` , `shuffle` , `num_shards` , `shard_id` can be used to control the sampler
           used in the dataset, and their effects when combined with parameter `sampler` are as follows.
@@ -1423,14 +1422,13 @@ class EMnistDataset(MappableDataset, VisionBaseDataset):
 
     .. code-block::
 
-        @article{cohen_afshar_tapson_schaik_2017,
+        @inproceedings{cohen2017emnist,
         title        = {EMNIST: Extending MNIST to handwritten letters},
-        DOI          = {10.1109/ijcnn.2017.7966217},
-        journal      = {2017 International Joint Conference on Neural Networks (IJCNN)},
-        author       = {Cohen, Gregory and Afshar, Saeed and Tapson, Jonathan and Schaik, Andre Van},
+        author       = {Cohen, Gregory and Afshar, Saeed and Tapson, Jonathan and Van Schaik, Andre},
+        booktitle    = {2017 international joint conference on neural networks (IJCNN)},
+        pages        = {2921--2926},
         year         = {2017},
-        howpublished = {https://www.westernsydney.edu.au/icns/reproducible_research/
-                        publication_support_materials/emnist}
+        organization = {IEEE}
         }
     """
 
@@ -1458,7 +1456,7 @@ class FakeImageDataset(MappableDataset, VisionBaseDataset):
 
     Args:
         num_images (int, optional): Number of images to generate in the dataset. Default: ``1000``.
-        image_size (tuple, optional):  Size of the fake image. Default: ``(224, 224, 3)``.
+        image_size (tuple, optional): Size of the fake image. Default: ``(224, 224, 3)``.
         num_classes (int, optional): Number of classes in the dataset. Default: ``10``.
         base_seed (int, optional): Offsets the index-based random seed used to generate each image.
             Default: ``0``.
@@ -1858,7 +1856,7 @@ class _Flowers102Dataset:
 
 class Flowers102Dataset(GeneratorDataset):
     """
-    Oxfird 102 Flower dataset.
+    Oxford 102 Flower dataset.
 
     According to the given `task` configuration, the generated dataset has different output columns:
     - `task` = 'Classification', output columns: `[image, dtype=uint8]` , `[label, dtype=uint32]` .
@@ -1927,7 +1925,7 @@ class Flowers102Dataset(GeneratorDataset):
     .. code-block::
 
         .
-        └── flowes102_dataset_dir
+        └── flowers102_dataset_dir
              ├── imagelabels.mat
              ├── setid.mat
              ├── jpg
@@ -2055,8 +2053,8 @@ class Food101Dataset(MappableDataset, VisionBaseDataset):
           <https://www.mindspore.cn/docs/en/master/api_python/samples/dataset/dataset_gallery.html>`_
 
     Note:
-        - The parameters `num_samples` , `shuffle` , `num_shards` , `shard_id` can be used to control the sampler
-          used in the dataset, and their effects when combined with parameter `sampler` are as follows.
+        The parameters `num_samples` , `shuffle` , `num_shards` , `shard_id` can be used to control the sampler
+        used in the dataset, and their effects when combined with parameter `sampler` are as follows.
 
     .. include:: mindspore.dataset.sampler.txt
 
@@ -2842,8 +2840,8 @@ class ManifestDataset(MappableDataset, VisionBaseDataset):
 
     Manifest file contains a list of files included in a dataset, including basic file info such as File name and File
     ID, along with extended file metadata. Manifest is a data format file supported by Huawei Modelarts. For details,
-    see `Specifications for Importing the Manifest File <https://support.huaweicloud.com/intl/en-us/dataprepare-modelarts/
-    dataprepare-modelarts-0015.html>`_ .
+    see `Specifications for Importing the Manifest File
+    <https://support.huaweicloud.com/intl/en-us/sdkreference-modelarts/modelarts_04_0349.html>`_ .
 
     .. code-block::
 
@@ -3723,13 +3721,13 @@ class _SBDataset:
                 usage_path = os.path.join(dataset_dir, item + '.txt')
                 if not os.path.exists(usage_path):
                     raise FileNotFoundError("SBDataset: {0} not found".format(usage_path))
-                with open(usage_path, 'r') as f:
+                with open(usage_path, 'r', encoding='utf-8') as f:
                     image_names += [x.strip() for x in f.readlines()]
         else:
             usage_path = os.path.join(dataset_dir, usage + '.txt')
             if not os.path.exists(usage_path):
                 raise FileNotFoundError("SBDataset: {0} not found".format(usage_path))
-            with open(usage_path, 'r') as f:
+            with open(usage_path, 'r', encoding='utf-8') as f:
                 image_names = [x.strip() for x in f.readlines()]
 
         self.images = [os.path.join(self.images_path, i + ".jpg") for i in image_names]

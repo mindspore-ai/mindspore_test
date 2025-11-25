@@ -20,7 +20,7 @@ mindspore.communication.comm_func.scatter_tensor
         Tensor第0维等于输入数据第0维除以 `src`，其他维度相同。
 
     异常：
-        - **TypeError** - 首个输入的数据类型不为Tensor，`op` 或 `group` 不是str。
+        - **TypeError** - 首个输入的数据类型不为Tensor， `group` 不是str。
         - **RuntimeError** - 目标设备无效，或者后端无效，或者分布式初始化失败。
 
     样例：

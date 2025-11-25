@@ -7,7 +7,7 @@ mindspore.dataset.audio.Vad
 
     试图修剪去除语音记录末尾沉默或安静的背景声音。
 
-    接口实现方式类似于 `SoX库 <http://sox.sourceforge.net/sox.html>`_ 。
+    接口实现方式类似于 `SoX库 <https://sourceforge.net/projects/sox/>`_ 。
 
     参数：
         - **sample_rate** (int) - 音频信号的采样率。

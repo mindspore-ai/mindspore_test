@@ -19,7 +19,7 @@ mindspore.communication.comm_func.all_to_all_v_c
         CommHandle。若 `async_op` 是True，则CommHandle是一个异步工作句柄；若 `async_op` 是False，则CommHandle将返回None。
 
     异常：
-        - **TypeError** - `input` 或者 `output` 不是tensor类型， `group` 不是str， `async_op` 不是bool。
+        - **TypeError** - `input` 或者 `output` 不是Tensor类型， `group` 不是str， `async_op` 不是bool。
 
     样例：
 

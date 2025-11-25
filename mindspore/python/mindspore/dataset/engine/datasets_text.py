@@ -53,12 +53,12 @@ class AGNewsDataset(SourceDataset, TextBaseDataset):
         num_parallel_workers (int, optional): Number of worker threads to read the data.
             Default: ``None`` , will use global default workers(8), it can be set
             by :func:`mindspore.dataset.config.set_num_parallel_workers` .
-        shuffle (Union[bool, Shuffle], optional): Perform reshuffling of the data every epoch.
-            Bool type and Shuffle enum are both supported to pass in.
+        shuffle (Union[bool, Shuffle], optional): Data shuffling mode in each epoch.
+            The bool type or enumeration type can be transferred for specifying.
             Default: ``Shuffle.GLOBAL`` .
             If `shuffle` is ``False``, no shuffling will be performed.
             If `shuffle` is ``True``, it is equivalent to setting `shuffle` to
-            ``mindspore.dataset.Shuffle.GLOBAL`` .
+            ``Shuffle.GLOBAL`` .
             Set the mode of data shuffling by passing in enumeration variables:
 
             - ``Shuffle.GLOBAL``: Shuffle both the files and samples.
@@ -163,12 +163,12 @@ class AmazonReviewDataset(SourceDataset, TextBaseDataset):
         num_parallel_workers (int, optional): Number of worker threads to read the data.
             Default: ``None`` , will use global default workers(8), it can be set
             by :func:`mindspore.dataset.config.set_num_parallel_workers` .
-        shuffle (Union[bool, Shuffle], optional): Perform reshuffling of the data every epoch.
-            Bool type and Shuffle enum are both supported to pass in.
+        shuffle (Union[bool, Shuffle], optional): Data shuffling mode in each epoch.
+            The bool type or enumeration type can be transferred for specifying.
             Default: ``Shuffle.GLOBAL`` .
             If `shuffle` is ``False``, no shuffling will be performed.
             If `shuffle` is ``True``, it is equivalent to setting `shuffle` to
-            ``mindspore.dataset.Shuffle.GLOBAL``.
+            ``Shuffle.GLOBAL``.
             Set the mode of data shuffling by passing in enumeration variables:
 
             - ``Shuffle.GLOBAL`` : Shuffle both the files and samples.
@@ -264,10 +264,10 @@ class CLUEDataset(SourceDataset, TextBaseDataset):
         num_parallel_workers (int, optional): Number of worker threads to read the data.
             Default: ``None`` , will use global default workers(8), it can be set
             by :func:`mindspore.dataset.config.set_num_parallel_workers` .
-        shuffle (Union[bool, Shuffle], optional): Perform reshuffling of the data every epoch.
-            Default: ``Shuffle.GLOBAL`` . Bool type and Shuffle enum are both supported to pass in.
+        shuffle (Union[bool, Shuffle], optional): Data shuffling mode in each epoch.
+            The bool type or enumeration type can be transferred for specifying. Default: ``Shuffle.GLOBAL`` .
             If `shuffle` is ``False``, no shuffling will be performed.
-            If `shuffle` is ``True``, performs global shuffle.
+            If `shuffle` is ``True``, it is equivalent to setting `shuffle` to ``Shuffle.GLOBAL`` .
             There are three levels of shuffling, desired shuffle enum defined by :class:`mindspore.dataset.Shuffle` .
 
             - ``Shuffle.GLOBAL`` : Shuffle both the files and samples, same as setting `shuffle` to ``True``.
@@ -504,7 +504,7 @@ class CoNLL2000Dataset(SourceDataset, TextBaseDataset):
         usage (str, optional): Usage of dataset, can be ``'train'`` , ``'test'`` , or ``'all'`` .
             For dataset, ``'train'`` will read from 8,936 train samples,
             ``'test'`` will read from 2,012 test samples,
-            ``'all'`` will read from all 1,0948 samples. Default: ``None`` , read all samples.
+            ``'all'`` will read from all 10,948 samples. Default: ``None`` , read all samples.
         num_samples (int, optional): Number of samples (rows) to be read. Default: ``None`` ,
             read the full dataset.
         shuffle (Union[bool, Shuffle], optional): Perform reshuffling of the data every epoch.

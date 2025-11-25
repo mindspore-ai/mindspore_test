@@ -3,7 +3,7 @@ mindspore.dataset.Flowers102Dataset
 
 .. py:class:: mindspore.dataset.Flowers102Dataset(dataset_dir, task='Classification', usage='all', num_samples=None, num_parallel_workers=1, shuffle=None, decode=False, sampler=None, num_shards=None, shard_id=None)
 
-    Oxfird 102 Flower数据集。
+    Oxford 102 Flower数据集。
 
     根据给定的 `task` 配置，生成数据集具有不同的输出列：
 
@@ -49,7 +49,7 @@ mindspore.dataset.Flowers102Dataset
     .. code-block::
 
         .
-        └── flowes102_dataset_dir
+        └── flowers102_dataset_dir
              ├── imagelabels.mat
              ├── setid.mat
              ├── jpg
