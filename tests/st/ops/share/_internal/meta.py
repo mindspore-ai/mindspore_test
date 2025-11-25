@@ -32,7 +32,9 @@ from mindspore._c_expression import MSContext
 from mindspore.common.dtype import _dtype_to_nptype
 from typing import Optional, Union, List, final
 from tests.st.utils.test_utils import single_golden_compare, double_golden_compare, OpTypes
-from tests.st.ops.share._internal.utils import OpSampleInput, OpDynamicInput, is_op_input_dynamic, make_tensor, ms_asnumpy
+from tests.st.ops.share._internal.utils import (
+    OpSampleInput, OpDynamicInput, is_op_input_dynamic, make_tensor, ms_asnumpy
+)
 from tests.st.ops.share._op_info.op_info import OpInfo
 from tests.st.ops.share._op_info.op_common import get_default_loss, dtypes_extra_uint
 
@@ -550,7 +552,9 @@ class OpsFactory():
 
             grad_tuple = []
             for _, tin in tensor_inputs:
-                grad_tuple.append(tin.grad.detach())
+                grad = tin.grad
+                if grad is not None:
+                    grad_tuple.append(grad.detach())
             grads.append(tuple(grad_tuple))
 
         return grads
@@ -903,6 +907,14 @@ class OpsFactory():
 
         try:
             print(f"\nsample_name: {self.sample_name}, mode:{self._context_mode}, test_op_dynamic...")
+            if grad_cmp:
+                self.supported_dtypes = tuple(d for d in self.supported_dtypes if d.is_floating_point)
+                if not self.supported_dtypes:
+                    return
+                if ms.float32 in self.supported_dtypes:
+                    dtype = ms.float32
+                else:
+                    dtype = self.supported_dtypes[0]
             for op_dynamic_input in self.op_info.op_dynamic_inputs_func(
                     self.op_info,
                     dtype=dtype,

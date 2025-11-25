@@ -49,7 +49,6 @@ class OpInfo:
         op_func_without_kwargs: MindSpore callable used for gradient/dynamic nets;
             falls back to ``op`` if not provided (e.g., when kwargs need special handling).
         ref: Reference implementation (e.g., PyTorch/NumPy callable).
-        tensor_variant: Tensor method variant of the operator, if applicable.
 
         dtypes_ascend: Supported MindSpore dtypes on Ascend devices.
         dtypes_ascend910b: Supported dtypes specifically on Ascend 910B.
@@ -84,7 +83,6 @@ class OpInfo:
     op: Optional[Callable] = None
     op_func_without_kwargs: Optional[Callable] = None
     ref: Optional[Callable] = None
-    tensor_variant: Optional[Callable] = None
 
     # dtypes supported by each backend
     dtypes_ascend: tuple = field(default_factory=tuple)

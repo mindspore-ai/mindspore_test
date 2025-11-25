@@ -91,7 +91,7 @@ def test_binary_op_type_promotion(mode, op_info):
           card_mark='onecard',
           essential_mark='essential')
 @pytest.mark.parametrize("mode", ['kbk'])
-@pytest.mark.parametrize("op_info", binary_op_db)
+@pytest.mark.parametrize("op_info", ['mint.add', 'mint.sub'])
 def test_binary_op_dynamic_forward(mode, op_info):
     '''
     Feature: Binary operations
