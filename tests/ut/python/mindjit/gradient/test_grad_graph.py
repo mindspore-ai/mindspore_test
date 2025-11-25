@@ -14,10 +14,11 @@
 # ============================================================================
 """test function grad in graph mode"""
 import numpy as np
-import mindspore.nn as nn
-import mindspore.context as context
-from mindspore import Tensor
+import pytest
+from mindspore import Tensor, ops, nn, context
 from mindspore.ops.functional import grad
+from mindspore.common import dtype
+from mindspore.common.api import _pynative_executor
 
 context.set_context(mode=context.GRAPH_MODE)
 
@@ -58,3 +59,34 @@ def test_grad_multiple_inputs_multiple_outputs_cell_graph():
     z = Tensor(np.array([[0, 3], [5, -1]]).astype(np.float32))
     net = MultipleInputsMultipleOutputsNet()
     grad(net, grad_position=(1, 2))(x, y, z)
+
+
+class NetMul(nn.Cell):
+    def __init__(self):
+        super().__init__()
+        self.mul = ops.Mul()
+
+    def construct(self, x, y):
+        out = self.mul(x, y)
+        return out
+
+
+@pytest.mark.parametrize(
+    "grad_position_error",
+    ((-1, ValueError), (2, (IndexError, RuntimeError)), (1.0, TypeError),
+    ((0, 0, 1), ValueError), ((0, -1), ValueError), ((0.0, 1.0), TypeError),
+    ((0, 2), (IndexError, RuntimeError)), ([0, 1], TypeError),
+))
+def test_grad_invalid_position(grad_position_error):
+    """
+    Features: Function grad.
+    Description: Test F.grad with invalid grad position in graph mode.
+    Expectation: No exception.
+    """
+    net = NetMul()
+    with pytest.raises(grad_position_error[1]):
+        grad_net = grad(net, grad_position=grad_position_error[0])
+        x = Tensor([1, 2, 3], dtype.float32)
+        y = Tensor([1, 2, 3], dtype.float32)
+        grad_net(x, y)
+        _pynative_executor.sync()

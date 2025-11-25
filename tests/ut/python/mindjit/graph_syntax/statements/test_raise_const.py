@@ -19,6 +19,7 @@ import pytest
 import numpy as np
 from mindspore import Tensor, context, jit, nn
 from mindspore.common.api import _cell_graph_executor
+from mindspore.common.api import _pynative_executor
 
 context.set_context(mode=context.GRAPH_MODE)
 
@@ -414,6 +415,196 @@ def test_raise_21():
         net = RaiseNet()
         res = net(1)
         print("res:", res)
+
+
+def test_raise_base_exception_error():
+    """
+    Feature: graph raise.
+    Description: Test raise.
+    Expectation: Raise base exception.
+    """
+    class RaiseNet(nn.Cell):
+        def construct(self, x):
+            if x == 1:
+                raise BaseException("x is 1")
+            return x
+
+    with pytest.raises(BaseException) as e:
+        net = RaiseNet()
+        net(1)
+        _pynative_executor.sync()
+    assert "x is 1" in str(e.value)
+
+
+def test_raise_keyboard_interrupt_error():
+    """
+    Feature: graph raise.
+    Description: Test raise.
+    Expectation: Raise KeyboardInterrupt.
+    """
+    class RaiseNet(nn.Cell):
+        def construct(self, x):
+            if x == 1:
+                raise KeyboardInterrupt("x is 1")
+            return x
+
+    with pytest.raises(KeyboardInterrupt) as e:
+        net = RaiseNet()
+        net(1)
+        _pynative_executor.sync()
+    assert "x is 1" in str(e.value)
+
+
+def test_raise_over_flow_error():
+    """
+    Feature: graph raise.
+    Description: Test raise.
+    Expectation: Raise OverflowError.
+    """
+    class RaiseNet(nn.Cell):
+        def construct(self, x):
+            if x == 1:
+                raise OverflowError("x is 1")
+            return x
+
+    with pytest.raises(OverflowError) as e:
+        net = RaiseNet()
+        net(1)
+        _pynative_executor.sync()
+    assert "x is 1" in str(e.value)
+
+
+def test_raise_environment_error():
+    """
+    Feature: graph raise.
+    Description: Test raise.
+    Expectation: Raise EnvironmentError.
+    """
+    class RaiseNet(nn.Cell):
+        def construct(self, x):
+            if x == 1:
+                raise EnvironmentError("x is 1")
+            return x
+
+    with pytest.raises(EnvironmentError) as e:
+        net = RaiseNet()
+        net(1)
+        _pynative_executor.sync()
+    assert "x is 1" in str(e.value)
+
+
+def test_raise_io_error():
+    """
+    Feature: graph raise.
+    Description: Test raise.
+    Expectation: Raise IOError.
+    """
+    class RaiseNet(nn.Cell):
+        def construct(self, x):
+            if x == 1:
+                raise IOError("x is 1")
+            return x
+
+    with pytest.raises(IOError) as e:
+        net = RaiseNet()
+        net(1)
+        _pynative_executor.sync()
+    assert "x is 1" in str(e.value)
+
+
+def test_raise_os_error():
+    """
+    Feature: graph raise.
+    Description: Test raise.
+    Expectation: Raise OSError.
+    """
+    class RaiseNet(nn.Cell):
+        def construct(self, x):
+            if x == 1:
+                raise OSError("x is 1")
+            return x
+
+    with pytest.raises(OSError) as e:
+        net = RaiseNet()
+        net(1)
+        _pynative_executor.sync()
+    assert "x is 1" in str(e.value)
+
+
+def test_raise_menory_error():
+    """
+    Feature: graph raise.
+    Description: Test raise.
+    Expectation: Raise MemoryError.
+    """
+    class RaiseNet(nn.Cell):
+        def construct(self, x):
+            if x == 1:
+                raise MemoryError("x is 1")
+            return x
+
+    with pytest.raises(MemoryError) as e:
+        net = RaiseNet()
+        net(1)
+        _pynative_executor.sync()
+    assert "x is 1" in str(e.value)
+
+
+def test_raise_unbound_local_error():
+    """
+    Feature: graph raise.
+    Description: Test raise.
+    Expectation: Raise UnboundLocalError.
+    """
+    class RaiseNet(nn.Cell):
+        def construct(self, x):
+            if x == 1:
+                raise UnboundLocalError("x is 1")
+            return x
+
+    with pytest.raises(UnboundLocalError) as e:
+        net = RaiseNet()
+        net(1)
+        _pynative_executor.sync()
+    assert "x is 1" in str(e.value)
+
+
+def test_raise_indentation_error():
+    """
+    Feature: graph raise.
+    Description: Test raise.
+    Expectation: Raise IndentationError.
+    """
+    class RaiseNet(nn.Cell):
+        def construct(self, x):
+            if x == 1:
+                raise IndentationError("x is 1")
+            return x
+
+    with pytest.raises(IndentationError) as e:
+        net = RaiseNet()
+        net(1)
+        _pynative_executor.sync()
+    assert "x is 1" in str(e.value)
+
+
+def test_raise_syntax_error_not_support():
+    """
+    Feature: graph raise.
+    Description: Test raise.
+    Expectation: Raise Unsupported exception.
+    """
+    class RaiseNet(nn.Cell):
+        def construct(self, x):
+            if x == 1:
+                raise SyntaxError("x is 1")
+            return x
+
+    with pytest.raises(RuntimeError) as e:
+        net = RaiseNet()
+        net(1)
+        _pynative_executor.sync()
+    assert "Unsupported exception type: SyntaxError." in str(e.value)
 
 
 def test_raise_list():
