@@ -828,13 +828,13 @@ class TestSingleProcessDataLoader:
         """
         dataset_sizes = [batch_size - 1, batch_size, batch_size + 1]
         for dataset_size in dataset_sizes:
-            data_loader = DataLoader(MyDataset(dataset_size), batch_size=batch_size, drop_last=drop_last)
+            dataloader = DataLoader(MyDataset(dataset_size), batch_size=batch_size, drop_last=drop_last)
             if drop_last:
                 expected_len = dataset_size // batch_size
             else:
                 expected_len = (dataset_size - 1) // batch_size + 1
-            assert len(data_loader) == expected_len
-            assert sum(1 for _ in data_loader) == expected_len
+            assert len(dataloader) == expected_len
+            assert sum(1 for _ in dataloader) == expected_len
 
     @arg_mark(plat_marks=["cpu_linux"], level_mark="level0", card_mark="onecard", essential_mark="essential")
     @pytest.mark.parametrize("persistent_workers", (True, False))
@@ -844,9 +844,9 @@ class TestSingleProcessDataLoader:
         Description: Test the result of DataLoader with persistent_workers.
         Expectation: The result of DataLoader is the expected result.
         """
-        data_loader = DataLoader(MyIterDataset(3), num_workers=1, persistent_workers=persistent_workers)
+        dataloader = DataLoader(MyIterDataset(3), num_workers=1, persistent_workers=persistent_workers)
         for _ in range(3):
-            for index, data in enumerate(data_loader):
+            for index, data in enumerate(dataloader):
                 assert data == ms.tensor([index])
 
     @arg_mark(plat_marks=["cpu_linux"], level_mark="level0", card_mark="onecard", essential_mark="essential")
@@ -859,8 +859,8 @@ class TestSingleProcessDataLoader:
         dataset = MyDataset(20)
         sampler = DistributedSampler(dataset, num_replicas=2, rank=1, shuffle=False, drop_last=True)
         batch_sampler = BatchSampler(sampler, batch_size=10, drop_last=True)
-        data_loader = DataLoader(dataset, batch_sampler=batch_sampler)
-        for data in data_loader:
+        dataloader = DataLoader(dataset, batch_sampler=batch_sampler)
+        for data in dataloader:
             np.testing.assert_array_equal(data.asnumpy(), np.array([1, 3, 5, 7, 9, 11, 13, 15, 17, 19]))
 
 
@@ -873,7 +873,7 @@ class TestMultiProcessDataLoader:
         """
         Setup the DataLoader.
         """
-        self.data_loader = DataLoader(MyDataset(10), num_workers=2)
+        self.dataloader = DataLoader(MyDataset(10), num_workers=2)
 
     @arg_mark(plat_marks=["platform_ascend"], level_mark="level0", card_mark="onecard", essential_mark="essential")
     @pytest.mark.parametrize("pin_memory", (False, True))
@@ -883,8 +883,8 @@ class TestMultiProcessDataLoader:
         Description: Test the result of DataLoader with pin_memory.
         Expectation: The result of DataLoader is pinned.
         """
-        monkeypatch.setattr(self.data_loader, "pin_memory", pin_memory)
-        for data in self.data_loader:
+        monkeypatch.setattr(self.dataloader, "pin_memory", pin_memory)
+        for data in self.dataloader:
             assert data.is_pinned() == pin_memory
 
     @arg_mark(plat_marks=["cpu_linux"], level_mark="level0", card_mark="onecard", essential_mark="essential")
@@ -898,12 +898,12 @@ class TestMultiProcessDataLoader:
         monkeypatch.setattr(MyDataset, "__getitem__", lambda *inputs: os.getpid())
         monkeypatch.setattr(
             self,
-            "data_loader",
+            "dataloader",
             DataLoader(MyDataset(1), num_workers=2, persistent_workers=persistent_workers),
         )
         worker_ids = []
         for _ in range(2):
-            for data in self.data_loader:
+            for data in self.dataloader:
                 worker_ids.append(data)
         assert (worker_ids[0] == worker_ids[1]) == persistent_workers
 
@@ -916,7 +916,7 @@ class TestMultiProcessDataLoader:
         """
         for _ in range(3):
             result = []
-            for data in self.data_loader:
+            for data in self.dataloader:
                 result.append(data)
             assert result == [ms.tensor([i], dtype=ms.uint8) for i in range(10)]
 
@@ -935,7 +935,7 @@ class TestMultiProcessDataLoader:
 
         monkeypatch.setattr(MyDataset, "__getitem__", mock_getitem)
         with pytest.raises(RuntimeError, match="Worker 1 raises RuntimeError!"):
-            for _ in self.data_loader:
+            for _ in self.dataloader:
                 pass
 
     @arg_mark(plat_marks=["cpu_linux"], level_mark="level0", card_mark="onecard", essential_mark="essential")
@@ -952,9 +952,9 @@ class TestMultiProcessDataLoader:
 
         timeout = 3
         monkeypatch.setattr(MyDataset, "__getitem__", mock_getitem)
-        monkeypatch.setattr(self.data_loader, "timeout", timeout)
+        monkeypatch.setattr(self.dataloader, "timeout", timeout)
         with pytest.raises(RuntimeError, match=f"DataLoader timed out waiting for data after {timeout} seconds"):
-            for _ in self.data_loader:
+            for _ in self.dataloader:
                 pass
 
     @arg_mark(plat_marks=["cpu_linux"], level_mark="level0", card_mark="onecard", essential_mark="essential")
@@ -971,12 +971,140 @@ class TestMultiProcessDataLoader:
             return np.array(self.data[index], dtype=np.uint8)
 
         monkeypatch.setattr(MyDataset, "__getitem__", mock_getitem)
-        monkeypatch.setattr(self.data_loader, "num_workers", 4)
-        monkeypatch.setattr(self.data_loader, "in_order", in_order)
+        monkeypatch.setattr(self.dataloader, "num_workers", 4)
+        monkeypatch.setattr(self.dataloader, "in_order", in_order)
         result = []
-        for data in self.data_loader:
+        for data in self.dataloader:
             result.append(data)
         assert (result == [ms.tensor([i], dtype=ms.uint8) for i in range(10)]) == in_order
+
+    @arg_mark(plat_marks=["cpu_linux"], level_mark="level0", card_mark="onecard", essential_mark="essential")
+    @pytest.mark.parametrize(
+        ("num_workers", "multiprocessing_context"),
+        (
+            (0, None),
+            (1, None),
+            (1, multiprocessing.get_context("fork")),
+            (1, multiprocessing.get_context("spawn")),
+            (1, multiprocessing.get_context("forkserver")),
+        ),
+    )
+    def test_shared_memory_for_ipc(self, num_workers, multiprocessing_context):
+        """
+        Feature: Test DataLoader using shared memory for IPC.
+        Description: Test the result of DataLoader with multiprocessing.
+        Expectation: The result is on shared memory when multiprocessing is enabled.
+        """
+        dataloader = DataLoader(
+            MyDataset(5),
+            num_workers=num_workers,
+            multiprocessing_context=multiprocessing_context,
+        )
+
+        for data in dataloader:
+            assert data.is_shared() == (num_workers > 0)
+
+    @staticmethod
+    def record_execution_time(dataset, *args, **kwargs):
+        """Run and record the execution time of the DataLoader."""
+        dataloader = DataLoader(dataset, *args, **kwargs)
+        begin_time = time.time()
+        for _ in dataloader:
+            pass
+        end_time = time.time()
+        return end_time - begin_time
+
+    @arg_mark(plat_marks=["cpu_linux"], level_mark="level0", card_mark="onecard", essential_mark="essential")
+    def test_shared_memory_performance(self):
+        """
+        Feature: Test the performance of DataLoader IPC.
+        Description: Test the performance of DataLoader IPC with and without shared memory.
+        Expectation: The performance is better when using shared memory.
+        """
+
+        class MixedTypeDataset(Dataset):
+            """Dataset that supports specifying output type."""
+
+            def __init__(self, num_samples, output_type):
+                self.data = np.random.random((5, 1024, 1024)).astype(np.float32)  # 20MB
+                self.num_samples = num_samples
+                self.output_type = output_type
+
+            def __getitem__(self, index):
+                if self.output_type == "numpy":
+                    return self.data
+                return ms.Tensor(self.data)
+
+            def __len__(self):
+                return self.num_samples
+
+        def collate_fn(data):
+            """Custom collate function to avoid converting numpy to tensor."""
+            return data
+
+        num_samples = 100
+
+        # Data of type numpy ndarray uses connection-based IPC.
+        numpy_time = self.record_execution_time(
+            MixedTypeDataset(num_samples, "numpy"),
+            batch_size=None,
+            shuffle=False,
+            num_workers=2,
+            collate_fn=collate_fn,
+        )
+
+        # Data of type Tensor uses shared memory-based IPC.
+        tensor_time = self.record_execution_time(
+            MixedTypeDataset(num_samples, "tensor"),
+            batch_size=None,
+            shuffle=False,
+            num_workers=2,
+            collate_fn=collate_fn,
+        )
+
+        assert numpy_time > 1.2 * tensor_time, "The IPC time of tensor type data should be less than numpy."
+
+    @arg_mark(plat_marks=["cpu_linux"], level_mark="level0", card_mark="onecard", essential_mark="essential")
+    @pytest.mark.parametrize(
+        "multiprocessing_context",
+        (
+            None,
+            multiprocessing.get_context("fork"),
+            multiprocessing.get_context("spawn"),
+            multiprocessing.get_context("forkserver"),
+        ),
+    )
+    def test_shared_memory_resource_collection(self, multiprocessing_context):
+        """
+        Feature: Test the resource collection of shared memory.
+        Description: Test the resource collection of shared memory.
+        Expectation: The resource is collected when the process exits.
+        """
+        init_fd_count = len(os.listdir("/proc/self/fd"))
+
+        dataloader = DataLoader(
+            MyDataset(5),
+            num_workers=1,
+            multiprocessing_context=multiprocessing_context,
+        )
+        for data in dataloader:
+            assert data.is_shared()
+            del data  # Release the shared memory used by Tensor.
+        del dataloader  # Release the pipe used by multiprocessing.Queue in DataLoader.
+
+        final_fd_count = len(os.listdir("/proc/self/fd"))
+
+        # When using the 'spawn' or 'forkserver' start methods, a resource tracker will be created,
+        # which consumes some file descriptor.
+        if multiprocessing_context is None:
+            multiprocessing_context = multiprocessing
+        remain_fd = 0 if multiprocessing_context.get_start_method() == "fork" else 2
+
+        assert final_fd_count <= init_fd_count + remain_fd, (
+            "File descriptor count mismatch:\n"
+            f"  init_fd_count:     {init_fd_count}\n"
+            f"  final_fd_count:    {final_fd_count}"
+        )
 
     @arg_mark(plat_marks=["platform_ascend"], level_mark="level0", card_mark="onecard", essential_mark="essential")
     def test_pin_memory_thread_exit(self, monkeypatch):
@@ -985,9 +1113,9 @@ class TestMultiProcessDataLoader:
         Description: Test the error message when the pin memory thread is exited.
         Expectation: Raise RuntimeError.
         """
-        monkeypatch.setattr(self.data_loader, "pin_memory", True)
+        monkeypatch.setattr(self.dataloader, "pin_memory", True)
 
-        data_loader_iter = iter(self.data_loader)
+        data_loader_iter = iter(self.dataloader)
         pin_memory_done = data_loader_iter.pin_memory_done
         with pytest.raises(RuntimeError, match="DataLoader pin memory thread exited unexpectedly"):
             for _ in data_loader_iter:
@@ -1017,9 +1145,9 @@ class TestMultiProcessDataLoader:
             return np.array(self.data[index], dtype=np.uint8)
 
         monkeypatch.setattr(MyDataset, "__getitem__", mock_getitem)
-        monkeypatch.setattr(self.data_loader, "num_workers", 4)
+        monkeypatch.setattr(self.dataloader, "num_workers", 4)
 
-        data_loader_iter = iter(self.data_loader)
+        data_loader_iter = iter(self.dataloader)
         worker_group = data_loader_iter.data_workers
         assert len(worker_group) == 4
         try:
@@ -1032,8 +1160,8 @@ class TestMultiProcessDataLoader:
     @staticmethod
     def run_data_loader(num_workers, dataloader_ready, worker_ready):
         dataloader_ready.set()
-        data_loader = DataLoader(MyDataset(100), num_workers=num_workers)
-        for index, _ in enumerate(data_loader):
+        dataloader = DataLoader(MyDataset(100), num_workers=num_workers)
+        for index, _ in enumerate(dataloader):
             # make sure every worker is ready
             if index + 1 == num_workers:
                 worker_ready.set()
