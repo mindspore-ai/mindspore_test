@@ -219,7 +219,7 @@ def _run_test_in_subprocess(test_name):
     test_file = __file__
 
     env = os.environ.copy()
-    env['MS_DEV_DISABLE_AUTO_H2D'] = '1'
+    env['MS_DEV_DISABLE_AUTO_H2D'] = '2'
 
     cmd = [sys.executable, '-m', 'pytest', '-s', f'{test_file}::{test_name}']
 

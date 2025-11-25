@@ -28,10 +28,16 @@ constexpr int kDeviceTypeCount = static_cast<int>(device::DeviceType::kDeviceEnd
 static_assert(kDeviceTypeCount <= 16, "DeviceType count must be <= 16.");
 
 template <typename T>
-struct is_tensor : std::false_type {};
+struct is_tensor_ptr : std::false_type {};
 
 template <>
-struct is_tensor<mindspore::tensor::TensorPtr> : std::true_type {};
+struct is_tensor_ptr<mindspore::tensor::TensorPtr> : std::true_type {};
+
+template <typename T>
+struct is_value_ptr : std::false_type {};
+
+template <>
+struct is_value_ptr<mindspore::ValuePtr> : std::true_type {};
 
 template <typename T>
 struct is_value_tuple : std::false_type {};
@@ -39,31 +45,60 @@ struct is_value_tuple : std::false_type {};
 template <>
 struct is_value_tuple<ValueTuplePtr> : std::true_type {};
 
-std::string GetPythonStackTrace();
+template <typename T>
+struct is_vector_value : std::false_type {};
+
+template <>
+struct is_vector_value<std::vector<mindspore::ValuePtr>> : std::true_type {};
+
+PYBOOST_API std::string GetPythonStackTrace();
+
+template <typename T>
+device::DeviceType get_device_from_container(const T &container) {
+  auto result = device::DeviceType::kUnknown;
+  for (const auto &elem : container) {
+    auto dev = get_device_single(elem);
+    if (dev > result) {
+      result = dev;
+      MS_LOG(DEBUG) << "[Dispatch]Set device to " << device::GetDeviceNameByType(result);
+    }
+  }
+  return result;
+}
 
 template <typename T>
 device::DeviceType get_device_single(const T &input) {
-  if constexpr (is_tensor<T>::value) {
-    MS_LOG(DEBUG) << "[Dispatch]Get tensor device " << device::GetDeviceNameByType(input->device_type());
-    return input->device_type();
-  } else if constexpr (is_value_tuple<T>::value) {
-    MS_LOG(DEBUG) << "[Dispatch]Get device from ValueTuple.";
-    auto result = device::DeviceType::kUnknown;
-    const auto &values = input->value();
-    for (const auto &t : values) {
-      if (t->template isa<mindspore::tensor::Tensor>()) {
-        auto tensor = t->template cast<mindspore::tensor::TensorPtr>();
-        if (tensor->device_type() > result) {
-          result = tensor->device_type();
-          MS_LOG(DEBUG) << "[Dispatch]Get tensor device " << device::GetDeviceNameByType(result);
-        }
-      }
+  if constexpr (is_tensor_ptr<T>::value) {
+    const auto device_type = input->device_type();
+    MS_LOG(DEBUG) << "[Dispatch]Get tensor device " << device::GetDeviceNameByType(device_type);
+    return device_type;
+  }
+
+  if constexpr (is_value_ptr<T>::value) {
+    MS_LOG(DEBUG) << "[Dispatch]Get device from Value.";
+    if (input->template isa<mindspore::tensor::Tensor>()) {
+      MS_LOG(DEBUG) << "[Dispatch]Cast to Tensor.";
+      return get_device_single(input->template cast<mindspore::tensor::TensorPtr>());
     }
-    return result;
-  } else {
-    MS_LOG(DEBUG) << "[Dispatch] Unknown input type.";
+    if (input->template isa<ValueTuple>()) {
+      MS_LOG(DEBUG) << "[Dispatch]Cast to ValueTuple.";
+      return get_device_single(input->template cast<mindspore::ValueTuplePtr>());
+    }
     return device::DeviceType::kUnknown;
   }
+
+  if constexpr (is_value_tuple<T>::value) {
+    MS_LOG(DEBUG) << "[Dispatch]Get device from ValueTuple.";
+    return get_device_from_container(input->value());
+  }
+
+  if constexpr (is_vector_value<T>::value) {
+    MS_LOG(DEBUG) << "[Dispatch]Get device from vector<ValuePtr>.";
+    return get_device_from_container(input);
+  }
+
+  MS_LOG(DEBUG) << "[Dispatch]Unknown input type.";
+  return device::DeviceType::kUnknown;
 }
 
 inline void CheckDeviceCount(uint32_t device_mask) {
@@ -93,7 +128,11 @@ inline void CheckDeviceCount(uint32_t device_mask) {
     if (EnableDispatchWithStack()) {
       oss << " Stack:\n" << GetPythonStackTrace();
     }
-    MS_LOG(WARNING) << oss.str();
+    if (EnableDispatchWithCheck()) {
+      MS_LOG(EXCEPTION) << oss.str();
+    } else {
+      MS_LOG(INFO) << oss.str();
+    }
   }
 }
 
