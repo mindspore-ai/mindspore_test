@@ -603,8 +603,12 @@ Status FlashAttentionScoreInfo::InferOutputLayout() {
   std::vector<Shape> softmax_max_sum_tensor_map;
   Shape softmax_max_sum_tensor_shape;
   if (is_flatten_batch_seq_) {
-    softmax_max_tensor_layout_ = query_layout;
-    softmax_sum_tensor_layout_ = query_layout;
+    softmax_max_sum_tensor_map.push_back(query_tensor_map[qkv_batch_dim_]);                              // T
+    softmax_max_sum_tensor_shape.push_back(query_layout.tensor_shape_before().array()[qkv_batch_dim_]);  // T
+    softmax_max_sum_tensor_map.push_back(query_tensor_map[qkv_head_dim_]);                               // N
+    softmax_max_sum_tensor_shape.push_back(head_num_);                                                   // N
+    softmax_max_sum_tensor_map.push_back({MAP_NONE});                                                    // 8
+    softmax_max_sum_tensor_shape.push_back(8);                                                           // 8
   } else {
     softmax_max_sum_tensor_map.push_back(query_tensor_map[qkv_batch_dim_]);                              // B
     softmax_max_sum_tensor_shape.push_back(query_layout.tensor_shape_before().array()[qkv_batch_dim_]);  // B
@@ -614,11 +618,11 @@ Status FlashAttentionScoreInfo::InferOutputLayout() {
     softmax_max_sum_tensor_shape.push_back(query_layout.tensor_shape_before().array()[qkv_seq_dim_]);    // S
     softmax_max_sum_tensor_map.push_back({MAP_NONE});                                                    // 8
     softmax_max_sum_tensor_shape.push_back(8);                                                           // 8
-    softmax_max_tensor_layout_.InitFromExtendVector(query_device_matrix, softmax_max_sum_tensor_map,
-                                                    outputs_shape()[ops::kFlashAttentionScoreOutputSoftmaxMaxIndex]);
-    softmax_sum_tensor_layout_.InitFromExtendVector(query_device_matrix, softmax_max_sum_tensor_map,
-                                                    outputs_shape()[ops::kFlashAttentionScoreOutputSoftmaxSumIndex]);
   }
+  softmax_max_tensor_layout_.InitFromExtendVector(query_device_matrix, softmax_max_sum_tensor_map,
+                                                  outputs_shape()[ops::kFlashAttentionScoreOutputSoftmaxMaxIndex]);
+  softmax_sum_tensor_layout_.InitFromExtendVector(query_device_matrix, softmax_max_sum_tensor_map,
+                                                  outputs_shape()[ops::kFlashAttentionScoreOutputSoftmaxSumIndex]);
 
   // Construct layout for softmax_out
   softmax_out_tensor_layout_.InitFromExtendVector(query_device_matrix, std::vector<Shape>{{MAP_NONE}},
