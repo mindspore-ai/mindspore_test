@@ -15,6 +15,8 @@
  */
 #include "include/cluster/topology/compute_graph_node.h"
 #include <memory>
+#include <vector>
+#include <map>
 #include <string>
 #include <utility>
 #include <random>
@@ -283,16 +285,17 @@ bool ComputeGraphNode::Heartbeat() {
       MS_VLOG(VL_DISTRIBUTED_TRACE) << "Start heart beat.";
       MessageBase *response = hb_client_->ReceiveSync(std::move(message));
       if (response == nullptr) {
-        MS_LOG(ERROR)
+        MS_LOG(WARNING)
           << "Failed to send heartbeat message to meta server node and try to reconnect to the meta server.";
-        if (!Reconnect()) {
+        if (!ReconnectWithTimeout(kExecuteRetryTimeout)) {
           if (!enable_recovery_ && topo_state_ != TopoState::kInitializing) {
             topo_state_ = TopoState::kFailed;
             if (abnormal_callback_ != nullptr) {
               (*abnormal_callback_)();
             }
-            MS_LOG(EXCEPTION)
-              << "Failed to connect to the meta server. Maybe it has exited. Please check scheduler's log.";
+            MS_LOG(EXCEPTION) << "It is possible that an exception has occurred in the TCP connection between the "
+                                 "scheduler and the worker. Please check the scheduler process status via scheduler's "
+                                 "log and verify that the host network is functioning properly.";
           } else {
             MS_LOG(ERROR) << "Failed to connect to the meta server. Maybe it has exited. Please check scheduler's log.";
           }
@@ -368,6 +371,28 @@ bool ComputeGraphNode::ReconnectWithTimeoutWindow(const std::function<bool(void)
   return success;
 }
 
+bool ComputeGraphNode::ReconnectWithTimeout(size_t timeout) {
+  const size_t timeout_ms = timeout * 1000;
+  const auto start_time = CURRENT_TIMESTAMP_MILLI;
+  size_t retry_count = 0;
+  bool success = false;
+
+  const auto deadline = start_time + std::chrono::milliseconds(timeout_ms);
+
+  while (!success && CURRENT_TIMESTAMP_MILLI < deadline) {
+    success = Reconnect();
+    if (!success) {
+      MS_LOG(WARNING) << "Retry to reconnect to the meta server... Retry count: " << ++retry_count;
+      SleepBasedOnScale(kExecuteInterval);
+    }
+  }
+
+  if (success) {
+    MS_LOG(WARNING) << "Successfully reconnected to the meta server.";
+  }
+  return success;
+}
+
 bool ComputeGraphNode::Reconnect() {
   MS_ERROR_IF_NULL_W_RET_VAL(tcp_client_, false);
   MS_ERROR_IF_NULL_W_RET_VAL(hb_client_, false);
@@ -399,8 +424,6 @@ bool ComputeGraphNode::Reconnect() {
 void ComputeGraphNode::set_abnormal_callback(std::shared_ptr<std::function<void(void)>> abnormal_callback) {
   abnormal_callback_ = abnormal_callback;
 }
-
-const std::string &ComputeGraphNode::client_ip() const { return client_ip_; }
 }  // namespace topology
 }  // namespace cluster
 }  // namespace distributed

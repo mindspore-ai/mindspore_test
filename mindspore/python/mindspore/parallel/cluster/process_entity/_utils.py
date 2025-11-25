@@ -23,6 +23,7 @@ from mindspore.runtime.thread_bind_core import _get_physical_device_id, _get_cpu
 
 CURRENT_IP = None
 
+
 def _generate_cmd(cmd, cmd_args, local_rank, device_to_cpu_map, arg_bind_core):
     """
     Generates a command string to execute a Python script in the background.
