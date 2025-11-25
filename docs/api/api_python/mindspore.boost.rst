@@ -484,7 +484,7 @@ Boost能够自动优化网络性能，例如通过减少BN、梯度冻结、累�
         获取loss scale的值。
 
         返回：
-            bool，`loss_scale` 的值。
+            Number，`loss_scale` 的值。
 
     .. py:method:: get_update_cell()
 
@@ -509,7 +509,7 @@ Boost能够自动优化网络性能，例如通过减少BN、梯度冻结、累�
             - **layer** (int) - 当前层。
             - **update_ratio** (float) - 更新loss scale的当前比例。
 
-        输出：
+        返回：
             float，新loss scale的值。
 
 .. automodule:: mindspore.boost

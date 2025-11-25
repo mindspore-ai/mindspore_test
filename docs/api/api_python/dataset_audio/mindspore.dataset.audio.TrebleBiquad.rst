@@ -5,7 +5,7 @@ mindspore.dataset.audio.TrebleBiquad
 
     给音频波形施加高音音调控制效果。
 
-    接口实现方式类似于 `SoX库 <http://sox.sourceforge.net/sox.html>`_ 。
+    接口实现方式类似于 `SoX库 <https://sourceforge.net/projects/sox/>`_ 。
 
     参数：
         - **sample_rate** (int) - 采样频率（单位：Hz），不能为0。

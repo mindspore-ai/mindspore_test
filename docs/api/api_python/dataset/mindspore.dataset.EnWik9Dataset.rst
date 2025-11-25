@@ -11,8 +11,8 @@ mindspore.dataset.EnWik9Dataset
         - **dataset_dir** (str) - 包含数据集文件的根目录路径。
         - **num_samples** (int, 可选) - 指定从数据集中读取的样本数。默认值： ``None`` ，读取所有样本。
         - **num_parallel_workers** (int, 可选) - 指定读取数据的工作线程数。默认值： ``None`` ，使用全局默认线程数(8)，也可以通过 :func:`mindspore.dataset.config.set_num_parallel_workers` 配置全局线程数。
-        - **shuffle** (Union[bool, :class:`~.dataset.Shuffle`], 可选) - 每个epoch中数据混洗的模式，支持传入bool类型与枚举类型进行指定。默认值： ``True`` 。
-          如果 `shuffle` 为 ``False`` ，则不混洗，如果 `shuffle` 为 ``True`` ，等同于将 `shuffle` 设置为 ``mindspore.dataset.Shuffle.GLOBAL`` 。
+        - **shuffle** (Union[bool, :class:`~.dataset.Shuffle`], 可选) - 每个epoch中数据混洗的模式，支持传入bool类型或枚举类型进行指定。默认值： ``True`` 。
+          如果 `shuffle` 为 ``False`` ，则不混洗；如果 `shuffle` 为 ``True`` ，等同于将 `shuffle` 设置为 ``Shuffle.GLOBAL`` 。
           通过传入枚举变量设置数据混洗的模式：
 
           - ``Shuffle.GLOBAL`` ：混洗文件和样本。

@@ -6,7 +6,7 @@ mindspore.communication.comm_func.batch_isend_irecv
     异步地发送和接收张量。
 
     .. note::
-        - 不同设备中， `p2p_op_list` 中的 `P2POp` 的 ``"isend`` 和 ``"irecv"`` 应该互相匹配。
+        - 不同设备中， `p2p_op_list` 中的 `P2POp` 的 ``"isend"`` 和 ``"irecv"`` 应该互相匹配。
         - `p2p_op_list` 中的 `P2POp` 应该使用同一个通信组。
         - 暂不支持 `p2p_op_list` 中的 `P2POp` 含有 `tag` 入参。
         - `p2p_op_list` 中的 `P2POp` 的 `tensor` 的值不会被最后的结果原地修改。

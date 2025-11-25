@@ -11,8 +11,8 @@ mindspore.communication.get_group_rank_from_world_rank
         - `get_group_rank_from_world_rank` 方法应该在 `init` 方法之后使用。
 
     参数：
-        - **world_rank_id** (`int`) - 通信集群内的全局rank ID。
-        - **group** (`str`) - 指定通信组实例（由 `create_group` 方法创建）的名称。
+        - **world_rank_id** (int) - 通信集群内的全局rank ID。
+        - **group** (str) - 指定通信组实例（由 `create_group` 方法创建）的名称。
 
     返回：
         当前通信组内的rank_ID，数据类型为int。

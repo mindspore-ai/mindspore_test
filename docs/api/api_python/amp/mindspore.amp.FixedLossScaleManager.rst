@@ -21,7 +21,7 @@ mindspore.amp.FixedLossScaleManager
         获取loss scale值。
 
         返回：
-            bool， `loss_scale` 的值。
+            float， `loss_scale` 的值。
 
     .. py:method:: get_update_cell()
 
