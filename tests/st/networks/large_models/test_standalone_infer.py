@@ -154,6 +154,7 @@ def test_qwen2_0_5b_predict_standalone_for_aclgraph():
     config.processor.tokenizer.vocab_file = vocab_file_path
     config.processor.tokenizer.merges_file = merges_file_path
     config.context.device_id = int(os.environ.get("DEVICE_ID", "0"))
+    config.context.max_device_memory = "12GB"
 
     # init context
     build_context(config)
