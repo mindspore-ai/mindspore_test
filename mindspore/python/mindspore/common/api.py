@@ -1199,7 +1199,8 @@ def jit(
 
             - ast: Parse Python ast to build graph.
             - bytecode: Parse Python bytecode to build graph at runtime. This is an experimental prototype
-              that is subject to change and/or deletion.
+              that is subject to change and/or deletion. Python 3.12 and higher versions are currently
+              not supported.
             - trace: Trace the execution of Python code to build graph. This is an experimental prototype
               that is subject to change and/or deletion.
 
