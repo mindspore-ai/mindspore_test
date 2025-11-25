@@ -24,8 +24,9 @@ namespace kernel {
 namespace pyboost {
 tensor::TensorPtr RandnAscendCustomize(const std::shared_ptr<OpRunner> &op, const ValueTuplePtr &shape,
                                        const TensorPtr &seed, const TensorPtr &offset,
-                                       const std::optional<Int64ImmPtr> &dtype) {
-  OpRunner::InferOpOutput(op, shape, seed, offset, dtype);
+                                       const std::optional<Int64ImmPtr> &dtype,
+                                       const std::optional<Int64ImmPtr> &device) {
+  OpRunner::InferOpOutput(op, shape, seed, offset, dtype, device);
   auto [seed_imm, offset_imm] = UpdateGeneratorState(seed, offset);
   auto device_context = op->device_context();
   auto outputs = op->outputs();

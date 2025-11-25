@@ -261,7 +261,8 @@ class FuncBuilder : public BpropBuilder {
                                  const NodePtr &argmax_type) override;
   NodePtr RemainderTensorScalar(const NodePtr &input, const NodePtr &other) override;
   NodePtr FmodScalar(const NodePtr &input, const NodePtr &other) override;
-  NodePtr Randn(const NodePtr &shape, const NodePtr &seed, const NodePtr &offset, const NodePtr &dtype) override;
+  NodePtr Randn(const NodePtr &shape, const NodePtr &seed, const NodePtr &offset, const NodePtr &dtype,
+                const NodePtr &device) override;
   NodePtr BitwiseXorScalar(const NodePtr &input, const NodePtr &other) override;
   NodePtr UpsampleTrilinear3D(const NodePtr &x, const NodePtr &output_size, const NodePtr &scales,
                               const NodePtr &align_corners) override;
@@ -504,7 +505,8 @@ class FuncBuilder : public BpropBuilder {
   NodePtr NeScalar(const NodePtr &input, const NodePtr &other) override;
   NodePtr Conv2DExt(const NodePtr &input, const NodePtr &weight, const NodePtr &bias, const NodePtr &stride,
                     const NodePtr &padding, const NodePtr &dilation, const NodePtr &groups) override;
-  NodePtr RandnLike(const NodePtr &input, const NodePtr &seed, const NodePtr &offset, const NodePtr &dtype) override;
+  NodePtr RandnLike(const NodePtr &input, const NodePtr &seed, const NodePtr &offset, const NodePtr &dtype,
+                    const NodePtr &device) override;
   NodePtr Conv3DPadding(const NodePtr &input, const NodePtr &weight, const NodePtr &bias, const NodePtr &stride,
                         const NodePtr &padding, const NodePtr &dilation, const NodePtr &groups) override;
   NodePtr Ceil(const NodePtr &input) override;

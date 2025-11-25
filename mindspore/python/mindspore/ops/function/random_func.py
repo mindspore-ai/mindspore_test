@@ -221,12 +221,12 @@ def multinomial_with_replacement(x, seed, offset, numsamples, replacement=False)
     """
     if not isinstance(seed, Tensor):
         if not isinstance(seed, int):
-            raise TypeError(f"For multinomial_with_replacement,",
+            raise TypeError("For multinomial_with_replacement, "
                             f"the input[seed] must be int, but got {type(seed)}.")
         seed = Tensor(seed, dtype=mstype.int64)
     if not isinstance(offset, Tensor):
         if not isinstance(offset, int):
-            raise TypeError(f"For multinomial_with_replacement,",
+            raise TypeError("For multinomial_with_replacement, "
                             f"the input[offset] must be int, but got {type(offset)}.")
         offset = Tensor(offset, dtype=mstype.int64)
     multinomial_with_replacement_ = P.MultinomialWithReplacement(numsamples=numsamples,
@@ -361,7 +361,7 @@ def uniform(shape, minval, maxval, seed=None, dtype=mstype.float32):
     """
     if not isinstance(minval, Tensor) or not isinstance(maxval, Tensor):
         raise TypeError(
-            f"For functional operator[uniform], the input[minval] and input[maxval] must be a Tensor.")
+            "For functional operator[uniform], the input[minval] and input[maxval] must be a Tensor.")
 
     minval_dtype = F.dtype(minval)
     maxval_dtype = F.dtype(maxval)
@@ -1257,7 +1257,7 @@ def rand_like_ext(input, *, dtype=None):
 
 
 @_function_forbid_reuse
-def randn_ext(*size, generator=None, dtype=None):
+def randn_ext(*size, generator=None, dtype=None, device=None):
     r"""
     Returns a new tensor filled with numbers from the normal distribution over an interval :math:`[0, 1)`
     based on the given shape and dtype.
@@ -1270,6 +1270,8 @@ def randn_ext(*size, generator=None, dtype=None):
             Default: ``None``, uses the default pseudorandom number generator.
         dtype (:class:`mindspore.dtype`, optional): Designated tensor dtype. If None,
             `mindspore.float32` will be applied. Default: ``None`` .
+        device (str, optional): The specified device of the output tensor. ``"Ascend"`` and ``"npu"`` are supported.
+            If `device = None`, the value set by :func:`mindspore.set_device` will be used. Default ``None``.
 
     Returns:
         Tensor, with the designated shape and dtype, filled with random numbers from the normal distribution on
@@ -1277,6 +1279,8 @@ def randn_ext(*size, generator=None, dtype=None):
 
     Raises:
         ValueError: If `size` contains negative numbers.
+        RuntimeError: If `device` is ``"CPU"``.
+        ValueError: If `device` is ``"GPU"``.
 
     Supported Platforms:
         ``Ascend``
@@ -1292,11 +1296,11 @@ def randn_ext(*size, generator=None, dtype=None):
         generator_step_)
     if size and isinstance(size[0], (tuple, list)):
         size = size[0]
-    return randn_(size, seed, offset, dtype)
+    return randn_(size, seed, offset, dtype, device)
 
 
 @_function_forbid_reuse
-def randn_like_ext(input, *, dtype=None):
+def randn_like_ext(input, *, dtype=None, device=None):
     r"""
     Returns a new tensor filled with numbers from the normal distribution over an interval :math:`[0, 1)`
     based on the given dtype and shape of the input tensor.
@@ -1310,10 +1314,16 @@ def randn_like_ext(input, *, dtype=None):
     Keyword Args:
         dtype (:class:`mindspore.dtype`, optional): Designated Tensor dtype, it must be float type. If ``None``,
             the same dtype of `input` will be applied. Default: ``None`` .
+        device (str, optional): The specified device of the output tensor. ``"Ascend"`` and ``"npu"`` are supported.
+            If `device = None`, the device of `input` will be used. Default ``None``.
 
     Returns:
         Tensor, with the designated shape and dtype, filled with random numbers from the normal distribution on
         the interval :math:`[0, 1)`.
+
+    Raises:
+        RuntimeError: If `device` is ``"CPU"``.
+        ValueError: If `device` is ``"GPU"``.
 
     Supported Platforms:
         ``Ascend``
@@ -1327,7 +1337,7 @@ def randn_like_ext(input, *, dtype=None):
     """
     seed, offset = default_generator._step(  # pylint: disable=protected-access
         generator_step_)
-    return randn_like_(input, seed, offset, dtype)
+    return randn_like_(input, seed, offset, dtype, device)
 
 
 @_function_forbid_reuse

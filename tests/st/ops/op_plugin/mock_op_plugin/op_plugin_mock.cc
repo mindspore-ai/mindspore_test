@@ -21,7 +21,7 @@
 #include <algorithm>
 #include <iterator>
 
-const std::unordered_set<std::string> register_op_name = {"LogicalAnd", "CumsumExt", "InplaceReLU",
+const std::unordered_set<std::string> register_op_name = {"LogicalAnd", "CumsumExt", "InplaceReLU", "InplaceNormal",
                                                           "Randn",      "StackExt",  "SumExt"};
 
 extern "C" {
