@@ -62,7 +62,7 @@ class NetAssign0002(Cell):
         return x
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_store_subscr_side_effect_1():
     """
     Feature: STORE SUBSCR + HAS_ARGS
@@ -90,7 +90,7 @@ def test_store_subscr_side_effect_1():
     assert jcr["break_count_"] == 0
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_store_subscr_side_effect_2():
     """
     Feature: STORE_SUBSCR + NO_ARGS + OPERATION
@@ -109,7 +109,7 @@ def test_store_subscr_side_effect_2():
     assert jcr["break_count_"] == 0
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_del_subscr_side_effect_3():
     """
     Feature: DEL_SUBSCR + NO_ARGS + OPERATION
@@ -157,7 +157,7 @@ def test_list_pop(func, x1, x2, y1, y2):
     match_value(s, s1, error=0, err_msg=str(ms_res))
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_dict_pop_side_effect_4():
     """
     Feature: DICT POP side effect
@@ -178,7 +178,7 @@ def test_dict_pop_side_effect_4():
     assert jcr["break_count_"] == 0
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_dict_pop_side_effect_5():
     """
     Feature: DICT POP side effect 2
@@ -199,7 +199,7 @@ def test_dict_pop_side_effect_5():
     assert jcr["break_count_"] == 0
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_store_global_side_effect_6():
     """
     Feature: STORE_GLOBAL
@@ -220,7 +220,7 @@ def test_store_global_side_effect_6():
     assert jcr["break_count_"] == 0
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_del_global_side_effect_7():
     """
     Feature: DEL GLOBAL side effect
@@ -244,7 +244,7 @@ def test_del_global_side_effect_7():
 VALUE = 3
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_store_global_side_effect_8():
     """
     Feature: global variable.
@@ -298,7 +298,7 @@ def test_store_global_side_effect_8():
     assert pynative_grad_value == jit_grad_value == 3
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_fix_bug_store_subscr_side_effect_1():
     """
     Feature: STORE SUBSCR + FIX BUGS

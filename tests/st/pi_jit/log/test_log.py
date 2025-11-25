@@ -219,7 +219,7 @@ def test_pijit_log_dynamic_content():
     os.remove(f"{test_case_name}_log.txt")
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_pijit_log_bytecode_graph_split_case():
     """
     Feature: Test pijit log (bytecode only).
@@ -237,7 +237,7 @@ def test_pijit_log_bytecode_graph_split_case():
     os.remove(f"{test_case_name}_log.txt")
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_pijit_log_graph_break_and_guard_graph_split_case():
     """
     Feature: Test pijit log (graph_break and guard).
@@ -258,7 +258,7 @@ def test_pijit_log_graph_break_and_guard_graph_split_case():
     os.remove(f"{test_case_name}_log.txt")
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_pijit_log_all_graph_split_case():
     """
     Feature: Test pijit log (all).
@@ -289,7 +289,7 @@ def run_pytest(test_file_name, test_case_name, log_config):
     return data
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_pijit_log_print_after_all_graph_split_for():
     """
     Feature: print_after_all logging for graph break in loop.
@@ -306,7 +306,7 @@ def test_pijit_log_print_after_all_graph_split_for():
     os.remove(f"{test_case_name}_log.txt")
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_pijit_log_print_after_all_try_finally():
     """
     Feature: print_after_all logging for try/finally graph break.
@@ -324,7 +324,7 @@ def test_pijit_log_print_after_all_try_finally():
     os.remove(f"{test_case_name}_log.txt")
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_pijit_log_print_after_all_before_psjit():
     """
     Feature: print_after_all logging before psjit execution.

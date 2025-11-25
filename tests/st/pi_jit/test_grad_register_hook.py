@@ -256,7 +256,7 @@ def half_fn(grad):
     return grad * 0.5
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_hook_register_tensor_outside_grad_input():
     """
     Feature: Tensor.register_hook outside construct.
@@ -293,7 +293,7 @@ def test_hook_register_tensor_outside_grad_input():
     match_array(grad_pn, grad_jit)
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_hook_register_parameter_outside_grad_weight():
     """
     Feature: Parameter.register_hook outside construct.
@@ -327,7 +327,7 @@ def test_hook_register_parameter_outside_grad_weight():
     match_array(grad_pn, grad_jit)
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_hook_register_fallback_square_on_tensor():
     """
     Feature: Tensor.register_hook with custom square op.
@@ -369,7 +369,7 @@ def test_hook_register_fallback_square_on_tensor():
     match_array(grad_pn, grad_jit)
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_hook_register_dump_to_file():
     """
     Feature: Tensor.register_hook with dumping to file.
@@ -424,7 +424,7 @@ def test_hook_register_dump_to_file():
             os.remove(path2)
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_hook_register_ctrl_if_condition():
     """
     Feature: Tensor.register_hook with control flow inside hook.
@@ -464,7 +464,7 @@ def test_hook_register_ctrl_if_condition():
     match_array(grad_pn, grad_jit)
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_hook_register_middle_fallback_tensor_zero_grad():
     """
     Feature: Register hook on fallback tensor created inside construct.
@@ -502,7 +502,7 @@ def test_hook_register_middle_fallback_tensor_zero_grad():
     match_array(grad_pn, grad_jit)
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_hook_register_grad_not_all_inputs_and_weights():
     """
     Feature: Tensor and Parameter hooks with partial gradient fetching.
@@ -548,7 +548,7 @@ def test_hook_register_grad_not_all_inputs_and_weights():
     match_array(grad_b_pn, grad_b_jit)
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_hook_register_sequential_layers_parameters():
     """
     Feature: Parameter.register_hook in stacked Cells.
@@ -596,7 +596,7 @@ def test_hook_register_sequential_layers_parameters():
         match_array(grad_pn, grad_jit)
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_hook_register_remove_before_backward():
     """
     Feature: Tensor.register_hook remove handle before backward.
@@ -633,7 +633,7 @@ def test_hook_register_remove_before_backward():
     match_array(grad_weight_pn, grad_weight_jit)
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_hook_register_remove_after_first_backward():
     """
     Feature: Tensor.register_hook removal after first backward.
@@ -673,7 +673,7 @@ def test_hook_register_remove_after_first_backward():
     match_array(grad_after_remove_pn, grad_after_remove_jit)
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_hook_register_after_initial_run():
     """
     Feature: Tensor.register_hook after initial execution.
@@ -712,7 +712,7 @@ def test_hook_register_after_initial_run():
     match_array(grad_after_hook_pn, grad_after_hook_jit)
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_hook_register_run_twice():
     """
     Feature: Tensor.register_hook reused across multiple runs.
@@ -751,7 +751,7 @@ def test_hook_register_run_twice():
     match_array(grad_second_pn, grad_second_jit)
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_hook_register_three_remove_one():
     """
     Feature: Tensor.register_hook remove one handle among multiple.
@@ -787,7 +787,7 @@ def test_hook_register_three_remove_one():
     match_array(grad_pn, grad_jit)
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_hook_register_remove_inside_construct():
     """
     Feature: Parameter.register_hook with input hook removed inside construct.
@@ -825,7 +825,7 @@ def test_hook_register_remove_inside_construct():
     match_array(grad_weight_pn, grad_weight_jit)
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_hook_register_on_jit_function():
     """
     Feature: Tensor.register_hook applied before calling JIT function.

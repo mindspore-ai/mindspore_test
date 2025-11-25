@@ -138,7 +138,7 @@ def test_scope_with_nest_net_with_break():
     check_scope_info_with_break(net, (input_x, input_y), expect_dict, 2, "./test_scope_with_nest_net_with_break")
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_scope_info_cell_with_debug_info():
     """
     Feature: PIJit enable scope info and debug info in IR.
@@ -160,7 +160,7 @@ def test_scope_info_cell_with_debug_info():
     check_scope_info_no_break(net, (input_np1, input_np2), expect_scope_info_dict, "./test_scope_info_cell_with_debug_info")
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_scope_info_cell_with_graph_break():
     """
     Feature: PIJit enable scope info in IR.

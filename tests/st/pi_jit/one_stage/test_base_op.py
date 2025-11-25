@@ -1699,7 +1699,7 @@ def test_unpack_for_variable_tensor():
     assert len(jcr['code']['phase_']) > 0
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_jit_return_function():
     """
     Feature: ms.jit returning function closure.
@@ -1740,7 +1740,7 @@ def test_jit_return_function():
     match_array(pynative_result, jit_result, error=5)
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_jit_return_bool():
     """
     Feature: ms.jit returning boolean branch.
@@ -1780,7 +1780,7 @@ def test_jit_return_bool():
     match_array(pynative_result, jit_result, error=5)
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_jit_return_none():
     """
     Feature: ms.jit returning None helper.
@@ -1819,7 +1819,7 @@ def test_jit_return_none():
     # match_array(pynative_net.p, jit_net.p)
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_bytecode_to_float_preserves_dtype():
     """
     Feature: Bytecode JIT with to_float conversion.

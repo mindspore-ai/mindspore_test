@@ -216,7 +216,7 @@ class MultiOutputNet(Cell):
         return self.factor * x, 3 * y
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_dynamic_shape_scale_one_dimension():
     """
     Feature: Dynamic shape scaling.
@@ -243,7 +243,7 @@ def test_dynamic_shape_scale_one_dimension():
         assert_equal(jit_grad, pynative_grad, decimal=5)
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_dynamic_shape_scale_all_dimensions():
     """
     Feature: Dynamic shape scaling.
@@ -270,7 +270,7 @@ def test_dynamic_shape_scale_all_dimensions():
         assert_equal(jit_grad, pynative_grad, decimal=5)
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_dynamic_shape_scale_rank_variation():
     """
     Feature: Dynamic shape scaling.
@@ -298,7 +298,7 @@ def test_dynamic_shape_scale_rank_variation():
         assert_equal(jit_grad, pynative_grad, decimal=5)
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_dynamic_shape_scale_mixed_variation():
     """
     Feature: Dynamic shape scaling.
@@ -326,7 +326,7 @@ def test_dynamic_shape_scale_mixed_variation():
         assert_equal(jit_grad, pynative_grad, decimal=5)
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_dynamic_shape_scale_dtype_variation():
     """
     Feature: Dynamic shape scaling.
@@ -361,7 +361,7 @@ def test_dynamic_shape_scale_dtype_variation():
         assert_equal(jit_grad, pynative_grad, decimal=5)
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_dynamic_shape_two_inputs_change_first():
     """
     Feature: Dynamic shape with two inputs.
@@ -391,7 +391,7 @@ def test_dynamic_shape_two_inputs_change_first():
         assert_equal(jit_grads, pynative_grads, decimal=5)
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_dynamic_shape_two_inputs_change_both():
     """
     Feature: Dynamic shape with two inputs.
@@ -421,7 +421,7 @@ def test_dynamic_shape_two_inputs_change_both():
         assert_equal(jit_grads, pynative_grads, decimal=5)
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_dynamic_shape_two_inputs_multiple_cases():
     """
     Feature: Dynamic shape with two inputs.
@@ -452,7 +452,7 @@ def test_dynamic_shape_two_inputs_multiple_cases():
         assert_equal(jit_grads, pynative_grads, decimal=5)
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_dynamic_shape_tuple_tensor_input():
     """
     Feature: Dynamic shape with tuple tensor inputs.
@@ -482,7 +482,7 @@ def test_dynamic_shape_tuple_tensor_input():
         assert_equal(jit_grad, pynative_grad, decimal=5)
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_dynamic_shape_parameter_input():
     """
     Feature: Dynamic shape with Parameter input.
@@ -517,7 +517,7 @@ def test_dynamic_shape_parameter_input():
         assert_equal(jit_grads, pynative_grads, decimal=5)
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_dynamic_shape_tensor_with_none():
     """
     Feature: Dynamic shape with optional argument.
@@ -548,7 +548,7 @@ def test_dynamic_shape_tensor_with_none():
         assert_equal(jit_grads, pynative_grads, decimal=5)
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_dynamic_shape_tuple_int_input():
     """
     Feature: Dynamic shape with tuple integer inputs.
@@ -568,7 +568,7 @@ def test_dynamic_shape_tuple_int_input():
         match_array(jit_output, pynative_output)
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_dynamic_shape_tensor_and_scalar_input():
     """
     Feature: Dynamic shape with tensor-scalar inputs.
@@ -599,7 +599,7 @@ def test_dynamic_shape_tensor_and_scalar_input():
         assert_equal(jit_grads, pynative_grads, decimal=5)
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_dynamic_shape_multi_output_variation():
     """
     Feature: Dynamic shape with tuple outputs.
@@ -623,7 +623,7 @@ def test_dynamic_shape_multi_output_variation():
         assert_equal(jit_output, pynative_output)
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_dynamic_shape_multi_output_change_shape():
     """
     Feature: Dynamic shape with tuple outputs.

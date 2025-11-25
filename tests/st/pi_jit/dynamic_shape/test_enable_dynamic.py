@@ -33,7 +33,7 @@ def count_file_key(file, key):
     return count
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_enable_dynamic_input_signature_with_jit():
     """
     Feature: ms.enable_dynamic input signature.

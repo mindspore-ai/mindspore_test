@@ -1181,7 +1181,7 @@ def test_nested_list_comprehension():
     assert_no_graph_break(fn)
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_list_comprehension_nested_multi_generators():
     """
     Feature: list comprehension.
@@ -1220,7 +1220,7 @@ def test_list_comprehension_nested_multi_generators():
     assert_executed_by_graph_mode(jit_net.construct)
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_list_comprehension_inline_conditional():
     """
     Feature: list comprehension.
@@ -1254,7 +1254,7 @@ def test_list_comprehension_inline_conditional():
     assert_executed_by_graph_mode(jit_net.construct)
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_list_comprehension_tensor_creation_no_break():
     """
     Feature: list comprehension.
@@ -1340,7 +1340,7 @@ def test_graph_break_before_list_comprehension_2():
     assert_has_graph_break(fn, break_count=1)
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_graph_break_before_list_comprehension_asnumpy():
     """
     Feature: list comprehension.
@@ -1424,7 +1424,7 @@ def test_graph_break_after_list_comprehension_2():
     assert_has_graph_break(fn, break_count=1)
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_graph_break_after_list_comprehension_asnumpy():
     """
     Feature: list comprehension.
