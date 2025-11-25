@@ -20,7 +20,9 @@
 #include <string>
 #include <utility>
 #include <memory>
+#include "ir/tensor.h"
 #include "ir/device_type.h"
+#include "utils/device_manager_conf.h"
 #include "utils/ms_utils.h"
 #include "include/backend/visible.h"
 
@@ -28,11 +30,15 @@ namespace mindspore {
 namespace kernel {
 namespace pyboost {
 class OpRunner;
+
 using OpPtr = std::shared_ptr<OpRunner>;
+
 struct PYBOOST_API OpStatus {
   OpStatus();
+
   OpStatus(bool _disable_mix_precision, device::DeviceType device_target)
       : disable_mix_precision(_disable_mix_precision), device_target(device_target) {}
+
   bool disable_mix_precision{false};
   device::DeviceType device_target{};
 };
@@ -42,10 +48,13 @@ class PYBOOST_API OpRunStatus {
   static OpRunStatus &Get();
 
   const OpStatus &op_status() { return status_; }
+
   void set_run_info(OpStatus &&run_info) { status_ = run_info; }
 
   bool RequireGrad() const { return require_grad_; }
+
   void SetRequireGrad(bool require_grad) { require_grad_ = require_grad; }
+
   device::DeviceType device_target() const { return status_.device_target; }
 
   void ResetRequireGrad(bool require_grad) { require_grad_ = require_grad; }
@@ -57,11 +66,14 @@ class PYBOOST_API OpRunStatus {
   void HeterBarrier(device::DeviceType device);
 
   bool IsSafeView() const { return is_safe_view_; }
+
   void SetIsSafeView(bool is_safe) { is_safe_view_ = is_safe; }
+
   void ResetIsSaveView(bool is_safe) { is_safe_view_ = is_safe; }
 
  private:
   OpRunStatus();
+
   ~OpRunStatus() = default;
   DISABLE_COPY_AND_ASSIGN(OpRunStatus);
 
@@ -79,6 +91,7 @@ class PYBOOST_API RequireGradGuard {
     origin_require_grad_ = OpRunStatus::Get().RequireGrad();
     OpRunStatus::Get().SetRequireGrad(require_grad);
   }
+
   ~RequireGradGuard() { OpRunStatus::Get().ResetRequireGrad(origin_require_grad_); }
 
  private:
@@ -91,6 +104,7 @@ class PYBOOST_API IsSafeViewGuard {
     origin_is_safe_view_ = OpRunStatus::Get().IsSafeView();
     OpRunStatus::Get().SetIsSafeView(is_safe);
   }
+
   ~IsSafeViewGuard() { OpRunStatus::Get().ResetIsSaveView(origin_is_safe_view_); }
 
  private:

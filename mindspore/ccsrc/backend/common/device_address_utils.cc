@@ -50,6 +50,7 @@
 #include "mindspore/core/include/ir/tensor_new.h"
 #include "utils/stream_guard.h"
 #include "utils/log_adapter.h"
+#include "include/runtime/utils/dispatch/dispatch_env.h"
 
 namespace mindspore {
 using tensor::TensorPtr;
@@ -863,14 +864,16 @@ KernelTensorPtr DeviceAddressUtils::CloneEmptyKernelTensor(const KernelTensorPtr
 }
 
 void CheckAutoH2D(const DeviceContext *device_context, const tensor::TensorPtr &tensor) {
+  if (!EnableDispatchWithCheck()) {
+    return;
+  }
   if (tensor->source_type() != ops::OP_DTYPE::DT_BEGIN) {
     MS_LOG(DEBUG) << "Input tensor source_type is " << tensor->source_type();
-    return;
   }
   auto addr = tensor->device_address();
   auto device_address = std::static_pointer_cast<device::DeviceAddress>(addr);
   if (device_address->GetDeviceType() != device_context->GetDeviceType()) {
-    MS_LOG(EXCEPTION) << "The tensor device address type is " << device_address->GetDeviceType()
+    MS_LOG(EXCEPTION) << "[Dispatch]The tensor device address type is " << device_address->GetDeviceType()
                       << ". Need to call Tensor.to first";
   }
 }
@@ -919,10 +922,7 @@ void DeviceAddressUtils::CreateInputTensorAddress(const DeviceContext *device_co
                       << "https://www.mindspore.cn/docs/zh-CN/master/api_python/mindspore/mindspore.Tensor.html";
   }
 
-  static bool need_check = common::GetEnv("MS_DEV_DISABLE_AUTO_H2D") == "1";
-  if (need_check) {
-    CheckAutoH2D(device_context, tensor);
-  }
+  CheckAutoH2D(device_context, tensor);
 
   auto tensor_address = std::static_pointer_cast<device::DeviceAddress>(addr);
   if (tensor_address->GetDeviceType() == device_context->GetDeviceType()) {

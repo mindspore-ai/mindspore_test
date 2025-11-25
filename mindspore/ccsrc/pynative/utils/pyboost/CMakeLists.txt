@@ -1,6 +1,7 @@
 file(GLOB_RECURSE _PYBOOST_SRC_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
         "auto_generate/*.cc"
         "customize/*.cc"
+        "functions/composite/*.cc"
         "functions/*.cc"
         "functions/auto_generate/*.cc"
         "grad_functions/*.cc"

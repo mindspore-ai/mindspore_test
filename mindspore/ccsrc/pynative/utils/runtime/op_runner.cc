@@ -46,6 +46,7 @@
 #include "pynative/utils/runtime/ir_converter.h"
 #include "mindspore/ops/op_def/framework_op_name.h"
 #include "utils/stream_guard.h"
+#include "include/runtime/utils/dispatch/dispatch_env.h"
 using mindspore::profiler::ProfilerManager;
 using EdgePtr = mindspore::pynative::EdgePtr;
 
@@ -71,10 +72,9 @@ void UpdateInputTensorFromDevice(const std::vector<AnfNodePtr> &input_nodes,
     // node_address can't be null
     MS_EXCEPTION_IF_NULL(node_address);
     MS_EXCEPTION_IF_NULL(device_context);
-    static bool need_check = common::GetEnv("MS_DEV_DISABLE_AUTO_H2D") == "1";
-    if (need_check) {
-      CheckAutoH2D(device_context, tensor);
-    }
+
+    CheckAutoH2D(device_context, tensor);
+
     if (tensor_address != nullptr) {
       if (tensor_address->GetDeviceType() != device_context->GetDeviceType() ||
           tensor_address->format() != node_address->format()) {

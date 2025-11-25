@@ -17,6 +17,9 @@
 #include "mindspore/ccsrc/pynative/utils/pyboost/functions/auto_generate/functions.h"
 #include <string>
 #include "utils/ms_utils.h"
+#include "include/runtime/utils/dispatch/dispatch_env.h"
+#include "include/runtime/utils/dispatch/dispatch_env.h"
+#include "mindspore/ccsrc/pynative/utils/pyboost/functions/dispatch.h"
 #include "mindspore/ccsrc/pynative/utils/pyboost/functions/base.h"
 #include "mindspore/ccsrc/pynative/utils/pyboost/functions/auto_grad_reg.h"
 #include "mindspore/ccsrc/pynative/utils/pyboost/functions/auto_grad_guard.h"

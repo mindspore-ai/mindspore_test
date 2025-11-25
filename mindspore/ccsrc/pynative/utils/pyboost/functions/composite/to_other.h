@@ -14,20 +14,21 @@
  * limitations under the License.
  */
 
-#include "mindspore/ops/kernel/gpu/pyboost/customize/to_device.h"
-#include "pynative/utils/pyboost/customize/to.h"
-#include "ir/tensor_new.h"
+#ifndef MINDSPORE_MINDSPORE_CCSRC_PYNATIVE_UTILS_PYBOOST_FUNCTIONS_COMPOSITE_TO_OTHER_H_
+#define MINDSPORE_MINDSPORE_CCSRC_PYNATIVE_UTILS_PYBOOST_FUNCTIONS_COMPOSITE_TO_OTHER_H_
+#include <vector>
+#include <memory>
+#include "ir/tensor.h"
+#include "ir/value.h"
+#include "mindspore/ccsrc/pynative/utils/pyboost/op_runner.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::TensorPtr ToDeviceGPUCustomize(const std::shared_ptr<OpRunner> &op,
-                                       const mindspore::tensor::TensorPtr &self_tensor,
-                                       const std::optional<mindspore::Int64ImmPtr> &device,
-                                       const std::optional<mindspore::Int64ImmPtr> &dtype,
-                                       const mindspore::BoolImmPtr &non_blocking, const mindspore::BoolImmPtr &copy) {
-  return ToDeviceCustomize(op, self_tensor, device, dtype, non_blocking, copy);
-}
+tensor::TensorPtr PYBOOST_API to_other(const mindspore::tensor::TensorPtr &self,
+                                       const mindspore::tensor::TensorPtr &other,
+                                       const mindspore::BoolImmPtr &non_blocking, const mindspore::BoolImmPtr &copy);
 }  // namespace pyboost
 }  // namespace kernel
 }  // namespace mindspore
+#endif  // MINDSPORE_MINDSPORE_CCSRC_PYNATIVE_UTILS_PYBOOST_FUNCTIONS_COMPOSITE_TO_OTHER_H_

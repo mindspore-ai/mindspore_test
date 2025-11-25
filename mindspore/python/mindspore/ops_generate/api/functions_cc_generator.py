@@ -18,7 +18,7 @@ This module provides classes for generating C++ header and implementation files 
 
 import os
 
-import common.template as template
+from common import template
 from common.template import Template
 import common.gen_constants as K
 from common.gen_utils import save_file
@@ -56,7 +56,7 @@ class FunctionsHeaderGenerator(BaseGenerator):
         """
         functions_list = []
         for op_proto in op_protos:
-            if op_proto.op_dispatch is None:
+            if op_proto.op_dispatch is None or op_proto.composite is True:
                 continue
             input_args_with_type_str = self._get_input_args(op_proto)
             return_type_str = _get_return_type_str(op_proto)
@@ -113,6 +113,7 @@ class FunctionsGenerator(BaseGenerator):
         """
         self.FUNCTIONS_CC_TEMPLATE = template.FUNCTIONS_CC_TEMPLATE
         self.FUNCTION_BODY_TEMPLATE = template.FUNCTION_BODY_TEMPLATE
+        self.FUNCTION_BODY_WRAPPER_TEMPLATE = template.FUNCTION_BODY_WRAPPER_TEMPLATE
         self.FUNCTION_VIEW_BODY_TEMPLATE = template.FUNCTION_VIEW_BODY_TEMPLATE
         self.FUNCTION_VIEW_CUSTOMIZE_BODY_TEMPLATE = template.FUNCTION_VIEW_CUSTOMIZE_BODY_TEMPLATE
         self.FUNCTION_COMM_BODY_TEMPLATE = template.FUNCTION_COMM_BODY_TEMPLATE
@@ -145,6 +146,8 @@ class FunctionsGenerator(BaseGenerator):
         ops_inc_head_set = set()
         for op_proto in op_protos:
             if op_proto.op_dispatch is None:
+                continue
+            if op_proto.composite:
                 continue
             if op_proto.op_view:
                 function_body, pyboost_func_include_header = self._get_function_view_body(op_proto)
@@ -229,13 +232,22 @@ class FunctionsGenerator(BaseGenerator):
         create_op_str = self.create_aclnn_op_template.replace(class_name=op_proto.op_class.name)
         if getattr(op_proto.op_dispatch, 'internal_op_ascend') != 'None':
             create_op_str = self.create_internal_op_template.replace(class_name=op_proto.op_class.name)
-        return self.FUNCTION_BODY_TEMPLATE.replace(op_name=op_proto.op_name,
+
+        function_body = self.FUNCTION_BODY_TEMPLATE.replace(op_name=op_proto.op_name,
                                                    class_name=op_proto.op_class.name,
                                                    create_op=create_op_str,
                                                    input_args=input_args,
                                                    clone_func=clone_func_str,
                                                    input_args_with_type=input_args_with_type,
                                                    return_type=return_type_str)
+
+        function_body_wrapper \
+            = self.FUNCTION_BODY_WRAPPER_TEMPLATE.replace(op_name=op_proto.op_name,
+                                                          input_args=input_args,
+                                                          input_args_with_type=input_args_with_type,
+                                                          return_type=return_type_str)
+        return function_body + function_body_wrapper
+
 
     def _get_input_args(self, op_proto, has_type):
         """

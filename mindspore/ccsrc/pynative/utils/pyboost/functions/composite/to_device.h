@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_MINDSPORE_OPS_KERNEL_ASCEND_PYBOOST_CUSTOMIZE_TO_OTHER_H_
-#define MINDSPORE_MINDSPORE_OPS_KERNEL_ASCEND_PYBOOST_CUSTOMIZE_TO_OTHER_H_
+#ifndef MINDSPORE_MINDSPORE_CCSRC_PYNATIVE_UTILS_PYBOOST_FUNCTIONS_COMPOSITE_TO_DEVICE_H_
+#define MINDSPORE_MINDSPORE_CCSRC_PYNATIVE_UTILS_PYBOOST_FUNCTIONS_COMPOSITE_TO_DEVICE_H_
 #include <vector>
 #include <memory>
 #include "ir/tensor.h"
@@ -25,10 +25,11 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::TensorPtr ToOtherAscendCustomize(const std::shared_ptr<OpRunner> &op, const mindspore::tensor::TensorPtr &self,
-                                         const mindspore::tensor::TensorPtr &other,
-                                         const mindspore::BoolImmPtr &non_blocking, const mindspore::BoolImmPtr &copy);
+tensor::TensorPtr PYBOOST_API to_device(const mindspore::tensor::TensorPtr &self,
+                                        const std::optional<mindspore::Int64ImmPtr> &device,
+                                        const std::optional<mindspore::Int64ImmPtr> &dtype,
+                                        const mindspore::BoolImmPtr &non_blocking, const mindspore::BoolImmPtr &copy);
 }  // namespace pyboost
 }  // namespace kernel
 }  // namespace mindspore
-#endif  // MINDSPORE_MINDSPORE_OPS_KERNEL_ASCEND_PYBOOST_CUSTOMIZE_TO_OTHER_H_
+#endif  // MINDSPORE_MINDSPORE_CCSRC_PYNATIVE_UTILS_PYBOOST_FUNCTIONS_COMPOSITE_TO_DEVICE_H_

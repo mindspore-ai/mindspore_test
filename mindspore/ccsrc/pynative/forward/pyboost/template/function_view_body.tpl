@@ -2,8 +2,12 @@ namespace {
 inline static ${return_type} ${op_name}_inner(${call_args_with_type}) {
   MS_LOG(DEBUG) << "View ${op_name} Call start";
 
-  // device info
-  const auto &device_target = GetDeviceTarget();
+  device::DeviceType device_target;
+  if (EnableDispatch()) {
+    device_target = get_device(${call_args});
+  } else {
+    device_target = GetDeviceTarget();
+  }
   OpRunStatus::Get().HeterBarrier(device_target);
 
   const auto &device_context = runtime::OpRunner::GetDeviceContext(device_target);

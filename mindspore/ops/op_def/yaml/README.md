@@ -82,6 +82,11 @@
     # Default: False.
     <view>: <value>
 
+    # Optional. The 'composite' is a fixed key. Indicates whether this operator is implemented as a composite operator,
+    # i.e. its semantics are defined by composing multiple smaller operators rather than by a dedicated kernel.
+    # Default: False.
+    <composite>: <value>
+
     # Optional. The 'dispatch' is a fixed key. The item is used to control whether generate pyboost codes.
     <dispatch>:
       # Optional. The 'enable' is a fixed key. Pyboost codes will be auto generated if value is True.

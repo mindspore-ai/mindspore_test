@@ -21,13 +21,22 @@
 #include "mindspore/ccsrc/pynative/utils/runtime//op_runner.h"
 #include "mindspore/ccsrc/pynative/utils/pyboost/functions/auto_grad_reg.h"
 #include "mindspore/ccsrc/pynative/utils/pyboost/functions/auto_grad_guard.h"
+#include "include/runtime/utils/dispatch/dispatch_env.h"
+#include "pynative/utils/pyboost/functions/dispatch.h"
 
 namespace mindspore::kernel::pyboost {
 inline device::DeviceType GetDeviceTarget() { return OpRunStatus::Get().device_target(); }
 mindspore::tensor::TensorPtr reshape_impl(const mindspore::tensor::TensorPtr &input,
                                           const std::vector<int64_t> &shape) {
   auto storage_info = ops::ReshapeBasicTypeCalc(input, shape);
-  const auto &device_target = GetDeviceTarget();
+
+  device::DeviceType device_target;
+  if (EnableDispatch()) {
+    device_target = get_device(input);
+  } else {
+    device_target = GetDeviceTarget();
+  }
+
   if (MS_LIKELY(storage_info)) {
     OpRunStatus::Get().HeterBarrier(device_target);
     MS_LOG(DEBUG) << "View Reshape Call start";

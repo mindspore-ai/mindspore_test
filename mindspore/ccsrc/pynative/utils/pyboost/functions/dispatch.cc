@@ -14,18 +14,23 @@
  * limitations under the License.
  */
 
-#include "mindspore/ops/kernel/gpu/pyboost/customize/to_other.h"
-#include "pynative/utils/pyboost/customize/to.h"
-#include "ir/tensor_new.h"
+#include "pynative/utils/pyboost/functions/dispatch.h"
+#include <sstream>
+#include "pybind11/pybind11.h"
+
+namespace py = pybind11;
 
 namespace mindspore {
-namespace kernel {
-namespace pyboost {
-tensor::TensorPtr ToOtherGPUCustomize(const std::shared_ptr<OpRunner> &op, const mindspore::tensor::TensorPtr &self,
-                                      const mindspore::tensor::TensorPtr &other,
-                                      const mindspore::BoolImmPtr &non_blocking, const mindspore::BoolImmPtr &copy) {
-  return ToOtherCustomize(op, self, other, non_blocking, copy);
+std::string GetPythonStackTrace() {
+  try {
+    py::gil_scoped_acquire gil;
+    py::object traceback = py::module::import("traceback");
+    py::object format_stack = traceback.attr("format_stack")();
+    py::object sep = py::str("");
+    py::object stack_str = py::str("").attr("join")(format_stack);
+    return stack_str.cast<std::string>();
+  } catch (const std::exception &e) {
+    return std::string("<Failed to get Python stack: ") + e.what() + ">";
+  }
 }
-}  // namespace pyboost
-}  // namespace kernel
 }  // namespace mindspore

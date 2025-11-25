@@ -363,6 +363,11 @@ class MS_CORE_API Tensor : public MetaTensor {
   /// \return The device address.
   const DeviceAddressPtr &device_address() const;
 
+  device::DeviceType device_type() const {
+    MS_EXCEPTION_IF_NULL(device_sync_);
+    return device_sync_->GetDeviceType();
+  }
+
   /// \brief Set the device address.
   ///
   /// \param[in] device_sync The input Device synchronization.
