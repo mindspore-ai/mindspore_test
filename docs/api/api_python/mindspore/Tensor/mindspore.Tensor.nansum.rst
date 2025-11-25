@@ -46,9 +46,9 @@ mindspore.Tensor.nansum
     返回：
         Tensor，输入Tensor指定维度的元素和，将非数字(NaNs)处理为零。
 
-        - 如果 `axis` 为None，且 `keep_dims` 为False，则输出一个零维Tensor，表示输入Tensor中所有元素的和。
-        - 如果 `axis` 为int，值为2，并且 `keep_dims` 为False，则输出的shape为： :math:`(self_1, self_3, ..., self_R)` 。
-        - 如果 `axis` 为tuple(int)或list(int)，值为(2, 3)，并且 `keep_dims` 为False，则输出的shape为 :math:`(self_1, self_4, ..., self_R)` 。
+        - 如果 `axis` 为None，且 `keepdims` 为False，则输出一个零维Tensor，表示输入Tensor中所有元素的和。
+        - 如果 `axis` 为int，值为2，并且 `keepdims` 为False，则输出的shape为： :math:`(self_1, self_3, ..., self_R)` 。
+        - 如果 `axis` 为tuple(int)或list(int)，值为(2, 3)，并且 `keepdims` 为False，则输出的shape为 :math:`(self_1, self_4, ..., self_R)` 。
 
     异常：
         - **TypeError** - `keepdims` 不是bool类型。

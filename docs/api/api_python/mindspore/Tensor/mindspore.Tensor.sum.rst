@@ -42,7 +42,7 @@ mindspore.Tensor.sum
         Tensor。具有与输入相同shape的Tensor，删除了指定的 `axis` 。如果输入Tensor是零维数组，或 `axis` 为 ``None`` 时，返回一个标量。
 
     异常：
-        - **TypeError** - input不是Tensor， `axis` 不是整数、整数元组、整数列表或Tensor， `keepdims` 不是整数，或者 `initial` 不是标量。
+        - **TypeError** - input不是Tensor， `axis` 不是整数、整数元组、整数列表或Tensor， `keepdims` 不是bool，或者 `initial` 不是标量。
         - **ValueError** - 任意 `axis` 超出范围或存在重复的 `axis` 。
 
     .. seealso::

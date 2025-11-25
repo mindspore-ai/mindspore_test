@@ -28,7 +28,7 @@ mindspore.train.MAE
 
     .. py:method:: update(*inputs)
 
-        使用预测值 :math:`y_{pred}` 和真实值 :math:`y` 更新局部变量。
+        使用预测值 :math:`y_\pred` 和真实值 :math:`y` 更新局部变量。
 
         参数：
             - **inputs** - 输入 `y_pred` 和 `y` 来计算MAE，其中 `y_pred` 和 `y` 的shape都是N-D，它们的shape相同。
