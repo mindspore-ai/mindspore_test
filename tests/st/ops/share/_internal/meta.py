@@ -39,7 +39,7 @@ from tests.st.ops.share._op_info.op_info import OpInfo
 from tests.st.ops.share._op_info.op_common import get_default_loss, dtypes_extra_uint
 
 
-@ms.jit
+@ms.jit(backend="ms_backend")
 def ops_common_net(op, op_input, *op_args, **op_kwargs):
     """Forward op net wrapper with jit.
     """
@@ -482,7 +482,7 @@ class OpsFactory():
                 tensor_indices = (tensor_indices[0],) + tensor_indices[3:]
             if not tensor_indices:
                 grads.append(tuple())
-                warnings.warn("No tensor inputs to compute gradients for sample input {idx}")
+                warnings.warn(f"No tensor inputs to compute gradients for sample input: {sample_input.summary(True)}")
                 continue
             grad_func = grad_func or ms.grad(self.op_func_without_kwargs, grad_position=tensor_indices)
             grad_outi = grad_func(*args_no_dout)
@@ -596,7 +596,7 @@ class OpsFactory():
         arg_names = _code.co_varnames[:_code.co_argcount]
         dyn_kwargs = {name: val for name, val in zip(arg_names, compile_inputs) if is_op_input_dynamic(val)}
 
-        dyn_op_func = ms.enable_dynamic(**dyn_kwargs)(ms.jit(self.op_func_without_kwargs))
+        dyn_op_func = ms.enable_dynamic(**dyn_kwargs)(ms.jit(self.op_func_without_kwargs, backend="ms_backend"))
         out = []
         for running_input in self._dynamic_inputs.op_running_inputs:
             if self._inplace_op:
