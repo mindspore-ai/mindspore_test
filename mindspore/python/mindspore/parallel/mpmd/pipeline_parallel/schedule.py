@@ -19,7 +19,7 @@ from collections import defaultdict
 import itertools
 import bisect
 from mindspore.parallel.mpmd.pipeline_parallel import PipelineStage
-from ._utils import _MicroBatch
+from mindspore.parallel.mpmd.pipeline_parallel._utils import _MicroBatch
 
 
 class MetaStepType(Enum):
@@ -107,7 +107,8 @@ class PipelineScheduleRuntime(ABC):
                  micro_batch_num,
                  args_batch_dim=None,
                  kwargs_batch_dim=None,
-                 output_concat_dim=None):
+                 output_concat_dim=None,
+                 overlap_p2p=False):
         self.stages = self._check_stages(stages)
         self.micro_batch_num = micro_batch_num
         self._args_batch_dim = args_batch_dim
@@ -118,8 +119,11 @@ class PipelineScheduleRuntime(ABC):
         self._stage_dict = self.convert_stages_dict()
         self.real_stage_num = self.stages[0].stage_num // self.n_local_stages
         self._stage_num = self.stages[0].stage_num
+        self._overlap_p2p = overlap_p2p
         self.exec_order = {}
         self._init_stages()
+        self.fwd_handle_cache = {}
+        self.bwd_handle_cache = {}
 
     def convert_stages_dict(self):
         """convert stages to dict."""
@@ -171,32 +175,67 @@ class PipelineScheduleRuntime(ABC):
         if stage.is_last_stage:
             losses.append(loss)
 
+    def _wait_p2p(self, handles):
+        for handle in handles:
+            if handle is not None:
+                handle.wait()
+
     def run_microbatches(self, arg_mbs, kwarg_mbs, losses, grads):
         """run_microbatches."""
         real_stage_index = self.stages[0].stage_index % self.real_stage_num
+        send_handle = []
         for cur_step in self.exec_order[real_stage_index]:
             if cur_step is None:
                 continue
             stage = self._stage_dict[cur_step.stage_index]
+            stage_index = cur_step.stage_index
             micro_index = cur_step.micro_index
             if cur_step.type == MetaStepType.FWD_RECV:
-                stage.exec_fwd_recv_ops(micro_index)
+                comm_handle = stage.exec_fwd_recv_ops(micro_index)
+                if not self._overlap_p2p:
+                    self._wait_p2p(comm_handle)
+                else:
+                    key = (stage_index, micro_index)
+                    self.fwd_handle_cache[key] = comm_handle
             if cur_step.type == MetaStepType.FWD:
+                key = (stage_index, micro_index)
+                if self._overlap_p2p and key in self.fwd_handle_cache:
+                    comm_handle = self.fwd_handle_cache.pop(key)
+                    self._wait_p2p(comm_handle)
                 out = stage.forward_one_chunk(micro_index, arg_mbs[micro_index], kwarg_mbs[micro_index])
                 self.update_losses(stage, out, losses)
             if cur_step.type == MetaStepType.FWD_SEND:
-                stage.exec_fwd_send_ops(micro_index)
+                comm_handle = stage.exec_fwd_send_ops(micro_index)
+                if not self._overlap_p2p:
+                    self._wait_p2p(comm_handle)
+                else:
+                    send_handle.append(comm_handle)
             if cur_step.type == MetaStepType.BWD_RECV:
-                stage.exec_bwd_recv_ops(micro_index)
+                comm_handle = stage.exec_bwd_recv_ops(micro_index)
+                if not self._overlap_p2p:
+                    self._wait_p2p(comm_handle)
+                else:
+                    key = (stage_index, micro_index)
+                    self.bwd_handle_cache[key] = comm_handle
             if cur_step.type == MetaStepType.BWD:
+                key = (stage_index, micro_index)
+                if self._overlap_p2p and key in self.bwd_handle_cache:
+                    comm_handle = self.bwd_handle_cache.pop(key)
+                    self._wait_p2p(comm_handle)
                 if micro_index == self.micro_batch_num - 1:
                     grad_out = stage.backward_one_chunk(micro_index, True)
                     grads += grad_out
                 else:
                     _ = stage.backward_one_chunk(micro_index)
             if cur_step.type == MetaStepType.BWD_SEND:
-                stage.exec_bwd_send_ops(micro_index)
+                comm_handle = stage.exec_bwd_send_ops(micro_index)
+                if not self._overlap_p2p:
+                    self._wait_p2p(comm_handle)
+                else:
+                    send_handle.append(comm_handle)
         self.sync_shared_parameters_grad()
+        while send_handle:
+            self._wait_p2p(send_handle.pop())
 
 
 class ScheduleGPipe(PipelineScheduleRuntime):
