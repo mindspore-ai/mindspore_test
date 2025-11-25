@@ -15,6 +15,7 @@
 """ test_auto_grad """
 
 import numpy as np
+import pytest
 import torch
 import torch.nn as pynn
 import mindspore as ms
@@ -1042,15 +1043,14 @@ def test_reduce_grad_modify_output():
             c = x + y * 2
             return c
 
-    x = Tensor([[3, 3, 3], [3, 3, 3]], ms.float32)
-    y = Tensor([[1, 2, 3], [1, 2, 3]], ms.float32)
+    x = Tensor([1., 2., 3.], ms.float32)
+    y = Tensor([1., 2., 2.], ms.float32)
     net = NormalCell()
     net.set_grad()
     out = net(x, y)
-    out.data = mint.empty([1, 2], dtype=ms.float32)
-    grad_net = C.GradOperation(get_all=True, sens_param=True)
-    sens = Tensor([[[3, 3, 3], [3, 3, 3]]], dtype=ms.float32)
-    grad_net(net)(x, y, sens)
+    out.data = mint.empty((2, 3), dtype=ms.float32)
+    grad_net = C.GradOperation(get_all=True)
+    grad_net(net)(x, y)
 
 
 @arg_mark(plat_marks=['platform_ascend910b'],
@@ -1089,6 +1089,31 @@ def test_auto_grad_tuple_input_need_compute_grad_out():
 
     ms.value_and_grad(forward_fn, grad_position=(1,))(x, w, group_list)
     assert count == 3
+
+
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
+def test_reduce_error_shape():
+    """
+    Feature: reduce error shape.
+    Description: Test auto reduce.
+    Expectation: success.
+    """
+    class SelectCell(nn.Cell):
+        def construct(self, x, y):
+            c = x + y * 2
+            d = c[0]
+            return d
+
+    x = Tensor([[3, 3, 3], [3, 3, 3]], ms.float32)
+    y = Tensor([[1, 2, 3], [1, 2, 3]], ms.float32)
+    net = SelectCell()
+    grad_net = C.GradOperation(get_all=True, sens_param=True)
+    sens = Tensor([[1., 1, 1], [1, 1, 1]])
+    with pytest.raises(ValueError):
+        grad_net(net)(x, y, sens)
 
 
 def test_pynative_autograd_change_input_shape_in_diff_call():

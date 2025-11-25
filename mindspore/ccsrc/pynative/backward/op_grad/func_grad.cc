@@ -518,6 +518,7 @@ void ProcessForwardOutput(const ValuePtrList &flatten_outputs, const TensorPtrSe
   int num_diff_tensors = 0;
   for (size_t i = 0; i < flatten_outputs.size(); i++) {
     if (!flatten_outputs[i]->isa<tensor::Tensor>()) {
+      grad_node->mutable_metadata().emplace_back();
       continue;
     }
     auto base_tensor = flatten_outputs[i]->cast<tensor::TensorPtr>();
@@ -1769,21 +1770,25 @@ void AutoDiff::CheckSensShapeAndType(const ValuePtr &sens_gradient) {
   const auto flatten_sens_gradient = CommonUtils::FlattenOnlyTensor(sens_gradient);
   MS_EXCEPTION_IF_CHECK_FAIL(flatten_sens_out_.size() == flatten_sens_gradient.size(),
                              "The given sens gradient's size should be same as out of network!");
-  std::vector<TensorMeta> outputs_meta = GenerateInputsMeta(flatten_sens_out_);
   for (size_t i = 0; i < flatten_sens_out_.size(); ++i) {
+    const auto &out_tensor = flatten_sens_out_[i]->cast<tensor::TensorPtr>();
+    MS_EXCEPTION_IF_NULL(out_tensor);
     const auto &sens_tensor = flatten_sens_gradient[i]->cast<tensor::TensorPtr>();
     MS_EXCEPTION_IF_NULL(sens_tensor);
-    const auto &out_shape = outputs_meta[i].shape();
+    const auto &out_shape = out_tensor->shape();
     const auto &sens_gradient_shape = sens_tensor->shape();
     if (!sens_gradient_shape.empty() && !out_shape.empty()) {
-      if (!outputs_meta[i].IsBroadcastTo(sens_gradient_shape)) {
-        MS_EXCEPTION(ValueError) << "The sens shape should be broadcast to" << out_shape << ", but got "
-                                 << sens_gradient_shape;
+      if (sens_gradient_shape != out_shape) {
+        MS_EXCEPTION(ValueError) << "The shape should be " << out_shape << ", but got " << sens_gradient_shape << ", "
+                                 << ", sens gradient abs " << sens_tensor->ToAbstract()->ToString() << ", out abs"
+                                 << out_tensor->ToAbstract()->ToString();
       }
       const auto &sens_gradient_dtype = sens_tensor->Dtype()->ToString();
-      const auto &out_dtype = outputs_meta[i].dtype()->ToString();
+      const auto &out_dtype = out_tensor->Dtype()->ToString();
       if (sens_gradient_dtype != out_dtype) {
-        MS_EXCEPTION(TypeError) << "The sens dtype should be " << out_dtype << ", but got " << sens_gradient_dtype;
+        MS_EXCEPTION(TypeError) << "The dtype should be " << out_dtype << ", but got " << sens_gradient_dtype << ", "
+                                << ", sens gradient abs " << sens_tensor->ToAbstract()->ToString() << ", out abs"
+                                << out_tensor->ToAbstract()->ToString();
       }
     }
   }
@@ -1805,9 +1810,9 @@ void AutoDiff::BuildGraphRoot(const ValuePtr &sens_gradient, bool has_aux) {
   if (sens_gradient == nullptr) {
     root_gradients_ = OnsLike(flatten_sens_out_);
   } else {
-    root_gradients_ = AutoGradUtil::AutoCastAndReduce(CommonUtils::FlattenOnlyTensor(sens_gradient),
-                                                      GenerateInputsMeta(flatten_sens_out_));
+    root_gradients_ = CommonUtils::FlattenOnlyTensor(sens_gradient);
   }
+  root_gradients_ = AutoGradUtil::AutoCastAndReduce(root_gradients_, GenerateInputsMeta(flatten_sens_out_));
   if (root_gradients_.size() != flatten_sens_out_.size()) {
     MS_LOG(EXCEPTION) << "Sens size should be same as output, but got" << root_gradients_.size() << " vs "
                       << flatten_sens_out_.size();

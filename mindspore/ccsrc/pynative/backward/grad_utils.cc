@@ -807,8 +807,9 @@ ValuePtrList AutoGradUtil::AutoCastAndReduce(const ValuePtrList &gradients,
       continue;
     }
     if (!input_info.IsBroadcastTo(grad_tensor->shape())) {
-      MS_LOG(EXCEPTION) << "For custom function, grad tensor should be broadcast to expected shape, but got "
-                        << grad_tensor->shape() << " vs " << input_info.shape();
+      MS_LOG(EXCEPTION)
+        << "For grad interface or custom function, grad tensor should be broadcast to expected shape, but got "
+        << grad_tensor->shape() << " vs " << input_info.shape();
     }
     grad_tensor = Cast(ReduceGrad(grad_tensor, input_info.shape()), input_info.dtype());
     (void)grads.emplace_back(grad_tensor);
