@@ -631,7 +631,7 @@ ValuePtr ConvertConstantNumpyNumber(const py::object &obj, ResolveType obj_type)
   return nullptr;
 }
 
-void CheckJITForbiddenAPI(const py::object &obj) {
+void CheckAPI(const py::object &obj) {
   auto module = python_adapter::GetPyModule(PYTHON_MOD_MODULE);
   py::object res = python_adapter::CallPyModFn(module, PYTHON_MOD_GET_MODULE_AND_NAME_INFO, obj);
   if (!py::isinstance<py::none>(res)) {
@@ -641,8 +641,8 @@ void CheckJITForbiddenAPI(const py::object &obj) {
     auto obj_type = py::cast<std::string>(obj_info[2]);
     std::ostringstream oss;
     oss << "Failed to compile in GRAPH_MODE because the " << obj_type << " '" << obj_module << "." << obj_name
-        << "' is not supported in 'construct' or function with @jit decorator. " << "Try to use the " << obj_type
-        << " '" << obj_module << "." << obj_name << "' externally "
+        << "' is not supported in 'construct' or function with @jit decorator. "
+        << "Try to use the " << obj_type << " '" << obj_module << "." << obj_name << "' externally "
         << "such as initialized in the method '__init__' before assigning.\n";
     // Check if the API is decoratored by @jit_forbidden_register.
     bool is_jit_forbidden_register = data_converter::IsJITForbiddenAPI(obj);
@@ -655,6 +655,15 @@ void CheckJITForbiddenAPI(const py::object &obj) {
     if (is_jit_forbidden_module) {
       MS_LOG(EXCEPTION) << oss.str();
     }
+    // Check if the API is decoratored by @jit_view_unsupported.
+    bool is_jit_view_unsupported_register = data_converter::IsJitViewUnSupportedAPI(obj);
+    if (is_jit_view_unsupported_register) {
+      MS_LOG(WARNING) << "The mint interface " << obj_name
+                      << " was called, and the operators under this interface have different view capabilities on "
+                         "pynative and graph mode. Use this interface with caution in graph mode, as it may produce "
+                         "unexpected results. For more information, please refer to: "
+                         "https://www.mindspore.cn/docs/en/master/features/view.html\n";
+    }
   }
 }
 
@@ -662,8 +671,8 @@ ValuePtr ConvertOtherObj(const py::object &obj, bool forbid_reuse = false) {
   auto obj_type = data_converter::GetObjType(obj);
   MS_LOG(DEBUG) << "Converting the object(" << ((std::string)py::str(obj)) << ") detail type: " << obj_type << " ";
   if (obj_type == RESOLVE_TYPE_CLASS_TYPE) {
-    // Check JIT forbidden API
-    CheckJITForbiddenAPI(obj);
+    // Check JIT forbidden API and the view mint interface which is not supported in graph mode.
+    CheckAPI(obj);
     MS_LOG(DEBUG) << "Resolve the class type, need create class instance.";
     std::string desc = py::str(obj);
     // desc has format "<class xxxx>", strip the '<' and '>' by offset 1.
@@ -673,8 +682,8 @@ ValuePtr ConvertOtherObj(const py::object &obj, bool forbid_reuse = false) {
       (obj_type == RESOLVE_TYPE_CLASS_INSTANCE && py::hasattr(obj, PYTHON_PARSE_METHOD))) {
     if (obj_type == RESOLVE_TYPE_FUNCTION || obj_type == RESOLVE_TYPE_METHOD ||
         obj_type == RESOLVE_TYPE_BUILTIN_METHOD) {
-      // Check JIT forbidden API
-      CheckJITForbiddenAPI(obj);
+      // Check JIT forbidden API and the view mint interface which is not supported in graph mode.
+      CheckAPI(obj);
       // Check if the function is from a third-party library.
       py::module mod = python_adapter::GetPyModule(PYTHON_MOD_PARSE_MODULE);
       bool is_third_party_function =
@@ -1164,6 +1173,10 @@ bool IsMsClassInstance(const py::object &obj) { return py::hasattr(obj, PYTHON_M
 
 // Check if the object is jit forbidden api.
 bool IsJITForbiddenAPI(const py::object &obj) { return py::hasattr(obj, PYTHON_JIT_FORBIDDEN); }
+
+// Check whether the object is a mint interface that exhibits inconsistent view behavior
+// between PYNATIVE mode and graph mode.
+bool IsJitViewUnSupportedAPI(const py::object &obj) { return py::hasattr(obj, PYTHON_JIT_VIEW_UNSUPPORTED); }
 
 // Check if the object is class type.
 bool IsClassType(const py::object &obj) {

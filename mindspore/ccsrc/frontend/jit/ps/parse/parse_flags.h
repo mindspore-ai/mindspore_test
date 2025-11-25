@@ -26,6 +26,7 @@ extern const char PYTHON_CELL_AS_DICT[];
 extern const char PYTHON_CELL_AS_LIST[];
 extern const char PYTHON_MS_CLASS[];
 extern const char PYTHON_JIT_FORBIDDEN[];
+extern const char PYTHON_JIT_VIEW_UNSUPPORTED[];
 extern const char PYTHON_CLASS_MEMBER_NAMESPACE[];
 extern const char PYTHON_FUNCTION_FORBID_REUSE[];
 extern const char PYTHON_CELL_LIST_FROM_TOP[];
