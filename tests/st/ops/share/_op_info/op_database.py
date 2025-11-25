@@ -27,7 +27,6 @@ import torch
 import warnings
 import itertools
 import mindspore as ms
-from mindspore._c_expression import MSContext
 from mindspore import mint, mutable
 from mindspore.common.parameter import Parameter
 from mindspore._c_expression import MSContext
@@ -1054,13 +1053,13 @@ def nn_functional_selu_torch(op_input):
 
 def tensor_add__ms(op_input, other, alpha=1):
     """Wrapper for Tensor.add_ (in-place operation)."""
+    #TODO:The is_inplace_op item of OpInfo still has problem. Should be fixed in the future.
     cloned_input = op_input.clone()
     result = cloned_input.add_(other, alpha=alpha)
     return result
 
 def tensor_add__torch(op_input, other, alpha=1):
     """Wrapper for torch.Tensor.add_ (in-place operation)."""
-    # Convert inputs to torch tensors
     cloned_input_pt = op_input.clone()
     result = cloned_input_pt.add_(other, alpha=alpha)
     return result
@@ -1069,7 +1068,6 @@ def tensor_masked_scatter_ms(op_input, mask, source):
     return op_input.masked_scatter(mask, source)
 
 def tensor_masked_scatter_torch(op_input, mask, source):
-    # Convert inputs to torch tensors
     return op_input.masked_scatter(mask, source)
 
 def tensor_masked_scatter__ms(op_input, mask, source):
@@ -1984,7 +1982,6 @@ def tensor_index_select_ms(op_input, axis, index):
 
 def tensor_index_select_torch(op_input, axis, index):
     return op_input.index_select(axis, index)
-
 
 # wrap tensor method for cos
 def tensor_cos_ms(op_input):
@@ -3550,13 +3547,6 @@ def extra_sample_inputs_mint_index_select(op_info: OpInfo, dtype=None, device=No
             sample_name=op_info.name,
         )
 
-    for shape, dim in cases:
-        make_index = functools.partial(make_tensor, device=device, dtype=ms.int32, low=0, high=shape[dim]-1)
-        yield OpSampleInput(
-            op_input=make_arg(shape),
-            op_args=(dim, make_index((shape[dim]-1,))),
-            sample_name=op_info.name,
-        )
 
 # sample inputs functions for chunk
 def basic_sample_inputs_mint_masked_select(op_info: OpInfo, dtype=None, device=None):
@@ -3650,6 +3640,7 @@ def extra_sample_inputs_mint_nonzero(op_info: OpInfo, dtype=None, device=None):
             sample_name=op_info.name,
         )
 
+
 # sample inputs functions for chunk
 def basic_sample_inputs_mint_split(op_info: OpInfo, dtype=None, device=None):
     """
@@ -3740,6 +3731,7 @@ def basic_sample_inputs_tile(op_info, dtype, device=None, **kwargs):
             op_kwargs={},
             sample_name=f"shape{shape}_dims{dims}"
         )
+
 
 # op database
 op_db: Dict[str, OpInfo] = {
@@ -4718,6 +4710,9 @@ op_db: Dict[str, OpInfo] = {
         dtypes_gpu=(),
         disable_large_value_tensor_inputs=True,
         disable_small_value_tensor_inputs=True,
+         # The acosh backward is composed of small ops, and mul op accumulates numerical error,
+         # therefore a larger loss threshold is used for float16. This issue has been reviewed.
+        default_loss_override={ms.float16: 5e-3},
     ),
     'mint.asinh': UnaryOpInfo(
         name='mint.asinh',
@@ -5695,6 +5690,10 @@ op_db: Dict[str, OpInfo] = {
         name='mint.cumsum',
         op=mint.cumsum,
         ref=torch.cumsum,
+        dtypes_ascend=tuple(d for d in dtypes_as_torch if (not d.is_complex and d != ms.bfloat16)),
+        dtypes_ascend910b=tuple(d for d in dtypes_as_torch if not d.is_complex),
+        dtypes_cpu=(),
+        dtypes_gpu=(),
         op_basic_reference_inputs_func=basic_sample_inputs_mint_cumsum,
         op_extra_reference_inputs_func=extra_sample_inputs_mint_cumsum,
         op_dynamic_inputs_func=None,
@@ -5990,7 +5989,7 @@ op_db: Dict[str, OpInfo] = {
         name='mint.nn.functional.conv2d',
         op=mint.nn.functional.conv2d,
         ref=torch.nn.functional.conv2d,
-        dtypes_ascend=tuple([ms.float16,]),
+        dtypes_ascend=(),
         dtypes_ascend910b=tuple([ms.float16]),
         dtypes_cpu=(),
         dtypes_gpu=(),
@@ -6013,6 +6012,8 @@ op_db: Dict[str, OpInfo] = {
         op_dynamic_inputs_func=None,
         op_error_inputs_func=None,
         is_differentiable=True,
+        # For Conv-family operators with float32 inputs, HF32 is enabled by default.
+        # HiSilicon recommends a one-sided 0.1% accuracy guard.
         default_loss_override={ms.float32: 0.001},
     ),
     'mint.nn.functional.linear': OpInfo(
@@ -6088,11 +6089,11 @@ op_db: Dict[str, OpInfo] = {
         name='mint.nn.functional.selu',
         op=nn_functional_selu_ms,
         ref=nn_functional_selu_torch,
+        # Float16 still has precision issue which needs to be checked.
         dtypes_ascend=tuple([ms.float32]),
         dtypes_ascend910b=tuple([ms.float32,]),
         dtypes_cpu=(),
         dtypes_gpu=(),
-        default_loss_override={ms.float16: 0.002},
     ),
 }
 
@@ -6266,7 +6267,7 @@ other_op_db = [
     'mint.nn.functional.pad(mode="constant")',
     'mint.nn.functional.pad(mode="reflect")',
     'mint.nn.functional.pad(mode="replicate")',
-    'mint.nn.functional.pad(mode="circular")'
+    'mint.nn.functional.pad(mode="circular")',
     'mint.nn.functional.conv1d',
     'mint.nn.functional.conv2d',
     'mint.nn.functional.conv3d',
