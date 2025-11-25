@@ -50,7 +50,7 @@ mindspore.SummaryRecord
               - LANDSCAPE：代表添加的数据为地形图。
 
             - **name** (str) - 数据名称。
-            - **value** (Union[Tensor, GraphProto, TrainLineage, EvaluationLineage, DatasetGraph, UserDefinedInfo，LossLandscape]) - 待存储的值。
+            - **value** (Union[Tensor, GraphProto, TrainLineage, EvaluationLineage, DatasetGraph, UserDefinedInfo, LossLandscape]) - 待存储的值。
 
               - 当plugin为"graph"时，参数值的数据类型应为"GraphProto"对象。具体详情，请参见 `mindspore/ccsrc/anf_ir.proto <https://gitee.com/mindspore/mindspore/blob/master/mindspore/ccsrc/utils/anf_ir.proto>`_ 。
               - 当plugin为"scalar"、"image"、"tensor"或"histogram"时，参数值的数据类型应为"Tensor"对象。
@@ -66,7 +66,7 @@ mindspore.SummaryRecord
 
     .. py:method:: close()
 
-        将缓冲区中的数据立刻写入文件，并关闭SummaryRecord。请使用with语句或try…finally语句进行自动关闭。
+        将缓冲区中的数据立刻写入文件，并关闭SummaryRecord。请使用with语句或try...finally语句进行自动关闭。
 
     .. py:method:: flush()
 
