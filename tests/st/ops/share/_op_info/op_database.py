@@ -4489,9 +4489,9 @@ op_db: Dict[str, OpInfo] = {
         is_differentiable=False,
         # torch donen't support bool
         # ms.float16: Precision assertion failed.
-        # ms.uint8: Error message EH9999.
-        dtypes_ascend=tuple((ms.int8, ms.int16, ms.int32, ms.int64, ms.float32, ms.float64,)),
-        dtypes_ascend910b=tuple((ms.int8, ms.int16, ms.int32, ms.int64, ms.float32, ms.float64,)),
+        # ms.int8, ms.int16, ms.int32, ms.int64, ms.uint8: Error message EH9999.
+        dtypes_ascend=(ms.float32, ms.float64,),
+        dtypes_ascend910b=(ms.float32, ms.float64,),
         domain=((None, None), (1, None)),
         disable_small_value_tensor_inputs=True,
         disable_large_value_tensor_inputs=True,
@@ -5642,9 +5642,9 @@ op_db: Dict[str, OpInfo] = {
         is_differentiable=False,
         # torch donen't support bool
         # ms.float16: Precision assertion failed.
-        # ms.uint8: Error message EH9999.
-        dtypes_ascend=tuple((ms.int8, ms.int16, ms.int32, ms.int64, ms.float32, ms.float64,)),
-        dtypes_ascend910b=tuple((ms.int8, ms.int16, ms.int32, ms.int64, ms.float32, ms.float64,)),
+        # ms.uint8, ms.int8, ms.int16, ms.int32, ms.int64: Error message EH9999.
+        dtypes_ascend=(ms.float32, ms.float64,),
+        dtypes_ascend910b=(ms.float32, ms.float64,),
         domain=((None, None), (1, None)),
         supports_left_python_scalar=False,
         supports_right_python_scalar=False,

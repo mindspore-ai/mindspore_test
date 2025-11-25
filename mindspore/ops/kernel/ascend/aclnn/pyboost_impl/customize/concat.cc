@@ -47,15 +47,17 @@ static ShapeVector InferConcatOutputShape(const std::vector<tensor::TensorPtr> &
     const auto &sh = tensors_vector[i]->shape();
     if (sh.size() != first_rank) {
       MS_EXCEPTION(ValueError) << "For 'Concat', all inputs must have same rank, but got " << sh.size() << " and "
-                               << first_rank;
+                               << first_rank << ". The complete shapes of mismatch inputs are " << sh << " and "
+                               << first_shape;
     }
     for (size_t d = 0; d < sh.size(); ++d) {
       if (d == axis_norm) {
         continue;
       }
       if (sh[d] != first_shape[d]) {
-        MS_EXCEPTION(ValueError) << "For 'Concat', shapes must match on non-concat dims, but got " << sh[d] << " and "
-                                 << first_shape[d];
+        MS_EXCEPTION(ValueError) << "For 'Concat', shapes must match on non-concat dims: " << d << ", but got " << sh[d]
+                                 << " and " << first_shape[d] << ". The complete shapes of mismatch inputs are " << sh
+                                 << " and " << first_shape;
       }
     }
     out_shape[axis_norm] += sh[axis_norm];
