@@ -75,6 +75,37 @@ def test_cumsum_normal(mode):
     np.testing.assert_allclose(output2.asnumpy(), expect2, rtol=1e-4)
 
 
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@pytest.mark.parametrize('mode', ['pynative', 'KBK'])
+def test_cumsum_rank_0(mode):
+    """
+    Feature: mint.cumsum operator
+    Description: Validate cumsum behavior on zero-dimensional (scalar) inputs.
+    Expectation: Correct forward output and gradient results.
+    """
+    dim1 = 0
+    dim2 = -1
+
+    x1, expect1 = generate_random_input([], dim1)
+    x2, expect2 = generate_random_input([], dim2)
+    if mode == 'pynative':
+        output1 = cumsum_forward_func(ms.Tensor(x1), dim1)
+        output2 = cumsum_forward_func(ms.Tensor(x2), dim2)
+        grad1 = cumsum_backward_func(ms.Tensor(x1), dim1)
+        grad2 = cumsum_backward_func(ms.Tensor(x1), dim2)
+    else:
+        output1 = (jit(cumsum_forward_func, backend="ms_backend", jit_level="O0"))(ms.Tensor(x1), dim1)
+        output2 = (jit(cumsum_forward_func, backend="ms_backend", jit_level="O0"))(ms.Tensor(x2), dim2)
+        grad1 = (jit(cumsum_backward_func, backend="ms_backend", jit_level="O0"))(ms.Tensor(x1), dim1)
+        grad2 = (jit(cumsum_backward_func, backend="ms_backend", jit_level="O0"))(ms.Tensor(x2), dim2)
+
+    np.testing.assert_allclose(output1.asnumpy(), expect1, rtol=1e-4)
+    np.testing.assert_allclose(output2.asnumpy(), expect2, rtol=1e-4)
+
+    np.testing.assert_allclose(grad1.asnumpy(), np.ones([]), rtol=1e-4)
+    np.testing.assert_allclose(grad2.asnumpy(), np.ones([]), rtol=1e-4)
+
+
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('mode', ['pynative', 'KBK'])
 def test_cumsum_bfloat16(mode):

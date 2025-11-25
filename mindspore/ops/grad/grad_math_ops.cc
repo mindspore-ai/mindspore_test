@@ -2656,6 +2656,9 @@ REG_BPROP_BUILDER("CumsumExt").FreeUselessValues_IO({i0, i2}, {}).SetBody(BODYFU
   if (dim_opt.has_value()) {
     dim_value = dim_opt.value();
     auto rank = SizeToLong(x_shape.size());
+    if (rank == 0) {
+      rank = 1;
+    }
     MS_EXCEPTION_IF_CHECK_FAIL(dim_value >= -rank && dim_value <= rank - 1,
                                "For " + ib->name() + " grad, got an invalid dim: " + std::to_string(dim_value));
     if (dim_value < 0) {
