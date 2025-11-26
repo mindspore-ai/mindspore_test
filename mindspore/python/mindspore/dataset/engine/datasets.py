@@ -3497,12 +3497,13 @@ def _worker_loop(quit_signal, operations, worker_id, op_type, key, video_backend
     transforms.transforms.clean_unused_executors()
 
     while not _main_process_already_exit():
+        logger.info("The worker process is waiting for the main process to exit.")
+        time.sleep(0.1)
+
         # quit by close_worker
         if quit_signal.is_set():
             return
 
-        logger.info("The worker process is waiting for the main process to exit.")
-        time.sleep(0.1)
 
     # the main process is not exist yet which maybe killed -9
     msg_queue.set_release_flag(True)
@@ -3529,7 +3530,7 @@ class WorkerTarget:
 
 
 def worker_is_alive(worker):
-    """Check the subprocess worker status in spawn mode"""
+    """Check the subprocess worker status"""
     try:
         return worker.is_alive()
     except ValueError:
@@ -3537,23 +3538,22 @@ def worker_is_alive(worker):
 
 
 def close_worker(worker, eof):
-    """Close the subprocess worker in spawn mode"""
+    """Close the subprocess worker"""
     try:
         if worker_is_alive(worker):
             # release the eager executor which is used by current process
             transforms.transforms.clean_unused_executors()
 
-            # let the worker exit
-            logger.info(f"Set eof flag for worker with PID: {worker.pid}.")
-            eof.set()
-
             # wait timeout
             wait_timeout = 2
             start_time = time.time()
-
             process_dir = os.path.join('/proc', str(worker.pid))
             while worker_is_alive(worker) and os.path.exists(process_dir):
-                logger.info(f"Waiting for worker {worker.pid} closed ...")
+                # let the worker exit
+                logger.info(f"Set eof flag for worker with PID: {worker.pid}.")
+                eof.set()
+
+                logger.info(f"Waiting for worker {worker.pid} to close ...")
                 time.sleep(0.5)
 
                 # maybe the worker is hung by msg_queue.MsgRcv, so break the loop and terminate it in next step
