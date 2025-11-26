@@ -67,5 +67,7 @@ REG_BPROP_BUILDER("SetData").SetUnusedInputs({i2, i3}).SetBody(BODYFUNC(ib) {
   auto dx = ib->ZerosLikeExt(input, ib->Value(static_cast<int64_t>(ib->GetDtypeId(input))));
   return {dx, ib->OutZeros(value)};
 });
+
+REG_BPROP_BUILDER("GetData").SetUnusedInputs({i0, i1, i2}).SetBody(ReturnZeros);
 REG_BPROP_BUILDERS_END
 }  // namespace mindspore::expander::bprop

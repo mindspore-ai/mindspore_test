@@ -23,6 +23,45 @@ from tests.mark_utils import arg_mark
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+def test_ops_get_data():
+    """
+    Feature: Remote memory base operator
+    Description: Base scene.
+    Expectation: No Exception.
+    """
+    @jit
+    def foo(x):
+        y = ops.auto_generate.GetData()(x)
+        return y
+
+    x = Tensor([1, 2, 3, 4])
+    ret = foo(x)
+    assert np.all(ret.asnumpy() == np.array((1, 2, 3, 4)))
+
+    @jit
+    def foo1(x):
+        y = ops.auto_generate.GetData()(x)
+        x.add_(1)
+        return y
+
+    x = Tensor([1, 2, 3, 4])
+    ret = foo1(x)
+    assert np.all(ret.asnumpy() == np.array((2, 3, 4, 5)))
+
+
+    @jit
+    def foo2(x):
+        y = ops.auto_generate.GetData()(x)
+        x.add_(1)
+        y.add_(1)
+        return y
+
+    x = Tensor([1, 2, 3, 4])
+    ret = foo2(x)
+    assert np.all(ret.asnumpy() == np.array((3, 4, 5, 6)))
+
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_remote_ops_copy_to_host():
     """
     Feature: Remote memory base operator
