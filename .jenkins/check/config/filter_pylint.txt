@@ -338,6 +338,7 @@
 "mindspore/tests/st/common/test_dtype.py"                                                               "missing-module-docstring"
 "mindspore/tests/st/ops/test_ops_concat.py"                                                             "missing-function-docstring"
 "mindspore/tests/st/pynative/ops/test_ops.py"                                                           "missing-module-docstring"
+"mindspore/tests/st/hierarchical_memory/memory_ops/test_memory_ops_base.py"                             "missing-module-docstring"
 "mindspore/tests/st/ops/share/_op_info/op_database.py"                                                  "redefined-builtin"
 
 #MindSpore Lite

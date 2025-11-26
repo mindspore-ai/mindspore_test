@@ -32,6 +32,7 @@ mindspore/mindspore/core/device_address/convert_tensor_utils.cc:mindspore::devic
 mindspore/mindspore/ccsrc/runtime/core/graph_scheduler/base/graph_scheduler.cc:mindspore::runtime::GraphScheduler::LinkControlArrowByAutoMonad
 mindspore/mindspore/ccsrc/runtime/core/actors/base/super_kernel_actor.cc:mindspore::runtime::SuperKernelActor::BuildKernelActors
 mindspore/mindspore/ccsrc/runtime/core/actors/base/super_kernel_actor.cc:mindspore::runtime::SuperKernelActor::RunGraphKernelByKernel
+mindspore/mindspore/ccsrc/runtime/core/actors/base/super_kernel_actor.cc:mindspore::runtime::SuperKernelActor::LinkKernelActorByDeviceType
 mindspore/mindspore/ccsrc/runtime/core/actors/base/kernel_actor.cc:mindspore::runtime::KernelActor::ExecuteLaunchKernelTask
 mindspore/mindspore/ccsrc/runtime/core/actors/base/super_kernel_actor.cc:mindspore::runtime::SuperKernelActor::LaunchAllKernels
 mindspore/mindspore/ccsrc/runtime/core/actors/base/data_prepare_actor.cc:mindspore::runtime::DataPrepareActor::PrepareDataForHostTensorQueueNew

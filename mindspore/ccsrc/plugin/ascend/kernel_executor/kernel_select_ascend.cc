@@ -47,6 +47,7 @@
 #include "utils/anf_utils.h"
 #include "kernel/ascend/aclnn/kernel_mod_impl/customize/custom_aclnn_utils.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_e.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_f.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_g.h"
@@ -54,6 +55,7 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_p.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_u.h"
 #include "mindspore/ops/op_def/other_op_name.h"
 #include "mindspore/ops/op_def/math_op_name.h"
 
@@ -779,17 +781,34 @@ std::tuple<bool, std::string, ExceptionType, bool> SelectKernelInfoWithMsg(const
     CollectOpSelectedType(op_name, SelectedKernelType::ACLNN_KERNEL, op_selected_num, &op_selected_type);
     return result;
   }
-
+  static const PrimitiveSet rt_kernel_ops = {prim::kPrimCallInline,
+                                             prim::kPrimSwitch,
+                                             prim::kPrimPartialInline,
+                                             prim::kPrimConditionSwitch,
+                                             prim::kPrimConditionGather,
+                                             prim::kPrimReshapeExt,
+                                             prim::kPrimReshape,
+                                             prim::kPrimMoveTo,
+                                             prim::kPrimMoveAssign,
+                                             prim::kPrimStreamSend,
+                                             prim::kPrimStreamRecv,
+                                             prim::kPrimExpandDims,
+                                             prim::kPrimSqueeze,
+                                             prim::kPrimFlatten,
+                                             prim::kPrimFlattenGrad,
+                                             prim::kPrimReformat,
+                                             prim::kPrimFree,
+                                             prim::kPrimCopyToDevice,
+                                             prim::kPrimCopyToHost,
+                                             prim::kPrimUpdateToRemote,
+                                             prim::kPrimUpdateToDevice,
+                                             prim::kPrimDetach,
+                                             prim::kPrimSetData};
   // for backend inline
-  if (IsOneOfPrimitiveCNode(
-        node, {prim::kPrimCallInline, prim::kPrimSwitch, prim::kPrimPartialInline, prim::kPrimConditionSwitch,
-               prim::kPrimConditionGather, prim::kPrimReshapeExt, prim::kPrimReshape, prim::kPrimMoveTo,
-               prim::kPrimMoveAssign, prim::kPrimStreamSend, prim::kPrimStreamRecv, prim::kPrimExpandDims,
-               prim::kPrimSqueeze, prim::kPrimFlatten, prim::kPrimFlattenGrad, prim::kPrimReformat})) {
+  if (IsOneOfPrimitiveCNode(node, rt_kernel_ops)) {
     GenerateKernelBuildInfo(node, KernelType::RT_KERNEL);
     return result;
   }
-
   if (common::AnfAlgo::HasNodeAttr(kAttrKernelPacketNode, node)) {
     GenerateKernelPacketBuildInfo(node);
     return result;

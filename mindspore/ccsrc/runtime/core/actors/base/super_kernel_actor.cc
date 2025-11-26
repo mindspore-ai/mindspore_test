@@ -2406,12 +2406,25 @@ void SuperKernelActor::LinkKernelActorByDeviceType(const CNodePtr &kernel, size_
   const auto &input_device_tensor = input_kernel_tensor->device_address();
   MS_EXCEPTION_IF_NULL(input_device_tensor);
 
+  // If input tensor device type is not equal to device context type, throw exception.
+  // e.g. ascend_op(d2h(node)).
+  static bool enable_hierarchical_memory = common::GetEnv("MS_DEV_HIERARCHICAL_MEMORY") == "1";
+  bool check_type_valid = device_context->GetDeviceType() == input_device_tensor->GetDeviceType() ||
+                          input_device_tensor->GetDeviceType() == input_device_context->GetDeviceType() ||
+                          SchedulerHelper::IsIgnoredInputAddressV2(kernel_actor, input_index);
+  if (enable_hierarchical_memory && !check_type_valid) {
+    MS_LOG(EXCEPTION) << "Invalid input device tensor type for kernel:" << kernel->fullname_with_scope()
+                      << " with device context type:" << device_context->GetDeviceType() << " but the " << input_index
+                      << "th input device tensor type is " << input_device_tensor->GetDeviceType()
+                      << " for actor:" << GetAID() << ", input kenerl: " << input_kernel->fullname_with_scope();
+  }
+
   bool need_not_copy_output_device_addr = (device_context->GetDeviceType() == input_device_context->GetDeviceType()) ||
                                           SchedulerHelper::IsIgnoredInputAddressV2(kernel_actor, input_index);
   MS_LOG(DEBUG) << "Kernel:" << kernel->fullname_with_scope() << " input kernel:" << input_kernel->fullname_with_scope()
                 << " input index:" << input_index << " device context type:" << device_context->GetDeviceType()
                 << " input context type:" << input_device_context->GetDeviceType()
-                << " need copy:" << need_not_copy_output_device_addr << " for actor:" << GetAID();
+                << " need copy:" << !need_not_copy_output_device_addr << " for actor:" << GetAID();
   if (need_not_copy_output_device_addr) {
     if (input_index >= kernel_actor->input_kernel_tensors_.size() ||
         input_index >= kernel_actor->input_kernel_tensors_for_infer_.size() ||
