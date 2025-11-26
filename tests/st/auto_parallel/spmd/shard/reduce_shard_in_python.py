@@ -20,6 +20,7 @@ import mindspore as ms
 import mindspore.communication.management as D
 from mindspore import nn, Tensor
 from mindspore.parallel import Layout
+from mindspore.parallel.spmd.shard import shard
 from tests.st.auto_parallel.utils import global_to_local, local_to_global
 
 
@@ -36,7 +37,8 @@ class SumExtNet(nn.Cell):
         self.sum_ext = ms.mint.sum
         self.relu = ms.nn.ReLU()
         if relu_strategy is not None:
-            self.relu.shard(in_strategy=relu_strategy)
+            stra = { "forward": { "input": relu_strategy}}
+            shard(self.relu, stra)
 
     def construct(self, x, dim=None, keepdim=False, dtype=None):
         out = self.sum_ext(input=x, dim=dim, keepdim=keepdim, dtype=dtype)
@@ -53,7 +55,8 @@ class MeanExtNet(nn.Cell):
         self.sum_ext = ms.mint.mean
         self.relu = ms.nn.ReLU()
         if relu_strategy is not None:
-            self.relu.shard(in_strategy=relu_strategy)
+            stra = { "forward": { "input": relu_strategy}}
+            shard(self.relu, stra)
 
     def construct(self, x, dim=None, keepdim=False, dtype=None):
         out = self.sum_ext(input=x, dim=dim, keepdim=keepdim, dtype=dtype)

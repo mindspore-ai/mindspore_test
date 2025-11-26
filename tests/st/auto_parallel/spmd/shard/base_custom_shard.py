@@ -24,6 +24,7 @@ from mindspore import nn, Tensor
 from mindspore.parallel import Layout, hsdp, init_parameters, custom_shard
 from mindspore.nn.utils import no_init_parameters
 from mindspore.common.initializer import initializer
+from mindspore.parallel.spmd.shard import shard
 from tests.st.auto_parallel.utils import create_dtensor
 
 learning_rate = 0.01
@@ -149,11 +150,15 @@ def base_case(dp, mp, hsdp_shard_size):
         model = ParallelModel(input_size, output_size, custom_out_layouts, custom_in_layouts)
 
     # step 2: shard
-    model.shard(in_strategy=(x_layout,), out_strategy=(out_layout,), parameter_plan={"weight": w_layout})
-    model.mlp.shard(in_strategy=(mlp_x_layout,),
-                    optional_in_strategy={"activation": mlp_activation_layout, "extra_loss": layout()},
-                    parameter_plan={"weight": mlp_w_layout})
-    model.relu.shard(in_strategy=relu_strategy[0], out_strategy=relu_strategy[1])
+    model_strategy = { "forward" : { "input": (x_layout,), "output": (out_layout,)}, "parameter": { "weight": w_layout}}
+    shard(model, model_strategy)
+
+    mlp_strategy = { "forward": { "input": {"x": mlp_x_layout, "activation": mlp_activation_layout,
+                     "extra_loss": layout()}}, "parameter": { "weight": mlp_w_layout}}
+    shard(model.mlp, mlp_strategy)
+
+    relu_strategy = { "forward": { "input": relu_strategy[0], "output": relu_strategy[1]}}
+    shard(model.relu, relu_strategy)
 
     # step 3: hsdp
     model = hsdp(model, shard_size=hsdp_shard_size, threshold=0)

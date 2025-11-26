@@ -13,7 +13,7 @@
 # limitations under the License.
 # ============================================================================
 
-"""cell shard in python"""
+"""func shard in python"""
 import time
 import pytest
 import numpy as np
@@ -26,6 +26,7 @@ from mindspore.parallel import Layout
 from mindspore.parallel import init_parameters
 from mindspore.common.initializer import initializer
 from mindspore import ops
+from mindspore.parallel.spmd.shard import shard
 from tests.st.auto_parallel.utils import create_dtensor, global_to_local, local_to_global
 
 
@@ -51,15 +52,15 @@ class SimpleNet(nn.Cell):
     def __init__(self, strategy_list):
         super().__init__()
         self.cell_list = ms.nn.CellList()
-        for in_strategy, out_strategy in strategy_list:
+        for strategy in strategy_list:
             relu_net = ms.mint.nn.ReLU()
-            relu_net.shard(in_strategy=in_strategy, out_strategy=out_strategy)
+            shard(relu_net, sharding_plan = strategy)
             self.cell_list.append(relu_net)
 
     def construct(self, x):
         for cell in self.cell_list:
-            x = cell(x)
             x = x.contiguous()
+            x = cell(x)
         return x
 
 
@@ -77,9 +78,9 @@ class SimpleModel(nn.Cell):
             name='gamma'
         )
         self.cell_list = ms.nn.CellList()
-        for in_strategy, out_strategy in strategy_list:
+        for strategy in strategy_list:
             relu_net = ms.mint.nn.ReLU()
-            relu_net.shard(in_strategy=in_strategy, out_strategy=out_strategy)
+            shard(relu_net, sharding_plan=strategy)
             self.cell_list.append(relu_net)
 
     def construct(self, x):
@@ -173,10 +174,10 @@ base_alias_name3 = ("cp", "ep", "tp")
 base_rank_list3 = list(range(8))
 
 
-def test_cell_shard_1():
+def test_func_shard_1():
     '''
-    Feature: Cell shard in python shard.
-    Description: Test cell shard in python shard with constant device_matrix.
+    Feature: func shard in python shard.
+    Description: Test func shard in python shard with constant device_matrix.
     Expectation: Run success.
     '''
     layout = Layout(base_device_matrix, base_alias_name, base_rank_list)
@@ -191,9 +192,9 @@ def test_cell_shard_1():
     in_strategy_3 = (layout("mp", "dp"),)
     out_strategy_3 = (layout("mp", "None"),)
 
-    strategy_list = ((in_strategy_1, out_strategy_1),
-                     (in_strategy_2, out_strategy_2),
-                     (in_strategy_3, out_strategy_3))
+    strategy_list = ({ "forward": { "input": in_strategy_1, "output": out_strategy_1}},
+                     { "forward": { "input": in_strategy_2, "output": out_strategy_2}},
+                     { "forward": { "input": in_strategy_3, "output": out_strategy_3}})
     output = run_scenario(
         "Data Parallel (DP)",
         x_layout,
@@ -208,7 +209,7 @@ def test_cell_shard_1():
     assert output_shape == (32, 256)
 
 
-def test_cell_shard_2():
+def test_func_shard_2():
     '''
     Feature: Model parallel in python shard.
     Description: Test model parallel in python shard with changeable device matrix .
@@ -227,9 +228,9 @@ def test_cell_shard_2():
     in_strategy_3 = (layout("mp", "dp"),)
     out_strategy_3 = (layout("dp", "mp"),)
 
-    strategy_list = ((in_strategy_1, out_strategy_1),
-                     (in_strategy_2, out_strategy_2),
-                     (in_strategy_3, out_strategy_3))
+    strategy_list = ({ "forward": { "input": in_strategy_1, "output": out_strategy_1}},
+                     { "forward": { "input": in_strategy_2, "output": out_strategy_2}},
+                     { "forward": { "input": in_strategy_3, "output": out_strategy_3}})
     output = run_scenario(
         "Model Parallel (MP)",
         x_layout,
@@ -242,7 +243,7 @@ def test_cell_shard_2():
     assert output_layout_dict["tensor_map"] == (1, 0)
 
 
-def test_cell_shard_3():
+def test_func_shard_3():
     '''
     Feature: Model parallel in python shard, tp extend ep.
     Description: Test model parallel in python shard with changeable device matrix .
@@ -260,9 +261,10 @@ def test_cell_shard_3():
     in_strategy_3 = (layout3(("cp", "ep"), "None", "tp"),)
     out_strategy_3 = (layout3("cp", "ep", "tp"),)
 
-    strategy_list = ((in_strategy_1, out_strategy_1),
-                     (in_strategy_2, out_strategy_2),
-                     (in_strategy_3, out_strategy_3))
+    strategy_list = ({ "forward": { "input": in_strategy_1, "output": out_strategy_1}},
+                     { "forward": { "input": in_strategy_2, "output": out_strategy_2}},
+                     { "forward": { "input": in_strategy_3, "output": out_strategy_3}})
+
     output = run_scenario(
         "Model Parallel (MP)",
         x_layout,
@@ -274,7 +276,7 @@ def test_cell_shard_3():
     output_layout_dict = output_layout.to_dict()
     assert output_layout_dict["tensor_map"] == (2, 1, 0)
 
-def test_cell_shard_with_bprop():
+def test_func_shard_with_bprop():
     '''
     Feature: Model parallel in python shard.
     Description: Test model parallel in python shard with changeable device matrix and bprop .
@@ -295,9 +297,9 @@ def test_cell_shard_with_bprop():
     in_strategy_3 = (layout("mp", "dp"),)
     out_strategy_3 = (layout("dp", "None"),)
 
-    strategy_list = ((in_strategy_1, out_strategy_1),
-                     (in_strategy_2, out_strategy_2),
-                     (in_strategy_3, out_strategy_3))
+    strategy_list = ({ "forward": { "input": in_strategy_1, "output": out_strategy_1}},
+                     { "forward": { "input": in_strategy_2, "output": out_strategy_2}},
+                     { "forward": { "input": in_strategy_3, "output": out_strategy_3}})
     run_scenario_with_bprop(
         x_layout,
         w_layout,
@@ -341,7 +343,10 @@ def test_linear_model_parallel():
     w_layout = layout("mp", "None")
     x_local = global_to_local(x, x_layout)
     w_local = global_to_local(w, w_layout)
-    parallel_net.relu_net.shard(in_strategy=(layout("dp", "None"),))
+
+
+    strategy_list = { "forward": { "relu_net.input": (layout("dp", "None"),) } }
+    shard(parallel_net, sharding_plan=strategy_list)
     parallel_output = parallel_net(x_local, w_local)
 
     # Validate
@@ -384,7 +389,8 @@ def test_linear_sequence_parallel():
     w_layout = layout("mp", "None")
     x_local = global_to_local(x, x_layout)
     w_local = global_to_local(w, w_layout)
-    parallel_net.relu_net.shard(in_strategy=(layout("dp", "mp"),))
+    strategy_list = { "forward": { "relu_net.input": (layout("dp", "mp"),) } }
+    shard(parallel_net, sharding_plan=strategy_list)
     parallel_output = parallel_net(x_local, w_local)
 
     # Validate
@@ -393,7 +399,7 @@ def test_linear_sequence_parallel():
 
 
 @pytest.mark.parametrize('lazy_init', [True, False])
-def test_cell_shard_with_parameter_plan(lazy_init):
+def test_func_shard_with_parameter_plan(lazy_init):
     '''
     Feature: Cell shard with parameter_plan.
     Description: Test cell shard with parameter_plan in python shard.
@@ -431,8 +437,10 @@ def test_cell_shard_with_parameter_plan(lazy_init):
     x_layout = layout("dp", "mp")
     w_layout = layout("mp", "None")
     x_local = global_to_local(x, x_layout)
-    parallel_net.shard(in_strategy=(layout("dp", "mp"),), parameter_plan={"weight": w_layout})
-    parallel_net.relu_net.shard(in_strategy=(layout("dp", "mp"),))
+    strategy_list1 = { "forward": { "input": (layout("dp", "mp"),) }, "parameter": { "weight": w_layout} }
+    shard(parallel_net, sharding_plan=strategy_list1)
+    strategy_list2 = { "forward": { "relu_net.input": (layout("dp", "mp"),) }}
+    shard(parallel_net, sharding_plan=strategy_list2)
     init_parameters(parallel_net)
     parallel_output = parallel_net(x_local)
 

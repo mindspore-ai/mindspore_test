@@ -12,11 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-"""test flash attention score shard in python"""
+"""flash attention score shard in python"""
 
 import numpy as np
 import math
-
 import mindspore as ms
 import mindspore.communication.management as D
 import mindspore.common.dtype as mstype
@@ -24,10 +23,12 @@ from mindspore import Tensor
 from mindspore.parallel import Layout
 from mindspore.parallel.spmd.ops.parallel_flash_attention_score import ParallelFlashAttention
 from mindspore.ops import flash_attention_score
+from mindspore.parallel.spmd.shard import shard
 from tests.st.auto_parallel.utils import global_to_local, local_to_global
 
 
 def setup_module():
+    """setup module"""
     ms.context.set_context(mode=ms.context.PYNATIVE_MODE, device_target="Ascend")
     D.init()
 
@@ -108,8 +109,9 @@ def test_flash_attention_score_model_parallel():
                                           scalar_value=scalar_value,
                                           input_layout=input_layout,
                                           sparse_mode=sparse_mode)
-    parallel_net.shard(in_strategy=(query_layout, key_layout, value_layout, attn_mask_layout),
-                       out_strategy=(query_layout,))
+    stra = { "forward": { "input": (query_layout, key_layout, value_layout, attn_mask_layout),
+             "output": (query_layout,)}}
+    shard(parallel_net, stra)
     parallel_output = parallel_net(query_local, key_local, value_local, attn_mask_local)
 
     # Validate
