@@ -123,5 +123,14 @@ inline void DoGradSplitWithSizeImpl(const std::vector<mindspore::tensor::TensorP
   };
   pynative::autograd::DoViewGrad(input, output, make_func);
 }
+
+inline void DoGradSqueezeImpl(const mindspore::tensor::TensorPtr &output, const mindspore::tensor::TensorPtr &input_x,
+                              const std::vector<int64_t> &axis) {
+  auto make_func = [&input_x]() -> BackwardNodePtr {
+    auto backward_node = std::make_shared<pynative::autograd::ViewBackwardNode>("Squeeze", input_x->shape());
+    return backward_node;
+  };
+  pynative::autograd::DoViewGrad(input_x, output, make_func);
+}
 }  // namespace mindspore::pynative
 #endif  // MINDSPORE_MINDSPORE_CCSRC_PYNATIVE_OP_FUNCTION_CUSTOMIZE_VIEW_GRAD_IMPL_H_
