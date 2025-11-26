@@ -324,10 +324,10 @@ class Conv2d(_Conv):
     r"""
     2D convolution layer.
 
-    Applies a 2D convolution over an input tensor which is typically of shape :math:`(N, C_{in}, H_{in}, W_{in})`,
+    Applies a 2D convolution over an input signal composed of several input planes which is typically of shape :math:`(N, C_{in}, H_{in}, W_{in})`,
     where :math:`N` is batch size, :math:`C` is channel number, :math:`H` is feature height, :math:`W` is feature width.
 
-    The output is calculated based on formula:
+    Calculate according to the following formula:
 
     .. math::
 
@@ -338,16 +338,13 @@ class Conv2d(_Conv):
     the `cross-correlation <https://en.wikipedia.org/wiki/Cross-correlation>`_,
     :math:`weight` is the convolution kernel value and :math:`Input` represents the input feature map.
 
-    - :math:`i` corresponds to the batch number, the range is :math:`[0, N-1]`,
-      where :math:`N` is the batch size of the input.
+    - :math:`i` corresponds to the batch number, the range is :math:`[0, N-1]`.
 
     - :math:`j` corresponds to the output channel, the range is :math:`[0, C_{out}-1]`,
-      where :math:`C_{out}` is the number of
-      output channels, which is also equal to the number of kernels.
+      where :math:`C_{out}` is equal to the number of kernels.
 
     - :math:`k` corresponds to the input channel, the range is :math:`[0, C_{in}-1]`,
-      where :math:`C_{in}` is the number of
-      input channels, which is also equal to the number of channels in the convolutional kernels.
+      where :math:`C_{in}` is equal to the number of channels in the convolutional kernels.
 
     Therefore, in the above formula, :math:`{bias}(C_{\text{out}_j})` represents the bias of the :math:`j`-th
     output channel, :math:`{weight}(C_{\text{out}_j}, k)` represents the slice of the :math:`j`-th convolutional
@@ -365,15 +362,15 @@ class Conv2d(_Conv):
     <http://vision.stanford.edu/cs598_spring07/papers/Lecun98.pdf>`_.
 
     Args:
-        in_channels (int): The channel number of the input tensor of the Conv2d layer.
-        out_channels (int): The channel number of the output tensor of the Conv2d layer.
+        in_channels (int): Number of channels in the input image.
+        out_channels (int): Number of channels produced by the convolution.
         kernel_size (Union[int, tuple[int], list[int]]): Specifies the height and width of the 2D convolution kernel.
-            The data type is an integer or a tuple/list of two integers. An integer represents the height
-            and width of the convolution kernel. A tuple/list of two integers represents the height
+            The data type is an integer or a tuple/list of two integers. An integer represents a square convolution 
+            kernel. A tuple/list of two integers represents the height
             and width of the convolution kernel respectively.
         stride (Union[int, tuple[int], list[int]], optional): The movement stride of the 2D convolution kernel.
             The data type is an integer or a tuple/list of two integers. An integer represents the movement step size
-            in both height and width directions. A tuple/list of two integers represents the movement step size in the height
+            in any directions. A tuple/list of two integers represents the movement step size in the height
             and width directions respectively. Default: ``1`` .
         padding (Union[int, tuple[int], list[int], str], optional): The number of padding
             on the height and width directions of the input.
@@ -424,47 +421,45 @@ class Conv2d(_Conv):
           :math:`(C_{out})`. If bias is False, this will be None.
 
     Inputs:
-        - **Input** (Tensor) - Tensor of shape :math:`(N, C_{in}, H_{in}, W_{in})` or :math:`(C_{in}, H_{in}, W_{in})`.
+        - **Input** (Tensor) - :math:`(N, C_{in}, H_{in}, W_{in})` or :math:`(C_{in}, H_{in}, W_{in})`.
           When it's an empty Tesnor, backpropagation is currently not supported.
 
     Outputs:
-        Tensor of shape :math:`(N, C_{out}, H_{out}, W_{out})` or :math:`(C_{out}, H_{out}, W_{out})`.
+        - **Output** (Tensor) - :math:`(N, C_{out}, H_{out}, W_{out})` or :math:`(C_{out}, H_{out}, W_{out})`.
   
-        padding is ``'same'``:
-  
-        .. math::
-            \begin{array}{ll} \\
-              H_{out} = \left \lceil{\frac{H_{in}}{\text{stride[0]}}} \right \rceil \\
-              W_{out} = \left \lceil{\frac{W_{in}}{\text{stride[1]}}} \right \rceil \\
-            \end{array}
-  
-        padding is ``'valid'``:
-  
-        .. math::
-            \begin{array}{ll} \\
-              H_{out} = \left \lfloor{\frac{H_{in} - \text{dilation[0]} \times (\text{kernel_size[0]} - 1) - 1}
-              {\text{stride[0]}}} \right \rfloor + 1 \\
-              W_{out} = \left \lfloor{\frac{W_{in} - \text{dilation[1]} \times (\text{kernel_size[1]} - 1) - 1}
-              {\text{stride[1]}}} \right \rfloor + 1 \\
-            \end{array}
-  
-        padding is int or tuple/list:
-  
-        .. math::
-            \begin{array}{ll} \\
-                H_{out} = \left \lfloor{\frac{H_{in} + 2 \times padding[0] - \text{dilation[0]} \times
-                (\text{kernel_size[0]} - 1) - 1}{\text{stride[0]}}} \right \rfloor + 1 \\
-                W_{out} = \left \lfloor{\frac{W_{in} + 2 \times padding[1] - \text{dilation[1]} \times
-                (\text{kernel_size[1]} - 1) - 1}{\text{stride[1]}}} \right \rfloor + 1 \\
-            \end{array}
+          -  padding is ``'same'``:
+    
+            .. math::
+                \begin{array}{ll} \\
+                H_{out} = \left \lceil{\frac{H_{in}}{\text{stride[0]}}} \right \rceil \\
+                W_{out} = \left \lceil{\frac{W_{in}}{\text{stride[1]}}} \right \rceil \\
+                \end{array}
+    
+          - padding is ``'valid'``:
+    
+            .. math::
+                \begin{array}{ll} \\
+                H_{out} = \left \lfloor{\frac{H_{in} - \text{dilation[0]} \times (\text{kernel_size[0]} - 1) - 1}
+                {\text{stride[0]}}} \right \rfloor + 1 \\
+                W_{out} = \left \lfloor{\frac{W_{in} - \text{dilation[1]} \times (\text{kernel_size[1]} - 1) - 1}
+                {\text{stride[1]}}} \right \rfloor + 1 \\
+                \end{array}
+    
+          - padding is int or tuple/list:
+    
+            .. math::
+                \begin{array}{ll} \\
+                    H_{out} = \left \lfloor{\frac{H_{in} + 2 \times padding[0] - \text{dilation[0]} \times
+                    (\text{kernel_size[0]} - 1) - 1}{\text{stride[0]}}} \right \rfloor + 1 \\
+                    W_{out} = \left \lfloor{\frac{W_{in} + 2 \times padding[1] - \text{dilation[1]} \times
+                    (\text{kernel_size[1]} - 1) - 1}{\text{stride[1]}}} \right \rfloor + 1 \\
+                \end{array}
 
     Raises:
         ValueError: Args and size of the input feature map should satisfy the output formula to ensure that the size of
             the output feature map is positive; otherwise, an error will be reported.
         RuntimeError: On Ascend, due to the limitation of the L1 cache size of different NPU chip, if input size or
             kernel size is too large, it may trigger an error.
-        TypeError: If `in_channels`, `out_channels` or `groups` is not an int.
-        TypeError: If `kernel_size`, `stride` or `dilation` is neither an int nor a tuple/list.
         ValueError: If `in_channels`, `out_channels`, `kernel_size`, `stride` or `dilation` is less than 1.
         ValueError: If `padding` is less than 0.
         ValueError: If `padding` is `same` , `stride` is not equal to 1.
@@ -477,10 +472,9 @@ class Conv2d(_Conv):
 
     Examples:
         >>> import mindspore
-        >>> from mindspore import Tensor, mint
         >>> import numpy as np
-        >>> net = mint.nn.Conv2d(120, 240, 4, bias=False)
-        >>> x = Tensor(np.ones([1, 120, 1024, 640]), mindspore.float32)
+        >>> net = mindspore.mint.nn.Conv2d(120, 240, 4, bias=False)
+        >>> x = mindspore.tensor(np.ones([1, 120, 1024, 640]), mindspore.float32)
         >>> output = net(x).shape
         >>> print(output)
         (1, 240, 1021, 637)
