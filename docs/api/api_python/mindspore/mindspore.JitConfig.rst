@@ -22,7 +22,7 @@ mindspore.JitConfig
           默认是空字符串，表示忽略该项JitConfig配置，将使用ms.context的jit_syntax_level，ms.context请参考
           `set_context <https://www.mindspore.cn/docs/zh-CN/master/api_python/mindspore/mindspore.set_context.html>`_ 。
           默认值： ``""`` 。
-		  
+
           - ``"STRICT"``: 仅支持基础语法，且执行性能最佳。可用于MindIR导入导出。
           - ``"LAX"``: 最大程度地兼容Python所有语法。执行性能可能会受影响，不是最佳。由于存在可能无法导出的语法，不能用于MindIR导入导出。
 
@@ -31,7 +31,7 @@ mindspore.JitConfig
           - ``RELEASE`` : 正常场景下使用，一些调试信息会被丢弃以获取一个较好的编译性能。
           - ``DEBUG`` : 当错误发生时，用来调试，在编译过程中，更多的调试信息会被记录下来。
 
-        - **infer_boost** (str, 可选): 使能推理加速模式。
+        - **infer_boost** (str, 可选) - 使能推理加速模式。
           只能设置为 ``"on"`` 或 ``"off"``。 默认设置为 "off"，表示关闭推理加速。
           当使能了推理加速模式，MindSpore会优先使用高性能算子库，并优化运行时，提高推理性能。
           注意：当前推理加速模式只能在 `jit_level` 设为 ``"O0"`` 时使用，且仅支持Atlas A2系列产品。

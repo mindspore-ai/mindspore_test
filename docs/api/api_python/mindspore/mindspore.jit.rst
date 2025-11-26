@@ -53,7 +53,7 @@ mindspore.jit
           | infer_boost               |  Ascend                   |  ms_backend             |
           +---------------------------+---------------------------+-------------------------+
 
-          - **disable_format_transform** (bool, 可选) - 表示是否取消NCHW到NHWC的自动格式转换功能。当fp16的网络性能不如fp32的时，可以设置 `disable_format_transform` 为 ``True`` ，以尝试提高训练性能。默认值： ``False`` 。
+          - **disable_format_transform** (bool, 可选) - 表示是否取消NCHW到NHWC的自动格式转换功能。当fp16的网络性能不如fp32时，可以设置 `disable_format_transform` 为 ``True`` ，以尝试提高训练性能。默认值： ``False`` 。
           - **exec_order** (str, 可选) - 算子执行时的排序方法，GRAPH_MODE(0)下jit_level为O0或者O1时生效。不同的执行顺序会使得网络的执行内存和性能有所差异，当前仅支持两种排序方法：bfs和dfs，默认方法为bfs。
 
             - bfs：默认的排序方法，广度优先排序，具备较好的通信掩盖效果，执行性能相对较好。
@@ -71,4 +71,4 @@ mindspore.jit
             - off: 关闭推理模式，使用前向运算进行推理，性能较差。
 
     返回：
-        函数，如果 `fn` 不是None，则返回一个已经将输入 `fn` 编译成图的可执行函数；如果 `fn` 为None，则返回一个装饰器。当这个装饰器使用单个 `fn` 参数进行调用时，等价于 `fn` 不是None的场景。
+        函数，如果 `function` 不是None，则返回一个已经将输入 `function` 编译成图的可执行函数；如果 `function` 为None，则返回一个装饰器。当这个装饰器使用单个 `function` 参数进行调用时，等价于 `function` 不是None的场景。
