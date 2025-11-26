@@ -51,6 +51,7 @@
 #include "plugin/ascend/stress_detect/stress_detect.h"
 #include "plugin/ascend/kernel_executor/rts/rt_kernel_build.h"
 #include "plugin/ascend/res_manager/error_manager/ascend_error_manager.h"
+#include "mindspore/ccsrc/plugin/ascend/kernel_executor/hierarchical_memory/hierarchical_memory.h"
 #include "kernel/ascend/hccl/hccl_kernel_metadata.h"
 #include "kernel/ascend/hccl/hccl_kernel_build.h"
 #include "kernel/ascend/simu/kernel_mod_impl/simu_kernel_build.h"
@@ -1277,7 +1278,10 @@ void AscendKernelExecutor::PreprocessBeforeRun(const FuncGraphPtr &graph) const 
     }
   }
   ResetNodeIds({kernel_graph});
+  hierarchical_memory::AdjustExecutionOrderForHierarchicalMemoryOps(kernel_graph);
+  hierarchical_memory::ExecutionOrderOptimizeWithHierarchicalMemory(kernel_graph);
   DoStreamAssign(kernel_graph);
+  hierarchical_memory::AddEventToHierarchicalMemoryOps(kernel_graph);
   CreateEventKernelMod(kernel_graph);
   ExecKernelModResize(kernel_graph);
   kernel_graph->PrintGraphExecuteOrder();

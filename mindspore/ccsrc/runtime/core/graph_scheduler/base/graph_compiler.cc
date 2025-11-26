@@ -533,6 +533,17 @@ void ResetNodeId(const std::vector<KernelGraphPtr> &graphs) {
     }
   }
 }
+void SetOffloadUserData(const KernelGraphPtr &kernel_graph, const backend::BackendJitConfig &backend_jit_config) {
+  if (common::GetEnv("MS_DEV_HIERARCHICAL_MEMORY") != "1") {
+    return;
+  }
+  if (backend_jit_config.offload_activation) {
+    kernel_graph->set_user_data<bool>("offload_activation", std::make_shared<bool>(true));
+  }
+  if (backend_jit_config.offload_parameter) {
+    kernel_graph->set_user_data<bool>("offload_parameter", std::make_shared<bool>(true));
+  }
+}
 }  // namespace
 
 GraphId GraphCompiler::CompileGraph(const GraphSegmentPtr &segment,
@@ -549,6 +560,7 @@ GraphId GraphCompiler::CompileGraph(const GraphSegmentPtr &segment,
   PROF_START(ConstructKernelGraph);
   auto kernel_graph =
     session_->ConstructKernelGraph(nodes, io_nodes.second, device_target, backend_jit_config, true, true);
+  SetOffloadUserData(kernel_graph, backend_jit_config);
   PROF_END(ConstructKernelGraph);
 
   (void)profiler::CollectHostInfo(kModelNameRuntime, kEventCompileGraph, kStageConstructKernelGraph, start_time,

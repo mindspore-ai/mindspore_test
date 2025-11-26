@@ -787,7 +787,8 @@ std::tuple<bool, std::string, ExceptionType, bool> SelectKernelInfoWithMsg(const
     prim::kPrimMoveAssign,      prim::kPrimStreamSend,     prim::kPrimStreamRecv,    prim::kPrimExpandDims,
     prim::kPrimSqueeze,         prim::kPrimFlatten,        prim::kPrimFlattenGrad,   prim::kPrimReformat,
     prim::kPrimResLimit,        prim::kPrimFree,           prim::kPrimCopyToDevice,  prim::kPrimCopyToHost,
-    prim::kPrimUpdateToRemote,  prim::kPrimUpdateToDevice, prim::kPrimDetach,        prim::kPrimSetData};
+    prim::kPrimUpdateToRemote,  prim::kPrimUpdateToDevice, prim::kPrimDetach,        prim::kPrimSetData,
+    prim::kPrimCopyToHostExt};
   // for backend inline
   if (IsOneOfPrimitiveCNode(node, rt_kernel_ops)) {
     GenerateKernelBuildInfo(node, KernelType::RT_KERNEL);
