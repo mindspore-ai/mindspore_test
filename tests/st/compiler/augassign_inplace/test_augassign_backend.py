@@ -204,3 +204,38 @@ def test_grad_validation():
     net = Net()
     net.construct = jit(net.construct, backend='GE')
     grad(net)(x, y)
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_if_in_while():
+    """
+    Feature: Support augassign inplace fallback
+    Description: Fix fallback cycle problem caused by Inplace UpdateState being used by multiple UpdateStates
+    Expectation: Run success.
+    """
+
+    class Net(nn.Cell):
+        def __init__(self, loop_count=3):
+            super().__init__()
+            self.loop_count = loop_count
+
+        def construct(self, x):
+            num = self.loop_count
+            while num > 5:
+                num -= num
+                x = x * 1
+                x += x
+                if num == 10:
+                    x = x * 1
+                    x -= x
+            return x
+
+    input_x = Tensor(np.full((2, 3), 2).astype(np.float32))
+
+    net = Net(10)
+    out_pynative = net(input_x)
+
+    net = Net(10)
+    net.construct = jit(net.construct, backend='GE')
+    out_graph = net(input_x)
+    assert np.allclose(out_graph.asnumpy(), out_pynative.asnumpy(), 0.0001, 0.0001)

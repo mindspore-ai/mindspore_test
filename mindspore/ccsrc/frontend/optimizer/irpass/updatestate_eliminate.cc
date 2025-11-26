@@ -787,6 +787,31 @@ AnfNodePtr EliminateUpdateStateForAssign(const CNodePtr &update_state) {
 }
 }  // namespace
 
+// Convert:
+// %1  = SideEffectNode(xx, xx, u1)
+// %2 = UpdateState(u1, %1)
+// %3 = UpdateState(%2, %1)  --- need eliminate
+// %4 = xxx(%3)
+// To:
+// %1  = SideEffectNode(xx, xx, u1)
+// %2 = UpdateState(u1, %1)
+// %4 = xxx(%2)
+AnfNodePtr EliminateNestedUpdateState(const CNodePtr &update_state) {
+  if (!IsPrimitiveCNode(update_state, prim::kPrimUpdateState)) {
+    return nullptr;
+  }
+  const auto &inner_u = update_state->input(1);
+  if (!IsPrimitiveCNode(inner_u, prim::kPrimUpdateState)) {
+    return nullptr;
+  }
+  const auto &attach = update_state->input(kAttachIndex);
+  const auto &nested_attach = inner_u->cast<CNodePtr>()->input(kAttachIndex);
+  if (attach == nested_attach) {
+    return inner_u;
+  }
+  return nullptr;
+}
+
 // Eliminate useless node that only used by associated update_state.
 AnfNodePtr UpdatestateUselessNodeEliminater::operator()(const OptimizerPtr &, const AnfNodePtr &node) {
   auto update_state_node = dyn_cast<CNode>(node);
@@ -825,7 +850,9 @@ AnfNodePtr UpdatestateUselessNodeEliminater::operator()(const OptimizerPtr &, co
     }
     return EliminateUpdateStateMakeTupleWithUselessEnv(update_state_node, attach->cast<CNodePtr>());
   }
-  return nullptr;
+
+  auto inner_updatestate = EliminateNestedUpdateState(update_state_node);
+  return inner_updatestate;
 }
 
 // Eliminate UpdateState that attaches a pure (no-side-effect) node.
@@ -862,31 +889,6 @@ AnfNodePtr UpdatestatePureNodeEliminater::operator()(const OptimizerPtr &, const
     return nullptr;
   }
   return update_state_node->input(kInputIndex);
-}
-
-// Convert:
-// %1  = SideEffectNode(xx, xx, u1)
-// %2 = UpdateState(u1, %1)
-// %3 = UpdateState(%2, %1)  --- need eliminate
-// %4 = xxx(%3)
-// To:
-// %1  = SideEffectNode(xx, xx, u1)
-// %2 = UpdateState(u1, %1)
-// %4 = xxx(%2)
-AnfNodePtr EliminateNestedUpdateState(const CNodePtr &update_state) {
-  if (!IsPrimitiveCNode(update_state, prim::kPrimUpdateState)) {
-    return nullptr;
-  }
-  const auto &inner_u = update_state->input(1);
-  if (!IsPrimitiveCNode(inner_u, prim::kPrimUpdateState)) {
-    return nullptr;
-  }
-  const auto &attach = update_state->input(kAttachIndex);
-  const auto &nested_attach = inner_u->cast<CNodePtr>()->input(kAttachIndex);
-  if (attach == nested_attach) {
-    return inner_u;
-  }
-  return nullptr;
 }
 
 // Eliminate redundant UpdateState/Depend pair nodes caused by inline.
