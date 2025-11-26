@@ -92,6 +92,7 @@ class PrimitiveConverter {
 bool IsFunctionalMethod(const TypeId &type_id, const std::string &method_name);
 std::map<size_t, std::pair<ValuePtr, bool>> &GetFunctionalConvertCache();
 std::string BuildArgsTypeString(const TypePtr &arg_abs);
+FRONTEND_EXPORT bool IsFunctionalRegInMap(const std::string &function_name, bool is_method);
 FRONTEND_EXPORT std::string BuildFunctionalErrorMsg(const std::string &function_name,
                                                     const std::vector<std::string> &arg_info_list, bool is_method);
 AnfNodePtr ConvertFunctionalToPrimitive(const std::string &functional_name, const AnfNodePtrList &inputs_list,

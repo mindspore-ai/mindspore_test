@@ -32,6 +32,7 @@
 #include "include/utils/frontend/primitive_utils.h"
 #include "frontend/operator/composite/auto_generate/functional_map.h"
 #include "mindspore/core/include/utils/value_utils.h"
+#include "include/utils/pynative/storage_py.h"
 
 namespace mindspore {
 namespace pynative {
@@ -291,6 +292,37 @@ std::optional<std::vector<int64_t>> ConvertIntVector(PyObject *obj) {
     return std::nullopt;
   }
   return convert;
+}
+
+std::string GenerateSignatureStr(const std::string &function_name, const FunctionSignaturePtr &signature,
+                                 bool is_method) {
+  return is_method ? "Tensor." + function_name + signature->ToString() : function_name + signature->ToString();
+}
+
+std::vector<int> CollectValidSignatureIndices(const std::vector<FunctionSignaturePtr> &signatures,
+                                              Py_ssize_t total_arg_size) {
+  std::vector<int> valid_indices;
+  for (const auto &signature : signatures) {
+    if (static_cast<size_t>(total_arg_size) >= signature->min_args_ &&
+        static_cast<size_t>(total_arg_size) <= signature->max_args_) {
+      valid_indices.emplace_back(signature->index_);
+    }
+  }
+  return valid_indices;
+}
+
+std::vector<std::string> GenerateAllSignatureStrings(const std::vector<FunctionSignaturePtr> &signatures,
+                                                     const std::string &function_name, bool is_method) {
+  std::vector<std::string> sig_strings;
+  std::unordered_set<std::string> sig_set;
+  for (const auto &signature : signatures) {
+    auto sig_str = GenerateSignatureStr(function_name, signature, is_method);
+    bool inserted = sig_set.insert(sig_str).second;
+    if (inserted) {
+      sig_strings.emplace_back("\"" + sig_str + "\"");
+    }
+  }
+  return sig_strings;
 }
 }  // namespace
 namespace py = pybind11;
@@ -891,6 +923,12 @@ bool IsTensor(PyObject *obj) {
   }
   return false;
 }
+bool IsStorage(PyObject *obj) {
+  if (IsPyObjectStoragePy(obj)) {
+    return true;
+  }
+  return false;
+}
 
 bool CheckArgsAsIntlist(PyObject *obj, bool as_intlist) {
   int idx;
@@ -1233,6 +1271,8 @@ bool TypeCheck(PyObject *obj, const ops::OP_DTYPE &type, int &idx, ConvertPair &
   switch (type) {
     case OP_DTYPE::DT_TENSOR:
       return IsTensor(obj);
+    case OP_DTYPE::DT_STORAGE:
+      return IsStorage(obj);
     case OP_DTYPE::DT_NUMBER:
       return py_parse::ParseUtilsCheckScalar(obj);
     case OP_DTYPE::DT_FLOAT:
@@ -1631,14 +1671,8 @@ std::vector<std::string> ParamMatchInfo(PyObject *args, PyObject *kwargs,
 std::string PythonArgParser::PrintParseError(PyObject *args, PyObject *kwargs, const bool &is_method) {
   Py_ssize_t args_size = (!IsPyObjNone(args)) ? GetListOrTupleSize(args) : 0;
   Py_ssize_t kwargs_size = (!IsPyObjNone(kwargs)) ? PyDict_Size(kwargs) : 0;
-  const auto arg_size = args_size + kwargs_size;
-  std::vector<int> valid_signature_idx;
-  for (const auto &signature : signatures_) {
-    if (static_cast<size_t>(arg_size) >= signature->min_args_ &&
-        static_cast<size_t>(arg_size) <= signature->max_args_) {
-      valid_signature_idx.emplace_back(signature->index_);
-    }
-  }
+  const Py_ssize_t total_arg_size = args_size + kwargs_size;
+  const std::vector<int> valid_signature_idx = CollectValidSignatureIndices(signatures_, total_arg_size);
   if (valid_signature_idx.size() == 1) {
     ParserArgs parser_args(signatures_[valid_signature_idx[0]]);
     signatures_[valid_signature_idx[0]]->Parse(args, kwargs, parser_args, true);
@@ -1646,17 +1680,14 @@ std::string PythonArgParser::PrintParseError(PyObject *args, PyObject *kwargs, c
   std::vector<std::string> error_msg;
   std::unordered_set<std::string> signatures_str;
   for (auto idx : valid_signature_idx) {
-    auto sig_str = is_method ? "Tensor." + function_name_ + signatures_[idx]->ToString()
-                             : function_name_ + signatures_[idx]->ToString();
-    if (signatures_str.find(sig_str) != signatures_str.end()) {
-      continue;
-    }
+    const auto &signature = signatures_[idx];
+    auto sig_str = GenerateSignatureStr(function_name_, signature, is_method);
+    if (signatures_str.count(sig_str)) continue;
     signatures_str.insert(sig_str);
     error_msg.emplace_back("\"" + sig_str + "\"");
     std::vector<std::string> invalid_names;
     if (kwargs && kwargs != Py_None) {
-      // unrecognized kwarg name
-      invalid_names = GetInvalidKwargsName(kwargs, signatures_[idx]->params_);
+      invalid_names = GetInvalidKwargsName(kwargs, signature->params_);
       if (!invalid_names.empty()) {
         auto invalid_kw = std::accumulate(
           invalid_names.begin(), invalid_names.end(), std::string(),
@@ -1665,20 +1696,30 @@ std::string PythonArgParser::PrintParseError(PyObject *args, PyObject *kwargs, c
       }
     }
     if (invalid_names.empty()) {
-      auto match_infos = ParamMatchInfo(args, kwargs, signatures_[idx]->params_);
+      auto match_infos = ParamMatchInfo(args, kwargs, signature->params_);
       if (!match_infos.empty()) {
         error_msg.insert(error_msg.end(), match_infos.begin(), match_infos.end());
       } else {
-        ParserArgs parser_args(signatures_[idx]);
+        ParserArgs parser_args(signature);
         std::string error_info;
-        signatures_[idx]->Parse(args, kwargs, parser_args, false, &error_info);
+        signature->Parse(args, kwargs, parser_args, false, &error_info);
         error_msg.emplace_back("    " + error_info);
       }
     }
   }
   auto type_list = GetParseTypeListString(args, kwargs);
   if (error_msg.empty()) {
-    return prim::BuildFunctionalErrorMsg(function_name_, type_list, is_method);
+    bool in_map = prim::IsFunctionalRegInMap(function_name_, is_method);
+    if (in_map) {
+      return prim::BuildFunctionalErrorMsg(function_name_, type_list, is_method);
+    } else {
+      auto function_signature = GenerateAllSignatureStrings(signatures_, function_name_, is_method);
+      auto ss = prim::BuildApiInputInfo(function_name_, type_list);
+      for (auto &function_sign : function_signature) {
+        ss << function_sign << "\n";
+      }
+      return ss.str();
+    }
   } else {
     auto ss = prim::BuildApiInputInfo(function_name_, type_list);
     for (auto &error_info : error_msg) {

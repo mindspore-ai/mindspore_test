@@ -375,6 +375,8 @@ class MS_CORE_API Tensor : public MetaTensor {
   /// reused, so the feature map should set false when set device address of tensor.
   void set_device_address(const DeviceAddressPtr &device_sync, bool need_update_ref_count = true);
 
+  void set_(DeviceAddressPtr &&device_sync, const TensorStorageInfoPtr &storage_info, const ShapeVector &shape);
+
   /// \brief Set origin device address for implicit copy.
   ///
   /// \param[in] device_address Origin device address.

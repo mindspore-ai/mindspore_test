@@ -343,7 +343,12 @@ const DeviceAddressPtr &Tensor::device_address() const { return device_sync_; }
 void Tensor::set_device_address(const DeviceAddressPtr &device_sync, bool need_update_ref_count) {
   device_sync_ = device_sync;
 }
-
+void Tensor::set_(DeviceAddressPtr &&device_sync, const TensorStorageInfoPtr &storage_info, const ShapeVector &shape) {
+  device_sync->set_tensor_storage_info(storage_info);
+  set_device_address(device_sync);
+  set_storage_info(storage_info);
+  set_shape(shape);
+}
 TensorStorageInfoPtr Tensor::storage_info() const {
   if (device_sync_ != nullptr) {
     return device_sync_->GetTensorStorageInfo();

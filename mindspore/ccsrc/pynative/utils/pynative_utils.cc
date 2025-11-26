@@ -57,6 +57,7 @@
 #include "mindspore/ccsrc/pynative/utils/pyboost/functions/auto_grad_guard.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "include/utils/pynative/storage_py.h"
 
 namespace mindspore {
 namespace pynative {
@@ -131,6 +132,46 @@ tensor::TensorPtr GetContiguousTensor(const tensor::TensorPtr &input_tensor, dev
     PyBoost::DoGrad(contiguous_op, contiguous_run_info->op_grad_info, contiguous_run_info->async_status);
   }
   return contiguous_tensor;
+}
+
+bool IsMindSporeDtype(PyObject *obj) {
+  PyObject *ms_module = PyImport_ImportModule("mindspore");
+  if (ms_module && ms_module != Py_None) {
+    PyObject *type_class = PyObject_GetAttrString(ms_module, "Type");
+    Py_DECREF(ms_module);
+    if (type_class && type_class != Py_None) {
+      if (PyObject_IsInstance(obj, type_class)) {
+        Py_DECREF(type_class);
+        return true;
+      }
+    }
+    Py_DECREF(type_class);
+  }
+  return false;
+}
+
+std::string BuildSequenceTypeString(PyObject *obj, bool is_tuple) {
+  std::stringstream ss;
+  ss << (is_tuple ? "Tuple<" : "List<");
+  Py_ssize_t size = is_tuple ? PyTuple_Size(obj) : PyList_Size(obj);
+  for (Py_ssize_t i = 0; i < size; ++i) {
+    PyObject *item = is_tuple ? PyTuple_GetItem(obj, i) : PyList_GetItem(obj, i);
+    if (i == 0) {
+      ss << PyParser::BuildPyObjectInputTypeString(item);
+    } else {
+      ss << ", " << PyParser::BuildPyObjectInputTypeString(item);
+    }
+  }
+  ss << ">";
+  return ss.str();
+}
+
+std::string GetDefaultObjectTypeName(PyObject *obj) {
+  std::stringstream ss;
+  PyObject *obj_type = PyObject_Str(PyObject_Type(obj));
+  ss << PyUnicode_AsUTF8(obj_type);
+  Py_DECREF(obj_type);
+  return ss.str();
 }
 }  // namespace
 
@@ -352,13 +393,13 @@ tensor::TensorPtr Common::StubNodeToTensor(const ValuePtr &v) {
   MS_LOG(EXCEPTION) << "It should be stub tensor, but got " << v->ToString();
 }
 
-tensor::TensorPtr Common::ConvertStubNodeToTensor(const ValuePtr &v, bool need_contiguous, bool requires_grad) {
+tensor::TensorPtr Common::ConvertStubNodeToTensor(const ValuePtr &v, bool need_contiguous, bool requires_grad,
+                                                  bool is_inplace) {
   const auto &tensor = StubNodeToTensor(v);
   MS_EXCEPTION_IF_NULL(tensor);
   if (!need_contiguous || tensor->storage_info() == nullptr) {
     return tensor;
   }
-
   auto device_address = tensor->device_address();
   MS_EXCEPTION_IF_NULL(device_address);
   const auto &device_target = device_address->GetDeviceType();
@@ -367,40 +408,52 @@ tensor::TensorPtr Common::ConvertStubNodeToTensor(const ValuePtr &v, bool need_c
       (ms_op_plugin_path != nullptr && device_target == device::DeviceType::kCPU)) {
     return tensor;
   }
+  if (is_inplace) {
+    const auto &storage_info = tensor->storage_info();
+    if (storage_info->storage_offset == 0 && storage_info->is_contiguous) {
+      return tensor;
+    } else {
+      MS_LOG(WARNING) << "Tensor on CPU with storage_offset " << storage_info->storage_offset
+                      << " and is_contiguous: " << storage_info->is_contiguous
+                      << " cannot use CPU inplace copy normally";
+    }
+  }
 
   return GetContiguousTensor(tensor, device_target, requires_grad);
 }
 
 std::optional<tensor::TensorPtr> Common::ConvertStubNodeToTensor(const std::optional<ValuePtr> &v, bool need_contiguous,
-                                                                 bool requires_grad) {
+                                                                 bool requires_grad, bool is_inplace) {
   if (!v.has_value()) {
     return std::nullopt;
   }
-  return std::make_optional(ConvertStubNodeToTensor(v.value(), need_contiguous, requires_grad));
+  return std::make_optional(ConvertStubNodeToTensor(v.value(), need_contiguous, requires_grad, is_inplace));
 }
 
-ValueTuplePtr Common::ConvertStubNodeToValueTuple(const ValueListPtr &v, bool need_contiguous, bool requires_grad) {
+ValueTuplePtr Common::ConvertStubNodeToValueTuple(const ValueListPtr &v, bool need_contiguous, bool requires_grad,
+                                                  bool is_inplace) {
   if (utils::isa<ValueSequence>(v)) {
     const auto &value_seq = utils::cast<ValueSequencePtr>(v);
     const auto &values = value_seq->value();
     std::vector<ValuePtr> tensor_list;
     (void)std::transform(values.begin(), values.end(), std::back_inserter(tensor_list),
-                         [need_contiguous, requires_grad](const ValuePtr &value) {
-                           return ConvertStubNodeToTensor(value, need_contiguous, requires_grad);
+                         [need_contiguous, requires_grad, is_inplace](const ValuePtr &value) {
+                           return ConvertStubNodeToTensor(value, need_contiguous, requires_grad, is_inplace);
                          });
     return std::make_shared<ValueTuple>(tensor_list);
   }
   MS_LOG(EXCEPTION) << "It should be stub tensor sequence, but got " << v->ToString();
 }
 
-ValueTuplePtr Common::ConvertStubNodeToValueTuple(const ValueTuplePtr &v, bool need_contiguous, bool requires_grad) {
+ValueTuplePtr Common::ConvertStubNodeToValueTuple(const ValueTuplePtr &v, bool need_contiguous, bool requires_grad,
+                                                  bool is_inplace) {
   if (utils::isa<ValueSequence>(v)) {
     const auto &value_seq = utils::cast<ValueSequencePtr>(v);
     const auto &values = value_seq->value();
     std::vector<ValuePtr> tensor_list;
     (void)std::transform(values.begin(), values.end(), std::back_inserter(tensor_list),
-                         [need_contiguous, requires_grad](const ValuePtr &value) {
-                           return ConvertStubNodeToTensor(value, need_contiguous, requires_grad);
+                         [need_contiguous, requires_grad, is_inplace](const ValuePtr &value) {
+                           return ConvertStubNodeToTensor(value, need_contiguous, requires_grad, is_inplace);
                          });
     return std::make_shared<ValueTuple>(tensor_list);
   }
@@ -408,11 +461,12 @@ ValueTuplePtr Common::ConvertStubNodeToValueTuple(const ValueTuplePtr &v, bool n
 }
 
 std::optional<ValueTuplePtr> Common::ConvertStubNodeToValueTuple(const std::optional<ValueTuplePtr> &v,
-                                                                 bool need_contiguous, bool requires_grad) {
+                                                                 bool need_contiguous, bool requires_grad,
+                                                                 bool is_inplace) {
   if (!v.has_value()) {
     return std::nullopt;
   }
-  return std::make_optional(ConvertStubNodeToValueTuple(v.value(), need_contiguous, requires_grad));
+  return std::make_optional(ConvertStubNodeToValueTuple(v.value(), need_contiguous, requires_grad, is_inplace));
 }
 
 ValueNodePtr Common::CreateValueNodeByValue(const ValuePtr &v, const abstract::AbstractBasePtr &abs) {
@@ -657,6 +711,9 @@ std::string PyParser::BuildPyObjectInputTypeString(PyObject *obj) {
   if (tensor::IsPyObjectTensorPy(obj)) {
     return "Tensor";
   }
+  if (IsPyObjectStoragePy(obj)) {
+    return "Storage";
+  }
   // bool must before int, because bool is a special int
   if (PyBool_Check(obj)) {
     return "bool";
@@ -673,42 +730,18 @@ std::string PyParser::BuildPyObjectInputTypeString(PyObject *obj) {
   if (obj == Py_None) {
     return "None";
   }
-  PyObject *ms_module = PyImport_ImportModule("mindspore");
-  if (ms_module && ms_module != Py_None) {
-    PyObject *type_class = PyObject_GetAttrString(ms_module, "Type");
-    Py_DECREF(ms_module);
-    if (type_class && type_class != Py_None) {
-      if (PyObject_IsInstance(obj, type_class)) {
-        Py_DECREF(type_class);
-        return "mindspore.dtype";
-      }
-    }
-    Py_DECREF(type_class);
+
+  if (IsMindSporeDtype(obj)) {
+    return "mindspore.dtype";
   }
 
   auto is_tuple = PyTuple_Check(obj);
   auto is_list = PyList_Check(obj);
   if (is_tuple || is_list) {
-    std::stringstream ss;
-    ss << (is_tuple ? "Tuple<" : "List<");
-    Py_ssize_t size = is_tuple ? PyTuple_Size(obj) : PyList_Size(obj);
-    for (Py_ssize_t i = 0; i < size; ++i) {
-      PyObject *item = is_tuple ? PyTuple_GetItem(obj, i) : PyList_GetItem(obj, i);
-      if (i == 0) {
-        ss << BuildPyObjectInputTypeString(item);
-      } else {
-        ss << ", " << BuildPyObjectInputTypeString(item);
-      }
-    }
-    ss << ">";
-    return ss.str();
+    return BuildSequenceTypeString(obj, is_tuple);
   }
 
-  std::stringstream ss;
-  PyObject *obj_type = PyObject_Str(PyObject_Type(obj));
-  ss << PyUnicode_AsUTF8(obj_type);
-  Py_DECREF(obj_type);
-  return ss.str();
+  return GetDefaultObjectTypeName(obj);
 }
 
 void PyParser::PrintTypeCastError(const ops::OpDefPtr &op_def, const py::list &op_inputs, size_t idx) {

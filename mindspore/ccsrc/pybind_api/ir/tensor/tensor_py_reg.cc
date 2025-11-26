@@ -17,11 +17,15 @@
 #include <complex>
 #include <algorithm>
 #include <vector>
+#include <map>
+#include <tuple>
 #include <string>
 #include <memory>
 
 #include "pybind11/complex.h"
 #include "pybind_api/ir/tensor/tensor_py.h"
+#include "ir/tensor.h"
+#include "include/utils/tensor_py.h"
 #include "include/utils/pybind_api/api_register.h"
 #include "abstract/abstract_value.h"
 #include "pybind_api/ir/tensor/tensor_index_py.h"
@@ -38,9 +42,214 @@
 #include "include/frontend/jit/trace/trace_recorder_interface.h"
 #include "pybind_api/ir/tensor/storage/storage_py.h"
 #include "mindspore/ccsrc/pynative/backward/backward_node_py.h"
+#include "pynative/forward/pyboost/converter.h"
+#include "mindspore/ops/view/view_strides_calculator.h"
+#include "pynative/utils/pyboost/pyboost_utils.h"
+#include "pynative/utils/runtime/op_runner.h"
 
 namespace mindspore {
 namespace tensor {
+namespace {
+enum kSetId : int { kSetEmpty = 0, kSetStorage, kSetStorageCustom, kSetTensor, kSetTensorCustom };
+void CheckDtypeConsistency(const TypeId &dst_dtype, const TypeId &src_dtype, bool is_src_storage) {
+  if (dst_dtype == src_dtype) {
+    return;
+  }
+  if (is_src_storage) {
+    MS_LOG(EXCEPTION) << "Expected a Storage of type " << TypeIdToString(dst_dtype) << " but got type "
+                      << TypeIdToString(src_dtype) << " for argument 0 'storage'";
+  } else {
+    MS_LOG(EXCEPTION) << "Could not set tensor of type " << TypeIdToString(src_dtype) << " to a tensor of type "
+                      << TypeIdToString(dst_dtype);
+  }
+}
+
+std::tuple<int64_t, std::vector<int64_t>, std::vector<int64_t>> GetCustomTuple(const pynative::ParserArgs &parse_args) {
+  const auto py_shape_obj = py::reinterpret_borrow<py::object>(parse_args.arg_list_[2]);
+  const std::vector<int64_t> shape = py::cast<std::vector<int64_t>>(py_shape_obj);
+
+  const std::vector<int64_t> stride = [&]() -> std::vector<int64_t> {
+    if (parse_args.arg_list_[3] == Py_None) {
+      return ops::GetOriStrides(shape);
+    }
+    const auto py_stride_obj = py::reinterpret_borrow<py::object>(parse_args.arg_list_[3]);
+    return py::cast<std::vector<int64_t>>(py_stride_obj);
+  }();
+
+  const int64_t storage_offset = py::cast<int64_t>(py::reinterpret_borrow<py::object>(parse_args.arg_list_[1]));
+  return {storage_offset, shape, stride};
+}
+
+std::pair<DeviceAddressPtr, TensorStorageInfoPtr> CreateSourceStorageDeviceAddr(
+  const device::DeviceAddressPtr &base_device_address, const DeviceContext *device_context, int64_t storage_offset,
+  const std::vector<int64_t> &shape, const std::vector<int64_t> &stride, const Storage &source_storage) {
+  const auto &source_dtype = source_storage.GetTypeId();
+  int64_t bytes_size = source_storage.NBytes();
+  const std::string &device_name = source_storage.device();
+  int64_t new_bytes_size = ops::ComputeStorageNelements(storage_offset, shape, stride) *
+                           GetTypeByte(TypeIdToType(base_device_address->type_id()));
+  device::DeviceAddressPtr source_device_address;
+  if (new_bytes_size <= bytes_size) {
+    source_device_address = device_context->device_res_manager_->CreateDeviceAddress(
+      nullptr, bytes_size, shape, DEFAULT_FORMAT, base_device_address->type_id(), device_name,
+      source_storage.GetStreamId());
+    MS_EXCEPTION_IF_NULL(source_device_address);
+    source_device_address->set_device_pointer(source_storage.GetDevicePointer());
+  } else {
+    source_device_address = device_context->device_res_manager_->CreateDeviceAddress(
+      nullptr, new_bytes_size, shape, DEFAULT_FORMAT, base_device_address->type_id(), device_name,
+      source_storage.GetStreamId());
+    device_context->device_res_manager_->AllocateMemory(source_device_address.get());
+    SyncCopy(source_device_address, source_storage.GetDeviceAddress(), source_storage.GetStreamId());
+    const auto &source_storage_deevice_pointer = source_storage.GetDevicePointer();
+    source_storage_deevice_pointer->set_ptr(source_device_address->GetDevicePtr());
+    source_storage_deevice_pointer->set_deleter(source_device_address->device_pointer()->deleter());
+    source_storage_deevice_pointer->set_allocator(source_device_address->allocator());
+    source_device_address->set_device_pointer(source_storage_deevice_pointer);
+  }
+  auto new_storage_info =
+    ops::CheckSetStorageInfo(base_device_address, storage_offset, shape, stride, device_name, bytes_size, source_dtype);
+
+  return {std::move(source_device_address), std::move(new_storage_info)};
+}
+
+std::pair<DeviceAddressPtr, TensorStorageInfoPtr> CreateSourceTensorDeviceAddr(
+  const device::DeviceAddressPtr &base_device_address, const DeviceContext *device_context, int64_t storage_offset,
+  const std::vector<int64_t> &shape, const std::vector<int64_t> &stride, const TensorPtr &source_tensor) {
+  const auto &source_dtype = source_tensor->data_type();
+  const auto &device_address = source_tensor->device_address();
+  int64_t bytes_size = device_address->GetSize();
+  const auto &device_type = device_address->GetDeviceType();
+  const std::string &device_name = device::GetDeviceNameByType(device_type);
+  int64_t new_bytes_size = ops::ComputeStorageNelements(storage_offset, shape, stride) *
+                           GetTypeByte(TypeIdToType(base_device_address->type_id()));
+  device::DeviceAddressPtr source_device_address;
+  if (new_bytes_size <= bytes_size) {
+    source_device_address = device_context->device_res_manager_->CreateDeviceAddress(
+      nullptr, bytes_size, shape, DEFAULT_FORMAT, base_device_address->type_id(), device_name,
+      device_address->stream_id());
+    MS_EXCEPTION_IF_NULL(source_device_address);
+    source_device_address->set_device_pointer(device_address->device_pointer());
+  } else {
+    source_device_address = device_context->device_res_manager_->CreateDeviceAddress(
+      nullptr, new_bytes_size, shape, DEFAULT_FORMAT, base_device_address->type_id(), device_name,
+      device_address->stream_id());
+    device_context->device_res_manager_->AllocateMemory(source_device_address.get());
+    SyncCopy(source_device_address, device_address, device_address->stream_id());
+    const auto &source_storage_deevice_pointer = device_address->device_pointer();
+    source_storage_deevice_pointer->set_ptr(source_device_address->GetDevicePtr());
+    source_storage_deevice_pointer->set_deleter(source_device_address->device_pointer()->deleter());
+    source_storage_deevice_pointer->set_allocator(source_device_address->allocator());
+    source_device_address->set_device_pointer(source_storage_deevice_pointer);
+  }
+  auto new_storage_info =
+    ops::CheckSetStorageInfo(base_device_address, storage_offset, shape, stride, device_name, bytes_size, source_dtype);
+
+  return {std::move(source_device_address), std::move(new_storage_info)};
+}
+
+void SetEmpty(TensorPtr &base_tensor, const DeviceContext *device_context) {
+  auto source_device_address = device_context->device_res_manager_->CreateDeviceAddress(
+    nullptr, 0, {0}, DEFAULT_FORMAT, base_tensor->data_type(),
+    device::GetDeviceNameByType(base_tensor->device_address()->GetDeviceType()),
+    base_tensor->device_address()->stream_id());
+  MS_EXCEPTION_IF_NULL(source_device_address);
+  base_tensor->set_(std::move(source_device_address), nullptr, {0});
+}
+
+void SetStorage(TensorPtr &base_tensor, const pynative::ParserArgs &parse_args, const DeviceContext *device_context) {
+  const Storage &source_storage = StoragePy_Unpack(parse_args.arg_list_[0]);
+  CheckDtypeConsistency(base_tensor->data_type(), source_storage.GetTypeId(), true);
+  int64_t new_size = static_cast<int64_t>(source_storage.NBytes() / base_tensor->DataItemSize());
+  const std::vector<int64_t> shape = {new_size};
+  const std::vector<int64_t> stride = {1};
+  auto [source_device_address, new_storage_info] =
+    CreateSourceStorageDeviceAddr(base_tensor->device_address(), device_context, 0, shape, stride, source_storage);
+  base_tensor->set_(std::move(source_device_address), new_storage_info, shape);
+}
+
+void SetStorageCustom(TensorPtr &base_tensor, const pynative::ParserArgs &parse_args,
+                      const DeviceContext *device_context) {
+  const Storage &source_storage = StoragePy_Unpack(parse_args.arg_list_[0]);
+  CheckDtypeConsistency(base_tensor->data_type(), source_storage.GetTypeId(), true);
+  const auto [storage_offset, shape, stride] = GetCustomTuple(parse_args);
+  auto [source_device_address, new_storage_info] = CreateSourceStorageDeviceAddr(
+    base_tensor->device_address(), device_context, storage_offset, shape, stride, source_storage);
+  base_tensor->set_(std::move(source_device_address), new_storage_info, shape);
+}
+
+void SetTensor(TensorPtr &base_tensor, const pynative::ParserArgs &parse_args, const DeviceContext *device_context) {
+  PyType<TensorPy> *tensor_tmp = (PyType<TensorPy> *)parse_args.arg_list_[0];
+  TensorPtr source_tensor = tensor_tmp->value.GetTensor();
+  CheckDtypeConsistency(base_tensor->data_type(), source_tensor->data_type(), false);
+  int64_t storage_offset = source_tensor->storage_offset();
+  const std::vector<int64_t> &shape = source_tensor->shape_c();
+  const std::vector<int64_t> &stride = source_tensor->stride();
+  auto [source_device_address, new_storage_info] = CreateSourceTensorDeviceAddr(
+    base_tensor->device_address(), device_context, storage_offset, shape, stride, source_tensor);
+  base_tensor->set_(std::move(source_device_address), new_storage_info, shape);
+}
+
+void SetTensorCustom(TensorPtr &base_tensor, const pynative::ParserArgs &parse_args,
+                     const DeviceContext *device_context) {
+  PyType<TensorPy> *tensor_tmp = (PyType<TensorPy> *)parse_args.arg_list_[0];
+  TensorPtr source_tensor = tensor_tmp->value.GetTensor();
+  bool is_contiguous = source_tensor->is_contiguous();
+  if (!is_contiguous) {
+    MS_LOG(EXCEPTION) << "passed in tensor to be used as storage must be contiguous";
+  }
+  const auto [storage_offset, shape, stride] = GetCustomTuple(parse_args);
+  const int64_t total_offset = storage_offset + source_tensor->storage_offset();
+  auto [source_device_address, new_storage_info] = CreateSourceTensorDeviceAddr(
+    base_tensor->device_address(), device_context, total_offset, shape, stride, source_tensor);
+  base_tensor->set_(std::move(source_device_address), new_storage_info, shape);
+}
+
+TensorPtr TensorSet_(tensor::TensorPy &tensor, pynative::ParserArgs &parse_args) {
+  TensorPtr base_tensor = tensor.GetTensor();
+  runtime::Pipeline::Get().WaitForward();
+  MS_EXCEPTION_IF_NULL(base_tensor);
+  base_tensor->set_need_pipeline_sync(true);
+  const DeviceContext *device_context =
+    runtime::OpRunner::GetDeviceContext(base_tensor->device_address()->GetDeviceType());
+
+  switch (parse_args.GetOvertLoadIndex()) {
+    case kSetId::kSetEmpty: {
+      // Set()
+      SetEmpty(base_tensor, device_context);
+      break;
+    }
+    case kSetId::kSetStorage: {
+      // Set(storage source)
+      SetStorage(base_tensor, parse_args, device_context);
+      break;
+    }
+    case kSetId::kSetStorageCustom: {
+      // Set(storage source, int storage_offset, tuple[int]|list[int] size, tuple[int]|list[int] stride=None)
+      SetStorageCustom(base_tensor, parse_args, device_context);
+      break;
+    }
+    case kSetId::kSetTensor: {
+      // Set(tensor source)
+      SetTensor(base_tensor, parse_args, device_context);
+      break;
+    }
+    case kSetId::kSetTensorCustom: {
+      // Set(tensor source, int storage_offset, tuple[int]|list[int] size, tuple[int]|list[int] stride=None)
+      SetTensorCustom(base_tensor, parse_args, device_context);
+      break;
+    }
+    default:
+      MS_LOG(EXCEPTION) << "Parse function signature error";
+      break;
+  }
+  base_tensor->set_need_pipeline_sync(true);
+  base_tensor->set_contiguous_callback([](const tensor::TensorPtr &self) -> DeviceAddressPtr {
+    return kernel::pyboost::PyBoostUtils::MakeContiguousDeviceAddress(self);
+  });
+  return base_tensor;
+}
+}  // namespace
 PyTypeObject *TensorPyType = GetTensorPyType();
 struct PyObjDeleter {
   void operator()(PyObject *object) const { Py_DECREF(object); }
@@ -1314,6 +1523,23 @@ static PyObject *TensorPython_ToDLPack(PyObject *self, PyObject *args) {
   return result.release().ptr();
   HANDLE_MS_EXCEPTION_END
 }
+extern PyObject *TensorPython_Set(PyObject *self, PyObject *args, PyObject *kwargs) {
+  HANDLE_MS_EXCEPTION
+  static pynative::PythonArgParser parser(
+    {
+      "Set()",
+      "Set(storage source)",
+      "Set(storage source, int storage_offset, tuple[int]|list[int] size, tuple[int]|list[int] stride=None)",
+      "Set(tensor source)",
+      "Set(tensor source, int storage_offset, tuple[int]|list[int] size, tuple[int]|list[int] stride=None)",
+    },
+    "set_");
+  auto parse_args = parser.Parse(args, kwargs, true);
+  PyType<TensorPy> *py_tensor = reinterpret_cast<PyType<TensorPy> *>(self);
+  TensorPy &tensor_py = py_tensor->value;
+  return PackTensor(TensorSet_(tensor_py, parse_args));
+  HANDLE_MS_EXCEPTION_END
+}
 
 static PyMethodDef Tensor_methods[] = {
   {"set_param_info", (PyCFunction)TensorPython_set_paramInfo_, METH_STATIC | METH_VARARGS, "set param info"},
@@ -1629,6 +1855,69 @@ static PyMethodDef Tensor_methods[] = {
    "shared host memory with device."},
   {"from_dlpack", (PyCFunction)TensorPython_FromDLPack, METH_STATIC | METH_VARARGS, "from_dlpack."},
   {"to_dlpack", (PyCFunction)TensorPython_ToDLPack, METH_VARARGS, "to_dlpack."},
+  {"set_", (PyCFunction)TensorPython_Set, METH_VARARGS | METH_KEYWORDS, R"mydelimiter(
+                                Sets the underlying storage, size, and stride. 
+                                If source is a tensor, the self tensor will share the same storage with it, along with the same size and stride. 
+                                Modifications to elements of one tensor will be reflected in the other.
+
+                                This method supports multiple parameter combinations, with the valid call signatures as follows:
+
+                                - ``set_() -> Tensor``:
+                                  Parameterless call that sets the current tensor to an uninitialized empty tensor.
+
+                                - ``set_(source: Storage) -> Tensor``:
+                                  Sets the underlying storage of the `self` tensor to the specified ``Storage`` .
+
+                                - ``set_(source: Storage, storage_offset: int, size: tuple | list, stride: tuple | list) -> Tensor``:
+                                  Sets the underlying storage of the `self` tensor to the specified ``Storage`` ,
+                                  and simultaneously sets the `size` and `stride` of the `self` tensor to the provided size and stride.
+
+                                - ``set_(source: Tensor) -> Tensor``:
+                                  Makes the `self` tensor share the same underlying storage as the `source` tensor,
+                                  and the `storage_offset` , `size` , and `stride` of the `self` tensor are the same as those of the `source` tensor.
+
+                                - ``set_(source: Tensor, storage_offset: int, size: tuple | list, stride: tuple | list) -> Tensor``:
+                                  Makes the `self` tensor share the same underlying storage as the `source` tensor,
+                                  and simultaneously sets the `size` and `stride` of the `self` tensor to the provided size and stride.
+
+                                Note:
+                                    - If the device of the current tensor when calling `set_` is ``CPU`` and it needs to be used on ``Ascend`` subsequently,
+                                      it is recommended to explicitly copy the tensor to Ascend for use.
+                                    - If the device of the current tensor when calling `set_` is ``CPU`` , setting a non-contiguous underlying storage for
+                                      the tensor will cause subsequent in-place modifications on CPU to not take effect.
+
+                                Args:
+                                    source (Tensor or Storage, optional): The Tensor or Storage that needs to share the underlying storage. Default: ``None`` .
+                                    storage_offset (int, optional): Specifies the offset of the current tensor relative to the underlying storage. Default: ``0`` .
+                                    size (tuple or list, optional): Specifies the size of the current tensor in the underlying storage.  Default: ``None`` ,
+                                        which uses the underlying size of `source` by default.
+                                    stride (tuple or list, optional): Specifies the stride of the current tensor in the underlying storage. Default: ``None`` ,
+                                        which uses row-contiguous strides by default.
+
+                                Raises:
+                                    TypeError: The input parameter type does not meet the requirements, or the number of input parameters does not match.
+                                    RuntimeError: If the passed size is the same as the original size of self,
+                                        the underlying size being set exceeds the underlying size of source.
+                                    RuntimeError: The passed storage_offset is less than 0.
+                                    RuntimeError: The set size contains a value less than 0.
+                                    RuntimeError: The number of elements in the set size and stride is not the same.
+                                    RuntimeError: The number of elements in the set size exceeds 8.
+                                    RuntimeError: When source is a Tensor and parameters such as size are provided, but the source tensor is non-contiguous.
+                                    RuntimeError: When source is of Tensor and no other parameters are provided, the dtype of the self tensor and source are different.
+                                    RuntimeError: When source is of Storage, the dtype of the self tensor and source are different.
+                                    RuntimeError: The device of the self tensor and source is not the same.
+
+                                Examples:
+                                    >>> import mindspore as ms
+                                    >>> import numpy as np
+                                    >>> data = ms.Tensor([10, 20, 30], dtype = ms.float32)
+                                    >>> target = ms.Tensor(np.zeros(3))
+                                    >>> print(target)
+                                    [0., 0., 0.]
+                                    >>> target.set_(data)
+                                    >>> print(target)
+                                    [10., 20., 30.]
+                                )mydelimiter"},
   {NULL, NULL, 0, NULL}};
 
 extern void TensorPy_pydealloc(PyObject *obj) {

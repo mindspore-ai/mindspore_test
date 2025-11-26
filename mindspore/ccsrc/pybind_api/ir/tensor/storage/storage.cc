@@ -32,4 +32,8 @@ void Storage::InplaceCopy(const Storage &src, bool non_blocking) {
 }
 
 std::string Storage::device() const { return storage_base_->device(); }
+TypeId Storage::GetTypeId() const { return storage_base_->GetTypeId(); }
+uint32_t Storage::GetStreamId() const { return storage_base_->GetStreamId(); }
+const DevicePointerPtr &Storage::GetDevicePointer() const { return storage_base_->GetDevicePointer(); }
+const DeviceAddressPtr &Storage::GetDeviceAddress() const { return storage_base_->GetDeviceAddress(); }
 }  // namespace mindspore
