@@ -7,8 +7,8 @@ mindspore.mint.greater_equal
 
     .. math::
         out_{i} =\begin{cases}
-            & \text{True,    if } input_{i}>other_{i} \\
-            & \text{False,   if } input_{i}<=other_{i}
+            & \text{True,    if } input_{i}>=other_{i} \\
+            & \text{False,   if } input_{i}<other_{i}
             \end{cases}
 
     .. note::
