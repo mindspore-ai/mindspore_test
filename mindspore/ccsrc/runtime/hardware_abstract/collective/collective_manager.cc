@@ -315,6 +315,10 @@ bool CollectiveManager::CreateCommunicationGroup(const std::string &group_name,
     MS_LOG(WARNING) << "This rank: " << global_rank_id_ << " is not in the group ranks: " << group_ranks
                     << ". This may cause some exception when initializing the group.";
   }
+  if (group_map_.count(group_name)) {
+    MS_LOG(WARNING) << "The group " << group_name << " has already existed.";
+    return true;
+  }
   if (group_map_.count(group_name) == 0) {
     (void)group_infos_.emplace_back(std::make_pair(group_name, group_ranks));
   }
@@ -389,6 +393,9 @@ bool CollectiveManager::DestroyDeviceSideCommunicationGroup(const std::string &g
   }
   RETURN_IF_FALSE_WITH_LOG(device_comm_lib_instance_->DestroyCommunicationGroup(group_name),
                            "Failed to destroy device communication group " + group_name);
+  if (group_map_.count(group_name)) {
+    group_map_.erase(group_name);
+  }
   return true;
 }
 
@@ -404,6 +411,9 @@ bool CollectiveManager::DestroyCommunicationGroup(const std::string &group_name)
                            "Failed to destroy host communication group " + group_name);
   RETURN_IF_FALSE_WITH_LOG(device_comm_lib_instance_->DestroyCommunicationGroup(group_name),
                            "Failed to destroy device communication group " + group_name);
+  if (group_map_.count(group_name)) {
+    group_map_.erase(group_name);
+  }
   return true;
 }
 
@@ -485,6 +495,8 @@ void CollectiveManager::ClearInitResult() {
   std::unique_lock<std::mutex> result_lock(init_result_mutex_);
   MS_LOG(WARNING) << "Clean init result.";
   group_name_to_result_.clear();
+  group_map_.clear();
+  group_infos_.clear();
 }
 
 bool CollectiveManager::Finalize() {
