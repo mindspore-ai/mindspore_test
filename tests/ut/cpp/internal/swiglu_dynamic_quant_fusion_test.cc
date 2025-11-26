@@ -22,6 +22,7 @@
 #include "mindspore/ccsrc/utils/ir_dump/anf_ir_dump.h"
 #include "utils/phase.h"
 #include "pre_activate/common/pattern_to_pattern_pass_utils.h"
+#include "utils/ms_context.h"
 
 namespace mindspore {
 namespace opt {
@@ -34,9 +35,7 @@ class InferenceSwiGLUDynamicQuantFusionUT : public UT::Common {
 /// Description: Convert Swiglu + DynamicQuantExt to SwiGLUDynamicQuant
 /// Expectation: After optimize, match SwiGLUDynamicQuant.
 TEST_F(InferenceSwiGLUDynamicQuantFusionUT, InferenceSwiGLUDynamicQuantFusionTest) {
-  std::map<std::string, std::string> jit_config;
-  jit_config["infer_boost"] = "on";
-  PhaseManager::GetInstance().set_jit_config(jit_config);
+  MsContext::GetInstance()->SetJitInferBoost("on");
   test::ConstructGraph c;
   auto input = c.NewTensorInput("input", kFloat16, {1024, 11264});
   auto dim = c.NewValueNode(MakeValue<int64_t>(-1));

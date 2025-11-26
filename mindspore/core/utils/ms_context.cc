@@ -580,6 +580,27 @@ bool MsContext::IsKByKExecutorMode() {
   return false;
 }
 
+void MsContext::SetJitInferBoost(const std::string &infer_boost) {
+  std::map<std::string, std::string> jit_config = PhaseManager::GetInstance().jit_config();
+  jit_config["infer_boost"] = infer_boost;
+  PhaseManager::GetInstance().set_jit_config(jit_config);
+
+  string_params_[MS_CTX_INFER_BOOST - MS_CTX_TYPE_STRING_BEGIN] = infer_boost;
+
+  if (infer_boost == "on") {
+    enable_infer_boost_ = true;
+    MS_LOG(DEBUG) << "MSContext enable ms infer boost";
+    SetMsInternalEnableCustomKernelList();
+    common::SetEnv("ASDOPS_LOG_LEVEL", "ERROR", 0);
+    common::SetEnv("ASDOPS_LOG_TO_STDOUT", "1", 0);
+    return;
+  }
+
+  if (infer_boost == "off") {
+    enable_infer_boost_ = false;
+  }
+}
+
 void MsContext::SetAscendConfig() {
   set_param<std::string>(MS_CTX_PRECISION_MODE, "");
   set_param<std::string>(MS_CTX_ENABLE_JIT_COMPILE, "");
@@ -744,28 +765,13 @@ void MsContext::SetMsInternalEnableCustomKernelList() {
 }
 
 bool MsContext::IsEnableInferBoost() {
+  if (enable_infer_boost_.has_value()) {
+    return enable_infer_boost_.value();
+  }
+
+  // default value is false
+  // enable should call jit_config api to set
   enable_infer_boost_ = false;
-  const auto &jit_config = PhaseManager::GetInstance().jit_config();
-  auto iter = jit_config.find("infer_boost");
-  if ((iter != jit_config.end() && iter->second == "on") || get_param<std::string>(MS_CTX_INFER_BOOST) == "on") {
-    enable_infer_boost_ = true;
-  } else if (common::GetEnv("MS_ENABLE_INTERNAL_KERNELS") == "on") {
-    enable_infer_boost_ = true;
-    static bool print_warning_once = true;
-    if (print_warning_once) {
-      print_warning_once = false;
-      MS_LOG(WARNING) << "'MS_ENABLE_INTERNAL_KERNELS' will be deprecated in the next version. Please use "
-                         "`set_context(jit_config={'jit_level': 'O0', 'infer_boost': 'on'})` instead";
-    }
-  }
-
-  if (enable_infer_boost_) {
-    MS_LOG(DEBUG) << "MSContext enable ms infer boost";
-    SetMsInternalEnableCustomKernelList();
-    common::SetEnv("ASDOPS_LOG_LEVEL", "ERROR", 0);
-    common::SetEnv("ASDOPS_LOG_TO_STDOUT", "1", 0);
-  }
-
   return enable_infer_boost_.value();
 }
 
