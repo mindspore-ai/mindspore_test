@@ -168,7 +168,8 @@ void VirtualViewInsertProcesser::InitViewInfoFromParams() {
 }
 
 AnfNodePtr VirtualViewInsertProcesser::CreateVirtualViewNode(const AnfNodePtr &view_output, AnfNodePtr *last_umonad) {
-  const auto &view_node = std::get<0>(IsCreatedByViewOp(view_output));
+  auto view_node_result = IsCreatedByViewOp(view_output);
+  const auto &view_node = std::get<0>(view_node_result);
   MS_EXCEPTION_IF_NULL(view_node);
   MS_EXCEPTION_IF_CHECK_FAIL(view_node->inputs().size() > kIndex2,
                              "Input size should be larger than 2, view_node: " + view_node->DebugString());
