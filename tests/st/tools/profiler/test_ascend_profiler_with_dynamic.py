@@ -28,6 +28,7 @@ import mindspore.dataset as ds
 from mindspore.train import Model
 from mindspore.profiler import DynamicProfilerMonitor
 from mindspore.profiler.analysis.parser.base_parser import BaseParser
+from mindspore.profiler.common.file_manager import FileManager
 
 
 class StepMonitor(ms.Callback):
@@ -44,7 +45,7 @@ class StepMonitor(ms.Callback):
 
 class Net(nn.Cell):
     def __init__(self):
-        super(Net, self).__init__()
+        super().__init__()
         self.fc = nn.Dense(2, 2)
 
     def construct(self, x):
@@ -86,8 +87,7 @@ def change_cfg_json(json_path):
     data['aic_metrics'] = "MemoryUB"
     data['activities'] = ["CPU", "NPU"]
 
-    with open(json_path, 'w', encoding='utf-8') as file:
-        json.dump(data, file, ensure_ascii=False, indent=4)
+    FileManager.create_json_file(json_path, data)
 
 
 def train_tiny_transformer_with_dynamic_profiler(output_path, cfg_path):
@@ -141,8 +141,7 @@ def test_tiny_transformer_pynative_with_dynamic_profiler():
     with tempfile.TemporaryDirectory() as tmpdir:
         cfg_path = os.path.join(tmpdir, "profiler_config.json")
         # set cfg file
-        with open(cfg_path, 'w') as f:
-            json.dump(data_cfg, f, indent=4)
+        FileManager.create_json_file(cfg_path, data_cfg)
 
         rank_id = int(os.getenv('RANK_ID')) if os.getenv('RANK_ID') else 0
         train_tiny_transformer_with_dynamic_profiler(output_path=tmpdir, cfg_path=tmpdir)
@@ -215,8 +214,7 @@ def test_tiny_transformer_kbk_with_dynamic_profiler():
     with tempfile.TemporaryDirectory() as tmpdir:
         cfg_path = os.path.join(tmpdir, "profiler_config.json")
         # set cfg file
-        with open(cfg_path, 'w') as f:
-            json.dump(data_cfg, f, indent=4)
+        FileManager.create_json_file(cfg_path, data_cfg)
 
         rank_id = int(os.getenv('RANK_ID')) if os.getenv('RANK_ID') else 0
         train_tiny_transformer_with_dynamic_profiler(output_path=tmpdir, cfg_path=tmpdir)
@@ -290,8 +288,7 @@ def test_tiny_transformer_o2_with_dynamic_profiler():
     with tempfile.TemporaryDirectory() as tmpdir:
         cfg_path = os.path.join(tmpdir, "profiler_config.json")
         # set cfg file
-        with open(cfg_path, 'w') as f:
-            json.dump(data_cfg, f, indent=4)
+        FileManager.create_json_file(cfg_path, data_cfg)
 
         rank_id = int(os.getenv('RANK_ID')) if os.getenv('RANK_ID') else 0
         train_tiny_transformer_with_dynamic_profiler(output_path=tmpdir, cfg_path=tmpdir)
@@ -358,8 +355,7 @@ def test_net_with_dynamic_profiler_step():
     with tempfile.TemporaryDirectory(suffix="_step_profiler") as tmpdir:
         cfg_path = os.path.join(tmpdir, "profiler_config.json")
         # set cfg file
-        with open(cfg_path, 'w') as f:
-            json.dump(data_cfg, f, indent=4)
+        FileManager.create_json_file(cfg_path, data_cfg)
 
         rank_id = int(os.getenv('RANK_ID')) if os.getenv('RANK_ID') else 0
         train_net_with_dynamic_profiler_step(output_path=tmpdir, cfg_path=tmpdir)
