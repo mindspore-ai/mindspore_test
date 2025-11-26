@@ -407,7 +407,7 @@ class Dataset:
         Serialize a pipeline into JSON string and dump into file if filename is provided.
 
         Args:
-            filename (str): filename of JSON file to be saved as. Default: ``""``.
+            filename (str, optional): filename of JSON file to be saved as. Default: ``""``.
 
         Returns:
             str, JSON string of the pipeline.
@@ -466,8 +466,9 @@ class Dataset:
                 be padded to the longest in the current batch, unless if
                 `pad_to_bucket_boundary` is ``True``. If no padding is wanted, set `pad_info`
                 to ``None``. Default: ``None``.
-            pad_to_bucket_boundary (bool, optional): If ``True``, will pad each None
-                dimension in `pad_info` to the bucket_boundary minus 1. If there are any
+            pad_to_bucket_boundary (bool, optional): If `pad_to_bucket_boundary` is True,
+                columns in `pad_info` with a shape of None will be padded to a length of one less than
+                the corresponding bucket size specified by the parameter `bucket_batch_sizes`. If there are any
                 elements that fall into the last bucket, an error will occur.
                 Default: ``False``.
             drop_remainder (bool, optional): If ``True``, will drop the last batch for each
@@ -553,11 +554,11 @@ class Dataset:
 
                 - python_multiprocessing (bool, optional): Parallelize Python function `per_batch_map` with
                   multiprocessing or multithreading mode, ``True`` means multiprocessing,
-                  ``False`` means multithreading If `per_batch_map` is a I/O bound task, use
+                  ``False`` means multithreading. If `per_batch_map` is a I/O bound task, use
                   multithreading mode. If `per_batch_map` is a CPU bound task, it is recommended to use
                   multiprocessing mode. Default: ``False`` , use python multithreading mode.
 
-                - max_rowsize(Union[int, list[int]], optional): Maximum size of row in MB that is used for shared memory
+                - max_rowsize (Union[int, list[int]], optional): Maximum size of row in MB that is used for shared memory
                   allocation to copy data between processes, the total occupied shared memory will increase as
                   ``num_parallel_workers`` and :func:`mindspore.dataset.config.set_prefetch_size` increase.
                   This is only used if ``python_multiprocessing`` is set to ``True``.
@@ -616,7 +617,7 @@ class Dataset:
     @check_padded_batch
     def padded_batch(self, batch_size, drop_remainder=False, num_parallel_workers=None, pad_info=None):
         """
-        Combine batch_size number of consecutive rows into batch which apply pad_info to the samples first.
+        Combine batch_size number of consecutive rows into batches which apply pad_info to the samples first.
 
         Refer to the following figure for the execution process:
 
@@ -679,7 +680,7 @@ class Dataset:
 
         Args:
             condition_name (str): The condition name that is used to toggle sending next row.
-            num_batch (int, optional): the number of batches without blocking at the start of each epoch.
+            num_batch (int, optional): The number of batches without blocking at the start of each epoch.
                 Default: ``1``.
             callback (function, optional): The callback function that will be invoked when sync_update is called.
                 Default: ``None``.
@@ -771,6 +772,10 @@ class Dataset:
         Returns:
             Dataset, a new dataset with the above operation applied.
 
+        Raises:
+            TypeError: If `func` is not a function.
+            TypeError: If `func` doesn't return a Dataset.
+
         Examples:
             >>> import mindspore.dataset as ds
             >>> # 1) flat_map on one column dataset
@@ -796,10 +801,6 @@ class Dataset:
             >>>
             >>> dataset = dataset.flat_map(plus_and_minus)
             >>> # ([1, 2, 3, 4], [-1, -2, -3, -4])
-
-        Raises:
-            TypeError: If `func` is not a function.
-            TypeError: If `func` doesn't return a Dataset.
         """
         dataset = None
         if not hasattr(func, '__call__'):
@@ -865,7 +866,7 @@ class Dataset:
                 - python_multiprocessing (bool, optional): Parallelize Python operations with multiple worker processes.
                   This option could be beneficial if the Python operation is computational heavy. Default: ``False``.
 
-                - max_rowsize(Union[int, list[int]], optional): Maximum size of row in MB that is used for shared memory
+                - max_rowsize (Union[int, list[int]], optional): Maximum size of row in MB that is used for shared memory
                   allocation to copy data between processes, the total occupied shared memory will increase as
                   ``num_parallel_workers`` and :func:`mindspore.dataset.config.set_prefetch_size` increase.
                   This is only used if ``python_multiprocessing`` is set to ``True``.
@@ -900,7 +901,7 @@ class Dataset:
             - Input `operations` accepts TensorOperations defined in mindspore.dataset part, plus user-defined
               Python functions (PyFuncs).
             - Setting the start method of multiprocessing to `spawn` mode by
-              ds.config.set_multiprocessing_start_method("spawn") with `python_ multiprocessing=True`
+              ds.config.set_multiprocessing_start_method("spawn") with `python_multiprocessing=True`
               and `num_parallel_workers>1` supports adding network computing operators from mindspore.nn and
               mindspore.ops or other network computing operators into this `operations` .
               Otherwise, adding to `operations` is not supported.
@@ -999,7 +1000,7 @@ class Dataset:
     @check_filter
     def filter(self, predicate, input_columns=None, num_parallel_workers=None):
         """
-        Filter dataset by prediction.
+        Filter dataset by predicate.
 
         Args:
             predicate (callable): Python callable which returns a boolean value. If False then filter the element.
@@ -1031,7 +1032,7 @@ class Dataset:
             the repeat operation is used after the batch operation.
 
         Args:
-            count (int): Number of times the dataset is going to be repeated. Default: ``None``.
+            count (int, optional): Number of times the dataset is going to be repeated. Default: ``None``.
 
         Returns:
             Dataset, a new dataset with the above operation applied.
@@ -1176,7 +1177,7 @@ class Dataset:
                 error will throw.
                 If a list of floats [f1, f2, …, fn] is provided, all floats must be between 0 and 1
                 and must sum to 1, otherwise an error will throw. The dataset will be split into n
-                Datasets of size round(f1*K), round(f2*K), …, round(fn*K) where K is the size of the
+                datasets of size round(f1*K), round(f2*K), …, round(fn*K) where K is the size of the
                 original dataset.
                 If after rounding:
 
@@ -1191,8 +1192,14 @@ class Dataset:
                 consecutive rows from the dataset.
 
         Note:
-            1. Dataset cannot be sharded if split is going to be called.
-            2. It is strongly recommended to not shuffle the dataset, but use randomize=True instead.
+            1. If the dataset object for which the split operation is performed is of type MappableDataset,
+               an optimized split function will be called automatically.
+            2. If the split function is performed, the dataset object should not be sharded (e.g. by specifying
+               num_shards or using :class:`mindspore.dataset.DistributedSampler`). Instead, 
+               create a :class:`mindspore.dataset.DistributedSampler` and specify a split to shard after splitting.
+               It is strongly recommended to set the same seed in each instance of execution,
+               otherwise each shard may not be part of the same split (see Examples).
+            3. It is strongly recommended to not shuffle the dataset, but use randomize=True instead.
                Shuffling the dataset may not be deterministic, which means the data in each split
                will be different in each epoch.
 
@@ -1245,7 +1252,7 @@ class Dataset:
     def zip(self, datasets):
         """
         Zip the datasets in the sense of input tuple of datasets. Columns in the input datasets must have different
-        name.
+        names.
 
         Args:
             datasets (Union[Dataset, tuple[Dataset]]): A tuple of datasets or a single class Dataset
@@ -1279,7 +1286,7 @@ class Dataset:
         Performing "+" operation on dataset objects can achieve the same effect.
 
         For a dataset concatenated by many other dataset objects, it returns the data in the order of
-        datasets passed in. If you want to change the data order(such as random selection from each dataset
+        datasets passed in. If you want to change the data order (such as random selection from each dataset
         instead of in sequence), apply `use_sampler` method on the concatenated dataset object.
         Currently `use_sampler` supports `dataset.DistributedSampler` for sharding selection from each dataset
         or `dataset.RandomSampler` for random selection from each dataset, see examples below.
@@ -1373,7 +1380,7 @@ class Dataset:
         the pipeline with the order specified. The other columns are discarded.
 
         Args:
-            columns(Union[str, list[str]]): List of names of the columns to project.
+            columns (Union[str, list[str]]): List of names of the columns to project.
 
         Returns:
             Dataset, a new dataset with the above operation applied.
@@ -1402,6 +1409,10 @@ class Dataset:
         Returns:
             Dataset, a new dataset with the above operation applied.
 
+        Raises:
+            TypeError: If apply_func is not a function.
+            TypeError: If apply_func doesn't return a Dataset.
+
         Examples:
             >>> import mindspore.dataset as ds
             >>> dataset = ds.GeneratorDataset([i for i in range(10)], "column1")
@@ -1413,10 +1424,6 @@ class Dataset:
             >>>
             >>> # Use apply to call apply_func
             >>> dataset = dataset.apply(apply_func)
-
-        Raises:
-            TypeError: If apply_func is not a function.
-            TypeError: If apply_func doesn't return a Dataset.
         """
 
         if not hasattr(apply_func, '__call__'):
@@ -1900,10 +1907,10 @@ class Dataset:
 
         Args:
             condition_name (str): The condition name that is used to toggle sending next row.
-            num_batch (Union[int, None]): The number of batches (rows) that are released.
+            num_batch (Union[int, None], optional): The number of batches (rows) that are released.
                 When `num_batch` is ``None``, it will default to the number specified by the
                 `sync_wait` operation. Default: ``None``.
-            data (Any): The data passed to the callback, user defined. Default: ``None``.
+            data (Any, optional): The data passed to the callback, user defined. Default: ``None``.
 
         Examples:
             >>> import numpy as np
