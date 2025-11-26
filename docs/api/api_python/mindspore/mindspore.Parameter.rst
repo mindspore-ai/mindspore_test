@@ -22,14 +22,14 @@
                 self.param_a = Parameter(Tensor([1], ms.float32), name="name_a")
                 self.param_b = Parameter(Tensor([2], ms.float32))
 
-          - 如果在list或tuple中的 `Parameter` 未命名，将会提供一个唯一值。例如，以下 `Parameter` 的名字是 **Parameter$1** and **Parameter$2**。
+          - 如果在list或tuple中的 `Parameter` 未命名，将会提供一个唯一值。例如，以下 `Parameter` 的名字是 **Parameter$1** 和 **Parameter$2**。
 
             .. code-block::
 
                 self.param_list = [Parameter(Tensor([3], ms.float32)),
                                    Parameter(Tensor([4], ms.float32))]
 
-          - 如果 `Parameter` 已命名， 并且不同 `Parameter` 间有重复名称，将会抛出类似"its name 'name_a' already exists."的异常。
+          - 如果 `Parameter` 已命名，并且不同 `Parameter` 间有重复名称，将会抛出类似"its name 'name_a' already exists."的异常。
 
             .. code-block::
 
@@ -104,12 +104,12 @@
         初始化参数的数据。
 
         参数：
-            - **layout** (Union[None, tuple]) - 参数的layout信息。layout[dev_mat, tensor_map, slice_shape, filed_size, uniform_split, opt_shard_group]。默认值： ``None`` 。仅在 `SEMI_AUTO_PARALLEL` 或 `AUTO_PARALLEL` 模式下， `layout` 不是 ``None`` 。
+            - **layout** (Union[None, tuple]) - 参数的layout信息。layout[dev_mat, tensor_map, slice_shape, field_size, uniform_split, opt_shard_group]。默认值： ``None`` 。仅在 `SEMI_AUTO_PARALLEL` 或 `AUTO_PARALLEL` 模式下， `layout` 不是 ``None`` 。
 
               - **dev_mat** (list(int)) - 该参数的设备矩阵。
               - **tensor_map** (list(int)) - 该参数的张量映射。
               - **slice_shape** (list(int)) - 该参数的切片shape。
-              - **filed_size** (int) - 该权重的行数。
+              - **field_size** (int) - 该权重的行数。
               - **uniform_split** (bool) - 该参数是否进行均匀切分。
               - **opt_shard_group** (str) - 该参数进行优化器切分时的group。
 

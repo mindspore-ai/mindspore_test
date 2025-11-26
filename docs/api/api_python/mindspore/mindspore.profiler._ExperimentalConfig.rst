@@ -12,7 +12,7 @@ mindspore.profiler._ExperimentalConfig
           - ProfilerLevel.Level0：最精简的采集性能数据级别，采集计算类算子的耗时数据和通信类大算子的基础数据。
           - ProfilerLevel.Level1：在Level0的基础上额外采集CANN层中AscendCL数据、AICORE性能数据以及通信类小算子数据。
           - ProfilerLevel.Level2：在Level1的基础上额外采集CANN层中GE和Runtime数据。
-        - **aic_metrics** (AicoreMetrics, 可选) - （仅限Ascend）收集的AICORE性能数据类型，使用此参数时， `activities` 必须包含 ``ProfilerActivity.NPU`` ，且值必须包含在AicoreMetrics枚举值中，当profiler_level为Level0，默认值为： ``AicoreMetrics.AiCoreNone`` ；profiler_level为Level1或Level2，默认值为：``AicoreMetrics.PipeUtilization``，当每种类型包含的数据项如下：
+        - **aic_metrics** (AicoreMetrics, 可选) - （仅限Ascend）收集的AICORE性能数据类型，使用此参数时， `activities` 必须包含 ``ProfilerActivity.NPU`` ，且值必须包含在AicoreMetrics枚举值中，当profiler_level为Level0，默认值为： ``AicoreMetrics.AiCoreNone`` ；profiler_level为Level1或Level2，默认值为：``AicoreMetrics.PipeUtilization``，每种类型包含的数据项如下：
 
           - AicoreMetrics.AiCoreNone：不收集任何AICORE数据。
           - AicoreMetrics.ArithmeticUtilization：包含mac_fp16/int8_ratio、vec_fp32/fp16/int32_ratio、vec_misc_ratio等。
@@ -39,7 +39,7 @@ mindspore.profiler._ExperimentalConfig
           安装三方工具成功后，需要配置用户权限，详细步骤请参考 `配置用户权限 <https://www.hiascend.com/document/detail/zh/mindstudio/80RC1/T&ITools/Profiling/atlasprofiling_16_0137.html>`_ ，
           注意在配置用户权限的第3步中，需要将msprof_data_collection.sh脚本中的内容替换为 `msprof_data_collection.sh <https://gitee.com/mindspore/mindspore/blob/master/docs/api/api_python/mindspore/script/msprof_data_collection.sh>`_ 。
 
-          最终交付件可以通过 `MindStudio Insight <https://www.hiascend.com/developer/download/community/result?module=pt+sto+cann>`_ 工具可视化分析结果。
+          可以通过 `MindStudio Insight <https://www.hiascend.com/developer/download/community/result?module=pt+sto+cann>`_ 工具进行可视化分析。
           详细分析请参考 `host侧CPU数据分析 <https://www.hiascend.com/document/detail/zh/mindstudio/80RC1/T&ITools/Profiling/atlasprofiling_16_0106.html>`_ 、
           `host侧MEM数据分析 <https://www.hiascend.com/document/detail/zh/mindstudio/80RC1/T&ITools/Profiling/atlasprofiling_16_0107.html>`_ 、
           `host侧DISK数据分析 <https://www.hiascend.com/document/detail/zh/mindstudio/80RC1/T&ITools/Profiling/atlasprofiling_16_0108.html>`_ 、
@@ -50,7 +50,7 @@ mindspore.profiler._ExperimentalConfig
           - HostSystem.MEM：收集进程级别的内存利用率。
           - HostSystem.DISK：收集进程级别的磁盘I/O利用率。
           - HostSystem.NETWORK：收集系统级别的网络I/O利用率。
-          - HostSystem.OSRT：收集系统级别系统调用栈数据。
+          - HostSystem.OSRT：收集系统级别的系统调用栈数据。
 
     异常：
         - **RuntimeError** - 当CANN的版本与MindSpore版本不匹配时，MindSpore无法解析生成的ascend_job_id目录结构。
