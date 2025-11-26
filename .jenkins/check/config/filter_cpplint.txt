@@ -35,6 +35,7 @@
 "mindspore/mindspore/ops/kernel/gpu/cuda/sparse_grad/sparse_add_grad_gpu_kernel.cc" "whitespace/indent"
 "mindspore/mindspore/ops/infer/ops_func_impl/generator.cc"                  "build/namespace"
 "mindspore/mindspore/ops/op_def/ops_def.cc"                                 "build/include"
+"mindspore/mindspore/ops/op_def/op_enum.cc"                                 "build/include"
 "mindspore/mindspore/ops/kernel/cpu/native/generator_cpu_kernel.cc"                  "build/namespace"
 "mindspore/mindspore/ops/infer/ops_frontend_func_impl/range.cc"             "whitespace/braces"
 "mindspore/mindspore/ccsrc/backend/common/pass_manager/helper.cc"            "whitespace/indent_namespace"

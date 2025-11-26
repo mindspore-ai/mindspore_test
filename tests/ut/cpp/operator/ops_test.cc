@@ -47,7 +47,6 @@
 #include "primitive/auto_generate/gen_ops_primitive_r.h"
 #include "primitive/auto_generate/gen_ops_primitive_s.h"
 #include "primitive/auto_generate/gen_ops_primitive_t.h"
->>>>>>> e74aae73a5c (refactor: migrate operator header files from op_def and view to ops/include)
 
 namespace mindspore {
 namespace prim {
