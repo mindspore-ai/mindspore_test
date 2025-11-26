@@ -3722,13 +3722,13 @@ def basic_sample_inputs_mint_sum(op_info: OpInfo, dtype=None, device=None, **kwa
 
 def basic_sample_inputs_tile(op_info, dtype, device=None, **kwargs):
     """Generate sample inputs for tile operations.
-    
+
     Args:
         op_info: OpInfo object.
         dtype: Data type of the tensors.
         device: Device to create tensors on.
         **kwargs: Additional keyword arguments.
-    
+
     Yields:
         OpSampleInput: Sample input with tensor and dims tuple.
     """
@@ -3924,6 +3924,49 @@ def basic_sample_inputs_layer_norm(
         op_kwargs={},
         sample_name=f'{op_info.name}_minimal'
     )
+
+def basic_sample_inputs_mint_cat(op_info: OpInfo, dtype=None, device=None, **kwargs):
+    """
+    Generate basic sample inputs for mint.cat op.
+    """
+    S = SMALL_DIM_SIZE
+    make_arg = functools.partial(make_tensor, device=device, dtype=dtype)
+
+    cases = (
+        ((S, S), (S, S), {'dim': -1}),
+        ((S, S), (S, S), {'dim':  1}),
+        ((S, S), (S, S), {'dim': 0}),
+        ((1, 2, 3), (1, 2, 3), {'dim': -2}),
+        ((1,), (1,), {})
+    )
+    for input_shape_1, input_shape_2, kwargs in cases:
+        yield OpSampleInput(
+            op_input=tuple([make_arg(input_shape_1), make_arg(input_shape_2)]),
+            op_kwargs=kwargs,
+            sample_name=op_info.name,
+        )
+
+
+def extra_sample_inputs_mint_cat(op_info: OpInfo, dtype=None, device=None, **kwargs):
+    """
+    Generate extra sample inputs for mint.cat op.
+    """
+
+    make_arg = functools.partial(make_tensor, device=device, dtype=dtype)
+
+    cases = (
+        ((3, 7, 6, 8), (3, 7, 6, 8), {'dim': 1}),
+        ((3, 7, 6, 8, 2, 3, 4), (3, 7, 6, 8, 2, 3, 4), {'dim': 0}),
+        ((3, 7, 6, 8, 2, 3, 4), (3, 7, 6, 8, 2, 3, 4), {'dim': 2}),
+        ((50, 41), (50, 41), {'dim': -1}),
+    )
+    for input_shape_1, input_shape_2, kwargs in cases:
+        yield OpSampleInput(
+            op_input=tuple([make_arg(input_shape_1), make_arg(input_shape_2)]),
+            op_kwargs=kwargs,
+            sample_name=op_info.name,
+        )
+
 
 # op database
 op_db: Dict[str, OpInfo] = {
@@ -4745,7 +4788,8 @@ op_db: Dict[str, OpInfo] = {
         name='mint.logical_and',
         op=mint.logical_and,
         ref=torch.logical_and,
-        # 1j problem: torch.logical_and(1j) != mint.logical_and(1j)
+        # 1j problem: torch.logical_and(1j) != ms.logical_and(1j)
+        # Issue ID: #IB99TS
         dtypes_ascend=tuple(d for d in dtypes_as_torch if not d.is_complex and d != ms.bfloat16),
         dtypes_ascend910b=tuple(d for d in dtypes_as_torch if not d.is_complex),
         is_differentiable=False,
@@ -4757,7 +4801,8 @@ op_db: Dict[str, OpInfo] = {
         name='Tensor.logical_and',
         op=tensor_logical_and_ms,
         ref=tensor_logical_and_torch,
-        # 1j problem: torch.logical_and(1j) != mint.logical_and(1j)
+        # 0+1j problem: torch.logical_and(1j, 1j) != ms.logical_and(1j, 1j)
+        # Issue ID: #IB99TS
         dtypes_ascend=tuple(d for d in dtypes_as_torch if not d.is_complex and d != ms.bfloat16),
         dtypes_ascend910b=tuple(d for d in dtypes_as_torch if not d.is_complex),
         is_differentiable=False,
@@ -4769,6 +4814,8 @@ op_db: Dict[str, OpInfo] = {
         name='mint.logical_not',
         op=mint.logical_not,
         ref=torch.logical_not,
+        # 0+1j problem: torch.logical_not(1j, 1j) != ms.logical_not(1j, 1j)
+        # Issue ID: #IB99TS
         dtypes_ascend=tuple(d for d in dtypes_as_torch if not d.is_complex and d != ms.bfloat16),
         dtypes_ascend910b=tuple(d for d in dtypes_as_torch if not d.is_complex),
         is_differentiable=False,
@@ -4777,6 +4824,8 @@ op_db: Dict[str, OpInfo] = {
         name='Tensor.logical_not',
         op=tensor_logical_not_ms,
         ref=tensor_logical_not_torch,
+        # 0+1j problem: torch.logical_not(1j, 1j) != ms.logical_not(1j, 1j)
+        # Issue ID: #IB99TS
         dtypes_ascend=tuple(d for d in dtypes_as_torch if not d.is_complex and d != ms.bfloat16),
         dtypes_ascend910b=tuple(d for d in dtypes_as_torch if not d.is_complex),
         is_differentiable=False,
@@ -4785,6 +4834,8 @@ op_db: Dict[str, OpInfo] = {
         name='mint.logical_or',
         op=mint.logical_or,
         ref=torch.logical_or,
+        # 0+1j problem: torch.logical_or(1j, 1j) != ms.logical_or(1j, 1j)
+        # Issue ID: #IB99TS
         dtypes_ascend=tuple(d for d in dtypes_as_torch if not d.is_complex and d != ms.bfloat16),
         dtypes_ascend910b=tuple(d for d in dtypes_as_torch if not d.is_complex),
         is_differentiable=False,
@@ -4796,6 +4847,8 @@ op_db: Dict[str, OpInfo] = {
         name='Tensor.logical_or',
         op=tensor_logical_or_ms,
         ref=tensor_logical_or_torch,
+        # 0+1j problem: torch.logical_or(1j, 1j) != ms.logical_or(1j, 1j)
+        # Issue ID: #IB99TS
         dtypes_ascend=tuple(d for d in dtypes_as_torch if not d.is_complex and d != ms.bfloat16),
         dtypes_ascend910b=tuple(d for d in dtypes_as_torch if not d.is_complex),
         is_differentiable=False,
@@ -4807,6 +4860,8 @@ op_db: Dict[str, OpInfo] = {
         name='mint.logical_xor',
         op=mint.logical_xor,
         ref=torch.logical_xor,
+        # 0+1j problem: torch.logical_xor(1j, 1j) != ms.logical_xor(1j, 1j)
+        # Issue ID: #IB99TS
         dtypes_ascend=tuple(d for d in dtypes_as_torch if not d.is_complex and d != ms.bfloat16),
         dtypes_ascend910b=tuple(d for d in dtypes_as_torch if not d.is_complex),
         is_differentiable=False,
@@ -5044,7 +5099,9 @@ op_db: Dict[str, OpInfo] = {
         disable_large_value_tensor_inputs=True,
         disable_extremal_value_tensor_inputs=True,
         convert_half_to_float=True,
-        default_loss_override={ms.float16: 1e-1, ms.bfloat16:1e-1},
+        # The float16 benchmark is not supported, CCB conclusions will be based on actual.
+        # The bfloat16 benchmark is not supported, CCB conclusions will be based on actual.
+        default_loss_override={ms.float16: 0.06, ms.bfloat16:0.1},
     ),
     'Tensor.bfloat16': UnaryOpInfo(
         name='Tensor.bfloat16',
@@ -5989,6 +6046,19 @@ op_db: Dict[str, OpInfo] = {
         dtypes_cpu=(),
         dtypes_gpu=(),
     ),
+    'mint.cat': OpInfo(
+        name='mint.cat',
+        op=mint.cat,
+        ref=torch.cat,
+        dtypes_ascend=tuple(d for d in dtypes_as_torch if not d.is_complex and d != ms.bfloat16),
+        dtypes_ascend910b=tuple(d for d in dtypes_as_torch if not d.is_complex),
+        dtypes_cpu=(),
+        dtypes_gpu=(),
+        op_basic_reference_inputs_func=basic_sample_inputs_mint_cat,
+        op_extra_reference_inputs_func=extra_sample_inputs_mint_cat,
+        op_dynamic_inputs_func=None,
+        is_differentiable=False,
+    ),
     'mint.nn.functional.one_hot': OpInfo(
         name='mint.nn.functional.one_hot',
         op=mint.nn.functional.one_hot,
@@ -6449,6 +6519,7 @@ unary_op_db = [
 other_op_db = [
     'mint.chunk',
     'mint.gather',
+    'mint.cat',
     'mint.cumsum',
     'mint.index_select',
     'Tensor.index_select',
