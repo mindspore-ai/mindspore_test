@@ -1,5 +1,5 @@
 from .distributed_dataloader import DistributedDataLoader
-from .rpc import (
+from .rpc_adapter import (
     BatchAssignment,
     ClientInfo,
     FetchRequest,

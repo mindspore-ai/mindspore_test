@@ -105,17 +105,26 @@ class CoordinatorRPCClient(_BaseRPCClient):
         if not isinstance(response.payload, dict):
             raise ValueError("Coordinator did not return a server node mapping")
         return response.payload
+    
+    def register_servernode(self, node_id: str, port: int, weight: float = 1.0) -> bool:
+        payload = {
+            "client_id": node_id, 
+            "port": port, 
+            "weight": weight
+        }
+        response = self._call(RPCMethod.REGISTER_SERVERNODE, payload)
+        return bool(response.payload)
 
 
 class ServerNodeRPCClient(_BaseRPCClient):
     """Client used by GPU workers to fetch processed samples from server nodes."""
 
-    def fetch(self, client_id: str, indices: Sequence[int]) -> torch.Tensor:
+    def fetch(self, client_id: str, indices: Sequence[int]) -> Any:
         payload = {"client_id": client_id, "indices": list(indices)}
         response = self._call(RPCMethod.FETCH, payload)
-        if response.payload_type != PayloadType.TENSOR:
-            raise ValueError("Fetch RPC must return a tensor payload")
-        assert isinstance(response.payload, torch.Tensor)
+        if response.payload_type not in (PayloadType.TENSOR, PayloadType.BYTES):
+             raise ValueError(f"Fetch RPC returned unexpected type: {response.payload_type}")
+        #assert isinstance(response.payload, torch.Tensor)
         return response.payload
 
 

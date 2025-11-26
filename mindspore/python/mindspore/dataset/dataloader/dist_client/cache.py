@@ -6,7 +6,7 @@ from collections import OrderedDict
 from dataclasses import dataclass
 from typing import Dict, Iterable, Optional
 
-from .rpc import ProcessedSample
+from .rpc_adapter import ProcessedSample
 
 
 class SampleNotReady(KeyError):

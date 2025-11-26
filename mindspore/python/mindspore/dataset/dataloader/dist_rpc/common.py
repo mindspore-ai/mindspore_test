@@ -17,6 +17,8 @@ class RPCMethod(str, Enum):
     REGISTER_CLIENT = "register_client"
     ASSIGN_SERVERNODE = "assign_servernode"
     FETCH = "fetch"
+    REGISTER_SERVERNODE = "register_servernode" # 顺便把节点注册也加上
+    REPORT_COMPLETION = "report_completion"     # 新增：汇报完成情况
 
 
 REQUEST_HEADER: Final[struct.Struct] = struct.Struct("!III")

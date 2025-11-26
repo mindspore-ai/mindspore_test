@@ -10,6 +10,7 @@ if __name__ == "__main__" and __package__ is None:
     sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     __package__ = "client"
 
+import time
 import math
 import socket
 from collections.abc import Sequence as SequenceABC
@@ -23,7 +24,7 @@ except ModuleNotFoundError as exc:  # pragma: no cover - enforced at import time
     raise ImportError("DistributedDataLoader requires PyTorch to be installed") from exc
 
 from .cache import SampleCache, SampleNotReady
-from .rpc import (
+from .rpc_adapter import (
     BatchAssignment,
     ClientInfo,
     CoordinatorClient,
@@ -174,7 +175,20 @@ class DistributedDataLoader(Iterable[Any]):
             indices=missing,
             extra=session.assignment.metadata,
         )
-        samples = session.server_client.fetch(request)
+        
+        start_time = time.time()
+        samples = session.server_client.fetch(request)       
+        end_time = time.time()
+        latency = end_time - start_time        
+        # 自动向 Coordinator 汇报性能
+        # 这里的 server_node_id 就是之前 assign 拿到的 ID
+        self._coordinator_client.report_completion(
+            node_id=session.assignment.server_node_id,
+            latency=latency
+        )
+        
+        
+        #samples = session.server_client.fetch(request)
         if not samples:
             raise SampleNotReady("Server node returned no samples for requested indices")
         self._cache.bulk_put(samples)
@@ -194,7 +208,7 @@ class DistributedDataLoader(Iterable[Any]):
 
 ### example
 if __name__ == "__main__":
-    from .rpc import build_inmemory_rpc, configure_rpc_clients
+    from .rpc_adapter import build_inmemory_rpc, configure_rpc_clients
 
     # Configure RPC with in-memory mocks for demo purposes
     coordinator_factory, server_factory = build_inmemory_rpc()

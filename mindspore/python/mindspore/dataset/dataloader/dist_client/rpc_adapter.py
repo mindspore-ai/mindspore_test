@@ -8,8 +8,15 @@ import uuid
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Protocol, Sequence, Tuple
-
+import io
 import torch
+
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+from rpc.common import RPCMethod
+
+
 
 _start_coordinator = None
 _start_servernode = None
@@ -21,17 +28,38 @@ except ImportError:
     PROJECT_ROOT = Path(__file__).resolve().parents[2]
     if str(PROJECT_ROOT) not in sys.path:
         sys.path.insert(0, str(PROJECT_ROOT))
-    from ray_demo.rpc.client_rpc import CoordinatorRPCClient, ServerNodeRPCClient
-    from ray_demo.rpc.example import _start_coordinator, _start_servernode
+    from rpc.client_rpc import CoordinatorRPCClient, ServerNodeRPCClient
+    from rpc.example import _start_coordinator, _start_servernode
 
 
-def _tensor_batch_to_samples(batch: torch.Tensor) -> List[torch.Tensor]:
+def _tensor_batch_to_samples(batch: Any) -> List[torch.Tensor]:
     """Split a batch tensor into a list of per-sample tensors along dim 0."""
+    '''       
     if batch.ndim == 0:
         raise ValueError("Expected at least 1D tensor for batched samples")
     if batch.size(0) == 0:
         return []
     return list(batch.unbind(dim=0))
+    '''
+    if isinstance(batch, torch.Tensor): 
+        if batch.ndim == 0:
+            raise ValueError("Expected at least 1D tensor")
+        return list(batch.unbind(dim=0))
+    
+    elif isinstance(batch, dict):
+        keys = list(batch.keys())
+        if not keys:
+            return []
+        
+        batch_size = len(batch[keys[0]])
+        samples = []
+        for i in range(batch_size):
+            # 把每个 key 的第 i 个数据取出来，组成一个小字典
+            sample = {k: batch[k][i] for k in keys}
+            samples.append(sample)
+        return samples
+        
+    raise TypeError(f"Unsupported batch type: {type(batch)}")
 
 
 @dataclass(frozen=True)
@@ -57,11 +85,20 @@ class FetchRequest:
     extra: Dict[str, Any] = field(default_factory=dict)
 
 
+@dataclass(frozen=True)
+class ProcessedSample:
+    index: int
+    payload: Any
+    
+    
 class CoordinatorClient(Protocol):
     def register_client(self, info: ClientInfo) -> str:
         ...
 
     def assign_server_node(self, session_id: str, batch_indices: Sequence[int]) -> BatchAssignment:
+        ...
+        
+    def report_completion(self, node_id: str, latency: float) -> None:
         ...
 
 
@@ -163,6 +200,12 @@ class RemoteCoordinatorClient(CoordinatorClient):
         metadata.setdefault("host", host)
         metadata.setdefault("port", port)
         return BatchAssignment(session_id=session_id, server_node_id=server_node_id, metadata=metadata)
+    
+    def report_completion(self, node_id: str, latency: float) -> None:
+        payload = {"node_id": node_id, "latency": latency}
+        # 发送 RPC 请求
+        # 注意：这里使用了 rpc/common.py 里定义的 RPCMethod.REPORT_COMPLETION
+        self._rpc._call(RPCMethod.REPORT_COMPLETION, payload)
 
 
 class RemoteServerNodeClient(ServerNodeClient):
@@ -173,8 +216,29 @@ class RemoteServerNodeClient(ServerNodeClient):
 
     def fetch(self, request: FetchRequest) -> Sequence[torch.Tensor]:
         client_id = request.extra.get("client_id") if request.extra else request.session_id
-        batch = self._rpc.fetch(client_id, list(request.indices))
-        return _tensor_batch_to_samples(batch)
+        
+        raw_data = self._rpc.fetch(client_id, list(request.indices))
+        if isinstance(raw_data, bytes):
+            with io.BytesIO(raw_data) as f:
+                # 这一步会把 bytes 还原成 {'images': Tensor, ...}
+                batch = torch.load(f)
+        elif isinstance(raw_data, torch.Tensor):
+            # 兼容旧逻辑（如果服务器只返回 Tensor）
+            batch = raw_data
+        elif isinstance(raw_data, dict):
+            batch = raw_data           
+        else:
+            raise TypeError(f"Unexpected payload type from server: {type(raw_data)}")
+        payloads = _tensor_batch_to_samples(batch)
+        
+
+        # 4. 打包成 ProcessedSample (绑定 index 和 payload)
+        results = []
+        for idx, payload in zip(request.indices, payloads):
+            results.append(ProcessedSample(index=idx, payload=payload))
+            
+        return results
+        #return _tensor_batch_to_samples(batch)
 
 
 def build_socket_rpc(

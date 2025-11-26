@@ -1,0 +1,81 @@
+import torch
+import cv2
+import numpy as np
+import albumentations as A
+from albumentations.pytorch import ToTensorV2
+from transformers import AutoTokenizer
+import pandas as pd
+import os
+import sys
+
+class DataProcessor:
+    def __init__(self, tokenizer_path, df_ref):
+        self.df = df_ref
+        self.image_transform = A.Compose([
+            A.Resize(224, 224, interpolation=cv2.INTER_CUBIC),
+            A.RandomResizedCrop(size=(224, 224), scale=(0.9, 1.0)),
+            A.HorizontalFlip(p=0.5),
+            A.Normalize(
+                mean=[0.48145466, 0.4578275, 0.40821073], 
+                std=[0.26862954, 0.26130258, 0.27577711],
+            ),
+            ToTensorV2() 
+        ])
+        
+        self.tokenizer = AutoTokenizer.from_pretrained(tokenizer_path)
+        self.text_max_length = self.tokenizer.model_max_length
+        print(f"[Processor] Initialized with {len(self.df)} samples.")
+
+    def get_item(self, index):
+        try:
+            row = self.df.iloc[index]
+            image_path = row['image_path']
+            caption = row['caption']
+            
+            img_bytes = open(image_path, 'rb').read()
+            img_np = cv2.imdecode(np.frombuffer(img_bytes, np.uint8), cv2.IMREAD_COLOR)
+            img_rgb = cv2.cvtColor(img_np, cv2.COLOR_BGR2RGB)           
+            image_tensor = self.image_transform(image=img_rgb)['image']
+            
+            tokenized_output = self.tokenizer(
+                caption,
+                padding="max_length",
+                truncation=True,
+                max_length=self.text_max_length,
+                return_tensors="pt"
+            )
+            
+            input_ids = tokenized_output['input_ids'].squeeze(0)
+            attention_mask = tokenized_output['attention_mask'].squeeze(0)
+
+            return (image_tensor, input_ids, attention_mask)
+
+        
+        except Exception as e:
+            worker_pid = os.getpid()
+            print(f"--- [PID {worker_pid}] !!! ERROR IN GET_ITEM !!!", file=sys.stderr, flush=True)
+            print(f"    Index: {index} | Path: {image_path}", file=sys.stderr, flush=True)
+            print(f"    Error: {e}", file=sys.stderr, flush=True)
+            return (None, None, None)
+
+
+    def get_batch(self, indices):
+        batch_images = []
+        batch_input_ids = []
+        batch_masks = []
+        
+        for idx in indices:
+            images,input_ids,masks = self.get_item(index=idx)
+            if images is not None:                
+                batch_images.append(images)
+                batch_input_ids.append(input_ids)
+                batch_masks.append(masks)
+
+        if not batch_images:
+            return None
+
+        return {
+            "images": torch.stack(batch_images),
+            "input_ids": torch.stack(batch_input_ids),
+            "masks": torch.stack(batch_masks)
+        }
