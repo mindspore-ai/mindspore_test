@@ -124,7 +124,7 @@ class OutputActor : public AbstractActor {
   size_t outputs_num_;
   size_t current_outputs_num_;
 
-  std::map<DeviceTensor *, DeviceTensorPtr> old_to_new_device_address_;
+  std::map<KernelTensor *, KernelTensorPtr> old_to_new_kernel_tensor_;
 
   // All flatten stub node(TensorNode, ScalarNode, StubString) by output position, used in graph pipeline case.
   std::vector<stub::StubNodePtr> flatten_stub_nodes_{};

@@ -137,6 +137,7 @@ void MoveTo(const tensor::TensorPtr &src_tensor, const tensor::TensorPtr &dst_te
                         << ") isn't enough. Allocate size: " << size;
     }
     dst_tensor->set_device_address(dst_addr);
+    dst_tensor->set_format(Format::DEFAULT_FORMAT);
   } else if (dst_addr->GetMutablePtr() == nullptr) {
     device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, "PyNative", memory::mem_pool::MemType::kPyNativeOutput,
                                                    dst_addr->GetSize(), dst_addr.get());

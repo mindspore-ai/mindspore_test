@@ -210,12 +210,7 @@ class PYBOOST_API OpRunner : public std::enable_shared_from_this<OpRunner> {
     TrackerOutputTensors(tensors);
   }
 
-  void UpdateOutputShape(const TensorPtr &tensor, const ShapeVector &shape) {
-    tensor->set_shape(shape);
-    auto device_address = tensor->device_address();
-    MS_EXCEPTION_IF_NULL(device_address);
-    device_address->SetShapeVector(shape);
-  }
+  void UpdateOutputShape(const TensorPtr &tensor, const ShapeVector &shape) { tensor->set_shape(shape); }
 
   void CreateOutputSimpleInfo() {
     if (output_value_simple_info_ != nullptr) {

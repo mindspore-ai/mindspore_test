@@ -231,7 +231,7 @@ DeviceAddressPtr PyBoostUtils::MakeContiguousDeviceAddress(const tensor::TensorP
   auto stream_id = device_context->device_res_manager_->GetCurrentStreamId();
   auto address_size = GetTypeByte(TypeIdToType(input_tensor->data_type())) * SizeOf(storage_info->shape);
   auto new_device_address = device_context->device_res_manager_->CreateDeviceAddress(
-    nullptr, address_size, storage_info->shape, DEFAULT_FORMAT, old_device_address->type_id(),
+    nullptr, address_size, storage_info->shape, DEFAULT_FORMAT, input_tensor->data_type(),
     device::GetDeviceNameByType(device_context->device_context_key().device_type_), stream_id);
 
   auto output_tensor =
@@ -468,10 +468,11 @@ void PyBoostUtils::GetKernelTensor(const DeviceContext *device_context, size_t s
   kernel_tensor->set_device_address(device_address);
   kernel_tensor->SetShapeVector(tensor->shape());
   kernel_tensor->set_format(tensor->format());
+  kernel_tensor->set_dtype_id(tensor->data_type());
   MS_LOG(DEBUG) << "Create input " << tmp_abs->ToString() << " device address for " << index
                 << "th input, Shape: " << shape->ToString() << ", Type: " << type->ToString()
                 << ", Value: " << (value ? value->ToString() : "nullptr") << " device address:" << device_address.get()
-                << ", kernel tensor: " << kernel_tensor.get();
+                << ", kernel tensor: " << kernel_tensor->ToString();
   (void)kernel_tensor_ptr_list->emplace_back(kernel_tensor);
   (void)kernel_tensor_list->emplace_back(kernel_tensor.get());
 }

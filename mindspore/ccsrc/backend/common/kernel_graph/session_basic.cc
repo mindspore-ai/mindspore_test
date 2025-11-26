@@ -98,9 +98,10 @@ ParameterPtr ConstructRunOpParameter(const std::shared_ptr<KernelGraph> &graph, 
     TypeId param_init_data_type = common::AnfAlgo::IsParameterWeight(param) ? kTypeUnknown : input_tensor->data_type();
     kernel_build_info_builder->SetOutputsDeviceType(std::vector<TypeId>{param_init_data_type});
   } else {
-    kernel_build_info_builder->SetOutputsDeviceType(std::vector<TypeId>{device_address->type_id()});
+    kernel_build_info_builder->SetOutputsDeviceType(std::vector<TypeId>{input_tensor->data_type()});
     kernel_build_info_builder->SetOutputsReshapeType({device_address->padding_type()});
-    kernel_build_info_builder->SetOutputsFormat(std::vector<std::string>{device_address->format()});
+    kernel_build_info_builder->SetOutputsFormat(
+      std::vector<std::string>{kernel::GetFormatFromEnumToStr(input_tensor->format())});
   }
   if (input_tensor->isa<tensor::MapTensor>()) {
     auto map_tensor = input_tensor->cast<tensor::MapTensorPtr>();

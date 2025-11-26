@@ -112,6 +112,7 @@ std::pair<std::vector<size_t>, std::vector<size_t>> CPUResManager::AllocDeviceMe
       std::make_shared<DeviceAddressExt>(Format::DEFAULT_FORMAT, tensor->data_type(), tensor->shape());
     SyncCopy(device_address, tensor->device_address(), device_address->stream_id(), src_ext, dst_ext);
     tensor->set_device_address(device_address);
+    tensor->set_format(Format::DEFAULT_FORMAT);
   }
   return std::make_pair(before_padding_sizes, after_padding_sizes);
 }

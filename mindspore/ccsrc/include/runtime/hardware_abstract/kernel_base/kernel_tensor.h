@@ -162,20 +162,7 @@ class RUNTIME_HARDWARE_EXPORT KernelTensor : public AbstractBase {
 
   MS_DECLARE_PARENT(KernelTensor, AbstractBase);
 
-  std::string ToString() const {
-    std::stringstream ofs;
-    ofs << this << " shape:" << (GetShape() == nullptr ? "null" : GetShape()->ToString())
-        << " type:" << (GetType() == nullptr ? "null" : GetType()->ToString())
-        << " value:" << (value_ == nullptr ? "null" : value_->ToString());
-    ofs << " flag:" << flag_ << " user data:" << (user_data_ != nullptr)
-        << " need sync user data:" << need_sync_user_data_ << " managed by somas:" << managed_by_somas_;
-    ofs << "ref count:" << ref_cnt_->ToString();
-    if (device_address_ != nullptr) {
-      return ofs.str() + " device address:" + device_address_->ToString();
-    }
-    return ofs.str() + "device address:0";
-  }
-
+  std::string ToString() const;
   // Get the base shape for Tensor/Sequence/Scalar.
   abstract::BaseShapePtr GetShape() const override { return shape_; }
 
@@ -184,7 +171,7 @@ class RUNTIME_HARDWARE_EXPORT KernelTensor : public AbstractBase {
   void SetShape(const abstract::BaseShapePtr &shape);
 
   // Get the shape vector for Tensor/Sequence/Scalar.
-  const ShapeVector &GetShapeVector() const { return device_address_->GetShapeVector(); }
+  const ShapeVector &GetShapeVector() const { return shape_vector_; }
 
   // Set the shape vector for Tensor/Sequence/Scalar.
   void SetShapeVector(const ShapeVector &shape_vector);
@@ -214,10 +201,10 @@ class RUNTIME_HARDWARE_EXPORT KernelTensor : public AbstractBase {
   }
 
   // Get the data enum type id of the KernelTensor.
-  TypeId dtype_id() const { return device_address_->type_id(); }
+  TypeId dtype_id() const { return dtype_id_; }
 
   // Set the data enum type id of the KernelTensor.
-  void set_dtype_id(TypeId dtype_id) { device_address_->set_type_id(dtype_id); }
+  void set_dtype_id(TypeId dtype_id) { dtype_id_ = dtype_id; }
 
   // Set the value for the KernelTensor.
   void SetValue(const ValuePtr &value) { value_ = value; }
@@ -253,7 +240,7 @@ class RUNTIME_HARDWARE_EXPORT KernelTensor : public AbstractBase {
     std::lock_guard<std::mutex> lock(host_info_->value_mutex_);
 
     // There is a origin value in KernelTensor(maybe come from a ValueNode).
-    if (device_address_->type_id() == kMetaTypeNone) {
+    if (dtype_id_ == kMetaTypeNone) {
       MS_LOG(DEBUG) << "None type has no valid scalar value.";
       return std::nullopt;
     }
@@ -283,7 +270,7 @@ class RUNTIME_HARDWARE_EXPORT KernelTensor : public AbstractBase {
     std::lock_guard<std::mutex> lock(host_info_->value_mutex_);
 
     // There is a origin value in KernelTensor(maybe come from a ValueNode).
-    if (device_address_->type_id() == kMetaTypeNone) {
+    if (dtype_id_ == kMetaTypeNone) {
       MS_LOG(DEBUG) << "None type has no valid value for vector or string.";
       return std::nullopt;
     }
@@ -308,7 +295,7 @@ class RUNTIME_HARDWARE_EXPORT KernelTensor : public AbstractBase {
   template <typename T, typename std::enable_if<!IsValidContainer<T>::value && !std::is_pointer_v<T> &&
                                                 !std::is_scalar<std::decay_t<T>>::value>::type * = nullptr>
   std::optional<T> GetValue() {
-    if (device_address_->type_id() == kMetaTypeNone) {
+    if (dtype_id_ == kMetaTypeNone) {
       MS_LOG(DEBUG) << "None type has no valid value.";
       return std::nullopt;
     }
@@ -576,6 +563,19 @@ class RUNTIME_HARDWARE_EXPORT KernelTensor : public AbstractBase {
   ContinuousKernelTensorsPtr continuous_kernel_tensors_{nullptr};
   // The kernel tensor flag.
   size_t flag_{0};
+
+  // The data enum type id of the KernelTensor.
+  TypeId dtype_id_{kTypeUnknown};
+  // The origin flatten shape vector for Tensor/Scalar/Tuple/List.
+  // 1. For Tensor type, means its shape. For example, a Tensor with shape (8, 16), shape_vector_ is {8, 16}.
+  // 2. For Scalar type, shape_vector_ is an empty ShapeVector, i.e. {}.
+  // 3. For Tuple/List (all elements must be Tensor with same shape or Scalar) type, the shape_vector_
+  // consists of the element number and the shape of element in Tuple/List. For example, if a Tuple of the structure
+  // ((8,16), (8,16)) contains two Tensors of shape (8, 16), then shape_vector_ is {2, 8, 16}, 2 means elements
+  // number in Tuple/List. A Tuple with a structure such as ((), ()) that contains two Scalar, the shape_vector_ of
+  // this Tuple is {2}.
+  ShapeVector shape_vector_{};
+  Format format_{Format::DEFAULT_FORMAT};
 
   UserDataPtr user_data_{nullptr};
   // Handler for sync data from user data.

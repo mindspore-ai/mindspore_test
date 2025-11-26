@@ -787,11 +787,10 @@ void MallocMemoryAndCopyValue(const kernel::KernelTensorPtr &kernel_tensor, cons
   auto tensor = tensor::from_spec(kNumberTypeInt64, shape, device::DeviceType::kCPU);
   MS_EXCEPTION_IF_NULL(tensor);
   MS_EXCEPTION_IF_NULL(tensor->device_address());
-  auto tensor_device_address = dynamic_cast<DeviceAddress *>(tensor->device_address().get());
-  MS_EXCEPTION_IF_NULL(tensor_device_address);
+  auto tensor_device_address = tensor->device_address();
   tensor_device_address->set_ptr(vec.data());
   tensor_device_address->SetSize(device_address->GetSize());
-  tensor_device_address->set_format(kOpFormat_DEFAULT);
+  tensor->set_format(Format::DEFAULT_FORMAT);
   DeviceContextKey host_key = {device_address->GetDeviceType(), device_address->device_id()};
   DeviceContext *host_context = DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
   MS_EXCEPTION_IF_NULL(host_context);
@@ -854,8 +853,8 @@ bool GPUKernelExecutor::ExecuteKernelTask(const runtime::KernelTaskType &task_ty
   }
 
   kernel::ContiguousGpuKernel contiguous_kernel;
-  auto ret = contiguous_kernel.LaunchContiguous(input_address->type_id(), input_address, input_storage_info,
-                                                output_address->type_id(), output_address, shape_dev_addr,
+  auto ret = contiguous_kernel.LaunchContiguous(input_kernel_tensor->dtype_id(), input_address, input_storage_info,
+                                                output_kernel_tensor->dtype_id(), output_address, shape_dev_addr,
                                                 strides_dev_addr, stream);
   if (!ret) {
     MS_LOG(EXCEPTION) << "LaunchContiguous failed";

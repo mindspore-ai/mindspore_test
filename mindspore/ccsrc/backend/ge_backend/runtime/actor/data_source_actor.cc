@@ -207,8 +207,8 @@ void CopyHostTensorToKernelTensor(const tensor::TensorPtr &host_tensor, const ke
     }
   }
 
-  if (IsDynamic(device_tensor->GetShapeVector())) {
-    device_tensor->SetShapeVector(host_tensor->shape());
+  if (IsDynamic(kernel_tensor->GetShapeVector())) {
+    kernel_tensor->SetShapeVector(host_tensor->shape());
   }
 }
 }  // namespace

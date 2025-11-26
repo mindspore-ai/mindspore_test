@@ -371,9 +371,9 @@ void KernelActor::InitInputInfo() {
     MS_EXCEPTION_IF_NULL(input_kernel_tensor);
     const auto &input_device_tensor = input_kernel_tensor->device_address();
     MS_EXCEPTION_IF_NULL(input_device_tensor);
-    (void)real_input_data_infos_.emplace_back(std::make_shared<InputDataInfo>(
-      kernel::GetFormatFromStrToEnum(input_device_tensor->format()), input_kernel_tensor->GetShapeVector(),
-      input_device_tensor->GetSize(), input_kernel_tensor->dtype_id()));
+    (void)real_input_data_infos_.emplace_back(
+      std::make_shared<InputDataInfo>(input_kernel_tensor->format(), input_kernel_tensor->GetShapeVector(),
+                                      input_device_tensor->GetSize(), input_kernel_tensor->dtype_id()));
   }
 
   copy_input_kernel_tensors_.resize(real_input_num_);

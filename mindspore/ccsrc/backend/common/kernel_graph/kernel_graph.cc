@@ -83,12 +83,9 @@ void SyncDeviceInfoToValueNode(const ValueNodePtr &value_node, std::vector<std::
     device_types->clear();
     for (const auto &tensor : tensors) {
       MS_EXCEPTION_IF_NULL(tensor);
-      auto device_sync = tensor->device_address();
-      if (device_sync != nullptr) {
-        auto device_address = std::dynamic_pointer_cast<device::DeviceAddress>(device_sync);
-        MS_EXCEPTION_IF_NULL(device_address);
-        device_formats->emplace_back(device_address->format());
-        device_types->emplace_back(device_address->type_id());
+      if (tensor->device_address() != nullptr) {
+        device_formats->emplace_back(kernel::GetFormatFromEnumToStr(tensor->format()));
+        device_types->emplace_back(tensor->data_type());
         continue;
       }
       device_formats->emplace_back(kOpFormat_DEFAULT);

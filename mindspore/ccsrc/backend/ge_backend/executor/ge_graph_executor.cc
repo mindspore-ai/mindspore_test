@@ -276,7 +276,7 @@ void SetOutput(GeDeviceResManagerPtr res_manager, GeTensor *ge_output, const Anf
     MS_EXCEPTION_IF_NULL(tmp_device_address);
     tmp_device_address->set_ptr(ge_data);
     tmp_device_address->SetSize(size);
-    tmp_device_address->set_format(ascend_addr->format());
+    tensor->set_format(output_kernel_tensor->format());
     if (!device::ascend::AscendStreamMng::GetInstance().SyncAllStreams()) {
       MS_LOG(ERROR) << "Failed to sync all stream.";
     }

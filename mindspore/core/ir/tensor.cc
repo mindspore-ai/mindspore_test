@@ -572,20 +572,9 @@ void Tensor::UnPinMemory() {
 
 const ShapeVector &Tensor::shape_c() const { return shape(); }
 
-Format Tensor::format() const {
-  if (device_sync_ == nullptr) {
-    MS_LOG(EXCEPTION) << "Cannot access format of uninitialized tensor";
-  }
-  return kernel::GetFormatFromStrToEnum(device_sync_->format());
-}
+Format Tensor::format() const { return format_; }
 
-void Tensor::set_format(const Format &format) {
-  if (device_sync_ == nullptr) {
-    MS_LOG(EXCEPTION) << "Cannot set format for uninitialized tensor";
-  }
-  format_ = format;
-  device_sync_->set_format(kernel::GetFormatFromEnumToStr(format));
-}
+void Tensor::set_format(const Format &format) { format_ = format; }
 
 ssize_t Tensor::DataItemSize() const {
   if (device_sync_ != nullptr && device_sync_->has_data()) {
