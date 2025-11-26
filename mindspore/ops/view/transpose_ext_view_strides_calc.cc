@@ -20,7 +20,7 @@
 #include <utility>
 #include "utils/check_convert_utils.h"
 #include "ops_utils/op_utils.h"
-#include "mindspore/ops/op_def/op_name.h"
+#include "primitive/op_name.h"
 
 namespace mindspore::ops {
 TensorStorageInfoPtrList TransposeExtViewStridesCalc(const std::vector<int64_t> &cur_shape,

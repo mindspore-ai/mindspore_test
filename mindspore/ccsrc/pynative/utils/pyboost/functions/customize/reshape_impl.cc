@@ -15,7 +15,7 @@
  */
 
 #include "mindspore/ccsrc/pynative/utils/pyboost/functions/customize/view_impl.h"
-#include "mindspore/ops/view/reshape_strides_calc.h"
+#include "view/reshape_strides_calc.h"
 #include "mindspore/ccsrc/pynative/utils/pyboost/functions/auto_generate/functions.h"
 #include "mindspore/core/include/utils/stream_guard.h"
 #include "mindspore/ccsrc/pynative/utils/runtime//op_runner.h"

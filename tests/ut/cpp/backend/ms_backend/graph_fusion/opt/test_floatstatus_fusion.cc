@@ -21,8 +21,8 @@
 #include "utils/anf_utils.h"
 #include "ir/functor.h"
 #include "ir/tensor_new.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
-#include "mindspore/ops/op_def/math_ops.h"
+#include "primitive/auto_generate/gen_ops_primitive_a.h"
+#include "primitive/math_ops.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_info.h"
 #include "include/backend/anf_runtime_algorithm.h"
 

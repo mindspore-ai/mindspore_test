@@ -29,10 +29,10 @@
 #include "include/utils/frontend/primitive_utils.h"
 #include "utils/check_convert_utils.h"
 #include "tools/profiler/profiler.h"
-#include "mindspore/ops/op_def/other_op_name.h"
+#include "primitive/other_op_name.h"
 #include "include/utils/tensor_py.h"
 #include "utils/flags.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
+#include "primitive/auto_generate/gen_ops_primitive_t.h"
 #include "include/frontend/operator/primitive_py.h"
 namespace mindspore {
 namespace {

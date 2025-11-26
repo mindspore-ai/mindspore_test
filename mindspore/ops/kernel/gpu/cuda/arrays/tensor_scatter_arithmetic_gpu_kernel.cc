@@ -16,9 +16,9 @@
 
 #include "kernel/gpu/cuda/arrays/tensor_scatter_arithmetic_gpu_kernel.h"
 #include <functional>
-#include "mindspore/ops/op_def/array_ops.h"
+#include "primitive/array_ops.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/complex.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
+#include "primitive/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore {
 namespace kernel {

@@ -17,7 +17,7 @@
 #include "kernel/ascend/aicpu/aicpu_kernel_metadata.h"
 #include <memory>
 #include <string>
-#include "op_def/array_op_name.h"
+#include "primitive/array_op_name.h"
 #include "include/utils/kernel_base/oplib/oplib.h"
 #include "include/utils/kernel_base/common_utils.h"
 #include "include/runtime/hardware_abstract/kernel_base/graph_fusion/framework_utils.h"

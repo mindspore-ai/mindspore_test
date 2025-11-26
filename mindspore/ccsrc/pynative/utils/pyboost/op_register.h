@@ -22,7 +22,7 @@
 #include <string>
 #include <utility>
 #include "utils/stream_guard.h"
-#include "mindspore/ops/op_def/array_ops.h"
+#include "primitive/array_ops.h"
 #include "mindspore/ccsrc/pynative/utils/pyboost/op_runner.h"
 #include "pynative/utils/runtime/op_runner.h"
 #include "mindspore/ccsrc/pynative/utils/pyboost/pyboost_utils.h"

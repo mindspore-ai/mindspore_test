@@ -19,10 +19,10 @@
 #include <string>
 #include <algorithm>
 #include <set>
-#include "mindspore/ops/op_def/ascend_op_name.h"
-#include "mindspore/ops/op_def/other_op_name.h"
-#include "mindspore/ops/op_def/array_op_name.h"
-#include "mindspore/ops/op_def/framework_op_name.h"
+#include "primitive/ascend_op_name.h"
+#include "primitive/other_op_name.h"
+#include "primitive/array_op_name.h"
+#include "primitive/framework_op_name.h"
 #include "include/backend/common/ms_device_shape_transfer.h"
 #include "include/utils/utils.h"
 #include "kernel/ascend/hccl/hcom_util.h"

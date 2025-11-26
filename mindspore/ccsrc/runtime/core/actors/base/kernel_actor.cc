@@ -43,10 +43,10 @@
 #include "include/cluster/topology/collective_manager.h"
 #include "backend/common/pass_manager/dynamic_shape_helper.h"
 #include "include/runtime/hardware_abstract/kernel_base/graph_fusion/framework_utils.h"
-#include "mindspore/ops/op_def/framework_ops.h"
+#include "primitive/framework_ops.h"
 #include "utils/compile_config.h"
-#include "mindspore/ops/op_def/structure_op_name.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
+#include "primitive/structure_op_name.h"
+#include "primitive/auto_generate/gen_ops_primitive_s.h"
 namespace mindspore {
 namespace runtime {
 namespace {

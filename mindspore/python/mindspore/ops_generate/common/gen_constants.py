@@ -34,7 +34,8 @@ PY_AUTO_GEN_PATH = "mindspore/python/mindspore/ops/auto_generate"
 
 # op_def
 OP_DEF_AUTO_GENERATE_PATH = "op_def/auto_generate"
-MS_OP_DEF_AUTO_GENERATE_PATH = "mindspore/ops/op_def/auto_generate"
+MS_OP_DEF_AUTO_GENERATE_PATH = "mindspore/ops/include/primitive/auto_generate"
+MS_OP_DEF_AUTO_GENERATE_CC_PATH = "mindspore/ops/op_def/auto_generate"
 MS_OP_DEF_YAML_PATH = "mindspore/ops/op_def/yaml"
 MS_OP_DEF_FUNC_OP_YAML_PATH = "mindspore/ops/op_def/func_op"
 MS_OP_DEPRECATED_DEF_YAML_PATH = "mindspore/ops/op_def/deprecated"

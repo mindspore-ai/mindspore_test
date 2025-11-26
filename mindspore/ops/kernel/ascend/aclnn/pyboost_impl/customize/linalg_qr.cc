@@ -21,7 +21,7 @@
 #include "mindspore/ccsrc/pynative/utils/pyboost/op_register.h"
 #include "mindspore/ccsrc/pynative/utils/pyboost/pyboost_utils.h"
 #include "kernel/ascend/aclnn/pyboost_impl/aclnn_utils.h"
-#include "mindspore/ops/op_def/op_enum.h"
+#include "include/op_enum.h"
 
 namespace mindspore {
 namespace kernel {

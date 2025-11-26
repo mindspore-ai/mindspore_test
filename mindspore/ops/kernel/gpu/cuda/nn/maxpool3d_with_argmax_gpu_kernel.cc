@@ -17,7 +17,7 @@
 #include "kernel/gpu/cuda/nn/maxpool3d_with_argmax_gpu_kernel.h"
 #include <algorithm>
 #include <memory>
-#include "mindspore/ops/op_def/conv_pool_ops.h"
+#include "primitive/conv_pool_ops.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/maxpool3d_with_argmax_impl.cuh"
 #include "mindspore/ops/infer/max_pool3d_with_argmax.h"
 

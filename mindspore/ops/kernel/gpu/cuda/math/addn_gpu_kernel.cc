@@ -16,7 +16,7 @@
 
 #include "kernel/gpu/cuda/math/addn_gpu_kernel.h"
 
-#include "mindspore/ops/op_def/math_ops.h"
+#include "primitive/math_ops.h"
 namespace mindspore {
 namespace kernel {
 bool AddNFwdGpuKernelMod::Init(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) {

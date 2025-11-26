@@ -19,7 +19,7 @@
 #include "utils/ms_context.h"
 #include "infer/ops_func_impl/matmul_ext.h"
 #include "ops_utils/op_utils.h"
-#include "mindspore/ops/op_def/op_enum.h"
+#include "include/op_enum.h"
 
 namespace mindspore {
 namespace expander {

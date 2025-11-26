@@ -21,7 +21,7 @@
 #include "utils/shape_utils.h"
 #include "utils/check_convert_utils.h"
 #include "ops_utils/op_utils.h"
-#include "mindspore/ops/view/view_strides_calculator.h"
+#include "view/view_strides_calculator.h"
 
 namespace mindspore {
 namespace expander {

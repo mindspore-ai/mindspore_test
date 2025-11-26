@@ -20,8 +20,8 @@
 #include <algorithm>
 #include <vector>
 
-#include "mindspore/ops/op_def/sequence_ops.h"
-#include "mindspore/ops/op_def/framework_ops.h"
+#include "primitive/sequence_ops.h"
+#include "primitive/framework_ops.h"
 #include "abstract/abstract_value.h"
 #include "ir/anf.h"
 #include "abstract/dshape.h"
@@ -31,7 +31,7 @@
 #include "include/utils/fallback.h"
 #include "frontend/jit/ps/fallback.h"
 #include "utils/ms_context.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "primitive/auto_generate/gen_ops_primitive_m.h"
 #include "ir/func_graph_flag.h"
 
 namespace mindspore {

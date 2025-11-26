@@ -19,7 +19,7 @@
 #include "include/runtime/hardware_abstract/kernel_base/kernel.h"
 #include "mindapi/base/types.h"
 #include "utils/fft_helper.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "primitive/auto_generate/gen_ops_primitive_d.h"
 
 namespace mindspore {
 namespace kernel {

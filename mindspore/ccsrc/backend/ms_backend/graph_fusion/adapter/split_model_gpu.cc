@@ -15,7 +15,7 @@
  */
 #include "backend/ms_backend/graph_fusion/adapter/split_model_gpu.h"
 #include <memory>
-#include "mindspore/ops/op_def/nn_optimizer_op_name.h"
+#include "primitive/nn_optimizer_op_name.h"
 
 namespace mindspore::graphkernel::inner {
 constexpr size_t kReduceFusionDepth = 20;

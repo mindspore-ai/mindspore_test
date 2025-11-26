@@ -16,7 +16,7 @@
 #include "kernel/ascend/aclnn/kernel_mod_impl/customize/view/expand_dims_view.h"
 #include <vector>
 #include "kernel/ascend/aclnn/kernel_mod_impl/customize/view/view_utils.h"
-#include "mindspore/ops/view/expand_dims_strides_calc.h"
+#include "view/expand_dims_strides_calc.h"
 
 namespace mindspore {
 namespace kernel {

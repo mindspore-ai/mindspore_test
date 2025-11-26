@@ -22,10 +22,10 @@
 #include "include/backend/optimizer/pass.h"
 #include "ir/func_graph.h"
 #include "ir/anf.h"
-#include "mindspore/ops/op_def/array_op_name.h"
-#include "mindspore/ops/op_def/ascend_op_name.h"
-#include "mindspore/ops/op_def/framework_op_name.h"
-#include "mindspore/ops/op_def/other_op_name.h"
+#include "primitive/array_op_name.h"
+#include "primitive/ascend_op_name.h"
+#include "primitive/framework_op_name.h"
+#include "primitive/other_op_name.h"
 
 namespace mindspore {
 namespace opt {

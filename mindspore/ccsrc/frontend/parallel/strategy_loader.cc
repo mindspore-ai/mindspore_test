@@ -19,9 +19,9 @@
 #include <vector>
 #include <string>
 #include <memory>
-#include "mindspore/ops/op_def/other_ops.h"
-#include "mindspore/ops/op_def/structure_ops.h"
-#include "mindspore/ops/op_def/framework_ops.h"
+#include "primitive/other_ops.h"
+#include "primitive/structure_ops.h"
+#include "primitive/framework_ops.h"
 #include "include/utils/parallel_context.h"
 #include "frontend/operator/ops.h"
 #include "include/frontend/optimizer/optimizer.h"
@@ -37,7 +37,7 @@
 #include "frontend/parallel/step_parallel_utils.h"
 #include "frontend/parallel/strategy_utils.h"
 #include "frontend/parallel/graph_util/pipeline_split_utils.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
+#include "primitive/auto_generate/gen_ops_primitive_s.h"
 
 namespace mindspore {
 namespace parallel {

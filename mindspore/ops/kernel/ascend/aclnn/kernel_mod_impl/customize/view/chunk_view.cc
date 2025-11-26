@@ -16,7 +16,7 @@
 #include "kernel/ascend/aclnn/kernel_mod_impl/customize/view/chunk_view.h"
 
 #include "kernel/ascend/aclnn/kernel_mod_impl/customize/view/view_utils.h"
-#include "mindspore/ops/view/chunk_strides_calc.h"
+#include "view/chunk_strides_calc.h"
 
 namespace mindspore {
 namespace kernel {

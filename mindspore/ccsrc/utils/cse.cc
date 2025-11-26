@@ -21,8 +21,8 @@
 #include <vector>
 #include <set>
 
-#include "mindspore/ops/op_def/framework_ops.h"
-#include "mindspore/ops/op_def/other_ops.h"
+#include "primitive/framework_ops.h"
+#include "primitive/other_ops.h"
 #include "ir/anf.h"
 #include "ir/graph_utils.h"
 #include "utils/hash_map.h"
@@ -30,10 +30,10 @@
 #include "utils/flags.h"
 #include "include/utils/utils.h"
 #include "utils/anf_utils.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_p.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_u.h"
+#include "primitive/auto_generate/gen_ops_primitive_a.h"
+#include "primitive/auto_generate/gen_ops_primitive_p.h"
+#include "primitive/auto_generate/gen_ops_primitive_r.h"
+#include "primitive/auto_generate/gen_ops_primitive_u.h"
 
 namespace mindspore {
 /* namespace to support opt */

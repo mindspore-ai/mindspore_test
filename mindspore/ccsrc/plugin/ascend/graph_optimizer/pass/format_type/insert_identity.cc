@@ -18,11 +18,11 @@
 #include <memory>
 #include <string>
 #include <unordered_set>
-#include "mindspore/ops/op_def/array_ops.h"
+#include "primitive/array_ops.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/utils/anfalgo.h"
 #include "utils/ms_context.h"
-#include "mindspore/ops/op_def/nn_op_name.h"
+#include "primitive/nn_op_name.h"
 
 namespace mindspore {
 namespace opt {

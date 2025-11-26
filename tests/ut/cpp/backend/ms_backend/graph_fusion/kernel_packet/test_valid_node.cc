@@ -15,7 +15,7 @@
  */
 
 #include "backend/ms_backend/graph_fusion/kernel_packet/kernel_packet_common_test_suite.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "primitive/auto_generate/gen_ops_primitive_d.h"
 #include "ir/graph_utils.h"
 
 namespace mindspore::graphkernel::test {

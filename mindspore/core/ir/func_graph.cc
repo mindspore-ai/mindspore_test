@@ -29,8 +29,8 @@
 #include "ir/func_graph_cloner.h"
 #include "utils/phase.h"
 #include "mindspore/ccsrc/frontend/operator/composite/unpack_call.h"
-#include "mindspore/ops/op_def/framework_ops.h"
-#include "mindspore/ops/op_def/sequence_ops.h"
+#include "primitive/framework_ops.h"
+#include "primitive/sequence_ops.h"
 
 namespace mindspore {
 /*

@@ -17,7 +17,7 @@
 #include "kernel/gpu/cuda/nn/memcpy_gpu_kernel.h"
 #include <map>
 #include <memory>
-#include "mindspore/ops/op_def/array_ops.h"
+#include "primitive/array_ops.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/cast_impl.cuh"
 
 namespace mindspore {

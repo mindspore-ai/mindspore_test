@@ -25,7 +25,7 @@
 #include "google/protobuf/util/json_util.h"
 #include "nlohmann/json.hpp"
 #include "proto/profiling_parallel.pb.h"
-#include "mindspore/ops/op_def/ascend_op_name.h"
+#include "primitive/ascend_op_name.h"
 
 namespace mindspore {
 namespace profiler {

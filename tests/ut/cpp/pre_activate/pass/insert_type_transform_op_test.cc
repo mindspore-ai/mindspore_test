@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 #include "common/backend_common_test.h"
-#include "mindspore/ops/op_def/sequence_ops.h"
-#include "mindspore/ops/op_def/arithmetic_ops.h"
+#include "primitive/sequence_ops.h"
+#include "primitive/arithmetic_ops.h"
 #include "ir/anf.h"
 #include "ir/tensor.h"
 #include "mindspore/ccsrc/utils/ir_dump/anf_ir_dump.h"
@@ -28,9 +28,9 @@
 #define private public
 #define protected public
 #include "backend/common/pass/insert_type_transform_op.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
+#include "primitive/auto_generate/gen_ops_primitive_r.h"
+#include "primitive/auto_generate/gen_ops_primitive_s.h"
+#include "primitive/auto_generate/gen_ops_primitive_t.h"
 #undef private
 #undef protected
 

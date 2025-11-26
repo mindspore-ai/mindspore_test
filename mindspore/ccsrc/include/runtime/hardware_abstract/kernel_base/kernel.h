@@ -34,7 +34,7 @@
 #include "ops/base_operator.h"
 #include "nlohmann/json.hpp"
 #include "utils/log_adapter.h"
-#include "mindspore/ops/op_def/op_name.h"
+#include "primitive/op_name.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_tensor.h"
 #include "runtime/hardware_abstract/visible.h"
 

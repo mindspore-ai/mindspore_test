@@ -1476,6 +1476,7 @@ class CustomOpBuilder:
         include_list.append(os.path.join(ms_inner_path, "core", "mindrt", "include"))
         include_list.append(os.path.join(ms_inner_path, "core", "mindrt"))
         include_list.append(os.path.join(ms_inner_path, "ops"))
+        include_list.append(os.path.join(ms_inner_path, "ops", "include"))
         include_list.append(os.path.join(ms_inner_path, "ops", "kernel", "include"))
         include_list.append(os.path.join(ms_inner_path, "ccsrc"))
         include_list.append(os.path.join(ms_inner_path, "ccsrc", "include"))

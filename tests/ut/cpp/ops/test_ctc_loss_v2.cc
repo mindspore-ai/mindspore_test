@@ -27,7 +27,7 @@
 #include "ops/test_ops_cmp_utils.h"
 #include "infer/ctc_loss_v2.h"
 #include "ops_utils/op_constants.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "primitive/auto_generate/gen_ops_primitive_c.h"
 
 namespace mindspore {
 namespace ops {

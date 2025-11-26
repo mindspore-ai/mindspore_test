@@ -24,7 +24,7 @@
 #include <utility>
 #include <cfloat>
 
-#include "mindspore/ops/op_def/framework_ops.h"
+#include "primitive/framework_ops.h"
 #include "Eigen/Core"
 #include "abstract/abstract_value.h"
 #include "abstract/abstract_function.h"

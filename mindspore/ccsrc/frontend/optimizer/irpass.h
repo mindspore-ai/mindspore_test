@@ -20,7 +20,7 @@
 #include "base/base.h"
 #include "include/frontend/operator/primitive_py.h"
 #include "frontend/optimizer/opt.h"
-#include "mindspore/ops/op_def/framework_ops.h"
+#include "primitive/framework_ops.h"
 #include "ops/op_def.h"
 
 namespace mindspore {

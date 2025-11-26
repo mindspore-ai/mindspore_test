@@ -28,12 +28,12 @@
 #include "ir/func_graph.h"
 #include "ir/functor.h"
 #include "ir/tensor_new.h"
-#include "mindspore/ops/op_def/array_op_name.h"
-#include "mindspore/ops/op_def/comparison_op_name.h"
-#include "mindspore/ops/op_def/framework_op_name.h"
-#include "mindspore/ops/op_def/arithmetic_op_name.h"
-#include "mindspore/ops/op_def/math_ops.h"
-#include "mindspore/ops/op_def/sequence_ops.h"
+#include "primitive/array_op_name.h"
+#include "primitive/comparison_op_name.h"
+#include "primitive/framework_op_name.h"
+#include "primitive/arithmetic_op_name.h"
+#include "primitive/math_ops.h"
+#include "primitive/sequence_ops.h"
 #include "infer/shape_calc.h"
 
 namespace mindspore {

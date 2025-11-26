@@ -23,7 +23,7 @@
 #include <utility>
 #include <map>
 #include <memory>
-#include "mindspore/ops/op_def/op_name.h"
+#include "primitive/op_name.h"
 #include "mindspore/ops/infer/grad/slice_grad.h"
 #include "kernel/gpu/gpu_kernel.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/slice_impl.cuh"

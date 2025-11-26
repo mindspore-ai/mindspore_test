@@ -27,14 +27,14 @@
 #include <functional>
 
 #include "ops_utils/op_utils.h"
-#include "mindspore/ops/op_def/array_op_name.h"
-#include "mindspore/ops/op_def/array_ops.h"
+#include "primitive/array_op_name.h"
+#include "primitive/array_ops.h"
 #include "frontend/expander/bprop/bprop_irbuilder.h"
 #include "frontend/expander/grad/grad_utils.h"
 #include "ir/functor.h"
 #include "utils/check_convert_utils.h"
 #include "utils/ms_context.h"
-#include "op_def/op_enum.h"
+#include "include/op_enum.h"
 
 namespace mindspore::expander::bprop {
 namespace {

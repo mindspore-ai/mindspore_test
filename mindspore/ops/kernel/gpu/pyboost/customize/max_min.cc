@@ -18,7 +18,7 @@
 #include "kernel/gpu/pyboost/customize/max.h"
 #include "mindspore/ccsrc/pynative/utils/pyboost/pyboost_utils.h"
 #include "include/runtime/utils/runtime_conf/runtime_conf.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "primitive/auto_generate/gen_ops_primitive_r.h"
 
 namespace mindspore {
 namespace kernel {

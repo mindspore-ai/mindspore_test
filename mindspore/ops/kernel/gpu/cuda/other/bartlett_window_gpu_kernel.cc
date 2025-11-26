@@ -15,7 +15,7 @@
  */
 
 #include "kernel/gpu/cuda/other/bartlett_window_gpu_kernel.h"
-#include "mindspore/ops/op_def/op_name.h"
+#include "primitive/op_name.h"
 
 namespace mindspore {
 namespace kernel {

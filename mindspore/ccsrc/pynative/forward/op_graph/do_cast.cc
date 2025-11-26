@@ -18,11 +18,11 @@
 #include <memory>
 #include <utility>
 #include <algorithm>
-#include "mindspore/ops/op_def/array_ops.h"
+#include "primitive/array_ops.h"
 #include "pynative/utils/pynative_utils.h"
 #include "tools/profiler/profiler.h"
 #include "include/utils/pynative/common_utils.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "primitive/auto_generate/gen_ops_primitive_c.h"
 #include "include/runtime/utils/dispatch/dispatch_env.h"
 #include "pynative/utils/pyboost/functions/auto_generate/functions.h"
 

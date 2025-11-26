@@ -16,7 +16,7 @@
 
 #include "test_view.h"
 #include "ir/tensor_new.h"
-#include "mindspore/ops/view/broadcast_to_strides_calc.h"
+#include "view/broadcast_to_strides_calc.h"
 #include "include/utils/utils.h"
 
 namespace mindspore {

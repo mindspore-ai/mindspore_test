@@ -16,7 +16,7 @@
 #include <vector>
 #include <memory>
 #include "common/common_test.h"
-#include "mindspore/ops/op_def/sequence_op_name.h"
+#include "primitive/sequence_op_name.h"
 #include "infer/grad/softmax_grad.h"
 #include "ir/dtype/type.h"
 #include "ir/value.h"
@@ -26,7 +26,7 @@
 #include "ops/test_ops.h"
 #include "include/backend/optimizer/helper.h"
 #include "ir/primitive.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
+#include "primitive/auto_generate/gen_ops_primitive_s.h"
 
 namespace mindspore {
 namespace ops {

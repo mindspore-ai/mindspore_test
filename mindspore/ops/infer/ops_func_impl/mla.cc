@@ -19,8 +19,8 @@
 #include <string>
 #include <utility>
 
-#include "mindspore/ops/op_def/nn_ops.h"
-#include "mindspore/ops/op_def/op_enum.h"
+#include "primitive/nn_ops.h"
+#include "include/op_enum.h"
 #include "utils/check_convert_utils.h"
 #include "mindapi/helper.h"
 #include "include/api/data_type.h"

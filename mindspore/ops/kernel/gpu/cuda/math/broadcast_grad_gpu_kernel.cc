@@ -19,10 +19,10 @@
 #include <algorithm>
 #include <functional>
 #include "include/runtime/hardware_abstract/kernel_base/kernel_utils.h"
-#include "mindspore/ops/op_def/math_ops.h"
+#include "primitive/math_ops.h"
 #include "mindspore/ops/infer/ops_func_impl/maximum_grad.h"
 #include "mindspore/ops/infer/ops_func_impl/minimum_grad.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "primitive/auto_generate/gen_ops_primitive_m.h"
 #include "include/utils/anfalgo.h"
 
 namespace mindspore {

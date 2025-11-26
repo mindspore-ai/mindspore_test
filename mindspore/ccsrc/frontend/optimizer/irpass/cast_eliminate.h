@@ -19,7 +19,7 @@
 
 #include <map>
 #include "frontend/optimizer/anf_visitor.h"
-#include "mindspore/ops/op_def/array_ops.h"
+#include "primitive/array_ops.h"
 #include "frontend/optimizer/irpass.h"
 #include "include/frontend/optimizer/optimizer.h"
 

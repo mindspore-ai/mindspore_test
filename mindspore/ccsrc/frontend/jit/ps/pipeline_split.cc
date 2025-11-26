@@ -21,9 +21,9 @@
 #include <string>
 #include <memory>
 #include "ir/graph_utils.h"
-#include "mindspore/ops/op_def/sequence_ops.h"
-#include "mindspore/ops/op_def/other_ops.h"
-#include "mindspore/ops/op_def/framework_ops.h"
+#include "primitive/sequence_ops.h"
+#include "primitive/other_ops.h"
+#include "primitive/framework_ops.h"
 #include "utils/ms_context.h"
 #include "include/utils/comm_manager.h"
 #include "include/utils/parallel_context.h"
@@ -37,8 +37,8 @@
 #include "frontend/parallel/parameter_manager.h"
 #include "frontend/parallel/strategy_checkpoint/parallel_strategy_checkpoint.h"
 #if defined(__linux__) && defined(WITH_BACKEND)
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_v.h"
+#include "primitive/auto_generate/gen_ops_primitive_t.h"
+#include "primitive/auto_generate/gen_ops_primitive_v.h"
 #endif
 
 namespace mindspore {

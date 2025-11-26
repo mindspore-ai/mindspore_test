@@ -19,8 +19,8 @@
 #include <map>
 #include <memory>
 #include <utility>
-#include "mindspore/ops/op_def/nn_op_name.h"
-#include "mindspore/ops/op_def/op_name.h"
+#include "primitive/nn_op_name.h"
+#include "primitive/op_name.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/elementwise/eltwise_ops_impl.cuh"
 
 namespace mindspore {

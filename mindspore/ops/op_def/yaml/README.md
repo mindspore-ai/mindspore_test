@@ -106,7 +106,9 @@ The auto generated operator definition python files are in path:
 
 The auto generated operator definition c++ files are in path:
 
-'mindspore/ops/op_def/auto_generate'.
+'mindspore/ops/op_def/auto_generate' (source files .cc).
+
+'mindspore/ops/include/primitive/auto_generate' (header files .h).
 
 The auto generated operator pyboost code files are in path:
 

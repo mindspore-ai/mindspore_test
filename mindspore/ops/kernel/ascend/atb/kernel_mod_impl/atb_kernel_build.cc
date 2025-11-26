@@ -22,7 +22,7 @@
 #include "include/utils/anfalgo.h"
 #include "include/runtime/hardware_abstract/kernel_base/ms_factory.h"
 #include "include/runtime/hardware_abstract/kernel_base/graph_fusion/framework_utils.h"
-#include "ops/op_def.h"
+#include "include/op_def.h"
 #include "include/runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "kernel/ascend/kernel_plugin.h"
 #include "include/utils/utils.h"

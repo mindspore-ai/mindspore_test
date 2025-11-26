@@ -16,7 +16,7 @@
 #include "kernel/gpu/cuda/nn/binary_cross_entropy_gpu_kernel.h"
 #include <map>
 #include "kernel/gpu/cuda_impl/cuda_ops/loss_with_reduction_impl.cuh"
-#include "mindspore/ops/op_def/op_name.h"
+#include "primitive/op_name.h"
 
 namespace mindspore {
 namespace kernel {

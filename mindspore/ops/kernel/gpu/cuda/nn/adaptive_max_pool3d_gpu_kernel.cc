@@ -16,7 +16,7 @@
 
 #include "kernel/gpu/cuda/nn/adaptive_max_pool3d_gpu_kernel.h"
 #include <memory>
-#include "mindspore/ops/op_def/conv_pool_ops.h"
+#include "primitive/conv_pool_ops.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/adaptive_max_pool3d_impl.cuh"
 
 namespace mindspore {

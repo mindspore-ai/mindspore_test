@@ -18,7 +18,7 @@
 
 #include "common/common_test.h"
 
-#include "mindspore/ops/op_def/sequence_ops.h"
+#include "primitive/sequence_ops.h"
 #include "common/py_func_graph_fetcher.h"
 #include "ir/anf.h"
 #include "ir/func_graph.h"
@@ -36,7 +36,7 @@
 #include "frontend/jit/ps/parse/data_converter.h"
 #include "frontend/jit/ps/resource.h"
 #include "include/utils/convert_utils.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
+#include "primitive/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore {
 namespace opt {

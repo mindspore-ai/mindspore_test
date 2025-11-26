@@ -19,7 +19,7 @@
 #include "acl/acl_base.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_f.h"
+#include "primitive/auto_generate/gen_ops_primitive_f.h"
 
 namespace mindspore {
 namespace opt {

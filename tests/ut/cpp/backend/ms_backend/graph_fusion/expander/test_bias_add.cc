@@ -22,7 +22,7 @@
 #include "ir/graph_utils.h"
 #include "utils/anf_utils.h"
 #include "include/backend/anf_runtime_algorithm.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
+#include "primitive/auto_generate/gen_ops_primitive_b.h"
 
 namespace mindspore::graphkernel::test {
 namespace {

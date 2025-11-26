@@ -16,8 +16,8 @@
 
 #include <unordered_map>
 #include "plugin/gpu/graph_optimizer/pass/inference/combine_optimizer_fusion.h"
-#include "mindspore/ops/op_def/ascend_op_name.h"
-#include "mindspore/ops/op_def/nn_optimizer_op_name.h"
+#include "primitive/ascend_op_name.h"
+#include "primitive/nn_optimizer_op_name.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_info.h"
 #include "include/utils/anfalgo.h"

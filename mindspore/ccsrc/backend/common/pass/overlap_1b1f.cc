@@ -21,7 +21,7 @@
 #include <utility>
 #include <algorithm>
 
-#include "mindspore/ops/op_def/other_ops.h"
+#include "primitive/other_ops.h"
 #include "include/utils/utils.h"
 #include "mindspore/core/include/utils/ms_context.h"
 #include "include/utils/anfalgo.h"

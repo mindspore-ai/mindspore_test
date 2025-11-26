@@ -16,7 +16,7 @@
 #include "kernel/ascend/aclnn/kernel_mod_impl/customize/view/diagonal_view.h"
 
 #include "kernel/ascend/aclnn/kernel_mod_impl/customize/view/view_utils.h"
-#include "mindspore/ops/view/diagonal_strides_calc.h"
+#include "view/diagonal_strides_calc.h"
 
 namespace mindspore {
 namespace kernel {

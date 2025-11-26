@@ -25,11 +25,11 @@
 #include <utility>
 #include <string>
 
-#include "mindspore/ops/op_def/conv_pool_op_name.h"
-#include "mindspore/ops/op_def/math_op_name.h"
-#include "mindspore/ops/op_def/nn_op_name.h"
-#include "mindspore/ops/op_def/sequence_ops.h"
-#include "mindspore/ops/op_def/framework_ops.h"
+#include "primitive/conv_pool_op_name.h"
+#include "primitive/math_op_name.h"
+#include "primitive/nn_op_name.h"
+#include "primitive/sequence_ops.h"
+#include "primitive/framework_ops.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/utils/anfalgo.h"
 #include "ir/graph_utils.h"

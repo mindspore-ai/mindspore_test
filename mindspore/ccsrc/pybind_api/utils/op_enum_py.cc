@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "mindspore/ops/op_def/op_enum.h"
+#include "include/op_enum.h"
 #include "ops/op_def.h"
 #include "mindapi/base/format.h"
 #include "include/utils/pybind_api/api_register.h"

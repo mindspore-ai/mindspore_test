@@ -15,7 +15,7 @@
  */
 
 #include "common/common_test.h"
-#include "mindspore/ops/op_def/math_ops.h"
+#include "primitive/math_ops.h"
 #include "frontend/operator/ops.h"
 #include "include/backend/common/kernel_graph/kernel_graph.h"
 #include "include/backend/anf_runtime_algorithm.h"
@@ -23,8 +23,8 @@
 #include "include/utils/anfalgo.h"
 #include "backend/common/kernel_graph/session_basic.h"
 #include "backend/common/kernel_graph/session_factory.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "primitive/auto_generate/gen_ops_primitive_a.h"
+#include "primitive/auto_generate/gen_ops_primitive_m.h"
 
 namespace mindspore {
 namespace session {

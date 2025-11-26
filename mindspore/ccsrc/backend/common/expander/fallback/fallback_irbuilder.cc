@@ -17,9 +17,9 @@
 #include "backend/common/expander/fallback/fallback_irbuilder.h"
 #include <algorithm>
 #include <vector>
-#include "mindspore/ops/op_def/array_ops.h"
-#include "mindspore/ops/op_def/framework_ops.h"
-#include "mindspore/ops/op_def/sequence_ops.h"
+#include "primitive/array_ops.h"
+#include "primitive/framework_ops.h"
+#include "primitive/sequence_ops.h"
 #include "utils/anf_utils.h"
 #include "ir/scope.h"
 #include "mindspore/ccsrc/include/utils/expander/emitter.h"

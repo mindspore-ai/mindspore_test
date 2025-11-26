@@ -20,7 +20,7 @@
 #include <utility>
 #include "utils/core_op_utils.h"
 #include "utils/check_convert_utils.h"
-#include "mindspore/ops/op_def/array_op_name.h"
+#include "primitive/array_op_name.h"
 
 namespace mindspore::ops {
 namespace {

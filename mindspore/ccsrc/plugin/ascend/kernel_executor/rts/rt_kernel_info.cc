@@ -17,8 +17,8 @@
 #include "plugin/ascend/kernel_executor/rts/rt_kernel_info.h"
 #include <unordered_map>
 #include <algorithm>
-#include "mindspore/ops/op_def/ascend_op_name.h"
-#include "mindspore/ops/op_def/other_op_name.h"
+#include "primitive/ascend_op_name.h"
+#include "primitive/other_op_name.h"
 #include "include/utils/utils.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/utils/anfalgo.h"

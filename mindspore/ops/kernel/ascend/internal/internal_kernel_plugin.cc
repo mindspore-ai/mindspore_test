@@ -30,14 +30,14 @@
 #include "include/utils/anfalgo.h"
 #include "include/runtime/hardware_abstract/kernel_base/ms_factory.h"
 #include "include/runtime/hardware_abstract/kernel_base/graph_fusion/framework_utils.h"
-#include "op_def/math_op_name.h"
-#include "op_def/nn_op_name.h"
+#include "primitive/math_op_name.h"
+#include "primitive/nn_op_name.h"
 #include "acl/acl_base.h"
 #include "utils/phase.h"
 #include "utils/ms_context.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_g.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_q.h"
+#include "primitive/auto_generate/gen_ops_primitive_g.h"
+#include "primitive/auto_generate/gen_ops_primitive_m.h"
+#include "primitive/auto_generate/gen_ops_primitive_q.h"
 
 namespace mindspore::kernel {
 namespace {

@@ -28,7 +28,7 @@
 #include "frontend/optimizer/ad/grad.h"
 #include "include/frontend/optimizer/optimizer.h"
 #include "include/frontend/jit/ps/action_interface.h"
-#include "mindspore/ops/op_def/framework_ops.h"
+#include "primitive/framework_ops.h"
 #include "mindspore/ccsrc/frontend/operator/meta_dsl/common/meta_impl.h"
 
 namespace mindspore::prim {

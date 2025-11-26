@@ -17,9 +17,9 @@
 #include "kernel/gpu/cuda/nn/sparse_apply_momentum_gpu_kernel.h"
 #include <algorithm>
 #include <iostream>
-#include "mindspore/ops/op_def/nn_optimizer_ops.h"
+#include "primitive/nn_optimizer_ops.h"
 #include "mindspore/ops/infer/sparse_apply_momentum.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
+#include "primitive/auto_generate/gen_ops_primitive_s.h"
 
 namespace mindspore {
 namespace kernel {

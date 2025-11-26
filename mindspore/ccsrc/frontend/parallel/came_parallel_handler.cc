@@ -19,10 +19,10 @@
 #include <algorithm>
 
 #include "frontend/parallel/parameter_manager.h"
-#include "mindspore/ops/op_def/sequence_ops.h"
-#include "mindspore/ops/op_def/other_ops.h"
-#include "mindspore/ops/op_def/array_ops.h"
-#include "mindspore/ops/op_def/framework_ops.h"
+#include "primitive/sequence_ops.h"
+#include "primitive/other_ops.h"
+#include "primitive/array_ops.h"
+#include "primitive/framework_ops.h"
 #include "utils/convert_utils_base.h"
 #include "frontend/operator/ops.h"
 #include "include/frontend/optimizer/optimizer.h"
@@ -44,7 +44,7 @@
 #include "frontend/jit/ps/pipeline.h"
 #include "frontend/parallel/parallel_node_check.h"
 #include "frontend/parallel/step_parallel_utils.h"
-#include "mindspore/ops/op_def/nn_ops.h"
+#include "primitive/nn_ops.h"
 
 namespace mindspore {
 namespace parallel {

@@ -33,10 +33,10 @@
 #include "ir/value.h"
 #include "ir/graph_utils.h"
 #include "ir/tensor_new.h"
-#include "mindspore/ops/op_def/sparse_ops.h"
+#include "primitive/sparse_ops.h"
 #include "utils/anf_utils.h"
 #include "utils/hashing.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "primitive/auto_generate/gen_ops_primitive_c.h"
 
 namespace mindspore {
 bool ValueToBool(const ValuePtr &v, bool *value) {

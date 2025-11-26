@@ -22,7 +22,7 @@
 #include <algorithm>
 
 #include "plugin/ascend/graph_optimizer/pass/heterogeneous/move_to_utils.h"
-#include "mindspore/ops/op_def/framework_ops.h"
+#include "primitive/framework_ops.h"
 #include "mindspore/ccsrc/utils/ir_dump/anf_ir_dump.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/utils/anfalgo.h"

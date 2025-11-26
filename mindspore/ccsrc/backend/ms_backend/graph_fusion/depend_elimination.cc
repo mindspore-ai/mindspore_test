@@ -15,17 +15,17 @@
  */
 
 #include "backend/ms_backend/graph_fusion/depend_elimination.h"
-#include "mindspore/ops/op_def/framework_ops.h"
-#include "mindspore/ops/op_def/array_ops.h"
-#include "mindspore/ops/op_def/math_ops.h"
-#include "mindspore/ops/op_def/nn_optimizer_ops.h"
+#include "primitive/framework_ops.h"
+#include "primitive/array_ops.h"
+#include "primitive/math_ops.h"
+#include "primitive/nn_optimizer_ops.h"
 #include "include/utils/utils.h"
 #include "include/utils/anfalgo.h"
 #include "ir/graph_utils.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "primitive/auto_generate/gen_ops_primitive_a.h"
+#include "primitive/auto_generate/gen_ops_primitive_b.h"
+#include "primitive/auto_generate/gen_ops_primitive_d.h"
+#include "primitive/auto_generate/gen_ops_primitive_r.h"
 
 namespace mindspore::graphkernel {
 bool DependElimination::Run(const FuncGraphPtr &func_graph) {

@@ -23,7 +23,7 @@
 #include <utility>
 #include <vector>
 #include "ir/value.h"
-#include "mindspore/ops/op_def/sequence_ops.h"
+#include "primitive/sequence_ops.h"
 #include "frontend/jit/ps/parse/parse_base.h"
 #include "frontend/jit/ps/parse/parse.h"
 #include "frontend/jit/pi/graph_capture/abstract_wrapper.h"

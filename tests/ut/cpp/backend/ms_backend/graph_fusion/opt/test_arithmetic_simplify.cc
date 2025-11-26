@@ -19,7 +19,7 @@
 #include "backend/ms_backend/graph_fusion/adapter/graph_kernel_cluster_cloud.h"
 #include "backend/ms_backend/graph_fusion/axis_normalizer.h"
 #include "backend/ms_backend/graph_fusion/core/arithmetic_simplify.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "primitive/auto_generate/gen_ops_primitive_r.h"
 #include "utils/anf_utils.h"
 #include "include/utils/anfalgo.h"
 

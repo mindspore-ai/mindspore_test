@@ -19,9 +19,9 @@
 #include <vector>
 #include <memory>
 #include <string>
-#include "mindspore/ops/op_def/sequence_ops.h"
-#include "mindspore/ops/op_def/array_ops.h"
-#include "mindspore/ops/op_def/framework_ops.h"
+#include "primitive/sequence_ops.h"
+#include "primitive/array_ops.h"
+#include "primitive/framework_ops.h"
 #include "ops/op_def.h"
 #include "include/runtime/hardware_abstract/kernel_base/oplib/oplib.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_info.h"
@@ -31,12 +31,12 @@
 #include "include/backend/optimizer/helper.h"
 #include "kernel/ascend/acl_ir/ge_adapter_info.h"
 #include "kernel/ascend/aclop/kernel_mod_impl/acl_kernel_build.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_g.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_i.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "primitive/auto_generate/gen_ops_primitive_c.h"
+#include "primitive/auto_generate/gen_ops_primitive_d.h"
+#include "primitive/auto_generate/gen_ops_primitive_g.h"
+#include "primitive/auto_generate/gen_ops_primitive_i.h"
+#include "primitive/auto_generate/gen_ops_primitive_m.h"
+#include "primitive/auto_generate/gen_ops_primitive_r.h"
 
 namespace mindspore {
 namespace opt {

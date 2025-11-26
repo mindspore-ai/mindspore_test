@@ -48,6 +48,7 @@ include_directories(${CMAKE_BINARY_DIR}/proto/metadef_protos)
 include_directories(${CMAKE_BINARY_DIR}/proto/ge)
 include_directories(${CUDA_INCLUDE_DIRS})
 include_directories(${CMAKE_SOURCE_DIR}/mindspore/ops)
+include_directories(${CMAKE_SOURCE_DIR}/mindspore/ops/include)
 include_directories(${CMAKE_SOURCE_DIR}/mindspore/ops/kernel/cpu)
 include_directories(${CMAKE_SOURCE_DIR}/mindspore/ops/kernel/cpu/native)
 

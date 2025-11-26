@@ -22,7 +22,7 @@
 #include <vector>
 #include <memory>
 #include <map>
-#include "mindspore/ops/op_def/op_name.h"
+#include "primitive/op_name.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/dynamic_range_impl.cuh"
 #include "kernel/gpu/gpu_kernel.h"
 #include "kernel/gpu/gpu_kernel_factory.h"

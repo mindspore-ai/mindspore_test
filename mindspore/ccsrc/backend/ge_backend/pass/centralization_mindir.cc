@@ -18,7 +18,7 @@
 #include <vector>
 #include <string>
 #include <memory>
-#include "mindspore/ops/op_def/math_ops.h"
+#include "primitive/math_ops.h"
 #include "include/utils/anfalgo.h"
 #include "include/backend/common/ms_device_shape_transfer.h"
 

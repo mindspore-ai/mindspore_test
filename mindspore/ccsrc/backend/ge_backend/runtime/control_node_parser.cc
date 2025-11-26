@@ -18,9 +18,9 @@
 #include <unordered_map>
 #include <functional>
 #include <map>
-#include "mindspore/ops/op_def/sparse_tensor_ops.h"
-#include "mindspore/ops/op_def/sequence_ops.h"
-#include "mindspore/ops/op_def/framework_ops.h"
+#include "primitive/sparse_tensor_ops.h"
+#include "primitive/sequence_ops.h"
+#include "primitive/framework_ops.h"
 #include "backend/ge_backend/runtime/actor/actor_common.h"
 #include "backend/ge_backend/utils/device_address_utils.h"
 #include "include/utils/convert_utils.h"

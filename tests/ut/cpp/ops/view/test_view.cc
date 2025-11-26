@@ -16,7 +16,7 @@
 
 #include "test_view.h"
 #include "ir/tensor_new.h"
-#include "mindspore/ops/view/view_strides_calc.h"
+#include "view/view_strides_calc.h"
 #include "mindspore/core/include/ir/tensor_storage_info.h"
 
 namespace mindspore {

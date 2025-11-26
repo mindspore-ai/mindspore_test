@@ -24,9 +24,9 @@
 #include <utility>
 #include <unordered_map>
 #include "ir/tensor_new.h"
-#include "mindspore/ops/op_def/framework_op_name.h"
-#include "mindspore/ops/op_def/framework_ops.h"
-#include "mindspore/ops/op_def/structure_op_name.h"
+#include "primitive/framework_op_name.h"
+#include "primitive/framework_ops.h"
+#include "primitive/structure_op_name.h"
 #include "include/runtime/hardware_abstract/kernel_base/device_tensor_store.h"
 #include "tools/error_handler/error_config.h"
 #include "tools/error_handler/error_handler.h"
@@ -44,7 +44,7 @@
 #include "backend/common/device_address_utils.h"
 #include "include/runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "runtime/core/graph_executor/pipeline/runtime_pipeline.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
+#include "primitive/auto_generate/gen_ops_primitive_s.h"
 #include "utils/ms_exception.h"
 
 namespace mindspore {

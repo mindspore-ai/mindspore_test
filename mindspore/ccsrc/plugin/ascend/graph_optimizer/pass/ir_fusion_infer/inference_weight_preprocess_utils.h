@@ -30,7 +30,7 @@
 #include "include/utils/anfalgo.h"
 #include "include/api/data_type.h"
 #include "utils/ms_context.h"
-#include "mindspore/ops/op_def/framework_ops.h"
+#include "primitive/framework_ops.h"
 
 namespace mindspore {
 class TensorType;

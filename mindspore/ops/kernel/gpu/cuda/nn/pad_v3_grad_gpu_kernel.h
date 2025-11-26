@@ -25,7 +25,7 @@
 #include <map>
 #include <functional>
 #include "mindspore/ops/infer/grad/pad_v3_grad.h"
-#include "mindspore/ops/op_def/op_name.h"
+#include "primitive/op_name.h"
 #include "kernel/gpu/gpu_kernel.h"
 #include "kernel/gpu/gpu_kernel_factory.h"
 #include "kernel/gpu/cuda_impl/cuda_class/pad_v3_grad_helper.h"

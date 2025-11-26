@@ -21,7 +21,7 @@
 #include "backend/ms_backend/graph_fusion/shrink_only_shape_needed.h"
 #include "utils/anf_utils.h"
 #include "ir/functor.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "primitive/auto_generate/gen_ops_primitive_m.h"
 
 namespace mindspore::graphkernel::test {
 namespace {

@@ -22,7 +22,7 @@
 #include <complex>
 #include "ops_utils/op_utils.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_f.h"
+#include "primitive/auto_generate/gen_ops_primitive_f.h"
 
 namespace mindspore {
 namespace kernel {

@@ -20,7 +20,7 @@
 #include <memory>
 #include <string>
 #include "include/backend/optimizer/optimizer.h"
-#include "mindspore/ops/op_def/math_ops.h"
+#include "primitive/math_ops.h"
 #include "include/backend/visible.h"
 
 namespace mindspore {

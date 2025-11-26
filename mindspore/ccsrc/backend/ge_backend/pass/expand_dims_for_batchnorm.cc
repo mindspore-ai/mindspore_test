@@ -19,8 +19,8 @@
 #include <string>
 #include <vector>
 #include <set>
-#include "mindspore/ops/op_def/nn_ops.h"
-#include "mindspore/ops/op_def/sequence_ops.h"
+#include "primitive/nn_ops.h"
+#include "primitive/sequence_ops.h"
 #include "include/utils/anfalgo.h"
 #include "include/backend/optimizer/helper.h"
 

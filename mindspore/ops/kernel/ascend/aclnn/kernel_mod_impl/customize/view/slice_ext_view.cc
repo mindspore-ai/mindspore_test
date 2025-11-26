@@ -17,8 +17,8 @@
 
 #include "abstract/ops/primitive_infer_map.h"
 #include "kernel/ascend/aclnn/kernel_mod_impl/customize/view/view_utils.h"
-#include "mindspore/ops/view/slice_ext_strides_calc.h"
-#include "mindspore/ops/view/view_strides_calculator.h"
+#include "view/slice_ext_strides_calc.h"
+#include "view/view_strides_calculator.h"
 
 namespace mindspore {
 namespace kernel {

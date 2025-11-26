@@ -27,7 +27,7 @@
 #include <functional>
 #include "mindspore/ops/infer/ops_func_impl/grid_sampler_2d.h"
 #include "mindspore/ops/infer/ops_func_impl/grid_sampler_3d.h"
-#include "mindspore/ops/op_def/op_enum.h"
+#include "include/op_enum.h"
 #include "kernel/gpu/gpu_kernel.h"
 #include "kernel/gpu/gpu_kernel_factory.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/grid_sampler_impl.cuh"

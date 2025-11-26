@@ -25,8 +25,8 @@
 #include <memory>
 #include <numeric>
 #include "ops/op_def.h"
-#include "mindspore/ops/op_def/sequence_ops.h"
-#include "mindspore/ops/op_def/framework_ops.h"
+#include "primitive/sequence_ops.h"
+#include "primitive/framework_ops.h"
 #include "ir/tensor.h"
 #include "ir/tensor_new.h"
 #include "ir/dtype/tensor_type.h"
@@ -46,8 +46,8 @@
 #include "ir/device_type.h"
 #endif
 #include "include/runtime/pipeline/pipeline.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "primitive/auto_generate/gen_ops_primitive_c.h"
+#include "primitive/auto_generate/gen_ops_primitive_m.h"
 #include "mindspore/core/include/ir/tensor_new.h"
 #include "utils/stream_guard.h"
 #include "utils/log_adapter.h"

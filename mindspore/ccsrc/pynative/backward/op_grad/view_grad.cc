@@ -19,7 +19,7 @@
 #include <vector>
 #include "mindspore/core/include/utils/device_manager_conf.h"
 #include "pynative/utils/pyboost/functions/auto_generate/functions.h"
-#include "mindspore/ops/view/view_strides_calculator.h"
+#include "view/view_strides_calculator.h"
 #include "include/utils/convert_utils.h"
 
 namespace mindspore::pynative::autograd {

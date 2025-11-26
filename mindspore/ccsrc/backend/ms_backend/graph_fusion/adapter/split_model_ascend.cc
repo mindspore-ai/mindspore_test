@@ -18,12 +18,12 @@
 #include <string>
 #include <algorithm>
 #include <functional>
-#include "mindspore/ops/op_def/array_op_name.h"
-#include "mindspore/ops/op_def/math_op_name.h"
-#include "mindspore/ops/op_def/other_op_name.h"  // collective communication ops
-#include "mindspore/ops/op_def/sequence_ops.h"
-#include "mindspore/ops/op_def/nn_optimizer_op_name.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_g.h"
+#include "primitive/array_op_name.h"
+#include "primitive/math_op_name.h"
+#include "primitive/other_op_name.h"  // collective communication ops
+#include "primitive/sequence_ops.h"
+#include "primitive/nn_optimizer_op_name.h"
+#include "primitive/auto_generate/gen_ops_primitive_g.h"
 #include "include/runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel_flags.h"
 
 namespace mindspore::graphkernel::inner {

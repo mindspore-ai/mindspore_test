@@ -21,10 +21,10 @@
 #include <tuple>
 #include <vector>
 #include <string>
-#include "mindspore/ops/op_def/math_ops.h"
+#include "primitive/math_ops.h"
 #include "backend/ms_backend/graph_fusion/graph_kernel_helper.h"
 #include "backend/ms_backend/graph_fusion/inplace_assign_builder.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "primitive/auto_generate/gen_ops_primitive_r.h"
 
 namespace mindspore::graphkernel {
 class AtomicAddChecker {

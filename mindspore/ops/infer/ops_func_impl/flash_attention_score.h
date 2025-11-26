@@ -22,7 +22,7 @@
 #include <string>
 #include "ops/ops_func_impl/op_func_impl.h"
 #include "ops_utils/op_constants.h"
-#include "mindspore/ops/op_def/op_enum.h"
+#include "include/op_enum.h"
 
 namespace mindspore {
 namespace ops {

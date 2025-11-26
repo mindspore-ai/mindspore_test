@@ -18,7 +18,7 @@
 #include <algorithm>
 #include <functional>
 #include <unordered_map>
-#include "mindspore/ops/op_def/image_ops.h"
+#include "primitive/image_ops.h"
 #include "mindspore/ops/infer/resize_v2.h"
 
 #include "include/runtime/hardware_abstract/kernel_base/kernel_utils.h"

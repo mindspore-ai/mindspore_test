@@ -26,7 +26,7 @@
 #include "include/backend/anf_runtime_algorithm.h"
 #include "pre_activate/common/pattern_to_pattern_pass_utils.h"
 #include "backend/ms_backend/graph_fusion/expander/base.h"
-#include "mindspore/ops/op_def/op_enum.h"
+#include "op_enum.h"
 #include "ir/graph_utils.h"
 
 namespace mindspore::graphkernel::test {

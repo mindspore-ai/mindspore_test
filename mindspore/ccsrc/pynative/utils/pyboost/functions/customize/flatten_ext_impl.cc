@@ -16,7 +16,7 @@
  */
 
 #include "mindspore/ccsrc/pynative/utils/pyboost/functions/customize/view_impl.h"
-#include "mindspore/ops/view/view_strides_calculator.h"
+#include "view/view_strides_calculator.h"
 
 namespace mindspore::kernel::pyboost {
 mindspore::tensor::TensorPtr flatten_ext_impl(const mindspore::tensor::TensorPtr &input, const int64_t &start_dim,

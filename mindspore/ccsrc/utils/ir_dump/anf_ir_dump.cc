@@ -23,7 +23,7 @@
 #include <fstream>
 #include <iomanip>
 #include <nlohmann/json.hpp>
-#include "mindspore/ops/op_def/structure_ops.h"
+#include "primitive/structure_ops.h"
 #include "utils/label.h"
 #include "utils/hash_map.h"
 #include "utils/symbolic.h"

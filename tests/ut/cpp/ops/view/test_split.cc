@@ -16,7 +16,7 @@
 
 #include "test_view.h"
 #include "ir/tensor_new.h"
-#include "mindspore/ops/view/split_strides_calc.h"
+#include "view/split_strides_calc.h"
 
 namespace mindspore {
 namespace ops {

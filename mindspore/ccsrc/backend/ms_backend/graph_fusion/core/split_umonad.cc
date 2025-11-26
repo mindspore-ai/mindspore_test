@@ -19,10 +19,10 @@
 #include <string>
 #include <vector>
 #include "include/runtime/hardware_abstract/kernel_base/kernel_info.h"
-#include "mindspore/ops/op_def/framework_ops.h"
-#include "mindspore/ops/op_def/nn_optimizer_ops.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "primitive/framework_ops.h"
+#include "primitive/nn_optimizer_ops.h"
+#include "primitive/auto_generate/gen_ops_primitive_a.h"
+#include "primitive/auto_generate/gen_ops_primitive_d.h"
 #include "include/utils/anfalgo.h"
 #include "ops/op_def.h"
 

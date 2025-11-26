@@ -25,7 +25,7 @@
 #include "include/utils/utils.h"
 #include "include/utils/parallel_context.h"
 #include "frontend/jit/ps/resource.h"
-#include "mindspore/ops/op_def/math_ops.h"
+#include "primitive/math_ops.h"
 #include "utils/ms_context.h"
 
 namespace mindspore {

@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 #include "backend/ms_backend/graph_fusion/split_model/fuse_pattern.h"
-#include "mindspore/ops/op_def/nn_optimizer_op_name.h"
-#include "mindspore/ops/op_def/array_op_name.h"
+#include "primitive/nn_optimizer_op_name.h"
+#include "primitive/array_op_name.h"
 
 namespace mindspore::graphkernel::inner {
 bool FuseReshape::Match(const AreaPtr &dom) {

@@ -19,14 +19,14 @@
 #include <utility>
 #include <queue>
 
-#include "mindspore/ops/op_def/sequence_ops.h"
-#include "mindspore/ops/op_def/nn_optimizer_ops.h"
-#include "mindspore/ops/op_def/nn_ops.h"
-#include "mindspore/ops/op_def/math_ops.h"
-#include "mindspore/ops/op_def/lite_ops.h"
-#include "mindspore/ops/op_def/comparison_ops.h"
-#include "mindspore/ops/op_def/array_ops.h"
-#include "mindspore/ops/op_def/framework_ops.h"
+#include "primitive/sequence_ops.h"
+#include "primitive/nn_optimizer_ops.h"
+#include "primitive/nn_ops.h"
+#include "primitive/math_ops.h"
+#include "primitive/lite_ops.h"
+#include "primitive/comparison_ops.h"
+#include "primitive/array_ops.h"
+#include "primitive/framework_ops.h"
 #include "utils/hash_map.h"
 #include "ir/graph_utils.h"
 #include "utils/anf_utils.h"
@@ -34,8 +34,8 @@
 #include "include/runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel_flags.h"
 #include "backend/ms_backend/graph_fusion/core/graph_builder.h"
 #include "backend/ms_backend/graph_fusion/core/graph_kernel_utils.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
+#include "primitive/auto_generate/gen_ops_primitive_a.h"
+#include "primitive/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore::graphkernel {
 Graph::Cluster::Cluster(size_t node_id, const AnfNodePtr &node,

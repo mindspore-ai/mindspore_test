@@ -18,7 +18,7 @@
 #include "include/runtime/memory/mem_pool/mem_tracker.h"
 #include "include/utils/convert_utils.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_info.h"
-#include "mindspore/ops/op_def/framework_ops.h"
+#include "primitive/framework_ops.h"
 #include "utils/profile.h"
 #include "utils/ms_context.h"
 #include "include/runtime/hardware_abstract/device_context/device_context.h"

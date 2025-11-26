@@ -24,7 +24,7 @@
 #include <algorithm>
 #include <array>
 #include "include/runtime/hardware_abstract/kernel_base/kernel.h"
-#include "mindspore/ops/op_def/structure_op_name.h"
+#include "primitive/structure_op_name.h"
 #include "utils/log_adapter.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/backend/debug/execute_order_tracker/execute_order_tracker.h"
@@ -44,7 +44,7 @@
 #include "backend/common/pass_manager/dynamic_shape_helper.h"
 #include "pybind_api/gil_scoped_long_running.h"
 #include "pynative/utils/runtime/ir_converter.h"
-#include "mindspore/ops/op_def/framework_op_name.h"
+#include "primitive/framework_op_name.h"
 #include "utils/stream_guard.h"
 #include "include/runtime/utils/dispatch/dispatch_env.h"
 using mindspore::profiler::ProfilerManager;

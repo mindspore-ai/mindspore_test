@@ -21,7 +21,7 @@
 #include <algorithm>
 
 #include "ir/func_graph_cloner.h"
-#include "mindspore/ops/op_def/framework_ops.h"
+#include "primitive/framework_ops.h"
 #include "frontend/operator/composite/composite.h"
 #include "frontend/jit/pi/external.h"
 #include "frontend/jit/pi/graph_capture/graph_build.h"

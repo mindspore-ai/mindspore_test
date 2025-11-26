@@ -68,7 +68,7 @@
 #endif
 #include "tools/profiler/profiler.h"
 #include "include/utils/parallel_context.h"
-#include "mindspore/ops/op_def/framework_ops.h"
+#include "primitive/framework_ops.h"
 #include "ops_utils/op_constants.h"
 #include "include/runtime/hardware_abstract/kernel_base/oplib/oplib.h"
 #include "tools/profiler/profiling.h"

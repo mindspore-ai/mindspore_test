@@ -15,8 +15,8 @@
  */
 
 #include "runtime/core/graph_scheduler/base/scheduler_helper.h"
-#include "mindspore/ops/op_def/framework_ops.h"
-#include "mindspore/ops/op_def/array_ops.h"
+#include "primitive/framework_ops.h"
+#include "primitive/array_ops.h"
 #include "runtime/core/graph_scheduler/dump/actor_dump.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/utils/anfalgo.h"
@@ -24,11 +24,11 @@
 #include "include/utils/convert_utils.h"
 #include "include/runtime/utils/runtime_conf/runtime_conf.h"
 #include "runtime/core/graph_scheduler/base/parameter_store.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_u.h"
+#include "primitive/auto_generate/gen_ops_primitive_d.h"
+#include "primitive/auto_generate/gen_ops_primitive_l.h"
+#include "primitive/auto_generate/gen_ops_primitive_r.h"
+#include "primitive/auto_generate/gen_ops_primitive_s.h"
+#include "primitive/auto_generate/gen_ops_primitive_u.h"
 #include "include/runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "backend/common/device_address_utils.h"
 

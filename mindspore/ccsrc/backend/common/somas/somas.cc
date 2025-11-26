@@ -24,9 +24,9 @@
 #include <random>
 #include <tuple>
 
-#include "mindspore/ops/op_def/ascend_op_name.h"
-#include "mindspore/ops/op_def/array_op_name.h"
-#include "mindspore/ops/op_def/framework_op_name.h"
+#include "primitive/ascend_op_name.h"
+#include "primitive/array_op_name.h"
+#include "primitive/framework_op_name.h"
 #include "utils/somas/somas_node.h"
 #include "utils/somas/somas_stream.h"
 #include "utils/somas/somas_tensor.h"
@@ -38,7 +38,7 @@
 #include "include/utils/thread_pool.h"
 #if !defined(_WIN32) && !defined(_WIN64) && !defined(__APPLE__)
 #include "utils/numa_interface.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "primitive/auto_generate/gen_ops_primitive_m.h"
 #endif
 namespace mindspore {
 namespace somas {

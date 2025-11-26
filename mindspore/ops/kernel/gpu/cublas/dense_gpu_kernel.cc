@@ -19,7 +19,7 @@
 #include <algorithm>
 #include <utility>
 #include <memory>
-#include "mindspore/ops/op_def/nn_op_name.h"
+#include "primitive/nn_op_name.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/complex.h"
 #include "kernel/gpu/cublas/matmul/matmul_wrapper.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/cast_impl.cuh"
@@ -207,11 +207,9 @@ bool DenseGpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &inputs,
 template <typename T>
 using Complex = mindspore::utils::Complex<T>;
 
-#define DENSE_GPU_KERNEL_REG(T, S1, S2)                                                    \
-  {                                                                                        \
-    KernelAttr().AddInputAttr(T).AddInputAttr(T).AddOptionalInputAttr(T).AddOutputAttr(T), \
-      &DenseGpuKernelMod::LaunchKernel<S1, S2>                                             \
-  }
+#define DENSE_GPU_KERNEL_REG(T, S1, S2)                                                   \
+  {KernelAttr().AddInputAttr(T).AddInputAttr(T).AddOptionalInputAttr(T).AddOutputAttr(T), \
+   &DenseGpuKernelMod::LaunchKernel<S1, S2>}
 
 std::map<std::string, std::vector<std::pair<KernelAttr, DenseGpuKernelMod::DenseFunc>>>
   DenseGpuKernelMod::kernel_attr_map_ = {

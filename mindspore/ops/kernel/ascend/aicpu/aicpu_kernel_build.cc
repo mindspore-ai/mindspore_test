@@ -22,7 +22,7 @@
 #include <map>
 #include <climits>
 
-#include "op_def/structure_op_name.h"
+#include "primitive/structure_op_name.h"
 #include "include/utils/utils.h"
 #include "kernel/ascend/aicpu/aicpu_kernel_mod.h"
 #include "include/backend/anf_runtime_algorithm.h"

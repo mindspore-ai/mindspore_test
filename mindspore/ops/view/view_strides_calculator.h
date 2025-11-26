@@ -28,7 +28,7 @@
 
 #include "ir/tensor.h"
 #include "utils/hash_map.h"
-#include "mindspore/ops/op_def/op_name.h"
+#include "primitive/op_name.h"
 #include "ir/primitive.h"
 
 namespace mindspore {

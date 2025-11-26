@@ -17,7 +17,7 @@
 #include "backend/ms_backend/graph_fusion/common/graph_kernel_common_test_suite.h"
 #include "backend/ms_backend/graph_fusion/adapter/graph_kernel_cluster_cloud.h"
 #include "backend/ms_backend/graph_fusion/tensor_inplace.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
+#include "primitive/auto_generate/gen_ops_primitive_a.h"
 
 namespace mindspore::graphkernel::test {
 class TestPassTensorInplace : public GraphKernelCommonTestSuite {};

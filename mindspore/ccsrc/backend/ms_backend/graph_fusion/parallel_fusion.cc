@@ -21,8 +21,8 @@
 #include <queue>
 #include <unordered_map>
 #include <utility>
-#include "mindspore/ops/op_def/sequence_ops.h"
-#include "mindspore/ops/op_def/array_ops.h"
+#include "primitive/sequence_ops.h"
+#include "primitive/array_ops.h"
 #include "include/runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel_flags.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel.h"
 #include "backend/ms_backend/graph_fusion/graph_kernel_helper.h"
@@ -30,13 +30,13 @@
 #include "ir/func_graph_cloner.h"
 #include "backend/ms_backend/graph_fusion/core/update_state_formatter.h"
 #include "backend/ms_backend/graph_fusion/core/graph_builder.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_e.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_g.h"
+#include "primitive/auto_generate/gen_ops_primitive_b.h"
+#include "primitive/auto_generate/gen_ops_primitive_e.h"
+#include "primitive/auto_generate/gen_ops_primitive_m.h"
+#include "primitive/auto_generate/gen_ops_primitive_r.h"
+#include "primitive/auto_generate/gen_ops_primitive_s.h"
+#include "primitive/auto_generate/gen_ops_primitive_t.h"
+#include "primitive/auto_generate/gen_ops_primitive_g.h"
 
 namespace mindspore::graphkernel {
 namespace {
