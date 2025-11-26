@@ -50,7 +50,7 @@
             - **valid_dataset** (Dataset) - 一个验证集迭代器。如果定义了 `valid_dataset` ，将会构建验证计算图，此时 `Model` 中的 `metrics` 不能为None。默认值： ``None`` 。
             - **sink_size** (int) - 控制每次数据下沉的step数量。默认值： ``-1`` 。
             - **epoch** (int) - 控制训练轮次。默认值： ``1`` 。
-            - **sink_mode** (bool) - 是否开启数据下沉模式。默认值： ``Ture`` 。
+            - **sink_mode** (bool) - 是否开启数据下沉模式。默认值： ``True`` 。
 
     .. py:method:: eval(valid_dataset, callbacks=None, dataset_sink_mode=False)
 
