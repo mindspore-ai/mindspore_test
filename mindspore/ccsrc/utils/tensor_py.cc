@@ -28,6 +28,7 @@
 #include "pybind_api/gil_scoped_long_running.h"
 #include "include/utils/pyobj_manager.h"
 #include "include/runtime/pipeline/pipeline.h"
+#include "ops_utils/callback.h"
 
 namespace mindspore {
 namespace tensor {
@@ -657,6 +658,7 @@ bool IsTensorPy(const py::handle &obj) {
   PyObject *raw_ptr = obj.ptr();
   return PyObject_TypeCheck(raw_ptr, TensorPy_Type);
 }
+REGISTER_OPS_CALLBACK(IsTensorPy);
 
 bool IsPyObjectTensorPy(PyObject *obj) {
   if (TensorPy_Type == nullptr || obj == nullptr) {

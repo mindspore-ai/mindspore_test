@@ -43,6 +43,7 @@
 /mindspore/ccsrc/pybind_api/ir/tensor/ @chujinjin
 /mindspore/ccsrc/pybind_api/graph/ @limingqi107
 /mindspore/ccsrc/pybind_api/runtime/ @limingqi107
+/mindspore/ccsrc/pybind_api/ops/custom/ @limingqi107
 /mindspore/ccsrc/pybind_api/tools/ @fary86
 /mindspore/ccsrc/pybind_api/tools/data_dump_py.cc @DavidFFFan
 /mindspore/ccsrc/pynative/utils/pyboost/ @chujinjin
@@ -156,6 +157,7 @@
 /tests/st/backend_ascend/ @limingqi107
 /tests/st/broadcast/ @yangzhenzhang
 /tests/st/compiler/ @ginfung
+/tests/st/custom/py_func/ @limingqi107
 /tests/st/custom/ops_custom/ @limingqi107
 /tests/st/custom/custom_op_builder/kernel_mod/ @limingqi107
 /tests/st/custom/custom_op_builder/pyboost/ @chujinjin

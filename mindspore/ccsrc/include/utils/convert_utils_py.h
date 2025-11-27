@@ -74,6 +74,7 @@ COMMON_EXPORT void ConvertPyObjectToCTensor(const py::object &input_object, std:
 COMMON_EXPORT void ConvertPybindTupleGradToCValue(const py::tuple &input_tuple, std::vector<ValuePtr> *gradient_values);
 COMMON_EXPORT py::object ConvertCTensorToPyTensor(const py::object &input_arg);
 COMMON_EXPORT std::string ConvertPyObjToString(const py::object &obj);
+COMMON_EXPORT tensor::TensorPtr ConvertPyObjToTensor(const py::object &obj);
 COMMON_EXPORT py::tuple CheckBpropOut(const py::object &grads_obj, const py::tuple &py_args,
                                       const std::string &bprop_cls_name);
 py::object ScalarPtrToPyData(const ScalarPtr &value);

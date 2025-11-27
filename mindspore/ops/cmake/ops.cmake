@@ -41,7 +41,7 @@ if(CMAKE_SIZEOF_VOID_P EQUAL 4 OR NOT BUILD_LITE)
     list(APPEND CORE_OPS_LIST ${VIEW_LIST} ${UTILS_LIST} ${OP_DEF_SRC} ${INFER_LIST} ${INFER_MERGE_LIST})
 else()
     # ------- LITE merge_files -----
-    merge_ops_files(${CMAKE_CURRENT_SOURCE_DIR}/infer/ ${CMAKE_BINARY_DIR}/merge/mindspore/ops infer_merge "")
+    merge_ops_files(${CMAKE_CURRENT_SOURCE_DIR}/infer/ ${CMAKE_BINARY_DIR}/merge/mindspore/ops infer_merge "py_func.cc")
     merge_ops_files(${CMAKE_CURRENT_SOURCE_DIR}/view/ ${CMAKE_BINARY_DIR}/merge/mindspore/ops view_merge "")
     merge_ops_files(${CMAKE_CURRENT_SOURCE_DIR}/ops_utils/ ${CMAKE_BINARY_DIR}/merge/mindspore/ops utils_merge "")
     file(GLOB_RECURSE CORE_OPS_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}

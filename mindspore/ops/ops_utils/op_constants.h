@@ -324,6 +324,7 @@ constexpr auto kAttrFuncType = "func_type";
 constexpr auto kAttrFuncName = "func_name";
 constexpr auto kAttrFunctor = "functor";
 constexpr auto kAttrCustAicpu = "cust_aicpu";
+constexpr auto kAttrPrimPyFunc = "prim_py_func";
 constexpr auto kAttrIsInternalOutputNopNode = "is_internal_output_nop_node";
 constexpr auto kAttrIsUBFusionOp = "is_ub_fusion_op";
 constexpr auto kAttrNopOp = "nop_op";

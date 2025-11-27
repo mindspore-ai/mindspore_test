@@ -45,6 +45,7 @@
 #include "include/utils/utils.h"
 #include "include/utils/tensor_py.h"
 #include "include/utils/tensor_py_wrapper.h"
+#include "ops_utils/callback.h"
 
 namespace mindspore {
 namespace {
@@ -556,6 +557,8 @@ py::object ValueToPyData(const ValuePtr &value, const AbstractBasePtr &abs) {
   }
   MS_LOG(EXCEPTION) << "Unsupported to convert " << value->ToString() << "[" << value->type_name() << "] to a PyData";
 }
+
+REGISTER_OPS_CALLBACK(ValueToPyData);
 
 py::object AnyToPyData(const Any &value) {
   py::object ret;
@@ -1089,6 +1092,9 @@ py::object ConvertCTensorToPyTensor(const py::object &input_arg) {
 }
 
 std::string ConvertPyObjToString(const py::object &obj) { return py::str(obj).cast<std::string>(); }
+
+tensor::TensorPtr ConvertPyObjToTensor(const py::object &obj) { return py::cast<TensorPtr>(obj); }
+REGISTER_OPS_CALLBACK(ConvertPyObjToTensor);
 
 py::tuple CheckBpropOut(const py::object &grads_obj, const py::tuple &py_args, const std::string &bprop_cls_name) {
   py::tuple grads;

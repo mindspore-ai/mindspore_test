@@ -35,22 +35,8 @@
 
 namespace mindspore {
 namespace opt {
-const BaseRef AscendConvertTupleInputToDynamicInput::DefinePattern() const {
-  VarPtr V = std::make_shared<Var>();
-  VarPtr Xs = std::make_shared<SeqVar>();
-  return VectorRef({V, Xs});
-}
-
-const AnfNodePtr AscendConvertTupleInputToDynamicInput::Process(const FuncGraphPtr &func_graph, const AnfNodePtr &node,
-                                                                const EquivPtr &) const {
-  if (node == nullptr || !node->isa<CNode>() || !AnfUtils::IsRealKernel(node)) {
-    return nullptr;
-  }
-  auto cnode = node->cast<CNodePtr>();
-  MS_EXCEPTION_IF_NULL(cnode);
-  // since the input should be unfolded before some function, this pass should be in front of concat_fission,
-  // pack_fission, addn_fission, and HandleControlFlow
-
+namespace {
+bool IsUnfoldCalculateNode(const CNodePtr &cnode) {
   static const PrimitiveSet need_unfold_calculate_node = {prim::kPrimAddN,
                                                           prim::kPrimConcatD,
                                                           prim::kPrimPack,
@@ -74,13 +60,33 @@ const AnfNodePtr AscendConvertTupleInputToDynamicInput::Process(const FuncGraphP
                                                           prim::kPrimGroupedMatmulV4,
                                                           prim::kPrimGroupedMatmulV2,
                                                           prim::kPrimCustom};
+  return IsOneOfPrimitiveCNode(cnode, need_unfold_calculate_node) ||
+         common::AnfAlgo::HasNodeAttr(kAttrPrimPyFunc, cnode);
+}
+}  // namespace
+
+const BaseRef AscendConvertTupleInputToDynamicInput::DefinePattern() const {
+  VarPtr V = std::make_shared<Var>();
+  VarPtr Xs = std::make_shared<SeqVar>();
+  return VectorRef({V, Xs});
+}
+
+const AnfNodePtr AscendConvertTupleInputToDynamicInput::Process(const FuncGraphPtr &func_graph, const AnfNodePtr &node,
+                                                                const EquivPtr &) const {
+  if (node == nullptr || !node->isa<CNode>() || !AnfUtils::IsRealKernel(node)) {
+    return nullptr;
+  }
+  auto cnode = node->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(cnode);
+  // since the input should be unfolded before some function, this pass should be in front of concat_fission,
+  // pack_fission, addn_fission, and HandleControlFlow
 
   static const PrimitiveSet need_unfold_control_node = {prim::kPrimSwitchLayer, prim::kPrimCall, prim::kPrimSwitch,
                                                         prim::kPrimCallInline};
   PrimitivePtr prim = common::AnfAlgo::GetCNodePrimitive(cnode);
   MS_EXCEPTION_IF_NULL(prim);
   bool is_communication_op = common::AnfAlgo::IsCommunicationOp(node);
-  bool is_unfold_calculate_op = IsOneOfPrimitiveCNode(node, need_unfold_calculate_node);
+  bool is_unfold_calculate_op = IsUnfoldCalculateNode(cnode);
   bool is_unfold_control_op = IsOneOfPrimitiveCNode(node, need_unfold_control_node);
   // In GE backend, control node should not be unfold.
   if (is_ge_ && is_unfold_calculate_op) {
