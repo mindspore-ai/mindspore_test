@@ -109,10 +109,7 @@ int64_t StorageBase::NBytes() const {
   return device_data_->size();
 }
 
-TypeId StorageBase::GetTypeId() const {
-  MS_EXCEPTION_IF_NULL(device_data_);
-  return device_data_->type_id();
-}
+TypeId StorageBase::GetTypeId() const { return type_id_; }
 
 uint32_t StorageBase::GetStreamId() const {
   MS_EXCEPTION_IF_NULL(device_data_);

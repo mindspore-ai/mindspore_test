@@ -81,23 +81,22 @@ std::tuple<int64_t, std::vector<int64_t>, std::vector<int64_t>> GetCustomTuple(c
 }
 
 std::pair<DeviceAddressPtr, TensorStorageInfoPtr> CreateSourceStorageDeviceAddr(
-  const device::DeviceAddressPtr &base_device_address, const DeviceContext *device_context, int64_t storage_offset,
+  const tensor::TensorPtr &base_tensor, const DeviceContext *device_context, int64_t storage_offset,
   const std::vector<int64_t> &shape, const std::vector<int64_t> &stride, const Storage &source_storage) {
   const auto &source_dtype = source_storage.GetTypeId();
   int64_t bytes_size = source_storage.NBytes();
   const std::string &device_name = source_storage.device();
-  int64_t new_bytes_size = ops::ComputeStorageNelements(storage_offset, shape, stride) *
-                           GetTypeByte(TypeIdToType(base_device_address->type_id()));
+  int64_t new_bytes_size =
+    ops::ComputeStorageNelements(storage_offset, shape, stride) * GetTypeByte(TypeIdToType(base_tensor->data_type()));
   device::DeviceAddressPtr source_device_address;
   if (new_bytes_size <= bytes_size) {
     source_device_address = device_context->device_res_manager_->CreateDeviceAddress(
-      nullptr, bytes_size, shape, DEFAULT_FORMAT, base_device_address->type_id(), device_name,
-      source_storage.GetStreamId());
+      nullptr, bytes_size, shape, DEFAULT_FORMAT, base_tensor->data_type(), device_name, source_storage.GetStreamId());
     MS_EXCEPTION_IF_NULL(source_device_address);
     source_device_address->set_device_pointer(source_storage.GetDevicePointer());
   } else {
     source_device_address = device_context->device_res_manager_->CreateDeviceAddress(
-      nullptr, new_bytes_size, shape, DEFAULT_FORMAT, base_device_address->type_id(), device_name,
+      nullptr, new_bytes_size, shape, DEFAULT_FORMAT, base_tensor->data_type(), device_name,
       source_storage.GetStreamId());
     device_context->device_res_manager_->AllocateMemory(source_device_address.get());
     SyncCopy(source_device_address, source_storage.GetDeviceAddress(), source_storage.GetStreamId());
@@ -108,31 +107,30 @@ std::pair<DeviceAddressPtr, TensorStorageInfoPtr> CreateSourceStorageDeviceAddr(
     source_device_address->set_device_pointer(source_storage_deevice_pointer);
   }
   auto new_storage_info =
-    ops::CheckSetStorageInfo(base_device_address, storage_offset, shape, stride, device_name, bytes_size, source_dtype);
+    ops::CheckSetStorageInfo(base_tensor, storage_offset, shape, stride, device_name, bytes_size, source_dtype);
 
   return {std::move(source_device_address), std::move(new_storage_info)};
 }
 
 std::pair<DeviceAddressPtr, TensorStorageInfoPtr> CreateSourceTensorDeviceAddr(
-  const device::DeviceAddressPtr &base_device_address, const DeviceContext *device_context, int64_t storage_offset,
+  const tensor::TensorPtr &base_tensor, const DeviceContext *device_context, int64_t storage_offset,
   const std::vector<int64_t> &shape, const std::vector<int64_t> &stride, const TensorPtr &source_tensor) {
   const auto &source_dtype = source_tensor->data_type();
   const auto &device_address = source_tensor->device_address();
   int64_t bytes_size = device_address->GetSize();
   const auto &device_type = device_address->GetDeviceType();
   const std::string &device_name = device::GetDeviceNameByType(device_type);
-  int64_t new_bytes_size = ops::ComputeStorageNelements(storage_offset, shape, stride) *
-                           GetTypeByte(TypeIdToType(base_device_address->type_id()));
+  int64_t new_bytes_size =
+    ops::ComputeStorageNelements(storage_offset, shape, stride) * GetTypeByte(TypeIdToType(base_tensor->data_type()));
   device::DeviceAddressPtr source_device_address;
   if (new_bytes_size <= bytes_size) {
     source_device_address = device_context->device_res_manager_->CreateDeviceAddress(
-      nullptr, bytes_size, shape, DEFAULT_FORMAT, base_device_address->type_id(), device_name,
-      device_address->stream_id());
+      nullptr, bytes_size, shape, DEFAULT_FORMAT, base_tensor->data_type(), device_name, device_address->stream_id());
     MS_EXCEPTION_IF_NULL(source_device_address);
     source_device_address->set_device_pointer(device_address->device_pointer());
   } else {
     source_device_address = device_context->device_res_manager_->CreateDeviceAddress(
-      nullptr, new_bytes_size, shape, DEFAULT_FORMAT, base_device_address->type_id(), device_name,
+      nullptr, new_bytes_size, shape, DEFAULT_FORMAT, base_tensor->data_type(), device_name,
       device_address->stream_id());
     device_context->device_res_manager_->AllocateMemory(source_device_address.get());
     SyncCopy(source_device_address, device_address, device_address->stream_id());
@@ -143,7 +141,7 @@ std::pair<DeviceAddressPtr, TensorStorageInfoPtr> CreateSourceTensorDeviceAddr(
     source_device_address->set_device_pointer(source_storage_deevice_pointer);
   }
   auto new_storage_info =
-    ops::CheckSetStorageInfo(base_device_address, storage_offset, shape, stride, device_name, bytes_size, source_dtype);
+    ops::CheckSetStorageInfo(base_tensor, storage_offset, shape, stride, device_name, bytes_size, source_dtype);
 
   return {std::move(source_device_address), std::move(new_storage_info)};
 }
@@ -164,7 +162,7 @@ void SetStorage(TensorPtr &base_tensor, const pynative::ParserArgs &parse_args, 
   const std::vector<int64_t> shape = {new_size};
   const std::vector<int64_t> stride = {1};
   auto [source_device_address, new_storage_info] =
-    CreateSourceStorageDeviceAddr(base_tensor->device_address(), device_context, 0, shape, stride, source_storage);
+    CreateSourceStorageDeviceAddr(base_tensor, device_context, 0, shape, stride, source_storage);
   base_tensor->set_(std::move(source_device_address), new_storage_info, shape);
 }
 
@@ -173,8 +171,8 @@ void SetStorageCustom(TensorPtr &base_tensor, const pynative::ParserArgs &parse_
   const Storage &source_storage = StoragePy_Unpack(parse_args.arg_list_[0]);
   CheckDtypeConsistency(base_tensor->data_type(), source_storage.GetTypeId(), true);
   const auto [storage_offset, shape, stride] = GetCustomTuple(parse_args);
-  auto [source_device_address, new_storage_info] = CreateSourceStorageDeviceAddr(
-    base_tensor->device_address(), device_context, storage_offset, shape, stride, source_storage);
+  auto [source_device_address, new_storage_info] =
+    CreateSourceStorageDeviceAddr(base_tensor, device_context, storage_offset, shape, stride, source_storage);
   base_tensor->set_(std::move(source_device_address), new_storage_info, shape);
 }
 
@@ -185,8 +183,8 @@ void SetTensor(TensorPtr &base_tensor, const pynative::ParserArgs &parse_args, c
   int64_t storage_offset = source_tensor->storage_offset();
   const std::vector<int64_t> &shape = source_tensor->shape_c();
   const std::vector<int64_t> &stride = source_tensor->stride();
-  auto [source_device_address, new_storage_info] = CreateSourceTensorDeviceAddr(
-    base_tensor->device_address(), device_context, storage_offset, shape, stride, source_tensor);
+  auto [source_device_address, new_storage_info] =
+    CreateSourceTensorDeviceAddr(base_tensor, device_context, storage_offset, shape, stride, source_tensor);
   base_tensor->set_(std::move(source_device_address), new_storage_info, shape);
 }
 
@@ -200,8 +198,8 @@ void SetTensorCustom(TensorPtr &base_tensor, const pynative::ParserArgs &parse_a
   }
   const auto [storage_offset, shape, stride] = GetCustomTuple(parse_args);
   const int64_t total_offset = storage_offset + source_tensor->storage_offset();
-  auto [source_device_address, new_storage_info] = CreateSourceTensorDeviceAddr(
-    base_tensor->device_address(), device_context, total_offset, shape, stride, source_tensor);
+  auto [source_device_address, new_storage_info] =
+    CreateSourceTensorDeviceAddr(base_tensor, device_context, total_offset, shape, stride, source_tensor);
   base_tensor->set_(std::move(source_device_address), new_storage_info, shape);
 }
 
@@ -1364,7 +1362,7 @@ extern PyObject *TensorPython_Storage(PyObject *self, PyObject *args, PyObject *
     } else {
       MS_LOG(EXCEPTION) << "Current Tensor has no device!";
     }
-    auto result = std::make_shared<StorageBase>(device_address);
+    auto result = std::make_shared<StorageBase>(device_address, tensorTmp->data_type());
     Storage storage = Storage(result);
     tensor->value.SetStorage(py::reinterpret_steal<py::object>(CreateStorageObj(storage)));
   }
