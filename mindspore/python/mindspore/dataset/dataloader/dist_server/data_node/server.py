@@ -1,4 +1,3 @@
-# services/data_node/server.py
 import argparse
 import pandas as pd
 import torch
@@ -6,13 +5,13 @@ import io
 import time
 from concurrent.futures import ThreadPoolExecutor
 
-from rpc.server_rpc import ServerNodeRPCServer
-from rpc.client_rpc import CoordinatorRPCClient
-from services.data_node.processor import DataProcessor
+from dist_rpc.server_rpc import ServerNodeRPCServer
+from dist_rpc.client_rpc import CoordinatorRPCClient
+from dist_server.data_node.processor import DataProcessor
 
 # 全局处理器
 processor = None
-executor = ThreadPoolExecutor(max_workers=4) # 简单的并发池
+executor = ThreadPoolExecutor(max_workers=4)
 
 def handle_fetch(payload, ctx):
     """
@@ -23,31 +22,21 @@ def handle_fetch(payload, ctx):
         return None
 
     future = executor.submit(processor.get_batch, indices)
-    result_dict = future.result() # 阻塞等待结果
+    result_dict = future.result()
 
     if result_dict is None:
         return None
-
-    # !!! 接口适配关键点 !!!
-    # 原有的 RPC 协议可能期望返回 Tensor。
-    # 为了支持多模态 (Image, Text, Mask)，我们将整个字典视为一个 Object 保存。
-    # 只要 rpc/server_rpc.py 里的 _encode_response_payload 使用了 TorchSerializer
-    # 且 rpc/serde.py 使用了 torch.save，那么保存字典是支持的。
-    # 注意：你需要确认 rpc/client_rpc.py 里的类型检查是否通过。
+    
     buffer = io.BytesIO()
     torch.save(result_dict, buffer)
-    return buffer.getvalue() # 返回 bytes 类型
+    return buffer.getvalue() 
 
 
 def register_to_coordinator(coordinator_host, coordinator_port, local_port, node_id="node_0"):
-    """
-    循环尝试向 Coordinator 注册，直到成功
-    """
     client = CoordinatorRPCClient(coordinator_host, coordinator_port)
     while True:
         try:
             print(f"Attempting to register to Coordinator at {coordinator_host}:{coordinator_port}...")
-            # 调用我们在第一步中新增的方法
             success = client.register_servernode(node_id=node_id, port=local_port)
             if success:
                 print(">>> Registration SUCCESS!")
