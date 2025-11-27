@@ -19,6 +19,7 @@
 #include <utility>
 #include <map>
 #include "mindapi/base/types.h"
+#include "pynative/utils/pyboost/functions/composite/empty_like.h"
 #include "pynative/utils/pyboost/functions/auto_generate/functions.h"
 
 namespace mindspore {
