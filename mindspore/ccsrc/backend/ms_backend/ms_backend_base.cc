@@ -904,7 +904,8 @@ bool MSBackendBase::CompileGraphsByKbkCache(const FuncGraphPtr &func_graph, Devi
     MS_LOG(INFO) << "Status record: End load backend kernel graph.";
     return true;
   } catch (std::exception &e) {
-    MS_LOG(WARNING) << "Fail to load backend compile cache, error info:" << e.what();
+    MS_LOG(WARNING) << "Fail to load backend compile cache, error info:" << e.what()
+                    << ".\nCurrent compile cache is invalid, please delete the current compile cache and recompile.";
     return false;
   }
 }
@@ -2012,6 +2013,7 @@ BackendGraphId MSBackendBase::Build(const FuncGraphPtr &func_graph, const Backen
   if (EnableKBKCompileCache(func_graph, device_context->GetDeviceType())) {
     PROF_START(Load_backend_compile_cache);
     load_compile_cache = CompileGraphsByKbkCache(func_graph, device_context);
+    MS_LOG(INFO) << "Load backend cache and compile graphs " << (load_compile_cache == true ? "success." : "failed.");
     PROF_END(Load_backend_compile_cache);
   }
   if (!load_compile_cache) {

@@ -1535,7 +1535,7 @@ void SuperKernelActor::RecreateCommunicationGroup() {
     const std::string new_group_name = std::string("parallel_dispatch_group_") + std::to_string(i);
     distributed::collective::CollectiveManager::instance()->CreateCommunicationGroup(new_group_name, group_ranks);
 
-    // 3. Repalce old communication group and re-init kernel mod for communication ops.
+    // 3. Replace old communication group and re-init kernel mod for communication ops.
     for (auto &kernel_actor : comm_kernel_actors) {
       auto &kernel = kernel_actor->kernel_;
       MS_EXCEPTION_IF_NULL(kernel_actor);
@@ -1967,8 +1967,9 @@ void SuperKernelActor::SetInputFreePositionForKernelActor(
         const auto &iter = graph_->inline_sub_graph_kernels().find(kernel_actor->kernel_);
         if (iter == graph_->inline_sub_graph_kernels().end()) {
           if (!common::AnfAlgo::CheckPrimitiveType(kernel_actor->kernel_, prim::kPrimConditionGather)) {
-            MS_LOG(EXCEPTION) << "Failed to get branch info for kernel:" << kernel_actor->kernel_->fullname_with_scope()
-                              << " input node:" << input_node->fullname_with_scope() << " in actor:" << GetAID();
+            MS_INTERNAL_EXCEPTION(RuntimeError)
+              << "Failed to get branch info for kernel:" << kernel_actor->kernel_->fullname_with_scope()
+              << " input node:" << input_node->fullname_with_scope() << " in actor:" << GetAID();
           }
           input_info.branch_name = GetBranchNameByIndex(kernel_actor, input_node, i);
           MS_LOG(INFO) << "Input branch name:" << input_info.branch_name << " for input index:" << i
@@ -2416,7 +2417,7 @@ void SuperKernelActor::LinkKernelActorByDeviceType(const CNodePtr &kernel, size_
     MS_LOG(EXCEPTION) << "Invalid input device tensor type for kernel:" << kernel->fullname_with_scope()
                       << " with device context type:" << device_context->GetDeviceType() << " but the " << input_index
                       << "th input device tensor type is " << input_device_tensor->GetDeviceType()
-                      << " for actor:" << GetAID() << ", input kenerl: " << input_kernel->fullname_with_scope();
+                      << " for actor:" << GetAID() << ", input kernel: " << input_kernel->fullname_with_scope();
   }
 
   bool need_not_copy_output_device_addr = (device_context->GetDeviceType() == input_device_context->GetDeviceType()) ||

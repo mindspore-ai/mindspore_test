@@ -743,6 +743,34 @@ void AddKernelGraphItems(nlohmann::json *const kg_json, const KernelGraphPtr &kg
   }
 }
 
+void GetValidParamForMakeTupleSingleCache(const CNodePtr &cnode, std::vector<AnfNodePtr> *inputs,
+                                          std::vector<bool> *valid_inputs, size_t depth) {
+  MS_EXCEPTION_IF_NULL(cnode);
+  MS_EXCEPTION_IF_NULL(inputs);
+  MS_EXCEPTION_IF_NULL(valid_inputs);
+  const size_t max_depth = 100;
+  if (depth > max_depth) {
+    MS_LOG(WARNING) << "Current recursion depth is:" << depth
+                    << ", and exceeds the max recursion depth for cnode:" << cnode->DebugString();
+  }
+  MS_LOG(DEBUG) << "Cnode:" << cnode->DebugString() << ", input num:" << cnode->size();
+  for (size_t j = 1; j < cnode->size(); ++j) {
+    const auto &param = cnode->input(j);
+    if (param == nullptr) {
+      MS_LOG(DEBUG) << "Parameter index[" << j << "] is null for cnode:" << cnode->DebugString();
+      continue;
+    }
+    if (param->isa<Parameter>()) {
+      inputs->emplace_back(param);
+      valid_inputs->emplace_back(true);
+    } else if (param->isa<CNode>()) {
+      const auto &current_cnode = param->cast<CNodePtr>();
+      MS_EXCEPTION_IF_NULL(current_cnode);
+      GetValidParamForMakeTupleSingleCache(current_cnode, inputs, valid_inputs, depth + 1);
+    }
+  }
+}
+
 std::pair<std::vector<AnfNodePtr>, std::vector<bool>> FetchValidInputs(const KernelGraphPtr &graph) {
   MS_EXCEPTION_IF_NULL(graph);
   std::vector<AnfNodePtr> inputs;
@@ -755,7 +783,7 @@ std::pair<std::vector<AnfNodePtr>, std::vector<bool>> FetchValidInputs(const Ker
   for (size_t i = 0; i < graph->inputs().size(); ++i) {
     const auto &input = graph->inputs()[i];
     if (input == nullptr) {
-      MS_LOG(WARNING) << "Parameter index:" << i << "is null for graph:" << graph->ToString();
+      MS_LOG(WARNING) << "Parameter index[" << i << "] is null for graph:" << graph->ToString();
       continue;
     }
     if (input->isa<Parameter>()) {
@@ -764,12 +792,9 @@ std::pair<std::vector<AnfNodePtr>, std::vector<bool>> FetchValidInputs(const Ker
     } else if (common::AnfAlgo::CheckPrimitiveType(input, prim::kPrimMakeTuple)) {
       const auto &cnode = input->cast<CNodePtr>();
       MS_EXCEPTION_IF_NULL(cnode);
-      for (size_t j = 1; j < cnode->size(); ++j) {
-        if (cnode->input(j) != nullptr && cnode->input(j)->isa<Parameter>()) {
-          inputs.emplace_back(cnode->input(j));
-          valid_inputs.emplace_back(true);
-        }
-      }
+      GetValidParamForMakeTupleSingleCache(cnode, &inputs, &valid_inputs, 1);
+      MS_LOG(DEBUG) << "Success to get parameters by cnode:" << cnode->DebugString()
+                    << " in graph:" << graph->ToString();
     }
   }
   return {inputs, valid_inputs};
@@ -2976,8 +3001,11 @@ void KernelGraphMgr::BuildGraphAndAttrForSingleCache(
   MS_EXCEPTION_IF_NULL(all_out_graph);
   MS_EXCEPTION_IF_NULL(name_to_node);
   auto &context = CompileCacheContext::GetInstance();
-  for (auto iter = model_json.begin(); iter != model_json.end(); ++iter) {
-    if (!IsValidGraphKey(iter.key())) {
+  for (const auto &pair : model_json.items()) {
+    const auto &graph_name = pair.key();
+    const auto &graph_json = pair.value();
+    MS_LOG(DEBUG) << "Backend single cache graph_name:" << graph_name << ", graph_id:" << graph_json[kGraphId];
+    if (!IsValidGraphKey(graph_name)) {
       continue;
     }
     KernelGraphPtr kernel_graph = nullptr;
@@ -2986,24 +3014,23 @@ void KernelGraphMgr::BuildGraphAndAttrForSingleCache(
       kernel_graph->set_is_from_cache(true);
       MS_LOG(DEBUG) << "kernel_graph:" << kernel_graph->ToString();
     } else {
-      auto kernel_graph_iter = graphid_to_graph.find(iter.value()[kGraphId]);
+      auto kernel_graph_iter = graphid_to_graph.find(graph_json[kGraphId]);
       if (kernel_graph_iter == graphid_to_graph.end()) {
-        MS_LOG(EXCEPTION) << "Failed find kernel graph, graph id:" << iter.value()[kGraphId];
+        MS_LOG(EXCEPTION) << "Failed find kernel graph, graph id:" << graph_json[kGraphId];
       }
       kernel_graph = kernel_graph_iter->second;
       MS_EXCEPTION_IF_NULL(kernel_graph);
-      graphs_[graph_sum_++] = kernel_graph;
+      graph_sum_ = std::max(graph_sum_, static_cast<uint32_t>(graph_json[kGraphId]) + 1);
+      graphs_[graph_json[kGraphId]] = kernel_graph;
       MS_LOG(DEBUG) << "Build new kernel graph:" << kernel_graph->ToString() << " success.";
     }
     all_out_graph->push_back(kernel_graph);
-    const auto &graph_name = kernel_graph->ToString();
     if (!model_json.contains(graph_name)) {
       for (auto error_iter = model_json.begin(); error_iter != model_json.end(); ++error_iter) {
         MS_LOG(WARNING) << "Json contain key:" << error_iter.key();
       }
       MS_LOG(EXCEPTION) << "Load graph " << graph_name << " from json failed, json.";
     }
-    auto &graph_json = model_json[graph_name];
     if (!graph_json.contains(kCorrespondFrontendGraph)) {
       continue;
     }
@@ -3091,6 +3118,7 @@ std::vector<KernelGraphPtr> KernelGraphMgr::ConstructSingleKernelGraphByCache(
     }
   }
 #endif
+  AddRealBackendAttrCompileCache(model_json);
   MS_LOG(WARNING)
     << "Use the compile cache to construct kernel graph success, and will execute the preprocess before run directly.";
   return {all_out_graph->front()};
