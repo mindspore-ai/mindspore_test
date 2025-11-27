@@ -296,7 +296,13 @@ class RUNTIME_HARDWARE_EXPORT DeviceResManager {
   virtual DeviceEventPtr CreateEventWithFlag(bool enable_timing, bool blocking, bool use_extensional_api = true) {
     return nullptr;
   }
-
+  virtual void GetDeviceLimit(int32_t device_id, uint32_t *cube_num, uint32_t *vector_num) {}
+  virtual void SetDeviceLimit(int32_t device_id, int32_t cube_num, int32_t vector_num) {}
+  virtual void GetStreamLimit(size_t stream_id, uint32_t *cube_num, uint32_t *vector_num) {}
+  virtual void SetStreamLimit(size_t stream_id, int32_t cube_num, int32_t vector_num) {}
+  virtual void ResetStreamLimit(size_t stream_id) {}
+  virtual void UseStreamResInCurrentThread(size_t stream_id) {}
+  virtual void SetEnableStreamLimit() {}
   // Destroy specified device event.
   virtual bool DestroyEvent(const DeviceEventPtr &event) { return true; }
 

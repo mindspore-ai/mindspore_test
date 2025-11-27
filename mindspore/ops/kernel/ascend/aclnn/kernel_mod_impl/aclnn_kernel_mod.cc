@@ -33,6 +33,16 @@ bool AclnnKernelMod::Init(const std::vector<KernelTensor *> &inputs, const std::
 }
 
 int AclnnKernelMod::Resize(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) {
+  if (stream_id_ == UINT32_MAX) {
+    if (primitive_ != nullptr && primitive_->HasAttr(kAttrStreamId)) {
+      stream_id_ = GetValue<uint32_t>(primitive_->GetAttr(kAttrStreamId));
+      device_context_->device_res_manager_->UseStreamResInCurrentThread(stream_id_);
+    } else {
+      MS_LOG(WARNING) << "AclnnKernelMod Get StreamId failed.";
+    }
+  } else {
+    device_context_->device_res_manager_->UseStreamResInCurrentThread(stream_id_);
+  }
   auto ret = KernelMod::Resize(inputs, outputs);
   if (UseSimulationApi()) {
     return ret;

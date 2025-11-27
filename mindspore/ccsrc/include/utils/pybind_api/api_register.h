@@ -57,6 +57,7 @@ void RegBackendGraphMock(py::module *m);
 namespace hal {
 void RegStream(py::module *m);
 void RegEvent(py::module *m);
+void RegResLimit(py::module *m);
 FRONTEND_EXPORT void RegCommHandle(py::module *m);
 void RegMemory(py::module *m);
 void RegUtils(py::module *m);
