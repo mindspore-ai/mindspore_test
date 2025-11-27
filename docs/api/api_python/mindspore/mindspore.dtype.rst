@@ -21,19 +21,19 @@ MindSpore支持以下基础数据类型：
 ===================================================   =============================
 ``mindspore.bool``                                     布尔型
 ``mindspore.int8``                                     8位整型数
-``mindspore.int16``、``mindspore.short``             16位整型数
-``mindspore.int32``、``mindspore.int``               32位整型数
-``mindspore.int64``、``mindspore.long``              64位整型数
+``mindspore.int16`` 、 ``mindspore.short``             16位整型数
+``mindspore.int32`` 、 ``mindspore.int``               32位整型数
+``mindspore.int64`` 、 ``mindspore.long``              64位整型数
 ``mindspore.uint8``                                    无符号8位整型数
 ``mindspore.uint16``                                   无符号16位整型数
 ``mindspore.uint32``                                   无符号32位整型数
 ``mindspore.uint64``                                   无符号64位整型数
-``mindspore.float16``、``mindspore.half``            16位浮点数
-``mindspore.float32``、``mindspore.float``           32位浮点数
-``mindspore.float64``、``mindspore.double``          64位浮点数
+``mindspore.float16`` 、 ``mindspore.half``            16位浮点数
+``mindspore.float32`` 、 ``mindspore.float``           32位浮点数
+``mindspore.float64`` 、 ``mindspore.double``          64位浮点数
 ``mindspore.bfloat16``                                 16位脑浮点数
-``mindspore.complex64``、``mindspore.cfloat``        64位复数
-``mindspore.complex128``、``mindspore.cdouble``      128位复数
+``mindspore.complex64`` 、 ``mindspore.cfloat``        64位复数
+``mindspore.complex128`` 、 ``mindspore.cdouble``      128位复数
 ===================================================   =============================
 
 其他类型
