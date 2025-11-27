@@ -19,7 +19,7 @@
 #include <string>
 #include <vector>
 #include "pynative/utils/pyboost/pyboost_utils.h"
-#include "pynative/utils/pyboost/functions/composite/empty_utils.h"
+#include "pynative/utils/pyboost/functions/composite/composite_utils.h"
 #include "pynative/utils/runtime/op_runner.h"
 #include "pynative/utils/pyboost/functions/auto_grad_guard.h"
 #include "include/runtime/utils/dispatch/dispatch_env.h"

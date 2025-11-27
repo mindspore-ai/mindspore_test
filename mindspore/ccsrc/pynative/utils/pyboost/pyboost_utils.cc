@@ -46,19 +46,20 @@ namespace mindspore {
 namespace kernel {
 namespace pyboost {
 namespace {
-void CreateTensor(const TypeId &type_id, const ShapeVector &shape_vector, const AbstractBasePtr &abstract_tensor,
-                  std::vector<tensor::TensorPtr> *outputs) {
+inline void CreateTensor(const TypeId &type_id, const ShapeVector &shape_vector, const AbstractBasePtr &abstract_tensor,
+                         std::vector<tensor::TensorPtr> *outputs) {
   auto output_tensor = tensor::from_spec(type_id, shape_vector, device::DeviceType::kNone);
   output_tensor->set_need_pipeline_sync(true);
-  (void)outputs->emplace_back(output_tensor);
   MS_LOG(DEBUG) << "Create output tensor " << output_tensor->ToString();
+  (void)outputs->emplace_back(std::move(output_tensor));
 }
 
-void CreateTensor(const TypeId &type_id, const ShapeVector &shape_vector, std::vector<tensor::TensorPtr> *outputs) {
+inline void CreateTensor(const TypeId &type_id, const ShapeVector &shape_vector,
+                         std::vector<tensor::TensorPtr> *outputs) {
   auto output_tensor = tensor::from_spec(type_id, shape_vector, device::DeviceType::kNone);
   output_tensor->set_need_pipeline_sync(true);
-  (void)outputs->emplace_back(output_tensor);
   MS_LOG(DEBUG) << "Create output tensor " << output_tensor->ToString();
+  (void)outputs->emplace_back(std::move(output_tensor));
 }
 }  // namespace
 

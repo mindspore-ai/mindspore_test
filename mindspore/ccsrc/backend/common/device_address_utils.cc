@@ -1170,26 +1170,31 @@ KernelTensorPtr DeviceAddressUtils::CreateInputKernelTensor(const DeviceContext 
 void DeviceAddressUtils::CreateOutputTensorAddress(const DeviceContext *device_context, size_t stream_id,
                                                    const std::vector<tensor::TensorPtr> &outputs) {
   MS_EXCEPTION_IF_NULL(device_context);
+  const auto device_type = DeviceManagerConf::GetInstance()->device_type();
+  const auto device_name = device::GetDeviceNameByType(device_context->device_context_key().device_type_);
+
   for (size_t i = 0; i < outputs.size(); ++i) {
     const auto &tensor = outputs[i];
     MS_EXCEPTION_IF_NULL(tensor);
-    if (tensor->device_address() != nullptr &&
-        tensor->device_address()->GetDeviceType() == DeviceManagerConf::GetInstance()->device_type()) {
+    auto existing_addr = tensor->device_address();
+    if (existing_addr != nullptr && existing_addr->GetDeviceType() == device_type) {
       MS_LOG(DEBUG) << "Output tensor " << tensor->ToString() << " already has device address "
-                    << tensor->device_address()->ToString();
+                    << existing_addr->ToString();
       continue;
     }
+    const auto &tensor_shape = tensor->shape();
     auto tensor_size = LongToSize(tensor->DataNBytes());
-    const auto &format = GetFormatByTensorShape(device_context, tensor->shape());
+    const auto &format = GetFormatByTensorShape(device_context, tensor_shape);
+    auto data_type = tensor->data_type();
+
     auto device_address = device_context->device_res_manager_->CreateDeviceAddress(
-      nullptr, tensor_size, tensor->shape(), format, tensor->data_type(),
-      device::GetDeviceNameByType(device_context->device_context_key().device_type_), stream_id);
+      nullptr, tensor_size, tensor_shape, format, data_type, device_name, stream_id);
     MS_EXCEPTION_IF_NULL(device_address);
     tensor->set_device_address(device_address);
     tensor->set_format(format);
     MS_LOG(DEBUG) << "Create output tensor device address " << device_address << " for " << i
-                  << "th output, Shape: " << tensor->shape()
-                  << ", Type: " << TypeIdToType(tensor->data_type())->ToString() << ", Size:" << tensor_size;
+                  << "th output, Shape: " << tensor_shape << ", Type: " << TypeIdToType(data_type)->ToString()
+                  << ", Size:" << tensor_size;
   }
 }
 
@@ -1197,16 +1202,18 @@ void DeviceAddressUtils::CreateOutputTensorAddress(const DeviceContext *device_c
                                                    const tensor::TensorPtr &output_tensor, size_t size) {
   MS_EXCEPTION_IF_NULL(device_context);
   MS_EXCEPTION_IF_NULL(output_tensor);
-  const auto &format = GetFormatByTensorShape(device_context, output_tensor->shape());
+  const auto &tensor_shape = output_tensor->shape();
+  auto data_type = output_tensor->data_type();
+  const auto &format = GetFormatByTensorShape(device_context, tensor_shape);
   auto device_address = device_context->device_res_manager_->CreateDeviceAddress(
-    nullptr, size, output_tensor->shape(), format, output_tensor->data_type(),
+    nullptr, size, tensor_shape, format, data_type,
     device::GetDeviceNameByType(device_context->device_context_key().device_type_), stream_id);
   MS_EXCEPTION_IF_NULL(device_address);
   output_tensor->set_device_address(device_address);
   output_tensor->set_format(format);
-  MS_LOG(DEBUG) << "Create output tensor device address " << device_address << "the output, Shape: "
-                << static_cast<int64_t>(size / GetTypeByte(TypeIdToType(output_tensor->data_type())))
-                << ", Type: " << TypeIdToType(output_tensor->data_type())->ToString() << ", Size:" << size;
+  MS_LOG(DEBUG) << "Create output tensor device address " << device_address
+                << "the output, Shape: " << static_cast<int64_t>(size / GetTypeByte(TypeIdToType(data_type)))
+                << ", Type: " << TypeIdToType(data_type)->ToString() << ", Size:" << size;
 }
 
 device::DeviceAddressPtr DeviceAddressUtils::CreateDeviceAddress(const DeviceContext *device_context,

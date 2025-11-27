@@ -871,6 +871,11 @@ DeviceContext *OpRunner::GetDeviceContext(device::DeviceType device_type) {
 
   GilReleaseWithCheck release_gil;
   std::unique_lock<std::mutex> lock(*kDeviceContextMutex);
+  // double-checked locking
+  cached_device_context = kDeviceContexts[index];
+  if (cached_device_context != nullptr) {
+    return cached_device_context;
+  }
 
   auto device_id = MsContext::GetInstance()->get_param<uint32_t>(MS_CTX_DEVICE_ID);
   auto device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext({device_type, device_id});

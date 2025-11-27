@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "pynative/utils/pyboost/functions/composite/empty_utils.h"
+#include "pynative/utils/pyboost/functions/composite/composite_utils.h"
 #include <string>
 #include "pynative/utils/runtime/op_runner.h"
 #include "pynative/utils/pyboost/functions/auto_grad_guard.h"
@@ -22,24 +22,25 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
+
 device::DeviceType GetDeviceName(const tensor::TensorPtr &input_tensor, const std::optional<Int64ImmPtr> &device) {
-  device::DeviceType device_type;
-  if (input_tensor != nullptr) {
-    device_type = input_tensor->device_type();
-  } else {
-    device_type = OpRunStatus::Get().device_target();
-  }
   if (device.has_value()) {
     auto device_name_enum = GetValue<int64_t>(device.value());
-    if (device_name_enum == DEVICE_ASCEND || device_name_enum == DEVICE_NPU_LOWER) {
-      device_type = device::DeviceType::kAscend;
-    } else if (device_name_enum == DEVICE_CPU || device_name_enum == DEVICE_CPU_LOWER) {
-      device_type = device::DeviceType::kCPU;
-    } else {
-      MS_LOG(EXCEPTION) << "Only support ['CPU', 'Ascend', 'cpu', 'npu'] for device";
+    switch (device_name_enum) {
+      case DEVICE_ASCEND:
+      case DEVICE_NPU_LOWER:
+        return device::DeviceType::kAscend;
+      case DEVICE_CPU:
+      case DEVICE_CPU_LOWER:
+        return device::DeviceType::kCPU;
+      default:
+        MS_LOG(EXCEPTION) << "Only support ['CPU', 'Ascend', 'cpu', 'npu'] for device";
     }
   }
-  MS_LOG(DEBUG) << "Using '" << device::GetDeviceNameByType(device_type) << "' as the device";
+
+  device::DeviceType device_type =
+    (input_tensor != nullptr) ? input_tensor->device_type() : OpRunStatus::Get().device_target();
+  MS_LOG(DEBUG) << "Using device: " << device::GetDeviceNameByType(device_type);
   return device_type;
 }
 
@@ -61,6 +62,7 @@ void HandlePinMemory(const std::vector<tensor::TensorPtr> &outputs, device::Devi
 
 ShapeVector GetShape(const ValueTuplePtr &shape) {
   ShapeVector output_shape;
+  output_shape.reserve(shape->size());
   for (size_t i = 0; i < shape->size(); ++i) {
     int64_t shape_i = std::static_pointer_cast<Int64Imm>((*shape)[i])->value();
     output_shape.push_back(shape_i);
@@ -69,23 +71,22 @@ ShapeVector GetShape(const ValueTuplePtr &shape) {
 }
 
 TypeId GetDataType(const tensor::TensorPtr &input_tensor, const std::optional<Int64ImmPtr> &dtype) {
-  TypeId data_type;
+  constexpr TypeId kDefaultDataType = kNumberTypeFloat32;
+
   if (dtype.has_value()) {
-    data_type = static_cast<TypeId>(GetValue<int64_t>(dtype.value()));
-    MS_LOG(DEBUG) << "dtype is not None, output tensor's dtype will be set to " << TypeIdToString(data_type);
-  } else {
-    if (input_tensor != nullptr) {
-      data_type = static_cast<TypeId>(input_tensor->data_type_c());
-      MS_LOG(DEBUG) << "dtype is None, output tensor's dtype will be set to input tensor's dtype: "
-                    << TypeIdToString(data_type);
-    } else {
-      // default type: float32
-      data_type = kNumberTypeFloat32;
-      MS_LOG(DEBUG) << "dtype is None, output tensor's dtype will use default: " << TypeIdToString(data_type);
-    }
+    TypeId data_type = static_cast<TypeId>(GetValue<int64_t>(dtype.value()));
+    MS_LOG(DEBUG) << "Using specified dtype: " << TypeIdToString(data_type);
+    return data_type;
   }
 
-  return data_type;
+  if (input_tensor != nullptr) {
+    TypeId data_type = static_cast<TypeId>(input_tensor->data_type_c());
+    MS_LOG(DEBUG) << "Using input tensor dtype: " << TypeIdToString(data_type);
+    return data_type;
+  }
+
+  MS_LOG(DEBUG) << "Using default dtype: " << TypeIdToString(kDefaultDataType);
+  return kDefaultDataType;
 }
 }  // namespace pyboost
 }  // namespace kernel
