@@ -12,12 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+"""test stress detect"""
 
+import time
 import pytest
 import mindspore as ms
 from mindspore.tools import stress_detect
-import time
 
+from tests.mark_utils import arg_mark
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_stress_detect():
     """
     Feature: Stress Detect
@@ -34,7 +38,7 @@ def test_stress_detect():
     assert (end-start) <= 300
     assert ret == 0
 
-
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_stress_detect_cpu():
     """
     Feature: Stress Detect
@@ -49,7 +53,7 @@ def test_stress_detect_cpu():
         stress_detect()
     assert "Stress detection is not supported" in str(e.value)
 
-
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_stress_detect_gpu():
     """
     Feature: Stress Detect

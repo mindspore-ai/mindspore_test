@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+"""test destroy copy event"""
+
 from tests.mark_utils import arg_mark
 import os
 
@@ -26,25 +28,26 @@ def test_destroy_copy_event():
     Expectation: no errors produced when destroying copy event.
     """
     os.environ['ASCEND_SLOG_PRINT_TO_STDOUT'] = '1'
-    s = subprocess.Popen("python", stdout=subprocess.PIPE, stderr=subprocess.STDOUT, stdin=subprocess.PIPE, shell=True)
-    s.stdin.write(b"import mindspore as ms\n")
-    s.stdin.write(b"ms.set_device('Ascend')\n")
-    s.stdin.write(b"ms.run_check()\n")
-    s.stdin.close()
+    with subprocess.Popen("python", stdout=subprocess.PIPE, stderr=subprocess.STDOUT, stdin=subprocess.PIPE,
+                          shell=True) as s:
+        s.stdin.write(b"import mindspore as ms\n")
+        s.stdin.write(b"ms.set_device('Ascend')\n")
+        s.stdin.write(b"ms.run_check()\n")
+        s.stdin.close()
 
-    out = s.stdout.read().decode("UTF-8")
-    s.stdout.close()
+        out = s.stdout.read().decode("UTF-8")
+        s.stdout.close()
 
-    errors = []
-    lines = out.split('\n')
-    for line in lines:
-        if line.find('[ERROR]') != 0:
-            continue
-        if line.find('aclrtDestroyEvent') > 0:
-            errors.append(line)
+        errors = []
+        lines = out.split('\n')
+        for line in lines:
+            if line.find('[ERROR]') != 0:
+                continue
+            if line.find('aclrtDestroyEvent') > 0:
+                errors.append(line)
 
-    if errors:
-        print("Unexpeced errors occurred:\n")
-        for text in errors:
-            print("    " + text)
-    assert not errors
+        if errors:
+            print("Unexpeced errors occurred:\n")
+            for text in errors:
+                print("    " + text)
+        assert not errors

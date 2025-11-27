@@ -12,16 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-
+"""run switch nic with dp"""
 import os
 import argparse
-import  threading
+import threading
 
-import mindspore.context as context
 import mindspore.dataset as ds
 import mindspore.dataset.transforms as C
 import mindspore.dataset.vision as CV
-import mindspore.nn as nn
+from mindspore import context
+from mindspore import nn
 from mindspore.common import dtype as mstype
 from mindspore.dataset.vision import Inter
 from mindspore.train import Model, LossMonitor, Accuracy, Callback
@@ -54,7 +54,7 @@ def fc_with_initialize(input_channels, out_channels):
 
 
 def weight_variable():
-    """Weight initial"""
+    """weight initial"""
     return TruncatedNormal(0.02)
 
 
@@ -63,7 +63,7 @@ class LeNet5(nn.Cell):
     Define network LeNet5
     """
     def __init__(self, num_class=10, channel=1):
-        super(LeNet5, self).__init__()
+        super().__init__()
         self.num_class = num_class
         self.conv1 = conv(channel, 6, 5)
         self.conv2 = conv(6, 16, 5)
@@ -93,11 +93,10 @@ class LeNet5(nn.Cell):
 def create_dataset(data_path, batch_size=32, repeat_size=1,
                    num_parallel_workers=1):
     """
-    Create dataset for train or test
+    create dataset for train or test
     """
     # define dataset
-    mnist_ds = ds.MnistDataset(data_path, num_shards=get_group_size(),
-                               shard_id=get_rank())
+    mnist_ds = ds.MnistDataset(data_path, num_shards=get_group_size(), shard_id=get_rank())
 
     resize_height, resize_width = 32, 32
     rescale = 1.0 / 255.0
@@ -144,11 +143,11 @@ class SwitchNicThread(threading.Thread):
 
 class CommSwitchNicUseBackup(Callback):
     """
-    Comm switch nic use backup
+    comm switch nic use backup
     """
 
     def __init__(self):
-        super(CommSwitchNicUseBackup, self).__init__()
+        super().__init__()
         self.count = 0
 
     def on_train_step_end(self, run_context):
@@ -172,11 +171,11 @@ class CommSwitchNicUseBackup(Callback):
 
 class CommSwitchNic(Callback):
     """
-    Comm switch nic not use backup
+    comm switch nic not use backup
     """
 
     def __init__(self):
-        super(CommSwitchNic, self).__init__()
+        super().__init__()
         self.count = 0
 
     def on_train_step_end(self, run_context):
@@ -199,7 +198,7 @@ class CommSwitchNic(Callback):
 
 if __name__ == "__main__":
     init()
-    context.set_auto_parallel_context(parallel_mode="auto_parallel", gradients_mean=True, device_num=get_group_size())
+    context.set_auto_parallel_context(parallel_mode="data_parallel", gradients_mean=True, device_num=get_group_size())
     network = LeNet5(10)
     net_loss = nn.SoftmaxCrossEntropyWithLogits(sparse=True, reduction="mean")
     net_opt = nn.Momentum(network.trainable_params(), 0.01, 0.9)
