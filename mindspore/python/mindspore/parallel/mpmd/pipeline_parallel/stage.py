@@ -402,17 +402,19 @@ class PipelineStage(ABC):
     def exec_fwd_recv_ops(self, micro_index):
         """Execute the forward recv operation."""
         recv_infos = []
+        comm_handles = []
         for idx in range(self._recv_num):
             global_rank = self._global_rank(self._src_stage[idx])
             recv_info = self._construct_forward_recv_info(micro_index, idx, global_rank)
             if micro_index not in self.args_recv_info:
                 recv_infos.append(recv_info)
             handle = irecv(recv_info.buffer, global_rank)
-            handle.wait()
+            comm_handles.append(handle)
         self._layout_been_recv = True
         self._shape_been_recv = True
         if recv_infos:
             self.args_recv_info[micro_index] = recv_infos
+        return comm_handles
 
     def _construct_backward_recv_info(self, micro_index, idx, global_rank, tensor_send):
         """construct backward recv info."""
@@ -425,8 +427,9 @@ class PipelineStage(ABC):
 
     def exec_fwd_send_ops(self, micro_index):
         """Execute the forward send operation."""
+        comm_handle = []
         if self.is_last_stage:
-            return
+            return comm_handle
         out = self.fwd_outputs_cache.pop(micro_index)
         bwd_recv_infos = []
         for idx, cur_out in enumerate(out):
@@ -442,31 +445,36 @@ class PipelineStage(ABC):
                 if recv_info is not None:
                     bwd_recv_infos.append(recv_info)
             handle = isend(out[idx], global_rank)
-            handle.wait()
+            comm_handle.append(handle)
         self._layout_been_send = True
         self._shape_been_send = True
         if bwd_recv_infos:
             self.grad_recv_info[micro_index] = bwd_recv_infos
+        return comm_handle
 
     def exec_bwd_recv_ops(self, micro_index):
         """Execute the backward recv operation."""
+        comm_handle = []
         if micro_index not in self.grad_recv_info:
-            return
+            return comm_handle
         for recv_info in self.grad_recv_info[micro_index]:
             global_rank = recv_info.global_rank
             handle = irecv(recv_info.buffer, global_rank)
-            handle.wait()
+            comm_handle.append(handle)
+        return comm_handle
 
     def exec_bwd_send_ops(self, micro_index):
         """Execute the backward send operation."""
+        comm_handle = []
         if micro_index not in self.args_recv_info:
-            return
+            return comm_handle
         out = self.bwd_cache.pop(micro_index)
         for idx, cur_out in enumerate(out):
             info = self.args_recv_info[micro_index][idx]
             global_rank = info.global_rank
             handle = isend(cur_out, global_rank)
-            handle.wait()
+            comm_handle.append(handle)
+        return comm_handle
 
     def _construct_backward_func(self):
         """construct backward func."""
