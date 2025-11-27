@@ -214,18 +214,42 @@ bool CanSpecializeValueNode(const AnfNodePtr &node) {
   return false;
 }
 
+bool IsPartialDeadNode(const AnfNodePtr &node) {
+  MS_EXCEPTION_IF_NULL(node);
+  if (!IsPrimitiveCNode(node, prim::kPrimPartial)) {
+    return false;
+  }
+  auto cnode = node->cast<CNodePtr>();
+  MS_EXCEPTION_IF_CHECK_FAIL(cnode->inputs().size() > 1, "Input size should be larger than 1");
+  auto input = cnode->input(1);
+  return IsDeadNode(input);
+}
+
 void PurifyAbstractOfSequence(ProgramSpecializer *const specializer) {
   MS_EXCEPTION_IF_NULL(specializer);
   for (auto &abstract_and_node : specializer->sequence_abstract_list()) {
     auto &sequence_abs = abstract_and_node.first;
     MS_EXCEPTION_IF_NULL(sequence_abs);
-    MS_EXCEPTION_IF_NULL(abstract_and_node.second);
+    auto &node = abstract_and_node.second;
+    MS_EXCEPTION_IF_NULL(node);
     if (!sequence_abs->PurifyElements()) {
       MS_LOG(INFO) << "Purify elements failed, abstract: " << sequence_abs->ToString()
-                   << ", node: " << abstract_and_node.second->DebugString(AnfNode::DebugStringLevel::kLevel2);
+                   << ", node: " << node->DebugString(AnfNode::DebugStringLevel::kLevel2);
     } else {
       MS_LOG(DEBUG) << "Purify elements, abstract: " << sequence_abs->ToString()
-                    << ", node: " << abstract_and_node.second->DebugString(AnfNode::DebugStringLevel::kLevel2);
+                    << ", node: " << node->DebugString(AnfNode::DebugStringLevel::kLevel2);
+    }
+
+    // Partial(DeadNode) in MakeTuple, MakeTuple should be added to dead_node_list.
+    if (IsPrimitiveCNode(node, prim::kPrimMakeTuple)) {
+      auto &inputs = node->cast<CNodePtr>()->inputs();
+      for (size_t i = 1; i < inputs.size(); ++i) {
+        if (IsPartialDeadNode(inputs[i])) {
+          MS_LOG(DEBUG) << "Collect for erasing elements[" << i - 1 << "] DeadNode as zero for " << node << "/"
+                        << node->DebugString(AnfNode::DebugStringLevel::kLevel2);
+          (void)specializer->dead_node_list().emplace_back(std::pair(node, i - 1));
+        }
+      }
     }
   }
 }
@@ -257,7 +281,7 @@ void EliminateCollectedSequenceNodes(ProgramSpecializer *const specializer) {
       if (pos + 1 >= cnode->size()) {
         continue;
       }
-      if (!IsDeadNode(cnode->input(pos + 1))) {
+      if (!IsDeadNode(cnode->input(pos + 1)) && !IsPartialDeadNode(cnode->input(pos + 1))) {
         continue;
       }
 

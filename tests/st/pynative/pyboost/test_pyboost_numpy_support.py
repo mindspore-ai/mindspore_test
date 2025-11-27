@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+"""test_pyboost_numpy_support"""
 
 import mindspore as ms
 import numpy as np
@@ -76,7 +77,7 @@ def test_mint_argmin_with_invalid_dim():
     Expectation: Run success
     """
     x = ms.Tensor(np.random.randn(4, 4).astype(np.float32))
-    for dim in [4.0, np.float64(4.), ms.Tensor(4), np.array(4)]:
+    for dim in [4.0, np.float64(4.), np.array(4)]:
         with pytest.raises(TypeError):
             ms.mint.argmin(x, dim)
 
@@ -230,8 +231,8 @@ def test_tensor_inplace_masked_fill_with_value_argument_provided_in_various_type
     values = [1., 2., 3., 4., 1., 0.]
     candidates = [1, np.longlong(2.), 3., np.array([4.]).astype(np.float16)[0],
                   True, np.array([False])[0]]
-    for i in range(len(candidates)):
-        x.masked_fill_(mask, candidates[i])
+    for i, candidate in enumerate(candidates):
+        x.masked_fill_(mask, candidate)
         expect_out = np.array([1., 2., values[i]])
         assert np.allclose(x.asnumpy(), expect_out)
 

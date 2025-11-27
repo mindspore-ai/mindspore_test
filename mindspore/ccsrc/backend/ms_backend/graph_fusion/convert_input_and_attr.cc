@@ -20,6 +20,7 @@
 #include <map>
 #include <utility>
 #include <vector>
+#include <memory>
 #include <unordered_map>
 #include "base/base.h"
 #include "include/runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/graph_kernel_callback.h"
@@ -33,6 +34,7 @@
 #include "primitive/sequence_ops.h"
 #include "utils/anf_utils.h"
 #include "utils/check_convert_utils.h"
+#include "mindspore/ccsrc/frontend/jit/ps/parse/data_converter.h"
 #include "primitive/auto_generate/gen_ops_primitive_a.h"
 #include "primitive/auto_generate/gen_ops_primitive_b.h"
 #include "primitive/auto_generate/gen_ops_primitive_c.h"
@@ -119,12 +121,106 @@ ValuePtr DtypeToEnum(const ValuePtr &value) {
   return MakeValue<int64_t>(type_id);
 }
 
+template <typename T>
+static inline T GetTensorData(const tensor::TensorPtr &tensor) {
+  MS_EXCEPTION_IF_NULL(tensor);
+  auto cpu_tensor = tensor->cpu();
+  return *(static_cast<T *>(cpu_tensor->data_c()));
+}
+
+ValuePtr ScalarTensorToScalar(const ValuePtr &value) {
+  if (!value->isa<tensor::Tensor>()) {
+    return value;
+  }
+  const auto &tensor = value->cast<tensor::TensorPtr>();
+  if (tensor->DataDim() != 0) {
+    MS_EXCEPTION(ValueError) << "Failed to convert tensor to scalar:" << value->ToString() << " is not 0 dim tensor.";
+  }
+  switch (tensor->data_type()) {
+    case kNumberTypeBool:
+      return std::make_shared<BoolImm>(GetTensorData<bool>(tensor));
+    case kNumberTypeInt64:
+      return std::make_shared<Int64Imm>(GetTensorData<int64_t>(tensor));
+    case kNumberTypeInt32:
+      return std::make_shared<Int64Imm>(GetTensorData<int32_t>(tensor));
+    case kNumberTypeInt16:
+      return std::make_shared<Int64Imm>(GetTensorData<int16_t>(tensor));
+    case kNumberTypeInt8:
+      return std::make_shared<Int64Imm>(GetTensorData<int8_t>(tensor));
+    case kNumberTypeUInt64:
+      return std::make_shared<Int64Imm>(GetTensorData<uint64_t>(tensor));
+    case kNumberTypeUInt32:
+      return std::make_shared<Int64Imm>(GetTensorData<uint32_t>(tensor));
+    case kNumberTypeUInt16:
+      return std::make_shared<Int64Imm>(GetTensorData<uint16_t>(tensor));
+    case kNumberTypeUInt8:
+      return std::make_shared<Int64Imm>(GetTensorData<uint8_t>(tensor));
+    case kNumberTypeFloat64:
+      return std::make_shared<FP64Imm>(GetTensorData<double>(tensor));
+    case kNumberTypeFloat32:
+      return std::make_shared<FP32Imm>(GetTensorData<float>(tensor));
+    case kNumberTypeFloat16:
+      return std::make_shared<FP32Imm>(static_cast<float>(GetTensorData<float16>(tensor)));
+    default:
+      MS_EXCEPTION(TypeError) << "Can not convert " << tensor->ToString() << " to number";
+  }
+  return nullptr;
+}
+
+ValuePtr NormalizeIntSequence(const ValuePtr &value) {
+  static auto _ConvertTensorToInt = [](const tensor::TensorPtr &tensor) -> ValuePtr {
+    if (tensor->data_type() == kNumberTypeInt64) {
+      return std::make_shared<Int64Imm>(GetTensorData<int64_t>(tensor));
+    } else if (tensor->data_type() == kNumberTypeInt32) {
+      return std::make_shared<Int64Imm>(GetTensorData<int32_t>(tensor));
+    } else if (tensor->data_type() == kNumberTypeInt16) {
+      return std::make_shared<Int64Imm>(GetTensorData<int16_t>(tensor));
+    } else if (tensor->data_type() == kNumberTypeInt8) {
+      return std::make_shared<Int64Imm>(GetTensorData<int8_t>(tensor));
+    } else if (tensor->data_type() == kNumberTypeUInt8) {
+      return std::make_shared<Int64Imm>(GetTensorData<uint8_t>(tensor));
+    } else {
+      MS_LOG(ERROR) << "Can not convert " << tensor->ToString() << " to int";
+      return nullptr;
+    }
+  };
+  if (!value->isa<ValueSequence>()) {
+    if (value->isa<Int64Imm>()) {
+      return MakeValue(std::vector<int64_t>({GetValue<int64_t>(value)}));
+    } else if (value->isa<Int32Imm>()) {
+      return MakeValue(std::vector<int32_t>({GetValue<int32_t>(value)}));
+    }
+    MS_EXCEPTION(TypeError) << "Failed to normalize int sequence:" << value->ToString() << " is not a list or tuple.";
+  }
+  const auto &items = value->cast<ValueSequencePtr>()->value();
+  std::vector<ValuePtr> int_tuple(items.size());
+  size_t i = 0;
+  for (const auto &item : items) {
+    if (item->isa<Int64Imm>() || item->isa<Int32Imm>()) {
+      int_tuple[i] = item;
+    } else {
+      ValuePtr converted = _ConvertTensorToInt(item->cast<tensor::TensorPtr>());
+      if (!converted) {
+        MS_EXCEPTION(ValueError) << "Failed to normalize int sequence, contain non-integer element: "
+                                 << item->ToString();
+      }
+      int_tuple[i] = converted;
+    }
+    i++;
+  }
+  return MakeValue(int_tuple);
+}
+
 using ArgHandlerFunc = std::function<ValuePtr(const ValuePtr &)>;
 
 ArgHandlerFunc GetArgHandlerFunc(const std::string &arg_handler) {
   static const std::unordered_map<std::string, ArgHandlerFunc> arg_handler_funcs = {
     {"str_to_enum", EnumToFormat},
     {"dtype_to_type_id", EnumToDtype},
+    {"_scalar_tensor_to_scalar", ScalarTensorToScalar},
+    {"_scalar_tensor_to_float", ScalarTensorToScalar},
+    {"_scalar_tensor_to_int", ScalarTensorToScalar},
+    {"_normalize_int_sequence", NormalizeIntSequence},
   };
   if (arg_handler_funcs.find(arg_handler) != arg_handler_funcs.end()) {
     return arg_handler_funcs.at(arg_handler);
@@ -137,6 +233,10 @@ ArgHandlerFunc GetOppArgHandlerFunc(const std::string &arg_handler) {
   static const std::unordered_map<std::string, ArgHandlerFunc> opp_arg_handler_funcs = {
     {"str_to_enum", FormatToEnum},
     {"dtype_to_type_id", DtypeToEnum},
+    {"_scalar_tensor_to_scalar", ScalarTensorToScalar},
+    {"_scalar_tensor_to_float", ScalarTensorToScalar},
+    {"_scalar_tensor_to_int", ScalarTensorToScalar},
+    {"_normalize_int_sequence", NormalizeIntSequence},
   };
   if (opp_arg_handler_funcs.find(arg_handler) != opp_arg_handler_funcs.end()) {
     return opp_arg_handler_funcs.at(arg_handler);

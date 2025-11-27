@@ -20,7 +20,7 @@ from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.st.utils import test_utils
 
 import mindspore as ms
-import mindspore.nn as nn
+from mindspore import nn
 from mindspore.common.api import _pynative_executor
 
 
@@ -95,7 +95,7 @@ def test_method_min_python(mode):
             where=None, return_indices=False)
         _pynative_executor.sync()
 
-    with pytest.raises(TypeError):
+    with pytest.raises((TypeError, ValueError)):
         net(x, axis=0, keepdims=False, initial=ms.Tensor([False, True]), where=ms.Tensor([False, True]),
             return_indices=False)
         _pynative_executor.sync()

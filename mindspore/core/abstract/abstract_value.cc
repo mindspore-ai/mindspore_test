@@ -2738,8 +2738,8 @@ std::string AbstractCSRTensor::ToString() const {
   MS_EXCEPTION_IF_NULL(values_);
   MS_EXCEPTION_IF_NULL(shape_);
   buffer << type_name() << "("
-         << "indptr: " << indptr_->ToString() << ", indices: " << indices_->ToString() << ", values"
-         << values_->ToString() << ", dense_shape: " << shape_->ToString();
+         << "indptr: " << indptr_->ToString() << ", indices: " << indices_->ToString()
+         << ", values: " << values_->ToString() << ", dense_shape: " << shape_->ToString() << ")";
   return buffer.str();
 }
 

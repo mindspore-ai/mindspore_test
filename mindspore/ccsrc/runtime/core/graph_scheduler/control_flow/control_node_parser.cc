@@ -419,6 +419,15 @@ void CreateDeviceTensorForValueNode(const KernelWithIndex &front_node_with_index
   node_kernel_tensor->set_new_ref_count(SIZE_MAX);
 }
 
+bool IsDynamicSequenceNode(const AnfNodePtr &node) {
+  if (node == nullptr || node->abstract() == nullptr || !node->abstract()->isa<abstract::AbstractSequence>()) {
+    return false;
+  }
+  const auto &seq_abs = node->abstract()->cast<abstract::AbstractSequencePtr>();
+  MS_EXCEPTION_IF_NULL(seq_abs);
+  return seq_abs->dynamic_len();
+}
+
 // Create a device tensor for front node.
 // When the condition input of the switch and switchlayer or the output of a subgraph is a parameter or value node,
 // there is no corresponding backend node for this parameter, so a device tensor needs to be created for it.
@@ -451,7 +460,7 @@ void CreateDeviceTensorForFrontNode(const KernelWithIndex &front_node_with_index
     MS_EXCEPTION_IF_NULL(value_node);
     const auto &node_value = value_node->value();
     MS_EXCEPTION_IF_NULL(node_value);
-    if (node_value->isa<ValueSequence>()) {
+    if (node_value->isa<ValueSequence>() && !IsDynamicSequenceNode(node)) {
       const auto &sequence_node_value = node_value->cast<ValueSequencePtr>();
       MS_EXCEPTION_IF_NULL(sequence_node_value);
       if (sequence_node_value->size() == 0) {

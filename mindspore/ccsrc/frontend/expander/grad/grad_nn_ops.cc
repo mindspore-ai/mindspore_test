@@ -1555,12 +1555,6 @@ REG_BPROP_BUILDER("LayerNormExt").FreeUselessValues_IO({i4}, {i0}).SetBody(BODYF
   const auto &out = ib->GetInput(i5);
   const auto &dout = ib->GetInput(i6);
   auto normalized_shape_ptr = normalized_shape->BuildValue();
-  bool is_shape_mutable = true;
-  if (normalized_shape_ptr != nullptr &&
-      (normalized_shape_ptr->isa<ValueSequence>() || normalized_shape_ptr->isa<Scalar>() ||
-       normalized_shape_ptr->isa<tensor::Tensor>())) {
-    is_shape_mutable = false;
-  }
   std::vector<int64_t> output_mask_vec = {x->need_compute_grad_out(), gamma->need_compute_grad_out(),
                                           beta->need_compute_grad_out()};
   auto output_mask = ib->EmitValue(MakeValue(output_mask_vec));
@@ -1571,9 +1565,6 @@ REG_BPROP_BUILDER("LayerNormExt").FreeUselessValues_IO({i4}, {i0}).SetBody(BODYF
   auto d_beta = ib->TupleGetItem(result, 2);
   auto grad_normalized_shape = ib->OutZeros(normalized_shape);
   auto grad_eps = ib->OutZeros(eps);
-  if (is_shape_mutable) {
-    return {d_x, d_gamma, d_beta, grad_normalized_shape, grad_eps};
-  }
   return {d_x, grad_normalized_shape, d_gamma, d_beta, grad_eps};
 });
 

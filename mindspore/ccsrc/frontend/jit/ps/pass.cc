@@ -1798,6 +1798,21 @@ bool AutoMonadElimOptPass(const FuncGraphPtr &func_graph) {
   return true;
 }
 
+bool MutableEliminatePass(const ResourcePtr &resource) {
+  MS_EXCEPTION_IF_NULL(resource);
+  auto func_graph = resource->func_graph();
+  MS_EXCEPTION_IF_NULL(func_graph);
+  opt::irpass::OptimizeIRPassLib irpass;
+
+  OptPassGroupMap map({{"mutable_op_eliminate", opt::OptPassConfig({irpass.mutable_op_eliminate_})},
+                       {"mutable_op_eliminate_renormalize", opt::OptPassConfig::Renormalize()},
+                       {"mutable_op_eliminate_switch_simplify", opt::OptPassConfig({irpass.switch_simplify_})}});
+
+  auto opt_mutable_eliminate = opt::Optimizer::MakeOptimizer("mutable_eliminate", resource, map);
+  (void)opt_mutable_eliminate->step(func_graph, false);
+  return true;
+}
+
 bool EnvironConversionPass(const ResourcePtr &resource) {
   MS_EXCEPTION_IF_NULL(resource);
   (void)opt::EnvironConversion(resource);
@@ -1853,6 +1868,7 @@ REGISTER_PASS_FUNC_IMPL(CconvPass)
 REGISTER_PASS_FUNC_IMPL(RemoveValueNodeDuplicationsPass)
 REGISTER_PASS_FUNC_IMPL(AddRecomputationPass)
 
+REGISTER_PASS_FUNC_IMPL(MutableEliminatePass)
 REGISTER_PASS_FUNC_IMPL(EnvironConversionPass)
 REGISTER_PASS_FUNC_IMPL(SliceRecomputeActivationPass)
 REGISTER_PASS_FUNC_IMPL(MicroInterLeavedOrderControlPass)
@@ -1863,6 +1879,7 @@ std::vector<PassItem> kVmPasses = {
   {kPyInterpretToExecute, PyInterpretToExecutePass},
   {kRewriterBeforeOptA, RewriterBeforeOptAPass},
   {"opt_a", OptPassAGroup},
+  {kMutableEliminate, MutableEliminatePass},
   {kPyInterpretToExecuteAfterOptA, PyInterpretToExecutePass},
   {"slice_cell_reuse_recomputed_activation", SliceReuseRecomputedActivationPass},
   {kRewriterAfterOptA, RewriterAfterOptAPass},

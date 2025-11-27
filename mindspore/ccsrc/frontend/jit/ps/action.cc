@@ -357,7 +357,8 @@ abstract::AnalysisResult AbstractAnalyze(const ValuePtr &func, const abstract::A
   auto infer_graph = func->isa<FuncGraph>() ? func->cast<FuncGraphPtr>() : ConstructGraphForEval(func, args_abs);
 
   auto top_graph = parse::Parser::GetTopFuncGraph();
-  auto manager = top_graph == nullptr ? Manage(infer_graph, true) : top_graph->manager();
+  auto manager =
+    top_graph == nullptr || top_graph->manager() == nullptr ? Manage(infer_graph, true) : top_graph->manager();
   MS_EXCEPTION_IF_NULL(manager);
   manager->AddFuncGraph(infer_graph);
 
@@ -2265,6 +2266,7 @@ std::vector<PassItem> JitPipeline(const ResourcePtr &resource, bool build_top_gr
     (void)jit_passes.emplace(kRewriterBeforeOptA, RewriterBeforeOptAPass);
     (void)jit_passes.emplace(kExpandDumpFlag, ExpandDumpFlagPass);
     (void)jit_passes.emplace(kJitOptA, JitOptPassAGroup);
+    (void)jit_passes.emplace(kMutableEliminate, MutableEliminatePass);
     (void)jit_passes.emplace(kPyInterpretToExecuteAfterOptA, PyInterpretToExecutePass);
     (void)jit_passes.emplace(kRewriterAfterOptA, RewriterAfterOptAPass);
     (void)jit_passes.emplace(kConvertAfterRewriter, ConvertAfterRewriterPass);
