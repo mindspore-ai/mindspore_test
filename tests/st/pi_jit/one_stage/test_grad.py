@@ -1562,7 +1562,6 @@ def test_value_and_grad_with_aux_for_weights():
         match_array(native_tensor, jit_tensor)
 
 
-@pytest.mark.skip(reason="fix later: AttributeError: 'Tensor' object has no attribute 'name'")
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_value_and_grad_return_ids_for_weights():
     """

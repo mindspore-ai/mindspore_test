@@ -44,6 +44,7 @@
 #include "ir/func_graph_cloner.h"
 #include "include/frontend/operator/primitive_py.h"
 #include "frontend/jit/pi/python_adapter/pydef.h"
+#include "frontend/jit/ps/parse/resolve.h"
 #include "frontend/jit/ps/parse/data_converter.h"
 #include "include/utils/tensor_py.h"
 #include "frontend/jit/ps/static_analysis/prim.h"
@@ -4220,6 +4221,19 @@ bool IsGradOperation(const ValueNode *node) {
   auto type = vobj->GetTypeObject();
   return type != nullptr && IsGradOperationType<true>(type);
 }
+
+bool NeedConvertToTuple(const py::object &obj) {
+  auto py_list = obj.cast<py::list>();
+  if (py_list.size() == 0) {
+    return false;
+  }
+  for (size_t i = 0; i < py_list.size(); ++i) {
+    if (!parse::IsParameterObject(py_list[i])) {
+      return false;
+    }
+  }
+  return true;
+}
 }  // namespace
 
 void GraphBuilder::ExpandContainerParameters(ValueNode *node) {
@@ -4268,7 +4282,9 @@ void GraphBuilder::ExpandContainerParameters(ValueNode *node) {
     } else {
       expand_list_tuple(node, obj);
     }
-    DoBuildOp({(is_dict ? BUILD_MAP : (is_tuple ? BUILD_TUPLE : BUILD_LIST)), SizeToInt(py::len(obj))});
+    bool need_convert_to_tuple = is_list && NeedConvertToTuple(obj);
+    DoBuildOp({(is_dict ? BUILD_MAP : (is_tuple || need_convert_to_tuple ? BUILD_TUPLE : BUILD_LIST)),
+               SizeToInt(py::len(obj))});
     seek(0)->SetVobj(node->GetOwnVobj());
   }
 }
