@@ -35,14 +35,24 @@ class Net(nn.Cell):
         return self.cast(o, mstype.float32)
 
 
-class SameInputMatMulNet(nn.Cell):
+class SameInputMatMulNet0(nn.Cell):
     def __init__(self):
         super().__init__()
         self.mm = ops.MatMul(transpose_a=True)
 
     def construct(self, x, y, z):
         x = mint.transpose(x, -1, -2)
-        o = self.mm(x, y)
+        o = self.mm(x, x) + y + z
+        return o + 1
+
+
+class SameInputMatMulNet1(nn.Cell):
+    def __init__(self):
+        super().__init__()
+        self.mm = ops.MatMul(transpose_a=True)
+
+    def construct(self, x, y, z):
+        o = self.mm(x, y) + x + 1 + z
         return o + 1
 
 
@@ -81,7 +91,7 @@ def test_dvm_matmul_fusion(shape1, shape2, dtype):
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1',
           card_mark='onecard', essential_mark='unessential')
-def test_dvm_same_input_matmul_fusion():
+def test_dvm_same_input_matmul_fusion_0():
     """
     Feature: test same input matmul case for graph_kernel in Ascend.
     Description: ascend test case, use graph_kernel execute ops.
@@ -91,6 +101,23 @@ def test_dvm_same_input_matmul_fusion():
     x = Tensor(np.random.normal(1, 0.01, [4096, 4096]).astype(np.float16))
     y = Tensor(np.random.normal(1, 0.01, [4096, 4096]).astype(np.float16))
     z = Tensor(np.random.normal(1, 0.01, [4096, 4096]).astype(np.float16))
-    expect = get_output(SameInputMatMulNet, x, y, z, False)
-    output = get_output(SameInputMatMulNet, x, y, z, True)
+    expect = get_output(SameInputMatMulNet0, x, y, z, False)
+    output = get_output(SameInputMatMulNet0, x, y, z, True)
+    assert np.allclose(expect.asnumpy(), output.asnumpy(), 2e-3, 2e-3)
+
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1',
+          card_mark='onecard', essential_mark='unessential')
+def test_dvm_same_input_matmul_fusion_1():
+    """
+    Feature: test same input matmul case for graph_kernel in Ascend.
+    Description: ascend test case, use graph_kernel execute ops.
+    Expectation: the result match with close graph_kernel result
+    """
+    context.set_context(mode=context.GRAPH_MODE)
+    x = Tensor(np.random.normal(1, 0.01, [4096, 4096]).astype(np.float16))
+    y = Tensor(np.random.normal(1, 0.01, [4096, 4096]).astype(np.float16))
+    z = Tensor(np.random.normal(1, 0.01, [4096, 4096]).astype(np.float16))
+    expect = get_output(SameInputMatMulNet1, x, y, z, False)
+    output = get_output(SameInputMatMulNet1, x, y, z, True)
     assert np.allclose(expect.asnumpy(), output.asnumpy(), 2e-3, 2e-3)

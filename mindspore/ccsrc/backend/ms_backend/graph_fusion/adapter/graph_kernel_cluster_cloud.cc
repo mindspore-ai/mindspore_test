@@ -293,13 +293,8 @@ class DvmSupportChecker {
     }
     auto cnode = node->cast<CNodePtr>();
     MS_EXCEPTION_IF_NULL(cnode);
-    auto a_node = cnode->input(kIndex1);
-    auto b_node = cnode->input(kIndex2);
-    if (a_node == b_node) {
-      return false;
-    }
-    auto a_shape = GetShape(a_node);
-    auto b_shape = GetShape(b_node);
+    auto a_shape = GetShape(cnode->input(kIndex1));
+    auto b_shape = GetShape(cnode->input(kIndex2));
     auto c_shape = GetShape(node);
     if (a_shape.back() > kMaxDimSize || b_shape.back() > kMaxDimSize) {
       return false;
