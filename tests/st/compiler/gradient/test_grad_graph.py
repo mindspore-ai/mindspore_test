@@ -15,8 +15,8 @@
 """test function grad in graph mode"""
 import numpy as np
 import pytest
-from mindspore import nn
-from mindspore import context
+import mindspore
+from mindspore import nn, context
 from mindspore import Tensor
 from mindspore import jit, ops
 from mindspore.ops.functional import grad, value_and_grad, get_grad
@@ -1143,7 +1143,8 @@ def test_value_and_grad_nest_with_weights_graph_return_ids():
             self.weights = net.trainable_params()
 
         def construct(self, x):
-            value, gradient = value_and_grad(net, 0, self.weights, False, True)(x)
+            value, gradient = value_and_grad(
+                net, 0, self.weights, False, True)(x)
             return value, gradient
 
     x = Tensor(np.array([1, 2]).astype(np.float32))
@@ -1243,7 +1244,8 @@ class GetGradNet(nn.Cell):
         self.get = get
 
     def construct(self, x, y):
-        grad_net = ops.value_and_grad(self.net, self.pos, self.param, return_ids=True)
+        grad_net = ops.value_and_grad(
+            self.net, self.pos, self.param, return_ids=True)
         value, grads = grad_net(x, y)
         out = []
         for i in self.get:
@@ -1323,7 +1325,8 @@ def test_grad_varargs_single_call():
             return gradient_function(x, y)
 
     x = Tensor([[0.5, 0.6, 0.4], [1.2, 1.3, 1.1]], dtype=mstype.float32)
-    y = Tensor([[0.01, 0.3, 1.1], [0.1, 0.2, 1.3], [2.1, 1.2, 3.3]], dtype=mstype.float32)
+    y = Tensor([[0.01, 0.3, 1.1], [0.1, 0.2, 1.3], [
+               2.1, 1.2, 3.3]], dtype=mstype.float32)
     output = GradNetWrtX(MatMulNet())(x, y)
     expect = np.array([[1.41, 1.6, 6.6], [1.41, 1.6, 6.6]]).astype(np.float32)
     assert np.allclose(output.asnumpy(), expect)
@@ -1348,7 +1351,8 @@ def test_grad_varargs_single_call_need_unpack():
             return gradient_function(*inputs)
 
     x = Tensor([[0.5, 0.6, 0.4], [1.2, 1.3, 1.1]], dtype=mstype.float32)
-    y = Tensor([[0.01, 0.3, 1.1], [0.1, 0.2, 1.3], [2.1, 1.2, 3.3]], dtype=mstype.float32)
+    y = Tensor([[0.01, 0.3, 1.1], [0.1, 0.2, 1.3], [
+               2.1, 1.2, 3.3]], dtype=mstype.float32)
     output = GradNetWrtX(MatMulNet())(x, y)
     expect = np.array([[1.41, 1.6, 6.6], [1.41, 1.6, 6.6]]).astype(np.float32)
     assert np.allclose(output.asnumpy(), expect)
@@ -1371,7 +1375,8 @@ def test_grad_varargs_grad_inited():
             return self.grad(*inputs)
 
     x = Tensor([[0.5, 0.6, 0.4], [1.2, 1.3, 1.1]], dtype=mstype.float32)
-    y = Tensor([[0.01, 0.3, 1.1], [0.1, 0.2, 1.3], [2.1, 1.2, 3.3]], dtype=mstype.float32)
+    y = Tensor([[0.01, 0.3, 1.1], [0.1, 0.2, 1.3], [
+               2.1, 1.2, 3.3]], dtype=mstype.float32)
     output = GradNetWrtX(MatMulNet())(x, y)
     expect = np.array([[1.41, 1.6, 6.6], [1.41, 1.6, 6.6]]).astype(np.float32)
     assert np.allclose(output.asnumpy(), expect)
@@ -1398,7 +1403,8 @@ def test_grad_varargs_double_call():
             return gradient_function(*inputs), gradient_function(x, y)
 
     x = Tensor([[0.5, 0.6, 0.4], [1.2, 1.3, 1.1]], dtype=mstype.float32)
-    y = Tensor([[0.01, 0.3, 1.1], [0.1, 0.2, 1.3], [2.1, 1.2, 3.3]], dtype=mstype.float32)
+    y = Tensor([[0.01, 0.3, 1.1], [0.1, 0.2, 1.3], [
+               2.1, 1.2, 3.3]], dtype=mstype.float32)
     output = GradNetWrtX(MatMulNet())(x, y)
     expect = np.array([[1.41, 1.6, 6.6], [1.41, 1.6, 6.6]]).astype(np.float32)
     assert np.allclose(output[0].asnumpy(), expect)
@@ -1424,7 +1430,8 @@ def test_func_grad_varargs_single_call():
             return gradient_function(*inputs)
 
     x = Tensor([[0.5, 0.6, 0.4], [1.2, 1.3, 1.1]], dtype=mstype.float32)
-    y = Tensor([[0.01, 0.3, 1.1], [0.1, 0.2, 1.3], [2.1, 1.2, 3.3]], dtype=mstype.float32)
+    y = Tensor([[0.01, 0.3, 1.1], [0.1, 0.2, 1.3], [
+               2.1, 1.2, 3.3]], dtype=mstype.float32)
     output = GradNetWrtX(MatMulNet())(x, y)
     expect = np.array([[1.41, 1.6, 6.6], [1.41, 1.6, 6.6]]).astype(np.float32)
     assert np.allclose(output.asnumpy(), expect)
@@ -1522,7 +1529,8 @@ class GradOperationNet(nn.Cell):
     def __init__(self, net, get_all=False, get_by_list=False):
         super().__init__()
         self.net = net
-        self.grad_op = C.GradOperation(get_all=get_all, get_by_list=get_by_list)
+        self.grad_op = C.GradOperation(
+            get_all=get_all, get_by_list=get_by_list)
 
     def construct(self, *args):
         gradient_function = self.grad_op(self.net)
@@ -1552,11 +1560,13 @@ def test_grad_grad_attr_illegal():
     with pytest.raises(TypeError) as e:
         GradNet(net, grad_position="True")
         _pynative_executor.sync()
-    assert "For 'F.grad', the 'grad_position' must be int or tuple" in str(e.value)
+    assert "For 'F.grad', the 'grad_position' must be int or tuple" in str(
+        e.value)
     x1 = np.random.randn(3, 3, 3).astype(np.float32)
     x2 = np.random.randn(3, 3, 3).astype(np.float32)
     with pytest.raises(ValueError):
-        GradNetWrtWeight(net, grad_position=(0, 1), weight=0)(Tensor(x1), Tensor(x2))
+        GradNetWrtWeight(net, grad_position=(
+            0, 1), weight=0)(Tensor(x1), Tensor(x2))
         _pynative_executor.sync()
 
 
@@ -1576,3 +1586,65 @@ def test_grad_grad_operation_attr_illegal():
         GradOperationNet(net, get_all=False, get_by_list="True")
         _pynative_executor.sync()
     assert "the 'get_by_list' should be bool, but got str" in str(e.value)
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_grad_with_sense():
+    """
+    Features: grad_with_sense
+    Description: Test grad_with_sense
+    Expectation: The gradient result is correct.
+    """
+    class InputGrad(nn.Cell):
+        def __init__(self, network):
+            super().__init__()
+            self.grad = ops.grad(network, (0, 1), sens_param=True)
+
+        @jit
+        def construct(self, x1, x2, sens):
+            return self.grad(x1, x2, sens)
+
+    class InputGradOperation(nn.Cell):
+        def __init__(self, network):
+            super().__init__()
+            self.network = network
+            self.grad = C.GradOperation(get_all=True, sens_param=True)
+
+        @jit
+        def construct(self, x1, x2, sens):
+            return self.grad(self.network)(x1, x2, sens)
+
+    class AddNet(nn.Cell):
+        def construct(self, x, y):
+            return x + y
+
+    net_grad = InputGrad(AddNet())
+    net_gradoperation = InputGradOperation(AddNet())
+    x = Tensor(np.random.normal(0, 1, [3, 4, 5]).astype(np.float32))
+    y = Tensor(np.random.normal(0, 1, [3, 4, 5]).astype(np.float32))
+    sens = Tensor(np.random.normal(0, 1, [3, 4, 5]).astype(np.float32))
+    res_grad = net_grad(x, y, sens)
+    res_gradoperation = net_gradoperation(x, y, sens)
+    for grad_out, gradop_out in zip(res_grad, res_gradoperation):
+        assert np.allclose(grad_out.asnumpy(), gradop_out.asnumpy())
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_value_and_grad_with_sense():
+    """
+    Features: value_and_grad_with_sense
+    Description: Test value_and_grad_with_sense
+    Expectation: The gradient result is correct.
+    """
+    class Net(nn.Cell):
+        def construct(self, x, y, z):
+            return x * y * z
+    x = Tensor([1, 2], mindspore.float32)
+    y = Tensor([-2, 3], mindspore.float32)
+    z = Tensor([0, 3], mindspore.float32)
+    sense = Tensor([1, 2], mindspore.float32)
+    net = Net()
+    grad_fn = value_and_grad(net, grad_position=1, sens_param=True)
+    _, inputs_gradient = grad_fn(x, y, z, sense)
+    expect = np.array([[0, 12]]).astype(np.float32)
+    assert np.allclose(inputs_gradient.asnumpy(), expect)
