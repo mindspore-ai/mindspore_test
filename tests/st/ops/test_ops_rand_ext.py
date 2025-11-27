@@ -32,14 +32,14 @@ from tests.st.utils import test_utils
 
 @test_utils.run_with_mode
 @test_utils.run_with_cell
-def run_rand(*size, dtype=None, generator=None):
-    return rand_ext(*size, dtype=dtype, generator=generator)
+def run_rand(*size, dtype=None, generator=None, device=None):
+    return rand_ext(*size, dtype=dtype, generator=generator, device=device)
 
 
 @test_utils.run_with_mode
 @test_utils.run_with_cell
-def run_randlike(tensor, dtype=None):
-    return rand_like_ext(tensor, dtype=dtype)
+def run_randlike(tensor, dtype=None, device=None):
+    return rand_like_ext(tensor, dtype=dtype, device=device)
 
 
 @test_utils.run_with_mode
@@ -90,7 +90,7 @@ def test_rand_call(mode):
     shape = (5, 5)
     x = run_rand(*shape, dtype=ms.float64, mode=mode).asnumpy()
     x2 = run_rand(shape, dtype=ms.float64, mode=mode).asnumpy()
-    y = run_randlike(ms.Tensor(np.random.randn(*shape)),
+    y = run_randlike(ms.Tensor(np.random.randn(*shape)).to('Ascend'),
                      dtype=ms.float64, mode=mode).asnumpy()
     assert np.all((x < 1) & (x >= 0))
     assert np.all((x2 < 1) & (x2 >= 0))
@@ -106,7 +106,7 @@ def test_rand_call(mode):
     shape = (7, 8, 9)
     x = run_randn(*shape, dtype=ms.float64, mode=mode).asnumpy()
     x2 = run_randn(shape, dtype=ms.float64, mode=mode).asnumpy()
-    y = run_randnlike(ms.Tensor(np.random.randn(*shape)),
+    y = run_randnlike(ms.Tensor(np.random.randn(*shape)).to('Ascend'),
                       dtype=ms.float64, mode=mode).asnumpy()
     assert x.dtype == np.float64
     assert x2.dtype == np.float64
@@ -121,7 +121,7 @@ def test_rand_call(mode):
     shape = (2, 3, 4, 5)
     dtype = ms.int32
     x = run_randint(low, high, shape, dtype=dtype, mode=mode).asnumpy()
-    y = run_randintlike(ms.Tensor(np.random.randn(*shape)), low, high,
+    y = run_randintlike(ms.Tensor(np.random.randn(*shape)).to('Ascend'), low, high,
                         dtype=dtype, mode=mode).asnumpy()
     assert np.all((x >= low) & (x < high))
     assert np.all((y >= low) & (y < high))
@@ -134,7 +134,7 @@ def test_rand_call(mode):
     x = run_randint_default_low_overload(high, shape, dtype=dtype, mode=mode).asnumpy()
     assert np.all(x >= 0)
     y = run_randint_like_default_low_overload(
-        ms.Tensor(x), 100, dtype=dtype, mode=mode).asnumpy()
+        ms.Tensor(x).to('Ascend'), 100, dtype=dtype, mode=mode).asnumpy()
     assert np.all(y >= 0)
 
 
@@ -183,7 +183,7 @@ def test_randlike_randomness(mode):
     Description: test randomness of rand_like
     Expectation: expect correct result.
     """
-    tensor = ms.Tensor(np.random.randn(5, 5))
+    tensor = ms.Tensor(np.random.randn(5, 5)).to('Ascend')
     x1 = run_randlike(tensor, mode=mode).asnumpy()
     x2 = run_randlike(tensor, mode=mode).asnumpy()
     y1 = run_randnlike(tensor, mode=mode).asnumpy()
@@ -208,7 +208,6 @@ def test_randlike_randomness(mode):
     assert np.all(y1 == y2)
     assert np.all(z1 == z2)
 
-
 def _run_test_in_subprocess(test_name):
     """
     Run a test function in subprocess with MS_DEV_DISABLE_AUTO_H2D=1.
@@ -219,7 +218,7 @@ def _run_test_in_subprocess(test_name):
     test_file = __file__
 
     env = os.environ.copy()
-    env['MS_DEV_DISABLE_AUTO_H2D'] = '1'
+    env['MS_DEV_DISABLE_AUTO_H2D'] = '2'
 
     cmd = [sys.executable, '-m', 'pytest', '-s', f'{test_file}::{test_name}']
 
@@ -237,9 +236,6 @@ def test_randn_with_device_impl(mode):
     Description: Implementation of test_randn_with_device.
     Expectation: expect correct result.
     """
-    # Skip if not running in subprocess (MS_DEV_DISABLE_AUTO_H2D should be set in subprocess)
-    if os.environ.get('MS_DEV_DISABLE_AUTO_H2D') != '1':
-        pytest.skip("This test should only run in subprocess")
 
     shape = (2, 2)
 
@@ -297,9 +293,6 @@ def test_randn_like_with_device_impl(mode):
     Description: Implementation of test_randn_like_with_device.
     Expectation: expect correct result.
     """
-    # Skip if not running in subprocess (MS_DEV_DISABLE_AUTO_H2D should be set in subprocess)
-    if os.environ.get('MS_DEV_DISABLE_AUTO_H2D') != '1':
-        pytest.skip("This test should only run in subprocess")
 
     tensor = ms.Tensor(np.random.randn(2, 2))
 
@@ -357,9 +350,6 @@ def test_randint_with_device_impl(mode):
     Description: test function call
     Expectation: expect correct result.
     """
-     # Skip if not running in subprocess (MS_DEV_DISABLE_AUTO_H2D should be set in subprocess)
-    if os.environ.get('MS_DEV_DISABLE_AUTO_H2D') != '1':
-        pytest.skip("This test should only run in subprocess")
 
     shape = (5, 5)
     low = -10
@@ -418,9 +408,6 @@ def test_randint_like_with_device_impl(mode):
     Description: test function call
     Expectation: expect correct result.
     """
-    # Skip if not running in subprocess (MS_DEV_DISABLE_AUTO_H2D should be set in subprocess)
-    if os.environ.get('MS_DEV_DISABLE_AUTO_H2D') != '1':
-        pytest.skip("This test should only run in subprocess")
 
     tensor = ms.Tensor(np.random.randn(5, 5))
     low = -10
@@ -469,4 +456,118 @@ def test_randint_like_with_device(mode):
     Expectation: expect correct result.
     """
     test_name = f"test_randint_like_with_device_impl[{mode}]"
+    _run_test_in_subprocess(test_name)
+
+
+@pytest.mark.parametrize('mode', ['pynative', 'kbk'])
+def test_rand_with_device_impl(mode):
+    """
+    Feature: mint.rand function with device.
+    Description: test function call
+    Expectation: expect correct result.
+    """
+
+    shape = (5, 5)
+
+    # 1.device=Ascend
+    x = run_rand(*shape, mode=mode, device='Ascend')
+    assert x.device.startswith('Ascend')
+
+    # 2.device=npu
+    x = run_rand(*shape, mode=mode, device='npu')
+    assert x.device.startswith('Ascend')
+
+    if mode == 'pynative':
+        # 3.device=CPU
+        with pytest.raises(RuntimeError) as err:
+            run_rand(*shape, mode=mode, device='CPU')
+            _pynative_executor.sync()
+        # InplaceUniform op currently doesn't support CPU.
+        assert 'The kernel InplaceUniform unregistered' in str(err.value)
+
+        # 4.device=GPU
+        with pytest.raises(ValueError) as err:
+            run_rand(*shape, mode=mode, device='GPU')
+            _pynative_executor.sync()
+
+    # 5.device=None use global device target
+    ms.set_context(device_target='Ascend')
+    x = run_rand(*shape, mode=mode)
+    assert x.device.startswith('Ascend')
+
+    if mode == 'pynative':
+        # 6.use global device target=CPU
+        ms.set_context(device_target='CPU')
+        with pytest.raises(RuntimeError) as err:
+            run_rand(*shape, mode=mode)
+            _pynative_executor.sync()
+        assert 'The kernel InplaceUniform unregistered' in str(err.value)
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@pytest.mark.parametrize('mode', ['pynative'])
+def test_rand_with_device(mode):
+    """
+    Feature: mint.rand function with device.
+    Description: test function call in subprocess
+    Expectation: expect correct result.
+    """
+    test_name = f"test_rand_with_device_impl[{mode}]"
+    _run_test_in_subprocess(test_name)
+
+
+@pytest.mark.parametrize('mode', ['pynative', 'kbk'])
+def test_rand_like_with_device_impl(mode):
+    """
+    Feature: mint.rand_like function with device.
+    Description: test function call
+    Expectation: expect correct result.
+    """
+
+    tensor = ms.Tensor(np.random.randn(5, 5))
+
+    # 1.device=Ascend
+    x = run_randlike(tensor, mode=mode, device='Ascend')
+    assert x.device.startswith('Ascend')
+
+    # 2.device=npu
+    x = run_randlike(tensor, mode=mode, device='npu')
+    assert x.device.startswith('Ascend')
+
+    if mode == 'pynative':
+        # 3.device=CPU
+        with pytest.raises(RuntimeError) as err:
+            run_randlike(tensor, mode=mode, device='CPU')
+            _pynative_executor.sync()
+        # InplaceUniform op currently doesn't support CPU.
+        assert 'The kernel InplaceUniform unregistered' in str(err.value)
+
+        # 4.device=GPU
+        with pytest.raises(ValueError) as err:
+            run_randlike(tensor, mode=mode, device='GPU')
+        _pynative_executor.sync()
+
+    # 5.device=None use device of input
+    tensor = tensor.to('Ascend')
+    x = run_randlike(tensor, mode=mode)
+    assert x.device == tensor.device
+
+    if mode == 'pynative':
+        # 6.use device of input: CPU
+        tensor = tensor.to('CPU')
+        with pytest.raises(RuntimeError) as err:
+            run_randlike(tensor, mode=mode)
+            _pynative_executor.sync()
+        assert 'The kernel InplaceUniform unregistered' in str(err.value)
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@pytest.mark.parametrize('mode', ['pynative'])
+def test_rand_like_with_device(mode):
+    """
+    Feature: mint.rand_like function with device.
+    Description: test function call in subprocess
+    Expectation: expect correct result.
+    """
+    test_name = f"test_rand_like_with_device_impl[{mode}]"
     _run_test_in_subprocess(test_name)
