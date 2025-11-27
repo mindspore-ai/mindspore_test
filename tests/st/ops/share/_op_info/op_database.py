@@ -211,6 +211,41 @@ def error_inputs_add_sub_ext_func(op_info: OpInfo, dtype=None, device=None, **kw
         op_error_info='other is not tensor or number',
     )
 
+
+def basic_sample_inputs_atan2_ext(op_info: OpInfo, dtype=None, device=None, **kwargs):
+    '''
+    Generate sample inputs for atan2 ops including extra alpha cases.
+    Args:
+        op_info: OpInfo object.
+        dtype: Data type of the tensors.
+        device: Device of the tensors.
+        kwargs: Additional keyword arguments.
+    Returns:
+        Generator of OpSampleInput objects.
+    '''
+    yield from basic_reference_inputs_binary_op_common_func(op_info, dtype, device, **kwargs)
+
+    S = SMALL_DIM_SIZE
+    # Adds alpha kwarg cases
+    make_arg = functools.partial(make_tensor, device=device, dtype=dtype)
+    _input = make_arg((S, S))
+    _other = make_arg((S, S))
+    if dtype is not ms.bool_:
+        yield OpSampleInput(
+            op_input=_input,
+            op_args=(_other,),
+            op_kwargs={},
+            sample_name=op_info.name
+        )
+    else:
+        yield OpSampleInput(
+            op_input=_input,
+            op_args=(_other,),
+            op_kwargs={},
+            sample_name=op_info.name
+        )
+
+
 def basic_sample_inputs_mint_repeat_interleave(
     op_info: OpInfo,
     dtype,
@@ -278,6 +313,7 @@ def basic_sample_inputs_mint_repeat_interleave(
         op_kwargs={'dim': 0},
         sample_name=f"{op_info.name}_1d_rand_repeats_tensor_dim0"
     )
+
 
 def basic_sample_inputs_mint_arange(
     op_info: OpInfo,
@@ -347,6 +383,7 @@ def basic_sample_inputs_mint_arange(
             op_kwargs=op_kwargs,
             sample_name=op_info.name,
         )
+
 
 # NOTE: op_func_without_kwargs, used by gradient comparison only when there are kwargs in op!
 def add_ext_func_grad_without_kwargs(x, y, alpha=1):
@@ -1675,6 +1712,12 @@ def tensor_ne_ms(op_input, x):
 def tensor_ne_torch(op_input, x):
     return op_input.ne(x)
 
+def tensor_atan2_ms(op_input, x):
+    return op_input.atan2(x)
+
+def tensor_atan2_torch(op_input, x):
+    return op_input.atan2(x)
+
 def tensor_gt_ms(op_input, x):
     return op_input.gt(x)
 
@@ -1764,6 +1807,13 @@ def empty_like_ms(op_input):
 
 def empty_like_torch(op_input):
     return torch.empty_like(op_input).shape
+
+# wrap method for normal
+def normal_ms(op_input, *args, **kwargs):
+    return mint.normal(op_input, *args, **kwargs).shape
+
+def normal_torch(op_input, *args, **kwargs):
+    return torch.normal(op_input, *args, **kwargs).shape
 
 # wrap nn method for batchnorm1d
 def nn_batchnorm1d_ms(op_input):
@@ -1863,6 +1913,30 @@ def tensor_tile_ms(op_input, dims):
 
 def tensor_tile_torch(op_input, dims):
     return op_input.tile(dims)
+
+def tensor_reciprocal_ms(op_input):
+    return op_input.reciprocal()
+
+def tensor_reciprocal_torch(op_input):
+    return op_input.reciprocal()
+
+def tensor_unsqueeze_ms(op_input, *args, **kwargs):
+    return op_input.unsqueeze(*args, **kwargs)
+
+def tensor_unsqueeze_torch(op_input, *args, **kwargs):
+    return op_input.unsqueeze(*args, **kwargs)
+
+def tensor_topk_ms(op_input, *args, **kwargs):
+    return op_input.topk(*args, **kwargs)
+
+def tensor_topk_torch(op_input, *args, **kwargs):
+    return op_input.topk(*args, **kwargs)
+
+def tensor_transpose_ms(op_input, *args, **kwargs):
+    return op_input.transpose(*args, **kwargs)
+
+def tensor_transpose_torch(op_input, *args, **kwargs):
+    return op_input.transpose(*args, **kwargs)
 
 # wrap nn method for tanh
 def nn_tanh_ms(op_input):
@@ -2010,6 +2084,20 @@ def nn_layer_norm_torch(op_input, normalized_shape, eps=1e-5, elementwise_affine
     module = torch.nn.LayerNorm(
             normalized_shape, eps=eps, elementwise_affine=elementwise_affine, bias=bias, dtype=dtype)
     return module(op_input)
+
+# wrap nn method for AdaptiveAvgPool2d
+def nn_adaptiveavgpool2d_ms(op_input, output_size):
+    return mint.nn.AdaptiveAvgPool2d(output_size)(op_input)
+
+def nn_adaptiveavgpool2d_torch(op_input, output_size):
+    return torch.nn.AdaptiveAvgPool2d(output_size)(op_input)
+
+# wrap nn method for AdaptiveAvgPool3d
+def nn_adaptiveavgpool3d_ms(op_input, output_size):
+    return mint.nn.AdaptiveAvgPool3d(output_size)(op_input)
+
+def nn_adaptiveavgpool3d_torch(op_input, output_size):
+    return torch.nn.AdaptiveAvgPool3d(output_size)(op_input)
 
 # sample inputs functions for chunk
 def basic_sample_inputs_mint_chunk(op_info: OpInfo, dtype=None, device=None, **kwargs):
@@ -2525,6 +2613,7 @@ def dynamic_sample_inputs_mint_gather(op_info: OpInfo, dtype=None, device=None, 
                 ),
             ),
         )
+
 
 # sample inputs functions for mint.nn.functional.interpolate
 def _normalize_mode_and_ranks(mode: str):
@@ -3925,6 +4014,7 @@ def basic_sample_inputs_layer_norm(
         sample_name=f'{op_info.name}_minimal'
     )
 
+
 def basic_sample_inputs_mint_cat(op_info: OpInfo, dtype=None, device=None, **kwargs):
     """
     Generate basic sample inputs for mint.cat op.
@@ -3966,6 +4056,253 @@ def extra_sample_inputs_mint_cat(op_info: OpInfo, dtype=None, device=None, **kwa
             op_kwargs=kwargs,
             sample_name=op_info.name,
         )
+
+
+def sample_inputs_permute(op_info, device, dtype, **kwargs):
+    make_arg = functools.partial(make_tensor, device=device, dtype=dtype)
+
+    cases = [((1, 2, 3, 4), (0, 2, 3, 1)),
+             ((1, 2, 3, 4), (0, -2, -1, 1)),
+             ((), ()),
+             ((1, 2, 3, 4), (2, 1, 3, 0))]
+
+    for shape, args in cases:
+        yield OpSampleInput(make_arg(shape), op_args=(args,), op_kwargs={}, sample_name=op_info.name)
+
+
+def basic_sample_inputs_mint_permute(op_info: OpInfo, dtype=None, device=None, **kwargs):
+    yield from sample_inputs_permute(op_info, device, dtype, **kwargs)
+
+    make_arg = functools.partial(make_tensor, device=device, dtype=dtype)
+
+    cases = (
+        ((), ()),
+        ((1,), (0,)),
+        ((2, 2), (1, 0)),
+        ((2, 2), (0, 1)),
+        ((2, 0, 1), (0, 2, 1)),
+        ((3, 4, 2), (2, 1, 0)),
+        ((3, 4, 2), (1, 0, 2)),
+        ((3, 4, 2), (0, 1, 2)),
+    )
+
+    # Adds tricky permutations and permutations with noncontiguity
+    for shape, permutation in cases:
+        a = make_arg(shape)
+        yield OpSampleInput(a, op_args=(permutation,), op_kwargs={}, sample_name=op_info.name)
+
+
+def basic_sample_inputs_mint_unsqueeze(op_info: OpInfo, dtype=None, device=None, **kwargs):
+    shapes_and_axes = [
+        ((3, 4, 5), 0),
+        ((3, 4, 5), 1),
+        ((3, 4, 5), 3),
+        ((3, 4, 5), -1),
+        ((3, 4, 5), -3),
+        ((), 0),
+        ((), -1),
+        ((1,), 0),
+        ((1,), -1),
+    ]
+
+    for shape, axis in shapes_and_axes:
+        tensor = make_tensor(shape, dtype=dtype, device=device, low=None, high=None,)
+        yield OpSampleInput(tensor, op_args=(axis, ))
+
+
+def basic_sample_inputs_mint_transpose(op_info: OpInfo, dtype=None, device=None, **kwargs):
+    S = SMALL_DIM_SIZE
+    M = MEDIUM_DIM_SIZE
+    make_arg = functools.partial(make_tensor, dtype=dtype, device=device)
+
+    cases = (((1, 2, 3), (-1, -2)),
+             ((1, 2, 3), (-1, 2)),
+             ((1, 2, 3), (1, -2)),
+             ((1, 2, 3), (1, 2)),
+             ((), (0, 0)),
+             ((1, ), (0, 0)),
+             ((M, M), (0, 1)),
+             ((S, S, S), (2, 0)), )
+
+    for shape, args in cases:
+        yield OpSampleInput(make_arg(shape), op_args=args, op_kwargs={}, sample_name=op_info.name)
+
+
+def basic_sample_inputs_mint_topk(op_info: OpInfo, dtype=None, device=None, **kwargs):
+    S = SMALL_DIM_SIZE
+    M = MEDIUM_DIM_SIZE
+
+    def get_tensor_input(size):
+        inputs_x = make_tensor(size, dtype=dtype, device=device, random_method='randn')
+        # get no repeat value
+        input_sum = 1
+        for num in inputs_x.shape:
+            input_sum *= num
+        input_np = np.arange(0, input_sum)
+        np.random.shuffle(input_np)
+        return ms.tensor(input_np.reshape(*inputs_x.shape))
+
+    yield OpSampleInput(get_tensor_input((S, )), op_args=(1, 0, True, True))
+    yield OpSampleInput(get_tensor_input((S, M, S)), op_args=(3, ))
+    yield OpSampleInput(get_tensor_input((S, M, S)), op_args=(3, 1))
+    yield OpSampleInput(get_tensor_input((S, M, S)), op_args=(3, -2))
+    yield OpSampleInput(get_tensor_input((S, M, S)), op_args=(3, 1, True))
+    yield OpSampleInput(get_tensor_input((S, M, S)), op_args=(3, -2, True))
+    yield OpSampleInput(get_tensor_input((S, M, S)), op_args=(3, 1, True, True))
+    yield OpSampleInput(get_tensor_input((S, M, S)), op_args=(3, -2, True, True))
+
+
+def basic_sample_inputs_mint_normal(op_info: OpInfo, dtype=None, device=None, **kwargs):
+    # S = SMALL_DIM_SIZE
+    make_arg = functools.partial(make_tensor, dtype=dtype, device=device)
+
+    samples = (
+        ((3, ), (1, )),
+    )
+    for mean_shape, std_shape in samples:
+        yield OpSampleInput(make_arg(mean_shape, random_method='randn'),
+                            op_args=(make_arg(std_shape, high=100, low=0, random_method='uniform'), ))
+
+    yield OpSampleInput(-2.0, op_args=(make_arg((4, ), high=100, low=0, random_method='uniform'), ))
+
+    yield OpSampleInput(make_arg((9, ), random_method='randn'), op_args=(312.1199124773063, ))
+
+    std = 929.6270736417483
+    size = (2, 5, 13)
+    yield OpSampleInput(-2.0, op_args=(std, size))
+
+
+def basic_sample_inputs_adaptive_avg_pool1d(op_info: OpInfo, dtype=None, device=None, **kwargs):
+    make_arg = functools.partial(make_tensor, device=device, dtype=dtype)
+
+    # Ordered as (input shape, output size)
+    cases = (
+        #((0, 8, 8), (5,)), ms don't surpport
+        ((8, 4, 9), 6),
+        ((3, 8, 8), 5),
+        ((3, 8, 8), 1)
+    )
+
+    for input_shape, output_size in cases:
+        # Batched
+        yield OpSampleInput(make_arg(input_shape), op_args=(output_size,), op_kwargs={}, sample_name=op_info.name)
+        # Unbatched
+        yield OpSampleInput(make_arg(input_shape[1:]), op_args=(output_size,), op_kwargs={}, sample_name=op_info.name)
+
+
+def basic_sample_inputs_adaptive_avg_pool2d(op_info: OpInfo, dtype=None, device=None, **kwargs):
+    make_arg = functools.partial(make_tensor, device=device, dtype=dtype)
+
+    # Ordered as (input shape, output size)
+    cases = (
+        ((1, 7, 3, 8), (1)),
+        ((1, 8, 8, 8), (5, 7)),
+        ((2, 8, 8, 8), (None, 7)),
+        ((1, 8, 4, 3), (5, None)),
+        ((1, 8, 4, 3), (None, None)),
+        ((1, 8, 4, 3), (5)),
+    )
+
+    for input_shape, output_size in cases:
+        # Batched
+        yield OpSampleInput(make_arg(input_shape), op_args=(output_size,), op_kwargs={}, sample_name=op_info.name)
+        # Unbatched
+        yield OpSampleInput(make_arg(input_shape[1:]), op_args=(output_size,), op_kwargs={}, sample_name=op_info.name)
+
+
+def basic_sample_inputs_adaptive_avg_pool3d(op_info: OpInfo, dtype=None, device=None, **kwargs):
+    make_arg = functools.partial(make_tensor, device=device, dtype=dtype)
+
+    # Ordered as (input shape, output size)
+    cases = (
+        ((1, 38, 5, 1, 12), (50, 12, 26)),
+        #((0, 8, 8, 8, 8), (5, 7, 4)),
+        # ms don't support
+        ((1, 8, 4, 3, 7), (None, None, None)),
+        ((1, 8, 4, 3, 7), (1, 1, 1)),
+        ((3, 3, 8, 8, 6), (5, 7, None)),
+        ((1, 3, 8, 8, 6), (5, None, 2)),
+        ((3, 3, 8, 8, 6), (None, 3, 2)),
+    )
+
+    for input_shape, output_size in cases:
+        # Batched
+        yield OpSampleInput(make_arg(input_shape), op_args=(output_size,), op_kwargs={}, sample_name=op_info.name)
+        # Unbatched
+        yield OpSampleInput(make_arg(input_shape[1:]), op_args=(output_size,), op_kwargs={}, sample_name=op_info.name)
+
+
+def basic_sample_inputs_avgpool2d(op_info: OpInfo, dtype=None, device=None, **kwargs):
+    make_arg = functools.partial(make_tensor, device=device, dtype=dtype)
+
+    # Order: input_shape, kernel_size, stride, padding, ceil_mode, count_include_pad, divisor_override
+    cases = (((5, 5, 8, 8), 4, 1, 2, False, False, 18),
+             ((1, 3, 9, 9), 3, 1, 1, True, False, 2),
+             ((1, 3, 9, 9), (4, 4), (2, 3), 1, True, False, 2),
+             ((1, 3, 9, 9), (6, 6), (3, 3), (2, 3), True, True, 2),
+             ((2, 3, 9, 9), (3, 3), (1, 1), (1, ), True, False, 2),
+             #((1, 1, 4, 4), (2, 2), (), (0, ), False, True, -2),
+             ((1, 2, 6, 6), (4, 4), (2, 2), (2, ), True, True, None))
+
+    for input_shape, kernel_size, stride, padding, ceil_mode, count_include_pad, divisor_override in cases:
+        yield OpSampleInput(make_arg(input_shape),
+                            op_args=(kernel_size, stride, padding, ceil_mode, count_include_pad, divisor_override),
+                            op_kwargs={},
+                            sample_name=op_info.name)
+    # Case with just input_shape and kernel_size
+    yield OpSampleInput(make_arg((1, 3, 9, 9)), op_args=((3, 3)), op_kwargs={}, sample_name=op_info.name)
+
+
+def basic_sample_inputs_max_pool(op_info: OpInfo, dtype=None, device=None, **kwargs):
+    make_arg = functools.partial(make_tensor, device=device, dtype=dtype)
+
+    cases = (((9, 8, 4, 3), 2, 1, 0, 1, False, False),)
+
+    for input_shape, kernel_size, stride, padding, dilation, ceil_mode, return_indices in cases:
+        yield OpSampleInput(make_arg(input_shape),
+                            op_args=(kernel_size, stride, padding, dilation, ceil_mode, return_indices),
+                            op_kwargs={},
+                            sample_name=op_info.name)
+
+
+def basic_sample_inputs_adaptivegpool2d(op_info: OpInfo, dtype=None, device=None, **kwargs):
+    make_arg = functools.partial(make_tensor, device=device, dtype=dtype)
+
+    # Ordered as (input shape, output size)
+    cases = (
+        ((1, 7, 5, 9), (48)),
+        ((1, 8, 8, 8), (5, 7)),
+        ((2, 8, 8, 8), (None, 7)),
+        ((1, 8, 4, 3), (5, None)),
+        ((1, 8, 4, 3), (None, None)),
+        ((1, 8, 4, 3), (5)),
+    )
+
+    for input_shape, output_size in cases:
+        # Batched
+        yield OpSampleInput(make_arg(input_shape), op_args=(output_size,), op_kwargs={}, sample_name=op_info.name)
+        # Unbatched
+        yield OpSampleInput(make_arg(input_shape[1:]), op_args=(output_size,), op_kwargs={}, sample_name=op_info.name)
+
+
+def basic_sample_inputs_adaptivegpool3d(op_info: OpInfo, dtype=None, device=None, **kwargs):
+    make_arg = functools.partial(make_tensor, device=device, dtype=dtype)
+
+    # Ordered as (input shape, output size)
+    cases = (
+        ((1, 18, 6, 1, 32), (None, None, 3)),
+        ((1, 8, 4, 3, 7), (None, None, None)),
+        ((1, 8, 4, 3, 7), (1, 1, 1)),
+        ((3, 3, 8, 8, 6), (5, 7, None)),
+        ((1, 3, 8, 8, 6), (5, None, 2)),
+        ((3, 3, 8, 8, 6), (None, 3, 2)),
+    )
+
+    for input_shape, output_size in cases:
+        # Batched
+        yield OpSampleInput(make_arg(input_shape), op_args=(output_size,), op_kwargs={}, sample_name=op_info.name)
+        # Unbatched
+        yield OpSampleInput(make_arg(input_shape[1:]), op_args=(output_size,), op_kwargs={}, sample_name=op_info.name)
 
 
 # op database
@@ -4869,6 +5206,40 @@ op_db: Dict[str, OpInfo] = {
         supports_right_python_scalar=False,
         supports_both_python_scalar=False,
     ),
+    'mint.atan2': BinaryOpInfo(
+        name='mint.atan2',
+        op=mint.atan2,
+        ref=torch.atan2,
+        dtypes_ascend=tuple(d for d in dtypes_as_torch if d == ms.float32),
+        dtypes_ascend910b=tuple(d for d in dtypes_as_torch if d == ms.float32),
+        #dtypes_cpu=tuple([d for d in dtypes_as_torch if d != ms.bfloat16 and d != ms.bool_] + list(dtypes_extra_uint)),
+        #dtypes_gpu=tuple([d for d in dtypes_as_torch if d != ms.bfloat16 and d != ms.bool_] + list(dtypes_extra_uint)),
+        op_basic_reference_inputs_func=basic_sample_inputs_atan2_ext,
+        op_dynamic_inputs_func=None,
+        op_error_inputs_func=None,
+        disable_small_value_tensor_inputs=True,
+        disable_large_value_tensor_inputs=True,
+        disable_broadcasting_and_discontiguous_tensor_inputs=True,
+        disable_scalar_inputs=True,
+        disable_extremal_value_tensor_inputs=True,
+    ),
+    'Tensor.atan2': BinaryOpInfo(
+        name='Tensor.atan2',
+        op=tensor_atan2_ms,
+        ref=tensor_atan2_torch,
+        dtypes_ascend=tuple(d for d in dtypes_as_torch if d == ms.float32),
+        dtypes_ascend910b=tuple(d for d in dtypes_as_torch if d == ms.float32),
+        #dtypes_cpu=tuple([d for d in dtypes_as_torch if d != ms.bfloat16 and d != ms.bool_] + list(dtypes_extra_uint)),
+        #dtypes_gpu=tuple([d for d in dtypes_as_torch if d != ms.bfloat16 and d != ms.bool_] + list(dtypes_extra_uint)),
+        op_basic_reference_inputs_func=basic_sample_inputs_atan2_ext,
+        op_dynamic_inputs_func=None,
+        op_error_inputs_func=None,
+        disable_small_value_tensor_inputs=True,
+        disable_large_value_tensor_inputs=True,
+        disable_broadcasting_and_discontiguous_tensor_inputs=True,
+        disable_scalar_inputs=True,
+        disable_extremal_value_tensor_inputs=True,
+    ),
     'mint.tanh': UnaryOpInfo(
         name='mint.tanh',
         op=mint.tanh,
@@ -5041,6 +5412,15 @@ op_db: Dict[str, OpInfo] = {
         dtypes_cpu=(),
         dtypes_gpu=(),
         disable_large_value_tensor_inputs=True,
+    ),
+    'Tensor.reciprocal': UnaryOpInfo(
+        name='Tensor.reciprocal',
+        op=tensor_reciprocal_ms,
+        ref=tensor_reciprocal_torch,
+        dtypes_ascend=tuple(d for d in dtypes_as_torch if (not d.is_complex and d != ms.bfloat16 and d != ms.float64)),
+        dtypes_ascend910b=tuple(d for d in dtypes_as_torch if (not d.is_complex and d != ms.float64)),
+        dtypes_cpu=(),
+        dtypes_gpu=(),
         disable_small_value_tensor_inputs=True,
     ),
     'mint.nn.Tanh': UnaryOpInfo(
@@ -5913,6 +6293,18 @@ op_db: Dict[str, OpInfo] = {
         dtypes_cpu=(),
         dtypes_gpu=(),
     ),
+    'mint.permute': OpInfo(
+        name='mint.permute',
+        op=mint.permute,
+        ref=torch.permute,
+        dtypes_ascend=tuple(d for d in dtypes_as_torch if (not d.is_complex and d != ms.bfloat16)),
+        dtypes_ascend910b=tuple(d for d in dtypes_as_torch if not d.is_complex),
+        dtypes_cpu=(),
+        dtypes_gpu=(),
+        op_basic_reference_inputs_func=basic_sample_inputs_mint_permute,
+        op_extra_reference_inputs_func=None,
+        op_dynamic_inputs_func=None,
+    ),
     'mint.zeros_like': UnaryOpInfo(
         name='mint.zeros_like',
         op=mint.zeros_like,
@@ -6070,6 +6462,188 @@ op_db: Dict[str, OpInfo] = {
         op_dynamic_inputs_func=None,
         dtypes_cpu=(),
         dtypes_gpu=(),
+    ),
+    'mint.unsqueeze': OpInfo(
+        name='mint.unsqueeze',
+        op=mint.unsqueeze,
+        ref=torch.unsqueeze,
+        dtypes_ascend=tuple(d for d in dtypes_as_torch if (not d.is_complex and d != ms.bfloat16)),
+        dtypes_ascend910b=tuple(d for d in dtypes_as_torch if not d.is_complex),
+        dtypes_cpu=(),
+        dtypes_gpu=(),
+        op_basic_reference_inputs_func=basic_sample_inputs_mint_unsqueeze,
+        op_extra_reference_inputs_func=None,
+        op_dynamic_inputs_func=None,
+    ),
+    'mint.transpose': OpInfo(
+        name='mint.transpose',
+        op=mint.transpose,
+        ref=torch.transpose,
+        dtypes_ascend=tuple(d for d in dtypes_as_torch if (not d.is_complex and d != ms.bfloat16)),
+        dtypes_ascend910b=tuple(d for d in dtypes_as_torch if not d.is_complex),
+        dtypes_cpu=(),
+        dtypes_gpu=(),
+        op_basic_reference_inputs_func=basic_sample_inputs_mint_transpose,
+        op_extra_reference_inputs_func=None,
+        op_dynamic_inputs_func=None,
+    ),
+    'mint.topk': OpInfo(
+        name='mint.topk',
+        op=mint.topk,
+        ref=torch.topk,
+        dtypes_ascend=(ms.float32, ),
+        dtypes_ascend910b=(ms.float32, ),
+        dtypes_cpu=(),
+        dtypes_gpu=(),
+        op_basic_reference_inputs_func=basic_sample_inputs_mint_topk,
+        op_extra_reference_inputs_func=None,
+        op_dynamic_inputs_func=None,
+    ),
+    'mint.normal': OpInfo(
+        name='mint.normal',
+        op=normal_ms,
+        ref=normal_torch,
+        dtypes_ascend=tuple(d for d in dtypes_as_torch if d == ms.float32),
+        dtypes_ascend910b=tuple(d for d in dtypes_as_torch if d == ms.float32),
+        dtypes_cpu=(),
+        dtypes_gpu=(),
+        op_basic_reference_inputs_func=basic_sample_inputs_mint_normal,
+        op_extra_reference_inputs_func=None,
+        op_dynamic_inputs_func=None,
+        is_differentiable=False,
+    ),
+    'mint.nn.functional.adaptive_avg_pool3d': OpInfo(
+        name='mint.nn.functional.adaptive_avg_pool3d',
+        op=mint.nn.functional.adaptive_avg_pool3d,
+        ref=torch.nn.functional.adaptive_avg_pool3d,
+        dtypes_ascend=tuple(),
+        # IARVJM 910A underlying architecture does not support fp32 and will convert to fp16 operations.
+        # Therefore, float32 will be skipped in 910A.
+        dtypes_ascend910b=tuple(d for d in dtypes_as_torch if d == ms.float32),
+        dtypes_cpu=(),
+        dtypes_gpu=(),
+        op_basic_reference_inputs_func=basic_sample_inputs_adaptive_avg_pool3d,
+        op_extra_reference_inputs_func=None,
+        op_dynamic_inputs_func=None,
+    ),
+    'mint.nn.functional.adaptive_avg_pool2d': OpInfo(
+        name='mint.nn.functional.adaptive_avg_pool2d',
+        op=mint.nn.functional.adaptive_avg_pool2d,
+        ref=torch.nn.functional.adaptive_avg_pool2d,
+        dtypes_ascend=tuple(),
+        # IARVJM 910A underlying architecture does not support fp32 and will convert to fp16 operations.
+        # Therefore, float32 will be skipped in 910A.
+        dtypes_ascend910b=tuple(d for d in dtypes_as_torch if d == ms.float32),
+        dtypes_cpu=(),
+        dtypes_gpu=(),
+        op_basic_reference_inputs_func=basic_sample_inputs_adaptive_avg_pool2d,
+        op_extra_reference_inputs_func=None,
+        op_dynamic_inputs_func=None,
+    ),
+    'mint.nn.functional.adaptive_avg_pool1d': OpInfo(
+        name='mint.nn.functional.adaptive_avg_pool1d',
+        op=mint.nn.functional.adaptive_avg_pool1d,
+        ref=torch.nn.functional.adaptive_avg_pool1d,
+        dtypes_ascend=tuple(),
+        # IARVJM 910A underlying architecture does not support fp32 and will convert to fp16 operations.
+        # Therefore, float32 will be skipped in 910A.
+        dtypes_ascend910b=tuple(d for d in dtypes_as_torch if d == ms.float32),
+        dtypes_cpu=(),
+        dtypes_gpu=(),
+        op_basic_reference_inputs_func=basic_sample_inputs_adaptive_avg_pool1d,
+        op_extra_reference_inputs_func=None,
+        op_dynamic_inputs_func=None,
+    ),
+    'mint.nn.functional.avg_pool2d': OpInfo(
+        name='mint.nn.functional.avg_pool2d',
+        op=mint.nn.functional.avg_pool2d,
+        ref=torch.nn.functional.avg_pool2d,
+        dtypes_ascend=tuple(),
+        # IARVJM 910A underlying architecture does not support fp32 and will convert to fp16 operations.
+        # Therefore, float32 will be skipped in 910A.
+        dtypes_ascend910b=tuple(d for d in dtypes_as_torch if d == ms.float32),
+        dtypes_cpu=(),
+        dtypes_gpu=(),
+        op_basic_reference_inputs_func=basic_sample_inputs_avgpool2d,
+        op_extra_reference_inputs_func=None,
+        op_dynamic_inputs_func=None,
+    ),
+    'mint.nn.functional.max_pool2d': OpInfo(
+        name='mint.nn.functional.max_pool2d',
+        op=mint.nn.functional.max_pool2d,
+        ref=torch.nn.functional.max_pool2d,
+        dtypes_ascend=tuple(),
+        #skip 910a
+        dtypes_ascend910b=tuple(d for d in dtypes_as_torch if d == ms.float32),
+        dtypes_cpu=(),
+        dtypes_gpu=(),
+        op_basic_reference_inputs_func=basic_sample_inputs_max_pool,
+        op_extra_reference_inputs_func=None,
+        op_dynamic_inputs_func=None,
+    ),
+    'mint.nn.AdaptiveAvgPool2d': OpInfo(
+        name='mint.nn.AdaptiveAvgPool2d',
+        op=nn_adaptiveavgpool2d_ms,
+        ref=nn_adaptiveavgpool2d_torch,
+        dtypes_ascend=tuple(),
+        # IARVJM 910A underlying architecture does not support fp32 and will convert to fp16 operations.
+        # Therefore, float32 will be skipped in 910A.
+        dtypes_ascend910b=tuple(d for d in dtypes_as_torch if d == ms.float32),
+        dtypes_cpu=(),
+        dtypes_gpu=(),
+        op_basic_reference_inputs_func=basic_sample_inputs_adaptivegpool2d,
+        op_extra_reference_inputs_func=None,
+        op_dynamic_inputs_func=None,
+    ),
+    'mint.nn.AdaptiveAvgPool3d': OpInfo(
+        name='mint.nn.AdaptiveAvgPool3d',
+        op=nn_adaptiveavgpool3d_ms,
+        ref=nn_adaptiveavgpool3d_torch,
+        dtypes_ascend=tuple(),
+        # IARVJM 910A underlying architecture does not support fp32 and will convert to fp16 operations.
+        # Therefore, float32 will be skipped in 910A.
+        dtypes_ascend910b=tuple(d for d in dtypes_as_torch if d == ms.float32),
+        dtypes_cpu=(),
+        dtypes_gpu=(),
+        op_basic_reference_inputs_func=basic_sample_inputs_adaptivegpool3d,
+        op_extra_reference_inputs_func=None,
+        op_dynamic_inputs_func=None,
+    ),
+    'Tensor.unsqueeze': OpInfo(
+        name='Tensor.unsqueeze',
+        op=tensor_unsqueeze_ms,
+        ref=tensor_unsqueeze_torch,
+        dtypes_ascend=tuple(d for d in dtypes_as_torch if (not d.is_complex and d != ms.bfloat16)),
+        dtypes_ascend910b=tuple(d for d in dtypes_as_torch if not d.is_complex),
+        dtypes_cpu=(),
+        dtypes_gpu=(),
+        op_basic_reference_inputs_func=basic_sample_inputs_mint_unsqueeze,
+        op_extra_reference_inputs_func=None,
+        op_dynamic_inputs_func=None,
+    ),
+    'Tensor.transpose': OpInfo(
+        name='Tensor.transpose',
+        op=tensor_transpose_ms,
+        ref=tensor_transpose_torch,
+        dtypes_ascend=tuple(d for d in dtypes_as_torch if (not d.is_complex and d != ms.bfloat16)),
+        dtypes_ascend910b=tuple(d for d in dtypes_as_torch if not d.is_complex),
+        dtypes_cpu=(),
+        dtypes_gpu=(),
+        op_basic_reference_inputs_func=basic_sample_inputs_mint_transpose,
+        op_extra_reference_inputs_func=None,
+        op_dynamic_inputs_func=None,
+    ),
+    'Tensor.topk': OpInfo(
+        name='Tensor.topk',
+        op=tensor_topk_ms,
+        ref=tensor_topk_torch,
+        dtypes_ascend=(ms.float32, ),
+        dtypes_ascend910b=(ms.float32, ),
+        dtypes_cpu=(),
+        dtypes_gpu=(),
+        op_basic_reference_inputs_func=basic_sample_inputs_mint_topk,
+        op_extra_reference_inputs_func=None,
+        op_dynamic_inputs_func=None,
     ),
     'mint.unique': OpInfo(
         name='mint.unique',
@@ -6438,6 +7012,8 @@ binary_op_db = [
     'mint.floor_divide',
     'Tensor.floor_divide',
     'mint.pow',
+    'mint.atan2',
+    'Tensor.atan2',
 ]
 
 unary_op_db = [
@@ -6514,6 +7090,7 @@ unary_op_db = [
     'mint.cosh',
     'mint.cos',
     'Tensor.cos',
+    'Tensor.reciprocal',
 ]
 
 other_op_db = [
@@ -6581,6 +7158,21 @@ other_op_db = [
     'mint.nn.functional.layer_norm',
     'mint.nn.GroupNorm',
     'mint.nn.LayerNorm',
+    'mint.permute',
+    'mint.transpose',
+    'mint.unsqueeze',
+    'mint.topk',
+    'mint.normal',
+    'mint.nn.functional.adaptive_avg_pool1d',
+    'mint.nn.functional.adaptive_avg_pool2d',
+    'mint.nn.functional.adaptive_avg_pool3d',
+    'mint.nn.functional.avg_pool2d',
+    'mint.nn.functional.max_pool2d',
+    'mint.nn.AdaptiveAvgPool2d',
+    'mint.nn.AdaptiveAvgPool3d',
+    'Tensor.transpose',
+    'Tensor.unsqueeze',
+    'Tensor.topk',
 ]
 
 reduction_op_db = [

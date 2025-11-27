@@ -545,7 +545,9 @@ class OpsFactory():
             # dout_i = torch_douts[idx]
             if isinstance(outi, (tuple, list)):
                 grad_list = [torch.ones_like(o) for o in outi]
-                torch.autograd.backward(list(outi), grad_tensors=grad_list)
+                tensor_require_grad = [t for t in outi if t.requires_grad]
+                grad_list_filtered = [g for t, g in zip(outi, grad_list) if t.requires_grad]
+                torch.autograd.backward(tensor_require_grad, grad_tensors=grad_list_filtered)
             else:
                 outi_grad = torch.ones_like(outi)
                 outi.backward(gradient=outi_grad)
