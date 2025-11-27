@@ -90,12 +90,13 @@ int SparseFillEmptyRowsGpuKernelMod::Resize(const std::vector<KernelTensor *> &i
     abstract::TypeIdSize(inputs[kIndex0]->dtype_id()) * input_indices_shapes_[kIndex0] * input_indices_shapes_[kIndex1];
   input_values_size_ = abstract::TypeIdSize(inputs[kIndex1]->dtype_id()) * input_values_shapes_[kIndex0];
   input_dense_shape_size_ = abstract::TypeIdSize(inputs[kIndex2]->dtype_id()) * input_dense_shape_shapes_[kIndex0];
-  output_elements1_ =
-    std::accumulate(output_indices_shapes_.begin(), output_indices_shapes_.end(), 1, std::multiplies<int64_t>());
-  output_elements2_ =
-    std::accumulate(output_values_shapes_.begin(), output_values_shapes_.end(), 1, std::multiplies<int64_t>());
-  output_elements3_ = std::accumulate(output_empty_row_indicator_shape_.begin(),
-                                      output_empty_row_indicator_shape_.end(), 1, std::multiplies<int64_t>());
+  output_elements1_ = std::accumulate(output_indices_shapes_.begin(), output_indices_shapes_.end(),
+                                      static_cast<int64_t>(1), std::multiplies<int64_t>());
+  output_elements2_ = std::accumulate(output_values_shapes_.begin(), output_values_shapes_.end(),
+                                      static_cast<int64_t>(1), std::multiplies<int64_t>());
+  output_elements3_ =
+    std::accumulate(output_empty_row_indicator_shape_.begin(), output_empty_row_indicator_shape_.end(),
+                    static_cast<int64_t>(1), std::multiplies<int64_t>());
   output_elements4_ = std::accumulate(output_reverse_index_map_shape_.begin(), output_reverse_index_map_shape_.end(), 1,
                                       std::multiplies<int64_t>());
   dense_row = output_elements3_;

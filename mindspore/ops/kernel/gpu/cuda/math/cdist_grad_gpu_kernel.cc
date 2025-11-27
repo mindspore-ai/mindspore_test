@@ -50,11 +50,16 @@ int CdistGradGpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs,
   std::vector<int64_t> dist_shape = inputs[kIndex3]->GetShapeVector();
   std::vector<int64_t> output_shape = outputs[kIndex0]->GetShapeVector();
   auto in_shape_size = in_shape0.size();
-  grad_size_ = std::accumulate(grad_shape.begin(), grad_shape.end(), 1, std::multiplies<int64_t>());
-  input0_size_ = std::accumulate(in_shape0.begin(), in_shape0.end(), 1, std::multiplies<int64_t>());
-  input1_size_ = std::accumulate(in_shape1.begin(), in_shape1.end(), 1, std::multiplies<int64_t>());
-  dist_size_ = std::accumulate(dist_shape.begin(), dist_shape.end(), 1, std::multiplies<int64_t>());
-  out_size_ = std::accumulate(output_shape.begin(), output_shape.end(), 1, std::multiplies<int64_t>());
+  grad_size_ =
+    std::accumulate(grad_shape.begin(), grad_shape.end(), static_cast<int64_t>(1), std::multiplies<int64_t>());
+  input0_size_ =
+    std::accumulate(in_shape0.begin(), in_shape0.end(), static_cast<int64_t>(1), std::multiplies<int64_t>());
+  input1_size_ =
+    std::accumulate(in_shape1.begin(), in_shape1.end(), static_cast<int64_t>(1), std::multiplies<int64_t>());
+  dist_size_ =
+    std::accumulate(dist_shape.begin(), dist_shape.end(), static_cast<int64_t>(1), std::multiplies<int64_t>());
+  out_size_ =
+    std::accumulate(output_shape.begin(), output_shape.end(), static_cast<int64_t>(1), std::multiplies<int64_t>());
   if (in_shape1.size() != in_shape_size || in_shape_size < kCdistInputDimsMin) {
     MS_LOG(ERROR) << "For " << kernel_name_ << ",invalid input shape, input0 shape size " << in_shape_size
                   << ", input1 shape size " << in_shape1.size();

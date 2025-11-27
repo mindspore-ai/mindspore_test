@@ -66,7 +66,8 @@ int SparseTensorToCSRSparseMatrixGpuKernelMod::Resize(const std::vector<KernelTe
   for (size_t i = 0; i < inputs.size(); i++) {
     std::vector<int64_t> input_shape =
       std::vector<int64_t>(inputs.at(i)->GetDeviceShapeVector().begin(), inputs.at(i)->GetDeviceShapeVector().end());
-    size_t input_elements_ = std::accumulate(input_shape.begin(), input_shape.end(), 1, std::multiplies<int64_t>());
+    size_t input_elements_ =
+      std::accumulate(input_shape.begin(), input_shape.end(), static_cast<int64_t>(1), std::multiplies<int64_t>());
     elements[i] = input_elements_;
   }
   unit_size_ = abstract::TypeIdSize(kernel_attr.GetInputAttr(0).dtype);
@@ -74,7 +75,8 @@ int SparseTensorToCSRSparseMatrixGpuKernelMod::Resize(const std::vector<KernelTe
   for (size_t i = 0; i < outputs.size(); i++) {
     std::vector<int64_t> output_shape =
       std::vector<int64_t>(outputs.at(i)->GetDeviceShapeVector().begin(), outputs.at(i)->GetDeviceShapeVector().end());
-    size_t output_elements_ = std::accumulate(output_shape.begin(), output_shape.end(), 1, std::multiplies<int64_t>());
+    size_t output_elements_ =
+      std::accumulate(output_shape.begin(), output_shape.end(), static_cast<int64_t>(1), std::multiplies<int64_t>());
     size_t unit_size_ = abstract::TypeIdSize(kernel_attr.GetOutputAttr(i).dtype);
     output_size_list_.push_back(output_elements_ * unit_size_);
     if (i == 1) {

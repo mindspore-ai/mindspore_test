@@ -107,7 +107,8 @@ std::tuple<int64_t, ShapeVector, int64_t> RemoveExpandedDims::ConstRemoveExpande
     }
   }
   if (has_false) {
-    if (std::accumulate(broadcast_shape.begin(), broadcast_shape.end(), 1, std::multiplies<>()) != 1) {
+    if (std::accumulate(broadcast_shape.begin(), broadcast_shape.end(), static_cast<int64_t>(1), std::multiplies<>()) !=
+        1) {
       MS_EXCEPTION(IndexError) << "Unable to broadcast indices " << broadcast_shape;
     }
     indices_out = 0;

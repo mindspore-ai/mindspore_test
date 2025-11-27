@@ -37,8 +37,9 @@ void GroupNormGradAscendCustomize(const std::shared_ptr<OpRunner> &op, const Ten
   const auto &x_shape = input_tensor->shape();
   const int64_t N = x_shape[0];
   const int64_t C = x_shape[1];
-  const int64_t HxW =
-    (x_shape.size() == kDim2) ? 1 : std::accumulate(x_shape.begin() + 2, x_shape.end(), 1, std::multiplies<int64_t>());
+  const int64_t HxW = (x_shape.size() == kDim2) ? 1
+                                                : std::accumulate(x_shape.begin() + 2, x_shape.end(),
+                                                                  static_cast<int64_t>(1), std::multiplies<int64_t>());
   auto num_groups_imm = GetValue<int64_t>(num_groups);
   auto dx_require = GetValue<bool>(dx_is_require);
   auto dgamma_require = GetValue<bool>(dgamma_is_require);

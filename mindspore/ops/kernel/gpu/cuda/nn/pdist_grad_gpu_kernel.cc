@@ -73,10 +73,12 @@ int PDistGradGpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs,
                   << " but got " << y_dim << "-D.";
     return false;
   }
-  y_grad_size_ = std::accumulate(y_grad_shape.begin(), y_grad_shape.end(), 1, std::multiplies<int64_t>());
-  x_size_ = std::accumulate(x_shape.begin(), x_shape.end(), 1, std::multiplies<int64_t>());
-  y_size_ = std::accumulate(y_shape.begin(), y_shape.end(), 1, std::multiplies<int64_t>());
-  size_t x_grad_size = std::accumulate(output_shape.begin(), output_shape.end(), 1, std::multiplies<int64_t>());
+  y_grad_size_ =
+    std::accumulate(y_grad_shape.begin(), y_grad_shape.end(), static_cast<int64_t>(1), std::multiplies<int64_t>());
+  x_size_ = std::accumulate(x_shape.begin(), x_shape.end(), static_cast<int64_t>(1), std::multiplies<int64_t>());
+  y_size_ = std::accumulate(y_shape.begin(), y_shape.end(), static_cast<int64_t>(1), std::multiplies<int64_t>());
+  size_t x_grad_size =
+    std::accumulate(output_shape.begin(), output_shape.end(), static_cast<int64_t>(1), std::multiplies<int64_t>());
   matrix_row_ = x_shape[x_shape.size() - kTwoindex];
   matrix_col_ = x_shape[x_shape.size() - kOneindex];
   if (x_grad_size == 0) {

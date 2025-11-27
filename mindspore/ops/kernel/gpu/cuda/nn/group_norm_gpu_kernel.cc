@@ -52,9 +52,10 @@ int GroupNormGpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs,
   const auto &x_shape = inputs[kIndex0]->GetShapeVector();
   auto batch = x_shape[0];
   auto num_groups = inputs[kIndex1]->GetValueWithCheck<int64_t>();
-  HxW_ = LongToSize((x_shape.size() == kNumberTwo)
-                      ? 1
-                      : std::accumulate(x_shape.begin() + kIndex2, x_shape.end(), 1, std::multiplies<int64_t>()));
+  HxW_ =
+    LongToSize((x_shape.size() == kNumberTwo) ? 1
+                                              : std::accumulate(x_shape.begin() + kIndex2, x_shape.end(),
+                                                                static_cast<int64_t>(1), std::multiplies<int64_t>()));
   eps_ = inputs[kIndex4]->GetValueWithCheck<float_t>();
   num_channel_ = LongToSize(x_shape[1]);
   inner_size_ = LongToSize(num_channel_ * HxW_ / num_groups);

@@ -190,14 +190,15 @@ bool SparseAddCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTensor 
   (void)out_indices_shape.emplace_back(SizeToLong(indices_column_));
   (void)out_values_shape.emplace_back(SizeToLong(whole_values.size()));
   outputs[kSumIndicesIdx]->SetShapeVector(out_indices_shape);
-  auto ele_size =
-    LongToSize(std::accumulate(out_indices_shape.begin(), out_indices_shape.end(), 1, std::multiplies<int64_t>()));
+  auto ele_size = LongToSize(std::accumulate(out_indices_shape.begin(), out_indices_shape.end(),
+                                             static_cast<int64_t>(1), std::multiplies<int64_t>()));
   outputs[kSumIndicesIdx]->set_size(ele_size * UnitSizeInBytes(outputs[kSumIndicesIdx]->dtype_id()));
   outputs[kSumValuesIdx]->SetShapeVector(out_values_shape);
   outputs[kSumValuesIdx]->set_size(whole_values.size() * UnitSizeInBytes(outputs[kSumValuesIdx]->dtype_id()));
   auto const &dense_shape = inputs.at(kAShapeIdx)->GetShapeVector();
   outputs[kSumShapeIdx]->SetShapeVector(dense_shape);
-  ele_size = LongToSize(std::accumulate(dense_shape.begin(), dense_shape.end(), 1, std::multiplies<int64_t>()));
+  ele_size = LongToSize(
+    std::accumulate(dense_shape.begin(), dense_shape.end(), static_cast<int64_t>(1), std::multiplies<int64_t>()));
   outputs[kSumShapeIdx]->set_size(ele_size * UnitSizeInBytes(outputs[kSumShapeIdx]->dtype_id()));
 
   return true;

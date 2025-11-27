@@ -51,7 +51,8 @@ int CholeskyInverseGpuKernelMod::Resize(const std::vector<KernelTensor *> &input
   upper_ = inputs[kIndex1]->GetValueWithCheck<bool>();
   ResetResource();
   auto output_shape = outputs[0]->GetShapeVector();
-  output_elements_ = std::accumulate(output_shape.begin(), output_shape.end(), 1, std::multiplies<int64_t>());
+  output_elements_ =
+    std::accumulate(output_shape.begin(), output_shape.end(), static_cast<int64_t>(1), std::multiplies<int64_t>());
   if (output_elements_ == 0) {
     is_null_input_ = true;
   }

@@ -54,8 +54,10 @@ int UpperBoundGpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs,
                                                               inputs.at(kIndex0)->GetDeviceShapeVector().end());
   std::vector<int64_t> values_shape_ = std::vector<int64_t>(inputs.at(kIndex1)->GetDeviceShapeVector().begin(),
                                                             inputs.at(kIndex1)->GetDeviceShapeVector().end());
-  sorted_x_elements_ = std::accumulate(sorted_x_shape_.begin(), sorted_x_shape_.end(), 1, std::multiplies<int64_t>());
-  values_elements_ = std::accumulate(values_shape_.begin(), values_shape_.end(), 1, std::multiplies<int64_t>());
+  sorted_x_elements_ = std::accumulate(sorted_x_shape_.begin(), sorted_x_shape_.end(), static_cast<int64_t>(1),
+                                       std::multiplies<int64_t>());
+  values_elements_ =
+    std::accumulate(values_shape_.begin(), values_shape_.end(), static_cast<int64_t>(1), std::multiplies<int64_t>());
   if (sorted_x_elements_ == 0 || values_elements_ == 0) {
     is_null_input_ = true;
   }

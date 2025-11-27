@@ -53,8 +53,10 @@ abstract::TupleShapePtr DenseToDenseSetOperationInferShape(const PrimitivePtr &p
   }
   output_rank_dim = x1_rank;
   int64_t max_num = 0;
-  auto x1_num = std::accumulate(x1_shape_vec.begin(), x1_shape_vec.end(), 1, std::multiplies<int64_t>());
-  auto x2_num = std::accumulate(x2_shape_vec.begin(), x2_shape_vec.end(), 1, std::multiplies<int64_t>());
+  auto x1_num =
+    std::accumulate(x1_shape_vec.begin(), x1_shape_vec.end(), static_cast<int64_t>(1), std::multiplies<int64_t>());
+  auto x2_num =
+    std::accumulate(x2_shape_vec.begin(), x2_shape_vec.end(), static_cast<int64_t>(1), std::multiplies<int64_t>());
   ShapeVector x1_group_shape_vec;
   x1_group_shape_vec.assign(x1_shape_vec.begin(), x1_shape_vec.end() - 1);
   ShapeVector x2_group_shape_vec;

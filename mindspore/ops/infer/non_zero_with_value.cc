@@ -86,7 +86,8 @@ class OPS_API AGNonZeroWithValueInfer : public abstract::OpInferBase {
 
     auto shape_vec = x_shape->GetShapeVector();
     int64_t rank_base = SizeToLong(shape_vec.size());
-    int64_t max_size = std::accumulate(shape_vec.begin(), shape_vec.end(), 1, std::multiplies<int64_t>());
+    int64_t max_size =
+      std::accumulate(shape_vec.begin(), shape_vec.end(), static_cast<int64_t>(1), std::multiplies<int64_t>());
     (void)y_shape.emplace_back(rank_base);
     // Set as max shape when in running process.
     (void)y_shape.emplace_back(max_size);
