@@ -614,7 +614,7 @@ class DBpediaDataset(SourceDataset, TextBaseDataset):
             Default: ``Shuffle.GLOBAL`` .
             If `shuffle` is ``False`` , no shuffling will be performed.
             If `shuffle` is ``True`` , it is equivalent to setting `shuffle` to
-            ``mindspore.dataset.Shuffle.GLOBAL`` .
+            ``Shuffle.GLOBAL`` .
             Set the mode of data shuffling by passing in enumeration variables:
 
             - ``Shuffle.GLOBAL`` : Shuffle both the files and samples.
@@ -659,7 +659,7 @@ class DBpediaDataset(SourceDataset, TextBaseDataset):
     MeanOfTransportation, Building, NaturalPlace, Village, Animal, Plant, Album, Film, WrittenWork.
 
     Here is the original DBpedia dataset structure.
-    You can unzip the dataset files into this directory structure and read by Mindspore's API.
+    You can unzip the dataset files into this directory structure and read by MindSpore's API.
 
     .. code-block::
 
@@ -714,7 +714,7 @@ class EnWik9Dataset(SourceDataset, TextBaseDataset):
             Bool type and Shuffle enum are both supported to pass in. Default: ``True``.
             If `shuffle` is ``False`` , no shuffling will be performed.
             If `shuffle` is ``True`` , it is equivalent to setting `shuffle` to
-            ``mindspore.dataset.Shuffle.GLOBAL`` .
+            ``Shuffle.GLOBAL`` .
             Set the mode of data shuffling by passing in enumeration variables:
 
             - ``Shuffle.GLOBAL`` : Shuffle both the files and samples.
@@ -919,8 +919,8 @@ class IWSLT2016Dataset(SourceDataset, TextBaseDataset):
     IWSLT2016(International Workshop on Spoken Language Translation) dataset.
 
     The generated dataset has two columns: :py:obj:`[text, translation]` .
-    The tensor of column :py:obj: `text` is of the string type.
-    The column :py:obj: `translation` is of the string type.
+    The tensor of column :py:obj:`text` is of the string type.
+    The column :py:obj:`translation` is of the string type.
 
     Args:
         dataset_dir (str): Path to the root directory that contains the dataset.
@@ -941,7 +941,7 @@ class IWSLT2016Dataset(SourceDataset, TextBaseDataset):
             Default: ``Shuffle.GLOBAL`` .
             If `shuffle` is ``False``, no shuffling will be performed.
             If `shuffle` is ``True``, it is equivalent to setting `shuffle` to
-            ``mindspore.dataset.Shuffle.GLOBAL`` .
+            ``Shuffle.GLOBAL`` .
             Set the mode of data shuffling by passing in enumeration variables:
 
             - ``Shuffle.GLOBAL`` : Shuffle both the files and samples.
@@ -1074,7 +1074,7 @@ class IWSLT2017Dataset(SourceDataset, TextBaseDataset):
             Default: ``Shuffle.GLOBAL`` .
             If `shuffle` is ``False`` , no shuffling will be performed.
             If `shuffle` is ``True`` , it is equivalent to setting `shuffle` to
-            ``mindspore.dataset.Shuffle.GLOBAL`` .
+            ``Shuffle.GLOBAL`` .
             Set the mode of data shuffling by passing in enumeration variables:
 
             - ``Shuffle.GLOBAL`` : Shuffle both the files and samples.
@@ -1179,12 +1179,13 @@ class Multi30kDataset(SourceDataset, TextBaseDataset):
         num_parallel_workers (int, optional): Number of worker threads to read the data.
             Default: ``None`` , will use global default workers(8), it can be set
             by :func:`mindspore.dataset.config.set_num_parallel_workers` .
-        shuffle (Union[bool, Shuffle], optional): Whether to shuffle the dataset. Default: ``None`` ,
-            means ``mindspore.dataset.Shuffle.GLOBAL`` .
-            If ``False`` is provided, no shuffling will be performed.
-            If ``True`` is provided, it is the same as setting to
-            ``mindspore.dataset.Shuffle.GLOBAL`` .
-            If Shuffle is provided, the effect is as follows:
+        shuffle (Union[bool, Shuffle], optional): Perform reshuffling of the data every epoch.
+            Bool type and Shuffle enum are both supported to pass in.
+            Default: ``Shuffle.GLOBAL`` .
+            If `shuffle` is ``False`` , no shuffling will be performed.
+            If `shuffle` is ``True`` , it is equivalent to setting `shuffle` to
+            ``Shuffle.GLOBAL`` .
+            Set the mode of data shuffling by passing in enumeration variables:
 
             - ``Shuffle.GLOBAL`` : Shuffle both the files and samples.
             - ``Shuffle.FILES`` : Shuffle files only.
@@ -1202,13 +1203,13 @@ class Multi30kDataset(SourceDataset, TextBaseDataset):
 
     Raises:
         RuntimeError: If `dataset_dir` does not contain data files.
-        ValueError: If `usage` is not ``'train'``, ``'test'``, ``'valid'`` or ``'all'``.
-        TypeError: If `language_pair` is not of type Sequence[str, str].
         RuntimeError: If num_samples is less than 0.
         RuntimeError: If `num_parallel_workers` exceeds the max thread numbers.
         RuntimeError: If `num_shards` is specified but `shard_id` is None.
         RuntimeError: If `shard_id` is specified but `num_shards` is None.
         ValueError: If `shard_id` is not in range of [0, `num_shards` ).
+        ValueError: If `usage` is not ``'train'``, ``'test'``, ``'valid'`` or ``'all'``.
+        TypeError: If `language_pair` is not of type Sequence[str, str].
 
     Tutorial Examples:
         - `Load & Process Data With Dataset Pipeline
@@ -1294,7 +1295,7 @@ class PennTreebankDataset(SourceDataset, TextBaseDataset):
             Default: ``Shuffle.GLOBAL`` .
             If `shuffle` is ``False`` , no shuffling will be performed.
             If `shuffle` is ``True`` , it is equivalent to setting `shuffle` to
-            ``mindspore.dataset.Shuffle.GLOBAL`` .
+            ``Shuffle.GLOBAL`` .
             Set the mode of data shuffling by passing in enumeration variables:
 
             - ``Shuffle.GLOBAL`` : Shuffle both the files and samples.
@@ -1395,7 +1396,7 @@ class SogouNewsDataset(SourceDataset, TextBaseDataset):
             Default: ``Shuffle.GLOBAL`` .
             If `shuffle` is ``False`` , no shuffling will be performed.
             If `shuffle` is ``True`` , it is equivalent to setting `shuffle` to
-            ``mindspore.dataset.Shuffle.GLOBAL`` .
+            ``Shuffle.GLOBAL`` .
             Set the mode of data shuffling by passing in enumeration variables:
 
             - ``Shuffle.GLOBAL`` : Shuffle both the files and samples, same as setting shuffle to True.
@@ -1494,11 +1495,12 @@ class SQuADDataset(SourceDataset, TextBaseDataset):
         num_parallel_workers (int, optional): Number of worker threads to read the data.
             Default: ``None`` , will use global default workers(8), it can be set
             by :func:`mindspore.dataset.config.set_num_parallel_workers` .
-        shuffle (Union[bool, Shuffle], optional): Whether to shuffle the dataset.
+        shuffle (Union[bool, Shuffle], optional): Perform reshuffling of the data every epoch.
+            Bool type and Shuffle enum are both supported to pass in.
             Default: ``Shuffle.GLOBAL`` .
             If ``False`` is provided, no shuffling will be performed.
             If ``True`` is provided, it is the same as setting to
-            ``mindspore.dataset.Shuffle.GLOBAL`` .
+            ``Shuffle.GLOBAL`` .
             If Shuffle is provided, the effect is as follows:
 
             - ``Shuffle.GLOBAL`` : Shuffle both the files and samples.
@@ -1619,7 +1621,7 @@ class SST2Dataset(SourceDataset, TextBaseDataset):
             Bool type and Shuffle enum are both supported to pass in.
             Default: ``Shuffle.GLOBAL`` .
             If `shuffle` is ``False`` , no shuffling will be performed;
-            If `shuffle` is ``True`` , the behavior is the same as setting shuffle to be Shuffle.GLOBAL
+            If `shuffle` is ``True`` , the behavior is the same as setting `shuffle` to be ``Shuffle.GLOBAL`` .
             Set the mode of data shuffling by passing in enumeration variables:
 
             - ``Shuffle.GLOBAL`` : Shuffle both the files and samples.
@@ -1664,7 +1666,7 @@ class SST2Dataset(SourceDataset, TextBaseDataset):
     annotated by 3 human judges.
 
     Here is the original SST2 dataset structure.
-    You can unzip the dataset files into this directory structure and read by Mindspore's API.
+    You can unzip the dataset files into this directory structure and read by MindSpore's API.
 
     .. code-block::
 
@@ -1720,11 +1722,11 @@ class TextFileDataset(SourceDataset, TextBaseDataset):
             Default: ``None`` , will use global default workers(8), it can be set
             by :func:`mindspore.dataset.config.set_num_parallel_workers` .
         shuffle (Union[bool, Shuffle], optional): Perform reshuffling of the data every epoch.
-            Default: ``Shuffle.GLOBAL`` .
             Bool type and Shuffle enum are both supported to pass in.
+            Default: ``Shuffle.GLOBAL`` .
             If `shuffle` is ``False`` , no shuffling will be performed.
             If `shuffle` is ``True`` , performs global shuffle.
-            There are three levels of shuffling, desired shuffle enum defined by :class:`mindspore.dataset.Shuffle` .
+            There are two levels of shuffling, desired shuffle enum defined by :class:`mindspore.dataset.Shuffle` .
 
             - ``Shuffle.GLOBAL`` : Shuffle both the files and samples, same as setting shuffle to True.
             - ``Shuffle.FILES`` : Shuffle files only.
@@ -1733,7 +1735,7 @@ class TextFileDataset(SourceDataset, TextBaseDataset):
             When this argument is specified, `num_samples` reflects the maximum sample number of per shard.
             Used in `data parallel training <https://www.mindspore.cn/tutorials/en/master/
             parallel/data_parallel.html#loading-datasets>`_ .
-        shard_id (int, optional): The shard ID within `num_shards` . Default: ``None`` . This
+        shard_id (int, optional): The shard ID within `num_shards` . Default: ``None`` . This 
             argument can only be specified when `num_shards` is also specified.
         cache (DatasetCache, optional): Use tensor caching service to speed up dataset processing. More details:
             `Single-Node Data Cache <https://www.mindspore.cn/tutorials/en/master/dataset/cache.html>`_ .
@@ -1788,7 +1790,7 @@ class UDPOSDataset(SourceDataset, TextBaseDataset):
             Default: ``Shuffle.GLOBAL`` .
             If `shuffle` is ``False`` , no shuffling will be performed.
             If `shuffle` is ``True`` , it is equivalent to setting `shuffle` to
-            ``mindspore.dataset.Shuffle.GLOBAL`` .
+            ``Shuffle.GLOBAL`` .
             Set the mode of data shuffling by passing in enumeration variables:
 
             - ``Shuffle.GLOBAL`` : Shuffle both the files and samples.
@@ -1875,7 +1877,7 @@ class WikiTextDataset(SourceDataset, TextBaseDataset):
             Default: ``Shuffle.GLOBAL`` .
             If `shuffle` is ``False`` , no shuffling will be performed.
             If `shuffle` is ``True`` , it is equivalent to setting `shuffle` to
-            ``mindspore.dataset.Shuffle.GLOBAL`` .
+            ``Shuffle.GLOBAL`` .
             Set the mode of data shuffling by passing in enumeration variables:
 
             - ``Shuffle.GLOBAL`` : Shuffle both the files and samples.
@@ -1973,7 +1975,7 @@ class YahooAnswersDataset(SourceDataset, TextBaseDataset):
             Default: ``Shuffle.GLOBAL`` .
             If `shuffle` is ``False`` , no shuffling will be performed.
             If `shuffle` is ``True`` , it is equivalent to setting `shuffle` to
-            ``mindspore.dataset.Shuffle.GLOBAL`` .
+            ``Shuffle.GLOBAL`` .
             Set the mode of data shuffling by passing in enumeration variables:
 
             - ``Shuffle.GLOBAL`` : Shuffle both the files and samples.
@@ -2019,7 +2021,7 @@ class YahooAnswersDataset(SourceDataset, TextBaseDataset):
     Politics & Government.
 
     Here is the original YahooAnswers dataset structure.
-    You can unzip the dataset files into this directory structure and read by Mindspore's API.
+    You can unzip the dataset files into this directory structure and read by MindSpore's API.
 
     .. code-block::
 
@@ -2078,7 +2080,7 @@ class YelpReviewDataset(SourceDataset, TextBaseDataset):
             Default: ``Shuffle.GLOBAL`` .
             If `shuffle` is ``False`` , no shuffling will be performed.
             If `shuffle` is ``True`` , it is equivalent to setting `shuffle` to
-            ``mindspore.dataset.Shuffle.GLOBAL`` .
+            ``Shuffle.GLOBAL`` .
             Set the mode of data shuffling by passing in enumeration variables:
 
             - ``Shuffle.GLOBAL`` : Shuffle both the files and samples.

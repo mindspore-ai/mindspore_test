@@ -10,6 +10,7 @@
 "mindspore/"                                                                                            "consider-using-in"
 
 # Mindspore
+"mindspore/mindspore/python/mindspore/dataset/engine/datasets.py"                                                                  "line-too-long"
 "mindspore/mindspore/python/mindspore/_check_deps_version.py"                                                            "broad-except"
 "mindspore/mindspore/python/mindspore/_check_version.py"                                                                 "unused-import"
 "mindspore/mindspore/python/mindspore/_check_version.py"                                                                 "broad-except"
