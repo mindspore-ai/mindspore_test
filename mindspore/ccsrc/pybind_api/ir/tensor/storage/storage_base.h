@@ -27,8 +27,10 @@ class StorageBase {
  public:
   using StorageBasePtr = std::shared_ptr<StorageBase>;
   StorageBase() = default;
-  explicit StorageBase(device::DeviceAddressPtr &device_data) : device_data_(device_data) {}
-  explicit StorageBase(const StorageBase &storage_base) : device_data_(storage_base.device_data_) {}
+  explicit StorageBase(device::DeviceAddressPtr &device_data, TypeId type_id)
+      : device_data_(device_data), type_id_(type_id) {}
+  explicit StorageBase(const StorageBase &storage_base, TypeId type_id)
+      : device_data_(storage_base.device_data_), type_id_(type_id) {}
   ~StorageBase();
 
   uintptr_t DataPtr() const;
@@ -43,6 +45,7 @@ class StorageBase {
 
  private:
   device::DeviceAddressPtr device_data_{nullptr};
+  TypeId type_id_;
 };
 using StorageBasePtr = std::shared_ptr<StorageBase>;
 }  // namespace mindspore

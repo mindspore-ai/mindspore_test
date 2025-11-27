@@ -108,8 +108,8 @@ bool CopyTensorData(const tensor::TensorPtr &tensor, const kernel::KernelTensorP
   return true;
 }
 
-device::DeviceAddressPtr HandleAddressForHeterogeneous(const tensor::TensorPtr &tensor, const ValueNodePtr &value_node,
-                                                       const device::DeviceContext *device_context) {
+tensor::TensorPtr HandleAddressForHeterogeneous(const tensor::TensorPtr &tensor, const ValueNodePtr &value_node,
+                                                const device::DeviceContext *device_context) {
   MS_EXCEPTION_IF_NULL(tensor);
   MS_EXCEPTION_IF_NULL(value_node);
   MS_EXCEPTION_IF_NULL(device_context);
@@ -121,9 +121,11 @@ device::DeviceAddressPtr HandleAddressForHeterogeneous(const tensor::TensorPtr &
     if (!CopyTensorData(tensor, new_kernel_tensor, value_node, device_context)) {
       MS_LOG(EXCEPTION) << "CopyTensorData failed, value_node " << value_node->DebugString();
     }
-    return new_kernel_tensor->device_address();
+
+    return std::make_shared<tensor::Tensor>(new_kernel_tensor->dtype_id(), new_kernel_tensor->GetShapeVector(),
+                                            new_kernel_tensor->device_address());
   }
-  return device_address;
+  return std::make_shared<tensor::Tensor>(tensor->data_type(), tensor->shape(), device_address);
 }
 }  // namespace
 
@@ -212,10 +214,8 @@ void GraphAdapter::UpdateForwardOutputInBpropGraph(const KernelGraphPtr &graph,
     auto tensor = GetTensorFromValueNode(value_node);
     MS_EXCEPTION_IF_NULL(tensor);
 
-    auto device_address = HandleAddressForHeterogeneous(tensor, value_node, device_context);
-    auto input_tensor =
-      std::make_shared<tensor::Tensor>(device_address->type_id(), device_address->GetShapeVector(), device_address);
-    device_address = runtime::DeviceAddressUtils::ConvertContiguousDeviceAddress(nullptr, input_tensor);
+    auto input_tensor = HandleAddressForHeterogeneous(tensor, value_node, device_context);
+    auto device_address = runtime::DeviceAddressUtils::ConvertContiguousDeviceAddress(nullptr, input_tensor);
 
     auto abs = tensor->ToAbstract()->Broaden();
     MS_EXCEPTION_IF_NULL(abs);
@@ -224,7 +224,7 @@ void GraphAdapter::UpdateForwardOutputInBpropGraph(const KernelGraphPtr &graph,
     auto value = abs->GetValue();
     const auto &kernel_tensor = std::make_shared<kernel::KernelTensor>(shape, type, value);
     kernel_tensor->set_device_address(device_address);
-    device_address->SetShapeVector(tensor->shape());
+    kernel_tensor->SetShapeVector(tensor->shape());
     tensor->set_device_address(device_address);
     auto front_node = AnfAlgo::FetchFrontNodeByBackendNode(value_node, *graph);
     MS_EXCEPTION_IF_NULL(front_node);

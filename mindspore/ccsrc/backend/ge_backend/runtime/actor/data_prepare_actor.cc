@@ -255,10 +255,10 @@ void DataPrepareActor::UpdateDeviceAddressForDataNode(const AnfNodePtr &input_no
 
   // If tensor address and device address are different (heterogeneous scenarios), or device address is persisted
   // Update device address data in data source actor process.
-  if (kernel_tensor->is_ptr_persisted() || tensor_address->GetDeviceType() != device_address->GetDeviceType() ||
-      (!AnfAlgo::IsEquivalentFormat(kernel::GetFormatFromStrToEnum(tensor_address->format()),
-                                    kernel_tensor->format())) ||
-      (tensor_address->type_id() != kernel_tensor->dtype_id())) {
+  if (kernel_tensor->is_ptr_persisted() ||
+      (tensor_address->GetDeviceType() != device_address->GetDeviceType() ||
+       (!AnfAlgo::IsEquivalentFormat(input_tensor->format(), kernel_tensor->format())) ||
+       input_tensor->data_type() != kernel_tensor->dtype_id())) {
     MS_LOG(DEBUG) << "Cannot update address of " << input_node->DebugString();
     return;
   }
@@ -682,7 +682,12 @@ void DataPrepareActor::PrepareDataForControlValueNode(const KernelWithIndex &nod
   if (device_tensor->GetPtr() != nullptr) {
     return;
   }
-
+  if (tensor->data_type() != kernel_tensor->dtype_id() || tensor->shape() != kernel_tensor->GetShapeVector() ||
+      tensor->format() != kernel_tensor->format()) {
+    MS_LOG(INFO) << "Not same info for tensor:" << tensor->ToString() << " type:" << TypeIdLabel(tensor->data_type())
+                 << " shape:" << tensor->shape() << " format:" << tensor->format()
+                 << " and kernel tensor:" << kernel_tensor->ToString();
+  }
   tensor->set_device_address(device_tensor);
   UpdateRefCount(kernel_tensor, true);
 
@@ -928,8 +933,10 @@ void DataPrepareActor::PrepareDataForWeightNode(const AnfNodePtr &backend_node, 
   auto device_tensor = node_kernel_tensor->device_address();
   MS_EXCEPTION_IF_NULL(device_tensor);
   auto host_tensor_address = tensor->device_address();
+  // Host kernel tensor replace the input tensor data.
   auto host_kernel_tensor = node_kernel_tensor->CloneKernelTensor();
   host_kernel_tensor->set_device_address(host_tensor_address);
+  host_kernel_tensor->set_format(tensor->format());
   // Use the device address of host tensor to set device tensor.
   bool is_need_sync = false;
 
@@ -944,6 +951,7 @@ void DataPrepareActor::PrepareDataForWeightNode(const AnfNodePtr &backend_node, 
                           << " for ge backend device type:" << device::GetDeviceTypeByName(device_name);
       }
       host_tensor_address = device_tensor;
+      host_kernel_tensor->set_format(node_kernel_tensor->format());
       is_need_sync = true;
       UpdateRefCount(host_kernel_tensor, true);
     }
@@ -963,6 +971,7 @@ void DataPrepareActor::PrepareDataForWeightNode(const AnfNodePtr &backend_node, 
     SyncTensorData(tensor, host_kernel_tensor, backend_node, context, real_strategy_);
   }
   tensor->set_device_address(host_tensor_address);
+  tensor->set_format(host_kernel_tensor->format());
 }
 
 void DataPrepareActor::PrepareDeviceTensorStoreForControlNode(const ControlNodeParserPtr &control_node_parser,
@@ -1005,7 +1014,7 @@ void DataPrepareActor::PrepareDeviceTensorStoreForControlNode(const ControlNodeP
     }
     MS_EXCEPTION_IF_NULL(kernel_tensors[0]);
     MS_EXCEPTION_IF_NULL(kernel_tensors[0]->device_address());
-    auto host_tensor_address = std::dynamic_pointer_cast<DeviceTensor>(tensor->device_address());
+    auto host_tensor_address = tensor->device_address();
     if (host_tensor_address == nullptr || (kernel_tensors[0]->device_address() == host_tensor_address) ||
         (kernel_tensors[0]->IsPtrValid())) {
       continue;
@@ -1019,6 +1028,7 @@ void DataPrepareActor::PrepareDeviceTensorStoreForControlNode(const ControlNodeP
     if (host_tensor_address->GetDeviceType() != kernel_tensors[0]->device_address()->GetDeviceType()) {
       SyncTensorData(tensor, kernel_tensors[0], node, context, GraphExecutionStrategy::kPipeline);
       tensor->set_device_address(kernel_tensors[0]->device_address());
+      tensor->set_format(kernel_tensors[0]->format());
     } else {
       if (host_tensor_address->GetSize() != kernel_tensors[0]->GetSize()) {
         MS_LOG(WARNING) << "Please check the size of parameter:" << front_parameter->fullname_with_scope()
@@ -1028,6 +1038,7 @@ void DataPrepareActor::PrepareDeviceTensorStoreForControlNode(const ControlNodeP
       host_tensor_address->SetNodeIndex(node, 0);
       UpdateRefCount(kernel_tensors[0], true);
       kernel_tensors[0]->set_device_address(host_tensor_address);
+      kernel_tensors[0]->set_format(tensor->format());
       DeviceTensorStore::GetInstance().Remove(front_parameter.get());
       DeviceTensorStore::GetInstance().Insert(front_parameter.get(), kernel_tensors[0]);
     }

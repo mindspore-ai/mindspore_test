@@ -487,6 +487,7 @@ void TensorPybind::Offload(const TensorPtr &tensor, bool release) {
 
   auto cpu_tensor = MakeCpuTensor(tensor);
   tensor->set_device_address(cpu_tensor->device_address());
+  tensor->set_format(cpu_tensor->format());
   if (release) {
     device_address->ClearDeviceMemory();
   }
@@ -524,6 +525,7 @@ void TensorPybind::Load(const Tensor &tensor) {
     MS_LOG(EXCEPTION) << "Failed to sync copy for tensor pybind load:" << tensor.ToString();
   }
   const_cast<tensor::Tensor &>(tensor).set_device_address(new_device_address);
+  const_cast<tensor::Tensor &>(tensor).set_format(Format::DEFAULT_FORMAT);
 }
 
 bool TensorPybind::SharedMemory(const TensorPtr &tensor) {
@@ -562,6 +564,7 @@ bool TensorPybind::SharedMemory(const TensorPtr &tensor) {
 
     MS_EXCEPTION_IF_NULL(device_address_);
     tensor->set_device_address(device_address_);
+    tensor->set_format(Format::DEFAULT_FORMAT);
     const auto &device_address_new = std::dynamic_pointer_cast<device::DeviceAddress>(device_address_);
     device_address_new->set_allocator(shared_mem_allocator);
 
@@ -602,12 +605,12 @@ void TensorPybind::SetDeviceAddress(const TensorPtr &tensor, uintptr_t addr, con
 
   TypeId data_type = type_ptr->type_id();
   if (data_type != tensor->data_type()) {
-    MS_LOG(EXCEPTION) << "Dtype to be set is not euqal with the tensor's, then tensor's dtype is"
+    MS_LOG(EXCEPTION) << "Dtype to be set is not equal with the tensor's, then tensor's dtype is"
                       << tensor->data_type();
   }
 
   if (shape != tensor->shape()) {
-    MS_LOG(EXCEPTION) << "Shape to be set is not euqal with the tensor's, then tensor's shape is" << tensor->shape();
+    MS_LOG(EXCEPTION) << "Shape to be set is not equal with the tensor's, then tensor's shape is" << tensor->shape();
   }
 
   void *data = reinterpret_cast<void *>(addr);
@@ -621,6 +624,7 @@ void TensorPybind::SetDeviceAddress(const TensorPtr &tensor, uintptr_t addr, con
   if (device_sync_->GetDeviceType() != device::DeviceType::kAscend) {
     auto device_address = std::make_shared<device::MbufDeviceAddress>(data, data_size, shape, data_type, kAscendDevice);
     const_cast<TensorPtr &>(tensor)->set_device_address(device_address);
+    const_cast<TensorPtr &>(tensor)->set_format(Format::DEFAULT_FORMAT);
   } else {
     device_sync_->set_ptr(data);
   }

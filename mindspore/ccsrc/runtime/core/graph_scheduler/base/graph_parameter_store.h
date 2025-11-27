@@ -234,7 +234,7 @@ class BACKEND_EXPORT GraphParameterStore {
 
   std::pair<bool, std::pair<TypePtr, KernelWithIndex>> GetReleasePositionInfo(const DeviceTensorPosition &position);
 
-  DeviceTensorPtr GetReleasedCheckInfo(size_t outer_index, size_t inner_index);
+  KernelTensorPtr GetReleasedCheckInfo(size_t outer_index, size_t inner_index);
 
  private:
   // The input args refresh in every step.
@@ -254,7 +254,7 @@ class BACKEND_EXPORT GraphParameterStore {
   std::set<std::pair<size_t, size_t>> non_weight_ref_max_inputs_;
   std::map<DeviceTensorPosition, std::pair<TypePtr, KernelWithIndex>> release_data_info_;
   // Record released device addresses, used for check input next step.
-  std::vector<std::vector<DeviceTensorPtr>> released_check_addresses_;
+  std::vector<std::vector<KernelTensorPtr>> released_check_addresses_;
 
   std::map<AnfNode *, size_t> front_node_to_index_;
 

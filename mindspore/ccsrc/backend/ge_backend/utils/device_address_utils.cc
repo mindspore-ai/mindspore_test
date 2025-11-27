@@ -308,10 +308,10 @@ std::vector<KernelTensorPtr> DeviceAddressUtils::CreateKernelTensorForTensorValu
       if (output_address->GetDeviceType() == device::GetDeviceTypeByName(node_target)) {
         // We need to set tensor->device_address to ValueNode even if the tensor is a forward_output tensor
         // in PyNative Bprop graph. ValueNode device_address is necessary for GraphSchedule::Transform.
-        AnfAlgo::SetOutputAddr(std::static_pointer_cast<device::DeviceAddress>(tensor->device_address()), output_idx,
-                               value_node);
+        AnfAlgo::SetOutputAddr(tensor->device_address(), output_idx, value_node);
         auto kernel_tensor = AnfAlgo::GetOutputKernelTensor(value_node, output_idx, false);
         MS_EXCEPTION_IF_NULL(kernel_tensor);
+        kernel_tensor->set_format(tensor->format());
         (void)kernel_tensor_list.emplace_back(kernel_tensor);
         return kernel_tensor_list;
       }
@@ -335,16 +335,12 @@ std::vector<KernelTensorPtr> DeviceAddressUtils::CreateKernelTensorForTensorValu
   auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
   auto kernel_tensor = AnfAlgo::CreateOutputKernelTensorWithDeviceInfo(
     {value_node, output_idx}, nullptr, tensor_size, output_format, output_type_id, {}, node_target, device_id);
+  AnfAlgo::SetOutputKernelTensor(kernel_tensor, output_idx, value_node.get());
   device::DeviceAddressPtr address = kernel_tensor->device_address();
   MS_EXCEPTION_IF_NULL(address);
-  address->SetShapeVector(kernel_tensor->GetShapeVector());
-  kernel_tensor->set_stream_id(AnfAlgo::GetStreamId(value_node));
-  MS_LOG(DEBUG) << "Create addr for node:" << common::AnfAlgo::GetNodeDebugString(value_node) << " addr:" << address
-                << " size:" << tensor_size << " format:" << output_format << " type:" << output_type_id
-                << " shape:" << kernel_tensor->GetShapeVector();
-  MS_EXCEPTION_IF_NULL(address);
   address->set_from_persistent_mem(true);
-  AnfAlgo::SetOutputKernelTensor(kernel_tensor, output_idx, value_node.get());
+  kernel_tensor->set_stream_id(AnfAlgo::GetStreamId(value_node));
+  MS_LOG(DEBUG) << "Create kernel tensor:" << kernel_tensor->ToString() << " for node:" << value_node->DebugString();
   (void)kernel_tensor_list.emplace_back(kernel_tensor);
   return kernel_tensor_list;
 }
@@ -416,14 +412,12 @@ KernelTensorPtr DeviceAddressUtils::CloneEmptyKernelTensor(const KernelTensorPtr
   device::DeviceContext *host_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
   MS_EXCEPTION_IF_NULL(host_context);
   MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
+  auto new_kernel_tensor = old_kernel_tensor->CloneKernelTensor();
+  MS_EXCEPTION_IF_NULL(new_kernel_tensor);
   auto new_device_address = host_context->device_res_manager_->CreateDeviceAddress(
     old_device_address->device_pointer()->ptr(), old_device_address->size(), old_kernel_tensor->GetShapeVector(),
     old_kernel_tensor->format(), old_kernel_tensor->dtype_id(), device_name, old_device_address->stream_id());
-  new_device_address->SetShapeVector(old_kernel_tensor->GetShapeVector());
-  auto new_kernel_tensor = old_kernel_tensor->CloneKernelTensor();
-  MS_EXCEPTION_IF_NULL(new_kernel_tensor);
   new_kernel_tensor->set_device_address(new_device_address);
-
   new_kernel_tensor->SetDeviceType(device::GetDeviceTypeByName(device_name));
   new_kernel_tensor->set_device_ptr(nullptr);
   new_kernel_tensor->set_user_data(old_kernel_tensor->user_data());

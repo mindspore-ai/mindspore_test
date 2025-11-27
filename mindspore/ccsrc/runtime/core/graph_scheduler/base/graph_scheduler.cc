@@ -2537,11 +2537,11 @@ void GraphScheduler::LinkDataArrowForInternalParameter(AbstractActor *const, Abs
     kernel_type = actor_pair.first->type_;
 
     // The format of internal parameter need update in the heterogeneous scene.
-    auto parameter_device_address = AnfAlgo::GetMutableOutputAddr(internal_parameter, 0);
-    if ((parameter_device_address != nullptr) && !(graph->is_graph_run_mode() && !EnableKbkSubGraphExecute())) {
+    auto parameter_kernel_tensor = AnfAlgo::GetOutputKernelTensor(internal_parameter, 0);
+    if ((parameter_kernel_tensor != nullptr) && !(graph->is_graph_run_mode() && !EnableKbkSubGraphExecute())) {
       auto format =
         AnfAlgo::GetOutputFormat(real_from_kernel_with_output_idx.first, real_from_kernel_with_output_idx.second);
-      parameter_device_address->set_format(format);
+      parameter_kernel_tensor->set_format(kernel::GetFormatFromStrToEnum(format));
     }
   }
 

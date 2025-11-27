@@ -138,8 +138,10 @@ void AscendSnapshotMgr::SaveParameters(const std::vector<AnfNodePtr> &weights, a
     auto param = node->cast<ParameterPtr>();
     MS_EXCEPTION_IF_NULL(param);
     if (common::AnfAlgo::IsParameterWeight(param)) {
-      auto out_addr = session::AnfRuntimeAlgorithm::GetMutableOutputAddr(param, 0, false);
-      if (out_addr == nullptr || out_addr->GetPtr() == nullptr || IsOneOfHWSpecialFormat(out_addr->format())) {
+      auto out_kernel_tensor = session::AnfRuntimeAlgorithm::GetOutputKernelTensor(param, 0, false);
+      if (out_kernel_tensor == nullptr || out_kernel_tensor->device_address() == nullptr ||
+          out_kernel_tensor->device_address()->GetPtr() == nullptr ||
+          IsOneOfHWSpecialFormat(kernel::GetFormatFromEnumToStr(out_kernel_tensor->format()))) {
         // skip async copy if addr is nullptr.
         // special format need convert to default format at host, so skip async copy if format is a special format.
         continue;
@@ -184,8 +186,9 @@ void AscendSnapshotMgr::SaveParameters(const std::vector<AnfNodePtr> &weights, a
       auto size = tensor->Size();
       MS_LOG(INFO) << "Copy parameter " << param->name() << " with size " << size << " " << index << "/"
                    << weights.size();
-      auto ret = CALL_ASCEND_API(aclrtMemcpyAsync, host_tensor->data_c(), size, out_addr->GetMutablePtr(), size,
-                                 ACL_MEMCPY_DEVICE_TO_HOST, stream);
+      auto ret =
+        CALL_ASCEND_API(aclrtMemcpyAsync, host_tensor->data_c(), size,
+                        out_kernel_tensor->device_address()->GetMutablePtr(), size, ACL_MEMCPY_DEVICE_TO_HOST, stream);
       if (ret != ACL_ERROR_NONE) {
         MS_LOG_WITH_NODE(EXCEPTION, param) << "Call aclrtMemcpyAsync failed, param: " << param->DebugString();
       }

@@ -991,9 +991,9 @@ void UpdateDynamicShapeAndSize(tensor::Tensor *input_tensor, const KernelTensorP
   // Update size.
   const auto &device_tensor = kernel_tensor->device_address();
   MS_EXCEPTION_IF_NULL(device_tensor);
-  auto device_format = device_tensor->format();
-  static const std::set<std::string> kNormalFormat = {
-    kOpFormat_DEFAULT, kOpFormat_ND, kOpFormat_NCHW, kOpFormat_NHWC, kOpFormat_HWCN,
+  auto device_format = kernel_tensor->format();
+  static const std::set<Format> kNormalFormat = {
+    Format::DEFAULT_FORMAT, Format::ND, Format::NCHW, Format::NHWC, Format::HWCN,
   };
   if (kNormalFormat.find(device_format) != kNormalFormat.end()) {
     auto tensor_data_size = input_tensor->DataNBytes();
@@ -1164,6 +1164,7 @@ void PrepareParameterWithCopy(const std::pair<KernelWithIndex, size_t> &paramete
   if (graph_parameter_store->GetPositionWeight(outer_index) || common::AnfAlgo::HasAbstractRef(front_node.first) ||
       IsRefOutputInTuple(front_node.first, inner_index)) {
     tensor->set_device_address(device_tensor);
+    tensor->set_format(kernel_tensor->format());
     kernel_tensor->set_new_ref_count(SIZE_MAX);
     MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS) << "Set new ref count to max for device address:" << device_tensor
                                                  << " parameter:" << front_node.first->DebugString()
@@ -1195,17 +1196,17 @@ void CheckInputSize(const KernelTensorPtr &kernel_tensor, Tensor *tensor, size_t
     MS_EXCEPTION_IF_NULL(tensor);
     auto graph_parameter_store = ParameterStore::GetInstance().GetGraphParameterStore();
     if (!graph_parameter_store->IsPositionDynamic(outer_index, inner_index)) {
-      DeviceTensorPtr device_tensor;
-      if (kernel_tensor->device_address() != nullptr) {
-        device_tensor = kernel_tensor->device_address();
-      } else {
-        device_tensor = graph_parameter_store->GetReleasedCheckInfo(outer_index, inner_index);
+      auto tmp = kernel_tensor;
+      if (kernel_tensor->device_address() == nullptr) {
+        tmp = graph_parameter_store->GetReleasedCheckInfo(outer_index, inner_index);
       }
+      if (tmp == nullptr) {
+        return;
+      }
+      auto device_tensor = tmp->device_address();
       // The input size for static shape and normal format remains unchanged.
       if (device_tensor && device_tensor->GetTensorStorageInfo() == nullptr &&
-          (kernel::GetFormatFromStrToEnum(device_tensor->format()) == DEFAULT_FORMAT ||
-           kernel::GetFormatFromStrToEnum(device_tensor->format()) == ND) &&
-          device_tensor->size() != tensor->Size()) {
+          (tmp->format() == DEFAULT_FORMAT || tmp->format() == ND) && device_tensor->size() != tensor->Size()) {
         MS_LOG(ERROR) << "The tensor size " << tensor->Size() << " is different from device tensor size "
                       << device_tensor->size() << ", outer index: " << outer_index << ", inner index: " << inner_index
                       << kernel_tensor->ToString();
@@ -1235,7 +1236,7 @@ device::DeviceAddressPtr PrepareOffloadedParameter(Tensor *tensor, const KernelT
   }
 
   auto pinned_tensor_address = std::static_pointer_cast<device::DeviceAddress>(
-    MakeDeviceAddress(tensor_address->type_id(), tensor_address->GetShapeVector(), false, device::DeviceType::kCPU));
+    MakeDeviceAddress(tensor->data_type(), tensor->shape(), false, device::DeviceType::kCPU));
   pinned_tensor_address->set_allocator(allocator);
   auto pin_mem_ptr = allocator->Alloc(size, kDefaultStreamIndex);
   if (pin_mem_ptr != nullptr && tensor_address->GetPtr() != nullptr) {
@@ -1326,6 +1327,10 @@ void PrepareParameter(const std::pair<KernelWithIndex, size_t> &parameter_index,
                 << ", outer index: " << outer_index << ", inner index: " << inner_index
                 << ", kernel tensor: " << kernel_tensor.get();
   SetNodeIndexForTensorAddress(device_tensor, tensor_address, outer_index, inner_index);
+  if (tensor->format() != kernel_tensor->format()) {
+    MS_LOG(INFO) << "Input format:" << tensor->format()
+                 << " for graph parameter kernel tensor:" << kernel_tensor->ToString();
+  }
   kernel_tensor->set_device_address(tensor_address);
   UpdateDynamicShapeAndSize(tensor, kernel_tensor, outer_index, inner_index);
 }

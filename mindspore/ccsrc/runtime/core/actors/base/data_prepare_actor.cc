@@ -241,16 +241,18 @@ void UpdateDeviceAddressByRefInputNode(const std::vector<KernelGraphPtr> &graphs
 }
 
 void UpdateDataNodeDeviceAddressSize(const AnfNodePtr &input_node, const TensorPtr &input_tensor,
-                                     const device::DeviceAddressPtr &device_address) {
+                                     const kernel::KernelTensorPtr &kernel_tensor) {
   MS_EXCEPTION_IF_NULL(input_node);
   MS_EXCEPTION_IF_NULL(input_tensor);
+  MS_EXCEPTION_IF_NULL(kernel_tensor);
+  const device::DeviceAddressPtr &device_address = kernel_tensor->device_address();
   MS_EXCEPTION_IF_NULL(device_address);
   TypeId output_type_id = AnfAlgo::GetOutputDeviceDataType(input_node, 0);
   if (output_type_id == kTypeUnknown) {
     output_type_id = common::AnfAlgo::GetOutputInferDataType(input_node, 0);
   }
-  auto device_shape =
-    trans::TransShapeToDevice(input_tensor->shape(), device_address->format(), input_node, 0, output_type_id);
+  auto device_shape = trans::TransShapeToDevice(
+    input_tensor->shape(), kernel::GetFormatFromEnumToStr(kernel_tensor->format()), input_node, 0, output_type_id);
   size_t type_size = GetTypeByte(TypeIdToType(output_type_id));
   auto device_address_size = type_size * SizeOf(device_shape);
   MS_LOG(INFO) << "Size of device_address is updated from " << device_address->GetSize() << " to "
@@ -324,9 +326,9 @@ void DataPrepareActor::UpdateDynamicShapeAndSize(const AnfNodePtr &input_node, c
   output_kernel_tensor->SetShape(input_tensor->base_shape_ptr());
 
   // Update size.
-  auto device_format = device_address->format();
-  static const std::set<std::string> kNormalFormat = {
-    kOpFormat_DEFAULT, kOpFormat_ND, kOpFormat_NCHW, kOpFormat_NHWC, kOpFormat_HWCN,
+  auto device_format = kernel_tensor->format();
+  static const std::set<Format> kNormalFormat = {
+    Format::DEFAULT_FORMAT, Format::ND, Format::NCHW, Format::NHWC, Format::HWCN,
   };
   if (kNormalFormat.find(device_format) != kNormalFormat.end()) {
     auto tensor_data_size = input_tensor->DataNBytes();
@@ -337,7 +339,7 @@ void DataPrepareActor::UpdateDynamicShapeAndSize(const AnfNodePtr &input_node, c
   } else {
     MS_LOG(DEBUG) << "Update data node device address size";
     // Size of 5D format device_address is larger than tensor_data_size.
-    UpdateDataNodeDeviceAddressSize(input_node, input_tensor, device_address);
+    UpdateDataNodeDeviceAddressSize(input_node, input_tensor, kernel_tensor);
   }
 }
 
@@ -364,9 +366,8 @@ void DataPrepareActor::UpdateDeviceAddressForDataNode(const AnfNodePtr &input_no
   // If tensor address and device address are different (heterogeneous scenarios), or device address is persisted
   // Update device address data in data source actor process.
   if (kernel_tensor->is_ptr_persisted() || (tensor_address->GetDeviceType() != device_address->GetDeviceType()) ||
-      (!AnfAlgo::IsEquivalentFormat(kernel::GetFormatFromStrToEnum(tensor_address->format()),
-                                    kernel::GetFormatFromStrToEnum(device_address->format()))) ||
-      (tensor_address->type_id() != device_address->type_id())) {
+      (!AnfAlgo::IsEquivalentFormat(input_tensor->format(), kernel_tensor->format())) ||
+      (input_tensor->data_type() != kernel_tensor->dtype_id())) {
     MS_LOG(DEBUG) << "Cannot update address of " << input_node->DebugString();
     return;
   }
@@ -1335,6 +1336,7 @@ void DataPrepareActor::PrepareDataForWeightNode(const AnfNodePtr &backend_node, 
   auto device_tensor = node_kernel_tensor->device_address();
   MS_EXCEPTION_IF_NULL(device_tensor);
   auto host_tensor_address = tensor->device_address();
+  Format host_format = tensor->format();
   if (host_tensor_address == nullptr) {
     // Tensor with initializer but didn't init_data yet.
     auto empty_tensor = tensor::from_spec(tensor->data_type(), tensor->shape(), device::DeviceType::kCPU);
@@ -1362,11 +1364,13 @@ void DataPrepareActor::PrepareDataForWeightNode(const AnfNodePtr &backend_node, 
         kernel_tensor->set_stream_id(device_tensor->stream_id());
         host_kernel_tensor = kernel_tensor;
         host_tensor_address = host_kernel_tensor->device_address();
+        host_format = host_kernel_tensor->format();
         MS_EXCEPTION_IF_NULL(host_tensor_address);
         MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS) << "Create kernel tensor:" << kernel_tensor->ToString();
         host_tensor_address->set_from_persistent_mem(tensor->is_parameter());
       } else {
         host_tensor_address = device_tensor;
+        host_format = node_kernel_tensor->format();
       }
       is_need_sync = true;
     }
@@ -1383,8 +1387,7 @@ void DataPrepareActor::PrepareDataForWeightNode(const AnfNodePtr &backend_node, 
       // In the scenario of training + inference , the device address of the weight node can not be changed when
       // multi-graphs sink mode is set.
       if (node_kernel_tensor->is_ptr_persisted() ||
-          !AnfAlgo::IsEquivalentFormat(kernel::GetFormatFromStrToEnum(host_tensor_address->format()),
-                                       kernel::GetFormatFromStrToEnum(device_tensor->format()))) {
+          !AnfAlgo::IsEquivalentFormat(host_format, node_kernel_tensor->format())) {
         if ((device_tensor->GetPtr() == nullptr) &&
             (!device_context->device_res_manager_->AllocateMemory(device_tensor.get(), kDefaultStreamIndex))) {
           SET_OPCONTEXT_MEMORY_ALLOC_FAIL_BY_STRATEGY(real_strategy_, *context, *device_context,
@@ -1401,6 +1404,7 @@ void DataPrepareActor::PrepareDataForWeightNode(const AnfNodePtr &backend_node, 
       } else {
         (void)address_modified_input_nodes_.insert(backend_node.get());
         AnfAlgo::SetOutputAddr(host_tensor_address, 0, backend_node);
+        node_kernel_tensor->set_format(host_format);
       }
     }
   }

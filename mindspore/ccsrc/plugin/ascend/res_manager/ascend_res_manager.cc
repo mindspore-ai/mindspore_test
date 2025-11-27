@@ -131,10 +131,13 @@ Format GetFormat(const tensor::TensorPtr &tensor) {
     auto const device_address = tensor->device_address();
     MS_EXCEPTION_IF_NULL(device_address);
     if (device_address->GetDeviceType() != device::DeviceType::kCPU) {
-      format = FromStrToEnum(tensor->format());
+      format = tensor->format();
     } else {
       auto cpu_tensor = tensor->cpu();
       tensor->set_device_address(cpu_tensor->device_address());
+      tensor->set_shape(cpu_tensor->shape());
+      tensor->set_data_type(cpu_tensor->data_type());
+      tensor->set_format(cpu_tensor->format());
     }
   }
   return format;

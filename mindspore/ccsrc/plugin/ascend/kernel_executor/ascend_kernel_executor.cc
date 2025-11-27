@@ -1486,11 +1486,11 @@ bool AscendKernelExecutor::LaunchCallback(CallbackFunc callback_func, size_t str
 
 void CustomizeCopyAscendInner(device::DeviceContext *device_context, const tensor::TensorPtr &input_tensor,
                               const tensor::TensorPtr &output_tensor, const size_t &stream_id) {
-  const auto &input_addr = std::static_pointer_cast<device::DeviceAddress>(input_tensor->device_address());
+  const auto &input_addr = input_tensor->device_address();
   MS_EXCEPTION_IF_NULL(input_addr);
   const auto &input_storage_info = input_tensor->storage_info();
 
-  const auto &output_addr = std::static_pointer_cast<device::DeviceAddress>(output_tensor->device_address());
+  const auto &output_addr = output_tensor->device_address();
   MS_EXCEPTION_IF_NULL(output_addr);
   const auto &output_storage_info = output_tensor->storage_info();
 
@@ -1499,7 +1499,7 @@ void CustomizeCopyAscendInner(device::DeviceContext *device_context, const tenso
                                                  output_addr->GetSize(), output_addr.get());
   device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(
     MarkTensorAsInput, "PyNative", device::GetDeviceNameByType(input_addr->GetDeviceType()), input_addr->GetPtr(),
-    input_addr->type_id(), input_addr->GetShapeVector(), input_storage_info);
+    input_tensor->data_type(), input_tensor->shape(), input_storage_info);
   if (output_addr->GetPtr() == nullptr) {
     if (!device_context->device_res_manager_->AllocateMemory(output_addr.get())) {
       MS_LOG(EXCEPTION) << "Allocate memory failed";
@@ -1514,7 +1514,7 @@ void CustomizeCopyAscendInner(device::DeviceContext *device_context, const tenso
   LAUNCH_ACLNN(aclnnInplaceCopy, device_context, stream_id, output_tensor, input_tensor);
   device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(
     MarkTensorAsOutput, "PyNative", device::GetDeviceNameByType(output_addr->GetDeviceType()), output_addr->GetPtr(),
-    output_addr->type_id(), output_addr->GetShapeVector(), output_storage_info);
+    output_tensor->data_type(), output_tensor->shape(), output_storage_info);
   MS_LOG(DEBUG) << "Launch end";
 }
 

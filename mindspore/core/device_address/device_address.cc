@@ -222,17 +222,9 @@ size_t DeviceAddress::GetSize() const {
 
 void DeviceAddress::SetSize(size_t size) { size_ = size; }
 
-std::string DeviceAddress::format() const { return kernel::GetFormatFromEnumToStr(format_); }
-
-void DeviceAddress::set_format(const std::string &format) { format_ = kernel::GetFormatFromStrToEnum(format); }
-
 const std::string &DeviceAddress::padding_type() const { return padding_type_; }
 
 void DeviceAddress::set_padding_type(const std::string &padding_type) { padding_type_ = padding_type; }
-
-TypeId DeviceAddress::type_id() const { return dtype_id_; }
-
-void DeviceAddress::set_type_id(TypeId dtype_id) { dtype_id_ = dtype_id; }
 
 bool DeviceAddress::from_mem_pool() const { return device_pointer_->from_mem_pool(); }
 
@@ -249,10 +241,6 @@ bool DeviceAddress::need_recycle() const { return need_recycle_; }
 void DeviceAddress::set_need_recycle(bool need_recycle) { need_recycle_ = need_recycle; }
 
 void *DeviceAddress::GetMutablePtr() const { return GetDevicePtr(); }
-
-const ShapeVector &DeviceAddress::GetShapeVector() const { return shape_vector_; }
-
-void DeviceAddress::SetShapeVector(const ShapeVector &shape_vector) { shape_vector_ = shape_vector; }
 
 TensorStorageInfoPtr DeviceAddress::GetTensorStorageInfo() const { return tensor_storage_info_; }
 
@@ -535,8 +523,8 @@ bool HostCopy(const DeviceAddressPtr &dst_device_address, const DeviceAddressPtr
     return DoCopy(dst_device_address, src_device_address, src_ext);
   }
   if (src_ext->format_ != dst_ext->format_) {
-    MS_LOG(ERROR) << "Format is different, src(format:" << src_device_address->format()
-                  << "), dst(format:" << dst_device_address->format() << ") for device address:" << dst_device_address;
+    MS_LOG(ERROR) << "Format is different, src(format:" << src_ext->format_ << "), dst(format:" << dst_ext->format_
+                  << ") for device address:" << dst_device_address;
     return false;
   }
   auto dst_type_id = dst_ext->dtype_id_;

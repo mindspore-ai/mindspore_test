@@ -93,7 +93,7 @@ bool ContiguousCpuKernel::LaunchContiguousImpl(device::DeviceAddress *input,
     auto ret = memcpy_s(output_addr, output_size * sizeof(T), input_addr + offset, output_size * sizeof(T));
     // Return ERANGE when the copy size is larger than SECUREC_MEM_MAX_LEN.
     if (ret == ERANGE) {
-      device::ConvertSameType(output_addr, input_addr + offset, output_size * sizeof(T), output->type_id());
+      device::ConvertSameType(output_addr, input_addr + offset, output_size * sizeof(T), kNumberTypeUInt8);
       return true;
     } else if (ret != EOK) {
       MS_LOG(EXCEPTION) << "For 'Contiguous', memcpy_s error. Error no: " << ret << " ,output_addr:" << output_addr

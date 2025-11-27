@@ -174,8 +174,7 @@ class PYBOOST_API OpRunner : public std::enable_shared_from_this<OpRunner> {
         }
         device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(
           MarkTensorAsInput, "PyNative", device::GetDeviceNameByType(device_address->GetDeviceType()),
-          device_address->GetPtr(), device_address->type_id(), device_address->GetShapeVector(),
-          device_address->GetTensorStorageInfo());
+          device_address->GetPtr(), tensor->data_type(), tensor->shape(), device_address->GetTensorStorageInfo());
       }
     }));
   }
@@ -211,12 +210,7 @@ class PYBOOST_API OpRunner : public std::enable_shared_from_this<OpRunner> {
     TrackerOutputTensors(tensors);
   }
 
-  void UpdateOutputShape(const TensorPtr &tensor, const ShapeVector &shape) {
-    tensor->set_shape(shape);
-    auto device_address = tensor->device_address();
-    MS_EXCEPTION_IF_NULL(device_address);
-    device_address->SetShapeVector(shape);
-  }
+  void UpdateOutputShape(const TensorPtr &tensor, const ShapeVector &shape) { tensor->set_shape(shape); }
 
   void CreateOutputSimpleInfo() {
     if (output_value_simple_info_ != nullptr) {
@@ -300,8 +294,7 @@ class PYBOOST_API OpRunner : public std::enable_shared_from_this<OpRunner> {
         }
         device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(
           MarkTensorAsOutput, "PyNative", device::GetDeviceNameByType(device_address->GetDeviceType()),
-          device_address->GetPtr(), device_address->type_id(), device_address->GetShapeVector(),
-          device_address->GetTensorStorageInfo());
+          device_address->GetPtr(), tensor->data_type(), tensor->shape(), device_address->GetTensorStorageInfo());
       }
       device::tracker::CALL_MEMORY_TRACKER(DelNestedTask);
     }));

@@ -1001,15 +1001,16 @@ KernelTensorPtr AnfRuntimeAlgorithm::CreateOutputKernelTensorWithDeviceInfo(
 
   MS_EXCEPTION_IF_NULL(shape);
   MS_EXCEPTION_IF_NULL(type);
+  auto out_tensor = CreateKernelTensor(shape, type, value, device_ptr, size, format, dtype_id, host_shape, device_name,
+                                       device_id, user_data);
+  MS_EXCEPTION_IF_NULL(out_tensor);
   MS_LOG(DEBUG) << "Create device address for node: " << node_with_index.first->fullname_with_scope()
                 << ", output index: " << node_with_index.second << ", device ptr: " << device_ptr << ", size: " << size
                 << ", host shape: " << host_shape << ", format: " << format << ", dtype id: " << dtype_id
                 << ", device name: " << device_name << ", device id: " << device_id << ", stream id: " << stream_id
                 << ", Shape: " << shape->ToString() << ", Type: " << type->ToString()
-                << ", Value: " << (value ? value->ToString() : "nullptr");
-
-  auto out_tensor = CreateKernelTensor(shape, type, value, device_ptr, size, format, dtype_id, host_shape, device_name,
-                                       device_id, user_data);
+                << ", Value: " << (value ? value->ToString() : "nullptr")
+                << " kernel tensor:" << out_tensor->ToString();
   if (info) {
     out_tensor->set_tensor_storage_info(info);
   }
@@ -1028,11 +1029,13 @@ KernelTensorPtr AnfRuntimeAlgorithm::CreateKernelTensor(const abstract::BaseShap
 
   auto device_address = host_context->device_res_manager_->CreateDeviceAddress(
     device_ptr, size, host_shape, kernel::GetFormatFromStrToEnum(format), dtype_id, device_name, 0);
+  MS_EXCEPTION_IF_NULL(device_address);
   // Currently, address_common and device_address are not unified. Kernel tensor may use info from address_common
   // or device_address, so all info keep to kernel tensor.
   // Only device address are keep for construct after unified.
   auto kernel_tensor = std::make_shared<kernel::KernelTensor>(device_address, shape, type, value, device_ptr, size,
                                                               format, dtype_id, host_shape, device_name, user_data);
+  MS_LOG(DEBUG) << "Create kernel tensor:" << kernel_tensor->ToString();
   return kernel_tensor;
 }
 
@@ -1045,7 +1048,9 @@ KernelTensorPtr AnfRuntimeAlgorithm::CreateKernelTensor(void *device_ptr, size_t
   MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
   auto device_address = host_context->device_res_manager_->CreateDeviceAddress(device_ptr, size, host_shape, format,
                                                                                dtype_id, device_name, 0);
+  MS_EXCEPTION_IF_NULL(device_address);
   auto kernel_tensor = std::make_shared<kernel::KernelTensor>(device_address, dtype_id, host_shape, user_data);
+  MS_LOG(DEBUG) << "Create kernel tensor:" << kernel_tensor->ToString();
   return kernel_tensor;
 }
 

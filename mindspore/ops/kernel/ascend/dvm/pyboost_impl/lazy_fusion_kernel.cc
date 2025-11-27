@@ -265,12 +265,11 @@ void LazyFusionKernelAscend::Flush() {
       bool has_store = false;
       for (auto &out : outputs_) {
         const auto &out_tensor = out.tensor;
-        if (out_tensor.use_count() == 1) {
+        auto &device_address = out_tensor->device_address();
+        if (out_tensor.use_count() == 1 && device_address.use_count() == 1) {
           out.skip = true;
           continue;
         }
-
-        auto &device_address = out_tensor->device_address();
         if (device_address->GetPtr() == nullptr) {
           device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, "PyNative",
                                                          memory::mem_pool::MemType::kPyNativeOutput,
@@ -279,10 +278,10 @@ void LazyFusionKernelAscend::Flush() {
             MS_LOG(EXCEPTION) << "Allocate memory failed for dvm kernel output, kernel id is " << id() << " " << this;
           }
         }
-        auto storage_info = device_address->GetTensorStorageInfo();
+        const auto &storage_info = out.tensor->storage_info();
         auto offset = storage_info == nullptr
                         ? 0
-                        : storage_info->storage_offset * GetTypeByte(TypeIdToType(device_address->type_id()));
+                        : storage_info->storage_offset * GetTypeByte(TypeIdToType(out.tensor->data_type()));
         auto dev_mem = device_address->GetMutablePtr();
         auto store = dvm::Kernel::Store(static_cast<void *>(static_cast<uint8_t *>(dev_mem) + offset), out.op);
         if (out.inplace) {

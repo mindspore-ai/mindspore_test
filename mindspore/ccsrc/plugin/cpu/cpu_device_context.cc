@@ -625,22 +625,22 @@ bool CPUKernelExecutor::ExecuteKernelTask(const runtime::KernelTaskType &task_ty
   MS_LOG(DEBUG) << "Start Contiguous task";
 
   const auto &input = input_kernel_tensors[0];
+  MS_EXCEPTION_IF_NULL(input);
   const auto &input_address = input->device_address();
   const auto &input_storage_info = input->tensor_storage_info();
 
   const auto &output = output_kernel_tensors[0];
+  MS_EXCEPTION_IF_NULL(output);
   const auto &output_address = output->device_address();
 
-  MS_LOG(DEBUG) << "Input_storage_info:" << (input_storage_info == nullptr ? "" : input_storage_info->ToString())
-                << ", input_address size:" << input_address->GetSize()
-                << ", output_address size:" << output_address->GetSize();
+  MS_LOG(DEBUG) << "Input:" << input->ToString() << " output:" << output->ToString();
 
   MallocMemoryForDeviceAddress(input_address.get(), device_context_);
   MallocMemoryForDeviceAddress(output_address.get(), device_context_);
 
   kernel::ContiguousCpuKernel contiguous_kernel;
-  auto ret = contiguous_kernel.LaunchContiguous(input_address->type_id(), input_address, input_storage_info,
-                                                output_address->type_id(), output_address);
+  auto ret = contiguous_kernel.LaunchContiguous(input->dtype_id(), input_address, input_storage_info,
+                                                output->dtype_id(), output_address);
   if (!ret) {
     MS_LOG(EXCEPTION) << "CpuContiguous failed";
   }

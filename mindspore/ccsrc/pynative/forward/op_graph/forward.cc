@@ -91,8 +91,7 @@ void CreateDeviceAddressForTensor(const FrontendOpRunInfoPtr &op_run_info, const
     MS_EXCEPTION_IF_NULL(device_address);
     device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(
       MarkTensorAsInput, "PyNative", device::GetDeviceNameByType(device_address->GetDeviceType()),
-      device_address->GetPtr(), device_address->type_id(), device_address->GetShapeVector(),
-      device_address->GetTensorStorageInfo());
+      device_address->GetPtr(), tensor->data_type(), tensor->shape(), device_address->GetTensorStorageInfo());
   }
 }
 #endif
@@ -112,6 +111,7 @@ ValuePtr CopyTensorValueWithNewId(const FrontendOpRunInfoPtr &op_run_info, const
     // todo: check tensor->data need ?
     new_tensor->set_need_pipeline_sync(true);
     new_tensor->set_device_address(tensor->device_address());
+    new_tensor->set_format(tensor->format());
     new_tensor->set_contiguous_callback(tensor->contiguous_callback());
     new_tensor->set_sync_status(tensor->sync_status());
     return new_tensor;
@@ -962,8 +962,7 @@ ValuePtr ForwardExecutor::RunOpInMs(const FrontendOpRunInfoPtr &op_run_info,
 void ForwardExecutor::CreateInputAddressForViewOp(const tensor::TensorPtr &input_tensor,
                                                   const FrontendOpRunInfoPtr &op_run_info) {
   MS_EXCEPTION_IF_NULL(input_tensor);
-  auto device_address = input_tensor->device_address();
-
+  const auto &device_address = input_tensor->device_address();
   const auto &device_context = runtime::OpRunner::GetDeviceContext(op_run_info->base_op_run_info.device_target);
   MS_EXCEPTION_IF_NULL(device_context);
   MS_EXCEPTION_IF_NULL(device_address);
@@ -984,10 +983,11 @@ void ForwardExecutor::CreateInputAddressForViewOp(const tensor::TensorPtr &input
   kernel_tensor->SetShape(std::make_shared<abstract::TensorShape>(input_tensor->shape()));
   kernel_tensor->set_stream_id(op_run_info->base_op_run_info.stream_id);
 
-  auto new_device_address = kernel_tensor->device_address();
-  input_tensor->set_device_address(new_device_address);
-  input_tensor->set_need_pipeline_sync(true);
   input_tensor->set_implicit_copy_address(device_address);
+  input_tensor->set_implicit_copy_format(input_tensor->format());
+  input_tensor->set_device_address(kernel_tensor->device_address());
+  input_tensor->set_format(kernel_tensor->format());
+  input_tensor->set_need_pipeline_sync(true);
   op_backend_->RunAllocMemTask(device_context, input_tensor, EnablePipeline(""));
 }
 
@@ -1050,6 +1050,7 @@ void ForwardExecutor::CreateViewOutputTensor(const FrontendOpRunInfoPtr &op_run_
 
   output_device_address->set_device_pointer(input_device_address->device_pointer());
   output_tensor->set_device_address(output_device_address);
+  output_tensor->set_format(kernel_tensor->format());
   autograd::CreationType creationType =
     is_multi_output
       ? autograd::CreationType::kMultiOutput

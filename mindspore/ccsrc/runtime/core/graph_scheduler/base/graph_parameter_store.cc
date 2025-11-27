@@ -269,7 +269,7 @@ void GraphParameterStore::ConvertNormalInputContiguous(const std::vector<size_t>
   }
 }
 
-DeviceTensorPtr GraphParameterStore::GetReleasedCheckInfo(size_t outer_index, size_t inner_index) {
+KernelTensorPtr GraphParameterStore::GetReleasedCheckInfo(size_t outer_index, size_t inner_index) {
   CheckIndexValid(outer_index, inner_index);
   return released_check_addresses_[outer_index][inner_index];
 }
@@ -320,9 +320,9 @@ void GraphParameterStore::ReleaseData() {
         // Record released info, so that it can check input next step.
         // Used for CheckInputSize for fetching parameter.
         if (sync_copy_input) {
-          auto new_device_tensor = device_tensor->CloneDeviceAddress();
-          new_device_tensor->set_ptr(nullptr);
-          released_check_addresses_[index.first][index.second] = new_device_tensor;
+          auto new_kernel_tensor = kernel_tensor->CloneKernelTensor();
+          new_kernel_tensor->set_device_ptr(nullptr);
+          released_check_addresses_[index.first][index.second] = new_kernel_tensor;
         }
         release_data_info_[{position}] = {kernel_tensor->GetType(), device_tensor->GetNodeIndex()};
         kernel_tensor->set_device_address(nullptr);

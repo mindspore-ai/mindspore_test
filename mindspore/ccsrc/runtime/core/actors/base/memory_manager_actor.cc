@@ -216,11 +216,11 @@ void MemoryManagerActor::AllocateContinuousMemory(const std::vector<std::vector<
                             << " vs " << size_list[index];
         }
 
-        auto kernel_tensor = AnfAlgo::CreateKernelTensor(
-          dev_ptr_list[index], old_size, kernel::GetFormatFromStrToEnum(old_dev_addr->format()),
-          old_dev_kernel_tensor->dtype_id(), old_dev_kernel_tensor->GetShapeVector(),
-          device::GetDeviceNameByType(device_context->device_context_key().device_type_),
-          device_context->device_context_key().device_id_);
+        auto kernel_tensor =
+          AnfAlgo::CreateKernelTensor(dev_ptr_list[index], old_size, old_dev_kernel_tensor->format(),
+                                      old_dev_kernel_tensor->dtype_id(), old_dev_kernel_tensor->GetShapeVector(),
+                                      device::GetDeviceNameByType(device_context->device_context_key().device_type_),
+                                      device_context->device_context_key().device_id_);
         kernel_tensor->set_stream_id(old_dev_addr->stream_id());
         MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS) << "Create kernel tensor:" << kernel_tensor->ToString();
         (void)SyncCopy(kernel_tensor.get(), old_dev_kernel_tensor.get(), stream_id);

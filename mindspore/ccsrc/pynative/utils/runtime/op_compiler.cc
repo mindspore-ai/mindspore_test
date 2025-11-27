@@ -23,6 +23,9 @@
 #include <string>
 #include <sstream>
 #include <limits>
+#include <utility>
+#include <set>
+
 #include "utils/core_op_utils.h"
 #include "mindapi/base/type_id.h"
 #include "include/backend/anf_runtime_algorithm.h"
@@ -390,7 +393,7 @@ std::string OpCompiler::GetSingleOpGraphInfo(const pynative::BaseOpRunInfo &op_i
       if (tensor_addr != nullptr && !has_hidden_side_effect) {
         auto p_address = tensor_addr;
         MS_EXCEPTION_IF_NULL(p_address);
-        graph_info += p_address->format();
+        graph_info += kernel::GetFormatFromEnumToStr(input_tensor->format());
         graph_info += p_address->padding_type();
       }
 

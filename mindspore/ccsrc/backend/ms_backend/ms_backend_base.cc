@@ -1489,8 +1489,8 @@ void MSBackendBase::ConstructOutputByTupleTensor(tensor::TensorPtr output_tensor
     auto split_tensor = tensor::from_spec(tensor_type_id, split_tensor_shape, device::DeviceType::kNone);
 
     auto kernel_tensor = AnfAlgo::CreateKernelTensor(
-      nullptr, split_tensor_size, kernel::GetFormatFromStrToEnum(device_tensor->format()), device_tensor->type_id(),
-      split_tensor_shape, device::GetDeviceNameByType(device_context->device_context_key().device_type_),
+      nullptr, split_tensor_size, output_tensor->format(), output_tensor->data_type(), split_tensor_shape,
+      device::GetDeviceNameByType(device_context->device_context_key().device_type_),
       device_context->device_context_key().device_id_);
     kernel_tensor->SetType(element_types[i]);
     kernel_tensor->SetShape((*tensor_shape)[i]);

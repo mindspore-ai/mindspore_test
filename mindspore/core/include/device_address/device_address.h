@@ -194,12 +194,8 @@ class MS_CORE_API DeviceAddress {
   size_t GetSize() const;
   void SetSize(size_t size);
 
-  std::string format() const;
-  void set_format(const std::string &format);
   const std::string &padding_type() const;
   void set_padding_type(const std::string &padding_type);
-  TypeId type_id() const;
-  void set_type_id(TypeId dtype_id);
   bool from_mem_pool() const;
   void set_from_mem_pool(bool from_mem_pool) const;
   virtual void set_communication_ptr(uint8_t *communication_ptr);
@@ -208,9 +204,6 @@ class MS_CORE_API DeviceAddress {
   bool need_recycle() const;
   void set_need_recycle(bool need_recycle);
   void *GetMutablePtr() const;
-  // Get the shape vector for Tensor/Sequence/Scalar.
-  const ShapeVector &GetShapeVector() const;
-  void SetShapeVector(const ShapeVector &shape_vector);
 
   TensorStorageInfoPtr GetTensorStorageInfo() const;
   void set_tensor_storage_info(const TensorStorageInfoPtr &tensor_storage_info);

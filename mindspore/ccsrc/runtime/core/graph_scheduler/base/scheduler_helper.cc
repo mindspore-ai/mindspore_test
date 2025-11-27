@@ -1603,7 +1603,6 @@ KernelTensorPtr SchedulerHelper::CloneKernelTensorWithDeviceInfo(const KernelTen
     device_address->device_pointer()->ptr(), device_address->size(), kernel_tensor->GetShapeVector(),
     kernel_tensor->format(), kernel_tensor->dtype_id(),
     device::GetDeviceNameByType(device_context->device_context_key().device_type_), device_address->stream_id());
-  new_device_address->SetShapeVector(kernel_tensor->GetShapeVector());
   auto new_kernel_tensor = kernel_tensor->CloneKernelTensor();
   new_kernel_tensor->set_user_data(kernel_tensor->user_data());
   new_kernel_tensor->set_need_sync_user_data(kernel_tensor->need_sync_user_data());

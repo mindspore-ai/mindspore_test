@@ -21,6 +21,11 @@
 #include <utility>
 #include <queue>
 #include <regex>
+#include <map>
+#include <string>
+#include <memory>
+#include <vector>
+
 #include "backend/ge_backend/pass/ge_backend_optimization.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "ir/manager.h"
@@ -1316,8 +1321,7 @@ void GEBackend::ConstructInputsRefMode(const KernelGraphPtr &func_graph, const V
       }
 
       bool is_need_sync = true;
-      auto host_tensor_address =
-        std::dynamic_pointer_cast<mindspore::device::DeviceAddress>(flatten_tensors[j]->device_address());
+      auto host_tensor_address = flatten_tensors[j]->device_address();
 
       UpdateInputsShapeAndSize(parameter, kernel_tensor, flatten_tensors[j]);
       CheckContiguousTensor(flatten_tensors[j]);
@@ -1336,6 +1340,7 @@ void GEBackend::ConstructInputsRefMode(const KernelGraphPtr &func_graph, const V
           // host is nullptr -> set & copy_to_device
           host_tensor_address = device_tensor;
           flatten_tensors[j]->set_device_address(host_tensor_address);
+          flatten_tensors[j]->set_format(kernel_tensor->format());
           is_need_sync = true;
         } else if (host_tensor_address->GetDeviceType() != device_tensor->GetDeviceType()) {
           // device_type not same -> sync_to_host & copy_to_device
@@ -1343,6 +1348,7 @@ void GEBackend::ConstructInputsRefMode(const KernelGraphPtr &func_graph, const V
           flatten_tensors[j] = flatten_tensors[j]->cpu();
           host_tensor_address = device_tensor;
           origin_tensor->set_device_address(device_tensor);
+          origin_tensor->set_format(kernel_tensor->format());
           is_need_sync = true;
         } else {
           // other not same condition -> device_copy
@@ -1351,6 +1357,7 @@ void GEBackend::ConstructInputsRefMode(const KernelGraphPtr &func_graph, const V
           }
           host_tensor_address = device_tensor;
           flatten_tensors[j]->set_device_address(device_tensor);
+          flatten_tensors[j]->set_format(kernel_tensor->format());
           is_need_sync = false;
         }
       } else {
@@ -1408,7 +1415,7 @@ bool GEBackend::Copy(KernelTensor *const dst_kernel_tensor, const tensor::Tensor
   if (src_device_tensor->GetSize() != dst_device_tensor->GetSize()) {
     MS_LOG(INFO) << "Copy size is not equal, input size:" << src_device_tensor->GetSize()
                  << ", output size:" << dst_device_tensor->GetSize();
-    if (kernel::GetFormatFromStrToEnum(src_tensor->format()) == dst_kernel_tensor->format()) {
+    if (src_tensor->format() == dst_kernel_tensor->format()) {
       auto new_address_size = GetTypeByte(TypeIdToType(src_tensor->data_type())) * SizeOf(src_tensor->shape());
       src_device_tensor->SetSize(new_address_size);
     }
@@ -1508,9 +1515,8 @@ void GEBackend::ConstructOutputs(const KernelGraphPtr &func_graph, std::vector<t
     MS_LOG(DEBUG) << "Create kernel tensor:" << kernel_tensor->ToString()
                   << ", output node:" << output_node->fullname_with_scope() << " output index:" << idx
                   << ", origin output kernel tensor: " << output_kernel_tensor->ToString();
-
-    tensor_device_address->SetShapeVector(out_tensor->shape());
     out_tensor->set_device_address(tensor_device_address);
+    out_tensor->set_format(kernel_tensor->format());
     outputs->emplace_back(out_tensor);
     output_types->emplace_back(kernel_tensor->GetType());
   }

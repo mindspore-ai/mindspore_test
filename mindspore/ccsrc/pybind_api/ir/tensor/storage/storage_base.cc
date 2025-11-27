@@ -15,6 +15,7 @@
  */
 #include "pybind_api/ir/tensor/storage/storage_base.h"
 #include <utility>
+#include <memory>
 #include <string>
 #include "runtime/hardware_abstract/utils.h"
 #include "include/runtime/hardware_abstract/device_context/device_context.h"
@@ -38,8 +39,7 @@ device::DeviceAddressPtr CreateTempDeviceAddress(const device::DeviceAddressPtr 
   device_context->Initialize();
   ShapeVector shape = {static_cast<int64_t>(device_address->size())};
   auto new_device_address = device_context->device_res_manager_->CreateDeviceAddress(
-    device_address->GetMutablePtr(), device_address->size(), shape,
-    kernel::GetFormatFromStrToEnum(device_address->format()), kNumberTypeUInt8,
+    device_address->GetMutablePtr(), device_address->size(), shape, Format::DEFAULT_FORMAT, kNumberTypeUInt8,
     device::GetDeviceNameByType(device_address->GetDeviceType()), CurrentStream::id());
   new_device_address->set_from_mem_pool(false);
   return new_device_address;
@@ -109,10 +109,7 @@ int64_t StorageBase::NBytes() const {
   return device_data_->size();
 }
 
-TypeId StorageBase::GetTypeId() const {
-  MS_EXCEPTION_IF_NULL(device_data_);
-  return device_data_->type_id();
-}
+TypeId StorageBase::GetTypeId() const { return type_id_; }
 
 uint32_t StorageBase::GetStreamId() const {
   MS_EXCEPTION_IF_NULL(device_data_);

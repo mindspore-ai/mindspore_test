@@ -16,8 +16,12 @@
 
 #include "pynative/utils/pyboost/custom/tensor.h"
 #include <algorithm>
+#include <memory>
+#include <string>
+#include <vector>
 #include <functional>
 #include "ir/tensor.h"
+#include "ir/format_utils.h"
 #include "ir/tensor_new.h"
 #include "include/utils/tensor_utils.h"
 #include "mindspore/ccsrc/pynative/utils/pynative_utils.h"
@@ -84,10 +88,7 @@ std::string Tensor::format() const {
   if (t->device_address() == nullptr) {
     return "DefaultFormat";
   }
-  auto device_sync = t->device_address();
-  auto device_address = std::dynamic_pointer_cast<mindspore::device::DeviceAddress>(device_sync);
-  MS_EXCEPTION_IF_NULL(device_address);
-  return device_address->format();
+  return mindspore::kernel::GetFormatFromEnumToStr(t->format());
 }
 
 void Tensor::set_format(const std::string &format) const {
@@ -97,7 +98,8 @@ void Tensor::set_format(const std::string &format) const {
   auto device_sync = t->device_address();
   auto device_address = std::dynamic_pointer_cast<mindspore::device::DeviceAddress>(device_sync);
   MS_EXCEPTION_IF_NULL(device_address);
-  device_address->set_format(format);
+
+  t->set_format(mindspore::kernel::GetFormatFromStrToEnum(format));
 }
 
 const ShapeVector &Tensor::shape() const {

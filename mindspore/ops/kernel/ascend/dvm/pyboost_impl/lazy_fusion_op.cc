@@ -19,6 +19,7 @@
 #include <vector>
 #include <string>
 #include <tuple>
+#include <utility>
 #include <algorithm>
 #include "ir/tensor_new.h"
 #include "infer/ops_func_impl/tile.h"
@@ -521,6 +522,7 @@ tensor::TensorPtr ConcatAscendDvm::Call(const ValueTuplePtr &tensors_tensor_list
       device_address->set_ptr(device_ptr + offset);
       device_address->SetSize(sz);
       output_tensor_i->set_device_address(device_address);
+      output_tensor_i->set_format(outputs[0]->format());
       LAUNCH_ACLNN(aclnnInplaceCopy, device_context, op->stream_id(), output_tensor_i, tensors_tensor_list_vector[i]);
       offset += sz;
     }
