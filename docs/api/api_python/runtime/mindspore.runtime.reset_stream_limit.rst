@@ -1,5 +1,5 @@
 mindspore.runtime.reset_stream_limit
-==================================
+======================================
 
 .. py:function:: mindspore.runtime.reset_stream_limit(stream)
 

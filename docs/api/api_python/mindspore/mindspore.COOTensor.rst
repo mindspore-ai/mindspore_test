@@ -44,7 +44,7 @@ mindspore.COOTensor
 
         参数：
             - **other** (COOTensor) - 另一个操作数，与当前操作数相加。
-            - **thresh** (Tensor) - 零维，表示阈值，用来决定COOTensor.add结果中的indice/value对是否出现。如果结果中value的数据类型为实数，则 `thresh` 的数据类型应该与它的数据类型一致。如果结果中value小于 `thresh`，它将会被丢弃。
+            - **thresh** (Tensor) - 零维，表示阈值，用来决定COOTensor.add结果中的indices/values对是否出现。如果结果中value的数据类型为实数，则 `thresh` 的数据类型应该与它的数据类型一致。如果结果中value小于 `thresh`，它将会被丢弃。
 
         返回：
             COOTensor，为两个COOTensor相加后的结果。
@@ -53,12 +53,12 @@ mindspore.COOTensor
             - **ValueError** - 如果操作数（本COOTensor/other）的indices的维度不等于2。
             - **ValueError** - 如果操作数（本COOTensor/other）的values的维度不等于1。
             - **ValueError** - 如果操作数（本COOTensor/other）的shape的维度不等于1。
-            - **ValueError** - 如果thresh的维度不等于0。
+            - **ValueError** - 如果 `thresh` 的维度不等于0。
             - **TypeError** - 如果操作数（本COOTensor/other）的indices的数据类型不为int64。
             - **TypeError** - 如果操作数（本COOTensor/other）的shape的数据类型不为int64。
             - **ValueError** - 如果操作数（本COOTensor/other）的indices的长度不等于它的values的长度。
             - **TypeError** - 如果操作数（本COOTensor/other）的values的数据类型不为int8、int16、int32、int64、float32、float64、complex64、complex128中的任何一个。
-            - **TypeError** - 如果thresh的数据类型不为int8、int16、int32、int64、float32、float64中的任何一个。
+            - **TypeError** - 如果 `thresh` 的数据类型不为int8、int16、int32、int64、float32、float64中的任何一个。
             - **TypeError** - 如果操作数（本COOTensor）的indices数据类型不等于other的indices数据类型。
             - **TypeError** - 如果操作数（本COOTensor）的values数据类型不等于other的values数据类型。
             - **TypeError** - 如果操作数（本COOTensor）的shape数据类型不等于other的shape数据类型。
