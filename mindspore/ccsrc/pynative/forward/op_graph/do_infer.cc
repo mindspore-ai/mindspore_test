@@ -16,7 +16,6 @@
 
 #include "pynative/forward/op_graph/do_infer.h"
 #include "pynative/utils/pynative_utils.h"
-#include "frontend/operator/ops_front_infer_function.h"
 #include "pybind_api/gil_scoped_long_running.h"
 #include "tools/profiler/profiler.h"
 #include "include/utils/pynative/common_utils.h"
@@ -26,6 +25,7 @@
 #include "primitive/auto_generate/gen_ops_primitive_t.h"
 #include "include/utils/tensor_py.h"
 #include "include/frontend/operator/frontend_primitive_infer.h"
+#include "include/frontend/jit/ps/parse/py_data_convert.h"
 #include "include/frontend/jit/ps/static_analysis/py_infer_convert.h"
 
 namespace mindspore {

@@ -19,7 +19,6 @@
 #include "pynative/utils/pynative_utils.h"
 #include "mindspore/ccsrc/pynative/utils/pyboost/op_runner.h"
 #include "mindspore/ccsrc/pynative/utils/pyboost/functions/auto_grad_guard.h"
-#include "frontend/expander/bprop/bprop_irbuilder.h"
 #include "pynative/backward/grad_utils.h"
 #include "pynative/forward/pyboost/auto_grad_register.h"
 #include "pynative/forward/pyboost/customize/grad_impl.h"

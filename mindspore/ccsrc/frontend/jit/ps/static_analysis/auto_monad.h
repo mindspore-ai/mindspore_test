@@ -21,7 +21,6 @@
 
 #include "ir/anf.h"
 #include "ir/func_graph.h"
-#include "include/utils/visible.h"
 
 namespace mindspore::pipeline {
 

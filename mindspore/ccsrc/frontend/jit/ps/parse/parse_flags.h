@@ -17,8 +17,6 @@
 #ifndef MINDSPORE_CCSRC_FRONTEND_JIT_PS_PARSE_PARSE_FLAGS_H_
 #define MINDSPORE_CCSRC_FRONTEND_JIT_PS_PARSE_PARSE_FLAGS_H_
 
-#include "include/utils/visible.h"
-
 namespace mindspore {
 extern const char PYTHON_PRIMITIVE_FLAG[];
 extern const char PYTHON_PRIMITIVE_FUNCTION_FLAG[];

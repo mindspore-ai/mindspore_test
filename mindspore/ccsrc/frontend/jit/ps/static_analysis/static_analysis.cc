@@ -47,6 +47,7 @@
 #include "include/utils/convert_utils_py.h"
 #include "include/utils/python_adapter.h"
 #include "include/frontend/operator/frontend_primitive_infer.h"
+#include "include/frontend/operator/composite/grad_operation.h"
 #include "frontend/jit/ps/static_analysis/async_eval_result.h"
 #include "frontend/operator/ops_front_infer_function.h"
 #include "mindspore/ccsrc/frontend/operator/meta_dsl/common/meta_impl.h"

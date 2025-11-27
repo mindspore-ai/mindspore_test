@@ -20,11 +20,8 @@
 #include <string>
 #include "include/runtime/hardware_abstract/kernel_base/oplib/oplib.h"
 #include "include/frontend/jit/ps/pipeline_interface.h"
-#include "frontend/jit/ps/pipeline.h"
 #include "include/frontend/jit/ps/executor/graph_executor_py.h"
 #include "include/frontend/jit/ps/executor/jit_executor_py.h"
-#include "frontend/operator/composite/composite.h"
-#include "frontend/operator/composite/functional_overload.h"
 #include "pynative/utils/pynative_execute.h"
 #include "utils/symbolic.h"
 #include "include/utils/pybind_api/api_register.h"
@@ -34,10 +31,10 @@
 #include "utils/ms_utils.h"
 #include "utils/ms_context.h"
 #include "include/utils/parallel_context.h"
-#include "frontend/parallel/strategy_checkpoint/parallel_strategy_checkpoint.h"
-#include "frontend/parallel/device_manager.h"
+#include "include/frontend/parallel/parallel_strategy_checkpoint.h"
+#include "include/frontend/parallel/device_manager.h"
 #include "include/utils/offload_context.h"
-#include "frontend/parallel/costmodel_context.h"
+#include "include/frontend/parallel/costmodel_context.h"
 #include "include/cluster/topology/ps_context.h"
 #include "include/cluster/init.h"
 #include "include/cluster/topology/collective_manager.h"
@@ -46,11 +43,10 @@
 #include "include/runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "include/runtime/hardware_abstract/collective/collective_communication_lib.h"
 #include "include/runtime/memory/mem_pool/mem_dynamic_allocator.h"
-#include "frontend/parallel/tensor_layout/tensor_transform.h"
+#include "include/frontend/parallel/tensor_layout/tensor_transform.h"
 #include "pybind_api/gil_scoped_long_running.h"
 #include "pybind_api/resource/manager.h"
 
-#include "frontend/jit/pi/external.h"
 #include "include/utils/np_dtypes.h"
 #include "include/utils/amp.h"
 #include "include/frontend/jit/trace/trace_recorder_interface.h"
@@ -66,7 +62,6 @@
 namespace py = pybind11;
 using GraphExecutorPy = mindspore::pipeline::GraphExecutorPy;
 using JitExecutorPy = mindspore::pipeline::JitExecutorPy;
-using Pipeline = mindspore::pipeline::Pipeline;
 using PrimitivePy = mindspore::PrimitivePy;
 using MetaFuncGraph = mindspore::MetaFuncGraph;
 using EventWriter = mindspore::summary::EventWriter;

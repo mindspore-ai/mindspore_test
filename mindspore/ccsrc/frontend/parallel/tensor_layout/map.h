@@ -24,13 +24,13 @@
 #include <vector>
 #include "frontend/parallel/status.h"
 #include "frontend/parallel/tensor_layout/arrangement.h"
-#include "frontend/parallel/tensor_layout/array.h"
+#include "include/frontend/parallel/tensor_layout/array.h"
 
 namespace mindspore {
 namespace parallel {
 constexpr int64_t MAP_NONE = -1;
 
-class FRONTEND_EXPORT Map : public Array {
+class Map : public Array {
  public:
   Map() = default;
   ~Map() override = default;

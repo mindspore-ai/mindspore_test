@@ -53,7 +53,6 @@
 #endif
 #include "tools/profiler/profiler.h"
 #include "include/utils/compile_cache_context.h"
-#include "frontend/jit/ps/base.h"
 #include "primitive/framework_ops.h"
 #include "include/runtime/utils/runtime_conf/runtime_conf.h"
 #include "primitive/auto_generate/gen_ops_primitive_c.h"

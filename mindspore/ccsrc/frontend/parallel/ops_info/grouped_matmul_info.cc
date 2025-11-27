@@ -27,7 +27,7 @@
 #include "include/utils/parallel_context.h"
 #include "primitive/sequence_ops.h"
 #include "ir/value.h"
-#include "frontend/parallel/auto_parallel/graph_costmodel.h"
+#include "include/frontend/parallel/graph_costmodel.h"
 #include "frontend/parallel/graph_util/generate_graph.h"
 #include "frontend/parallel/device_manager.h"
 #include "frontend/parallel/device_matrix.h"

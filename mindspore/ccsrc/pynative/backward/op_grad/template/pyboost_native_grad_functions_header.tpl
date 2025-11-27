@@ -6,8 +6,8 @@
 #include <vector>
 #include "mindspore/ccsrc/pynative/utils/pyboost/op_runner.h"
 #include "pynative/utils/runtime/op_runner.h"
-#include "frontend/expander/bprop/bprop_irbuilder.h"
 #include "mindspore/ccsrc/pynative/utils/pyboost/comm_handle.h"
+#include "include/frontend/expander/bprop_interface.h"
 
 namespace mindspore{
 namespace pynative {

@@ -15,7 +15,6 @@
  */
 
 #include "include/frontend/operator/primitive_py.h"
-#include "frontend/jit/ps/parse/parse_flags.h"
 #include "pybind11/stl.h"
 
 namespace mindspore {

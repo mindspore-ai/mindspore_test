@@ -25,6 +25,7 @@
 #include "utils/ms_utils.h"
 #include "include/utils/convert_utils_py.h"
 #include "mindspore/ccsrc/utils/base_ref_py.h"
+#include "utils/frontend/auto_generate/functional_signature_map.h"
 
 namespace mindspore {
 py::function GetBpropFunctionByObj(const py::object &obj, bool get_closure) {
@@ -152,6 +153,27 @@ std::stringstream BuildApiInputInfo(const std::string &function_name, const std:
   ss << "Failed calling " << function_name << " with \"" << function_name << "(" << result << ")\".\n";
   ss << "The valid calling should be:\n";
   return ss;
+}
+
+std::map<std::string, std::vector<std::string>> GetFunctionalSignatureMap(bool is_method) {
+  return is_method ? ops::tensor_method_overload_signature_map : ops::function_overload_signature_map;
+}
+
+std::string BuildFunctionalErrorMsg(const std::string &function_name, const std::vector<std::string> &arg_info_list,
+                                    bool is_method) {
+  std::stringstream ss = BuildApiInputInfo(function_name, arg_info_list);
+  const auto &signature_map = GetFunctionalSignatureMap(is_method);
+  auto it = signature_map.find(function_name);
+  if (it != signature_map.end()) {
+    const std::vector<std::string> &valid_arg_options = it->second;
+    for (const std::string &arg_option : valid_arg_options) {
+      ss << "\"" << arg_option << "\"\n";
+    }
+    ss << std::endl;
+  } else {
+    MS_LOG(EXCEPTION) << "Valid arg options are not correctly generated." << std::endl;
+  }
+  return ss.str();
 }
 }  // namespace prim
 }  // namespace mindspore

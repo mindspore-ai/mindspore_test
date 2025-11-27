@@ -48,8 +48,6 @@
 #include "mindspore/ccsrc/utils/ir_dump/anf_ir_dump.h"
 #include "mindspore/ccsrc/utils/ir_dump/dump_proto.h"
 
-#include "frontend/operator/py_execute_py.h"  // Only include one-time in the whole project.
-
 namespace mindspore {
 namespace pipeline {
 namespace {

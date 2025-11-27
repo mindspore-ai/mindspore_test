@@ -29,7 +29,7 @@
 #include "primitive/array_ops.h"
 #include "primitive/framework_ops.h"
 #include "primitive/arithmetic_ops.h"
-#include "frontend/parallel/auto_parallel/graph_costmodel.h"
+#include "include/frontend/parallel/graph_costmodel.h"
 #include "frontend/parallel/ops_info/ops_utils.h"
 #include "frontend/parallel/group_manager.h"
 #include "frontend/parallel/parameter_manager.h"

@@ -24,13 +24,11 @@
 #include <unordered_set>
 #include <algorithm>
 #include "include/utils/convert_utils_py.h"
-#include "frontend/operator/composite/functional_overload.h"
 #include "pynative/utils/pynative_utils.h"
 #include "include/utils/tensor_py.h"
 #include "include/utils/tensor_utils.h"
 #include "include/utils/pynative/py_parse.h"
 #include "include/utils/frontend/primitive_utils.h"
-#include "frontend/operator/composite/auto_generate/functional_map.h"
 #include "mindspore/core/include/utils/value_utils.h"
 #include "include/utils/pynative/storage_py.h"
 
@@ -323,6 +321,11 @@ std::vector<std::string> GenerateAllSignatureStrings(const std::vector<FunctionS
     }
   }
   return sig_strings;
+}
+
+bool IsFunctionalRegInMap(const std::string &function_name, bool is_method) {
+  const auto &signature_map = prim::GetFunctionalSignatureMap(is_method);
+  return signature_map.find(function_name) != signature_map.end();
 }
 }  // namespace
 namespace py = pybind11;
@@ -1709,7 +1712,7 @@ std::string PythonArgParser::PrintParseError(PyObject *args, PyObject *kwargs, c
   }
   auto type_list = GetParseTypeListString(args, kwargs);
   if (error_msg.empty()) {
-    bool in_map = prim::IsFunctionalRegInMap(function_name_, is_method);
+    bool in_map = IsFunctionalRegInMap(function_name_, is_method);
     if (in_map) {
       return prim::BuildFunctionalErrorMsg(function_name_, type_list, is_method);
     } else {

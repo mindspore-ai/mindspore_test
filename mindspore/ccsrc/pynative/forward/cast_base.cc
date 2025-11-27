@@ -18,7 +18,8 @@
 #include <memory>
 #include <algorithm>
 #include "primitive/array_ops.h"
-#include "frontend/operator/composite/do_signature.h"
+#include "include/utils/python_adapter.h"
+#include "include/frontend/operator/primitive_py.h"
 
 namespace mindspore {
 namespace pynative {

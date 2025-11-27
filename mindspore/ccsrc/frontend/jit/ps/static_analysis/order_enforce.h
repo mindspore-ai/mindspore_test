@@ -18,7 +18,6 @@
 #define MINDSPORE_CCSRC_FRONTEND_JIT_ORDER_ENFORCE_H_
 
 #include "ir/func_graph.h"
-#include "include/utils/visible.h"
 
 namespace mindspore::pipeline {
 // Enforce order of execution of the given graph.

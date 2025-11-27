@@ -32,7 +32,7 @@
 #include "include/runtime/pipeline/pipeline.h"
 #include "pynative/backward/op_grad/bprop_task.h"
 #include "include/utils/pynative/variable.h"
-#include "frontend/jit/ps/resource.h"
+#include "include/frontend/operator/composite/grad_operation.h"
 #include "pynative/backward/hook/custom_function.h"
 
 namespace mindspore {

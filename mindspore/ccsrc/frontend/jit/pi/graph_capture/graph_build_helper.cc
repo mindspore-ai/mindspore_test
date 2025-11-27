@@ -20,9 +20,9 @@
 #include <memory>
 #include <algorithm>
 
+#include "ir/func_graph_flag.h"
 #include "ir/func_graph_cloner.h"
 #include "primitive/framework_ops.h"
-#include "frontend/operator/composite/composite.h"
 #include "frontend/jit/pi/external.h"
 #include "frontend/jit/pi/graph_capture/graph_build.h"
 #include "frontend/jit/pi/graph_build/build_graph_utils.h"
@@ -31,7 +31,7 @@
 #include "frontend/jit/ps/static_analysis/static_analysis.h"
 #include "frontend/jit/pi/graph_capture/abstract_wrapper.h"
 #include "frontend/jit/pi/graph_build/func_graph_builder.h"
-#include "ir/func_graph_flag.h"
+#include "include/frontend/operator/composite/grad_operation.h"
 
 namespace mindspore {
 namespace pijit {

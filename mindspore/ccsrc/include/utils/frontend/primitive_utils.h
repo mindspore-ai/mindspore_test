@@ -17,7 +17,9 @@
 #ifndef MINDSPORE_CCSRC_INCLUDE_UTILS_FRONTEND_PRIMITIVE_UTILS_H_
 #define MINDSPORE_CCSRC_INCLUDE_UTILS_FRONTEND_PRIMITIVE_UTILS_H_
 
+#include <set>
 #include <string>
+#include <vector>
 #include "pybind11/pybind11.h"
 #include "base/base_ref.h"
 #include "include/utils/utils.h"
@@ -48,11 +50,16 @@ COMMON_EXPORT py::function GetVmapRuleFunctionByObj(const py::object &obj, int a
 COMMON_EXPORT py::function GetVmapRuleFunction(const std::string &name, int axis_size);
 
 namespace prim {
+COMMON_EXPORT std::map<std::string, std::vector<std::string>> GetFunctionalSignatureMap(bool is_method);
+
 COMMON_EXPORT std::string ErrorMessageForConvertRefDtype(const ValuePtr &func, const std::string &ref_type,
                                                          const std::string &target_type, size_t index);
 
 COMMON_EXPORT std::stringstream BuildApiInputInfo(const std::string &function_name,
                                                   const std::vector<std::string> &arg_info_list);
+
+COMMON_EXPORT std::string BuildFunctionalErrorMsg(const std::string &function_name,
+                                                  const std::vector<std::string> &arg_info_list, bool is_method);
 }  // namespace prim
 }  // namespace mindspore
 

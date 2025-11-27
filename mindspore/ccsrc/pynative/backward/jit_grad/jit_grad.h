@@ -24,7 +24,7 @@
 #include "ir/tensor.h"
 #include "pynative/utils/base.h"
 #include "pynative/backward/top_cell.h"
-#include "frontend/jit/ps/resource.h"
+#include "include/frontend/jit/ps/resource_interface.h"
 #include "include/utils/visible.h"
 
 namespace mindspore {

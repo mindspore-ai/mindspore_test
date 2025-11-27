@@ -29,7 +29,6 @@
 #include "ir/anf.h"
 #include "primitive/ascend_op_name.h"
 #include "primitive/framework_op_name.h"
-#include "frontend/parallel/ops_info/ops_utils.h"
 #include "plugin/ascend/graph_optimizer/gpto/gpto.h"
 #include "plugin/ascend/res_manager/stream_manager/ascend_stream_manager.h"
 #include "primitive/auto_generate/gen_ops_primitive_c.h"

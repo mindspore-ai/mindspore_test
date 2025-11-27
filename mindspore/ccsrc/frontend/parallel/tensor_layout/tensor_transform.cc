@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "frontend/parallel/tensor_layout/tensor_transform.h"
+#include "include/frontend/parallel/tensor_layout/tensor_transform.h"
 #include <functional>
 #include <algorithm>
 #include <memory>

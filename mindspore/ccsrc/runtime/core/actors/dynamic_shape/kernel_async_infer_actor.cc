@@ -17,7 +17,7 @@
 #include "runtime/core/actors/dynamic_shape/kernel_async_infer_actor.h"
 #include "runtime/core/actors/base/kernel_actor.h"
 #include "runtime/core/actors/base/kernel_runner.h"
-#include "frontend/jit/ps/debug/trace.h"
+#include "utils/trace_base.h"
 #include "utils/ms_exception.h"
 
 namespace mindspore {

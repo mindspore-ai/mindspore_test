@@ -25,7 +25,6 @@
 #include <tuple>
 #include "ir/tensor_new.h"
 #include "pybind11/pytypes.h"
-#include "frontend/jit/ps/parse/parse_base.h"
 #include "utils/log_adapter.h"
 #include "include/utils/tensor_py.h"
 #include "pynative/utils/pynative_execute.h"

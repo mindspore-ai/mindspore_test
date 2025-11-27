@@ -27,7 +27,7 @@
 #include <set>
 
 #include "frontend/parallel/auto_parallel/edge_costmodel.h"
-#include "frontend/parallel/auto_parallel/graph_costmodel.h"
+#include "include/frontend/parallel/graph_costmodel.h"
 #include "frontend/parallel/step_parallel_utils.h"
 #include "frontend/parallel/graph_util/graph_utils.h"
 #include "primitive/sequence_ops.h"

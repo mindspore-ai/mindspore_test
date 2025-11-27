@@ -21,7 +21,7 @@
 #include <tuple>
 
 #include "frontend/parallel/ops_info/fused_infer_attention_score_info.h"
-#include "frontend/parallel/auto_parallel/graph_costmodel.h"
+#include "include/frontend/parallel/graph_costmodel.h"
 #include "frontend/parallel/device_manager.h"
 #include "frontend/parallel/device_matrix.h"
 #include "frontend/parallel/dynamic_creator.h"

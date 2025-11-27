@@ -24,7 +24,7 @@
 #include "pynative/backward/grad.h"
 
 #include "pybind11/pybind11.h"
-#include "frontend/operator/composite/composite.h"
+#include "include/frontend/operator/composite/grad_operation.h"
 #include "ir/anf.h"
 #include "include/fork_utils.h"
 #include "include/utils/visible.h"

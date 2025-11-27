@@ -25,7 +25,7 @@
 #include "include/frontend/optimizer/optimizer.h"
 #include "frontend/optimizer/anf_visitor.h"
 #include "frontend/operator/ops.h"
-#include "frontend/operator/composite/composite.h"
+#include "include/frontend/operator/composite/grad_operation.h"
 
 namespace mindspore {
 namespace opt {

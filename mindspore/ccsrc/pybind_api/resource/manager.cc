@@ -24,13 +24,10 @@
 #include "include/frontend/jit/ps/executor/executor_py.h"
 #include "include/frontend/jit/ps/executor/graph_executor_py.h"
 #include "include/frontend/optimizer/ad/grad_interface.h"
-#include "frontend/jit/ps/pass.h"
 #include "include/frontend/jit/ps/executor/jit_executor_py.h"
 #include "include/frontend/jit/ps/parse/py_data_convert.h"
-#include "frontend/optimizer/ad/dfunctor.h"
-#include "frontend/optimizer/ad/prim_bprop_optimizer.h"
-#include "frontend/parallel/auto_parallel/graph_costmodel.h"
-#include "frontend/expander/utils.h"
+#include "include/frontend/jit/ps/debug/trace_interface.h"
+#include "include/frontend/parallel/graph_costmodel.h"
 #include "pynative/utils/pynative_execute.h"
 #include "pynative/forward/pyboost/converter.h"
 #include "include/utils/config_manager.h"
@@ -46,9 +43,6 @@
 #include "include/backend/common/ms_device_shape_transfer.h"
 #include "utils/interpret_node_recorder.h"
 #include "mindspore/ccsrc/utils/ir_dump/dump_proto.h"
-#include "frontend/jit/ps/fallback.h"
-#include "frontend/jit/ps/debug/trace.h"
-#include "frontend/jit/ps/pipeline.h"
 #include "backend/common/kernel_graph/session_factory.h"
 #include "include/backend/backend_manager/backend_manager.h"
 #include "include/runtime/hardware_abstract/device_context/device_context_manager.h"
@@ -71,7 +65,6 @@
 #include "ir/cell.h"
 #endif
 
-#include "frontend/operator/py_execute_py.h"  // Only include one-time in the whole project.
 #include "mindspore/ccsrc/pynative/forward/pyboost/auto_generate/tensor_func_utils.h"
 #include "backend/common/somas/somas.h"
 #include "include/utils/pyobj_manager.h"
@@ -128,7 +121,7 @@ void ClearResPart1() {
   pipeline::GraphExecutorPy::ClearRes();
   pipeline::JitExecutorPy::ClearRes();
   pipeline::ReclaimOptimizer();
-  pipeline::ActionConfigure::Instance().Clear();
+  pipeline::ClearActionConfigure();
 }
 
 void ClearResPart2() {

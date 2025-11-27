@@ -17,15 +17,12 @@
 #include "pynative/backward/jit_grad/jit_grad.h"
 
 #include <utility>
-#include "frontend/optimizer/ad/grad.h"
 #include "primitive/structure_op_name.h"
 #include "primitive/framework_op_name.h"
 #include "primitive/sequence_ops.h"
 #include "pynative/backward/grad_utils.h"
 #include "pynative/utils/pynative_utils.h"
-#include "frontend/jit/ps/pipeline.h"
 #include "ir/func_graph_cloner.h"
-#include "frontend/expander/bprop/bprop.h"
 #include "include/utils/pynative/common_utils.h"
 #include "include/utils/pynative/adapter.h"
 #include "primitive/auto_generate/gen_ops_primitive_m.h"

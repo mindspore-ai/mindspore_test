@@ -26,8 +26,6 @@
 #include "pynative/backward/hook/saved_tensor_hook.h"
 #include "include/utils/config_manager.h"
 #include "include/utils/pybind_api/api_register.h"
-#include "frontend/optimizer/ad/grad.h"
-#include "frontend/jit/ps/pass.h"
 #include "include/frontend/optimizer/ad/grad_interface.h"
 #include "pynative/utils/runtime/op_executor.h"
 #include "pynative/utils/runtime/op_compiler.h"

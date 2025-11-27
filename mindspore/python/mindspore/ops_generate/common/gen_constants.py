@@ -47,6 +47,7 @@ PYBOOST_NATIVE_GRAD_FUNC_GEN_PATH = "mindspore/ccsrc/pynative/backward/op_grad/a
 PYBOOST_AUTO_GRAD_FUNC_GEN_PATH = "mindspore/ccsrc/pynative/forward/pyboost/auto_generate"
 PIPELINE_PYBOOST_FUNC_GEN_PATH = "mindspore/ccsrc/pynative/forward/pyboost/auto_generate"
 FUNCTIONAL_OVERLOAD_GEN_PATH = "mindspore/ccsrc/frontend/operator/composite/auto_generate"
+FUNCTIONAL_OVERLOAD_SIGNATURE_GEN_PATH = "mindspore/ccsrc/utils/frontend/auto_generate"
 PYBOOST_GRAD_FUNC_GEN_PATH = "mindspore/ccsrc/pynative/utils/pyboost/grad_functions/auto_generate"
 TENSOR_FUNC_REGISTER_PATH = "mindspore/ccsrc/pynative/forward/pyboost/auto_generate"
 TENSOR_API_PATH = "mindspore/ccsrc/pybind_api/ir/tensor/tensor_api/auto_generate"

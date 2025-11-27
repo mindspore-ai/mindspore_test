@@ -22,7 +22,6 @@
 #include <utility>
 #include <string>
 #include "frontend/jit/ps/resource.h"
-#include "include/utils/visible.h"
 #include "frontend/optimizer/irpass/view_inplace_utils.h"
 
 namespace mindspore {
