@@ -21,7 +21,7 @@
 #include <unordered_set>
 #include "acl/error_codes/rt_error_codes.h"
 #include "kernel/ascend/acl_ir/acl_helper.h"
-#include "include/backend/anf_runtime_algorithm.h"
+#include "include/backend/common/kernel_graph/anf_runtime_algorithm.h"
 #include "include/utils/anfalgo.h"
 #include "include/utils/utils.h"
 #include "include/runtime/utils/runtime_conf/runtime_env.h"

@@ -20,7 +20,7 @@
 
 #include "ir/func_graph.h"
 #include "runtime/hardware_abstract/visible.h"
-#include "include/backend/optimizer/pass.h"
+#include "include/backend/common/pass_manager/pass.h"
 #include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/symbol_engine/jit/cpp_visitor.h"
 #include "include/runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/infershape_functor.h"
 

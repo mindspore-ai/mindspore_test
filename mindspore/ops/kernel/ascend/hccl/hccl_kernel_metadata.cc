@@ -26,7 +26,7 @@
 #include "include/backend/common/ms_device_shape_transfer.h"
 #include "include/utils/utils.h"
 #include "kernel/ascend/hccl/hcom_util.h"
-#include "include/backend/anf_runtime_algorithm.h"
+#include "include/backend/common/kernel_graph/anf_runtime_algorithm.h"
 #include "include/utils/anfalgo.h"
 #include "include/utils/parallel_context.h"
 

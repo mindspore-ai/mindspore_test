@@ -23,7 +23,7 @@
 #include <tuple>
 #include <map>
 #include <utility>
-#include "include/backend/anf_runtime_algorithm.h"
+#include "include/backend/common/kernel_graph/anf_runtime_algorithm.h"
 
 namespace mindspore {
 namespace kernel {

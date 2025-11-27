@@ -26,7 +26,7 @@
 #include "pybind11/stl.h"
 #include "mindspore/core/include/base/base_ref.h"
 #include "backend/backend_manager/visible.h"
-#include "backend/backend_manager/backend_jit_config.h"
+#include "include/backend/backend_manager/backend_jit_config.h"
 #include "ir/tensor.h"
 
 namespace mindspore {

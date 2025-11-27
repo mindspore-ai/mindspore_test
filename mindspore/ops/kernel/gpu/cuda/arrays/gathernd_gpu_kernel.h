@@ -20,7 +20,7 @@
 #include <string>
 #include <utility>
 #include <vector>
-#include "include/backend/anf_runtime_algorithm.h"
+#include "include/backend/common/kernel_graph/anf_runtime_algorithm.h"
 #include "include/utils/anfalgo.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/gathernd.cuh"
 #include "kernel/gpu/gpu_kernel.h"

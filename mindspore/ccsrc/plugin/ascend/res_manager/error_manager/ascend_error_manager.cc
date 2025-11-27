@@ -20,7 +20,7 @@
 #include <mutex>
 #include <vector>
 #include "include/utils/anfalgo.h"
-#include "include/backend/anf_runtime_algorithm.h"
+#include "include/backend/common/kernel_graph/anf_runtime_algorithm.h"
 #include "ir/device_type.h"
 #include "ir/tensor_new.h"
 #include "plugin/ascend/res_manager/symbol_interface/symbol_utils.h"

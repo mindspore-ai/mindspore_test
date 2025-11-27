@@ -17,7 +17,7 @@
 #include "backend/common/pass/add_attr_to_node/add_attr_to_node_register.h"
 
 #include <memory>
-#include "include/backend/optimizer/helper.h"
+#include "include/backend/common/pass_manager/helper.h"
 #include "primitive/sequence_ops.h"
 #include "primitive/nn_ops.h"
 #include "include/utils/anfalgo.h"

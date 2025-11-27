@@ -21,9 +21,9 @@
 
 #include "backend/common/pass/common/gllo_utils.h"
 #include "primitive/nn_ops.h"
-#include "include/backend/anf_runtime_algorithm.h"
+#include "include/backend/common/kernel_graph/anf_runtime_algorithm.h"
 #include "include/utils/anfalgo.h"
-#include "include/backend/optimizer/helper.h"
+#include "include/backend/common/pass_manager/helper.h"
 #include "utils/shape_utils.h"
 #include "utils/ms_context.h"
 #include "primitive/auto_generate/gen_ops_primitive_a.h"

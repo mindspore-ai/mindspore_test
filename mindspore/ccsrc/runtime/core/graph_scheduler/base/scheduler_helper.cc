@@ -18,7 +18,7 @@
 #include "primitive/framework_ops.h"
 #include "primitive/array_ops.h"
 #include "runtime/core/graph_scheduler/dump/actor_dump.h"
-#include "include/backend/anf_runtime_algorithm.h"
+#include "include/backend/common/kernel_graph/anf_runtime_algorithm.h"
 #include "include/utils/anfalgo.h"
 #include "utils/log_adapter.h"
 #include "include/utils/convert_utils.h"

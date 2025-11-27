@@ -28,7 +28,7 @@
 #include "include/frontend/jit/ps/executor/jit_executor_py.h"
 #include "include/frontend/jit/ps/debug/trace_interface.h"
 #include "include/frontend/optimizer/ad/grad_interface.h"
-#include "include/backend/optimizer/helper.h"
+#include "include/backend/common/pass_manager/helper.h"
 #include "include/utils/convert_utils_py.h"
 #include "include/utils/tensor_py.h"
 #include "include/utils/pynative/common_utils.h"

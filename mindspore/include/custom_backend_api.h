@@ -21,6 +21,6 @@
 // backend headfiles
 #include "mindspore/ccsrc/include/backend/backend_manager/backend_manager.h"
 #include "mindspore/ccsrc/include/backend/backend_manager/backend_base.h"
-#include "mindspore/ccsrc/backend/backend_manager/backend_jit_config.h"
+#include "mindspore/ccsrc/include/backend/backend_manager/backend_jit_config.h"
 
 #endif  // MINDSPORE_INCLUDE_CUSTOM_BACKEND_API_H_

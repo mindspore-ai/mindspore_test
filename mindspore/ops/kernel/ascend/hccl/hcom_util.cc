@@ -19,7 +19,7 @@
 #include <algorithm>
 #include <memory>
 #include <utility>
-#include "include/backend/anf_runtime_algorithm.h"
+#include "include/backend/common/kernel_graph/anf_runtime_algorithm.h"
 #include "include/utils/anfalgo.h"
 #include "include/utils/utils.h"
 #include "primitive/ascend_op_name.h"

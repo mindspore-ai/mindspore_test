@@ -19,7 +19,7 @@
 #include <algorithm>
 #include <unordered_set>
 #include "include/utils/anfalgo.h"
-#include "include/backend/anf_runtime_algorithm.h"
+#include "include/backend/common/kernel_graph/anf_runtime_algorithm.h"
 #include "device_address/device_address.h"
 #include "include/cluster/topology/collective_manager.h"
 #include "include/runtime/memory/mem_pool/mem_tracker.h"

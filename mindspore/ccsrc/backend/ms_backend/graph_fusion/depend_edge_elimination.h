@@ -16,7 +16,7 @@
 #ifndef MINDSPORE_CCSRC_BACKEND_COMMON_GRAPH_KERNEL_DEPEND_EDGE_ELIMINATION_H_
 #define MINDSPORE_CCSRC_BACKEND_COMMON_GRAPH_KERNEL_DEPEND_EDGE_ELIMINATION_H_
 
-#include "include/backend/optimizer/pass.h"
+#include "include/backend/common/pass_manager/pass.h"
 
 namespace mindspore::graphkernel {
 /**

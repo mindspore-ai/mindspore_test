@@ -27,7 +27,7 @@
 #include "primitive/sparse_ops.h"
 #include "primitive/sequence_ops.h"
 #include "primitive/framework_ops.h"
-#include "include/backend/optimizer/helper.h"
+#include "include/backend/common/pass_manager/helper.h"
 #include "include/backend/common/pass_manager/op_adaptation_info_factory.h"
 #include "include/frontend/operator/primitive_py.h"
 #include "include/frontend/jit/ps/parse/py_data_convert.h"

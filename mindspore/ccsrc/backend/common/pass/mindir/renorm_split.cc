@@ -23,7 +23,7 @@
 #include "primitive/nn_op_name.h"
 #include "primitive/array_ops.h"
 #include "primitive/nn_ops.h"
-#include "include/backend/optimizer/helper.h"
+#include "include/backend/common/pass_manager/helper.h"
 #include "primitive/auto_generate/gen_ops_primitive_b.h"
 #include "primitive/auto_generate/gen_ops_primitive_m.h"
 #include "primitive/auto_generate/gen_ops_primitive_r.h"

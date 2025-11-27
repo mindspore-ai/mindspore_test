@@ -19,7 +19,7 @@
 #include <map>
 #include <unordered_map>
 #include <string>
-#include "include/backend/anf_runtime_algorithm.h"
+#include "include/backend/common/kernel_graph/anf_runtime_algorithm.h"
 #include "include/utils/anfalgo.h"
 #include "include/utils/utils.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_info.h"

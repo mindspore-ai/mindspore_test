@@ -15,8 +15,8 @@
  */
 #include "backend/common/pass/add_attr_to_node/add_attr_to_node_register.h"
 #include "include/utils/anfalgo.h"
-#include "include/backend/anf_runtime_algorithm.h"
-#include "include/backend/optimizer/helper.h"
+#include "include/backend/common/kernel_graph/anf_runtime_algorithm.h"
+#include "include/backend/common/pass_manager/helper.h"
 #include "utils/ms_context.h"
 #include "primitive/array_ops.h"
 #include "primitive/auto_generate/gen_ops_primitive_e.h"

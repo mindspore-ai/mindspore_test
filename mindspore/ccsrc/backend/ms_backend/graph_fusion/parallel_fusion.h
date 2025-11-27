@@ -26,9 +26,9 @@
 #include <vector>
 
 #include "base/base.h"
-#include "include/backend/anf_runtime_algorithm.h"
+#include "include/backend/common/kernel_graph/anf_runtime_algorithm.h"
 #include "include/utils/anfalgo.h"
-#include "include/backend/optimizer/optimizer.h"
+#include "include/backend/common/pass_manager/optimizer.h"
 #include "backend/ms_backend/graph_fusion/parallel_cost_model.h"
 #include "include/backend/common/kernel_graph/kernel_graph.h"
 #include "utils/ms_context.h"

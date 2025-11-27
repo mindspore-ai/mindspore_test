@@ -21,7 +21,7 @@
 #include "primitive/arithmetic_ops.h"
 #include "primitive/framework_ops.h"
 #include "include/utils/anfalgo.h"
-#include "include/backend/optimizer/helper.h"
+#include "include/backend/common/pass_manager/helper.h"
 #include "primitive/auto_generate/gen_ops_primitive_s.h"
 
 /* This pass changes the following pattern.

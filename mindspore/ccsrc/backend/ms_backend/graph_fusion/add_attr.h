@@ -17,7 +17,7 @@
 #define MINDSPORE_CCSRC_BACKEND_COMMON_GRAPH_KERNEL_ADD_ATTR_H_
 
 #include "ir/func_graph.h"
-#include "include/backend/optimizer/pass.h"
+#include "include/backend/common/pass_manager/pass.h"
 
 namespace mindspore::graphkernel {
 class AddAttr : public opt::Pass {

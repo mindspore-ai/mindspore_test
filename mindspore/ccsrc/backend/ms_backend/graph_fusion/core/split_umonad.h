@@ -18,7 +18,7 @@
 
 #include <memory>
 #include <string>
-#include "include/backend/optimizer/optimizer.h"
+#include "include/backend/common/pass_manager/optimizer.h"
 #include "backend/ms_backend/graph_fusion/core/graph_kernel_expander.h"
 
 namespace mindspore::graphkernel {

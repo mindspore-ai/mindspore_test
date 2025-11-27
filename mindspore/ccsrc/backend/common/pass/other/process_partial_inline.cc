@@ -18,7 +18,7 @@
 #include <memory>
 #include <string>
 #include <vector>
-#include "include/backend/anf_runtime_algorithm.h"
+#include "include/backend/common/kernel_graph/anf_runtime_algorithm.h"
 #include "include/utils/anfalgo.h"
 #include "primitive/framework_ops.h"
 #include "utils/ms_context.h"

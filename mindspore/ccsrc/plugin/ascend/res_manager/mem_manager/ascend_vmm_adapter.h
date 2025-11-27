@@ -30,7 +30,7 @@
 #include "ops_utils/op_constants.h"
 #include "utils/log_adapter.h"
 
-#include "include/backend/anf_runtime_algorithm.h"
+#include "include/backend/common/kernel_graph/anf_runtime_algorithm.h"
 #include "include/runtime/memory/mem_pool/mem_dynamic_allocator.h"
 #include "include/utils/utils.h"
 #include "utils/ms_context.h"

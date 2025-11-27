@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "include/backend/optimizer/helper.h"
+#include "include/backend/common/pass_manager/helper.h"
 #include <cstdint>
 #include <memory>
 #include <string>
@@ -32,7 +32,7 @@
 #include "primitive/framework_ops.h"
 #include "include/utils/utils.h"
 #include "base/base_ref.h"
-#include "include/backend/anf_runtime_algorithm.h"
+#include "include/backend/common/kernel_graph/anf_runtime_algorithm.h"
 #include "include/utils/fallback.h"
 #include "include/utils/anfalgo.h"
 #include "utils/log_adapter.h"

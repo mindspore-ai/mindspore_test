@@ -43,7 +43,7 @@
 #include "primitive/auto_generate/gen_ops_primitive_c.h"
 #include "primitive/auto_generate/gen_ops_primitive_m.h"
 #include "primitive/auto_generate/gen_ops_primitive_t.h"
-#include "include/backend/anf_runtime_algorithm.h"
+#include "include/backend/common/kernel_graph/anf_runtime_algorithm.h"
 #include "include/utils/callback.h"
 #include "kernel/cpu/custom/kernel_mod_impl/op_plugin_utils.h"
 #include "ops/op_def.h"

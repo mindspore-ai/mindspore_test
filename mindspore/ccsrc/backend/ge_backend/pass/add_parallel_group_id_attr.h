@@ -17,7 +17,7 @@
 #define MINDSPORE_CCSRC_BACKEND_GE_BACKEND_PASS_ADD_PARALLEL_GROUP_ID_ATTR_H_
 
 #include <string>
-#include "include/backend/optimizer/pass.h"
+#include "include/backend/common/pass_manager/pass.h"
 
 namespace mindspore {
 namespace opt {

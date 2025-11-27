@@ -32,7 +32,7 @@
 #include "pybind_api/gil_scoped_long_running.h"
 #include "utils/ms_context.h"
 #include "include/utils/anfalgo.h"
-#include "include/backend/anf_runtime_algorithm.h"
+#include "include/backend/common/kernel_graph/anf_runtime_algorithm.h"
 #include "include/runtime/hardware_abstract/device_context/device_context_manager.h"
 
 namespace mindspore {

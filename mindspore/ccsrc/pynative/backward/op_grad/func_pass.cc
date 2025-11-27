@@ -23,7 +23,7 @@
 #include "primitive/sequence_ops.h"
 #include "primitive/nn_ops.h"
 #include "ops_utils/op_utils.h"
-#include "include/backend/optimizer/helper.h"
+#include "include/backend/common/pass_manager/helper.h"
 #include "include/utils/pynative/common_utils.h"
 #include "pynative/backward/op_grad/func_builder.h"
 

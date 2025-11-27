@@ -19,7 +19,7 @@
 #include <vector>
 #include <string>
 #include "primitive/math_ops.h"
-#include "include/backend/anf_runtime_algorithm.h"
+#include "include/backend/common/kernel_graph/anf_runtime_algorithm.h"
 #include "include/utils/anfalgo.h"
 #include "primitive/auto_generate/gen_ops_primitive_b.h"
 #include "primitive/auto_generate/gen_ops_primitive_c.h"

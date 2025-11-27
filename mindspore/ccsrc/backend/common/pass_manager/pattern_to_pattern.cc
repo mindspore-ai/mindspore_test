@@ -20,7 +20,7 @@
 #include <queue>
 #include "ir/manager.h"
 #include "include/utils/anfalgo.h"
-#include "include/backend/optimizer/helper.h"
+#include "include/backend/common/pass_manager/helper.h"
 #include "ir/func_graph_flag.h"
 
 namespace mindspore {

@@ -33,7 +33,7 @@
 #include "ir/graph_utils.h"
 #include "include/runtime/hardware_abstract/kernel_base/graph_fusion/framework_utils.h"
 #include "tools/profiler/profiling.h"
-#include "include/backend/optimizer/helper.h"
+#include "include/backend/common/pass_manager/helper.h"
 #include "base/base_ref_utils.h"
 #include "mindspore/ccsrc/utils/ir_dump/dump_proto.h"
 #include "include/utils/parallel_context.h"
@@ -46,7 +46,7 @@
 #include "primitive/framework_ops.h"
 #include "include/runtime/utils/runtime_conf/runtime_conf.h"
 #include "backend/ge_backend/executor/ge_graph_executor.h"
-#include "backend/backend_manager/backend_jit_config.h"
+#include "include/backend/backend_manager/backend_jit_config.h"
 
 namespace mindspore {
 namespace ge_backend {

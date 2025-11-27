@@ -20,7 +20,7 @@
 #include "include/runtime/hardware_abstract/kernel_base/graph_fusion/framework_utils.h"
 #include "kernel/ascend/akg/kernel_mod_impl/akg_utils.h"
 #include "kernel/ascend/akg/kernel_mod_impl/akg_ascend_kernel_mod.h"
-#include "include/backend/anf_runtime_algorithm.h"
+#include "include/backend/common/kernel_graph/anf_runtime_algorithm.h"
 
 namespace mindspore {
 namespace kernel {

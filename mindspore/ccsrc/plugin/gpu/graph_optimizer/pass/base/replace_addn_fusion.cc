@@ -19,8 +19,8 @@
 #include "primitive/array_ops.h"
 #include "include/utils/anfalgo.h"
 #include "include/utils/utils.h"
-#include "include/backend/optimizer/helper.h"
-#include "include/backend/anf_runtime_algorithm.h"
+#include "include/backend/common/pass_manager/helper.h"
+#include "include/backend/common/kernel_graph/anf_runtime_algorithm.h"
 #include "primitive/auto_generate/gen_ops_primitive_a.h"
 
 namespace mindspore {

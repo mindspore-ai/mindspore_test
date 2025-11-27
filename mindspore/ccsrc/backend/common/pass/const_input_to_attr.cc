@@ -16,7 +16,7 @@
 #include "backend/common/pass/const_input_to_attr.h"
 
 #include <vector>
-#include "include/backend/optimizer/helper.h"
+#include "include/backend/common/pass_manager/helper.h"
 #include "include/utils/utils.h"
 #include "ops_utils/op_utils.h"
 #include "utils/anf_utils.h"

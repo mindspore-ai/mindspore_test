@@ -18,7 +18,7 @@
 
 #include <string>
 #include <vector>
-#include "include/backend/optimizer/pass.h"
+#include "include/backend/common/pass_manager/pass.h"
 #include "abstract/symbolic_shape/operation_builder.h"
 
 namespace mindspore::graphkernel::packet {

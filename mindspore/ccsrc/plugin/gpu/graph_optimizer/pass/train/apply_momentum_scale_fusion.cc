@@ -21,7 +21,7 @@
 #include "primitive/math_ops.h"
 #include "ir/dtype/tensor_type.h"
 #include "include/utils/utils.h"
-#include "include/backend/optimizer/helper.h"
+#include "include/backend/common/pass_manager/helper.h"
 #include "primitive/auto_generate/gen_ops_primitive_a.h"
 #include "primitive/auto_generate/gen_ops_primitive_m.h"
 

@@ -25,7 +25,7 @@
 #include "primitive/structure_op_name.h"
 #include "include/utils/utils.h"
 #include "kernel/ascend/aicpu/aicpu_kernel_mod.h"
-#include "include/backend/anf_runtime_algorithm.h"
+#include "include/backend/common/kernel_graph/anf_runtime_algorithm.h"
 #include "include/utils/anfalgo.h"
 #include "kernel/ascend/aicpu/aicpu_util.h"
 #include "kernel/ascend/aicpu/aicpu_kernel_load.h"

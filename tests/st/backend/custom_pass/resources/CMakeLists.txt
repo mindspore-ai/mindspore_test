@@ -66,7 +66,7 @@ if(MINDSPORE_INCLUDE_DIRS)
         # Add complete MindSpore include paths to ensure all dependency headers are found
         include_directories(${include_dir}/mindspore)
         include_directories(${include_dir}/mindspore/core/include)
-        # Add MindSpore ccsrc path, contains backend/optimizer/pass.h
+        # Add MindSpore ccsrc path, contains backend/common/pass_manager/pass.h
         include_directories(${include_dir}/mindspore/ccsrc/)
         # Add MindSpore custom_pass path, contains custom_pass_plugin.h
         include_directories(${include_dir}/mindspore/ccsrc/include/backend/common/custom_pass/)
@@ -75,18 +75,18 @@ if(MINDSPORE_INCLUDE_DIRS)
         include_directories(${include_dir}/mindspore/ops/include)
         include_directories(${include_dir}/mindspore/ops/kernel/include)
         # Copy required header files for pattern_to_pattern.h
-        if(EXISTS "${include_dir}/mindspore/ccsrc/include/backend/optimizer")
+        if(EXISTS "${include_dir}/mindspore/ccsrc/include/backend/common")
             execute_process(
                 COMMAND ${CMAKE_COMMAND} -E make_directory
-                "${include_dir}/mindspore/ccsrc/include/include/backend/optimizer"
+                "${include_dir}/mindspore/ccsrc/include/include/backend/common"
                 WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
             )
             # Copy optimizer.h
-            if(EXISTS "${include_dir}/mindspore/ccsrc/include/backend/optimizer/optimizer.h")
+            if(EXISTS "${include_dir}/mindspore/ccsrc/include/backend/common/pass_manager/optimizer.h")
                 execute_process(
                     COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                    "${include_dir}/mindspore/ccsrc/include/backend/optimizer/optimizer.h"
-                    "${include_dir}/mindspore/ccsrc/include/include/backend/optimizer/optimizer.h"
+                    "${include_dir}/mindspore/ccsrc/include/backend/common/pass_manager/optimizer.h"
+                    "${include_dir}/mindspore/ccsrc/include/include/backend/common/pass_manager/optimizer.h"
                     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
                 )
             endif()
@@ -95,16 +95,16 @@ if(MINDSPORE_INCLUDE_DIRS)
                 execute_process(
                     COMMAND ${CMAKE_COMMAND} -E copy_if_different
                     "${include_dir}/mindspore/ccsrc/include/backend/common/pass_manager/pattern_engine.h"
-                    "${include_dir}/mindspore/ccsrc/include/include/backend/optimizer/pattern_engine.h"
+                    "${include_dir}/mindspore/ccsrc/include/include/backend/common/pass_manager/pattern_engine.h"
                     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
                 )
             endif()
             # Copy helper.h
-            if(EXISTS "${include_dir}/mindspore/ccsrc/include/backend/optimizer/helper.h")
+            if(EXISTS "${include_dir}/mindspore/ccsrc/include/backend/common/pass_manager/helper.h")
                 execute_process(
                     COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                    "${include_dir}/mindspore/ccsrc/include/backend/optimizer/helper.h"
-                    "${include_dir}/mindspore/ccsrc/include/include/backend/optimizer/helper.h"
+                    "${include_dir}/mindspore/ccsrc/include/backend/common/pass_manager/helper.h"
+                    "${include_dir}/mindspore/ccsrc/include/include/backend/common/pass_manager/helper.h"
                     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
                 )
             endif()
@@ -113,7 +113,7 @@ if(MINDSPORE_INCLUDE_DIRS)
                 execute_process(
                     COMMAND ${CMAKE_COMMAND} -E copy_if_different
                     "${include_dir}/mindspore/ccsrc/include/backend/common/pass_manager/node_pass.h"
-                    "${include_dir}/mindspore/ccsrc/include/include/backend/optimizer/node_pass.h"
+                    "${include_dir}/mindspore/ccsrc/include/include/backend/common/pass_manager/node_pass.h"
                     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
                 )
             endif()
@@ -122,7 +122,7 @@ if(MINDSPORE_INCLUDE_DIRS)
                 execute_process(
                     COMMAND ${CMAKE_COMMAND} -E copy_if_different
                     "${include_dir}/mindspore/ccsrc/include/backend/common/pass_manager/graph_optimizer.h"
-                    "${include_dir}/mindspore/ccsrc/include/include/backend/optimizer/graph_optimizer.h"
+                    "${include_dir}/mindspore/ccsrc/include/include/backend/common/pass_manager/graph_optimizer.h"
                     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
                 )
             endif()

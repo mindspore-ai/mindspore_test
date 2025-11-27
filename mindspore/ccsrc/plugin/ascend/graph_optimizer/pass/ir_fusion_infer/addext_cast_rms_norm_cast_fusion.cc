@@ -19,7 +19,7 @@
 #include "utils/ms_context.h"
 #include "include/utils/anfalgo.h"
 #include "ir/primitive.h"
-#include "include/backend/optimizer/helper.h"
+#include "include/backend/common/pass_manager/helper.h"
 #include "primitive/auto_generate/gen_ops_primitive_a.h"
 #include "primitive/auto_generate/gen_ops_primitive_c.h"
 #include "primitive/auto_generate/gen_ops_primitive_r.h"

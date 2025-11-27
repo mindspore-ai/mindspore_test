@@ -18,9 +18,9 @@
 #include <set>
 #include <vector>
 
-#include "include/backend/anf_runtime_algorithm.h"
+#include "include/backend/common/kernel_graph/anf_runtime_algorithm.h"
 #include "include/backend/common/kernel_graph/kernel_graph.h"
-#include "include/backend/optimizer/helper.h"
+#include "include/backend/common/pass_manager/helper.h"
 #include "include/utils/anfalgo.h"
 #include "primitive/array_op_name.h"
 #include "primitive/framework_ops.h"

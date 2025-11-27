@@ -18,9 +18,9 @@
 #include <vector>
 #include <string>
 #include "mindspore/ops/op_def/conv_pool_ops.h"
-#include "include/backend/optimizer/helper.h"
+#include "include/backend/common/pass_manager/helper.h"
 #include "abstract/dshape.h"
-#include "include/backend/anf_runtime_algorithm.h"
+#include "include/backend/common/kernel_graph/anf_runtime_algorithm.h"
 #include "include/backend/common/kernel_graph/kernel_graph.h"
 #include "include/utils/anfalgo.h"
 #include "ir/anf.h"

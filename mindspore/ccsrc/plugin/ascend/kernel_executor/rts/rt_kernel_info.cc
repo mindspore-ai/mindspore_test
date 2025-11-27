@@ -20,7 +20,7 @@
 #include "primitive/ascend_op_name.h"
 #include "primitive/other_op_name.h"
 #include "include/utils/utils.h"
-#include "include/backend/anf_runtime_algorithm.h"
+#include "include/backend/common/kernel_graph/anf_runtime_algorithm.h"
 #include "include/utils/anfalgo.h"
 
 namespace mindspore {

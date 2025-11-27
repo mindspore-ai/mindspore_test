@@ -20,7 +20,7 @@
 #include "include/runtime/hardware_abstract/kernel_base/kernel.h"
 #include "include/runtime/hardware_abstract/kernel_base/graph_fusion/kash/kernel_pack.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_info.h"
-#include "include/backend/optimizer/optimizer.h"
+#include "include/backend/common/pass_manager/optimizer.h"
 #include "plugin/ascend/graph_optimizer/pass/buffer_fusion/ub_pattern_fusion.h"
 #include "plugin/ascend/graph_optimizer/pass/buffer_fusion/eltwise_fusion_pass.h"
 #include "plugin/ascend/graph_optimizer/pass/buffer_fusion/conv2dbackprop_eltwise_eltwise_fusion_pass.h"

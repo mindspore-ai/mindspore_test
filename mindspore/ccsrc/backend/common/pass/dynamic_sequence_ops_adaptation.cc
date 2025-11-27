@@ -16,7 +16,7 @@
 #include "backend/common/pass/dynamic_sequence_ops_adaptation.h"
 #include "primitive/array_op_name.h"
 #include "include/utils/anfalgo.h"
-#include "include/backend/anf_runtime_algorithm.h"
+#include "include/backend/common/kernel_graph/anf_runtime_algorithm.h"
 
 namespace mindspore {
 namespace opt {

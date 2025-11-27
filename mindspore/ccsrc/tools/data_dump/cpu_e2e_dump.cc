@@ -20,7 +20,7 @@
 #include <string>
 #include <vector>
 
-#include "include/backend/anf_runtime_algorithm.h"
+#include "include/backend/common/kernel_graph/anf_runtime_algorithm.h"
 #include "include/utils/anfalgo.h"
 #include "include/utils/common.h"
 #include "mindspore/ccsrc/utils/ir_dump/anf_dump_utils.h"

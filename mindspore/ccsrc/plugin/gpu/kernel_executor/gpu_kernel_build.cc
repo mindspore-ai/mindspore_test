@@ -25,7 +25,7 @@
 #include "kernel/gpu/akg/akg_gpu_kernel_build.h"
 #endif
 #include "include/runtime/hardware_abstract/kernel_base/kernel_build_client.h"
-#include "include/backend/anf_runtime_algorithm.h"
+#include "include/backend/common/kernel_graph/anf_runtime_algorithm.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_info.h"
 #include "include/utils/anfalgo.h"
 #include "plugin/gpu/res_manager/symbol_interface/cuda_env_checker.h"

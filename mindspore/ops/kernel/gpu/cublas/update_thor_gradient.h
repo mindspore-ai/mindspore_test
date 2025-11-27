@@ -26,7 +26,7 @@
 #include "kernel/gpu/cuda_impl/cuda_ops/convert_gradient_impl.cuh"
 #include "kernel/gpu/cuda_impl/cuda_ops/pad_impl.cuh"
 #include "include/utils/convert_utils.h"
-#include "include/backend/anf_runtime_algorithm.h"
+#include "include/backend/common/kernel_graph/anf_runtime_algorithm.h"
 
 namespace mindspore {
 namespace kernel {

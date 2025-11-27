@@ -30,12 +30,12 @@
 #include "primitive/nn_op_name.h"
 #include "primitive/sequence_ops.h"
 #include "primitive/framework_ops.h"
-#include "include/backend/anf_runtime_algorithm.h"
+#include "include/backend/common/kernel_graph/anf_runtime_algorithm.h"
 #include "include/utils/anfalgo.h"
 #include "ir/graph_utils.h"
 #include "include/utils/utils.h"
 #include "include/utils/contract.h"
-#include "include/backend/optimizer/helper.h"
+#include "include/backend/common/pass_manager/helper.h"
 #include "plugin/gpu/graph_optimizer/pass/base/kernel_info_setter.h"
 
 namespace mindspore {

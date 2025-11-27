@@ -24,7 +24,7 @@
 #include "primitive/sequence_ops.h"
 #include "include/utils/env_vars.h"
 #include "primitive/structure_ops.h"
-#include "include/backend/anf_runtime_algorithm.h"
+#include "include/backend/common/kernel_graph/anf_runtime_algorithm.h"
 #include "primitive/auto_generate/gen_ops_primitive_h.h"
 #include "primitive/auto_generate/gen_ops_primitive_i.h"
 #include "primitive/auto_generate/gen_ops_primitive_p.h"

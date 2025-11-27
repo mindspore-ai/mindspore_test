@@ -21,7 +21,7 @@
 #include <memory>
 #include <functional>
 #include <set>
-#include "include/backend/optimizer/pass.h"
+#include "include/backend/common/pass_manager/pass.h"
 #include "ir/func_graph.h"
 #include "backend/ms_backend/graph_fusion/model/lite_graph.h"
 

@@ -17,7 +17,7 @@
 #include <memory>
 #include <vector>
 #include "backend/ms_backend/graph_fusion/graph_kernel_helper.h"
-#include "include/backend/anf_runtime_algorithm.h"
+#include "include/backend/common/kernel_graph/anf_runtime_algorithm.h"
 #include "include/utils/anfalgo.h"
 #include "primitive/sequence_ops.h"
 #include "primitive/auto_generate/gen_ops_primitive_m.h"

@@ -23,7 +23,7 @@
 #include "ir/anf.h"
 #include "ir/value.h"
 #include "include/utils/utils.h"
-#include "include/backend/anf_runtime_algorithm.h"
+#include "include/backend/common/kernel_graph/anf_runtime_algorithm.h"
 
 #define private public
 #define protected public

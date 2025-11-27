@@ -18,7 +18,7 @@
 #include <string>
 #include <unordered_map>
 #include "include/backend/visible.h"
-#include "include/backend/optimizer/pass.h"
+#include "include/backend/common/pass_manager/pass.h"
 #include "include/backend/common/kernel_graph/kernel_graph.h"
 
 namespace mindspore {

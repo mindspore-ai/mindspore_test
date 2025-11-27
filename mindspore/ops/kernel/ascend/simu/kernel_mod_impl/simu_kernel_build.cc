@@ -19,7 +19,7 @@
 #include <memory>
 #include <vector>
 #include "kernel/ascend/simu/kernel_mod_impl/simu_kernel.h"
-#include "include/backend/anf_runtime_algorithm.h"
+#include "include/backend/common/kernel_graph/anf_runtime_algorithm.h"
 #include "include/utils/anfalgo.h"
 #include "include/runtime/hardware_abstract/kernel_base/graph_fusion/framework_utils.h"
 

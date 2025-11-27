@@ -18,7 +18,7 @@
 #include "include/runtime/hardware_abstract/kernel_base/kernel_info.h"
 #include "backend/ms_backend/graph_fusion/expander/mindir_adapter/anf_node_holder.h"
 #include "backend/ms_backend/graph_fusion/model/op_register.h"
-#include "include/backend/anf_runtime_algorithm.h"
+#include "include/backend/common/kernel_graph/anf_runtime_algorithm.h"
 
 namespace mindspore::graphkernel::expander {
 NodePtr MindirEmitter::EmitOp(MetaOp op, const NodePtrList &args, const NodePtrDict &kargs) {

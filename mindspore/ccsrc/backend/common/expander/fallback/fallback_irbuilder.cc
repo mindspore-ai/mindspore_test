@@ -24,9 +24,9 @@
 #include "ir/scope.h"
 #include "mindspore/ccsrc/include/utils/expander/emitter.h"
 #include "include/utils/anfalgo.h"
-#include "include/backend/optimizer/helper.h"
+#include "include/backend/common/pass_manager/helper.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_info.h"
-#include "include/backend/anf_runtime_algorithm.h"
+#include "include/backend/common/kernel_graph/anf_runtime_algorithm.h"
 #include "utils/check_convert_utils.h"
 
 namespace mindspore {

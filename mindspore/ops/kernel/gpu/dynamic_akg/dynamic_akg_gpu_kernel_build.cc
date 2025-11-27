@@ -23,7 +23,7 @@
 #include "utils/ms_utils.h"
 #include "include/runtime/hardware_abstract/kernel_base/ms_factory.h"
 #include "include/utils/anfalgo.h"
-#include "include/backend/anf_runtime_algorithm.h"
+#include "include/backend/common/kernel_graph/anf_runtime_algorithm.h"
 #include "kernel/gpu/akg/akg_gpu_kernel_build.h"
 #include "kernel/gpu/dynamic_akg/dynamic_akg_gpu_kernel_mod.h"
 

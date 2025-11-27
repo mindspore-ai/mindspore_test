@@ -18,7 +18,7 @@
 
 #include <vector>
 #include "include/backend/common/kernel_graph/kernel_graph.h"
-#include "include/backend/optimizer/optimizer.h"
+#include "include/backend/common/pass_manager/optimizer.h"
 #include "include/backend/common/pass_manager/pass_manager.h"
 
 namespace mindspore::graphkernel {

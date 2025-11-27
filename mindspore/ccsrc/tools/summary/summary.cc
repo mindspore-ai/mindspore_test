@@ -19,7 +19,7 @@
 #include <map>
 #include <string>
 #include <utility>
-#include "include/backend/anf_runtime_algorithm.h"
+#include "include/backend/common/kernel_graph/anf_runtime_algorithm.h"
 #include "include/utils/anfalgo.h"
 #include "include/utils/callbacks.h"
 #include "primitive/structure_ops.h"

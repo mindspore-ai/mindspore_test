@@ -17,7 +17,7 @@
 #include "include/backend/common/pass_manager/pattern_engine.h"
 #include "ir/anf.h"
 #include "utils/convert_utils_base.h"
-#include "include/backend/optimizer/helper.h"
+#include "include/backend/common/pass_manager/helper.h"
 #include "utils/anf_utils.h"
 
 namespace mindspore {

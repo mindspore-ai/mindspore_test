@@ -25,7 +25,7 @@
 #include "abstract/abstract_value.h"
 #include "utils/ms_context.h"
 #include "ops/test_ops.h"
-#include "include/backend/optimizer/helper.h"
+#include "include/backend/common/pass_manager/helper.h"
 #include "primitive/auto_generate/gen_ops_primitive_p.h"
 
 namespace mindspore {

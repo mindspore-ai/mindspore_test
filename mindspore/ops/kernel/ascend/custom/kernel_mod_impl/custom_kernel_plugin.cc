@@ -22,7 +22,7 @@
 
 #include "kernel/ascend/custom/kernel_mod_impl/custom_kernel_factory.h"
 #include "plugin/ascend/kernel_executor/kernel_select_ascend.h"
-#include "include/backend/anf_runtime_algorithm.h"
+#include "include/backend/common/kernel_graph/anf_runtime_algorithm.h"
 #include "include/utils/anfalgo.h"
 #include "include/runtime/hardware_abstract/kernel_base/graph_fusion/framework_utils.h"
 #include "kernel/ascend/custom/kernel_mod_impl/py_func_kernel_mod.h"

@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef MINDSPORE_CCSRC_BACKEND_OPTIMIZER_COMMON_OPTIMIZER_H_
-#define MINDSPORE_CCSRC_BACKEND_OPTIMIZER_COMMON_OPTIMIZER_H_
+#ifndef MINDSPORE_CCSRC_INCLUDE_BACKEND_COMMON_PASS_MANAGER_OPTIMIZER_H_
+#define MINDSPORE_CCSRC_INCLUDE_BACKEND_COMMON_PASS_MANAGER_OPTIMIZER_H_
 
 #include <memory>
 #include <string>
@@ -22,7 +22,7 @@
 #include "ir/anf.h"
 #include "ir/func_graph.h"
 #include "include/backend/common/pass_manager/pattern_engine.h"
-#include "include/backend/optimizer/helper.h"
+#include "include/backend/common/pass_manager/helper.h"
 #include "include/backend/visible.h"
 #include "include/backend/common/pass_manager/node_pass.h"
 #include "include/backend/common/pass_manager/graph_optimizer.h"
@@ -69,4 +69,4 @@ class BACKEND_COMMON_EXPORT PatternProcessPass : public PatternPass {
 }  // namespace opt
 }  // namespace mindspore
 
-#endif  // MINDSPORE_CCSRC_BACKEND_OPTIMIZER_COMMON_OPTIMIZER_H_
+#endif  // MINDSPORE_CCSRC_INCLUDE_BACKEND_COMMON_PASS_MANAGER_OPTIMIZER_H_

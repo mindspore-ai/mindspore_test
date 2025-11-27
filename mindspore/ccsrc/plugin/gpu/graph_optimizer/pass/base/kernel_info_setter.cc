@@ -37,7 +37,7 @@
 #include "include/runtime/hardware_abstract/kernel_base/kernel_build_info.h"
 #include "include/runtime/hardware_abstract/kernel_base/oplib/opinfo.h"
 #include "include/runtime/hardware_abstract/kernel_base/oplib/oplib.h"
-#include "include/backend/anf_runtime_algorithm.h"
+#include "include/backend/common/kernel_graph/anf_runtime_algorithm.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_info.h"
 #include "include/utils/anfalgo.h"
 #include "kernel/gpu/custom/kernel_mod_impl/custom_aot_gpu_kernel.h"

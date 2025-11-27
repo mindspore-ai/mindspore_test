@@ -20,7 +20,7 @@
 
 #include "include/backend/common/kernel_graph/kernel_graph.h"
 #include "include/utils/anfalgo.h"
-#include "include/backend/anf_runtime_algorithm.h"
+#include "include/backend/common/kernel_graph/anf_runtime_algorithm.h"
 #include "primitive/framework_ops.h"
 #include "primitive/nn_ops.h"
 #include "primitive/sequence_ops.h"
