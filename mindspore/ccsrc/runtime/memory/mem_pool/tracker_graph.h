@@ -86,6 +86,8 @@ class TrackerGraph {
 };
 
 bool NeedSkipRaceCheck(const TaskInfoPtr &task_info);
+
+bool IsEvent(const TaskInfoPtr &task_info, const std::string &type);
 }  // namespace graph
 }  // namespace tracker
 }  // namespace device

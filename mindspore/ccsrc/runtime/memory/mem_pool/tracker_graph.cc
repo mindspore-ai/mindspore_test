@@ -21,6 +21,8 @@
 #include <memory>
 #include <mutex>
 #include <numeric>
+#include <vector>
+#include <algorithm>
 #include <string>
 #include <string_view>
 #include <unordered_map>
@@ -140,14 +142,14 @@ void TrackerGraph::RaceCheck() {
     MS_EXCEPTION_IF_NULL(op);
     MS_EXCEPTION_IF_NULL(op->task_info);
     auto stream_id = GetTaskInfoStreamId(op->task_info);
-    if (op->task_info->node_name == "RecordEvent") {
+    if (IsEvent(op->task_info, "RecordEvent")) {
       auto iter = op->task_info->attrs.find(kEvent);
       if (iter == op->task_info->attrs.end()) {
         MS_LOG(ERROR) << "Event id is not found, task info: " << op->task_info->time_stamp;
         continue;
       }
       race_checker.RecordEvent(stream_id, iter->second);
-    } else if (op->task_info->node_name == "WaitEvent") {
+    } else if (IsEvent(op->task_info, "WaitEvent")) {
       auto iter = op->task_info->attrs.find(kEvent);
       if (iter == op->task_info->attrs.end()) {
         MS_LOG(ERROR) << "Event id is not found, task info: " << op->task_info->time_stamp;
@@ -355,6 +357,13 @@ bool MatchOp(const std::string_view &src, const std::string_view &opname) {
 
 bool NeedSkipRaceCheck(const TaskInfoPtr &task_info) {
   return task_info == nullptr || MatchOp(task_info->node_name, "Reshape");
+}
+
+bool IsEvent(const TaskInfoPtr &task_info, const std::string &type) {
+  const std::string exact_name = (type == "RecordEvent") ? "RecordEvent" : "WaitEvent";
+  const std::string op_name = (type == "RecordEvent") ? "StreamSend" : "StreamRecv";
+
+  return (task_info->node_name == exact_name) || MatchOp(task_info->node_name, op_name);
 }
 }  // namespace graph
 }  // namespace tracker
