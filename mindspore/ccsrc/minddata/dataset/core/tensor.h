@@ -374,7 +374,7 @@ class Tensor {
     if (value.length() != length) {
       RETURN_STATUS_UNEXPECTED("Length of the new string does not match the item.");
     }
-    const int ret_code = memcpy_s(reinterpret_cast<char *>(ptr), length, value.c_str(), length);
+    const int ret_code = memcpy_s(reinterpret_cast<void *>(ptr), length, value.c_str(), length);
     CHECK_FAIL_RETURN_UNEXPECTED(ret_code == 0, "Failed to set data into tensor.");
 
     return Status::OK();
