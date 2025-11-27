@@ -160,7 +160,12 @@ def test_tensor_set_errors(mode):
     # provide invalid shape
     with pytest.raises(RuntimeError) as err:
         _ = set_func_storage_custom(t2, t1, 0, (2, -1, 2))
-    assert "set the storage of a tensor with invalid shape" in str(err.value)
+    assert "Storage size calculation overflowed" in str(err.value)
+
+    # provide invalid stride
+    with pytest.raises(RuntimeError) as err:
+        _ = set_func_storage_custom(t2, t1, 0, (2, 2), (-2, 1))
+    assert "Storage size calculation overflowed" in str(err.value)
 
     # provide shape.size != stride.size
     with pytest.raises(RuntimeError) as err:
@@ -505,3 +510,30 @@ def test_set_increase_storage_size_cpu(mode):
     t3[4] = 99.
     assert np.allclose(t1[4].asnumpy(), t3[4].asnumpy())
     assert np.allclose(t2[4].asnumpy(), t3[4].asnumpy())
+
+
+@arg_mark(plat_marks=['platform_ascend'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
+@pytest.mark.parametrize('mode', [ms.PYNATIVE_MODE])
+def test_set_expand_size_not_memory_leak(mode):
+    """
+    Feature: Tensor.set_
+    Description: Verify that expanding the tensor size does not cause memory leak
+    Expectation: success
+    """
+    def scope():
+        origin_tensor = Tensor(np.random.rand(1, 3, 224, 224), dtype=ms.float32).to('Ascend')
+        expand_size = 1 * 3 * 224 * 224 + 1
+        expand_tensor = Tensor([0], dtype=ms.float32).to('Ascend')
+        expand_tensor.set_(origin_tensor, 0, (expand_size,))
+
+    ms.set_context(mode=mode)
+    for _ in range(10):
+        ms.runtime.synchronize()
+        alloc_mem = ms.runtime.memory_allocated()
+        assert np.allclose(0, alloc_mem)
+        scope()
+        after_set_mem = ms.runtime.memory_allocated()
+        assert np.allclose(0, after_set_mem)

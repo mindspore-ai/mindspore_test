@@ -143,8 +143,8 @@ bool IsMindSporeDtype(PyObject *obj) {
         Py_DECREF(type_class);
         return true;
       }
+      Py_DECREF(type_class);
     }
-    Py_DECREF(type_class);
   }
   return false;
 }

@@ -89,10 +89,16 @@ bool IsContiguous(const ShapeVector &shape, const std::vector<int64_t> &strides)
 
 int64_t ComputeStorageNelements(int64_t storage_offset, const std::vector<int64_t> &shape,
                                 const std::vector<int64_t> &stride) {
+  if (shape.size() != stride.size()) {
+    MS_LOG(EXCEPTION) << "unequal shape length (" << shape.size() << ") and stride length (" << stride.size() << ")";
+  }
   int64_t size = 1;
   for (size_t i = 0; i < shape.size(); ++i) {
-    if (shape[i] <= 0) {
-      MS_LOG(EXCEPTION) << "Attempted to set the storage of a tensor with invalid shape " << shape;
+    if (shape[i] == 0) {
+      return 0;
+    }
+    if (shape[i] < 0 || stride[i] < 0) {
+      MS_LOG(EXCEPTION) << "Storage size calculation overflowed with sizes=" << shape << " and strides=" << stride;
     }
     size += stride[i] * (shape[i] - 1);
   }
@@ -106,14 +112,11 @@ TensorStorageInfoPtr CheckSetStorageInfo(const tensor::TensorPtr &origin_tensor,
   MS_EXCEPTION_IF_NULL(origin_tensor);
   MS_EXCEPTION_IF_NULL(origin_tensor->device_address());
   const auto &origin_device_address = origin_tensor->device_address();
-  const std::string &origin_device_type_name = device::GetDeviceNameByType(origin_device_address->GetDeviceType());
-  if (source_device_type_name != origin_device_type_name) {
-    MS_LOG(EXCEPTION) << "Attempted to set the storage of a tensor on device \"" << origin_device_type_name
+  if (device::GetDeviceTypeByName(source_device_type_name) != origin_device_address->GetDeviceType()) {
+    MS_LOG(EXCEPTION) << "Attempted to set the storage of a tensor on device \""
+                      << device::GetDeviceNameByType(origin_device_address->GetDeviceType())
                       << "\" to a storage on different device \"" << source_device_type_name
                       << "\".  This is no longer allowed; the devices must match.";
-  }
-  if (shape.size() != stride.size()) {
-    MS_LOG(EXCEPTION) << "unequal shape length (" << shape.size() << ") and stride length (" << stride.size() << ")";
   }
   constexpr size_t max_shape_dim = 8;
   if (shape.size() > max_shape_dim) {
