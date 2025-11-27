@@ -1112,6 +1112,13 @@ BaseRef GEBackend::ConstructOutputByAbstract(const abstract::AbstractBasePtr &ab
   return outputs;
 }
 
+void GEBackend::ClearGraph(BackendGraphId backend_graph_id) {
+  (void)graph_map_.erase(backend_graph_id);
+  (void)root_graph_map_.erase(backend_graph_id);
+  (void)graph_compile_type_.erase(backend_graph_id);
+  (void)graph_id_to_graph_compiler_info_.erase(backend_graph_id);
+}
+
 void GEBackend::ConstructOutputs(const AnfNodePtr &output_node, const std::vector<tensor::TensorPtr> &output_tensors,
                                  size_t *output_position, VectorRef *outputs,
                                  std::vector<tensor::TensorPtr> *tuple_tensors,

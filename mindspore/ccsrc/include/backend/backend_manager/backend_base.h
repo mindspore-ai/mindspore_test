@@ -154,6 +154,9 @@ class BACKEND_MANAGER_EXPORT BackendBase {
 
   // clear the resource, init is in constructor function
   virtual void Clear() {}
+
+  // clear the compiler info for graph
+  virtual void ClearGraph(BackendGraphId backend_graph_id) {}
 };
 
 using BackendBasePtr = std::shared_ptr<BackendBase>;

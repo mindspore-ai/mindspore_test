@@ -142,6 +142,8 @@ class MSBackendBase : public BackendBase {
   bool CompileGraphsByKbkCache(const FuncGraphPtr &func_graph, DeviceContext *device_context);
   bool CacheCompileGraphs();
 
+  void ClearGraph(BackendGraphId backend_graph_id) override;
+
   FuncGraphPtr WrapPrimitives(const FuncGraphPtr &graph);
 
   // The temp members for backend graph building and will be reset at the end of graph building, can't be used in the

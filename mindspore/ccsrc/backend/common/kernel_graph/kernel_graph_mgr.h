@@ -123,6 +123,8 @@ class BACKEND_COMMON_EXPORT KernelGraphMgr {
                              const KernelGraphPtr &graph, bool is_switch_inline);
   ParameterPtr CreateNewParameter(const AnfNodePtr &anf, KernelGraph *graph) const;
 
+  mindspore::HashMap<GraphId, std::shared_ptr<KernelGraph>> &graphs() { return graphs_; }
+
  private:
   void GetCNodeInfo(const CNodePtr &cnode, std::vector<AnfNodePtr> *cnode_inputs) const;
   void GetNewCNodeInputs(const CNodePtr &cnode, KernelGraph *graph, std::vector<AnfNodePtr> *cnode_inputs,

@@ -1162,6 +1162,21 @@ bool MSBackendBase::CacheCompileGraphs() {
   }
 }
 
+void MSBackendBase::ClearGraph(BackendGraphId backend_graph_id) {
+  auto iter = actor_to_graph_compiler_info_.find(backend_graph_id);
+  if (iter == actor_to_graph_compiler_info_.end()) {
+    MS_LOG(INFO) << "Can not find graph compiler info for backend graph id: " << backend_graph_id;
+    return;
+  }
+  MS_LOG(INFO) << "Clear compiler info for graph: " << backend_graph_id;
+  const auto &compiled_graphs = iter->second->graphs_;
+  auto &graphs = graph_compiler_->session_ptr()->graphs();
+  for (const auto &graph : compiled_graphs) {
+    (void)graphs.erase(graph->graph_id());
+  }
+  (void)actor_to_graph_compiler_info_.erase(iter);
+}
+
 std::shared_ptr<GraphCompilerInfo> MSBackendBase::ConstructGraphCompilerInfo(
   const FuncGraphPtr &root_graph, const BackendJitConfig &backend_jit_config) {
   MS_EXCEPTION_IF_NULL(root_graph);
