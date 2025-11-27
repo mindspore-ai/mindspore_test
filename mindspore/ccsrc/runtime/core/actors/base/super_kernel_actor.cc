@@ -1203,8 +1203,9 @@ void SuperKernelActor::RunGraphKernelByKernel(OpContext<KernelTensor> *const con
     GraphCaptureManager::GetInstance().SetInReplay(need_replay_graph);
 
     if (!need_capture_graph && !need_replay_graph) {
-      if (common::GetEnv("MS_DEV_HIERARCHICAL_MEMORY") == "1" &&
-          common::GetCompileConfig("ENABLE_REMOTE_MEM_SLIDE") == "1") {
+      static const bool use_hierarchical_memory = common::GetEnv("MS_DEV_HIERARCHICAL_MEMORY") == "1" &&
+                                                  common::GetCompileConfig("ENABLE_REMOTE_MEM_SLIDE") == "1";
+      if (use_hierarchical_memory) {
         MemUseAnalyzer::GetInstance().InitGraphInfo(this, device_contexts_[0]);
       }
       if (!LaunchAllKernels(context, is_high_perf_mode_ && IsHighPerfModeAtExec())) {
@@ -1542,7 +1543,7 @@ void SuperKernelActor::RecreateCommunicationGroup() {
     const std::string new_group_name = std::string("parallel_dispatch_group_") + std::to_string(i);
     distributed::collective::CollectiveManager::instance()->CreateCommunicationGroup(new_group_name, group_ranks);
 
-    // 3. Repalce old communication group and re-init kernel mod for communication ops.
+    // 3. Replace old communication group and re-init kernel mod for communication ops.
     for (auto &kernel_actor : comm_kernel_actors) {
       auto &kernel = kernel_actor->kernel_;
       MS_EXCEPTION_IF_NULL(kernel_actor);
@@ -2423,7 +2424,7 @@ void SuperKernelActor::LinkKernelActorByDeviceType(const CNodePtr &kernel, size_
     MS_LOG(EXCEPTION) << "Invalid input device tensor type for kernel:" << kernel->fullname_with_scope()
                       << " with device context type:" << device_context->GetDeviceType() << " but the " << input_index
                       << "th input device tensor type is " << input_device_tensor->GetDeviceType()
-                      << " for actor:" << GetAID() << ", input kenerl: " << input_kernel->fullname_with_scope();
+                      << " for actor:" << GetAID() << ", input kernel: " << input_kernel->fullname_with_scope();
   }
 
   bool need_not_copy_output_device_addr = (device_context->GetDeviceType() == input_device_context->GetDeviceType()) ||
@@ -2512,7 +2513,7 @@ void SuperKernelActor::LinkKernelActorByDeviceType(const CNodePtr &kernel, size_
 void SuperKernelActor::UpdateOutputKernelTensors(const std::vector<std::pair<KernelTensorPtr, size_t>> &new_kernel_pair,
                                                  const std::vector<KernelTensorPtr> &output_kernel_tensors) {
   size_t output_idx = 0;
-  std::unordered_map<KernelTensorPtr, KernelTensorPtr> new_kernel_tensors_map;
+  mindspore::HashMap<KernelTensorPtr, KernelTensorPtr> new_kernel_tensors_map;
   for (size_t index = 0; index < output_kernel_tensors.size(); ++index) {
     if (output_kernel_tensors[index] == nullptr) {
       continue;

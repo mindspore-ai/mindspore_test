@@ -352,10 +352,6 @@ class KernelRunner {
 
   bool IsRunningFailed(const OpContext<KernelTensor> *context);
 
-  /// \brief Use remote memory with sliding window method
-  /// \param[in] before_launch is called before launch
-  void UseRemoteMemoryWithSlidingWindow(bool before_launch);
-
   // The real input number of kernel launch.
   size_t real_input_num_;
 

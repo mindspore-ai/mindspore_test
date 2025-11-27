@@ -1267,7 +1267,9 @@ void KernelRunner::ExecuteLaunchKernelTask(OpContext<KernelTensor> *const contex
     return;
   }
 
-  UseRemoteMemoryWithSlidingWindow(true);
+  if (enable_remote_mem_slide_) {
+    MemUseAnalyzer::GetInstance().LaunchTaskBefore(this, device_contexts_[0]);
+  }
 
   // 1. Allocate memory.
   if (!ActorDispatcher::enable_use_trace_memory()) {
@@ -1329,7 +1331,9 @@ void KernelRunner::ExecuteLaunchKernelTask(OpContext<KernelTensor> *const contex
     }
   }
 
-  UseRemoteMemoryWithSlidingWindow(false);
+  if (enable_remote_mem_slide_) {
+    MemUseAnalyzer::GetInstance().LaunchTaskAfter(this, device_contexts_[0]);
+  }
 }
 
 void KernelRunner::ExecuteLaunchKernelTaskHP(OpContext<KernelTensor> *const context) {
@@ -1339,7 +1343,9 @@ void KernelRunner::ExecuteLaunchKernelTaskHP(OpContext<KernelTensor> *const cont
     return;
   }
 
-  UseRemoteMemoryWithSlidingWindow(true);
+  if (enable_remote_mem_slide_) {
+    MemUseAnalyzer::GetInstance().LaunchTaskBefore(this, device_contexts_[0]);
+  }
 
   // 1. Allocate memory.
   if (!ActorDispatcher::enable_use_trace_memory()) {
@@ -1390,7 +1396,9 @@ void KernelRunner::ExecuteLaunchKernelTaskHP(OpContext<KernelTensor> *const cont
     }
   }
 
-  UseRemoteMemoryWithSlidingWindow(false);
+  if (enable_remote_mem_slide_) {
+    MemUseAnalyzer::GetInstance().LaunchTaskAfter(this, device_contexts_[0]);
+  }
 }
 
 void KernelRunner::InferAndUpdateDeviceTensorSize(OpContext<KernelTensor> *const context) {
@@ -2032,15 +2040,5 @@ bool KernelRunner::IsRunningFailed(const OpContext<KernelTensor> *context) {
   return context->is_error_;
 }
 
-void KernelRunner::UseRemoteMemoryWithSlidingWindow(bool before_launch) {
-  if (!enable_remote_mem_slide_) {
-    return;
-  }
-  if (before_launch) {
-    MemUseAnalyzer::GetInstance().LaunchTaskBefore(this, device_contexts_[0]);
-  } else {
-    MemUseAnalyzer::GetInstance().LaunchTaskAfter(this, device_contexts_[0]);
-  }
-}
 }  // namespace runtime
 }  // namespace mindspore

@@ -64,7 +64,9 @@ void ConditionGatherRunner::ExecuteLaunchKernelTask(OpContext<KernelTensor> *con
   MS_EXCEPTION_IF_NULL(kernel_);
   MS_LOG(DEBUG) << "Begin launch kernel: " << kernel_->fullname_with_scope();
 
-  UseRemoteMemoryWithSlidingWindow(true);
+  if (enable_remote_mem_slide_) {
+    MemUseAnalyzer::GetInstance().LaunchTaskBefore(this, device_contexts_[0]);
+  }
 
   new_memory_free_list_.clear();
   for (size_t i = 0; i < branch_names_.size(); ++i) {
@@ -112,7 +114,9 @@ void ConditionGatherRunner::ExecuteLaunchKernelTask(OpContext<KernelTensor> *con
   }
   MS_LOG(DEBUG) << "End launch kernel: " << kernel_->fullname_with_scope();
 
-  UseRemoteMemoryWithSlidingWindow(false);
+  if (enable_remote_mem_slide_) {
+    MemUseAnalyzer::GetInstance().LaunchTaskAfter(this, device_contexts_[0]);
+  }
 }
 
 void ConditionGatherRunner::ExecuteLaunchKernelTaskHP(OpContext<KernelTensor> *const context) {

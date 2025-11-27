@@ -163,7 +163,9 @@ void ConditionSwitchRunner::ExecuteLaunchKernelTask(OpContext<KernelTensor> *con
   MS_EXCEPTION_IF_NULL(kernel_);
   MS_LOG(DEBUG) << "Begin launch kernel: " << kernel_->fullname_with_scope();
 
-  UseRemoteMemoryWithSlidingWindow(true);
+  if (enable_remote_mem_slide_) {
+    MemUseAnalyzer::GetInstance().LaunchTaskBefore(this, device_contexts_[0]);
+  }
 
   if (!WaitRuntimePipelineFinish(context, GetAID().Name())) {
     MS_LOG(INFO) << "Run failed and early stop.";
@@ -219,7 +221,9 @@ void ConditionSwitchRunner::ExecuteLaunchKernelTask(OpContext<KernelTensor> *con
   }
   MS_LOG(DEBUG) << "End launch kernel: " << kernel_->fullname_with_scope();
 
-  UseRemoteMemoryWithSlidingWindow(false);
+  if (enable_remote_mem_slide_) {
+    MemUseAnalyzer::GetInstance().LaunchTaskAfter(this, device_contexts_[0]);
+  }
 }
 
 void ConditionSwitchRunner::ExecuteLaunchKernelTaskHP(OpContext<KernelTensor> *const context) {
