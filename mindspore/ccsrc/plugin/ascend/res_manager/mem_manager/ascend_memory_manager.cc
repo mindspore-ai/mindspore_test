@@ -53,6 +53,10 @@ void AscendMemoryManager::FreeMemFromMemPool(void *device_ptr) {
   AscendMemoryPool::GetInstance().FreeTensorMem(device_ptr);
 }
 
+bool AscendMemoryManager::IsAbleFreeMemFromMemPool(void *device_ptr) {
+  return AscendMemoryPool::GetInstance().IsAbleFreeTensorMem(device_ptr);
+}
+
 size_t AscendMemoryManager::GetMaxUsedMemorySize() const { return AscendMemoryPool::GetInstance().GetMaxUsedMemSize(); }
 
 // Relevant function to manage memory statistics

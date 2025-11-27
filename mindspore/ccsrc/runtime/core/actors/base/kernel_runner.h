@@ -156,6 +156,8 @@ class KernelRunner {
 
   bool HighPerfMode();
 
+  bool *GetEnablePtr() const { return is_enable_; }
+
  protected:
   virtual void Init();
   void SendRecorderInfo(OpContext<KernelTensor> *const context) const;
@@ -313,6 +315,9 @@ class KernelRunner {
   // Flag for kernel actor should insert event for parameter.
   bool insert_input_event_{false};
 
+  // Remote mem enable flag
+  bool enable_remote_mem_slide_{false};
+
  protected:
   friend class GraphScheduler;
   friend class ControlNodeScheduler;
@@ -346,6 +351,10 @@ class KernelRunner {
   bool LaunchKernelWithDebug(OpContext<KernelTensor> *const context, const bool skip_launch);
 
   bool IsRunningFailed(const OpContext<KernelTensor> *context);
+
+  /// \brief Use remote memory with sliding window method
+  /// \param[in] before_launch is called before launch
+  void UseRemoteMemoryWithSlidingWindow(bool before_launch);
 
   // The real input number of kernel launch.
   size_t real_input_num_;

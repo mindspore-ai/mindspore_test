@@ -49,6 +49,8 @@
 #include "utils/compile_config.h"
 #include "primitive/structure_op_name.h"
 #include "primitive/auto_generate/gen_ops_primitive_s.h"
+#include "runtime/core/actors/remote_memory/mem_use_analyzer.h"
+
 namespace mindspore {
 namespace runtime {
 namespace {
@@ -284,6 +286,9 @@ KernelRunner::KernelRunner(const std::string &name, const CNodePtr &kernel, cons
   }
   // shape depend need kernel is cnode.
   SetShapeDependInfo();
+
+  enable_remote_mem_slide_ =
+    common::GetEnv("MS_DEV_HIERARCHICAL_MEMORY") == "1" && common::GetCompileConfig("ENABLE_REMOTE_MEM_SLIDE") == "1";
 }
 
 void KernelRunner::Init() {
@@ -1262,6 +1267,8 @@ void KernelRunner::ExecuteLaunchKernelTask(OpContext<KernelTensor> *const contex
     return;
   }
 
+  UseRemoteMemoryWithSlidingWindow(true);
+
   // 1. Allocate memory.
   if (!ActorDispatcher::enable_use_trace_memory()) {
     if (!memory_alloc_list_.empty()) {
@@ -1321,6 +1328,8 @@ void KernelRunner::ExecuteLaunchKernelTask(OpContext<KernelTensor> *const contex
       SendMemoryFreeReq(context);
     }
   }
+
+  UseRemoteMemoryWithSlidingWindow(false);
 }
 
 void KernelRunner::ExecuteLaunchKernelTaskHP(OpContext<KernelTensor> *const context) {
@@ -1329,6 +1338,8 @@ void KernelRunner::ExecuteLaunchKernelTaskHP(OpContext<KernelTensor> *const cont
                                          << kernel_->fullname_with_scope();
     return;
   }
+
+  UseRemoteMemoryWithSlidingWindow(true);
 
   // 1. Allocate memory.
   if (!ActorDispatcher::enable_use_trace_memory()) {
@@ -1378,6 +1389,8 @@ void KernelRunner::ExecuteLaunchKernelTaskHP(OpContext<KernelTensor> *const cont
       SendMemoryFreeReq(context);
     }
   }
+
+  UseRemoteMemoryWithSlidingWindow(false);
 }
 
 void KernelRunner::InferAndUpdateDeviceTensorSize(OpContext<KernelTensor> *const context) {
@@ -2017,6 +2030,17 @@ bool KernelRunner::IsRunningFailed(const OpContext<KernelTensor> *context) {
   }
 
   return context->is_error_;
+}
+
+void KernelRunner::UseRemoteMemoryWithSlidingWindow(bool before_launch) {
+  if (!enable_remote_mem_slide_) {
+    return;
+  }
+  if (before_launch) {
+    MemUseAnalyzer::GetInstance().LaunchTaskBefore(this, device_contexts_[0]);
+  } else {
+    MemUseAnalyzer::GetInstance().LaunchTaskAfter(this, device_contexts_[0]);
+  }
 }
 }  // namespace runtime
 }  // namespace mindspore

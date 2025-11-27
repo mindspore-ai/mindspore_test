@@ -39,6 +39,7 @@ class ASCEND_RES_MANAGER_EXPORT AscendMemoryManager : public MemoryManager {
   void *MallocMemFromMemPool(size_t size, bool from_persistent_mem, bool need_recycle = false,
                              uint32_t stream_id = kDefaultStreamIndex) override;
   void FreeMemFromMemPool(void *device_ptr) override;
+  bool IsAbleFreeMemFromMemPool(void *device_ptr) override;
   size_t GetMaxUsedMemorySize() const override;
   uint64_t GetMsMaxMemSize() const;
   bool MallocContinuousMemFromMemPool(const DeviceAddressPtrList &addr_list, size_t total_size,

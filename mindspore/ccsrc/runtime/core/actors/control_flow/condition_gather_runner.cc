@@ -18,6 +18,7 @@
 #include <utility>
 #include "include/runtime/memory/mem_pool/mem_tracker.h"
 #include "runtime/core/graph_executor/pipeline/runtime_pipeline.h"
+#include "runtime/core/actors/remote_memory/mem_use_analyzer.h"
 
 namespace mindspore {
 namespace runtime {
@@ -62,6 +63,9 @@ void ConditionGatherRunner::ExecuteResizeKernelModTask(OpContext<KernelTensor> *
 void ConditionGatherRunner::ExecuteLaunchKernelTask(OpContext<KernelTensor> *const context) {
   MS_EXCEPTION_IF_NULL(kernel_);
   MS_LOG(DEBUG) << "Begin launch kernel: " << kernel_->fullname_with_scope();
+
+  UseRemoteMemoryWithSlidingWindow(true);
+
   new_memory_free_list_.clear();
   for (size_t i = 0; i < branch_names_.size(); ++i) {
     branch_flags_.get()[i] = false;
@@ -107,6 +111,8 @@ void ConditionGatherRunner::ExecuteLaunchKernelTask(OpContext<KernelTensor> *con
     SendMemoryFreeReq(context);
   }
   MS_LOG(DEBUG) << "End launch kernel: " << kernel_->fullname_with_scope();
+
+  UseRemoteMemoryWithSlidingWindow(false);
 }
 
 void ConditionGatherRunner::ExecuteLaunchKernelTaskHP(OpContext<KernelTensor> *const context) {

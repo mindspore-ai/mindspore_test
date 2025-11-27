@@ -110,6 +110,11 @@ class RUNTIME_HARDWARE_EXPORT MemoryManager {
     return GetMemoryPool()->SyncAllEvents();
   }
 
+  /// \brief Check if memory from memory pool can be safely freed
+  /// \param[in] device_ptr The device pointer to check
+  /// \return bool True if memory can be freed, false otherwise
+  virtual bool IsAbleFreeMemFromMemPool(void *device_ptr) { return true; }
+
   virtual DynamicMemPool *GetMemoryPool() = 0;
 
   // Relevant function to manage memory statistics

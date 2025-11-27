@@ -515,6 +515,17 @@ void AscendResManager::FreeMemory(DeviceAddress *const &address) const {
   address->set_ptr(nullptr);
 }
 
+bool AscendResManager::IsAbleFreeMemory(DeviceAddress *const &address) const {
+  MS_EXCEPTION_IF_NULL(address);
+  void *device_ptr = address->GetMutablePtr();
+  auto allocator = address->allocator();
+  MS_EXCEPTION_IF_NULL(mem_manager_);
+  if (MS_UNLIKELY(allocator != nullptr)) {
+    return true;
+  }
+  return mem_manager_->IsAbleFreeMemFromMemPool(device_ptr);
+}
+
 void AscendResManager::FreeMemory(void *ptr) const {
   MS_EXCEPTION_IF_NULL(ptr);
   MS_EXCEPTION_IF_NULL(mem_manager_);

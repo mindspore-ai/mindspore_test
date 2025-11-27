@@ -68,6 +68,17 @@ class RUNTIME_HARDWARE_EXPORT MultiStreamController {
   bool WaitEvent(int64_t task_id_on_stream, uint32_t user_stream_id);
   bool DispatchRecordWaitEvent(uint32_t user_stream_id, uint32_t memory_stream_id);
 
+  /// \brief Dispatch a record event on the specified stream
+  /// \param[in] stream_id The stream ID where the event will be recorded
+  /// \return DeviceEventPtr The created event pointer
+  DeviceEventPtr DispatchRecordEvent(uint32_t stream_id);
+
+  /// \brief Dispatch a wait event on the specified stream
+  /// \param[in] stream_id The stream ID where the event will be waited
+  /// \param[in] event The event to wait for
+  /// \return bool True if dispatch successful, false otherwise
+  bool DispatchWaitEvent(uint32_t stream_id, const DeviceEventPtr &event);
+
   bool SyncStream(size_t stream_id);
   bool SyncAllStreams();
   bool SyncNotDefaultStreams();

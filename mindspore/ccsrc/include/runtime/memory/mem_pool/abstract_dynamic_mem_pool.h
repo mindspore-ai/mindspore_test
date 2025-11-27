@@ -500,6 +500,12 @@ class BACKEND_EXPORT AbstractDynamicMemPool : virtual public DynamicMemPool {
                                                      uint32_t stream_id = kDefaultStreamIndex) override;
   // The main program entry of memory free.
   void FreeTensorMem(const DeviceMemPtr &device_addr) override;
+
+  /// \brief Check if the tensor memory can be safely freed
+  /// \param[in] device_addr The device memory address to check
+  /// \return bool True if memory can be freed, false otherwise
+  bool IsAbleFreeTensorMem(const DeviceMemPtr &device_addr) override;
+
   bool DoFreeTensorMem(const DeviceMemPtr &device_addr) override;
   // The main program entry of part memory free and part memory keep.
   void FreePartTensorMems(const std::vector<DeviceMemPtr> &free_addrs, const std::vector<DeviceMemPtr> &keep_addrs,

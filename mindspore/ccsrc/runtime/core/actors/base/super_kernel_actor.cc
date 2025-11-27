@@ -39,12 +39,15 @@
 #include "utils/log_adapter.h"
 #include "utils/ms_exception.h"
 #include "utils/trace_base.h"
+#include "utils/compile_config.h"
 #include "primitive/framework_ops.h"
 #include "pybind_api/gil_scoped_long_running.h"
 #include "primitive/auto_generate/gen_ops_primitive_s.h"
 #include "include/cluster/topology/collective_manager.h"
 #include "include/backend/debug/execute_order_tracker/execute_order_tracker.h"
 #include "tools/error_handler/error_config.h"
+#include "runtime/core/actors/remote_memory/mem_counted_cache.h"
+#include "runtime/core/actors/remote_memory/mem_use_analyzer.h"
 
 namespace mindspore {
 namespace runtime {
@@ -1200,6 +1203,10 @@ void SuperKernelActor::RunGraphKernelByKernel(OpContext<KernelTensor> *const con
     GraphCaptureManager::GetInstance().SetInReplay(need_replay_graph);
 
     if (!need_capture_graph && !need_replay_graph) {
+      if (common::GetEnv("MS_DEV_HIERARCHICAL_MEMORY") == "1" &&
+          common::GetCompileConfig("ENABLE_REMOTE_MEM_SLIDE") == "1") {
+        MemUseAnalyzer::GetInstance().InitGraphInfo(this, device_contexts_[0]);
+      }
       if (!LaunchAllKernels(context, is_high_perf_mode_ && IsHighPerfModeAtExec())) {
         MS_INTERNAL_EXCEPTION(RuntimeError)
           << "Launch kernels by execution order failed for graph: " << graph_->ToString();
@@ -2500,6 +2507,32 @@ void SuperKernelActor::LinkKernelActorByDeviceType(const CNodePtr &kernel, size_
   }
   kernel_actor->SetInputDeviceTensor(input_copy_kernel_tensor, input_index);
   kernel_actor->memory_free_list_[input_index] = input_copy_kernel_tensor;
+}
+
+void SuperKernelActor::UpdateOutputKernelTensors(const std::vector<std::pair<KernelTensorPtr, size_t>> &new_kernel_pair,
+                                                 const std::vector<KernelTensorPtr> &output_kernel_tensors) {
+  size_t output_idx = 0;
+  std::unordered_map<KernelTensorPtr, KernelTensorPtr> new_kernel_tensors_map;
+  for (size_t index = 0; index < output_kernel_tensors.size(); ++index) {
+    if (output_kernel_tensors[index] == nullptr) {
+      continue;
+    }
+    auto new_kernel_tensor = new_kernel_pair[output_idx++].first;
+    if (new_kernel_tensor != nullptr && output_kernel_tensors[index] != new_kernel_tensor) {
+      new_kernel_tensors_map[output_kernel_tensors[index]] = new_kernel_tensor;
+    }
+  }
+  for (const auto &kernel_tensor_pair : output_data_) {
+    auto data = kernel_tensor_pair.first.get();
+    MS_EXCEPTION_IF_NULL(data);
+    if (new_kernel_tensors_map.find(data->data_) != new_kernel_tensors_map.end()) {
+      MS_VLOG(VL_REMOTE_MEM_DEBUG) << "Original kernel tensor: " << data->data_->ToString()
+                                   << ", new kernel tensor: " << new_kernel_tensors_map[data->data_]->ToString();
+      data->data_->device_address()->SetDevicePtr(
+        new_kernel_tensors_map[data->data_]->device_address()->GetDevicePtr());
+      new_kernel_tensors_map[data->data_]->device_address()->SetDevicePtr(nullptr);
+    }
+  }
 }
 
 void SuperKernelActor::IncreaseNewRefCounts(OpContext<KernelTensor> *const context) {}

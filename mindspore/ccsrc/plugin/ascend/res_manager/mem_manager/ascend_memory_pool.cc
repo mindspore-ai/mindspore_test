@@ -343,6 +343,11 @@ void DefaultEnhancedAscendMemoryPool::FreeTensorMem(const DeviceMemPtr &device_a
   DoFreeTensorMem(device_addr);
 }
 
+bool DefaultEnhancedAscendMemoryPool::IsAbleFreeTensorMem(const DeviceMemPtr &device_addr) {
+  LockGuard lock(instance_->lock());
+  return instance_->IsAbleFreeTensorMem(device_addr);
+}
+
 bool DefaultEnhancedAscendMemoryPool::DoFreeTensorMem(const DeviceMemPtr &device_addr) {
   void *enhanced_device_addr = device_addr;
   bool ret = instance_->DoFreeTensorMem(device_addr);

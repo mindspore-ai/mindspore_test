@@ -86,6 +86,11 @@ class DefaultEnhancedAscendMemoryPool : public DefaultAscendMemoryPool {
 
   void FreeTensorMem(const DeviceMemPtr &device_addr) override;
 
+  /// \brief Check if the tensor memory can be safely freed
+  /// \param[in] device_addr The device memory address to check
+  /// \return bool True if memory can be freed, false otherwise
+  bool IsAbleFreeTensorMem(const DeviceMemPtr &device_addr) override;
+
   bool DoFreeTensorMem(const DeviceMemPtr &device_addr) override;
 
   void FreePartTensorMems(const std::vector<DeviceMemPtr> &free_addrs, const std::vector<DeviceMemPtr> &keep_addrs,
