@@ -108,6 +108,18 @@ void BackendManager::Clear() {
   backend_load_handle_.clear();
 }
 
+void BackendManager::ClearGraph(BackendType backend_type, BackendGraphId backend_graph_id) {
+  if (backend_type >= kInvalidBackend) {
+    MS_LOG(EXCEPTION) << "Invalid backend type: " << backend_type;
+  }
+  auto backend = backends_[static_cast<int>(backend_type)];
+  // when process exits, backend is cleared in ClearResAtexit()
+  if (backend == nullptr) {
+    return;
+  }
+  backend->ClearGraph(backend_graph_id);
+}
+
 std::vector<GraphFragmentPtr> BackendManager::Split(const FuncGraphPtr &func_graph, const std::string &backend_name) {
   auto backend_type = GetBackendType(backend_name);
   auto backend = GetOrCreateBackend(backend_type);
