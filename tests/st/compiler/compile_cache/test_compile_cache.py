@@ -492,3 +492,15 @@ def test_compile_cache_jit_with_weight():
     run_twice_with_same_network("run_jit_net_with_weight.py", "./compile_cache_jit_net_with_weight",
                                 "compile_cache_jit_net_with_weight_first.txt",
                                 "compile_cache_jit_net_with_weight_second.txt")
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_compile_cache_jit_with_control_flow():
+    """
+    Feature: Compile cache.
+    Description: Test compile cache with grad jit on net with control flow.
+    Expectation: success.
+    """
+    run_twice_with_same_network("run_jit_with_control_flow.py", "./compile_cache_jit_with_control_flow",
+                                "compile_cache_jit_with_control_flow_first.txt",
+                                "compile_cache_jit_with_control_flow_second.txt")

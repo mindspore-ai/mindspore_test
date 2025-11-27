@@ -511,6 +511,8 @@ std::pair<bool, FuncGraphPtr> GetBpropGraph(const pynative::GradParamPtr &grad_p
       compile_cache_manager_forward = pair_forward.second;
     }
     loaded = forward_fg != nullptr;
+    auto &context = CompileCacheContext::GetInstance();
+    context.SetUseCompileCache(CompileCacheEnable() && loaded);
   }
   if (cache_hit) {
     MS_LOG(DEBUG) << "Get ad grad graph by cache, cache key: " << grad_param->graph_cache_key;
@@ -537,8 +539,6 @@ std::pair<bool, FuncGraphPtr> GetBpropGraph(const pynative::GradParamPtr &grad_p
     MS_LOG(INFO) << "Forward graph generated successfully.";
     pynative::CommonUtils::DumpGraphIR("opt_forward.ir", forward_fg);
   }
-  auto &context = CompileCacheContext::GetInstance();
-  context.SetUseCompileCache(CompileCacheEnable() && loaded);
   CacheFuncGraph(compile_cache_manager_forward, forward_fg, loaded, cache_hit);
 
   VectorRef arg_list = ExecuteForward(grad_param, forward_fg, need_forward_result, need_reuse_forward_node, cache_hit);

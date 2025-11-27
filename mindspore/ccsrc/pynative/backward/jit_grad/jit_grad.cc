@@ -280,6 +280,9 @@ bool Jit::GetJitGradGraph(const pipeline::ResourcePtr &resource, const std::stri
   jit_compile_info_[graph_phase_].is_dynamic_shape_ = IsGraphDynamic(jit_forward_graph);
   if (resource->is_load()) {
     MS_LOG(DEBUG) << "Compile cache is loaded, skip grad graph generation.";
+    auto graphs = ad::CacheFuncGraphBeforeOpt(nullptr, nullptr);
+    graph_executor->SetJitPrimalFuncGraph(graphs.second, graph_phase_);
+    graph_executor->SetJitGradGraph(graphs.first, graph_phase_);
     return true;
   }
   auto primal_fg = BasicClone(jit_forward_graph, true);
@@ -303,6 +306,7 @@ bool Jit::GetJitGradGraph(const pipeline::ResourcePtr &resource, const std::stri
     MS_LOG(EXCEPTION) << "Cannot find primal func graph: " << grad_graph->ToString();
   }
   auto actual_primal_graph = primal_fg_iter->second.func_graph();
+  (void)ad::CacheFuncGraphBeforeOpt(grad_graph, actual_primal_graph);
   graph_executor->SetJitPrimalFuncGraph(actual_primal_graph, graph_phase_);
   graph_executor->SetJitGradGraph(grad_graph, graph_phase_);
   CommonUtils::DumpGraphIR("jit_modify_before_forward_graph.ir", jit_forward_graph);
@@ -347,11 +351,6 @@ py::object Jit::GradJit(const py::args &args) {
   auto jit_grad_graph = executor->GetJitGradGraph(graph_phase_);
   // Get primal graph
   auto jit_primal_graph = executor->GetJitPrimalFuncGraph(graph_phase_);
-
-  auto graphs = ad::CacheFuncGraphBeforeOpt(jit_grad_graph, jit_primal_graph);
-
-  jit_grad_graph = graphs.first;
-  jit_primal_graph = graphs.second;
   MS_EXCEPTION_IF_NULL(jit_grad_graph);
   MS_EXCEPTION_IF_NULL(jit_primal_graph);
 
