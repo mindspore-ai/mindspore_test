@@ -18,7 +18,6 @@ __all__ = ['Tensor']
 
 import abc
 import numbers
-import copy as cp
 import numpy as np
 
 from mindspore.communication.management import get_group_size
@@ -37,7 +36,6 @@ from mindspore._checkparam import is_stub_tensor, check_hook_fn
 from mindspore._check_jit_forbidden_api import jit_forbidden_register
 from mindspore.common.symbol import Symbol
 from mindspore._c_expression import is_reboot_node
-from mindspore.parallel.tensor_redistribution import _tensor_redistribution
 
 np_types = (np.int8, np.int16, np.int32, np.int64,
             np.uint8, np.uint16, np.uint32, np.uint64, np.float16,
@@ -140,7 +138,7 @@ def _init(input_data=None, dtype=None, shape=None, init=None, const_arg=False, d
 
     if input_data is None and shape is None and init is None and dtype is not None:
         validator.check_type_name('dtype', dtype, mstype.number_type + (mstype.bool_, mstype.string), "Tensor")
-        logger.warning(f"For 'Tensor', if 'dtype' is not None, 'input_data', 'shape' or 'init' must not be None.")
+        logger.warning("For 'Tensor', if 'dtype' is not None, 'input_data', 'shape' or 'init' must not be None.")
         return {"dtype": dtype, "shape": [-2], "init": init, "const_arg": const_arg, "device": device}
 
     # If input data is numpy number, convert it to np array
@@ -377,8 +375,8 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
         try:
             data = self._item()
             return float(data)
-        except ValueError:
-            raise ValueError("Only one element tensors can be converted to Python scalars")
+        except ValueError as exc:
+            raise ValueError("Only one element tensors can be converted to Python scalars") from exc
 
     def __index__(self):
         try:
@@ -547,40 +545,6 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
         """
         self._dist_tensor_info = input_dtensor_info
 
-    def local_to_global(self, layout):
-        """create global dtensor"""
-        self._layout = layout
-        return self
-
-    def to_local(self):
-        """covert global_tensor to local_tensor"""
-        self._layout = None
-        del self._layout
-        return self
-
-    @property
-    def layout(self):
-        """
-        Return the distributed layout information. For details,
-        please refer to :class:`mindspore.parallel.Layout`.
-
-        Examples:
-            >>> from mindspore import Tensor, Layout
-            >>> import numpy as np
-            >>> x = Tensor(np.array([[1, 2], [3, 4]]))
-            >>> x_layout = Layout((2, 4), ("dp", "mp"))("dp", "mp")
-            >>> x = x.local_to_global(x_layout)
-            >>> print(x.layout)
-        """
-        if not hasattr(self, '_layout'):
-            return None
-        return self._layout
-
-    @property
-    def local_shape(self):
-        """return local shape when tensor has layout"""
-        return self._shape
-
     @property
     def shape(self):
         """
@@ -593,9 +557,8 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
             >>> print(x.shape)
             (2, 2)
         """
-        if not hasattr(self, '_layout'):
-            return self._shape
-        return self._layout.get_global_shape(self._shape)
+        return self._shape
+
 
     @shape.setter
     def shape(self, shape_value):
@@ -752,7 +715,7 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
         rank = self.ndim
         if rank <= 1:
             return self
-        dims = [i for i in range(rank - 1, -1, -1)]
+        dims = list(range(rank - 1, -1, -1))
         return self.permute(dims)
 
     @staticmethod
@@ -2331,7 +2294,7 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
                 raise ValueError('The size of sorter must be the same as the Tensor')
 
         dtype = mstype.int32
-        right = (side == 'right')
+        right = side == 'right'
         search_sorted_ = tensor_operator_registry.get('searchsorted')(dtype, right)
         return search_sorted_(self, v, sorter)
 
@@ -2487,7 +2450,7 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
         pre_axis = []
         if len(size) < x.ndim:
             pre_len = x.ndim - len(size)
-            pre_axis = [axis for axis in range(pre_len)]
+            pre_axis = list(range(pre_len))
         axes = pre_axis
         for i, element in enumerate(size):
             if element != x.shape[i + pre_len] and element == 1:
@@ -3751,20 +3714,6 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('triangular_solve')(self, A, upper, transpose, unitriangular)
 
-    def redistribute(self, dst_layout):
-        out = _tensor_redistribution.redistribution(self, dst_layout)
-        return out
-
-    def reduce_partial(self):
-        """syntax suger. Reduce all partial status, equal to call: tensor.redistribute(tensor.layout)"""
-        if not self.layout:
-            return self
-        to_layout = cp.deepcopy(self.layout)
-        to_layout.reset_partial()
-        out = _tensor_redistribution.reduce_partial(self, to_layout)
-        return out
-
-
 def _vm_compare(*args):
     """Implement `vm_compare` for tensor."""
     if args:
@@ -3812,7 +3761,8 @@ def _check_tensor_input(input_data=None, dtype=None, shape=None, init=None):
                 _ = np.array(input_data)
             except ValueError as e:
                 if "The requested array has an inhomogeneous shape" in str(e):
-                    raise TypeError(f"For Tensor, the input_data is {input_data} that contain unsupported element.")
+                    raise TypeError(f"For Tensor, the input_data is {input_data} that contain unsupported element.")\
+                        from e
                 raise
 
 

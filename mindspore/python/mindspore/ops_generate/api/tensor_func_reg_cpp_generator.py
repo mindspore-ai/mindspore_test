@@ -23,15 +23,15 @@ that can be used to call the Pyboost primitive implementations.
 
 import os
 
-import common.template as template
+from common import template
 import common.gen_constants as K
 from common.template import Template
-from common.gen_utils import save_file, safe_load_yaml_from_dir
+from common.gen_utils import save_file
 from common.base_generator import BaseGenerator
 from common.op_proto import OpProto
 from pyboost.op_template_parser import OpTemplateParser
 from pyboost import pyboost_utils
-import api.op_api_proto as op_api_proto
+from api import op_api_proto
 
 
 class TensorFuncRegCppGenerator(BaseGenerator):
@@ -77,6 +77,10 @@ class TensorFuncRegCppGenerator(BaseGenerator):
             '}'
         )
         self.pyboost_return_template = Template(
+            'if (parse_args.has_fallback()) {\n'
+            '  auto op_call = std::make_shared<TensorOverloadCall>("${class_name}", callback);\n'
+            '  return pynative::HandleFallback(self, py_args, py_kwargs, py::cast(op_call));\n'
+            '}\n'
             '${arg_handler_processor}\n'
             'MS_LOG(INFO) << "Call Tensor${class_name}";\n'
             'auto res = mindspore::pynative::'
@@ -84,9 +88,12 @@ class TensorFuncRegCppGenerator(BaseGenerator):
             'trace::CapturePy(parse_args.arg_list_, mindspore::prim::kPrim${class_name}, &res);\n'
             'return res;\n'
         )
-        self._init_with_layout_infer()
 
         self.callback_python_template = Template(
+            'if (parse_args.has_fallback()) {\n'
+            '  auto op_call = std::make_shared<TensorOverloadCall>("${class_name}", callback);\n'
+            '  return pynative::HandleFallback(self, py_args, py_kwargs, py::cast(op_call));\n'
+            '}\n'
             'py::object self_new = py::reinterpret_borrow<py::object>(self);\n'
             'py::args py_args_new = py::reinterpret_borrow<py::args>(py_args);\n'
             'py::dict empty_dict = py::dict();\n'
@@ -109,45 +116,6 @@ class TensorFuncRegCppGenerator(BaseGenerator):
         self.header_func_header_template = Template(
             "PyObject* TensorMethod${cpp_func_name}"
             "(PyObject* self, PyObject* py_args, PyObject* py_kwargs);\n"
-        )
-
-    def _init_with_layout_infer(self):
-        """
-        Generates C++ tensor function WithLayoutInfer code for distributed ops.
-        """
-
-        self.layout_infer_ops = safe_load_yaml_from_dir(os.path.join(K.WORK_DIR, K.PARALLEL_OP_YAML_PATH))
-        self.pyboost_with_layout_infer_template = dict()
-        prepare_pyargs_code = ('MS_LOG(INFO) << "Call Tensor${class_name} with LayoutInfer";\n'
-                               '// Construct py_args including self at the correct position\n'
-                               'py::list py_args;\n'
-                               'for (size_t i = 0; i < parse_args.arg_list_.size(); ++i) {\n'
-                               '  py_args.append(parse_args.arg_list_[i]);\n'
-                               '}\n')
-        self.pyboost_with_layout_infer_template['default'] = Template(
-            '${arg_handler_processor}\n' +
-            prepare_pyargs_code +
-            'auto res = mindspore::pynative::WithLayoutInfer${suffix}(\n'
-            '    mindspore::prim::kPrim${class_name},\n'
-            '    [](const PrimitivePtr &prim, const std::vector<ops::OP_DTYPE> &source_types${lambda_params}) {\n'
-            '        return mindspore::pynative::${pyboost_function}(prim, source_types${lambda_args});\n'
-            '    },\n'
-            '    py_args.ptr(),\n'
-            '    mindspore::prim::kPrim${class_name}, parse_args.src_types_${convert_args_comma}\n'
-            ');\n'
-            'trace::CapturePy(parse_args.arg_list_, mindspore::prim::kPrim${class_name}, &res);\n'
-            'return res;\n'
-        )
-        self.pyboost_with_layout_infer_template['without_parse'] = Template(
-            prepare_pyargs_code +
-            'auto res = mindspore::pynative::WithLayoutInfer${suffix}(\n'
-            '    mindspore::prim::kPrim${class_name},\n'
-            '    [](const PrimitivePtr &prim, const std::vector<ops::OP_DTYPE> &source_types${lambda_params}) {\n'
-            '        return mindspore::pynative::${pyboost_function}(prim, source_types${lambda_args});\n'
-            '    },\n'
-            '   py_args.ptr());\n'
-            'trace::CapturePy(parse_args.arg_list_, mindspore::prim::kPrimReshape, &res);\n'
-            'return res;\n'
         )
 
     def generate(self, work_path, op_protos, func_protos_data, alias_func_mapping):
@@ -186,7 +154,7 @@ class TensorFuncRegCppGenerator(BaseGenerator):
             all_op_func_data, alias_func_mapping)
         tensor_api_header = self.TENSOR_API_HEADER.replace(
             tensor_api_declaration_list=tensor_api_declaration_list)
-        save_file(os.path.join(work_path, K.TENSOR_API_PATH), f"tensor_api.h",
+        save_file(os.path.join(work_path, K.TENSOR_API_PATH), "tensor_api.h",
                   tensor_api_header)
         self._generate_func_name_for_stub_tensor(
             work_path, tensor_cpp_methods_list)
@@ -315,7 +283,8 @@ class TensorFuncRegCppGenerator(BaseGenerator):
                                                                               signatures=signature_str,
                                                                               max_args=max_size,
                                                                               self_index=self_index,
-                                                                              ut_body=ut_body)
+                                                                              ut_body=ut_body,
+                                                                              op_name=func_proto.op_proto.op_name)
             func_call_body_list.append(tensor_func_single_call_body)
 
     def _create_overload_op_source_files(self, overload_op_func_data, func_call_body_list):
@@ -500,37 +469,16 @@ class TensorFuncRegCppGenerator(BaseGenerator):
             op_pyboost_func_name = op_parser.get_pyboost_func_name() + "_OP"
             convert_args_str = op_parser.get_convert_args_str(func_proto.op_proto, is_tensor_api=True)
             self_index = op_parser.get_input_tensor_index(func_proto.op_proto)
-            if func_proto.op_proto.op_class.name in self.layout_infer_ops.keys():
-                num_args = len(func_proto.op_proto.op_args)
-                lambda_params = ""
-                lambda_args = ""
-                if num_args > 0:
-                    lambda_params = ", " + ", ".join(
-                        [f"const auto &arg{i}" for i in range(num_args)]
-                    )
-                    lambda_args = ", " + ", ".join([f"arg{i}" for i in range(num_args)])
-
-                convert_args_comma = ", " + convert_args_str if convert_args_str else ""
-
-                layout_infer_info = self.layout_infer_ops[func_proto.op_proto.op_class.name]
-                template_name = layout_infer_info.get('template_name', 'default')
-                return self.pyboost_with_layout_infer_template[template_name].replace(
-                    arg_handler_processor=arg_handler_processor_str,
-                    class_name=func_proto.op_proto.op_class.name,
-                    pyboost_function=op_pyboost_func_name,
-                    lambda_params=lambda_params,
-                    lambda_args=lambda_args,
-                    convert_args_comma=convert_args_comma,
-                    suffix=layout_infer_info.get('infer_layout_suffix', '')
-                )
             return self.pyboost_return_template.replace(arg_handler_processor=arg_handler_processor_str,
                                                         class_name=func_proto.op_proto.op_class.name,
+                                                        op_name=func_proto.op_proto.op_name,
                                                         pyboost_function=op_pyboost_func_name,
                                                         self_index=self_index,
                                                         convert_args=convert_args_str)
 
         if func_proto_device == 'py_method':
-            return self.callback_python_template.replace(py_method=func_proto.py_method)
+            return self.callback_python_template.replace(py_method=func_proto.py_method,
+                                                         class_name=func_proto.op_proto.op_class.name)
 
         raise TypeError("Only support pyboost or python_method.")
 

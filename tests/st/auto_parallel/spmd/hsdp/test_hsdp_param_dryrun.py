@@ -14,7 +14,9 @@
 # ============================================================================
 """test hsdp param"""
 import os
+import mindspore as ms
 from mindspore import nn
+from mindspore.common.initializer import initializer
 from mindspore.parallel import Layout
 from mindspore.nn.utils import no_init_parameters
 from mindspore.communication.management import init
@@ -53,9 +55,9 @@ def test_hsdp_param_to_unsharded():
     net = nn.Dense(in_channels, out_channels, weight_init="ones")
     hsdp_param = get_hsdp_param(net)
     hsdp_param.to_sharded()
-    assert net.weight.local_shape == (32, 256)
+    assert net.weight.shape == (32, 256)
     hsdp_param.to_unsharded()
-    assert net.weight.local_shape == (64, 256)
+    assert net.weight.shape == (64, 256)
 
 @arg_mark(plat_marks=["platform_ascend"], level_mark="level0", card_mark="onecard", essential_mark="essential")
 def test_hsdp_scaler_param():
@@ -71,9 +73,9 @@ def test_hsdp_scaler_param():
     _ = get_hsdp_param(net, net.scaler)
     hsdp_param = get_hsdp_param(net, net.dense.weight)
     hsdp_param.to_sharded()
-    assert net.dense.weight.local_shape == (32, 256)
+    assert net.dense.weight.shape == (32, 256)
     hsdp_param.to_unsharded()
-    assert net.dense.weight.local_shape == (64, 256)
+    assert net.dense.weight.shape == (64, 256)
 
 @arg_mark(plat_marks=["platform_ascend"], level_mark="level1", card_mark="onecard", essential_mark="essential")
 def test_hsdp_no_init_param_to_unsharded():
@@ -88,9 +90,9 @@ def test_hsdp_no_init_param_to_unsharded():
         net = nn.Dense(in_channels, out_channels, weight_init="ones")
     hsdp_param = get_hsdp_param(net)
     hsdp_param.to_sharded()
-    assert net.weight.local_shape == (32, 256)
+    assert net.weight.shape == (32, 256)
     hsdp_param.to_unsharded()
-    assert net.weight.local_shape == (64, 256)
+    assert net.weight.shape == (64, 256)
 
 @arg_mark(plat_marks=["platform_ascend"], level_mark="level1", card_mark="onecard", essential_mark="essential")
 def test_hsdp_param_with_layout():
@@ -108,8 +110,8 @@ def test_hsdp_param_with_layout():
     rank_list = list(range(32))
     layout = Layout(device_matrix, alias_name, rank_list)
     w_layout = layout("mp", "None")
-    net.weight = net.weight.local_to_global(w_layout)
-
+    net.weight = ms.Parameter(ms.parallel.DTensor.from_local(initializer(
+        "ones", [out_channels, in_channels], dtype=ms.float32), w_layout), name="weight")
     hsdp_param = get_hsdp_param(net)
     hsdp_param.to_sharded()
     assert net.weight.local_shape == (32, 256)
@@ -133,8 +135,8 @@ def test_hsdp_no_init_param_with_layout():
     rank_list = list(range(32))
     layout = Layout(device_matrix, alias_name, rank_list)
     w_layout = layout("mp", "None")
-    net.weight = net.weight.local_to_global(w_layout)
-
+    net.weight = ms.Parameter(ms.parallel.DTensor.from_local(initializer(
+        "ones", [out_channels, in_channels], dtype=ms.float32), w_layout), name="weight")
     hsdp_param = get_hsdp_param(net)
     hsdp_param.to_sharded()
     assert net.weight.local_shape == (32, 256)
@@ -157,8 +159,8 @@ def test_hsdp_param_with_two_axis_unshard():
     rank_list = list(range(32))
     layout = Layout(device_matrix, alias_name, rank_list)
     w_layout = layout("mp", "None")
-    net.weight = net.weight.local_to_global(w_layout)
-
+    net.weight = ms.Parameter(ms.parallel.DTensor.from_local(initializer(
+        "ones", [out_channels, in_channels], dtype=ms.float32), w_layout), name="weight")
     hsdp_param = get_hsdp_param(net)
     hsdp_param.to_sharded()
     assert net.weight.local_shape == (32, 256)

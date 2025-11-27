@@ -253,11 +253,22 @@ class Parameter(Tensor_):
         init_data_flag = bool(isinstance(default_input, Tensor) and default_input.has_init)
         rc = sys.getrefcount(default_input)
         init_param = getattr(cls, "init_param", True)
+        # pylint: disable-msg=C0123
+        if isinstance(default_input, Tensor) and not isinstance(default_input, Parameter)\
+                and type(default_input) != Tensor:
+            input_class = type(default_input)
+            new_type = Parameter._get_combined_class(input_class)
+            obj = input_class.__new__(new_type, default_input)
+            obj.init_mode = None
+            obj.is_default_input_init = init_data_flag
+            if obj.has_init:
+                obj.init_mode = default_input
+            return obj
+
         input_class, *class_init_args = Parameter._get_parameter_new_args(default_input, rc, init_param)
         new_type = Parameter._get_base_class(input_class)
-        obj = input_class.__new__(new_type) # pylint: disable=too-many-function-args
+        obj = input_class.__new__(new_type)
         input_class.__init__(obj, *class_init_args)
-        # it's better to make the Initializer a kind of tensor.
         obj.init_mode = None
         obj.is_default_input_init = init_data_flag
         if obj.has_init:
@@ -293,7 +304,7 @@ class Parameter(Tensor_):
         self.is_in_parallel = _is_in_auto_parallel_mode()
         self._pipeline_stage_list = []
         if -1 in self.shape:
-            raise ValueError(f"All shape elements of the Parameter must be positive. But got None.")
+            raise ValueError("All shape elements of the Parameter must be positive. But got None.")
         if isinstance(default_input, (Tensor_, Tensor)):
             Tensor_.__init__(self, dtype=default_input.dtype, shape=default_input.shape)
         elif isinstance(default_input, int):
@@ -312,7 +323,7 @@ class Parameter(Tensor_):
                 raise ValueError(f"Only 'CPU' is supported for device, but got ${device}.")
             self._set_user_data("parameter_device", device)
 
-        import mindspore.ops.operations.other_ops as other_ops
+        from mindspore.ops.operations import other_ops
         self.load = other_ops.Load()
 
     def __deepcopy__(self, memodict):
@@ -339,6 +350,21 @@ class Parameter(Tensor_):
         else:
             new_type = type(input_class_name, (Parameter, input_class), {})
             Parameter._base_type[input_class_name] = new_type
+        return new_type
+
+    @staticmethod
+    def _get_combined_class(tensor_subclass):
+        """Create sub class of Parameter and tensor_subclass"""
+        class_name = f"Parameter{tensor_subclass.__name__}"
+
+        if class_name in Parameter._base_type:
+            return Parameter._base_type[class_name]
+        def new_init(self, default_input, *args, **kwargs):
+            Parameter.__init__(self, default_input, *args, **kwargs)
+            default_input.local_param_info = self.param_info
+
+        new_type = type(class_name, (tensor_subclass, Parameter), {'__init__':new_init})
+        Parameter._base_type[class_name] = new_type
         return new_type
 
     @staticmethod
@@ -410,35 +436,6 @@ class Parameter(Tensor_):
         param_info_.obj = self
         self._param_info = param_info_
         Tensor_.set_param_info(self, param_info_)
-
-    def local_to_global(self, layout):
-        """create global dtensor"""
-        self._layout = layout
-        return self
-
-    def to_local(self):
-        """covert global_tensor to local_tensor"""
-        self._layout = None
-        del self._layout
-        return self
-
-    @property
-    def layout(self):
-        """
-        Return the distributed layout information. For details,
-        please refer to :class:`mindspore.parallel.Layout`.
-
-        Examples:
-            >>> from mindspore import Parameter, Layout
-            >>> import numpy as np
-            >>> x = Parameter(np.array([[1, 2], [3, 4]]))
-            >>> x_layout = Layout((2, 4), ("dp", "mp"))("dp", "mp")
-            >>> x = x.local_to_global(x_layout)
-            >>> print(x.layout)
-        """
-        if not hasattr(self, '_layout'):
-            return None
-        return self._layout
 
     @property
     def name(self):
@@ -612,15 +609,11 @@ class Parameter(Tensor_):
         if self.cache_shape:
             x.cache_shape = self.cache_shape
         if init != 'same':
-            # Use local shape if 'self' has layout
-            shape = self.local_shape
+            shape = self._shape
             dtype = self.dtype
             tensor = initializer(init, shape=shape, dtype=dtype)
             x.set_data(tensor)
             x.init = tensor.init
-            if hasattr(self, '_layout'):
-                x.local_to_global(self.layout)
-            x.local_to_global(self.layout)
         device = self._get_user_data("parameter_device")
         if device is not None:
             x._set_user_data("parameter_device", device)
@@ -812,7 +805,7 @@ class Parameter(Tensor_):
         Raise:
             TypeError: If `stage` is not a positive number or not int type.
         """
-        logger.warning(f"This interface may be deleted in the future.")
+        logger.warning("This interface may be deleted in the future.")
         if not isinstance(stage, int) or stage < 0:
             raise TypeError("`stage` must be a positive number of int type")
         self._pipeline_stage_list.append(stage)

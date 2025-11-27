@@ -12,17 +12,25 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+"""utils"""
 
 from typing import List, Optional
 from mindspore import Tensor, mint
-from mindspore.parallel import Layout
+from mindspore.parallel import Layout, DTensor
 from mindspore.parallel.shard import _DeviceMatrix
 from mindspore.communication import get_rank, create_group
 
 
+def create_dtensor(data, layout, dtype=None):
+    """create_dtensor"""
+    if dtype:
+        return DTensor.from_local(Tensor(data, dtype=dtype), layout)
+    return DTensor.from_local(Tensor(data), layout)
+
 def _infer_slice_area_by_rank(dev_matrix, tensor_map, rank_id: int, full_shape: tuple): # -> tuple[tuple[int]]:
     """Return the range of each axis from full tensor for slice in current rank."""
-    _get_dev_num_alone_dim = lambda matrix, dim: dev_matrix[-dim - 1] if dim != -1 else 1
+    def _get_dev_num_alone_dim(matrix, dim):
+        return matrix[-dim - 1] if dim != -1 else 1
 
     def _rank_id_to_dev_id_list(dev_matrix, rank_id):
         """Infer dev id list by rank_id and dev_matrix"""
@@ -71,8 +79,7 @@ def global_to_local(global_tensor, layout):
         return full_data[area]
 
     local_tensor = get_slice_data(global_tensor, slice_area)
-    local_tensor.local_to_global(layout)
-    return local_tensor
+    return DTensor.from_local(local_tensor, layout)
 
 
 def local_to_global(local_tensor):
@@ -85,11 +92,12 @@ def local_to_global(local_tensor):
     tensor_map = layout.tensor_map
     none_structure = tuple(update_layout(dim) for dim in tensor_map)
     to_layout = layout(*none_structure)
-    return local_tensor.redistribute(to_layout)
+    return local_tensor.redistribute(to_layout).to_local()
 
 
 def mesh_scatter(output: Tensor, scatter_list: List[Tensor], dev_mesh: _DeviceMatrix,
                  mesh_alias: str, group_src_rank: Optional[int] = 0):
+    """mesh_scatter"""
     rank_id = get_rank()
     if rank_id not in dev_mesh.rank_list:
         raise ValueError(f"rank {rank_id} not in {dev_mesh}")
@@ -104,6 +112,7 @@ def mesh_scatter(output: Tensor, scatter_list: List[Tensor], dev_mesh: _DeviceMa
 
 def mesh_broadcast(tensor: Tensor, dev_mesh: _DeviceMatrix,
                    mesh_alias: str, group_src_rank: Optional[int] = 0):
+    """mesh_broadcast"""
     rank_id = get_rank()
     if rank_id not in dev_mesh.rank_list:
         raise ValueError(f"rank {rank_id} not in {dev_mesh}")
@@ -126,7 +135,7 @@ def distribute_tensor(tensor: Tensor,
         Do broadcast if the tensor replicated along an axis.
     """
     if not layout.tensor_map:
-        raise RuntimeError(f"For distribute_tensor, layout should config 'tensor_map'")
+        raise RuntimeError("For distribute_tensor, layout should config 'tensor_map'")
     local_tensor = tensor
     shardmap_alias_names = layout.alias_tensor_map
     dev_matrix = layout.mesh
@@ -148,5 +157,4 @@ def distribute_tensor(tensor: Tensor,
         if dev_mat_dim_alias in sharded_dim_set:
             continue
         local_tensor = mesh_broadcast(local_tensor, dev_matrix, dev_mat_dim_alias, src_data_rank)
-    local_tensor.local_to_global(layout)
-    return local_tensor
+    return DTensor.from_local(local_tensor, layout)

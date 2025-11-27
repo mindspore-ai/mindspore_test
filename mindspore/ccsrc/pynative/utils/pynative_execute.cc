@@ -42,6 +42,8 @@
 #include "include/common/utils/convert_utils_py.h"
 #include "include/common/pynative/adapter.h"
 #include "include/common/pynative/variable.h"
+#include "pynative/forward/pyboost/converter.h"
+#include "pynative/forward/pyboost/fallback.h"
 
 namespace mindspore::pynative {
 std::shared_ptr<PyNativeExecutor> PyNativeExecutor::executor_ = nullptr;
@@ -50,7 +52,7 @@ GradExecutorPtr PyNativeExecutor::grad_executor_ = nullptr;
 std::mutex PyNativeExecutor::instance_lock_;
 namespace {
 template <typename T, typename... Args>
-T PyNativeExecutorTry(const std::function<T(const Args &...)> &method, const Args &... args) {
+T PyNativeExecutorTry(const std::function<T(const Args &...)> &method, const Args &...args) {
   const auto &inst = PyNativeExecutor::GetInstance();
   MS_EXCEPTION_IF_NULL(inst);
   MS_EXCEPTION_IF_NULL(method);
@@ -100,10 +102,29 @@ void PyNativeExecutor::StoreAsyncStatus(const FrontendOpRunInfoPtr &op_run_info)
   op_run_info->async_status.disable_mix_precision = forward_executor()->CellNotSetMixedPrecision(op_run_info);
 }
 
+bool CheckHasFallback(const FrontendOpRunInfoPtr &op_run_info) {
+  if (!fallback_enabled()) {
+    return false;
+  }
+  const auto &values = op_run_info->op_grad_info->input_value;
+  return std::any_of(values.begin(), values.end(), [](const ValuePtr &value) {
+    MS_EXCEPTION_IF_NULL(value);
+    return value->isa<Tensor>() && value->cast<TensorPtr>()->has_fallback();
+  });
+}
+
 py::object PyNativeExecutor::RunOpStub(const py::args &args) const {
   FrontendOpRunInfoPtr op_run_info = forward_executor()->GenerateOpRunInfo(args, true);
   runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kPynative, runtime::ProfilerEvent::kRunOp,
                                      op_run_info->base_op_run_info.op_name, false, true);
+
+  if (CheckHasFallback(op_run_info)) {
+    auto op_call =
+      std::make_shared<OpCall>(op_run_info->base_op_run_info.op_name,
+                               [this](const py::args &args, const py::kwargs &kwargs) { return RunOpStub(args); });
+    return pynative::HandleFallback(args, py::kwargs(), py::cast(op_call));
+  }
+
   SetCallbackForInputTensor(op_run_info->op_grad_info->input_value);
 
   StoreAsyncStatus(op_run_info);

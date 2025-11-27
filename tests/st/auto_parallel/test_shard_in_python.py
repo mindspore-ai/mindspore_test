@@ -12,13 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+"""test shard in python"""
 
 import numpy as np
 import mindspore as ms
 import mindspore.communication.management as D
-from mindspore import nn, Tensor
+from mindspore import nn
 from mindspore.parallel import Layout
-
+from tests.st.auto_parallel.utils import create_dtensor
 
 def setup_module():
     ms.context.set_context(mode=ms.context.PYNATIVE_MODE, device_target="Ascend")
@@ -32,11 +33,6 @@ class SimpleNet(nn.Cell):
         x = x / 10
         x = x + 1
         return x
-
-def create_dtensor(data, layout):
-    """create_dtensor"""
-    tensor = Tensor(data, dtype=ms.float32)
-    return tensor.local_to_global(layout)
 
 def print_layout_info(tensor, name):
     """print_layout_info"""

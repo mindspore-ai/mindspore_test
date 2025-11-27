@@ -22,7 +22,7 @@ operation's primitive and arguments. The generated file is saved to the specifie
 
 import os
 
-import common.template as template
+from common import template
 import common.gen_constants as K
 from common.template import Template
 from common.gen_utils import save_file
@@ -65,7 +65,6 @@ class PyboostFunctionsHeaderGenerator(BaseGenerator):
             None: The method writes the generated header file to the specified directory.
         """
         prim_func_list = []
-        prim_func_list.append(template.LAYOUT_INFER_DEF_TEMPLATE.code_pattern)
         op_func_list_str = []
         for op_proto in op_protos:
             if op_proto.op_dispatch is None or not op_proto.op_dispatch.enable:

@@ -13,6 +13,7 @@
 # limitations under the License.
 # ============================================================================
 """HSDP parameter buffer"""
+import mindspore as ms
 from mindspore.common.api import _no_grad
 from mindspore.common.tensor import Tensor
 import mindspore.parallel.spmd.hsdp.hsdp_comm as comm
@@ -53,7 +54,9 @@ class HSDPParamBuffer:
             start_index = hsdp_param.param_buffer_start_index
             end_index = hsdp_param.param_buffer_end_index
             self.sharded_param_buffer[start_index:end_index] = hsdp_param.sharded_param.reshape(-1)
-            data = self.sharded_param_buffer[start_index:end_index].view(hsdp_param.sharded_param.local_shape)
+            local_shape = hsdp_param.sharded_param.local_shape \
+                if isinstance(hsdp_param.sharded_param, ms.parallel.DTensor) else hsdp_param.sharded_param.shape
+            data = self.sharded_param_buffer[start_index:end_index].view(local_shape)
             hsdp_param.sharded_param_view = data
 
     def add_param(self, hsdp_param):
@@ -103,7 +106,9 @@ class HSDPParamBuffer:
             start_index = hsdp_param.param_buffer_start_index
             end_index = hsdp_param.param_buffer_end_index
             unshared_param_data = unshared_param_buffer[:, start_index:end_index]
-            unsharded_shape = list(hsdp_param.sharded_param.local_shape)
+            local_shape = hsdp_param.sharded_param.local_shape \
+                if isinstance(hsdp_param.sharded_param, ms.parallel.DTensor) else hsdp_param.sharded_param.shape
+            unsharded_shape = list(local_shape)
             unsharded_shape[0] = unsharded_shape[0] * self.shard_size
             unshared_param_data = unshared_param_data.view(unsharded_shape)
             hsdp_param.param.set_data(unshared_param_data)

@@ -12,12 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+"""test parallel gather"""
 
 import numpy as np
 import mindspore as ms
 import mindspore.communication.management as D
-from mindspore import nn, Tensor, mint
+from mindspore import nn, mint
 from mindspore.parallel import Layout
+from tests.st.auto_parallel.utils import create_dtensor
 
 D.init()
 ms.set_context(pynative_synchronize=True)
@@ -42,13 +44,6 @@ class SimpleGatherNet(nn.Cell):
         out = mint.gather(params, axis, indices)
         return out
 
-
-def create_dtensor(data, layout):
-    """create_dtensor"""
-    tensor = Tensor(data, dtype=ms.float32)
-    return tensor.local_to_global(layout)
-
-
 def print_layout_info(tensor, name):
     """print_layout_info"""
     if hasattr(tensor, "layout") and tensor.layout is not None:
@@ -70,10 +65,9 @@ def run_scenario(scenario_name, net, params_layout, indices_layout, params_shape
     print("=" * 80)
 
     # Create Dtensor
-    params = Tensor(
-        np.random.randn(*params_shape).astype(np.float32), dtype=ms.float32
-    ).local_to_global(params_layout)
-    indices = Tensor(np.ones(indices_shape), ms.int32).local_to_global(indices_layout)
+    params = create_dtensor(
+        np.random.randn(*params_shape).astype(np.float32), params_layout, dtype=ms.float32)
+    indices = create_dtensor(np.ones(indices_shape), indices_layout, ms.int32)
 
     print_layout_info(params, "Input Params")
     print_layout_info(indices, "Input Indices")

@@ -16,6 +16,7 @@
 import os
 import numpy as np
 import mindspore as ms
+from mindspore._c_expression import NoFallbackGuard
 from mindspore import nn, Tensor
 from mindspore.communication.management import init
 from mindspore.parallel import hsdp
@@ -55,4 +56,5 @@ def test_hsdp_reduce_dtype():
     optimizer = nn.Adam(net.trainable_params(), 0.01)
     for _ in range(train_steps):
         _, grads = grad_fn(data, label)
-        optimizer(grads)
+        with NoFallbackGuard():
+            optimizer(grads)

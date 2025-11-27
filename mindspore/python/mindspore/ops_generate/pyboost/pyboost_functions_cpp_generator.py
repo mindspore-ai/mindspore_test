@@ -22,10 +22,10 @@ the necessary header files for the generated functions.
 
 import os
 
-import common.template as template
+from common import template
 import common.gen_constants as K
 from common.template import Template
-from common.gen_utils import save_file, safe_load_yaml_from_dir
+from common.gen_utils import save_file
 from common.op_proto import OpProto
 from common.base_generator import BaseGenerator
 from pyboost import pyboost_utils
@@ -57,7 +57,6 @@ class PyboostFunctionsGenerator(BaseGenerator):
         self.OP_DEF_INC_HEAD_TEMPLATE = template.OP_DEF_INC_HEAD_TEMPLATE
         self.MARK_SIDE_EFFECT_STR = "PyNativeAlgo::PyBoost::MarkSideEffect(PyList_GetItem(args, 0));"
         self.pyboost_api_body_template = template.PYBOOST_API_BODY_CC_TEMPLATE
-        self.layout_infer_ops = safe_load_yaml_from_dir(os.path.join(K.WORK_DIR, K.PARALLEL_OP_YAML_PATH))
 
     def generate(self, work_path, op_protos):
         """
@@ -135,40 +134,14 @@ class PyboostFunctionsGenerator(BaseGenerator):
             op_args_str = [op_arg.arg_name for op_arg in op_proto.op_args]
             side_effect_str = self._generate_mark_side_effect_str(op_proto)
 
-            if op_proto.op_class.name in self.layout_infer_ops.keys():
-                input_args = [arg.arg_name for arg in op_proto.op_args]
-                lambda_params = []
-                lambda_args = []
-                for i, _ in enumerate(input_args):
-                    lambda_params.append(f", const auto &arg{i}")
-                    lambda_args.append(f", arg{i}")
-
-                lambda_params_str = "".join(lambda_params)
-                lambda_args_str = "".join(lambda_args)
-                forward_args_str = "".join([f", {arg}" for arg in input_args])
-
-                layout_infer_info = self.layout_infer_ops[op_proto.op_class.name]
-                template_name = layout_infer_info.get('template_name', 'default')
-                pyboost_api_body_str += template.PYBOOST_API_BODY_WITH_LAYOUT_CC_TEMPLATE[template_name].replace(
-                    func_name=op_pyboost_func_name,
-                    op_def_name=op_def_name_str,
-                    parser_body=parser_body_str,
-                    class_name=op_proto.op_class.name,
-                    lambda_params=lambda_params_str,
-                    lambda_args=lambda_args_str,
-                    forward_args=forward_args_str,
-                    mark_side_effect=side_effect_str,
-                    suffix=layout_infer_info.get('infer_layout_suffix', '')
-                )
-            else:
-                pyboost_api_body_str += self.pyboost_api_body_template.replace(
-                    func_name=op_pyboost_func_name,
-                    op_def_name=op_def_name_str,
-                    parser_body=parser_body_str,
-                    class_name=op_proto.op_class.name,
-                    op_args=op_args_str,
-                    mark_side_effect=side_effect_str
-                )
+            pyboost_api_body_str += self.pyboost_api_body_template.replace(
+                func_name=op_pyboost_func_name,
+                op_def_name=op_def_name_str,
+                parser_body=parser_body_str,
+                class_name=op_proto.op_class.name,
+                op_args=op_args_str,
+                mark_side_effect=side_effect_str
+            )
             ops_inc_head_set.add(self.OP_DEF_INC_HEAD_TEMPLATE.replace(prefix_char=op_proto.op_class.name[0].lower()))
 
         return pyboost_api_cc_tpl.replace(pyboost_api_body=pyboost_api_body_str)

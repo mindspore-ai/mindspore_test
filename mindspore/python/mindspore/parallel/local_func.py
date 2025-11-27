@@ -51,7 +51,7 @@ def custom_shard(
 
         args_layout = queue.Queue(len(args))
         for i, arg in enumerate(args):
-            if isinstance(arg, ms.Tensor):
+            if isinstance(arg, ms.parallel.DTensor):
                 if in_layouts is None:
                     raise RuntimeError("Found Tensor input but in_layouts is None")
 
@@ -79,9 +79,6 @@ def custom_shard(
                 local_args.append(arg)
 
         out = func(*local_args, **kwargs)
-        for arg in args:
-            if isinstance(arg, ms.Tensor):
-                arg.local_to_global(args_layout.get())
 
         if not contain_distributed_arg:
             return out
@@ -101,7 +98,7 @@ def custom_shard(
                     raise TypeError(
                         "Tensor output requires non-None out_layout!"
                     )
-                dist_output.append(item.local_to_global(out_layout))
+                dist_output.append(ms.parallel.DTensor.from_local(item, out_layout))
             else:
                 if out_layout is not None:
                     raise TypeError(

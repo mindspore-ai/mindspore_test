@@ -20,32 +20,31 @@ import mindspore as ms
 import mindspore.communication.management as D
 from mindspore import nn, Tensor
 from mindspore.parallel import Layout, hsdp
+from tests.st.auto_parallel.utils import create_dtensor
 
 learning_rate = 0.01
 epochs = 2
 
 class SimpleModel(nn.Cell):
     """simple model"""
-    def __init__(self, input_size, output_size):
+    def __init__(self, input_size, output_size, w_layout=None):
         super().__init__()
-        self.weight = ms.Parameter(
-            Tensor(np.ones([input_size, output_size]).astype(np.float32)),
-            name='weight'
-        )
-
+        if not w_layout:
+            self.weight = ms.Parameter(
+                Tensor(np.ones([input_size, output_size]).astype(np.float32)),
+                name='weight'
+            )
+        else:
+            self.weight = ms.Parameter(
+                ms.parallel.DTensor.from_local(Tensor(np.ones([input_size, output_size]).astype(np.float32)), w_layout),
+                name='weight'
+            )
         self.relu = ms.mint.nn.ReLU()
 
     def construct(self, x):
         x = ms.mint.matmul(x, self.weight)
         x = self.relu(x)
         return x
-
-
-def create_dtensor(data, layout):
-    """create_dtensor"""
-    tensor = Tensor(data, dtype=ms.float32)
-    return tensor.local_to_global(layout)
-
 
 def create_tensor(data):
     """create tensor """
@@ -81,9 +80,8 @@ def run_standalone(x, input_size, output_size):
 
 def run_parallel(local_x, local_input_size, local_output_size, x_layout, w_layout, relu_strategy, hsdp_shard_size):
     """run parallel"""
-    model = SimpleModel(local_input_size, local_output_size)
+    model = SimpleModel(local_input_size, local_output_size, w_layout)
 
-    model.weight = model.weight.local_to_global(w_layout)
     model.shard(in_strategy=(x_layout,))
     model.relu.shard(in_strategy=relu_strategy[0], out_strategy=relu_strategy[1])
     model = hsdp(model, shard_size=hsdp_shard_size, threshold=0)
@@ -95,7 +93,7 @@ def run_parallel(local_x, local_input_size, local_output_size, x_layout, w_layou
     optimizer = nn.Adam(model.trainable_params(), learning_rate=learning_rate)
     grad_fn = ms.parallel.parallelize_value_and_grad(forward_fn, optimizer.parameters)
 
-    x = create_dtensor(local_x, x_layout)
+    x = create_dtensor(local_x, x_layout, ms.float32)
 
     ret_loss = None
     ret_grads = None

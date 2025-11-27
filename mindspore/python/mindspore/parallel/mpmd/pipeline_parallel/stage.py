@@ -57,6 +57,15 @@ class SharedParameterInfo:
         return f"Shared parameter name:({self.parameter.name}), shared stage:({self.shared_stage})"
 
 
+class CellWrapper(ms.nn.Cell):
+    """CellWrapper"""
+    def __init__(self, fn):
+        super().__init__(auto_prefix=False)
+        self.network = fn
+
+    def construct(self, *args, **kwargs):
+        return self.network(*args, **kwargs)
+
 class PipelineStage(ABC):
     """
     PipelineStage represents a pipeline stage in pipeline parallelism.
@@ -80,7 +89,7 @@ class PipelineStage(ABC):
         super().__init__()
         if not isinstance(submodule, HSDPCell) and has_backward:
             raise TypeError(f"Argument submodule must be of type HSDPCell, but got type {type(submodule)}.")
-        self.submodule = submodule
+        self.submodule = CellWrapper(submodule)
         self.stage_index = stage_index
         self.stage_num = stage_num
         self.pp_group = self._check_pp_group(group)
@@ -360,7 +369,7 @@ class PipelineStage(ABC):
         fwd_args, fwd_kwargs = self.fwd_inputs_cache.pop(micro_index)
         recv_args = []
         if last_backward:
-            self.submodule.set_requires_grad_sync(True)
+            self.submodule.network.set_requires_grad_sync(True)
         if micro_index in self.grad_recv_info:
             recv_args = [recv_info.buffer for recv_info in self.grad_recv_info[micro_index]]
 
@@ -383,7 +392,7 @@ class PipelineStage(ABC):
         """construct forward recv info."""
         shape = self._communicate_shape(global_rank, idx)
         layout, dtype = self._communicate_layout(global_rank, idx)
-        dtensor = mint.empty(shape, dtype=dtype).local_to_global(layout)
+        dtensor = ms.parallel.DTensor.from_local(mint.empty(shape, dtype=dtype), layout)
         if micro_index in self.args_recv_info:
             recv_info = self.args_recv_info[micro_index][idx]
             recv_info.buffer = dtensor

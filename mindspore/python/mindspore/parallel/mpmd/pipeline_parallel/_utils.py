@@ -15,6 +15,7 @@
 """pipeline parallel utils"""
 import io
 import pickle
+import mindspore as ms
 from mindspore import nn, Tensor, mint, ops
 from mindspore.common import dtype as mstype
 from mindspore.mint.distributed.distributed import _object_to_tensor, send, recv
@@ -105,6 +106,8 @@ class _MicroBatch(nn.Cell):
         return args_after_split, kwargs_after_split
 
     def split_inputs_with_custom_shard(self, input, cur_arg_batch_dim, micro_idx):
+        if not isinstance(input, ms.parallel.DTensor):
+            raise TypeError(f"Input type {type(input)} is not DTensor.")
         input_layout = input.layout
         func_wrap = custom_shard(self.split_inputs, out_layouts=(input_layout,), in_layouts=(input_layout, None, None))
         return func_wrap(input, cur_arg_batch_dim, micro_idx)
@@ -123,9 +126,7 @@ class _MicroBatch(nn.Cell):
         strided_slice_end = list(input.shape)
         strided_slice_begin[cur_arg_batch_dim] = micro_batch_begin
         strided_slice_end[cur_arg_batch_dim] = micro_batch_end
-        input_layout = input.layout
         micro_input = ops.strided_slice(input, strided_slice_begin, strided_slice_end, strided_slice_strides)
-        micro_input = micro_input.local_to_global(input_layout)
         return micro_input
 
 

@@ -25,6 +25,8 @@
 #include "frontend/operator/composite/composite.h"
 #include "frontend/operator/composite/functional_overload.h"
 #include "pynative/utils/pynative_execute.h"
+#include "pynative/utils/pynative_utils.h"
+#include "pynative/forward/pyboost/fallback.h"
 #include "utils/symbolic.h"
 #include "include/common/pybind_api/api_register.h"
 #include "include/common/utils/python_adapter.h"
@@ -131,6 +133,7 @@ void RegModule(py::module *m) {
   mindspore::hal::RegUtils(m);
   mindspore::runtime::RegRuntimeConf(m);
   mindspore::pynative::RegPyNativeExecutor(m);
+  mindspore::pynative::RegOpCall(m);
   mindspore::pynative::RegisterPyBoostFunction(m);
   mindspore::pynative::RegisterCustomizeFunction(m);
   mindspore::pynative::RegisterCellBackwardHookFunction(m);
@@ -150,6 +153,7 @@ void RegModule(py::module *m) {
   mindspore::abstract::RegPrimitiveFrontEval();
 #endif
   mindspore::ops::RegOpEnum(m);
+  mindspore::pynative::RegFallback(m);
 }
 
 void RegModuleHelper(py::module *m) {

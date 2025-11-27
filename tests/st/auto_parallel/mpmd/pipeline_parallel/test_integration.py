@@ -12,10 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+"""test integration"""
+
 import numpy as np
+from mindspore import context
 from mindspore import Tensor, dtype as mstype
 from mindspore.parallel import Layout
 from mindspore.parallel.mpmd.pipeline_parallel._utils import _MicroBatch, BatchDimSpec
+from tests.st.auto_parallel.utils import create_dtensor
 
 
 def test_microbatch_basic_args_only():
@@ -27,8 +31,7 @@ def test_microbatch_basic_args_only():
 
     batch_size = 8
     micro_batch_num = 4
-    input_tensor1 = Tensor(np.ones((batch_size, 10, 20)), mstype.float32)
-    input_tensor2 = Tensor(np.ones((batch_size, 5)), mstype.float32)
+
 
     dp = 1
     mp = 1
@@ -36,8 +39,8 @@ def test_microbatch_basic_args_only():
     layout = Layout((dp, mp, cp), ("dp", "mp", "cp"))
     input_tensor1_layout = layout("dp", "mp", "cp")
     input_tensor2_layout = layout("dp", "mp")
-    input_tensor1.local_to_global(input_tensor1_layout)
-    input_tensor2.local_to_global(input_tensor2_layout)
+    input_tensor1 = create_dtensor(Tensor(np.ones((batch_size, 10, 20)), mstype.float32), input_tensor1_layout)
+    input_tensor2 = create_dtensor(Tensor(np.ones((batch_size, 5)), mstype.float32), input_tensor2_layout)
 
     original_layout1 = input_tensor1.layout
     original_layout2 = input_tensor2.layout
@@ -74,16 +77,14 @@ def test_microbatch_kwargs_only():
 
     batch_size = 12
     micro_batch_num = 3
-    input_tensor1 = Tensor(np.ones((batch_size, 32)), mstype.float32)
-    input_tensor2 = Tensor(np.ones((20, batch_size)), mstype.float32)
+
 
     dp = 1
     mp = 1
     layout = Layout((dp, mp), ("dp", "mp"))
     input_tensor_layout = layout("dp", "mp")
-    input_tensor1.local_to_global(input_tensor_layout)
-    input_tensor2.local_to_global(input_tensor_layout)
-
+    input_tensor1 = create_dtensor(Tensor(np.ones((batch_size, 32)), mstype.float32), input_tensor_layout)
+    input_tensor2 = create_dtensor(Tensor(np.ones((20, batch_size)), mstype.float32), input_tensor_layout)
     original_layout1 = input_tensor1.layout
     original_layout2 = input_tensor2.layout
 
@@ -125,9 +126,6 @@ def test_microbatch_mixed_args_kwargs():
 
     batch_size = 16
     micro_batch_num = 2
-    arg_tensor = Tensor(np.ones((batch_size, 64)), mstype.float32)
-    kwarg_tensor1 = Tensor(np.ones((8, batch_size, 16)), mstype.float32)
-    kwarg_tensor2 = Tensor(np.ones((batch_size,)), mstype.float32)
 
     dp = 1
     mp = 1
@@ -136,9 +134,9 @@ def test_microbatch_mixed_args_kwargs():
     arg_tensor_layout = layout("dp", "mp")
     kwarg_tensor1_layout = layout("dp", "mp", "cp")
     kwarg_tensor2_layout = layout("dp")
-    arg_tensor.local_to_global(arg_tensor_layout)
-    kwarg_tensor1.local_to_global(kwarg_tensor1_layout)
-    kwarg_tensor2.local_to_global(kwarg_tensor2_layout)
+    arg_tensor = create_dtensor(Tensor(np.ones((batch_size, 64)), mstype.float32), arg_tensor_layout)
+    kwarg_tensor1 = create_dtensor(Tensor(np.ones((8, batch_size, 16)), mstype.float32), kwarg_tensor1_layout)
+    kwarg_tensor2 = create_dtensor(Tensor(np.ones((batch_size,)), mstype.float32), kwarg_tensor2_layout)
 
     microbatch = _MicroBatch(
         micro_batch_num=micro_batch_num,
@@ -172,17 +170,13 @@ def test_microbatch_default_batch_dim():
     Description:Test the function of default_batch_dim
     Expectation:Run success
     """
-
-
     batch_size = 6
     micro_batch_num = 3
-    input_tensor = Tensor(np.ones((batch_size, 10)), mstype.float32)
-
     dp = 1
     mp = 1
     layout = Layout((dp, mp), ("dp", "mp"))
     input_tensor_layout = layout("dp", "mp")
-    input_tensor.local_to_global(input_tensor_layout)
+    input_tensor = create_dtensor(Tensor(np.ones((batch_size, 10)), mstype.float32), input_tensor_layout)
 
     microbatch = _MicroBatch(micro_batch_num=micro_batch_num)
 
@@ -199,19 +193,14 @@ def test_microbatch_partial_batch_dim_spec():
     Description:Test the function of partial_batch_dim
     Expectation:Run success
     """
-
-
     batch_size = 9
     micro_batch_num = 3
-    arg_tensor1 = Tensor(np.ones((batch_size, 10)), mstype.float32)
-    arg_tensor2 = Tensor(np.ones((batch_size, 20)), mstype.float32)
-
     dp = 1
     mp = 1
     layout = Layout((dp, mp), ("dp", "mp"))
     input_tensor_layout = layout("dp", "mp")
-    arg_tensor1.local_to_global(input_tensor_layout)
-    arg_tensor2.local_to_global(input_tensor_layout)
+    arg_tensor1 = create_dtensor(Tensor(np.ones((batch_size, 10)), mstype.float32), input_tensor_layout)
+    arg_tensor2 = create_dtensor(Tensor(np.ones((batch_size, 20)), mstype.float32), input_tensor_layout)
 
     microbatch = _MicroBatch(
         micro_batch_num=micro_batch_num,
@@ -231,16 +220,12 @@ def test_microbatch_edge_cases():
     Description:Test the function of edge_cases
     Expectation:Run success
     """
-
-
     batch_size = 8
-    input_tensor = Tensor(np.ones((batch_size, 10)), mstype.float32)
-
     dp = 1
     mp = 1
     layout = Layout((dp, mp), ("dp", "mp"))
     input_tensor_layout = layout("dp", "mp")
-    input_tensor.local_to_global(input_tensor_layout)
+    input_tensor = create_dtensor(Tensor(np.ones((batch_size, 10)), mstype.float32), input_tensor_layout)
 
     microbatch = _MicroBatch(micro_batch_num=1)
     args = [input_tensor]

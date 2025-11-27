@@ -103,7 +103,6 @@ def _get_slice_tensor_by_layout(global_tensor, layout):
         return full_data[area]
 
     local_tensor = get_slice_data(global_tensor, slice_area)
-    local_tensor.local_to_global(layout)
     return local_tensor
 
 
@@ -922,18 +921,25 @@ class Shard(Shard_):
     @staticmethod
     def _set_layout_into_parameter(param, layout):
         """Set layout in to parameter"""
-        if param.layout is not None:
+        if isinstance(param, ms.parallel.DTensor):
             raise ValueError(f"Parameter {param.name} has been configured layout, cannot be set repeatedly.")
-
+        param_info = param.param_info
+        requires_grad = param.requires_grad
+        name = param.name
         slice_shape = _infer_slice_shape_by_layout(param.shape, layout)
+
         if not param.has_init:
             # has been init, get slice data
-            param.set_data(_get_slice_tensor_by_layout(param, layout).value(), slice_shape=True)
+            param_dtensor = ms.parallel.DTensor.from_local(_get_slice_tensor_by_layout(param, layout).value(), layout)
+            param = ms.Parameter(param_dtensor, name=name, requires_grad=requires_grad)
+            param.param_info = param_info
         else:
             # has not been init, need to modify init shape
             param.init_mode.shape = slice_shape
-        param.shape = slice_shape
-        param.local_to_global(layout)
+            param_dtensor = ms.parallel.DTensor.from_local(param.init_mode, layout)
+            param = ms.Parameter(param_dtensor, name=name, requires_grad=requires_grad)
+            param.param_info = param_info
+        return param
 
     def _is_attrs_has_been_set(self, fn, in_strategy, out_strategy, device, level):
         return self.shard_fn is not None and self.fn == fn and self.in_strategy == in_strategy and \
@@ -1174,7 +1180,7 @@ def parallelize_value_and_grad(fn, weights, sens=None):
             if sens is None:
                 # if sens is None, only handle the first sens, and set the remaining sens to 0
                 loss_0 = loss_value[0]
-                if loss_0.layout is not None:
+                if isinstance(loss_0, ms.parallel.DTensor):
                     repeat_num = loss_0.layout.repeat_num()
                     sens_0 = ops.fill(ops.DType()(loss_0), loss_0.local_shape, 1.0 / repeat_num)
                 else:
@@ -1183,7 +1189,7 @@ def parallelize_value_and_grad(fn, weights, sens=None):
 
                 for i in range(1, len(loss_value)):
                     loss_i = loss_value[i]
-                    if loss_i.layout is not None:
+                    if isinstance(loss_i, ms.parallel.DTensor):
                         sens_i = ops.fill(ops.DType()(loss_i), loss_i.local_shape, 0.0)
                     else:
                         sens_i = ops.fill(ops.DType()(loss_i), loss_i.shape, 0.0)
@@ -1202,7 +1208,7 @@ def parallelize_value_and_grad(fn, weights, sens=None):
                     raise TypeError(f"the len of loss is {len(loss_value)}, but the len of sens is {len(sens)}")
 
                 for _, loss_i in enumerate(loss_value):
-                    if loss_i.layout is not None:
+                    if isinstance(loss_i, ms.parallel.DTensor):
                         repeat_num = loss_i.layout.repeat_num()
                         sens_i = ops.fill(ops.DType()(loss_i), loss_i.local_shape, 1.0 / repeat_num)
                     else:
@@ -1213,7 +1219,7 @@ def parallelize_value_and_grad(fn, weights, sens=None):
             # loss is tensor
             if sens is not None:
                 raise TypeError(f"the fn only have one output, the sens must be None, but it is {sens}")
-            if loss_value.layout is not None:
+            if isinstance(loss_value, ms.parallel.DTensor):
                 repeat_num = loss_value.layout.repeat_num()
                 p_sens = ops.fill(ops.DType()(loss_value), loss_value.local_shape, 1.0 / repeat_num)
 

@@ -23,13 +23,10 @@ from mindspore.parallel.redistribute_infer import RedistributionOperatorInfer
 
 _tensor_transform = TensorTransform.get_instance()
 
-
 _REDISTRIBUTION_GROUP_CACHE = {}
-
 
 def _get_comm_group(rank_list):
     """_get_comm_group"""
-    global _REDISTRIBUTION_GROUP_CACHE
     map_key = hash(tuple(rank_list))
     if map_key not in _REDISTRIBUTION_GROUP_CACHE:
         hash_str_rank_list = '-'.join([str(rank) for rank in rank_list])
@@ -219,8 +216,8 @@ class TensorRedistribution:
             if input_x.layout.device_matrix == to_layout.device_matrix:
                 x = self.reduce_partial(input_x, to_layout)
             else:
-                logger.info(f"The dev_matrix is change between from_layout and to_layout, and thers is partial status "
-                            f"in from_layout, will be apply AllReduce op to resolve partial before redistribute.")
+                logger.info("The dev_matrix is change between from_layout and to_layout, and thers is partial status "
+                            "in from_layout, will be apply AllReduce op to resolve partial before redistribute.")
                 x = self.reduce_partial(input_x, x_layout)
 
         from_layout = x.layout
@@ -237,9 +234,7 @@ class TensorRedistribution:
             transform_operator_list = self._transform_cache[key]
             for transform_operator in transform_operator_list:
                 x = self._construct_op_operator[transform_operator[0]](x, *transform_operator[1])
-            x = x.local_to_global(to_layout)
-            input_x.local_to_global(x_layout)
-            return x
+            return ms.parallel.DTensor.from_local(x, to_layout)
 
         full_shape = x.shape
         key_and_shape = key + str(full_shape)
@@ -248,9 +243,7 @@ class TensorRedistribution:
             transform_operator_list = self._transform_cache[key_and_shape]
             for transform_operator in transform_operator_list:
                 x = self._construct_op_operator[transform_operator[0]](x, *transform_operator[1])
-            x = x.local_to_global(to_layout)
-            input_x.local_to_global(x_layout)
-            return x
+            return ms.parallel.DTensor.from_local(x, to_layout)
 
         if self._apply_eazy_redistribute(from_layout, to_layout):
             if from_layout.is_partial:
@@ -261,9 +254,7 @@ class TensorRedistribution:
                                                                           full_shape, key_and_shape)
             for transform_operator in transform_operator_list:
                 x = self._construct_op_operator[transform_operator[0]](x, *transform_operator[1])
-        x = x.local_to_global(to_layout)
-        input_x.local_to_global(x_layout)
-        return x
+        return ms.parallel.DTensor.from_local(x, to_layout)
 
     def _infer_transform_operator_list(self, from_layout, to_layout, from_full_shape, key):
         """infer transform operator list"""
@@ -360,9 +351,7 @@ class TensorRedistribution:
 
         output_layout = from_layout(*output_alias_tensor_map)
         output_layout.reset_partial()
-        x.local_to_global(output_layout)
-        input_x.local_to_global(from_layout)
-        return x
+        return ms.parallel.DTensor.from_local(x, output_layout)
 
 
 _tensor_redistribution = TensorRedistribution()

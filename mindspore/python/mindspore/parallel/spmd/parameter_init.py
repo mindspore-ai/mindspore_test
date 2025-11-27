@@ -13,6 +13,7 @@
 # limitations under the License.
 # ============================================================================
 """Parameter init"""
+import mindspore as ms
 
 def init_parameters(cell):
     r"""
@@ -28,6 +29,10 @@ def init_parameters(cell):
     if not isinstance(cell, Cell):
         raise ValueError("cell's type must be Cell but got {}.".format(type(cell)))
     for param in cell.get_parameters(expand=True):
+        if not isinstance(param, ms.parallel.DTensor):
+            if param.has_init:
+                param.init_data()
+            continue
         if not param.has_init:
             continue
         data_slice_index = None
@@ -35,11 +40,12 @@ def init_parameters(cell):
             data_slice_index = param.hsdp_init_index
         elif param.layout is not None:
             data_slice_index = _get_slice_index(param.layout.device_matrix, param.layout.tensor_map, None)
-
+        local_shape = param.local_shape if isinstance(param, ms.parallel.DTensor) else param.shape
         if data_slice_index is not None:
-            init_data = param.init_mode.init_data(slice_index=int(data_slice_index))
+            init_data = param.init_mode.to_local().init_data(slice_index=int(data_slice_index), shape=local_shape)
         else:
-            init_data = param.init_mode.init_data()
+            init_data = param.init_mode.to_local().init_data(shape=local_shape)
+        init_data = init_data.to(param.device)
         param.init_mode = None
         param.init = None
         param.set_data(init_data)

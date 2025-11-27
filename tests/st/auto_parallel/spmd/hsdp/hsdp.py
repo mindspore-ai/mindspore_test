@@ -15,6 +15,7 @@
 """test hsdp with slim lenet"""
 from typing import Optional
 import mindspore as ms
+from mindspore._c_expression import NoFallbackGuard
 import mindspore.runtime as rt
 import mindspore.dataset as ds
 from mindspore.communication import get_rank, get_group_size
@@ -97,7 +98,8 @@ def hsdp_without_accumulate_grad(shard_size, threshold=64, optimizer_level="leve
         (loss, _), grads = grad_fn(data, label)
         if comm_async:
             hsdp_wait_grad_handle()
-        optimizer(grads)
+        with NoFallbackGuard():
+            optimizer(grads)
         reduced_loss = loss_sync_allreduce(loss)
         final_loss = reduced_loss / dp_size
         if rank_id == 0:
@@ -136,7 +138,8 @@ def hsdp_with_accumulate_grad(shard_size, threshold=64, optimizer_level="level1"
                 hsdp_wait_grad_handle()
             total_loss = total_loss + loss
         reduced_loss = loss_sync_allreduce(total_loss)
-        optimizer(grads)
+        with NoFallbackGuard():
+            optimizer(grads)
         final_loss = reduced_loss / (micro_step * dp_size)
         if rank_id == 0:
             print(f"step: {i}, loss: {final_loss}")

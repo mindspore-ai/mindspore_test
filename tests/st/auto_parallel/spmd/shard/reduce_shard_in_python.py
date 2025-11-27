@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+"""test reduce shard in python"""
 
 import numpy as np
 
@@ -19,7 +20,7 @@ import mindspore as ms
 import mindspore.communication.management as D
 from mindspore import nn, Tensor
 from mindspore.parallel import Layout
-from tests.st.auto_parallel.python_shard.utils import global_to_local, local_to_global
+from tests.st.auto_parallel.utils import global_to_local, local_to_global
 
 
 def setup_module():
