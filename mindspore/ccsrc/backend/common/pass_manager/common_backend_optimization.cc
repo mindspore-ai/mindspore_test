@@ -34,7 +34,6 @@
 #include "backend/common/pass/inplace_assign_for_custom_op.h"
 #include "backend/common/pass/convert_unused_tuple_para_to_make_tuple.h"
 #include "backend/common/pass/convert_dynamic_broadcast_to.h"
-#include "backend/common/pass/broadcast_to_fusion.h"
 #include "backend/common/pass/add_attr_to_node/add_attr_to_node.h"
 #include "backend/common/pass/replace_addn_fusion.h"
 #include "backend/common/pass/transpose_to_reshape_pass.h"
@@ -59,7 +58,6 @@ PassManagerPtr GetBackendCommonOptimizationPassManagerPtr() {
   common_pm->AddPass(std::make_shared<ConvertTupleOutputToMaketuple>());
   common_pm->AddPass(std::make_shared<ConvertUnusedTupleParaToMakeTuple>());
   common_pm->AddPass(std::make_shared<AddInputStructuralForPyExecute>());
-  common_pm->AddFusionPass(std::make_shared<BroadcastToFusion>());
   common_pm->AddPass(std::make_shared<AddAttrToNode>());
   common_pm->AddFusionPass(std::make_shared<ReplaceAddNFusion>());
   common_pm->AddFusionPass(std::make_shared<TransposeToReshapePass>());

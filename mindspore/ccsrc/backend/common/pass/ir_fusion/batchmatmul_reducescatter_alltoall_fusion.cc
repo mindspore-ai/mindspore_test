@@ -359,26 +359,29 @@ AnfNodePtr BatchMatMulReduceScatterAllToAllFusion::Run(const FuncGraphPtr &func_
   // 1.2 ReduceScatter
   AnfNodePtr reducescatter;
   AnfNodePtr biasadd = nullptr;
-  if (!GetExpectedInput(alltoall_cnode_, prim::kPrimReduceScatter, {prim::kPrimStridedSlice, prim::kPrimTranspose},
+  if (!GetExpectedInput(alltoall_cnode_, prim::kPrimReduceScatter,
+                        {prim::kPrimStridedSlice, prim::kPrimTranspose, prim::kPrimTransposeView}, &reducescatter) &&
+      !GetExpectedInput(alltoall_cnode_, prim::kPrimReduceScatter,
+                        {prim::kPrimReshape, prim::kPrimStridedSlice, prim::kPrimReshape, prim::kPrimTranspose,
+                         prim::kPrimTransposeView},
                         &reducescatter) &&
       !GetExpectedInput(alltoall_cnode_, prim::kPrimReduceScatter,
-                        {prim::kPrimReshape, prim::kPrimStridedSlice, prim::kPrimReshape, prim::kPrimTranspose},
+                        {prim::kPrimStridedSlice, prim::kPrimReshape, prim::kPrimTranspose, prim::kPrimTransposeView},
                         &reducescatter) &&
       !GetExpectedInput(alltoall_cnode_, prim::kPrimReduceScatter,
-                        {prim::kPrimStridedSlice, prim::kPrimReshape, prim::kPrimTranspose}, &reducescatter) &&
-      !GetExpectedInput(alltoall_cnode_, prim::kPrimReduceScatter,
-                        {prim::kPrimStridedSlice, prim::kPrimStridedSlice, prim::kPrimReshape, prim::kPrimTranspose},
+                        {prim::kPrimStridedSlice, prim::kPrimStridedSlice, prim::kPrimReshape, prim::kPrimTranspose,
+                         prim::kPrimTransposeView},
                         &reducescatter) &&
       !GetExpectedInput(alltoall_cnode_, prim::kPrimReduceScatter, {prim::kPrimStridedSliceGrad},
                         &reducescatter)  // grad
       &&
       !GetExpectedInput(alltoall_cnode_, prim::kPrimReduceScatter,
                         {prim::kPrimReshape, prim::kPrimStridedSliceGrad, prim::kPrimReshape}, &reducescatter)  // grad
-      && !GetExpectedInput(
-           alltoall_cnode_, prim::kPrimReduceScatter,
-           {prim::kPrimReshape, prim::kPrimBiasAdd, prim::kPrimReshape, prim::kPrimTranspose, prim::kPrimStridedSlice},
-           &reducescatter, &biasadd)) {
-    MS_LOG(DEBUG) << "Cannot find expect ReduceScatter input";
+      && !GetExpectedInput(alltoall_cnode_, prim::kPrimReduceScatter,
+                           {prim::kPrimReshape, prim::kPrimBiasAdd, prim::kPrimReshape, prim::kPrimTranspose,
+                            prim::kPrimTransposeView, prim::kPrimStridedSlice},
+                           &reducescatter, &biasadd)) {
+    MS_LOG(DEBUG) << "Cannot find expected ReduceScatter input.";
     return nullptr;
   }
   reducescatter_cnode_ = reducescatter->cast<CNodePtr>();
@@ -396,8 +399,8 @@ AnfNodePtr BatchMatMulReduceScatterAllToAllFusion::Run(const FuncGraphPtr &func_
 
   // 1.3 BatchMatMul
   AnfNodePtr batchmatmul;
-  if (!GetExpectedInput(reducescatter, prim::kPrimBatchMatMul, {prim::kPrimTranspose, prim::kPrimReshape},
-                        &batchmatmul) &&
+  if (!GetExpectedInput(reducescatter, prim::kPrimBatchMatMul,
+                        {prim::kPrimTranspose, prim::kPrimTransposeView, prim::kPrimReshape}, &batchmatmul) &&
       !GetExpectedInput(reducescatter, prim::kPrimBatchMatMul,
                         {prim::kPrimConcat, prim::kPrimMakeTuple, prim::kPrimTupleGetItem, prim::kPrimSplit,
                          prim::kPrimStridedSliceGrad, prim::kPrimReshape},
@@ -407,7 +410,7 @@ AnfNodePtr BatchMatMulReduceScatterAllToAllFusion::Run(const FuncGraphPtr &func_
                             prim::kPrimReshape, prim::kPrimStridedSliceGrad, prim::kPrimReshape},
                            &batchmatmul)  // new
   ) {
-    MS_LOG(DEBUG) << "Cannot find expect BatchMatMul input";
+    MS_LOG(DEBUG) << "Cannot find expected BatchMatMul input.";
     return nullptr;
   }
   batch_matmul_cnode_ = batchmatmul->cast<CNodePtr>();
