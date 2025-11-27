@@ -74,6 +74,7 @@
 #include "load_mindir/infer_mindir.h"
 #include "include/runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel_flags.h"
 #include "tools/profiler/profiling.h"
+#include "tools/profiler/mstx/mstx_impl.h"
 #include "frontend/optimizer/fallback_rewriter.h"
 #include "frontend/jit/ps/load_mindir.h"
 #include "frontend/jit/ps/pass_config.h"
@@ -85,7 +86,6 @@
 #endif
 #include "tools/profiler/profiling_framework_data.h"
 #include "tools/profiler/profiler.h"
-#include "tools/profiler/mstx/mstx_guard.h"
 #include "include/backend/backend_manager/backend_manager.h"
 #include "include/utils/pynative/adapter.h"
 #include "backend/backend_manager/backend_jit_config.h"
@@ -1406,7 +1406,7 @@ bool OptimizeAction(const ResourcePtr &resource, const std::vector<PassItem> &pa
   size_t counter = 0;
   for (auto &pass : passes) {
     std::string pass_name = pass.first;
-    profiler::MstxRangeGuard guard(pass_name.c_str(), profiler::MSTX_DOMAIN_MODEL_PREPARATION);
+    MSTX_RANGE_GUARD(pass_name.c_str(), nullptr, profiler::MSTX_DOMAIN_MODEL_PREPARATION);
     MsProfileStatGuard stat_guard(std::move(pass_name), "compile_irpass", true);
     ProcessStatus::GetInstance().RecordStart(pass.first);
     uint64_t start_time = profiler::GetClockSyscnt();

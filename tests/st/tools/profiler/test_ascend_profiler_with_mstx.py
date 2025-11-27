@@ -96,7 +96,7 @@ def test_mstx_profiler():
                         data_simplification=False,
                         mstx_domain_exclude=["model_preparation"])
 
-        ms.save_checkpoint(net, "./add.ckpt") # to get save checkpoint tx data
+        ms.save_checkpoint(net, "./add.ckpt")  # to get save checkpoint tx data
 
         # to get dataset tx data
         images = []
@@ -216,3 +216,36 @@ def test_mstx_profiler_with_domain_exclude():
                 "mark2"
             ],
         )
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_mstx_profiler_with_domain_include_model_preparation():
+    """
+    Feature: Profiler with model preparation
+    Description: Test Profiler with model preparation.
+    Expectation: The profiler successfully collects model_preparation data and generates the expected files.
+    """
+    with tempfile.TemporaryDirectory(suffix="_profiler_with_model_preparation") as tmpdir:
+        context.set_context(mode=ms.PYNATIVE_MODE, device_target="Ascend")
+        net = TinyAddNet()
+        experimental_config = ms.profiler._ExperimentalConfig(
+            profiler_level=ProfilerLevel.LevelNone,
+            mstx=True,
+            mstx_domain_include=["model_preparation"]
+        )
+        prof = ms.profiler.profile(activities=[ProfilerActivity.NPU],
+                                   on_trace_ready=ms.profiler.tensorboard_trace_handler(dir_name=tmpdir),
+                                   experimental_config=experimental_config)
+        prof.start()
+        for _ in range(6):
+            train(net)
+            prof.step()
+        ckpt_path = os.path.join(tmpdir, "add.ckpt")
+        ms.save_checkpoint(net, ckpt_path)
+        prof.stop()
+        trace_view_json_path = os.path.join(
+            glob.glob(f"{tmpdir}/*_ascend_ms")[0],
+            "ASCEND_PROFILER_OUTPUT",
+            "trace_view.json"
+        )
+        FileChecker.check_timeline_values(trace_view_json_path, "name", {"save_checkpoint", })

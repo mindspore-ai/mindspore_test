@@ -25,7 +25,7 @@
 #include <initializer_list>
 
 #include "tools/profiler/profiling.h"
-#include "tools/profiler/mstx/mstx_guard.h"
+#include "tools/profiler/mstx/mstx_impl.h"
 #include "mindspore/ccsrc/utils/ir_dump/draw.h"
 #include "mindspore/ccsrc/utils/ir_dump/anf_ir_dump.h"
 #include "frontend/optimizer/opt.h"
@@ -234,7 +234,7 @@ void Optimizer::RunFunc(int *counter, bool use_profile) {
 
     uint64_t start_time = profiler::GetClockSyscnt();
     MS_LOG(INFO) << "Start " << profiler_pass_name;
-    profiler::MstxRangeGuard guard(profiler_pass_name.c_str(), profiler::MSTX_DOMAIN_MODEL_PREPARATION);
+    MSTX_RANGE_GUARD(profiler_pass_name.c_str(), nullptr, profiler::MSTX_DOMAIN_MODEL_PREPARATION);
     ProcessStatus::GetInstance().RecordStart(profiler_pass_name);
     auto last_version = FuncGraphManager::version();
     use_profile ? ProfileExecute(MsProfile::GetProfile()->Step(pass_names_[i]), opt_func) : opt_func();

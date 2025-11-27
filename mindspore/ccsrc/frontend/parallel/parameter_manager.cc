@@ -54,7 +54,7 @@
 #include "primitive/nn_ops.h"
 #include "include/utils/tensor_py.h"
 #include "include/utils/tensor_py_wrapper.h"
-#include "tools/profiler/mstx/mstx_guard.h"
+#include "tools/profiler/mstx/mstx_impl.h"
 #include "primitive/auto_generate/gen_ops_primitive_c.h"
 #include "primitive/auto_generate/gen_ops_primitive_r.h"
 #include "primitive/auto_generate/gen_ops_primitive_s.h"
@@ -653,7 +653,7 @@ void AutoParallelPostProcess(const FuncGraphPtr &root) {
     }
     auto layout = param->user_data<TensorLayout>();
     auto param_ptr = param->cast<ParameterPtr>();
-    profiler::MstxRangeGuard guard(param_ptr->name().c_str(), profiler::MSTX_DOMAIN_MODEL_PREPARATION);
+    MSTX_RANGE_GUARD(param_ptr->name().c_str(), nullptr, profiler::MSTX_DOMAIN_MODEL_PREPARATION);
     MS_EXCEPTION_IF_NULL(param_ptr);
     if (!param_ptr->has_default()) {
       continue;

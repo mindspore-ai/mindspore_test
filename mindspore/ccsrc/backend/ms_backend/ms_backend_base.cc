@@ -66,7 +66,7 @@
 #include "utils/info.h"
 #include "utils/trace_info.h"
 #include "tools/profiler/profiling.h"
-#include "tools/profiler/mstx/mstx_guard.h"
+#include "tools/profiler/mstx/mstx_impl.h"
 #if defined(__linux__) && defined(WITH_BACKEND)
 #include "include/cluster/topology/ps_context.h"
 #endif
@@ -2174,7 +2174,7 @@ void StrictCheckForDeviceAddress(const runtime::ActorSet *actor_set) {
 }  // namespace
 
 RunningStatus MSBackendBase::Run(BackendGraphId graph_id, const VectorRef &inputs, VectorRef *outputs) {
-  profiler::MstxRangeGuard guard("MSBackendRun", profiler::MSTX_DOMAIN_MODEL_PREPARATION);
+  MSTX_RANGE_GUARD("MSBackendRun", nullptr, profiler::MSTX_DOMAIN_MODEL_PREPARATION);
   runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kRuntime, runtime::ProfilerEvent::kBackendGraphRunInner,
                                      std::to_string(graph_id), true);
   // Main thread bind to core.

@@ -35,7 +35,7 @@
 #include "include/utils/compile_cache_context.h"
 #include "include/backend/backend_manager/backend_manager.h"
 #include "include/utils/pynative/grad_state.h"
-#include "tools/profiler/mstx/mstx_guard.h"
+#include "tools/profiler/mstx/mstx_impl.h"
 
 namespace mindspore {
 namespace pipeline {
@@ -81,7 +81,7 @@ void Optimize(const ResourcePtr &resource, const std::vector<PassItem> &passes) 
     size_t counter = 0;
     for (auto &pass : passes) {
       std::string pass_name = pass.first;
-      profiler::MstxRangeGuard guard(pass_name.c_str(), profiler::MSTX_DOMAIN_MODEL_PREPARATION);
+      MSTX_RANGE_GUARD(pass_name.c_str(), nullptr, profiler::MSTX_DOMAIN_MODEL_PREPARATION);
       MsProfileStatGuard stat_guard(std::move(pass_name), "compile_irpass", true);
       ProcessStatus::GetInstance().RecordStart(pass.first);
       auto profile_context = MsProfile::GetProfile()->Step(pass.first);
