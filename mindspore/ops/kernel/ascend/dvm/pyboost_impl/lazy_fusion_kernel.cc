@@ -36,6 +36,11 @@ void *WsAllocCallback(uint64_t size, void *user_data) {
   MS_LOG(INFO) << "Alloc workspace for dvm kernel, kernel id is " << kernel->id() << " " << kernel << " size: " << size;
   return kernel->AllocWorkspace(size);
 }
+
+size_t GetOffset(const TensorPtr &tensor) {
+  const auto &storage_info = tensor->storage_info();
+  return storage_info == nullptr ? 0 : storage_info->storage_offset * tensor->DataItemSize();
+}
 }  // namespace
 
 void LazyFusionQueue::Push(const runtime::AsyncTaskPtr &task) {
@@ -198,16 +203,21 @@ void LazyFusionKernelAscend::Output(const TensorPtr &tensor, dvm::NDObject *obj,
   if (GetDType(obj) != tensor_type) {
     obj = Cast(obj, tensor_type);
   }
-  auto &store = outputs_.emplace_back(obj, tensor, false, inplace);
-  ops_map_[store.tensor->device_address().get()] = obj;
-}
-
-bool LazyFusionKernelAscend::HasTensor(const TensorPtr &x) const {
-  auto device_addr = x->device_address();
-  if (device_addr == nullptr) {
-    return false;
+  void *dev_addr = tensor->device_address().get();
+  if (inplace && ops_map_.find(dev_addr) != ops_map_.end()) {
+    // %0 = Mul(p0, p1)
+    // %1 = InplaceAddExt(%0, p2, 1)
+    // here Inplace op's first input come from another op, should not emit Store for %0
+    for (int64_t i = SizeToLong(outputs_.size()) - 1; i >= 0; --i) {
+      auto idx = LongToSize(i);
+      if (outputs_[idx].tensor->device_address().get() == dev_addr) {
+        outputs_[idx].skip = true;
+        break;
+      }
+    }
   }
-  return ops_map_.find(device_addr.get()) != ops_map_.end();
+  (void)outputs_.emplace_back(obj, tensor, false, inplace);
+  ops_map_[dev_addr] = obj;
 }
 
 void *LazyFusionKernelAscend::AllocWorkspace(uint64_t size) {
@@ -252,10 +262,9 @@ void LazyFusionKernelAscend::Flush() {
         pyboost::PyBoostUtils::MallocForInput(device_context_, input->tensor, false);
         auto device_address = std::static_pointer_cast<device::DeviceAddress>(input->tensor->device_address());
         MS_EXCEPTION_IF_NULL(device_address);
-        auto storage_info = device_address->GetTensorStorageInfo();
-        auto offset_addr = storage_info ? storage_info->storage_offset * input->tensor->DataItemSize() : 0;
+        auto offset = GetOffset(input->tensor);
         auto dev_mem = device_address->GetMutablePtr();
-        reloc_entry_.emplace_back(input->op, static_cast<void *>(static_cast<uint8_t *>(dev_mem) + offset_addr));
+        reloc_entry_.emplace_back(input->op, static_cast<void *>(static_cast<uint8_t *>(dev_mem) + offset));
         auto stream_id = device_address->stream_id();
         if (stream_id_ != stream_id) {  // to do: public and use runtime::DeviceAddressUtils::GetCrossStreamAddressInfo
           cross_stream_addrs_.emplace_back(stream_id, dev_mem);
@@ -264,9 +273,14 @@ void LazyFusionKernelAscend::Flush() {
       // Malloc for output tensors
       bool has_store = false;
       for (auto &out : outputs_) {
-        const auto &out_tensor = out.tensor;
-        auto &device_address = out_tensor->device_address();
-        if (out_tensor.use_count() == 1 && device_address.use_count() == 1) {
+        if (out.skip) {
+          continue;
+        }
+        auto offset = GetOffset(out.tensor);
+        std::weak_ptr<DeviceAddress> dev_addr(out.tensor->device_address());
+        out.tensor.reset();
+        auto device_address = dev_addr.lock();
+        if (device_address == nullptr) {
           out.skip = true;
           continue;
         }
@@ -278,10 +292,6 @@ void LazyFusionKernelAscend::Flush() {
             MS_LOG(EXCEPTION) << "Allocate memory failed for dvm kernel output, kernel id is " << id() << " " << this;
           }
         }
-        const auto &storage_info = out.tensor->storage_info();
-        auto offset = storage_info == nullptr
-                        ? 0
-                        : storage_info->storage_offset * GetTypeByte(TypeIdToType(out.tensor->data_type()));
         auto dev_mem = device_address->GetMutablePtr();
         auto store = dvm::Kernel::Store(static_cast<void *>(static_cast<uint8_t *>(dev_mem) + offset), out.op);
         if (out.inplace) {
@@ -322,6 +332,8 @@ void LazyFusionKernelAscend::Flush() {
       ClearGraph();
       runtime::OpExecutor::DispatchLaunchTask([this]() { Launch(); });
       if (!cross_stream_addrs_.empty()) {
+        MS_LOG(INFO) << "cross_stream_addrs_ size: " << cross_stream_addrs_.size() << " kernel id is " << id() << " "
+                     << this;
         auto &ms = device::DeviceContextManager::GetInstance().GetMultiStreamController(
           device_context_->device_context_key().device_type_);
         ms->Refresh();
@@ -339,7 +351,7 @@ std::pair<bool, uint32_t> LazyFusionKernelAscend::GetInputIdx(const TensorPtr &t
   if (tensor == nullptr) {
     return std::make_pair(false, 0u);
   }
-  for (int64_t i = SizeToLong(inputs_.size()) - 1; i >= 0; --i) {
+  for (int64_t i = SizeToLong(input_used_) - 1; i >= 0; --i) {
     if (inputs_[LongToSize(i)]->tensor == tensor) {
       return std::make_pair(true, kLoadFlag | static_cast<uint32_t>(i));
     }
@@ -352,8 +364,8 @@ std::pair<bool, uint32_t> LazyFusionKernelAscend::GetOutputIdx(const TensorPtr &
     return std::make_pair(false, 0u);
   }
   auto dev_addr = tensor->device_address();
-  for (int64_t i = SizeToLong(outputs_.size()) - 1; i >= 0; --i) {
-    if (outputs_[LongToSize(i)].tensor->device_address() == dev_addr) {
+  for (size_t i = 0; i < outputs_.size(); ++i) {
+    if (outputs_[i].tensor->device_address() == dev_addr) {
       return std::make_pair(true, static_cast<uint32_t>(i));
     }
   }
@@ -366,19 +378,21 @@ void LazyFusionKernelAscend::DumpGraph() {
     auto input_tensor = inputs_[i]->tensor;
     dump_buf_ << "p" << i << ": " << LazyFusionDump::Instance().ToString(input_tensor) << "\n";
   }
-  dump_buf_ << "lazy_fusion_graph() {\n";
+  dump_buf_ << "lazy_fusion_graph";
+  for (const auto &op : dump_ops_) {
+    dump_buf_ << "_" << op.name;
+  }
+  dump_buf_ << "() {\n";
+  size_t output_idx = 0;
   for (const auto &op : dump_ops_) {
     dump_buf_ << "  ";
     // op outputs
-    for (size_t i = 0; i < op.outputs.size(); ++i) {
+    for (size_t i = 0; i < op.output_num; ++i) {
       if (i != 0) {
         dump_buf_ << ", ";
       }
-      auto idx = op.outputs[i];
-      dump_buf_ << "%" << idx;
-      if (outputs_[idx].skip) {
-        dump_buf_ << "(skip)";
-      }
+      dump_buf_ << "%" << output_idx;
+      output_idx += 1;
     }
     // op name
     dump_buf_ << " = " << op.name << "(";
@@ -398,7 +412,18 @@ void LazyFusionKernelAscend::DumpGraph() {
     }
     dump_buf_ << ")\n";
   }
-  dump_buf_ << "}\n";
+  dump_buf_ << "  return(";
+  output_idx = 0;
+  for (size_t i = 0; i < outputs_.size(); ++i) {
+    if (!outputs_[i].skip) {
+      if (output_idx != 0) {
+        dump_buf_ << ", ";
+      }
+      dump_buf_ << "%" << i;
+      output_idx += 1;
+    }
+  }
+  dump_buf_ << ")\n}\n";
   LazyFusionDump::Instance().DumpGraphInfo(&dump_buf_);
 }
 }  // namespace kernel

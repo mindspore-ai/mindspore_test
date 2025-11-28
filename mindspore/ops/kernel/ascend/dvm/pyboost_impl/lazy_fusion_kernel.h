@@ -128,12 +128,10 @@ class LazyFusionKernelAscend : public dvm::Kernel {
 
   void *AllocWorkspace(uint64_t size);
 
-  bool HasTensor(const TensorPtr &x) const;
-
   struct Op {
     std::string name;
     std::vector<std::pair<int64_t, std::string>> inputs;
-    std::vector<uint32_t> outputs;
+    size_t output_num;
   };
 
   template <typename T>
@@ -176,21 +174,12 @@ class LazyFusionKernelAscend : public dvm::Kernel {
   }
 
   template <typename... Args>
-  void DumpOp(const std::string &op_name, const std::vector<TensorPtr> &outputs, const Args &...inputs) {
+  void DumpOp(const std::string &op_name, const Args &...inputs) {
     auto &op = dump_ops_.emplace_back();
     op.name = op_name;
-    // record outputs
-    op.outputs.reserve(outputs.size());
-    for (size_t i = 0; i < outputs.size(); ++i) {
-      auto [found, idx] = GetOutputIdx(outputs[i]);
-      if (!found) {
-        MS_LOG(ERROR) << "For op [" << op.name << "], output[" << i << "] not found! kernel id is " << id();
-        continue;
-      }
-      op.outputs.push_back(idx);
-    }
-    // record inputs
+    op.output_num = outputs_.size() - dump_idx_;
     (DumpOpInput(&op, inputs), ...);
+    dump_idx_ = outputs_.size();
   }
 
   void DumpGraph();
@@ -207,6 +196,7 @@ class LazyFusionKernelAscend : public dvm::Kernel {
     outputs_.clear();
     reloc_entry_.clear();
     workspace_.clear();
+    dump_idx_ = 0;
     dump_ops_.clear();
   }
 
@@ -251,6 +241,7 @@ class LazyFusionKernelAscend : public dvm::Kernel {
   const device::DeviceContext *device_context_;
   size_t stream_id_;
   size_t id_{0};
+  size_t dump_idx_{0};
   std::vector<Op> dump_ops_;
 };
 
