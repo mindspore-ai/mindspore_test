@@ -12,12 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-
+"""
+This test is for mccl and hccl utilities.
+"""
 import numpy as np
-import mindspore.context as context
-import mindspore.nn as nn
 import mindspore as ms
-from mindspore import Tensor
+from mindspore import context, nn, Tensor
 from mindspore.common import dtype as mstype
 from mindspore.ops import operations as P
 from mindspore.communication import init, get_rank, get_group_size, create_group
@@ -53,7 +53,7 @@ def run_test(dtype_str):
 
     class AllReduceNet(nn.Cell):
         def __init__(self, dtype=np.float32):
-            super(AllReduceNet, self).__init__()
+            super().__init__()
             self.mul = P.Mul()
             if rank in hccl_rank_list1:
                 self.all_reduce = P.AllReduce(group="hccl_intra_node1")
