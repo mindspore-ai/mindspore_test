@@ -55,6 +55,7 @@
 #include "pybind_api/graph/custom_pass_py.h"
 #include "pybind_api/frombuffer.h"
 #include "pybind_api/graph/custom_backend_py.h"
+#include "pybind_api/ops/ops_api.h"
 #ifdef _WIN32
 #include "kernel/cpu/utils/cpu_utils.h"
 #endif
@@ -148,6 +149,7 @@ void RegModule(py::module *m) {
   mindspore::profiler::RegHostProfile(m);
   mindspore::profiler::RegFrameworkProfiler(m);
   mindspore::profiler::RegFrameworkPythonProfileRecorder(m);
+  RegOpsModule(m);
 #ifdef _MSC_VER
   mindspore::abstract::RegPrimitiveFrontEval();
 #endif

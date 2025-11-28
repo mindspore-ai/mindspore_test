@@ -25,6 +25,7 @@
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/utils/anfalgo.h"
 #include "include/runtime/hardware_abstract/kernel_base/graph_fusion/framework_utils.h"
+#include "kernel/ascend/custom/kernel_mod_impl/py_func_kernel_mod.h"
 
 namespace mindspore::kernel {
 KernelModPtr CustomKernelPlugin::BuildKernel(const AnfNodePtr &anf_node) {
@@ -56,6 +57,12 @@ KernelModPtr CustomKernelPlugin::BuildKernel(const AnfNodePtr &anf_node) {
 bool CustomKernelPlugin::IsRegisteredKernel(const AnfNodePtr &anf_node) {
   MS_EXCEPTION_IF_NULL(anf_node);
   std::string opname = common::AnfAlgo::GetCNodeName(anf_node);
+  auto cnode = anf_node->cast<CNodePtr>();
+  if (cnode != nullptr && common::AnfAlgo::HasNodeAttr(kAttrPrimPyFunc, cnode)) {
+    mindspore::kernel::CustomKernelFactory::Instance().Register(opname,
+                                                                []() { return std::make_shared<PyFuncKernelMod>(); });
+  }
+
   return CustomKernelFactory::Instance().IsRegistered(opname);
 }
 
