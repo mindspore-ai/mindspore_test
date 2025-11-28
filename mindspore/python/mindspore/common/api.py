@@ -1282,7 +1282,7 @@ def jit(
               interface is experimental. Default: ``""``, not offload.
 
               - weight: Automatic offload weight which is initialized with device 'Remote'.
-              - activaction" Automatic offload activation tensor.
+              - activaction: Automatic offload activation tensor.
               - all: Automatic both weight and activation.
 
     Returns:
