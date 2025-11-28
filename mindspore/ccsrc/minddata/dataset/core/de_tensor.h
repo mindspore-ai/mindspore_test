@@ -51,7 +51,6 @@ class DETensor : public mindspore::MSTensor::Impl {
   std::shared_ptr<dataset::DeviceTensor> device_tensor_impl_;
   bool is_device_;
   std::string name_;
-  enum mindspore::DataType type_;
   std::vector<int64_t> shape_;
 };
 }  // namespace mindspore::dataset

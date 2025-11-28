@@ -172,7 +172,7 @@ bool PIDToString(pid_t pid, char *buffer, size_t buffer_size) {
 
   // extract number in reverse
   while (num > 0 && i < static_cast<int>(sizeof(temp)) - 1) {
-    temp[i++] = static_cast<char>('0' + (num % DECIMAL_BASE));
+    temp[i++] = static_cast<char>(static_cast<int>('0') + (num % DECIMAL_BASE));
     num /= DECIMAL_BASE;
   }
 
@@ -495,8 +495,8 @@ void SIGCHLDHandler(int signal, siginfo_t *info, void *context) {
         if (sig_info.si_pid == 0) {
           continue;  // There were no children in a wait state.
         }
-        if (sig_info.si_code == CLD_EXITED && sig_info.si_status != EXIT_SUCCESS) {  // exited unexpected
-          msg = "Dataset worker process " + std::to_string(sig_info.si_pid) + " exited unexpected with exit code " +
+        if (sig_info.si_code == CLD_EXITED && sig_info.si_status != EXIT_SUCCESS) {  // exited unexpectedly
+          msg = "Dataset worker process " + std::to_string(sig_info.si_pid) + " exited unexpectedly with exit code " +
                 std::to_string(sig_info.si_status) + ".";
         } else if (sig_info.si_code == CLD_KILLED) {  // killed by signal
           msg = "Dataset worker process " + std::to_string(sig_info.si_pid) +
@@ -552,27 +552,26 @@ std::string CheckIfWorkerExit() {
       std::ostringstream out_stream;
       if (error < 0) {
         continue;
-      } else {
-        if (sig_info.si_pid == 0) {
-          continue;  // There were no children in a wait state.
-        }
-        if (sig_info.si_code == CLD_EXITED && sig_info.si_status != EXIT_SUCCESS) {
-          // exited unexpected
-          out_stream << "DataLoader worker (pid: " << sig_info.si_pid << ") exited unexpected with exit code "
-                     << sig_info.si_status << ".";
-        } else if (sig_info.si_code == CLD_KILLED) {
-          // killed by signal
-          out_stream << "DataLoader worker (pid: " << sig_info.si_pid
-                     << ") was killed by signal: " << strsignal(sig_info.si_status) << ".";
-        } else if (sig_info.si_code == CLD_DUMPED) {
-          // core dumped
-          out_stream << "DataLoader worker (pid: " << sig_info.si_pid
-                     << ") core dumped: " << strsignal(sig_info.si_status) << ".";
-          if (sig_info.si_status == SIGBUS) {
-            out_stream
-              << " This might be caused by insufficient shared memory. Please check if '/dev/shm' has enough available "
-                 "space via 'df -h'.";
-          }
+      }
+      if (sig_info.si_pid == 0) {
+        continue;  // There were no children in a wait state.
+      }
+      if (sig_info.si_code == CLD_EXITED && sig_info.si_status != EXIT_SUCCESS) {
+        // exited unexpectedly
+        out_stream << "DataLoader worker (pid: " << sig_info.si_pid << ") exited unexpectedly with exit code "
+                   << sig_info.si_status << ".";
+      } else if (sig_info.si_code == CLD_KILLED) {
+        // killed by signal
+        out_stream << "DataLoader worker (pid: " << sig_info.si_pid
+                   << ") was killed by signal: " << strsignal(sig_info.si_status) << ".";
+      } else if (sig_info.si_code == CLD_DUMPED) {
+        // core dumped
+        out_stream << "DataLoader worker (pid: " << sig_info.si_pid
+                   << ") core dumped: " << strsignal(sig_info.si_status) << ".";
+        if (sig_info.si_status == SIGBUS) {
+          out_stream
+            << " This might be caused by insufficient shared memory. Please check if '/dev/shm' has enough available "
+               "space via 'df -h'.";
         }
       }
       pids.clear();  // Clear the monitoring status of the process group to avoid triggering this again.

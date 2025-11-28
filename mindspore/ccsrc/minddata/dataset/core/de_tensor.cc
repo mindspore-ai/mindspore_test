@@ -27,11 +27,7 @@
 
 namespace mindspore::dataset {
 DETensor::DETensor(std::shared_ptr<dataset::Tensor> tensor_impl)
-    : tensor_impl_(tensor_impl),
-      name_("MindDataTensor"),
-      type_(static_cast<mindspore::DataType>(DETypeToMSType(tensor_impl_->type()))),
-      shape_(tensor_impl_->shape().AsVector()),
-      is_device_(false) {}
+    : tensor_impl_(tensor_impl), name_("MindDataTensor"), shape_(tensor_impl_->shape().AsVector()), is_device_(false) {}
 
 DETensor::DETensor(std::shared_ptr<dataset::DeviceTensor> device_tensor_impl, bool is_device)
     : device_tensor_impl_(device_tensor_impl), name_("MindDataDeviceTensor"), is_device_(is_device) {
