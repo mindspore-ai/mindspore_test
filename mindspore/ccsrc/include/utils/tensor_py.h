@@ -373,10 +373,15 @@ using TensorPyPtrList = std::vector<std::shared_ptr<TensorPy>>;
 /// \return Is TensorPy or not.
 COMMON_EXPORT bool IsTensorPy(const py::handle &obj);
 
-/// \brief Check whether the object is TensorPy.
+/// \brief Check whether the object is TensorPy or subclass of TensorPy.
 /// \param[in] obj [PyObject] The python object.
 /// \return Is TensorPy or not.
 COMMON_EXPORT bool IsPyObjectTensorPy(PyObject *obj);
+
+/// \brief Check whether the object is Python Tensor.
+/// \param[in] obj [PyObject] The python object.
+/// \return Is TensorPy or not.
+COMMON_EXPORT bool IsPyObjectPythonTensorStrict(PyObject *obj);
 
 /// \brief Convert the python object to TensorPy.
 /// \param[in] obj [py::handle] The python object.

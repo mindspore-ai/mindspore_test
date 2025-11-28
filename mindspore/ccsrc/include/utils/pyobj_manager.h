@@ -31,6 +31,7 @@ class COMMON_EXPORT PyObjManager {
   PyObject *GetAbcModule();
   PyObject *GetHookUtilsClass();
   PyObject *GetTensorPythonClass();
+  PyTypeObject *GetTensorPythonType();
 
  private:
   PyObjManager() = default;
@@ -41,6 +42,7 @@ class COMMON_EXPORT PyObjManager {
   PyObject *abc_module_{nullptr};
   PyObject *hook_utils_class_{nullptr};
   PyObject *tensor_python_class_{nullptr};
+  PyTypeObject *python_tensor_type_{nullptr};
 };
 }  // namespace mindspore
 #endif  // MINDSPORE_MINDSPORE_CCSRC_INCLUDE_COMMON_UTILS_PYOBJ_MANAGER_H_

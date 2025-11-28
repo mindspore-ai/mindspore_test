@@ -64,4 +64,12 @@ PyObject *PyObjManager::GetTensorPythonClass() {
   }
   return tensor_python_class_;
 }
+
+PyTypeObject *PyObjManager::GetTensorPythonType() {
+  if (python_tensor_type_ == nullptr) {
+    python_tensor_type_ = reinterpret_cast<PyTypeObject *>(GetTensorPythonClass());
+    return python_tensor_type_;
+  }
+  return python_tensor_type_;
+}
 }  // namespace mindspore
