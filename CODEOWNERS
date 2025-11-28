@@ -121,6 +121,7 @@
 /mindspore/python/mindspore/hal/ @limingqi107
 /mindspore/python/mindspore/mindrecord/ @jonyguo
 /mindspore/python/mindspore/mint/ @liangchenghui
+/mindspore/python/mindspore/mint/optim/ @limingqi107
 /mindspore/python/mindspore/mint/distributed/ @zhangyinxia
 /mindspore/python/mindspore/multiprocessing/ @zhangyinxia
 /mindspore/python/mindspore/nn/ @changzherui
