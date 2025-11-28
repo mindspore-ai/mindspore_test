@@ -31,6 +31,7 @@ ORIGIN_METHOD_WITH_SIMU(aclrtGetStreamResLimit, aclError, aclrtStream, aclrtDevR
 ORIGIN_METHOD_WITH_SIMU(aclrtSetStreamResLimit, aclError, aclrtStream, aclrtDevResLimitType, uint32_t)
 ORIGIN_METHOD_WITH_SIMU(aclrtResetStreamResLimit, aclError, aclrtStream)
 ORIGIN_METHOD_WITH_SIMU(aclrtUseStreamResInCurrentThread, aclError, aclrtStream)
+ORIGIN_METHOD_WITH_SIMU(aclrtGetResInCurrentThread, aclError, aclrtDevResLimitType, uint32_t *)
 ORIGIN_METHOD_WITH_SIMU(aclrtDestroyContext, aclError, aclrtContext)
 ORIGIN_METHOD_WITH_SIMU(aclrtDestroyEvent, aclError, aclrtEvent)
 ORIGIN_METHOD_WITH_SIMU(aclrtDestroyStream, aclError, aclrtStream)
