@@ -139,3 +139,4 @@ if(ANDROID_NDK)
 endif()
 
 target_link_libraries(mindspore_ops PRIVATE mindspore_core)
+target_link_libraries(mindspore_ops PRIVATE mindspore::pybind11_module)
