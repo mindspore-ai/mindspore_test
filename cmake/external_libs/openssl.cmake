@@ -15,7 +15,7 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Linux" OR APPLE)
             LIBS ssl crypto
             URL ${REQ_URL}
             SHA256 ${SHA256}
-            CONFIGURE_COMMAND ./config no-zlib no-shared no-afalgeng
+            CONFIGURE_COMMAND ./config --libdir=lib no-zlib no-shared no-afalgeng no-tests no-docs
             )
     include_directories(${openssl_INC})
     add_library(mindspore::ssl ALIAS openssl::ssl)
