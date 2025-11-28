@@ -657,6 +657,21 @@ FuncGraphPtr ResolveCellHook(const py::object &obj, const std::string &hook_dict
   return hook_func;
 }
 
+FuncGraphPtr ResolveSaveTensorHook(const py::object &obj, const std::string &hook_name) {
+  auto hook_obj = py::getattr(obj, hook_name.c_str(), py::none());
+  if (py::isinstance<py::none>(hook_obj)) {
+    return nullptr;
+  }
+
+  if (!py::isinstance<py::function>(hook_obj)) {
+    MS_EXCEPTION(TypeError) << "The attribute '" << hook_name << "' from '" << py::str(obj)
+                            << "' should be a function.";
+  }
+  auto hook_func = parse::ParsePythonCode(hook_obj);
+  MS_EXCEPTION_IF_NULL(hook_func);
+  return hook_func;
+}
+
 namespace {
 FuncGraphPtr MakeDummyForwardPreHook() {
   auto forward_pre_hook = std::make_shared<FuncGraph>();
@@ -783,6 +798,36 @@ void UnsetTraceTag(const py::object &obj) {
   }
 }
 
+void MarkDeferInlineForSavedTensorsHooks(const AnfNodePtr &resolved_node, const py::object &obj) {
+  MS_EXCEPTION_IF_NULL(resolved_node);
+  auto func_graph = GetValueNode<FuncGraphPtr>(resolved_node);
+  if (func_graph == nullptr) {
+    return;
+  }
+
+  auto mark_when_has_hook = [&func_graph, &obj](const char *py_attr_name) {
+    auto attr = py::getattr(obj, py_attr_name, py::none());
+    if (!attr.is_none()) {
+      func_graph->set_flag(FUNC_GRAPH_FLAG_DEFER_INLINE, true);
+      return;
+    }
+
+    py::module mod = python_adapter::GetPyModule(parse::PYTHON_MOD_PARSE_MODULE);
+    auto construct_obj = python_adapter::CallPyModFn(mod, parse::PYTHON_MOD_GET_ORIGINAL_CELL_CONSTRUCT, obj);
+    if (construct_obj.is_none()) {
+      return;
+    }
+    attr = py::getattr(construct_obj, py_attr_name, py::none());
+    if (attr.is_none()) {
+      return;
+    }
+    func_graph->set_flag(FUNC_GRAPH_FLAG_DEFER_INLINE, true);
+  };
+
+  mark_when_has_hook(FUNC_GRAPH_FLAG_PACK_HOOK);
+  mark_when_has_hook(FUNC_GRAPH_FLAG_UNPACK_HOOK);
+}
+
 AnfNodePtr Resolver::ResolveSymbol(const FuncGraphManagerPtr &manager, const NameSpacePtr &name_space,
                                    const SymbolPtr &symbol, const AnfNodePtr &node) {
   MS_EXCEPTION_IF_NULL(node);
@@ -848,6 +893,8 @@ AnfNodePtr Resolver::ResolveSymbol(const FuncGraphManagerPtr &manager, const Nam
   if (name_space->module() != RESOLVE_NAMESPACE_NAME_ENTRY || py::hasattr(obj, compile_cell_hook)) {
     ApplyCellHooks(resolved_node, obj, manager);
   }
+
+  MarkDeferInlineForSavedTensorsHooks(resolved_node, obj);
 
   return resolved_node;
 }

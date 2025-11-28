@@ -247,7 +247,7 @@ bool ResolveAll(const FuncGraphManagerPtr &manager);
 TensorHookMapPtr ResolveTensorHooks(const pipeline::ResourceBasePtr &resource, const tensor::TensorPtr &tensor);
 FuncGraphPtr ResolveCellHook(const py::object &obj, const std::string &hook_dict_name,
                              const std::string &hook_func_name);
-
+FuncGraphPtr ResolveSaveTensorHook(const py::object &obj, const std::string &hook_name);
 py::object GetSymbolObject(const NameSpacePtr &name_space, const SymbolPtr &symbol, const AnfNodePtr &node);
 ValuePtr GetParameterValue(const py::object &param_obj);
 

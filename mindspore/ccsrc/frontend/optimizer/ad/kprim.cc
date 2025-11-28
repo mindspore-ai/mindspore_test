@@ -599,8 +599,8 @@ AnfNodePtr KPrim::BuildOutput(const FuncGraphPtr &bprop_fg, const FuncGraphPtr &
   auto tuple_env = NewCNode({NewValueNode(prim::kPrimMakeTuple), NewEnviron(bprop_fg)}, bprop_fg);
   auto tuple_add_ops = CreateTupleAddShared();
 
-  std::vector<AnfNodePtr> res_args{NewValueNode(prim::kPrimMakeTuple)};
   if (!extra_lifted_args.empty()) {
+    std::vector<AnfNodePtr> res_args{NewValueNode(prim::kPrimMakeTuple)};
     std::transform(extra_lifted_args.cbegin(), extra_lifted_args.cend(), std::back_inserter(res_args),
                    [](const AnfNodePtr &arg) { return arg; });
     auto extra_tuple = NewCNode(res_args, bprop_fg);

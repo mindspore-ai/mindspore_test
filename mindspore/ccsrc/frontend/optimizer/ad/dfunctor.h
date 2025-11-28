@@ -36,6 +36,7 @@
 #include "ir/primal_debug_info.h"
 #include "frontend/jit/ps/resource.h"
 #include "frontend/optimizer/ad/adjoint.h"
+#include "frontend/optimizer/ad/saved_tensors_hooks.h"
 #include "frontend/operator/ops.h"
 #include "frontend/jit/ps/debug/trace.h"
 #include "include/utils/utils.h"
@@ -169,6 +170,10 @@ class KPrim {
   FuncGraphPtr BpropToK(const T &primal, const FuncGraphPtr &bprop_fg, const FuncGraphPtr &current_primal_fg,
                         const CNodePtr &cnode, const mindspore::HashMap<std::string, ValuePtr> &primal_attrs,
                         const std::vector<NodeDebugInfoPtr> &primal_debug_infos);
+  template <typename T>
+  FuncGraphPtr CloneBprop(const T &primal, const FuncGraphPtr &bprop_fg, const FuncGraphPtr &current_primal_fg,
+                          const CNodePtr &cnode, const mindspore::HashMap<std::string, ValuePtr> &primal_attrs,
+                          const std::vector<NodeDebugInfoPtr> &primal_debug_infos);
   AnfNodePtr BuildOutput(const FuncGraphPtr &bprop_fg, const FuncGraphPtr &current_primal_fg) const;
   void TransformArgsForPrimitive(const FuncGraphManagerPtr &mng, const FuncGraphPtr &bprop_fg,
                                  const PrimitivePtr &primitive, const FuncGraphPtr &outer,
@@ -184,13 +189,9 @@ class KPrim {
 };
 
 template <typename T>
-FuncGraphPtr KPrim::BpropToK(const T &primal, const FuncGraphPtr &bprop_fg, const FuncGraphPtr &current_primal_fg,
-                             const CNodePtr &cnode, const mindspore::HashMap<std::string, ValuePtr> &primal_attrs,
-                             const std::vector<NodeDebugInfoPtr> &primal_debug_infos) {
-  MS_EXCEPTION_IF_NULL(primal);
-  MS_EXCEPTION_IF_NULL(bprop_fg);
-  CheckBprop(bprop_fg, primal->ToString());
-
+FuncGraphPtr KPrim::CloneBprop(const T &primal, const FuncGraphPtr &bprop_fg, const FuncGraphPtr &current_primal_fg,
+                               const CNodePtr &cnode, const mindspore::HashMap<std::string, ValuePtr> &primal_attrs,
+                               const std::vector<NodeDebugInfoPtr> &primal_debug_infos) {
   FuncGraphPtr cloned_bprop_fg;
   {
     PrimalAttrGuard primal_attr_guard(primal_attrs);
@@ -225,6 +226,19 @@ FuncGraphPtr KPrim::BpropToK(const T &primal, const FuncGraphPtr &bprop_fg, cons
   }
   AnfNodePtr bout = BuildOutput(cloned_bprop_fg, current_primal_fg);
   cloned_bprop_fg->set_output(bout);
+
+  return cloned_bprop_fg;
+}
+
+template <typename T>
+FuncGraphPtr KPrim::BpropToK(const T &primal, const FuncGraphPtr &bprop_fg, const FuncGraphPtr &current_primal_fg,
+                             const CNodePtr &cnode, const mindspore::HashMap<std::string, ValuePtr> &primal_attrs,
+                             const std::vector<NodeDebugInfoPtr> &primal_debug_infos) {
+  MS_EXCEPTION_IF_NULL(primal);
+  MS_EXCEPTION_IF_NULL(bprop_fg);
+  CheckBprop(bprop_fg, primal->ToString());
+
+  auto cloned_bprop_fg = CloneBprop(primal, bprop_fg, current_primal_fg, cnode, primal_attrs, primal_debug_infos);
 
   FuncGraphPtr outer = nullptr;
   {
@@ -282,9 +296,10 @@ FuncGraphPtr KPrim::BpropToK(const T &primal, const FuncGraphPtr &bprop_fg, cons
   auto new_dout = cloned_bprop_fg->add_parameter();
   (void)mng->Replace(dout, new_dout);
   // We remove all parameters except new_dout.
-  std::vector<AnfNodePtr> newBpropParams = {new_dout};
-  cloned_bprop_fg->set_parameters(newBpropParams);
-  outer->set_output(outer->NewCNode({NewValueNode(prim::kPrimMakeTuple), out_value, NewValueNode(cloned_bprop_fg)}));
+  cloned_bprop_fg->set_parameters({new_dout});
+  CNodePtr fprop_cnode = outer->NewCNode(prim::kPrimMakeTuple, {out_value, NewValueNode(cloned_bprop_fg)});
+  outer->set_output(fprop_cnode);
+  ApplySavedTensorsHooksOnK(outer, cloned_bprop_fg, current_primal_fg, cnode, out_value, mng, transf_args);
   return BasicClone(outer);
 }
 }  // namespace ad

@@ -16,7 +16,7 @@
 from __future__ import absolute_import
 from mindspore.common import dtype
 from mindspore.common.api import ms_memory_recycle, jit, jit_class, _no_grad, saved_tensors_hooks, \
-    flops_collection, set_recursion_limit
+    register_saved_tensors_hooks, flops_collection, set_recursion_limit
 from mindspore.common.dtype import Type, int8, byte, int16, short, int, int32, intc, long, int64, intp, \
     uint8, ubyte, uint16, ushort, uint32, uintc, uint64, uintp, float16, half, \
     float, float32, single, float64, bfloat16, double, bool, bool_, float_, list_, tuple_, int_, \
@@ -100,7 +100,7 @@ __all__ = [
 
 __all__.extend([
     "tensor", "Tensor", "RowTensor", "SparseTensor", "COOTensor", "CSRTensor",  # tensor
-    'jit', 'jit_class', '_no_grad', 'saved_tensors_hooks',  # api
+    'jit', 'jit_class', '_no_grad', 'saved_tensors_hooks', 'register_saved_tensors_hooks',  # api
     "Parameter", "ParameterTuple",  # parameter
     "dtype",
     "set_seed", "get_seed", "manual_seed", # random seed

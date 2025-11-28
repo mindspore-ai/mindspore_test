@@ -924,6 +924,28 @@ def hook_wrapper(hook_fn):
     return inner
 
 
+def get_original_cell_construct(obj):
+    """Returns the original (unwrapped) 'construct' function of a Cell subclass.
+
+    If `obj` is an instance of a subclass of Cell and its class defines a 'construct' method,
+    return the unwrapped (via inspect.unwrap) unbound 'construct' function.
+    Otherwise, return None.
+
+    Args:
+        obj: An instance of a subclass of ``mindspore.nn.Cell``.
+
+    Returns:
+        The original unbound 'construct' function if `obj` is a Cell instance and its class
+        has a callable 'construct' method; otherwise None.
+    """
+    if not isinstance(obj, nn.Cell):
+        return None
+    construct_func = getattr(type(obj), 'construct', None)
+    if not callable(construct_func):
+        return None
+    return inspect.unwrap(construct_func)
+
+
 class Parser:
     """
     Parser python code to ast tree.

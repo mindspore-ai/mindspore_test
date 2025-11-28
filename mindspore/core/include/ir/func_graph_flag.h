@@ -59,6 +59,10 @@ const char kFuncGraphFlagReAutoMonad[] = "re_auto_monad";
 const char kFuncGraphFlagRecursive[] = "recursive";
 const char kFuncGraphFlagMetaFuncGraphBprop[] = "meta_fg_bprop";
 const char kFuncGraphFlagAddedForwardU[] = "added_forward_u";
+
+// saved tensors hooks flag
+const char FUNC_GRAPH_FLAG_PACK_HOOK[] = "_saved_tensors_pack_hook";
+const char FUNC_GRAPH_FLAG_UNPACK_HOOK[] = "_saved_tensors_unpack_hook";
 }  // namespace mindspore
 
 #endif  // MINDSPORE_CORE_IR_FUNC_GRAPH_FLAG_H_

@@ -114,6 +114,7 @@ mindspore
     mindspore.jacfwd
     mindspore.jacrev
     mindspore.jvp
+    mindspore.register_saved_tensors_hooks
     mindspore.saved_tensors_hooks
     mindspore.value_and_grad
     mindspore.vjp
