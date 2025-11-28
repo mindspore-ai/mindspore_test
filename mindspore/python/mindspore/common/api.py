@@ -2760,7 +2760,7 @@ def register_saved_tensors_hooks(pack_hook, unpack_hook):
     It is functionally equivalent to using `with mindspore.saved_tensors_hooks(pack_hook, unpack_hook)` in
     PyNative mode. 
 
-    For more details, please refer to :func:`mindspore.saved_tensors_hooks`.
+    For more details, please refer to :class:`mindspore.saved_tensors_hooks`.
 
     .. note::
         - This decorator only supports graph mode.
