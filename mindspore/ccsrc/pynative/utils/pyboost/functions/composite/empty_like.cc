@@ -25,7 +25,7 @@
 #include "include/runtime/utils/dispatch/dispatch_env.h"
 #include "pynative/utils/pyboost/functions/dispatch.h"
 #include "mindspore/core/include/utils/stream_guard.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_e.h"
+#include "mindspore/ops/include/primitive/auto_generate/gen_ops_primitive_e.h"
 
 namespace mindspore {
 namespace kernel {
