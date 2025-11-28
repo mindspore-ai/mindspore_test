@@ -14,6 +14,7 @@
 # ============================================================================
 """mint module."""
 from __future__ import absolute_import
+import mindspore
 from mindspore import ops
 from mindspore.ops.primitive import constexpr
 from mindspore.common.tensor import Tensor
@@ -38,6 +39,8 @@ from mindspore.ops.function.math_func import isclose
 from mindspore.ops.auto_generate import abs
 from mindspore.ops.auto_generate import clone
 from mindspore.ops.function.array_func import full_like_ext as full_like
+from mindspore._check_jit_forbidden_api import jit_forbidden_register
+from mindspore.graph._check_supported import jit_view_unsupported
 # 1
 from mindspore.ops.function.math_func import divide
 from mindspore.ops.auto_generate import topk_ext as topk
@@ -81,7 +84,7 @@ from mindspore.ops.functional import flip
 # 14
 from mindspore.ops.auto_generate import mv
 # 15
-from mindspore.ops.auto_generate import flatten_ext as flatten
+from mindspore.ops.auto_generate import flatten_ext
 # 16
 from mindspore.ops.functional import matmul
 from mindspore.ops.auto_generate import bmm_ext as bmm
@@ -373,8 +376,6 @@ from mindspore.ops.function.math_func import tan
 from mindspore.ops.auto_generate import trace_ext as trace
 from mindspore.ops.auto_generate import gcd
 
-from mindspore.ops.function.array_func import reshape
-
 from mindspore.ops.auto_generate import outer_ext as outer
 
 # 304
@@ -481,7 +482,6 @@ from mindspore.ops.function.math_func import isnan_ext as isnan
 from mindspore.ops.functional_overload import index_add
 
 # 1007
-from mindspore.ops.auto_generate import t_ext as t
 from mindspore.ops.auto_generate.pyboost_inner_prim import squeeze_impl
 from mindspore.ops.auto_generate.gen_ops_prim import equal_ext_op
 
@@ -1272,6 +1272,7 @@ def sqrt(input):
     return ops.auto_generate.sqrt(input)
 
 
+@jit_view_unsupported
 def squeeze(input, dim):
     r"""
     Return the Tensor after deleting the dimension of size 1 in the specified `dim`.
@@ -1569,6 +1570,20 @@ def cdist(x1, x2, p=2.0, compute_mode='use_mm_for_euclid_dist_if_necessary'):
     """
     return cdist_(x1, x2, p)
 
+@jit_view_unsupported
+def flatten(input, start_dim=0, end_dim=-1):
+    """flatten mint api."""
+    return flatten_ext(input, start_dim, end_dim)
+
+@jit_view_unsupported
+def reshape(input, shape):
+    """reshape mint api."""
+    return mindspore.ops.function.array_func.reshape(input, shape)
+
+@jit_view_unsupported
+def t(input):
+    """t mint api."""
+    return mindspore.ops.auto_generate.t_ext(input)
 
 __all__ = [
     'conv2d',

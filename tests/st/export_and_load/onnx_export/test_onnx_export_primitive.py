@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-
+"""Test onnx export."""
 import os
 import numpy as np
 import pytest
@@ -20,7 +20,7 @@ import onnxruntime as ort
 from tests.mark_utils import arg_mark
 
 import mindspore as ms
-import mindspore.nn as nn
+from mindspore import nn
 from mindspore import context
 from mindspore import Tensor, mint, ops
 from mindspore.ops import operations as P
@@ -29,6 +29,7 @@ from mindspore.ops.auto_generate import SliceExt
 from mindspore.ops.function.nn_func import batch_norm_ext
 from mindspore.mint.nn.functional import conv2d
 from mindspore.ops import auto_generate as gen
+from mindspore.ops.auto_generate.gen_ops_prim import split_tensor_op
 
 
 class InputNetTopK(nn.Cell):
@@ -337,11 +338,11 @@ def test_convert_model_with_transpose():
 
 class InputNetSplitTensor(nn.Cell):
     def construct(self, x):
-        output = mint.split(x, split_size_or_sections=3)
+        output = split_tensor_op(x, 3)
         return output
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_convert_model_with_split_tensor():
     """
     Feature: Convert mindir to onnx and infer by onnx
@@ -403,7 +404,7 @@ def test_convert_model_with_add_ext():
 
 class InputNetSliceExt(nn.Cell):
     def __init__(self):
-        super(InputNetSliceExt, self).__init__()
+        super().__init__()
         self.slice_ext = SliceExt()
 
     def construct(self, x):
@@ -474,7 +475,7 @@ def test_convert_model_with_batch_norm_ext():
 
 class InputNetBatchNorm(nn.Cell):
     def __init__(self):
-        super(InputNetBatchNorm, self).__init__()
+        super().__init__()
         self.batch_norm = ops.BatchNorm()
 
     def construct(self, x):
@@ -537,7 +538,7 @@ def test_export_batchmatmulext():
         assert np.array_equal(output, y.asnumpy())
         os.remove("./batchmatmulext_onnx.onnx")
     else:
-        raise RuntimeError(f"Export operator BatchMatMulExt to ONNX failed!")
+        raise RuntimeError("Export operator BatchMatMulExt to ONNX failed!")
 
 
 class IdentityNet(nn.Cell):
@@ -563,7 +564,7 @@ def test_export_identity():
         assert np.array_equal(output, y.asnumpy())
         os.remove("./identity_onnx.onnx")
     else:
-        raise RuntimeError(f"Export operator Identity to ONNX failed!")
+        raise RuntimeError("Export operator Identity to ONNX failed!")
 
 
 class ConvolutionNet(nn.Cell):
@@ -599,7 +600,7 @@ def test_export_convolution(bias, stride, padding, dilation, transposed, output_
         assert np.array_equal(output, y.asnumpy())
         os.remove("./convolution_onnx.onnx")
     else:
-        raise RuntimeError(f"Export operator Convolution to ONNX failed!")
+        raise RuntimeError("Export operator Convolution to ONNX failed!")
 
 
 class Conv2DExtNet(nn.Cell):
@@ -634,7 +635,7 @@ def test_export_conv2dext(bias, stride, padding, dilation, groups):
         assert np.array_equal(output, y.asnumpy())
         os.remove("./conv2dext_onnx.onnx")
     else:
-        raise RuntimeError(f"Export operator Conv2DExt to ONNX failed!")
+        raise RuntimeError("Export operator Conv2DExt to ONNX failed!")
 
 
 class ConvTranspose2DNet(nn.Cell):
@@ -669,7 +670,7 @@ def test_export_convtranspose2d(bias, stride, padding, output_padding, groups, d
         assert np.array_equal(output, y.asnumpy())
         os.remove("./convtranspose2d_onnx.onnx")
     else:
-        raise RuntimeError(f"Export operator ConvTranspose2D to ONNX failed!")
+        raise RuntimeError("Export operator ConvTranspose2D to ONNX failed!")
 
 
 class UpsampleNearest2DNet(nn.Cell):
@@ -697,7 +698,7 @@ def test_export_upsamplenearest2d(output_size, scales):
         assert np.array_equal(output, y.asnumpy())
         os.remove("./upsamplenearest2d_onnx.onnx")
     else:
-        raise RuntimeError(f"Export operator UpsampleNearest2D to ONNX failed!")
+        raise RuntimeError("Export operator UpsampleNearest2D to ONNX failed!")
 
 
 class MeshgridNet(nn.Cell):
@@ -740,7 +741,7 @@ def test_export_meshgrid(indexing):
             assert np.array_equal(i.asnumpy(), output), f" ms:{i.shape}, onnx:{o.shape}"
         os.remove(onnx_file)
     else:
-        raise RuntimeError(f"Export operator Meshgrid to ONNX failed!")
+        raise RuntimeError("Export operator Meshgrid to ONNX failed!")
 
 
 class StackExtNet(nn.Cell):
@@ -778,7 +779,7 @@ def test_export_stackext():
             assert np.array_equal(i.asnumpy(), output), f" ms:{i.shape}, onnx:{output.shape}"
         os.remove(onnx_file)
     else:
-        raise RuntimeError(f"Export operator Stack to ONNX failed!")
+        raise RuntimeError("Export operator Stack to ONNX failed!")
 
 
 class DenseNet(nn.Cell):
@@ -815,7 +816,7 @@ def test_export_dense():
         assert np.allclose(ms_output.asnumpy(), output, 1e-3, 1e-3), f" ms:{ms_output}, onnx:{output}"
         os.remove(onnx_file)
     else:
-        raise RuntimeError(f"Export operator Dense to ONNX failed!")
+        raise RuntimeError("Export operator Dense to ONNX failed!")
 
 
 class ArgMaxWithValueNet(nn.Cell):
@@ -835,7 +836,7 @@ class ArgMaxWithValueNet(nn.Cell):
             return arg
         if flag == 3:
             return value
-        raise RuntimeError(f"When call ArgMaxWithValueNet construct, the flag should be less than 3!")
+        raise RuntimeError("When call ArgMaxWithValueNet construct, the flag should be less than 3!")
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
@@ -867,7 +868,7 @@ def test_export_argmaxwithvalue():
                 assert np.allclose(ms_output.asnumpy(), output, 1e-3, 1e-3), f" ms:{ms_output}, onnx:{output}"
             os.remove(onnx_file)
         else:
-            raise RuntimeError(f"Export operator ArgMaxWithValue to ONNX failed!")
+            raise RuntimeError("Export operator ArgMaxWithValue to ONNX failed!")
 
 
 class StridedSliceNet(nn.Cell):
@@ -895,7 +896,7 @@ def test_export_stridedslice():
         assert np.array_equal(ms_output.asnumpy(), output), f" ms:{ms_output}, onnx:{output}"
         os.remove(onnx_file)
     else:
-        raise RuntimeError(f"Export operator StridedSlice to ONNX failed!")
+        raise RuntimeError("Export operator StridedSlice to ONNX failed!")
 
 
 class SumExtNet(nn.Cell):
@@ -925,7 +926,7 @@ def test_export_sumext():
         assert np.array_equal(ms_output.asnumpy(), output), f" ms:{ms_output}, onnx:{output}"
         os.remove(onnx_file)
     else:
-        raise RuntimeError(f"Export operator SumExt to ONNX failed!")
+        raise RuntimeError("Export operator SumExt to ONNX failed!")
 
 
 class SquareNet(nn.Cell):
@@ -957,7 +958,7 @@ def test_export_square():
         assert np.array_equal(ms_output.asnumpy(), output), f" ms:{ms_output}, onnx:{output}"
         os.remove(onnx_file)
     else:
-        raise RuntimeError(f"Export operator SiLU to ONNX failed!")
+        raise RuntimeError("Export operator SiLU to ONNX failed!")
 
 
 class SiLUNet(nn.Cell):
@@ -989,7 +990,7 @@ def test_export_silu():
         assert np.array_equal(ms_output.asnumpy(), output), f" ms:{ms_output}, onnx:{output}"
         os.remove(onnx_file)
     else:
-        raise RuntimeError(f"Export operator SiLU to ONNX failed!")
+        raise RuntimeError("Export operator SiLU to ONNX failed!")
 
 
 class ModNet(nn.Cell):
@@ -1023,7 +1024,7 @@ def test_export_mod():
         assert np.array_equal(ms_output.asnumpy(), output), f" ms:{ms_output}, onnx:{output}"
         os.remove(onnx_file)
     else:
-        raise RuntimeError(f"Export operator SiLU to ONNX failed!")
+        raise RuntimeError("Export operator SiLU to ONNX failed!")
 
 
 class AvgPoolNet(nn.Cell):
@@ -1055,7 +1056,7 @@ def test_export_avgpool():
         assert np.array_equal(ms_output.asnumpy(), output), f" ms:{ms_output}, onnx:{output}"
         os.remove(onnx_file)
     else:
-        raise RuntimeError(f"Export operator SiLU to ONNX failed!")
+        raise RuntimeError("Export operator SiLU to ONNX failed!")
 
 
 class SoftmaxNet(nn.Cell):
@@ -1087,7 +1088,7 @@ def test_export_softmax():
         assert np.allclose(ms_output.asnumpy(), output, rtol=1e-4, atol=1e-4), f" ms:{ms_output}, onnx:{output}"
         os.remove(onnx_file)
     else:
-        raise RuntimeError(f"Export operator Softmax to ONNX failed!")
+        raise RuntimeError("Export operator Softmax to ONNX failed!")
 
 
 class SqueezeNet(nn.Cell):
@@ -1119,7 +1120,7 @@ def test_export_squeeze():
         assert np.array_equal(ms_output.asnumpy(), output), f" ms:{ms_output}, onnx:{output}"
         os.remove(onnx_file)
     else:
-        raise RuntimeError(f"Export operator Squeeze to ONNX failed!")
+        raise RuntimeError("Export operator Squeeze to ONNX failed!")
 
 
 class MulsNet(nn.Cell):
@@ -1152,7 +1153,7 @@ def test_export_muls():
         assert np.array_equal(ms_output.asnumpy(), output), f" ms:{ms_output}, onnx:{output}"
         os.remove(onnx_file)
     else:
-        raise RuntimeError(f"Export operator Muls to ONNX failed!")
+        raise RuntimeError("Export operator Muls to ONNX failed!")
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
@@ -1175,12 +1176,12 @@ def test_export_muls_with_saved_dirs():
         assert np.array_equal(ms_output.asnumpy(), output), f" ms:{ms_output}, onnx:{output}"
         os.remove(onnx_file)
     else:
-        raise RuntimeError(f"Export operator Muls to ONNX failed!")
+        raise RuntimeError("Export operator Muls to ONNX failed!")
 
 
 class ConvReluModel(nn.Cell):
     def __init__(self):
-        super(ConvReluModel, self).__init__()
+        super().__init__()
         self.conv_layers = nn.SequentialCell(
             nn.Conv2d(3, 5, kernel_size=1, stride=1),
             nn.ReLU(),
@@ -1210,11 +1211,11 @@ def test_export_param_keep_initializers():
     export(net, x, file_name=onnx_file_export_params_false, export_params=False)
     export(net, x, file_name=onnx_file_keep_true, keep_initializers_as_inputs=True)
     if not os.path.isfile(onnx_file_origin_weight):
-        raise RuntimeError(f"Export operator ConvReluModel to ONNX failed!")
+        raise RuntimeError("Export operator ConvReluModel to ONNX failed!")
     if not os.path.isfile(onnx_file_export_params_false):
-        raise RuntimeError(f"Export operator ConvReluModel to ONNX with export_params=False failed!")
+        raise RuntimeError("Export operator ConvReluModel to ONNX with export_params=False failed!")
     if not os.path.isfile(onnx_file_keep_true):
-        raise RuntimeError(f"Export operator ConvReluModel to ONNX with keep_initializers_as_inputs=True failed!")
+        raise RuntimeError("Export operator ConvReluModel to ONNX with keep_initializers_as_inputs=True failed!")
     session1 = ort.InferenceSession(onnx_file_origin_weight)
     session2 = ort.InferenceSession(onnx_file_export_params_false)
     session3 = ort.InferenceSession(onnx_file_keep_true)
@@ -1225,7 +1226,7 @@ def test_export_param_keep_initializers():
     output2 = session2.run(None, inputs)[0]
     output3 = session3.run(None, inputs)[0]
     assert np.array_equal(output2,
-                          output3), f"Result of export_params=False and keep_initializers_as_inputs=True are not equal"
+                          output3), "Result of export_params=False and keep_initializers_as_inputs=True are not equal"
 
     os.remove(onnx_file_origin_weight)
     os.remove(onnx_file_export_params_false)
@@ -1234,7 +1235,7 @@ def test_export_param_keep_initializers():
 
 class DynamicNetwork(nn.Cell):
     def __init__(self):
-        super(DynamicNetwork, self).__init__()
+        super().__init__()
         self.conv1 = nn.Conv2d(3, 2, kernel_size=3, pad_mode='same')
         self.bn1 = nn.BatchNorm2d(2)
         self.relu1 = nn.ReLU()

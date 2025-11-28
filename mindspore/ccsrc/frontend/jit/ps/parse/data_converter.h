@@ -53,6 +53,7 @@ bool IsCellInstance(const py::object &obj);
 bool IsNumpyArrayInstance(const py::object &obj);
 bool IsMsClassInstance(const py::object &obj);
 bool IsJITForbiddenAPI(const py::object &obj);
+bool IsJitViewUnSupportedAPI(const py::object &obj);
 bool IsClassType(const py::object &obj);
 py::object CreatePythonObject(const py::object &type, const py::tuple &args_kwargs);
 py::object CallPythonScript(const py::object &script, const py::tuple &args_kwargs);
