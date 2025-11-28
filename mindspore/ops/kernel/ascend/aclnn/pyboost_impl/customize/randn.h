@@ -28,7 +28,8 @@ namespace kernel {
 namespace pyboost {
 tensor::TensorPtr RandnAscendCustomize(const std::shared_ptr<OpRunner> &op, const ValueTuplePtr &shape,
                                        const TensorPtr &seed, const TensorPtr &offset,
-                                       const std::optional<Int64ImmPtr> &dtype);
+                                       const std::optional<Int64ImmPtr> &dtype,
+                                       const std::optional<Int64ImmPtr> &device);
 }  // namespace pyboost
 }  // namespace kernel
 }  // namespace mindspore

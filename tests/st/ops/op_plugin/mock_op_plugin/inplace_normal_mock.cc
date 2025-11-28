@@ -15,32 +15,31 @@
  */
 #include <cstdint>
 #include <cstdlib>
-#include <fstream>
 #include <iostream>
-#include <algorithm>
 
 #include "custom_kernel_input_info.h"
 
 extern "C" {
 
-// Mock implementation of the randn operator.
+// Mock implementation of the inplace_normal operator, it is called by mint.randn().
 // Test the case when the input is tuple scalar
-int Randn(int nparam, void **params, int *ndims, int64_t **shapes, const char **dtypes, void *stream, void *extra) {
-  std::cout << "op_plugin mock: Randn called" << std::endl;
+int InplaceNormal(int nparam, void **params, int *ndims, int64_t **shapes, const char **dtypes, void *stream,
+                  void *extra) {
+  std::cout << "op_plugin mock: InplaceNormal called" << std::endl;
   constexpr int expected_nparam = 6;
   if (nparam != expected_nparam || params == nullptr || ndims == nullptr || shapes == nullptr) {
-    std::cout << "Invalid parameters for randn operator" << std::endl;
+    std::cout << "Invalid parameters for InplaceNormal operator" << std::endl;
     return -1;
   }
 
-  float *out = static_cast<float *>(params[nparam - 1]);
-  int out_ndim = ndims[nparam - 1];
+  float *x = static_cast<float *>(params[0]);
+  int x_ndim = ndims[0];
   int64_t numel = 1;
-  for (int i = 0; i < out_ndim; ++i) {
-    numel *= shapes[nparam - 1][i];
+  for (int i = 0; i < x_ndim; ++i) {
+    numel *= shapes[0][i];
   }
   for (size_t i = 0; i < numel; ++i) {
-    out[i] = i;  // implemented as iota for simple validation
+    x[i] = i;  // implemented as iota for simple validation
   }
 
   return 0;

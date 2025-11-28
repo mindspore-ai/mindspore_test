@@ -745,8 +745,9 @@ class COMMON_EXPORT Emitter {
     return Emit("RemainderTensorScalar", {input, other});
   }
   virtual NodePtr FmodScalar(const NodePtr &input, const NodePtr &other) { return Emit("FmodScalar", {input, other}); }
-  virtual NodePtr Randn(const NodePtr &shape, const NodePtr &seed, const NodePtr &offset, const NodePtr &dtype) {
-    return Emit("Randn", {shape, seed, offset, dtype});
+  virtual NodePtr Randn(const NodePtr &shape, const NodePtr &seed, const NodePtr &offset, const NodePtr &dtype,
+                        const NodePtr &device) {
+    return Emit("Randn", {shape, seed, offset, dtype, device});
   }
   virtual NodePtr BitwiseXorScalar(const NodePtr &input, const NodePtr &other) {
     return Emit("BitwiseXorScalar", {input, other});
@@ -1274,8 +1275,9 @@ class COMMON_EXPORT Emitter {
                             const NodePtr &padding, const NodePtr &dilation, const NodePtr &groups) {
     return Emit("Conv2DExt", {input, weight, bias, stride, padding, dilation, groups});
   }
-  virtual NodePtr RandnLike(const NodePtr &input, const NodePtr &seed, const NodePtr &offset, const NodePtr &dtype) {
-    return Emit("RandnLike", {input, seed, offset, dtype});
+  virtual NodePtr RandnLike(const NodePtr &input, const NodePtr &seed, const NodePtr &offset, const NodePtr &dtype,
+                            const NodePtr &device) {
+    return Emit("RandnLike", {input, seed, offset, dtype, device});
   }
   virtual NodePtr Conv3DPadding(const NodePtr &input, const NodePtr &weight, const NodePtr &bias, const NodePtr &stride,
                                 const NodePtr &padding, const NodePtr &dilation, const NodePtr &groups) {

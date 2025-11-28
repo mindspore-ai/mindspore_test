@@ -1283,8 +1283,9 @@ NodePtr FuncBuilder::FmodScalar(const NodePtr &input, const NodePtr &other) {
   return NativeFunc::FmodScalar(input, other);
 }
 
-NodePtr FuncBuilder::Randn(const NodePtr &shape, const NodePtr &seed, const NodePtr &offset, const NodePtr &dtype) {
-  return NativeFunc::Randn(shape, seed, offset, dtype);
+NodePtr FuncBuilder::Randn(const NodePtr &shape, const NodePtr &seed, const NodePtr &offset, const NodePtr &dtype,
+                           const NodePtr &device) {
+  return NativeFunc::Randn(shape, seed, offset, dtype, device);
 }
 
 NodePtr FuncBuilder::BitwiseXorScalar(const NodePtr &input, const NodePtr &other) {
@@ -1953,8 +1954,9 @@ NodePtr FuncBuilder::Conv2DExt(const NodePtr &input, const NodePtr &weight, cons
   return NativeFunc::Conv2DExt(input, weight, bias, stride, padding, dilation, groups);
 }
 
-NodePtr FuncBuilder::RandnLike(const NodePtr &input, const NodePtr &seed, const NodePtr &offset, const NodePtr &dtype) {
-  return NativeFunc::RandnLike(input, seed, offset, dtype);
+NodePtr FuncBuilder::RandnLike(const NodePtr &input, const NodePtr &seed, const NodePtr &offset, const NodePtr &dtype,
+                               const NodePtr &device) {
+  return NativeFunc::RandnLike(input, seed, offset, dtype, device);
 }
 
 NodePtr FuncBuilder::Conv3DPadding(const NodePtr &input, const NodePtr &weight, const NodePtr &bias,
