@@ -427,22 +427,22 @@ class Conv2d(_Conv):
     Outputs:
         - **Output** (Tensor) - :math:`(N, C_{out}, H_{out}, W_{out})` or :math:`(C_{out}, H_{out}, W_{out})`.
   
-          -  padding is ``'same'``:
+          - padding is ``'same'``:
     
             .. math::
                 \begin{array}{ll} \\
-                H_{out} = \left \lceil{\frac{H_{in}}{\text{stride[0]}}} \right \rceil \\
-                W_{out} = \left \lceil{\frac{W_{in}}{\text{stride[1]}}} \right \rceil \\
+                    H_{out} = \left \lceil{\frac{H_{in}}{\text{stride[0]}}} \right \rceil \\
+                    W_{out} = \left \lceil{\frac{W_{in}}{\text{stride[1]}}} \right \rceil \\
                 \end{array}
     
           - padding is ``'valid'``:
     
             .. math::
                 \begin{array}{ll} \\
-                H_{out} = \left \lfloor{\frac{H_{in} - \text{dilation[0]} \times (\text{kernel_size[0]} - 1) - 1}
-                {\text{stride[0]}}} \right \rfloor + 1 \\
-                W_{out} = \left \lfloor{\frac{W_{in} - \text{dilation[1]} \times (\text{kernel_size[1]} - 1) - 1}
-                {\text{stride[1]}}} \right \rfloor + 1 \\
+                    H_{out} = \left \lfloor{\frac{H_{in} - \text{dilation[0]} \times (\text{kernel_size[0]} - 1) - 1}
+                    {\text{stride[0]}}} \right \rfloor + 1 \\
+                    W_{out} = \left \lfloor{\frac{W_{in} - \text{dilation[1]} \times (\text{kernel_size[1]} - 1) - 1}
+                    {\text{stride[1]}}} \right \rfloor + 1 \\
                 \end{array}
     
           - padding is int or tuple/list:
