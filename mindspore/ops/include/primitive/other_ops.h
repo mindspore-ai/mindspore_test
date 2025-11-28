@@ -110,6 +110,9 @@ GVAR_DEF(PrimitivePtr, kPrimFFN, std::make_shared<Primitive>("FFN"));
 
 // ToEnum OP
 GVAR_DEF(PrimitivePtr, kPrimStringToEnum, std::make_shared<Primitive>("StringToEnum"));
+
+// Hierarchical Memory kernel
+GVAR_DEF(PrimitivePtr, kPrimCopyToHostExt, std::make_shared<Primitive>("CopyToHostExt"));
 }  // namespace prim
 }  // namespace mindspore
 

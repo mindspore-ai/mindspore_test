@@ -75,6 +75,8 @@ class AclStreamAssign {
 
   void AssignStream(const NotNull<KernelGraphPtr> &kernel_graph, DeviceResManager *device_res_manager);
   void CreateEvent(const NotNull<KernelGraphPtr> &kernel_graph);
+  std::pair<CNodePtr, CNodePtr> CreateSendReceive(const NotNull<KernelGraphPtr> &kernel_graph,
+                                                  uint32_t record_stream_id, uint32_t wait_stream_id);
 
  private:
   AclStreamAssign() = default;

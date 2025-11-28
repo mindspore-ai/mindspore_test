@@ -306,6 +306,38 @@ Value Range:
 DEBUG_LEVEL = ''
 
 """
+Name: HIERARCHICAL_MEMORY_SELECT_DISTANCE
+Function: Indicate minimum usage distance for node to offload.
+Value Range: Int value.
+    Default: 100
+"""
+HIERARCHICAL_MEMORY_SELECT_DISTANCE = '100'
+
+"""
+Name: HIERARCHICAL_MEMORY_SELECT_NUM
+Function: Indicate number of data to offload.
+Value Range: Int value.
+    Default: 100
+"""
+HIERARCHICAL_MEMORY_SELECT_NUM = '100'
+
+"""
+Name: HIERARCHICAL_MEMORY_PREFETCH_DISTANCE
+Function: Indicate data prefetch distance.
+Value Range: Int value.
+    Default: 50
+"""
+HIERARCHICAL_MEMORY_PREFETCH_DISTANCE = '50'
+
+"""
+Name: HIERARCHICAL_MEMORY_RELEASE_DISTANCE
+Function: Indicate data release wait distance.
+Value Range: Int value.
+    Default: 0
+"""
+HIERARCHICAL_MEMORY_RELEASE_DISTANCE = '0'
+
+"""
 Name: PIJIT_SUBGRAPH_BREAK_OPTIMIZE
 Function: Whether to enable subgraph break optimization in PIJit.
 Value Range:
@@ -404,6 +436,10 @@ __all__ = [
     "CHECK_BPROP",
     "GRAD_FOR_SCALAR",
     "DEBUG_LEVEL",
+    "HIERARCHICAL_MEMORY_SELECT_DISTANCE",
+    "HIERARCHICAL_MEMORY_SELECT_NUM",
+    "HIERARCHICAL_MEMORY_PREFETCH_DISTANCE",
+    "HIERARCHICAL_MEMORY_RELEASE_DISTANCE",
     "PIJIT_SUBGRAPH_BREAK_OPTIMIZE",
     "ENABLE_ELIMINATE_UNUSED_PARAMS",
     "PUT_ALL_CNODE_INTO_ORDER_LIST",

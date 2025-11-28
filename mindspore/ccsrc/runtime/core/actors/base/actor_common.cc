@@ -1305,8 +1305,12 @@ void PrepareParameter(const std::pair<KernelWithIndex, size_t> &parameter_index,
                         << " parameter store device type:"
                         << graph_parameter_store->GetParameterDeviceType(outer_index, inner_index);
     }
-    PrepareParameterWithCopy(parameter_index, tensor, from_aid, is_first_user, stream_id, has_h2d_copy);
-    return;
+    MS_LOG(INFO) << "Is device tensor remote: " << device_tensor->remote();
+    static const bool use_hierarchical_memory = (common::GetEnv("MS_DEV_HIERARCHICAL_MEMORY") == "1");
+    if (!(use_hierarchical_memory && device_tensor->remote())) {
+      PrepareParameterWithCopy(parameter_index, tensor, from_aid, is_first_user, stream_id, has_h2d_copy);
+      return;
+    }
   }
   graph_parameter_store->SetDeviceTensorPrepared(outer_index, inner_index, true);
   MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS) << "Set new ref count to max for device address:" << tensor_address;

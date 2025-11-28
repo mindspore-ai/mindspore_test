@@ -1249,6 +1249,8 @@ def jit(
             +---------------------------+---------------------------+-------------------------+
             | infer_boost               |  Ascend                   |  ms_backend             |
             +---------------------------+---------------------------+-------------------------+
+            | auto_offload              |  Ascend                   |  ms_backend             |
+            +---------------------------+---------------------------+-------------------------+
 
             - disable_format_transform (bool, optional): Whether to disable the automatic format transform function
               from NCHW to NHWC. When the network training performance of fp16 is worse than fp32,
@@ -1275,6 +1277,13 @@ def jit(
 
               - on: Enable inference mode, get better infer performance.
               - off: Disable inference mode, use forward for inference. The performance is poor.
+
+            - auto_offload (str, optional): Used to control whether automatic node offloading is performed. This
+              interface is experimental. Default: ``""``, not offload.
+
+              - weight: Automatic offload weight which is initialized with device 'Remote'.
+              - activaction" Automatic offload activation tensor.
+              - all: Automatic both weight and activation.
 
     Returns:
         Function, if `fn` is not None, returns a callable function that will execute the compiled function; If `fn` is

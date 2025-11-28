@@ -65,6 +65,20 @@ struct BackendJitConfig {
       if (options_json.contains("ge_options")) {
         options_json["ge_options"].get_to(backend_jit_config.ge_options);
       }
+      if (options_json.contains("auto_offload")) {
+        const auto &auto_offload_config = options_json["auto_offload"];
+        if (auto_offload_config == "all") {
+          backend_jit_config.offload_activation = true;
+          backend_jit_config.offload_parameter = true;
+        } else if (auto_offload_config == "weight") {
+          backend_jit_config.offload_parameter = true;
+        } else if (auto_offload_config == "activaction") {
+          backend_jit_config.offload_activation = true;
+        } else {
+          MS_LOG(EXCEPTION) << "auto_offload should only be value of all, weight or activaction but got "
+                            << auto_offload_config;
+        }
+      }
     }
 
     std::string gpto_options_str = common::GetEnv("MS_GPTO_OPTIONS");
@@ -115,6 +129,10 @@ struct BackendJitConfig {
   std::map<std::string, std::map<std::string, std::string> > ge_options = {};
   // GPTO options, {"option":"value", ...}
   std::map<std::string, std::string> gpto_options = {};
+
+  // offload options
+  bool offload_activation = false;
+  bool offload_parameter = false;
 };
 }  // namespace backend
 }  // namespace mindspore

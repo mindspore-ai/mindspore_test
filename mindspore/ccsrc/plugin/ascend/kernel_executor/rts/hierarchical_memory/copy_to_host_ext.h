@@ -14,27 +14,28 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_RTS_UPDATE_TO_DEVICE_H
-#define MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_RTS_UPDATE_TO_DEVICE_H
+#ifndef MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_RTS_COPY_TO_HOST_EXT_H_
+#define MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_RTS_COPY_TO_HOST_EXT_H_
 #include <memory>
 #include <vector>
 
 #include "plugin/ascend/kernel_executor/rts/rt_kernel.h"
+#include "plugin/ascend/kernel_executor/rts/hierarchical_memory/copy_to_host.h"
 
 namespace mindspore {
 namespace kernel {
-class UpdateToDeviceKernel : public RtKernel {
+class CopyToHostExtKernel : public CopyToHostKernel {
  public:
-  UpdateToDeviceKernel() = default;
-  ~UpdateToDeviceKernel() override {}
-  bool Init(const AnfNodePtr &anf_node) override;
+  CopyToHostExtKernel() = default;
+  ~CopyToHostExtKernel() override {}
+
   bool Launch(const std::vector<KernelTensor *> &, const std::vector<KernelTensor *> &,
               const std::vector<KernelTensor *> &, void *) override;
-  std::vector<size_t> GetLaunchIgnoredInputAddressIdx() const override { return {kIndex3}; };
+  std::vector<size_t> GetLaunchIgnoredInputAddressIdx() const override { return {kIndex0, kIndex1}; }
 };
 
-MS_REG_RTKERNEL(updatetodevice, UpdateToDeviceKernel);
+MS_REG_RTKERNEL(copytohostext, CopyToHostExtKernel);
 }  // namespace kernel
 }  // namespace mindspore
 
-#endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_RTS_UPDATE_TO_DEVICE_H
+#endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_RTS_COPY_TO_HOST_EXT_H

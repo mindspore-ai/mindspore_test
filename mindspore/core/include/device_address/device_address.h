@@ -240,6 +240,9 @@ class MS_CORE_API DeviceAddress {
 
   std::shared_ptr<AddressAllocator> allocator() const { return device_pointer_->allocator(); }
 
+  bool remote() const { return remote_; }
+  void set_remote(bool remote) { remote_ = remote; }
+
   void set_data(tensor::TensorDataPtr &&data);
   const tensor::TensorDataPtr &data() const;
   bool has_data() const;
@@ -287,6 +290,8 @@ class MS_CORE_API DeviceAddress {
   // number in Tuple/List. A Tuple with a structure such as ((), ()) that contains two Scalar, the shape_vector_ of
   // this Tuple is {2}.
   ShapeVector shape_vector_{};
+
+  bool remote_{false};
 };
 
 using DeviceAddressPtr = std::shared_ptr<DeviceAddress>;

@@ -36,8 +36,10 @@
 #include "plugin/ascend/graph_optimizer/gpto/gpto.h"
 #include "plugin/ascend/res_manager/stream_manager/ascend_stream_manager.h"
 #include "primitive/auto_generate/gen_ops_primitive_c.h"
+#include "primitive/auto_generate/gen_ops_primitive_f.h"
 #include "primitive/auto_generate/gen_ops_primitive_m.h"
 #include "primitive/framework_ops.h"
+#include "primitive/other_ops.h"
 #include "ops_utils/op_utils.h"
 
 namespace mindspore {
@@ -217,7 +219,8 @@ void AddStreamIdByGroup(const AnfNodePtr &node, DeviceResManager *device_res_man
       AddStreamIdForUsersSetStreamsOp(node, stream_map);
       MS_LOG(INFO) << "Set stream id by default for node " << node->fullname_with_scope()
                    << ", because it is users set stream operator.";
-    } else if (IsPrimitiveCNode(node, prim::kPrimCopyToHost) || IsPrimitiveCNode(node, prim::kPrimCopyToDevice)) {
+    } else if (IsOneOfPrimitiveCNode(node,
+                                     {prim::kPrimCopyToHost, prim::kPrimCopyToHostExt, prim::kPrimCopyToDevice})) {
       AssignStreamForCopyOut(node);
     } else if (IsPrimitiveCNode(node, prim::kPrimMoveTo) || IsPrimitiveCNode(node, prim::kPrimMoveAssign)) {
       AssignStreamForMoveTo(node);
@@ -483,7 +486,8 @@ void AclStreamAssign::AssignStream(const NotNull<KernelGraphPtr> &kernel_graph, 
         AddStreamIdForUsersSetStreamsOp(node, &stream_map);
       } else if (IsPrimitiveCNode(node, prim::kPrimMoveTo)) {
         AssignStreamForMoveTo(node);
-      } else if (IsPrimitiveCNode(node, prim::kPrimCopyToHost) || IsPrimitiveCNode(node, prim::kPrimCopyToDevice)) {
+      } else if (IsOneOfPrimitiveCNode(node,
+                                       {prim::kPrimCopyToHost, prim::kPrimCopyToHostExt, prim::kPrimCopyToDevice})) {
         AssignStreamForCopyOut(node);
       } else {
         AnfAlgo::SetStreamId(kDefaultStreamIndex, node.get());
@@ -590,6 +594,19 @@ void AclStreamAssign::GenKernelIoExecInfoMap(
       }
     }
   }
+}
+
+std::pair<CNodePtr, CNodePtr> AclStreamAssign::CreateSendReceive(const NotNull<KernelGraphPtr> &kernel_graph,
+                                                                 uint32_t record_stream_id, uint32_t wait_stream_id) {
+  auto &resource_manager = AscendStreamMng::GetInstance();
+  uint32_t event_id = resource_manager.ApplyNewEvent();
+  auto event = resource_manager.ApplyRtEvent();
+  auto event_generate_id = ++event_generate_id_;
+  auto send_node = CreateSendApplyKernel(kernel_graph, event_id, record_stream_id, event_generate_id);
+  common::AnfAlgo::SetNodeAttr(kAttrRecordEvent, MakeValue(reinterpret_cast<uintptr_t>(event)), send_node);
+  auto recv_node = CreateRecvApplyKernel(kernel_graph, event_id, record_stream_id, wait_stream_id, event_generate_id);
+  common::AnfAlgo::SetNodeAttr(kAttrWaitEvent, MakeValue(reinterpret_cast<uintptr_t>(event)), recv_node);
+  return std::pair<CNodePtr, CNodePtr>(send_node, recv_node);
 }
 
 void AclStreamAssign::AddBoundarySendRecvKernel(const NotNull<KernelGraphPtr> &kernel_graph, uint32_t record_stream_id,
