@@ -98,6 +98,7 @@ void StorageBase::InplaceReSize(int64_t size) {
   if (!device_ptr) {
     return;
   }
+  device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(BindDevicePtr, device_data_.get(), device_ptr);
   device_data_->set_ptr(device_ptr);
   device_data_->set_from_mem_pool(true);
   device_data_->SetSize(size);
