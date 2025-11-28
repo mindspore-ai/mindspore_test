@@ -667,6 +667,13 @@ bool IsPyObjectTensorPy(PyObject *obj) {
   return PyObject_TypeCheck(obj, TensorPy_Type);
 }
 
+bool IsPyObjectPythonTensorStrict(PyObject *obj) {
+  if (obj == nullptr) {
+    return false;
+  }
+  return Py_TYPE(obj) == PyObjManager::Get().GetTensorPythonType();
+}
+
 py::object GetPythonTensor() {
   auto tensor_module = PyObjManager::Get().GetTensorModule();
   return py::reinterpret_borrow<py::object>(tensor_module);

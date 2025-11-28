@@ -331,11 +331,16 @@ bool IsFunctionalRegInMap(const std::string &function_name, bool is_method) {
 }
 
 bool PyObjectHasFallbackAttr(PyObject *obj) {
-  auto tensor = tensor::ConvertPyObjectToTensor(obj);
-  if (tensor == nullptr) {
+  // Only Tensor subclass need to check fallback attr.
+  if (tensor::IsPyObjectPythonTensorStrict(obj)) {
     return false;
   }
-  return tensor->has_fallback();
+
+  if (!tensor::IsPyObjectTensorPy(obj)) {
+    return false;
+  }
+  auto attr = FastGetPyObjectAttr(obj, GetFallbackStr().c_str());
+  return attr.ptr() != nullptr;
 }
 }  // namespace
 namespace py = pybind11;
