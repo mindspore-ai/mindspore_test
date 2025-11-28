@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+""" tre train"""
 
 import mindspore as ms
 from mindspore import nn
@@ -25,7 +26,6 @@ import os
 import sys
 
 rt.set_memory(max_size="2GB")
-ms.set_deterministic(True)
 ms.set_seed(11)
 np.random.seed(11)
 
@@ -46,7 +46,7 @@ class LeNet5(nn.Cell):
 
     """
     def __init__(self, num_class=10, num_channel=1, include_top=True):
-        super(LeNet5, self).__init__()
+        super().__init__()
         self.conv1 = nn.Conv2d(num_channel, 6, 5, pad_mode='valid')
         self.conv2 = nn.Conv2d(6, 16, 5, pad_mode='valid')
         self.relu = nn.ReLU()
@@ -81,47 +81,52 @@ def create_dataset(batch_size):
     label = np.random.randint(low=0, high=10, size=num_elems, dtype=np.int32)
     return ds.NumpySlicesDataset({"data": data, "label": label}, shuffle=False).batch(batch_size)
 
-# record step and loss of each step
-step_info_list = []
+# flag for marking whether TREError occurred
+training_error_occured = False
+# recording loss before error occurred
+first_time_loss = {}
+# recording loss before error occurred
+resume_train_loss = {}
 
 def check_loss_consistency():
-    """check whether the loss of the same step is equal"""
-    step_map = {}
-    global step_info_list
-    for (step, loss) in step_info_list:
-        if step in step_map:
-            if loss != step_map[step]:
-                return False
-        else:
-            step_map[step] = loss
-    return len(step_map) == 20
+    """check the loss after resume training is same as before"""
+    num_retraining_steps = 0
+    for step, loss_after in resume_train_loss.items():
+        if not step in first_time_loss:
+            continue
+        num_retraining_steps += 1
+        loss_before = first_time_loss[step]
+        if not np.isclose(loss_before, loss_after):
+            print(f'ERROR: loss values of step {step} before({loss_before}) '
+                  f'and after({loss_after}) resume training are not same')
+            return False
+    if num_retraining_steps <= 0:
+        print('ERROR: there are no overlapped steps before and after resume training')
+        return False
+    return True
 
 
 class MyLossMonitor(Callback):
     """
     Self defined loss monitor
     """
-    def __init__(self, per_print_times=1, dataset_size: int = None):
-        super(MyLossMonitor, self).__init__()
+    def __init__(self, per_print_times=1):
+        super().__init__()
         self._per_print_times = per_print_times
         self._last_print_time = 0
-        self.steps_per_epoch = dataset_size
-        self.fault_steps = [9, 11, 19]
 
     def on_train_step_end(self, run_context):
         """
         Print training loss at the end of step.
         """
         cb_params = run_context.original_args()
+        cur_epoch_num = cb_params.get("cur_epoch_num", 1)
         loss = float(np.mean(cb_params.net_outputs.asnumpy()))
 
-        steps_per_epoch = self.steps_per_epoch if isinstance(self.steps_per_epoch, int) else cb_params.batch_num
         if isinstance(cb_params.initial_step, int):
-            cur_epoch_num = (cb_params.initial_step + cb_params.cur_step_num - 1) // steps_per_epoch + 1
-            cur_step_in_epoch = (cb_params.initial_step + cb_params.cur_step_num - 1) % steps_per_epoch + 1
+            cur_step_in_epoch = (cb_params.initial_step + cb_params.cur_step_num - 1) % cb_params.batch_num + 1
         else:
-            cur_epoch_num = (cb_params.cur_step_num - 1) // steps_per_epoch + 1
-            cur_step_in_epoch = (cb_params.cur_step_num - 1) % steps_per_epoch + 1
+            cur_step_in_epoch = (cb_params.cur_step_num - 1) % cb_params.batch_num + 1
 
         if isinstance(loss, float) and (np.isnan(loss) or np.isinf(loss)):
             raise ValueError("In epoch: {} step: {}, loss is NAN or INF, training process cannot continue, "
@@ -136,14 +141,21 @@ class MyLossMonitor(Callback):
 
         if self._per_print_times != 0 and (cb_params.cur_step_num - self._last_print_time) >= self._per_print_times:
             self._last_print_time = cb_params.cur_step_num
-            # print("epoch: %s step: %s, loss is %s" % (cur_epoch_num, cur_step_in_epoch, loss), flush=True)
-            print(f'epoch:{cur_epoch_num} step:{cur_step_in_epoch} loss:{loss}', flush=True)
-            global step_info_list
-            step_info_list.append((cur_step_in_epoch, loss))
+            print("epoch: %s step: %s, loss is %s" % (cur_epoch_num, cur_step_in_epoch, loss), flush=True)
 
-        if cb_params.cur_step_num in self.fault_steps:
-            self.fault_steps.remove(cb_params.cur_step_num)
-            raise RuntimeError(f"TREError occurred, current step:{cur_step_in_epoch} loss {loss}")
+        # record training loss
+        global training_error_occured
+        if training_error_occured:
+            resume_train_loss[cur_step_in_epoch] = loss
+        else:
+            first_time_loss[cur_step_in_epoch] = loss
+
+        loss_low_thresh = 8000.0
+        loss_high_thresh = 8500.0
+        if loss_low_thresh < loss < loss_high_thresh  and not training_error_occured:
+            training_error_occured = True
+            raise RuntimeError(f"TREError occurred, current loss {loss}, "
+                               f"loss thresh values are ({loss_low_thresh}, {loss_high_thresh})")
 
 
 if __name__ == '__main__':
@@ -151,19 +163,17 @@ if __name__ == '__main__':
     os.system(f'rm -rf {ckpt_path}')
     ms.set_context(mode=ms.GRAPH_MODE, jit_level='O0')
     dataset = create_dataset(batch_size=32)
-    ds_size = len(dataset)
     net = LeNet5()
     loss_func = nn.SoftmaxCrossEntropyWithLogits(sparse=True)
     loss_scale_manager = ms.FixedLossScaleManager(1024., False)
-    OptWrapper = TrainFaultTolerance.get_optimizer_wrapper(nn.Momentum)
-    optim = OptWrapper(params=net.trainable_params(), learning_rate=0.1, momentum=0.9)
+    optim = nn.Momentum(params=net.trainable_params(), learning_rate=0.1, momentum=0.9)
     model = Model(net, loss_fn=loss_func, optimizer=optim, metrics=None, loss_scale_manager=loss_scale_manager)
-    ckpt_cfg = CheckpointConfig(save_checkpoint_steps=1000, keep_checkpoint_max=2)
+    ckpt_cfg = CheckpointConfig(save_checkpoint_steps=10, keep_checkpoint_max=2)
     ckpt_cb = ModelCheckpoint(prefix="simple_net", directory=ckpt_path, config=ckpt_cfg)
-    loss_cb = MyLossMonitor(dataset_size=ds_size)
+    loss_cb = MyLossMonitor()
 
     def ckpt_load_func():
-        print(f'Begin to load checkpoint')
+        print('Begin to load checkpoint')
         ckpt_file = f"{ckpt_path}/simple_net-1_10.ckpt"
         param_dict = ms.load_checkpoint(ckpt_file)
         print(f'End to load ckpt, param_dict.size={len(param_dict)}')
@@ -177,5 +187,5 @@ if __name__ == '__main__':
     }
     tft_cb = TrainFaultTolerance(ckpt_save_path=ckpt_path, ckpt_load_fn=ckpt_load_func)
 
-    model.train(ds_size, dataset, callbacks=[ckpt_cb, loss_cb, tft_cb], dataset_sink_mode=True, sink_size=1)
+    model.train(1, dataset, callbacks=[ckpt_cb, loss_cb, tft_cb])
     sys.exit(0 if check_loss_consistency() else 1)

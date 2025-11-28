@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+"""send recv"""
 
 import os
 import numpy as np
@@ -22,7 +23,7 @@ from mindspore.communication import init
 
 class SendNet(nn.Cell):
     def __init__(self):
-        super(SendNet, self).__init__()
+        super().__init__()
         self.depend = ops.Depend()
         self.send = ops.Send(sr_tag=0, dest_rank=1, group="hccl_world_group")
         self.param = Parameter(Tensor(np.ones([2, 8], dtype=np.float32) * 3), name='param_send')
@@ -33,7 +34,7 @@ class SendNet(nn.Cell):
 
 class ReceiveNet(nn.Cell):
     def __init__(self):
-        super(ReceiveNet, self).__init__()
+        super().__init__()
         self.recv = ops.Receive(sr_tag=0, src_rank=0, shape=[2, 8], dtype=ms.float32, group="hccl_world_group")
         self.param = Parameter(Tensor(np.ones([2, 8], dtype=np.float32) * 2), name='param_recv')
 

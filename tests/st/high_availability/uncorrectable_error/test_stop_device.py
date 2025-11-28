@@ -17,8 +17,8 @@ Test stop device api
 """
 import os
 from mindspore._c_expression import _stop_device
-import mindspore.context as context
-import mindspore.nn as nn
+from mindspore import context
+from mindspore import nn
 from mindspore.ops import operations as P
 from mindspore import Tensor
 from tests.mark_utils import arg_mark
@@ -26,7 +26,7 @@ from tests.mark_utils import arg_mark
 
 class Net(nn.Cell):
     def __init__(self):
-        super(Net, self).__init__()
+        super().__init__()
         self.ops = P.Abs()
 
     def construct(self, x):

@@ -23,7 +23,7 @@ from mindspore import nn, ops, Tensor
 class Norm(nn.Cell):
     def __init__(self, axis=(), keep_dims=False):
         """Initialize Norm."""
-        super(Norm, self).__init__()
+        super().__init__()
         self.axis = axis
         self.keep_dims = keep_dims
         self.reduce_sum = ops.ReduceSum(True)

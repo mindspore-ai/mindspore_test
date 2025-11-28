@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+"""test silent detect"""
 
 import math
 import os
@@ -114,10 +115,10 @@ def test_silent_detect_v4():
 
 
 def exec_command(cmd):
-    s = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
-    out = s.stdout.read().decode("UTF-8")
-    s.stdout.close()
-    return out
+    with subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True) as s:
+        out = s.stdout.read().decode("UTF-8")
+        s.stdout.close()
+        return out
 
 
 @arg_mark(plat_marks=["platform_ascend910b"], level_mark="level1", card_mark="allcards", essential_mark="essential")
@@ -137,10 +138,10 @@ def test_silent_detect_strikeout():
     )
     if ret1 != 0:
         result = subprocess.run("grep 'port have been bound' test_silent_detect_strikeout_log/worker_*",
-                                shell=True, stdout=subprocess.PIPE)
+                                shell=True, check=True, stdout=subprocess.PIPE)
         print(result.stdout.decode("utf-8"))
-        result = subprocess.run(f"grep -r 'Error code' test_silent_detect_strikeout_log",
-                                shell=True, stdout=subprocess.PIPE)
+        result = subprocess.run("grep -r 'Error code' test_silent_detect_strikeout_log",
+                                shell=True, check=True, stdout=subprocess.PIPE)
         print(result.stdout.decode("utf-8"))
     assert ret1 == 0
     ret2 = os.system("grep -r 'Silent detect strike detected:' test_silent_detect_strikeout_log/worker_*")
@@ -170,10 +171,10 @@ def test_silent_detect_without_parallel_pass():
     )
     if ret1 != 0:
         result = subprocess.run("grep 'port have been bound' test_silent_detect_without_parallel_pass/worker_*",
-                                shell=True, stdout=subprocess.PIPE)
+                                shell=True, check=True, stdout=subprocess.PIPE)
         print(result.stdout.decode("utf-8"))
-        result = subprocess.run(f"grep -r 'Error code' test_silent_detect_without_parallel_pass",
-                                shell=True, stdout=subprocess.PIPE)
+        result = subprocess.run("grep -r 'Error code' test_silent_detect_without_parallel_pass",
+                                shell=True, check=True, stdout=subprocess.PIPE)
         print(result.stdout.decode("utf-8"))
     assert ret1 == 0
     ret2 = os.system("grep -rE \"WARNING.*Silent detect supports 'auto_parallel' and 'semi_auto_parallel' "

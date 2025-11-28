@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+"""silent detect"""
 
 import os
 import sys
@@ -31,7 +32,7 @@ np.random.seed(1)
 
 class Net(nn.Cell):
     def __init__(self):
-        super(Net, self).__init__()
+        super().__init__()
         self.fc1 = nn.Dense(1, 8)
         self.fc2 = nn.Dense(8, 8)
         self.relu = ops.ReLU()

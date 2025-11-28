@@ -36,7 +36,8 @@ def test_get_last_error():
     """
     os.environ['MS_ENABLE_TFT'] = '{UCE:1}'
     file_path = os.path.dirname(__file__)
-    result = subprocess.run(["python", f"{file_path}/get_last_error.py"], capture_output=True, text=True)
+    result = subprocess.run(["python", f"{file_path}/get_last_error.py"],
+                            capture_output=True, text=True, check=False)
     assert result.returncode != 0
     patterns = ['[ERROR]', 'Call ascend api <aclnnMulGetWorkspaceSize> in <operator()> at mindspore/',
                 'failed, error code [0].']
