@@ -358,7 +358,8 @@ PYBIND11_MODULE(_c_expression, m) {
   (void)m.def("frombuffer", &mindspore::tensor::TensorFrombuffer, py::arg("buffer"), py::arg("dtype"),
               py::arg("count") = -1, py::arg("offset") = 0,
               R"(
-               Create a 1-D tensor from an object implements the buffer interface. The returned tensor shares the same memory space as the buffer.
+               Create a 1-D tensor from an object implements the buffer interface.
+               The returned tensor shares the same memory space as the buffer.
 
                Args:
                     buffer (buffer): An object that exposes the buffer interface.
@@ -373,8 +374,10 @@ PYBIND11_MODULE(_c_expression, m) {
                     RuntimeError: If `count` is a negative number less than -1.
                     RuntimeError: If the buffer length is less than or equal to 0, or if `count` is 0.
                     RuntimeError: If `offset` is not within the range [0, buffer length - 1].
-                    RuntimeError: When `count` is -1, if (buffer length - `offset`) is not divisible by the element size.
-                    RuntimeError: If the remaining buffer size after `offset` is insufficient to accommodate the requested number of elements.
+                    RuntimeError: When `count` is -1, if (buffer length - `offset`) is
+                                  not divisible by the element size.
+                    RuntimeError: If the remaining buffer size after `offset` is insufficient to
+                                  accommodate the requested number of elements.
 
                Examples:
                     >>> import mindspore
