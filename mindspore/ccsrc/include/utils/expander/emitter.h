@@ -727,8 +727,8 @@ class COMMON_EXPORT Emitter {
     return Emit("Slice", {input, begin, size});
   }
   virtual NodePtr RandIntLike(const NodePtr &input, const NodePtr &low, const NodePtr &high, const NodePtr &seed,
-                              const NodePtr &offset, const NodePtr &dtype) {
-    return Emit("RandIntLike", {input, low, high, seed, offset, dtype});
+                              const NodePtr &offset, const NodePtr &dtype, const NodePtr &device) {
+    return Emit("RandIntLike", {input, low, high, seed, offset, dtype, device});
   }
   virtual NodePtr AsStrided(const NodePtr &input, const NodePtr &size, const NodePtr &stride,
                             const NodePtr &storage_offset) {
@@ -1659,8 +1659,8 @@ class COMMON_EXPORT Emitter {
     return Emit("LogSoftmaxGrad", {logits, grad, axis});
   }
   virtual NodePtr RandInt(const NodePtr &low, const NodePtr &high, const NodePtr &shape, const NodePtr &seed,
-                          const NodePtr &offset, const NodePtr &dtype) {
-    return Emit("RandInt", {low, high, shape, seed, offset, dtype});
+                          const NodePtr &offset, const NodePtr &dtype, const NodePtr &device) {
+    return Emit("RandInt", {low, high, shape, seed, offset, dtype, device});
   }
   virtual NodePtr Frac(const NodePtr &input) { return Emit("Frac", {input}); }
   virtual NodePtr ArgMaxExt(const NodePtr &input, const NodePtr &dim, const NodePtr &keepdim) {

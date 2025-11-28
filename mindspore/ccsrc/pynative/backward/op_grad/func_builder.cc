@@ -1258,8 +1258,8 @@ NodePtr FuncBuilder::Slice(const NodePtr &input, const NodePtr &begin, const Nod
 }
 
 NodePtr FuncBuilder::RandIntLike(const NodePtr &input, const NodePtr &low, const NodePtr &high, const NodePtr &seed,
-                                 const NodePtr &offset, const NodePtr &dtype) {
-  return NativeFunc::RandIntLike(input, low, high, seed, offset, dtype);
+                                 const NodePtr &offset, const NodePtr &dtype, const NodePtr &device) {
+  return NativeFunc::RandIntLike(input, low, high, seed, offset, dtype, device);
 }
 
 NodePtr FuncBuilder::AsStrided(const NodePtr &input, const NodePtr &size, const NodePtr &stride,
@@ -2435,8 +2435,8 @@ NodePtr FuncBuilder::LogSoftmaxGrad(const NodePtr &logits, const NodePtr &grad, 
 }
 
 NodePtr FuncBuilder::RandInt(const NodePtr &low, const NodePtr &high, const NodePtr &shape, const NodePtr &seed,
-                             const NodePtr &offset, const NodePtr &dtype) {
-  return NativeFunc::RandInt(low, high, shape, seed, offset, dtype);
+                             const NodePtr &offset, const NodePtr &dtype, const NodePtr &device) {
+  return NativeFunc::RandInt(low, high, shape, seed, offset, dtype, device);
 }
 
 NodePtr FuncBuilder::Frac(const NodePtr &input) { return NativeFunc::Frac(input); }
