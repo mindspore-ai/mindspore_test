@@ -341,6 +341,7 @@ constexpr auto kRealElementsSize = "real_elements_size";
 // MoveTo dst string
 constexpr auto kToNpu = "Ascend";
 constexpr auto kToCpu = "CPU";
+constexpr auto kToRemote = "Remote";
 constexpr auto kToDisk = "Disk";
 
 // Return vec<filename, line number, function name>

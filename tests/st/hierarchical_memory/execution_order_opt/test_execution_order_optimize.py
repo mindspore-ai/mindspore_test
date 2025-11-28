@@ -54,38 +54,40 @@ def get_max_memory(file_name, log_file_name):
     return memory_useage
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_net_base():
     """
     Feature: Hierarchical memory auto optimize with execution order.
     Description: Test whether hierarchical memory auto optimize with can decrease autual used memory.
     Expectation: success.
     """
-    get_max_memory("run_net_base.py", "test_net_base_result.txt")
+    max_memory = get_max_memory("run_net_base.py", "test_net_base_result.txt")
+    assert max_memory < 160
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_net_parameter():
     """
     Feature: Hierarchical memory auto optimize with execution order.
     Description: Test whether hierarchical memory auto optimize with can decrease autual used memory.
     Expectation: success.
     """
-    get_max_memory("run_net_parameter.py", "test_net_parameter_result.txt")
+    max_memory = get_max_memory("run_net_parameter.py", "test_net_parameter_result.txt")
+    assert max_memory < 160
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_net_all():
     """
     Feature: Hierarchical memory auto optimize with execution order.
     Description: Test whether hierarchical memory auto optimize with can decrease autual used memory.
     Expectation: success.
     """
-    get_max_memory("run_net_all.py", "test_net_parameter_all.txt")
+    max_memory = get_max_memory("run_net_all.py", "test_net_parameter_all.txt")
+    assert max_memory < 160
 
 
-@pytest.mark.skip
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_parameter_with_remote():
     """
     Feature: Hierarchical memory auto optimize with execution order.
@@ -112,7 +114,7 @@ def test_parameter_with_remote():
     compile_config.HIERARCHICAL_MEMORY_PREFETCH_DISTANCE = origin_prefetch_distance
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_wrong_auto_offload_input():
     """
     Feature: Hierarchical memory auto optimize with execution order.

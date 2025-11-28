@@ -37,6 +37,7 @@
 #include "include/utils/anfalgo.h"
 #include "include/utils/callback.h"
 #include "include/backend/common/kernel_graph/anf_runtime_algorithm.h"
+#include "include/utils/tensor_py.h"
 #include "include/backend/common/ms_device_shape_transfer.h"
 #include "include/runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "runtime/hardware_abstract/utils.h"
@@ -120,34 +121,33 @@ const DeviceContext *GetDeviceContextForOffloadedParameter(const DeviceContext *
     MS_EXCEPTION_IF_NULL(hete_device_context);
     MS_LOG(INFO) << "Use " << device_str << " DeviceContext for offloaded parameter: " << node->DebugString();
     return hete_device_context;
+  } else if (device_str == kToRemote) {
+    return origin_device_context;
   } else {
     MS_LOG(EXCEPTION) << "Device of parameter only support \"CPU\" but got " << device_str;
   }
 }
 
-bool IsRemoteParameter(const mindspore::AnfNodePtr &node) {
+bool IsRemoteParameterNode(const mindspore::AnfNodePtr &node) {
   static const bool skip = ((common::GetEnv("MS_DEV_HIERARCHICAL_MEMORY") != "1"));
   if (skip) {
     return false;
   }
-  if (!node->isa<Parameter>()) {
+  const auto &device_str = AnfAlgo::GetParameterDeviceStr(node);
+  return device_str == kToRemote;
+}
+
+bool IsRemoteParameterTensor(const TensorPtr &tensor) {
+  if ((common::GetEnv("MS_DEV_HIERARCHICAL_MEMORY") != "1")) {
     return false;
   }
-  const auto &parameter = node->cast<ParameterPtr>();
-  MS_EXCEPTION_IF_NULL(parameter);
-  const auto value = parameter->default_param();
-  if (value == nullptr) {
+  constexpr auto kParameterDeviceUserDataName = "parameter_device";
+  const auto &user_data = tensor->user_data<tensor::TensorPyUserData>(kParameterDeviceUserDataName);
+  if (user_data == nullptr || !py::isinstance<py::str>(user_data->obj)) {
     return false;
   }
-  const auto meta_tensor = value->cast_ptr<tensor::MetaTensor>();
-  if (meta_tensor == nullptr) {
-    return false;
-  }
-  const auto &param_info = meta_tensor->param_info();
-  if (param_info == nullptr) {
-    return false;
-  }
-  return param_info->is_remote_memory();
+  const auto &device_str = py::cast<std::string>(user_data->obj);
+  return device_str == kToRemote;
 }
 }  // namespace
 
@@ -263,7 +263,7 @@ void DeviceAddressUtils::CreateParameterDeviceAddress(const DeviceContext *devic
     auto real_device_context = device::FetchRealDeviceContext(item, device_context);
     auto origin_device_context = real_device_context;
     real_device_context = GetDeviceContextForOffloadedParameter(real_device_context, item);
-    bool is_remote = IsRemoteParameter(item);
+    bool is_remote = IsRemoteParameterNode(item);
     MS_EXCEPTION_IF_NULL(real_device_context);
     auto output_size = AnfAlgo::GetOutputTensorNum(item);
     for (size_t index = 0; index < output_size; index++) {
@@ -979,8 +979,7 @@ void DeviceAddressUtils::CreateInputTensorAddress(const DeviceContext *device_co
   auto device_address = device_context->device_res_manager_->CreateDeviceAddress(
     nullptr, tensor_size, tensor->shape(), format, tensor->data_type(),
     device::GetDeviceNameByType(device_context->device_context_key().device_type_), stream_id);
-  bool is_remote = (common::GetEnv("MS_DEV_HIERARCHICAL_MEMORY") == "1") && (tensor->param_info() != nullptr) &&
-                   (tensor->param_info()->is_remote_memory());
+  bool is_remote = IsRemoteParameterTensor(tensor);
   device_address->set_remote(is_remote);
   MS_EXCEPTION_IF_NULL(device_address);
   device_address->set_from_persistent_mem(tensor->is_parameter());

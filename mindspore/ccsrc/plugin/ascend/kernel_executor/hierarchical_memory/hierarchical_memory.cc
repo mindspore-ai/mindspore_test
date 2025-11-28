@@ -433,20 +433,8 @@ std::optional<ParameterPtr> GetRemoteParameter(const KernelGraphPtr &kernel_grap
     return std::nullopt;
   }
   const auto &parameter = ref_node_res.value();
-  const auto value = parameter->default_param();
-  if (value == nullptr) {
-    return std::nullopt;
-  }
-  const auto meta_tensor = value->cast_ptr<tensor::MetaTensor>();
-  if (meta_tensor == nullptr) {
-    return std::nullopt;
-  }
-
-  const auto &param_info = meta_tensor->param_info();
-  if (param_info == nullptr) {
-    return std::nullopt;
-  }
-  if (!param_info->is_remote_memory()) {
+  const auto &device_str = AnfAlgo::GetParameterDeviceStr(parameter);
+  if (device_str != kToRemote) {
     return std::nullopt;
   }
   return parameter;
