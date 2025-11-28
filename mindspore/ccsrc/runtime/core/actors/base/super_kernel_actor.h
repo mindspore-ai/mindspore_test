@@ -140,6 +140,9 @@ class SuperKernelActor : public DebugAwareActor {
   // Reset state for UCE, ARF.
   void ResetState(OpContext<KernelTensor> *const context) override;
 
+  void UpdateOutputKernelTensors(const std::vector<std::pair<KernelTensorPtr, size_t>> &new_kernel_pair,
+                                 const std::vector<KernelTensorPtr> &output_kernel_tensors);
+
  protected:
   void Init() override;
   void Run(OpContext<KernelTensor> *const context) override;

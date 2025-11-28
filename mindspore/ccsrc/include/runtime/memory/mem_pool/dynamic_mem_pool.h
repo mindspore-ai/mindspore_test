@@ -118,6 +118,11 @@ class BACKEND_EXPORT DynamicMemPool {
   // The main program entry of memory free.
   virtual void FreeTensorMem(const DeviceMemPtr &device_addr) = 0;
 
+  /// \brief Check if the tensor memory can be safely freed
+  /// \param[in] device_addr The device memory address to check
+  /// \return bool True if memory can be freed, false otherwise
+  virtual bool IsAbleFreeTensorMem(const DeviceMemPtr &device_addr) { return true; }
+
   virtual bool DoFreeTensorMem(const DeviceMemPtr &device_addr) { return false; }
 
   // The main program entry of part memorys free and part memorys keep.

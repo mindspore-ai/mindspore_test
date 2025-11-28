@@ -403,6 +403,15 @@ Value Range:
 """
 GRAD_JIT_FILTER = '1'
 
+"""
+Name: ENABLE_REMOTE_MEM_SLIDE
+Function: Whether to enable the remote memory with sliding window method.
+Value Range:
+    1: Enable
+    Default: Disable
+"""
+ENABLE_REMOTE_MEM_SLIDE = ''
+
 __all__ = [
     "COMPILE_PROFILE",
     "COMPILE_PROFILE_FINISH_ACTION",
@@ -446,5 +455,6 @@ __all__ = [
     "CHECK_PASS_NODE_SCOPE",
     "JIT_ENABLE_AUGASSIGN_INPLACE",
     "GRAD_JIT_FILTER",
-    "JIT_ENABLE_AUGASSIGN_INPLACE_FALLBACK"
+    "JIT_ENABLE_AUGASSIGN_INPLACE_FALLBACK",
+    "ENABLE_REMOTE_MEM_SLIDE"
 ]

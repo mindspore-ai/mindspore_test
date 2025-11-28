@@ -156,6 +156,8 @@ class KernelRunner {
 
   bool HighPerfMode();
 
+  bool *GetEnablePtr() const { return is_enable_; }
+
  protected:
   virtual void Init();
   void SendRecorderInfo(OpContext<KernelTensor> *const context) const;
@@ -312,6 +314,9 @@ class KernelRunner {
   bool need_check_tensor_contiguous_{false};
   // Flag for kernel actor should insert event for parameter.
   bool insert_input_event_{false};
+
+  // Remote mem enable flag
+  bool enable_remote_mem_slide_{false};
 
  protected:
   friend class GraphScheduler;

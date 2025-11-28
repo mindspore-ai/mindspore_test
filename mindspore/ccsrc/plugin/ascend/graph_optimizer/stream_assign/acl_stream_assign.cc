@@ -41,6 +41,7 @@
 #include "primitive/framework_ops.h"
 #include "primitive/other_ops.h"
 #include "ops_utils/op_utils.h"
+#include "utils/compile_config.h"
 
 namespace mindspore {
 namespace device {
@@ -316,6 +317,37 @@ void AddEventForUsersSetEvent(const AnfNodePtr &node, std::map<uint32_t, uint32_
     }
   }
 }
+
+void SetRemoteCopyIdForKernelGraph(const KernelGraphPtr &kernel_graph) {
+  static const bool use_hierarchical_memory =
+    common::GetEnv("MS_DEV_HIERARCHICAL_MEMORY") == "1" && common::GetCompileConfig("ENABLE_REMOTE_MEM_SLIDE") == "1";
+  if (!use_hierarchical_memory) {
+    return;
+  }
+  // Create Copy In Stream
+  auto remote_copy_in_stream = AscendStreamMng::GetInstance().GetRemoteCopyInStream();
+  size_t remote_copy_in_stream_id;
+  if (remote_copy_in_stream == nullptr) {
+    AscendStreamMng::GetInstance().CreateStream(&remote_copy_in_stream_id);
+    MS_LOG(INFO) << "Create ascend remote copy in stream, stream id: " << remote_copy_in_stream_id;
+    remote_copy_in_stream = AscendStreamMng::GetInstance().GetStream(remote_copy_in_stream_id);
+    AscendStreamMng::GetInstance().SetCopyInStream(remote_copy_in_stream);
+  }
+  remote_copy_in_stream_id = AscendStreamMng::GetInstance().GetStreamId(remote_copy_in_stream);
+  kernel_graph->SetRemoteCopyInStreamId(remote_copy_in_stream_id);
+  // Create Copy Out Stream
+  auto remote_copy_out_stream = AscendStreamMng::GetInstance().GetRemoteCopyOutStream();
+  size_t remote_copy_out_stream_id;
+  if (remote_copy_out_stream == nullptr) {
+    AscendStreamMng::GetInstance().CreateStream(&remote_copy_out_stream_id);
+    MS_LOG(INFO) << "Create ascend remote copy out stream, stream id: " << remote_copy_out_stream_id;
+    remote_copy_out_stream = AscendStreamMng::GetInstance().GetStream(remote_copy_out_stream_id);
+    AscendStreamMng::GetInstance().SetCopyOutStream(remote_copy_out_stream);
+  }
+  remote_copy_out_stream_id = AscendStreamMng::GetInstance().GetStreamId(remote_copy_out_stream);
+  kernel_graph->SetRemoteCopyOutStreamId(remote_copy_out_stream_id);
+  kernel_graph->set_enable_multi_stream(true);
+}
 }  // namespace
 
 CNodePtr AclStreamAssign::CreateLimitApplyKernel(const NotNull<KernelGraphPtr> &graph_ptr,
@@ -503,6 +535,7 @@ void AclStreamAssign::AssignStream(const NotNull<KernelGraphPtr> &kernel_graph, 
     AddEventForUsersSetEvent(node, &event_map, &event_info_map);
   }
   kernel_graph->set_enable_multi_stream(max_stream_id != kDefaultStreamIndex);
+  SetRemoteCopyIdForKernelGraph(kernel_graph);
 
   for (size_t i = 1; i < kernels.size(); ++i) {
     if (common::AnfAlgo::GetCNodeName(kernels[i - 1]) == kMemSetOpName) {

@@ -42,6 +42,7 @@ class ConditionSwitchRunner : public KernelRunner {
   const mindspore::HashMap<std::string, std::vector<size_t>> &branch_output_free_index() const {
     return branch_output_free_index_;
   }
+  std::shared_ptr<bool[]> GetBranchFlag() { return branch_flags_; }
 
  protected:
   void Init() override;

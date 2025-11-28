@@ -282,6 +282,9 @@ enum VLogLevel : int {
   VL_DISP_VLOG_TAGS = VL_USER_CUSTOM,           // print already used vlog tags
   VL_CUSTOM_OP,                                 // index 20001
   VL_ACLNN_OP,                                  // index 20002
+  VL_REMOTE_MEM_DEBUG,                          // Remote memory debug log
+  VL_REMOTE_MEM_INFO,                           // Remote memory info log
+  VL_REMOTE_MEM_WARNING,                        // Remote memort warning log
 };
 
 /// \brief Get sub-module name by the module id.

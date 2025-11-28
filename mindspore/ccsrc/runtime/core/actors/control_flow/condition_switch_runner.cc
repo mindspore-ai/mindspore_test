@@ -18,6 +18,7 @@
 #include <utility>
 #include "runtime/core/actors/control_flow/condition_gather_runner.h"
 #include "runtime/core/graph_executor/pipeline/runtime_pipeline.h"
+#include "runtime/core/actors/remote_memory/mem_use_analyzer.h"
 
 namespace mindspore {
 namespace runtime {
@@ -161,6 +162,11 @@ void ConditionSwitchRunner::ExecuteLaunchKernelTask(OpContext<KernelTensor> *con
   ProfilerRecorder profiler(ProfilerModule::kKernel, ProfilerEvent::kKernelLaunch, GetAID().Name());
   MS_EXCEPTION_IF_NULL(kernel_);
   MS_LOG(DEBUG) << "Begin launch kernel: " << kernel_->fullname_with_scope();
+
+  if (enable_remote_mem_slide_) {
+    MemUseAnalyzer::GetInstance().LaunchTaskBefore(this, device_contexts_[0]);
+  }
+
   if (!WaitRuntimePipelineFinish(context, GetAID().Name())) {
     MS_LOG(INFO) << "Run failed and early stop.";
     return;
@@ -214,6 +220,10 @@ void ConditionSwitchRunner::ExecuteLaunchKernelTask(OpContext<KernelTensor> *con
     SendMemoryFreeReq(context);
   }
   MS_LOG(DEBUG) << "End launch kernel: " << kernel_->fullname_with_scope();
+
+  if (enable_remote_mem_slide_) {
+    MemUseAnalyzer::GetInstance().LaunchTaskAfter(this, device_contexts_[0]);
+  }
 }
 
 void ConditionSwitchRunner::ExecuteLaunchKernelTaskHP(OpContext<KernelTensor> *const context) {
