@@ -2349,6 +2349,8 @@ REG_BPROP_BUILDER("View").FreeUselessValues_IO({}, {}).SetBody(BODYFUNC(ib) {
   return {dx, ib->OutZeros(shape)};
 });
 
+REG_BPROP_BUILDER("ViewDtype").FreeUselessValues_IO({}, {}).SetBody(ReturnZeros);
+
 REG_BPROP_BUILDER("ExpandDimsView").SetUnusedInputs({i0, i1, i2}).SetBody(BODYFUNC(ib) {
   const auto &x = ib->GetInput(i0);
   const auto &axis = ib->GetInput(i1);
