@@ -11,6 +11,9 @@ if(ENABLE_D OR ENABLE_ACL)
         file(STRINGS "${CMAKE_CURRENT_SOURCE_DIR}/../../../../../version.txt" VERSION)
         add_definitions(-DVERSION="${VERSION}")
         list(REMOVE_ITEM _TRANSFORM_SRC_LIST "callbacks_ge.cc")
+        list(REMOVE_ITEM _TRANSFORM_SRC_LIST "storage_format_convertor.cc")
+        list(REMOVE_ITEM _TRANSFORM_SRC_LIST "storage_format_factory.cc")
+        list(REMOVE_ITEM _TRANSFORM_SRC_LIST "storage_format_operator.cc")
         add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../../../plugin/ascend/res_manager/op_adapter/
             _mindspore_ascend_op_adapter_obj)
         add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../../../plugin/ascend/res_manager/symbol_interface
@@ -25,13 +28,9 @@ if(ENABLE_D OR ENABLE_ACL)
         endif()
         list(APPEND _TRANSFORM_SRC_LIST "${CMAKE_CURRENT_SOURCE_DIR}/../../../utils/convert_utils.cc")
 
-        list(APPEND _TRANSFORM_SRC_LIST
-                "${CMAKE_CURRENT_SOURCE_DIR}/../../../runtime/hardware_abstract/kernel_base/kernel_info.cc")
         list(APPEND _TRANSFORM_SRC_LIST "${CMAKE_CURRENT_SOURCE_DIR}/../../../utils/comm_manager.cc")
         list(APPEND _TRANSFORM_SRC_LIST "${CMAKE_CURRENT_SOURCE_DIR}/../../../utils/compile_cache_context.cc")
 
-        list(APPEND _TRANSFORM_SRC_LIST
-            "${CMAKE_CURRENT_SOURCE_DIR}/../../../runtime/hardware_abstract/kernel_base/kernel_build_info.cc")
         add_library(mindspore_graph_ir SHARED ${_TRANSFORM_SRC_LIST} $<TARGET_OBJECTS:_mindspore_ascend_symbol_obj>
             $<TARGET_OBJECTS:_mindspore_ascend_op_adapter_obj>)
     endif()
