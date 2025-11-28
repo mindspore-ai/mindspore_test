@@ -40,8 +40,9 @@ def run_simple_tracker_command(cmd, log_path, tracker_ir_pash, memory_block_csv_
     # Check if log file exists
     assert os.path.exists(log_path), "Log file does not exist"
     # Check if log contains "Simple tracker, skip dump"
-    with open(log_path, 'r') as f:
+    with open(log_path, 'r', encoding='utf-8') as f:
         log_content = f.read()
+        assert "ERROR" not in log_content, "Log contains 'ERROR' message"
         assert "Simple tracker, skip dump" in log_content, "Log does not contain 'Simple tracker, skip dump' message"
     if os.path.isfile(log_path):
         os.remove(log_path)
@@ -75,8 +76,9 @@ def run_tracker_command(cmd, log_path, tracker_ir_pash, memory_block_csv_path):
     # Check if log file exists
     assert os.path.exists(log_path), "Log file does not exist"
     # Check if log contains "Dump graph to file" message
-    with open(log_path, 'r') as f:
+    with open(log_path, 'r', encoding='utf-8') as f:
         log_content = f.read()
+        assert "ERROR" not in log_content, "Log contains 'ERROR' message"
         assert "Dump graph to file" in log_content, "Log does not contain 'Dump graph to file' message"
     if os.path.isfile(log_path):
         os.remove(log_path)
@@ -106,5 +108,17 @@ def test_tracker():
     Expectation: run success
     """
     sh_path = os.path.split(os.path.realpath(__file__))[0]
-    run_tracker_command(f"bash {sh_path}/dryrun_tracker.sh", f"{sh_path}/tracker.log",
+    run_tracker_command(f"bash {sh_path}/dryrun_tracker.sh tracker_pynative.py tracker1.log", f"{sh_path}/tracker1.log",
                         f"{sh_path}/rank_0/tracker_graph.ir", f"{sh_path}/rank_0/memory_block.csv")
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='dryrun_only', essential_mark='essential')
+def test_resize_storage_tracker():
+    """
+    Feature: tracker
+    Description: tracker ok
+    Expectation: run success
+    """
+    sh_path = os.path.split(os.path.realpath(__file__))[0]
+    run_tracker_command(f"bash {sh_path}/dryrun_tracker.sh resize_storage_tracker.py tracker2.log",
+                        f"{sh_path}/tracker2.log", f"{sh_path}/tracker_graph.ir",
+                        f"{sh_path}/memory_block.csv")
