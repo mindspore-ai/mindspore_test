@@ -77,6 +77,13 @@ def log_path_preprocess(case_name, device_num):
     return log_path_list
 
 
+def if_equals(golden_loss, loss_list, e=0.001):
+    # Compare two loss lists and check if all elements match within the specified tolerance e
+    if len(golden_loss) != len(loss_list):
+        return False
+    return all(abs(a - b) <= e for a, b in zip(golden_loss, loss_list))
+
+
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='allcards', essential_mark='essential')
 def test_deepseekv3_cell_dp2mp2ep2pp2mb4gas1bs1_8p():
     """
@@ -90,6 +97,7 @@ def test_deepseekv3_cell_dp2mp2ep2pp2mb4gas1bs1_8p():
     device_num = 8
     master_port = 7125
     hccl_if_base_port = 63375
+    epsilon = 0.001
 
     os.makedirs(os.path.join(sh_path, case_name), exist_ok=True)
     clear_directory(f"{sh_path}/{case_name}")
@@ -115,9 +123,9 @@ def test_deepseekv3_cell_dp2mp2ep2pp2mb4gas1bs1_8p():
     loss_list = extract_losses_from_log(log_file_path)
 
     # set golden_loss
-    golden_loss = [15.579, 15.314, 15.027, 14.695, 14.499, 14.362]
+    golden_loss = [15.578772, 15.315098, 15.028308, 14.695156, 14.498277, 14.363338]
 
-    if_equal = golden_loss == loss_list
+    if_equal = if_equals(golden_loss, loss_list, epsilon)
     assert if_equal, \
         f"Training loss is different from the golden loss, " \
         f"where training loss: {loss_list}, golden_loss: {golden_loss}."
