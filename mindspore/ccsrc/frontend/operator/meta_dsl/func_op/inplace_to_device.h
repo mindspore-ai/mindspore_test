@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,17 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef MINDSPORE_CORE_OPS_VIEW_GET_DATA_STRIDES_CALC_H
-#define MINDSPORE_CORE_OPS_VIEW_GET_DATA_STRIDES_CALC_H
 
+#ifndef MINDSPORE_MINDSPORE_CCSRC_FRONTEND_OPERATOR_META_DSL_FUNC_OP_INPLACE_TO_DEVICE_H_
+#define MINDSPORE_MINDSPORE_CCSRC_FRONTEND_OPERATOR_META_DSL_FUNC_OP_INPLACE_TO_DEVICE_H_
 #include <vector>
-#include "view/view_strides_calculator.h"
-#include "view/reshape_strides_calc.h"
+#include <memory>
 
-namespace mindspore {
-namespace ops {
-OPS_API TensorStorageInfoPtr GetDataBasicTypeCalc(const tensor::TensorPtr &input_tensor);
-}  // namespace ops
-}  // namespace mindspore
+#include "mindspore/ccsrc/frontend/operator/meta_dsl/common/meta_impl.h"
 
-#endif  // MINDSPORE_CORE_OPS_VIEW_GET_DATA_STRIDES_CALC_H
+namespace mindspore::prim {
+REGISTER_FUNCTION_OP(InplaceToDevice, nullptr);
+}  // namespace mindspore::prim
+#endif  // MINDSPORE_MINDSPORE_CCSRC_FRONTEND_OPERATOR_META_DSL_FUNC_OP_INPLACE_TO_DEVICE_H_

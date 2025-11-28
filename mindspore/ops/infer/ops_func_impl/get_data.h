@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_GET_DATA_H_
-#define MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_GET_DATA_H_
+#ifndef MINDSPORE_MINDSPORE_OPS_INFER_OPS_FUNC_IMPL_GET_DATA_H_
+#define MINDSPORE_MINDSPORE_OPS_INFER_OPS_FUNC_IMPL_GET_DATA_H_
 #include <vector>
 #include "ops/ops_func_impl/op_func_impl.h"
 
@@ -27,4 +27,4 @@ class OPS_API GetDataFuncImpl : public CopyToDeviceFuncImpl {};
 }  // namespace ops
 }  // namespace mindspore
 
-#endif  // MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_GET_DATA_H_
+#endif  // MINDSPORE_MINDSPORE_OPS_INFER_OPS_FUNC_IMPL_GET_DATA_H_

@@ -13,17 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef MINDSPORE_CORE_OPS_VIEW_GET_DATA_STRIDES_CALC_H
-#define MINDSPORE_CORE_OPS_VIEW_GET_DATA_STRIDES_CALC_H
 
-#include <vector>
-#include "view/view_strides_calculator.h"
-#include "view/reshape_strides_calc.h"
+#include "view/get_data_strides_calc.h"
 
-namespace mindspore {
-namespace ops {
-OPS_API TensorStorageInfoPtr GetDataBasicTypeCalc(const tensor::TensorPtr &input_tensor);
-}  // namespace ops
-}  // namespace mindspore
-
-#endif  // MINDSPORE_CORE_OPS_VIEW_GET_DATA_STRIDES_CALC_H
+namespace mindspore::ops {
+TensorStorageInfoPtr GetDataBasicTypeCalc(const tensor::TensorPtr &input_tensor) {
+  MS_EXCEPTION_IF_NULL(input_tensor);
+  return ops::ReshapeBasicTypeCalc(input_tensor, input_tensor->shape());
+}
+}  // namespace mindspore::ops

@@ -1,6 +1,6 @@
 # This is the Python adaptation and derivative work of Myia (https://github.com/mila-iqia/myia/).
 #
-# Copyright 2020-2024 Huawei Technologies Co., Ltd
+# Copyright 2020-2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -32,6 +32,7 @@ from mindspore.ops.auto_generate import trace_v2_op, inplace_addmm_op, inplace_i
 from mindspore.ops.auto_generate import inplace_copy_op, inplace_uniform_op, inplace_erfinv_op
 from mindspore.ops.auto_generate import inplace_scatter_add as inplace_scatter_add_
 from mindspore.ops.auto_generate import inplace_exponential_op
+from mindspore.ops.auto_generate import Free, GetData, InplaceToDevice
 
 from ... import _checkparam as validator
 from ..._checkparam import check_is_number, check_reshape_shp, check_axis_in_range, \
@@ -66,6 +67,9 @@ _format = Format()
 _reduce_sum_default = P.ReduceSum()
 _reduce_sum_keepdims = P.ReduceSum(True)
 _csr_mm = _csr_ops.CSRMM()
+free_ = Free()
+get_data_ = GetData()
+inplace_to_device_ = InplaceToDevice()
 
 itemsize_map = {mstype.bool_: 1, mstype.int8: 1, mstype.uint8: 1,
                 mstype.float16: 2, mstype.int16: 2, mstype.uint16: 2,
@@ -1740,7 +1744,7 @@ def _infer_out_shape(*shapes):
     """
     Returns shape of output after broadcasting. Raises ValueError if shapes cannot be broadcast.
     """
-    shape_out = list()
+    shape_out = []
     max_len = ms_max([len(it) for it in shapes])
     for i in range(max_len):
         items = [it[i - (max_len - len(it))] if i - (max_len - len(it))
@@ -1871,7 +1875,7 @@ def searchsorted(x, v, side='left', sorter=None):
             raise ValueError('The size of sorter must be the same as the Tensor')
 
     dtype = mstype.int32
-    right = (side == 'right')
+    right = side == 'right'
     search_sorted_ = P.SearchSorted(dtype, right)
     return search_sorted_(x, v, sorter)
 
@@ -2157,7 +2161,7 @@ def sum_to_size(input, *size):
     pre_axis = []
     if len(size) < input.ndim:
         pre_len = input.ndim - len(size)
-        pre_axis = [axis for axis in range(pre_len)]
+        pre_axis = list(range(pre_len))
 
     axes = _count_axes(size, input.shape, shape_input, pre_len, pre_axis)
     if axes:
@@ -3974,6 +3978,27 @@ def to(input_x, dtype):
     return F.cast(input_x, dtype)
 
 
+def to_(input_x, device=None, non_blocking=False):
+    r"""
+    Performs tensor device inplace conversion.
+    """
+    return inplace_to_device_(input_x, device, non_blocking)
+
+
+def delete_(input_x):
+    r"""
+    Delete tensor data.
+    """
+    return free_(input_x)
+
+
+def data(input_x):
+    r"""
+    Get tensor data.
+    """
+    return get_data_(input_x)
+
+
 def to_bool(input_x):
     r"""
     Converts input tensor dtype to bool.
@@ -4553,7 +4578,7 @@ def move_to(input, to, blocking=True):
     r"""
         Copy Tensor to target device synchronously or asynchronously, default synchronously. only support PyNative mode.
     """
-    raise ValueError(f"The method 'move_to' is not supported in jit.")
+    raise ValueError("The method 'move_to' is not supported in jit.")
 
 
 def index_put_(input, indices, values, accumulate=False):

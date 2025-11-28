@@ -1,4 +1,4 @@
-# Copyright 2020-2024 Huawei Technologies Co., Ltd
+# Copyright 2020-2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -734,20 +734,6 @@ class Parameter(Tensor_):
         Tensor_.wait_pipeline(self)
         self.param_info.requires_grad = value
         self._requires_grad = value
-
-    @property
-    def data(self):
-        """
-        Return the parameter object.
-
-        Examples:
-            >>> from mindspore import Tensor, Parameter
-            >>> import numpy as np
-            >>> x = Parameter(Tensor(np.array([[1, 2], [3, 4]], dtype=np.float32)), name="param")
-            >>> x.data
-            Parameter (name=param, shape=(2, 2), dtype=Float32, requires_grad=True)
-        """
-        return self
 
     def value(self):
         """

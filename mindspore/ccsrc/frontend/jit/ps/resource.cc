@@ -1,7 +1,7 @@
 /**
  * This is the C++ adaptation and derivative work of Myia (https://github.com/mila-iqia/myia/).
  *
- * Copyright 2019-2024 Huawei Technologies Co., Ltd
+ * Copyright 2019-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -433,6 +433,8 @@ BuiltInTypeMap &GetMethodMap() {
        {"bmm", std::string("bmm")},                                        // bmm()
        {"value", std::string("value_")},                                   // P.Load(param, U)
        {"to", std::string("to")},                                          // to()
+       {"to_", std::string("to_")},                                        // to_()
+       {"delete_", std::string("delete_")},                                // delete_()
        {"bool", std::string("to_bool")},                                   // bool()
        {"float", std::string("to_float")},                                 // float()
        {"half", std::string("to_half")},                                   // half()
@@ -591,6 +593,7 @@ BuiltInTypeMap &GetAttrMap() {
        {"strides", std::string("strides_")},    // C.strides_
        {"mH", std::string("adjoint")},          // C.adjoint
        {"mT", std::string("mT")},               // C.mT_
+       {"data", std::string("data")},           // C.data
      }},
     {kObjectTypeRowTensorType,
      {

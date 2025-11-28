@@ -13,17 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef MINDSPORE_CORE_OPS_VIEW_GET_DATA_STRIDES_CALC_H
-#define MINDSPORE_CORE_OPS_VIEW_GET_DATA_STRIDES_CALC_H
 
+#ifndef MINDSPORE_MINDSPORE_OPS_INFER_OPS_FUNC_IMPL_INPLACE_TO_DEVICE_H_
+#define MINDSPORE_MINDSPORE_OPS_INFER_OPS_FUNC_IMPL_INPLACE_TO_DEVICE_H_
 #include <vector>
-#include "view/view_strides_calculator.h"
-#include "view/reshape_strides_calc.h"
+#include <set>
+#include "ops/ops_func_impl/op_func_impl.h"
+#include "mindspore/ops/op_def/op_name.h"
 
 namespace mindspore {
 namespace ops {
-OPS_API TensorStorageInfoPtr GetDataBasicTypeCalc(const tensor::TensorPtr &input_tensor);
+class OPS_API InplaceToDeviceFuncImpl : public OpFuncImpl {};
 }  // namespace ops
 }  // namespace mindspore
-
-#endif  // MINDSPORE_CORE_OPS_VIEW_GET_DATA_STRIDES_CALC_H
+#endif  // MINDSPORE_MINDSPORE_OPS_INFER_OPS_FUNC_IMPL_INPLACE_TO_DEVICE_H_

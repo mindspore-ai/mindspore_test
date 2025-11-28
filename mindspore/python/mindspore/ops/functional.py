@@ -1,6 +1,6 @@
 # This is the Python adaptation and derivative work of Myia (https://github.com/mila-iqia/myia/).
 #
-# Copyright 2021-2024 Huawei Technologies Co., Ltd
+# Copyright 2021-2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -413,6 +413,7 @@ setattr(tensor_operator_registry, 'coo_add', coo_add)
 setattr(tensor_operator_registry, 'topk', topk)
 setattr(tensor_operator_registry, 'isfinite', isfinite)
 setattr(tensor_operator_registry, 'to', _cast)
+setattr(tensor_operator_registry, 'delete_', auto_generate.Free)
 setattr(tensor_operator_registry, 'bool', _cast)
 setattr(tensor_operator_registry, 'float', _cast)
 setattr(tensor_operator_registry, 'half', _cast)

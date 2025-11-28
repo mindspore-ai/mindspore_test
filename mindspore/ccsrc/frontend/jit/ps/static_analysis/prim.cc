@@ -1331,6 +1331,46 @@ EvalResultPtr InterpretGetAttrNode(const AbstractBasePtrList &args_abs_list, con
   return eng->ForwardConfig(out_conf, fn_conf);
 }
 
+EvalResultPtr InterpretTensorSetDataNode(const AbstractBasePtrList &args_abs_list, const AnfNodeConfigPtr &out_conf) {
+  MS_EXCEPTION_IF_NULL(out_conf);
+  auto out_node = out_conf->node();
+  MS_EXCEPTION_IF_NULL(out_node);
+  const auto cnode = out_node->cast_ptr<CNode>();
+  MS_EXCEPTION_IF_NULL(cnode);
+  auto fg = cnode->func_graph();
+  MS_EXCEPTION_IF_NULL(fg);
+  auto owner_abs = args_abs_list[0];
+  MS_EXCEPTION_IF_NULL(owner_abs);
+  if (!owner_abs->isa<abstract::AbstractRefTensor>() && !owner_abs->isa<abstract::AbstractTensor>()) {
+    MS_LOG(DEBUG) << "Expect AbstractRefTensor or AbstractTensor, but got: " << owner_abs->ToString();
+    return nullptr;
+  }
+  ValuePtr attr_str_value = args_abs_list[1]->BuildValue();
+  MS_EXCEPTION_IF_NULL(attr_str_value);
+  if (!attr_str_value->isa<StringImm>()) {
+    MS_LOG(INTERNAL_EXCEPTION) << "Expect a string, but got: " << attr_str_value->ToString();
+  }
+  auto attr_str = attr_str_value->cast<StringImmPtr>();
+  MS_EXCEPTION_IF_NULL(attr_str);
+  if (attr_str->value() != "data") {
+    MS_LOG(DEBUG) << "Expect set data, but got: " << attr_str->value();
+    return nullptr;
+  }
+  constexpr size_t min_set_data_input_size = 4;
+  size_t set_data_input_size = cnode->inputs().size();
+  if (set_data_input_size < min_set_data_input_size) {
+    MS_LOG(DEBUG) << "For Primitive SetData, got input size: " << set_data_input_size;
+    return nullptr;
+  }
+  const auto set_data_node =
+    fg->NewCNodeInOrder({NewValueNode(prim::kPrimSetData), cnode->input(kIndex1), cnode->input(kIndex3)});
+  MS_LOG(DEBUG) << "set_data_node: " << set_data_node->DebugString(AnfNode::DebugStringLevel::kLevel2);
+  auto eng = out_conf->engine();
+  MS_EXCEPTION_IF_NULL(eng);
+  auto fn_conf = eng->MakeConfig(set_data_node, out_conf->context(), out_conf->func_graph());
+  return eng->ForwardConfig(out_conf, fn_conf);
+}
+
 EvalResultPtr InterpretSetAttrNode(const AbstractBasePtrList &args_abs_list, const AnfNodeConfigPtr &out_conf) {
   MS_EXCEPTION_IF_NULL(out_conf);
   auto out_node = out_conf->node();
@@ -3513,7 +3553,10 @@ class SetAttrEvaluator final : public TransitionPrimEvaluator {
     if (res_abstract != nullptr) {
       return res_abstract;
     }
-
+    auto res = InterpretTensorSetDataNode(args_abs_list, out_conf);
+    if (res != nullptr) {
+      return res;
+    }
     return InterpretSetAttrNode(args_abs_list, out_conf);
   }
 };
