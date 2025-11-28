@@ -219,13 +219,13 @@ class Parameter(Tensor_):
         storage_format (str): Only Ascend device target is supported. It is used to specify the format of the weight
             loaded to the device. By default, the format is not changed. The optional values are ``"FRACTAL_NZ"`` ,
             ``"NC1HWC0"`` , ``"FRACTAL_Z"`` , etc. Default: ``""`` .
-        device(str): Only Ascend device target is supported. It is used to specify the device which the parameter is
-            stored. By default, the parameter will be stored on NPU while computing. When the device is specified as
-            ``"CPU"``, the parameter will be loaded into the device when it needs to be used, and unloaded to the CPU
-            after use. It takes effext only when `jit_level` is not ``"O2"`` and `memory_optimize_level` is ``O0``
-            in :func:`mindspore.set_context`. Less device memory is needed when device is specified as ``"CPU"``.
-            The parameter with ``"Remote"`` device type will be stored in remote and loaded to device when needed. The
-            ``"Remote"`` device type is an experimental option.
+        device (str): Only Ascend device target is supported. It is used to specify the device which the parameter
+            is stored. The optional values are ``"CPU"`` and ``"Remote"``. By default, the parameter will be stored
+            on NPU while computing. When the device is specified as ``"CPU"``, the parameter will be loaded into the
+            device when it needs to be used, and unloaded to the CPU after use. It takes effext only when `jit_level`
+            is not ``"O2"`` and `memory_optimize_level` is ``O0`` in :func:`mindspore.set_context`. Less device memory
+            is needed when device is specified as ``"CPU"``. The parameter with ``"Remote"`` device type will be stored
+            in remote and loaded to device when needed. The ``"Remote"`` device type is an experimental option.
 
     Examples:
         >>> import numpy as np
