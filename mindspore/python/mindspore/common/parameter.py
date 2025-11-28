@@ -255,11 +255,22 @@ class Parameter(Tensor_):
         init_data_flag = bool(isinstance(default_input, Tensor) and default_input.has_init)
         rc = sys.getrefcount(default_input)
         init_param = getattr(cls, "init_param", True)
+        # pylint: disable-msg=C0123
+        if isinstance(default_input, Tensor) and not isinstance(default_input, Parameter) \
+                and type(default_input) != Tensor:
+            input_class = type(default_input)
+            new_type = Parameter._get_combined_class(input_class)
+            obj = input_class.__new__(new_type, default_input)
+            obj.init_mode = None
+            obj.is_default_input_init = init_data_flag
+            if obj.has_init:
+                obj.init_mode = default_input
+            return obj
+
         input_class, *class_init_args = Parameter._get_parameter_new_args(default_input, rc, init_param)
         new_type = Parameter._get_base_class(input_class)
         obj = input_class.__new__(new_type)
         input_class.__init__(obj, *class_init_args)
-        # it's better to make the Initializer a kind of tensor.
         obj.init_mode = None
         obj.is_default_input_init = init_data_flag
         if obj.has_init:
@@ -344,6 +355,21 @@ class Parameter(Tensor_):
         else:
             new_type = type(input_class_name, (Parameter, input_class), {})
             Parameter._base_type[input_class_name] = new_type
+        return new_type
+
+    @staticmethod
+    def _get_combined_class(tensor_subclass):
+        """Create sub class of Parameter and tensor_subclass"""
+        class_name = f"Parameter{tensor_subclass.__name__}"
+
+        if class_name in Parameter._base_type:
+            return Parameter._base_type[class_name]
+        def new_init(self, default_input, *args, **kwargs):
+            Parameter.__init__(self, default_input, *args, **kwargs)
+            default_input.local_param_info = self.param_info
+
+        new_type = type(class_name, (tensor_subclass, Parameter), {'__init__':new_init})
+        Parameter._base_type[class_name] = new_type
         return new_type
 
     @staticmethod
@@ -588,7 +614,7 @@ class Parameter(Tensor_):
         if self.cache_shape:
             x.cache_shape = self.cache_shape
         if init != 'same':
-            shape = self.shape
+            shape = self._shape
             dtype = self.dtype
             tensor = initializer(init, shape=shape, dtype=dtype)
             x.set_data(tensor)
