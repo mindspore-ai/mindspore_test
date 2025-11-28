@@ -29,6 +29,7 @@ function_stream_status = {'record_event': False, 'wait_event': False, 'wait_stre
                           'current_stream': False, 'default_stream': False,
                           'communication_stream': False, 'StreamCtx': False}
 
+
 class Stream(Stream_):
     r"""
     Wrapper around a device stream.
@@ -57,6 +58,12 @@ class Stream(Stream_):
         else:
             super().__init__(priority)
         self.init_finished = True
+
+    def stream_id(self):
+        """
+        :return: stream id
+        """
+        return super().id
 
     def record_event(self, event=None):
         r"""

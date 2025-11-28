@@ -187,6 +187,28 @@ FuncGraphPtr CreateMorphGraph(const PrimitivePtr &prim) {
 
   return morph_fg;
 }
+
+void SetFlagForMorphFunc(const CNodePtr &cnode, const FuncGraphPtr &fg, const std::string &flag) {
+  int64_t num = -1;
+  if (cnode->HasAttr(flag)) {
+    auto value = cnode->GetAttr(flag);
+    num = GetValue<int64_t>(value);
+  }
+  if (num != -1) {
+    MS_LOG(DEBUG) << "The fg: " << fg->ToString() << " mark " << flag << ": " << num;
+    fg->set_attr(flag, MakeValue(static_cast<size_t>(num)));
+    fg->set_flag(FUNC_GRAPH_FLAG_NO_INLINE, true);
+  }
+}
+
+void MarkStreamInfoForMorphFunc(const CNodePtr &cnode, const FuncGraphPtr &fg) {
+  SetFlagForMorphFunc(cnode, fg, kFuncGraphFlagStreamId);
+  SetFlagForMorphFunc(cnode, fg, kFuncGraphFlagStreamLimitId);
+  SetFlagForMorphFunc(cnode, fg, kFuncGraphFlagCubeNum);
+  SetFlagForMorphFunc(cnode, fg, kFuncGraphFlagVectorNum);
+  SetFlagForMorphFunc(cnode, fg, kFuncGraphFlagStreamCtxAfter);
+  SetFlagForMorphFunc(cnode, fg, kFuncGraphFlagStreamLimitCtxAfter);
+}
 }  // namespace
 
 AnfNodePtr Morph::operator()(const OptimizerPtr &, const AnfNodePtr &node) {
@@ -247,6 +269,8 @@ AnfNodePtr Morph::operator()(const OptimizerPtr &, const AnfNodePtr &node) {
 
   // add monad parameters for funcgraph
   AddMonadParameterForFuncGraph(fg, cnode, new_cnode->size(), start_of_monad);
+  // Mark stream info
+  MarkStreamInfoForMorphFunc(cnode, fg);
 
   return new_cnode;
 }

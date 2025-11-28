@@ -63,8 +63,13 @@ const char kFuncGraphFlagAddedForwardU[] = "added_forward_u";
 // saved tensors hooks flag
 const char FUNC_GRAPH_FLAG_PACK_HOOK[] = "_saved_tensors_pack_hook";
 const char FUNC_GRAPH_FLAG_UNPACK_HOOK[] = "_saved_tensors_unpack_hook";
-const char FUNC_GRAPH_FLAG_NO_INLINE_WITH_STREAM_CTX[] = "no_inline_with_stream_ctx";
+
 const char kFuncGraphFlagStreamId[] = "stream_id";
+const char kFuncGraphFlagStreamLimitId[] = "stream_limit_id";
+const char kFuncGraphFlagCubeNum[] = "cube_num";
+const char kFuncGraphFlagVectorNum[] = "vector_num";
+const char kFuncGraphFlagStreamCtxAfter[] = "stream_ctx_after";
+const char kFuncGraphFlagStreamLimitCtxAfter[] = "stream_limit_ctx_after";
 }  // namespace mindspore
 
 #endif  // MINDSPORE_CORE_IR_FUNC_GRAPH_FLAG_H_

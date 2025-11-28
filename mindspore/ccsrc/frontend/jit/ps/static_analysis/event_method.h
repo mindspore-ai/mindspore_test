@@ -20,10 +20,10 @@
 #include <string>
 #include "ir/anf.h"
 #include "ir/func_graph.h"
-#include "mindspore/ccsrc/include/utils/visible.h"
+#include "include/utils/visible.h"
 
 namespace mindspore::pipeline {
-void FRONTEND_EXPORT EventMethod(const FuncGraphPtr &func_graph);
+bool FRONTEND_EXPORT EventMethod(const FuncGraphPtr &func_graph);
 }  // namespace mindspore::pipeline
 
 #endif  // MINDSPORE_CCSRC_FRONTEND_JIT_PARSE_EVENT_METHOD_H_

@@ -194,7 +194,8 @@ void UpdateFuncGraphParameter(const FuncGraphPtr &func_graph, const std::vector<
     AbstractBasePtr param_abs = param_node->abstract();
     MS_EXCEPTION_IF_NULL(param_abs);
     if ((param_abs->BuildValue() == kValueAny && !ContainsAbstractFunction(param_abs)) ||
-        EnableGradForScalar(param_abs) || EnableSequenceBroaden(param_abs)) {
+        EnableGradForScalar(param_abs) || EnableSequenceBroaden(param_abs) ||
+        param_abs->isa<abstract::AbstractEvent>()) {
       new_paras.push_back(param_node);
     } else {
       MS_LOG(INFO) << "Remove the " << i << "th parameter, since it's passed a constant argument.";
@@ -2275,7 +2276,7 @@ std::vector<PassItem> JitPipeline(const ResourcePtr &resource, bool build_top_gr
       (void)jit_passes.emplace(kBootstrap, BootstrapAction);
     }
     (void)jit_passes.emplace(kTypeInference, TypeInferenceAction);
-    (void)jit_passes.emplace_back(kEventMethod, EventMethodAction);
+    (void)jit_passes.emplace(kEventMethod, EventMethodAction);
     (void)jit_passes.emplace(kAutoMonad, AutoMonadAction);
     (void)jit_passes.emplace(kGraphReusing, GraphReusingAction);
     (void)jit_passes.emplace(kPreAutoParallel, SetTrainingFlagPass);

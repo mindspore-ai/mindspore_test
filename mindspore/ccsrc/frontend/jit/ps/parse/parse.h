@@ -166,9 +166,20 @@ class Parser {
   FunctionBlockPtr ParseAssert(const FunctionBlockPtr &block, const py::object &node);
   // Process with statement.
   FunctionBlockPtr ParseWith(const FunctionBlockPtr &block, const py::object &node);
-
-  py::object GetMSJitStreamObj(const FunctionBlockPtr &block, const py::object &context_expr_obj);
-
+  // Check if is StreamCtx.
+  bool IsStreamCtx(const FunctionBlockPtr &block, const py::object &context_expr_obj);
+  // Check if is StreamLimitCtx.
+  bool IsStreamLimitCtx(const FunctionBlockPtr &block, const py::object &context_expr_obj);
+  // New ndoe for arg of StreamCtx node.
+  AnfNodePtr NewStreamCtxArgNode(const FunctionBlockPtr &block, const py::object &context_expr_obj);
+  // New nodes for args of StreamLimitCtx.
+  std::vector<AnfNodePtr> NewStreamLimitCtxArgsNode(const FunctionBlockPtr &block, const py::object &context_expr_obj);
+  // Process with StreamCtx.
+  FunctionBlockPtr StreamCtxBlock(const FunctionBlockPtr &block, const py::object &node,
+                                  const py::object &context_expr_obj);
+  // Process with StreamLimitCtx.
+  FunctionBlockPtr StreamLimitCtxBlock(const FunctionBlockPtr &block, const py::object &node,
+                                       const py::object &context_expr_obj);
   // Process withitem.
   AnfNodePtr ParseWithitem(const FunctionBlockPtr &block, const py::object &node, const AnfNodePtr &context_expr_node);
   // Process the expr and slice node method list.
@@ -436,11 +447,6 @@ class Parser {
   // Error code setwhen parsing ast tree.
   ParseStatusCode errcode_;
   py::object list_pop_target_obj_;
-
-  std::stack<int64_t> stream_ids_;
-  void SetCurrentStreamId(const int64_t stream_id);
-  void ClearCurrentStreamId();
-  void TagSubgraphWithStream(const FuncGraphPtr &subgraph);
 
   // Hold all reference for FunctionBlock in this round of parsing,
   // so in FunctionBlock class we can use FunctionBlock* in member

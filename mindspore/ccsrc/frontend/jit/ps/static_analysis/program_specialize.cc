@@ -165,7 +165,7 @@ bool ExistInplaceAbsOrEventInSequence(const AbstractBasePtr &abs_base) {
     return std::any_of(tuple_elements.begin(), tuple_elements.end(), [](const auto &ele) {
       AbstractBasePtr ele_abs = ele;
       if (ele->inplace_abstract() != nullptr || ele_abs->isa<abstract::AbstractEvent>()) {
-        MS_LOG(DEBUG) << "Exist inplace_abstract or event in Sequence: " << ele->inplace_abstract()->ToString();
+        MS_LOG(DEBUG) << "Exist inplace_abstract or event in Sequence: " << ele->ToString();
         return true;
       }
       return false;
