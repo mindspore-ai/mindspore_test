@@ -80,6 +80,10 @@ enum Approximate : int64_t { NONE = 0, TANH = 1 };
 enum Device : int64_t { DEVICE_ASCEND = 0, DEVICE_NPU_LOWER = 1, DEVICE_CPU = 2, DEVICE_CPU_LOWER = 3 };
 
 enum QuantMode : int64_t { STATIC = 0, DYNAMIC = 1 };
+
+enum CompareOp : int64_t { EQUAL = 0, GREATER_THAN = 1, LESS_THAN = 2 };
+
+enum SignalOpMode : int64_t { SET = 0, ADD = 1 };
 }  // namespace ops
 }  // namespace mindspore
 #endif  // MINDSPORE_OPS_OP_ENUM_H_
