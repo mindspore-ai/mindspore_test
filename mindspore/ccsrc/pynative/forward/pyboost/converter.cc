@@ -24,9 +24,11 @@
 #include <unordered_set>
 #include <algorithm>
 #include "include/utils/convert_utils_py.h"
+#include "pynative/forward/pyboost/fallback.h"
 #include "pynative/utils/pynative_utils.h"
 #include "include/utils/tensor_py.h"
 #include "include/utils/tensor_utils.h"
+#include "include/utils/python_attr.h"
 #include "include/utils/pynative/py_parse.h"
 #include "include/utils/frontend/primitive_utils.h"
 #include "mindspore/core/include/utils/value_utils.h"
@@ -327,6 +329,14 @@ bool IsFunctionalRegInMap(const std::string &function_name, bool is_method) {
   const auto &signature_map = prim::GetFunctionalSignatureMap(is_method);
   return signature_map.find(function_name) != signature_map.end();
 }
+
+bool PyObjectHasFallbackAttr(PyObject *obj) {
+  auto tensor = tensor::ConvertPyObjectToTensor(obj);
+  if (tensor == nullptr) {
+    return false;
+  }
+  return tensor->has_fallback();
+}
 }  // namespace
 namespace py = pybind11;
 
@@ -376,6 +386,9 @@ std::optional<std::vector<int64_t>> Converter::ToBasicIntVectorOptional(PyObject
 }
 
 void Converter::Parse(PyObject *python_args) {
+  // Converter is a static object
+  // reset the flag every time.
+  has_fallback_ = false;
   Py_ssize_t args_size = (python_args && python_args != Py_None) ? GetListOrTupleSize(python_args) : 0;
   if (op_def_->args_.size() != static_cast<size_t>(args_size)) {
     MS_LOG(EXCEPTION) << "For operator " << op_def_->name_ << ", it requires " << op_def_->args_.size()
@@ -387,6 +400,13 @@ ValuePtr Converter::ToTensor(PyObject *python_args, size_t i) {
   // type of python_args is py::list
   const auto &op_arg = op_def_->args_[i];
   PyObject *obj = PyList_GetItem(python_args, i);
+
+  if (!has_fallback_) {
+    if (fallback_enabled() && PyObjectHasFallbackAttr(obj)) {
+      has_fallback_ = true;
+    }
+  }
+
   source_type_[i] = OP_DTYPE::DT_BEGIN;
   auto tensor = py_parse::ConvertPyObjectTensor(obj);
   if (tensor != nullptr) {
@@ -427,8 +447,15 @@ ValueTuplePtr Converter::ToTensorList(PyObject *python_args, size_t i) {
   source_type_[i] = OP_DTYPE::DT_BEGIN;
   auto val_seq = py_parse::ConvertSequence<typename T::pybind_type, ValueTuple, py_parse::ConvertTensor>(obj);
   if (val_seq != nullptr && val_seq->template isa<ValueTuple>()) {
-    EnablePipelineForTupleTensor(val_seq->template cast<ValueTuplePtr>());
-    return val_seq->template cast<ValueTuplePtr>();
+    auto value_tuple = val_seq->template cast<ValueTuplePtr>();
+    if (!has_fallback_ && fallback_enabled()) {
+      const auto &values = value_tuple->value();
+      has_fallback_ = std::any_of(values.begin(), values.end(), [](const ValuePtr &value) {
+        return value != nullptr && value->isa<Tensor>() && value->cast<TensorPtr>()->has_fallback();
+      });
+    }
+    EnablePipelineForTupleTensor(value_tuple);
+    return value_tuple;
   }
   return ConvertValueTupleByCastDtype(python_args, op_arg, i);
 }
@@ -1601,6 +1628,30 @@ void ParserArgs::PrintConvertError(size_t index) {
        << ").";
   }
   MS_EXCEPTION(TypeError) << ss.str();
+}
+
+void ParserArgs::CheckHasFallback() {
+  if (!fallback_enabled()) {
+    return;
+  }
+  for (const auto &arg : arg_list_) {
+    MS_LOG(DEBUG) << "Has fallback " << PyObjectHasFallbackAttr(arg) << " for " << PyUnicode_AsUTF8(PyObject_Str(arg));
+    if (PyObjectHasFallbackAttr(arg)) {
+      has_fallback_ = true;
+      return;
+    }
+  }
+}
+
+void ParserArgs::CheckHasFallback(PyObject *obj) {
+  if (!fallback_enabled()) {
+    return;
+  }
+  MS_LOG(DEBUG) << "Has fallback " << PyObjectHasFallbackAttr(obj) << " for " << PyUnicode_AsUTF8(PyObject_Str(obj));
+  if (PyObjectHasFallbackAttr(obj)) {
+    has_fallback_ = true;
+    return;
+  }
 }
 
 std::vector<std::string> GetInvalidKwargsName(PyObject *kwargs, const std::vector<FunctionParameter> &params) {

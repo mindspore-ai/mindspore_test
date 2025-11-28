@@ -22,6 +22,7 @@
 #include <string>
 #include <memory>
 
+#include "ir/tensor_new.h"
 #include "pybind11/complex.h"
 #include "pybind_api/ir/tensor/tensor_py.h"
 #include "ir/tensor.h"
@@ -37,12 +38,14 @@
 #include "include/utils/pynative/adapter.h"
 #include "include/utils/exception.h"
 #include "include/utils/pyobj_manager.h"
+#include "include/utils/python_attr.h"
 #include "include/runtime/pipeline/pipeline.h"
 #include "pynative/utils/runtime/op_executor.h"
 #include "include/frontend/jit/trace/trace_recorder_interface.h"
 #include "pybind_api/ir/tensor/storage/storage_py.h"
 #include "mindspore/ccsrc/pynative/backward/backward_node_py.h"
 #include "pynative/forward/pyboost/converter.h"
+#include "pynative/forward/pyboost/fallback.h"
 #include "mindspore/ops/view/view_strides_calculator.h"
 #include "pynative/utils/pyboost/pyboost_utils.h"
 #include "pynative/utils/runtime/op_runner.h"
@@ -644,6 +647,29 @@ extern int TensorPython_set_data(PyObject *self, PyObject *other, void *) {
   HANDLE_MS_EXCEPTION_RET_FAIL_END
 }
 
+extern PyObject *TensorPy_update_data(PyObject *self, PyObject *args) {
+  HANDLE_MS_EXCEPTION
+  PyObject *other;
+  if (!PyArg_ParseTuple(args, "O", &other)) {
+    return nullptr;
+  }
+
+  if (!PyObject_TypeCheck(other, TensorPyType)) {
+    auto *other_type = Py_TYPE(other);
+    MS_EXCEPTION_IF_NULL(other_type);
+    auto other_type_name = other_type->tp_name != nullptr ? other_type->tp_name : "<unknown>";
+    MS_LOG(EXCEPTION) << "Only support input type Tensor, but got " << other_type_name;
+  }
+
+  PyType<TensorPy> *self_tensor = (PyType<TensorPy> *)self;
+  PyType<TensorPy> *other_tensor = (PyType<TensorPy> *)(other);
+  self_tensor->value.GetTensor()->shallow_copy_from(*other_tensor->value.GetTensor());
+
+  Py_INCREF(self);
+  return self;
+  HANDLE_MS_EXCEPTION_END
+}
+
 static PyGetSetDef PyTensorPython_getseters[] = {
   {"param_info", (getter)TensorPython_get_paramInfo, (setter)TensorPython_set_paramInfo, "paramInfo of the tensor",
    nullptr},
@@ -782,8 +808,61 @@ extern int TensorPy_pyinit(PyObject *obj, PyObject *args, PyObject *kwargs) {
   self->value.SetDevice(TensorPyImpl::GetDeviceFromPython(p));
   self->value.SetSymbolicShape(TensorPyImpl::GetSymbolicShapeFromPython(p));
   self->value.SetInitFinished(true);
+
+  auto fallback_attr = FastGetPyObjectAttr(obj, pynative::GetFallbackStr().c_str());
+  if (fallback_attr.ptr() != nullptr) {
+    MS_LOG(DEBUG) << "Set fallback flag to " << tensor->ToString();
+    tensor->set_has_fallback(true);
+  }
+
   return 0;
   HANDLE_MS_EXCEPTION_RET_FAIL_END
+}
+
+PyObject *TensorPy_make_subclass(PyTypeObject *, PyObject *args, PyObject *kwargs) {
+  PyObject *cls_obj = nullptr;
+  PyObject *local_tensor_obj = nullptr;
+
+  // Expected: args = (cls, tensor)
+  if (!PyArg_ParseTuple(args, "OO", &cls_obj, &local_tensor_obj)) {
+    PyErr_SetString(PyExc_TypeError, "Expected (cls, local_tensor)");
+    return nullptr;
+  }
+
+  if (!PyType_Check(cls_obj)) {
+    PyErr_SetString(PyExc_TypeError, "cls must be a type");
+    return nullptr;
+  }
+
+  if (!tensor::IsPyObjectTensorPy(local_tensor_obj)) {
+    PyErr_SetString(PyExc_TypeError, "local_tensor must be a Tensor");
+    return nullptr;
+  }
+
+  auto local_tensor = ConvertPyObjectToTensor(local_tensor_obj);
+
+  PyTypeObject *type = (PyTypeObject *)cls_obj;
+  // alloc memory
+  PyObject *obj = type->tp_alloc(type, 0);
+  MS_EXCEPTION_IF_NULL(obj);
+
+  auto v = reinterpret_cast<PyType<TensorPy> *>(obj);
+  MS_EXCEPTION_IF_NULL(v);
+
+  if (local_tensor->auto_grad_meta_data() == nullptr) {
+    local_tensor->set_auto_grad_meta_data(std::make_shared<pynative::autograd::AutoGradMetaData>());
+  }
+  auto new_tensor = std::make_shared<Tensor>(*local_tensor);
+  // share local_tensor with dtensor.
+  new (&v->value) TensorPy(new_tensor);
+  v->value.SetInitFinished(true);
+
+  auto attr = FastGetPyObjectAttr(obj, pynative::GetFallbackStr().c_str());
+  if (attr.ptr() != nullptr) {
+    MS_LOG(DEBUG) << "Set fallback flag to " << new_tensor->ToString();
+    new_tensor->set_has_fallback(true);
+  }
+  return obj;
 }
 
 extern PyObject *TensorPython_set_paramInfo_(PyObject *, PyObject *args) {
@@ -1540,6 +1619,9 @@ extern PyObject *TensorPython_Set(PyObject *self, PyObject *args, PyObject *kwar
 }
 
 static PyMethodDef Tensor_methods[] = {
+  {"_make_subclass", (PyCFunction)TensorPy_make_subclass, METH_STATIC | METH_VARARGS | METH_KEYWORDS,
+   "Make subclass of Tensor"},
+  {"_update_data", (PyCFunction)TensorPy_update_data, METH_VARARGS, "Update data of Tensor"},
   {"set_param_info", (PyCFunction)TensorPython_set_paramInfo_, METH_STATIC | METH_VARARGS, "set param info"},
   {"asnumpy", (PyCFunction)TensorPython_asnumpy, METH_VARARGS, R"mydelimiter(
                                 Convert tensor to numpy.ndarray.

@@ -17,6 +17,7 @@
 #include "include/utils/pybind_api/api_register.h"
 #include "pynative/forward/pyboost/auto_generate/tensor_func_utils.h"
 #include "pynative/forward/pyboost/converter.h"
+#include "pynative/forward/pyboost/fallback.h"
 #include "pynative/forward/pyboost/arg_handler_py.h"
 #include "include/frontend/jit/trace/trace_recorder_interface.h"
 #include "pynative/forward/pyboost/auto_generate/pyboost_core.h"

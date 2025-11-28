@@ -1448,6 +1448,24 @@ tensor::TensorPtr Common::CaculateGradNorm(const tensor::TensorPtr &grad) {
 }
 }  // namespace PyNativeAlgo
 
+void RegOpCall(const py::module *m) {
+  (void)py::class_<OpCall, std::shared_ptr<OpCall>>(*m, "OpCall")
+    .def(py::init<>())
+    .def("__call__", &OpCall::operator())
+    .def_property_readonly("name", &OpCall::name)
+    .def("__str__", [](const std::shared_ptr<OpCall> &op_call) { return "<OpCall name=" + op_call->name() + ">"; })
+    .def("__repr__", [](const std::shared_ptr<OpCall> &op_call) { return "<OpCall name=" + op_call->name() + ">"; });
+
+  (void)py::class_<TensorOverloadCall, std::shared_ptr<TensorOverloadCall>>(*m, "TensorOverloadCall")
+    .def(py::init<>())
+    .def("__call__", &TensorOverloadCall::operator())
+    .def_property_readonly("name", &TensorOverloadCall::name)
+    .def("__str__",
+         [](const std::shared_ptr<TensorOverloadCall> &op_call) { return "<OpCall name=" + op_call->name() + ">"; })
+    .def("__repr__",
+         [](const std::shared_ptr<TensorOverloadCall> &op_call) { return "<OpCall name=" + op_call->name() + ">"; });
+}
+
 void DispatchOp(const std::shared_ptr<runtime::AsyncTask> &task) {
   GilReleaseWithCheck no_gil;
   static bool need_sync = runtime::OpExecutor::NeedSync();
