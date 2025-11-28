@@ -26,7 +26,7 @@
 #include <string>
 #include <vector>
 #include "include/utils/common.h"
-#include "include/cluster/topology/collective_manager.h"
+#include "include/runtime/hardware_abstract/collective/collective_manager.h"
 #include "include/utils/anfalgo.h"
 #include "utils/ms_context.h"
 #include "utils/log_adapter.h"

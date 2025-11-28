@@ -27,7 +27,7 @@
 #include "include/runtime/hardware_abstract/kernel_base/graph_fusion/framework_utils.h"
 #include "include/backend/common/pass_manager/helper.h"
 #include "cluster/rpc/tcp/constants.h"
-#include "include/cluster/topology/collective_manager.h"
+#include "include/runtime/hardware_abstract/collective/collective_manager.h"
 #include "mindspore/core/include/utils/ms_utils.h"
 namespace mindspore {
 namespace kernel {

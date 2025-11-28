@@ -50,7 +50,7 @@
 #include "backend/ge_backend/dump/deprecated_env.h"
 #endif
 #include "include/utils/callbacks.h"
-#include "include/cluster/topology/collective_manager.h"
+#include "include/runtime/hardware_abstract/collective/collective_manager.h"
 #include "backend/ge_backend/graph_ir/utils.h"
 #include "abstract/abstract_function.h"
 #include "primitive/array_ops.h"

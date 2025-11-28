@@ -51,7 +51,7 @@
 #include "runtime/core/graph_executor/pipeline/runtime_pipeline.h"
 #include "runtime/core/graph_scheduler/base/graph_scheduler.h"
 #include "tools/profiler/profiler.h"
-#include "include/cluster/topology/collective_manager.h"
+#include "include/runtime/hardware_abstract/collective/collective_manager.h"
 #include "tools/profiler/profiling.h"
 #include "include/runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/graph_kernel_builder_manager.h"
 #include "include/runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel_info.h"

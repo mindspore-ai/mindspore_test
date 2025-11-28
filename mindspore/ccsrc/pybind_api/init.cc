@@ -39,7 +39,7 @@
 #include "include/frontend/parallel/costmodel_context.h"
 #include "include/cluster/topology/ps_context.h"
 #include "include/cluster/init.h"
-#include "include/cluster/topology/collective_manager.h"
+#include "include/runtime/hardware_abstract/collective/collective_manager.h"
 #include "include/cluster/rpc/tcp_store.h"
 #include "include/backend/backend_manager/backend_manager.h"
 #include "include/runtime/hardware_abstract/device_context/device_context_manager.h"

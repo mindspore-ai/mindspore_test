@@ -27,7 +27,7 @@
 #include "include/backend/common/kernel_graph/anf_runtime_algorithm.h"
 #include "include/utils/anfalgo.h"
 #include "include/utils/utils.h"
-#include "include/cluster/topology/collective_manager.h"
+#include "include/runtime/hardware_abstract/collective/collective_manager.h"
 #include "utils/ms_context.h"
 #include "plugin/ascend/res_manager/hccl_adapter/hccl_adapter.h"
 #include "plugin/ascend/res_manager/collective/multi_ascend_collective_comm_lib.h"

@@ -44,7 +44,7 @@
 #include "primitive/framework_ops.h"
 #include "pybind_api/gil_scoped_long_running.h"
 #include "primitive/auto_generate/gen_ops_primitive_s.h"
-#include "include/cluster/topology/collective_manager.h"
+#include "include/runtime/hardware_abstract/collective/collective_manager.h"
 #include "include/backend/common/exec_order/execute_order_tracker.h"
 #include "runtime/core/actors/remote_memory/mem_counted_cache.h"
 #include "runtime/core/actors/remote_memory/mem_use_analyzer.h"

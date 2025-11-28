@@ -41,7 +41,7 @@
 #include "plugin/gpu/graph_optimizer/pass/base/reg_gpu_const_input_to_attr.h"
 #include "plugin/gpu/graph_optimizer/somas/gpu_somas.h"
 #include "plugin/gpu/graph_optimizer/stream_assign/gpu_stream_assign.h"
-#include "include/cluster/topology/collective_manager.h"
+#include "include/runtime/hardware_abstract/collective/collective_manager.h"
 #include "include/runtime/hardware_abstract/data_queue/data_queue_mgr.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_info.h"
 #include "include/runtime/hardware_abstract/kernel_base/common_utils.h"

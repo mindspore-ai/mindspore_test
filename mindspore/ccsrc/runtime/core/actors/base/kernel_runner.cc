@@ -42,7 +42,7 @@
 #include "utils/log_adapter.h"
 #include "include/runtime/memory/mem_pool/mem_tracker.h"
 #include "include/backend/common/exec_order/execute_order_tracker.h"
-#include "include/cluster/topology/collective_manager.h"
+#include "include/runtime/hardware_abstract/collective/collective_manager.h"
 #include "include/runtime/utils/runtime_conf/runtime_conf.h"
 #include "backend/common/pass_manager/dynamic_shape_helper.h"
 #include "include/runtime/hardware_abstract/kernel_base/graph_fusion/framework_utils.h"

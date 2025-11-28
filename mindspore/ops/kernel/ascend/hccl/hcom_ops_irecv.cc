@@ -16,7 +16,7 @@
 
 #include "kernel/ascend/hccl/hcom_ops_irecv.h"
 #include <string>
-#include "include/cluster/topology/collective_manager.h"
+#include "include/runtime/hardware_abstract/collective/collective_manager.h"
 
 namespace mindspore {
 namespace kernel {
