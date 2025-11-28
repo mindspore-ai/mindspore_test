@@ -1,7 +1,7 @@
 mindspore.graph
 ==================
 
-Graph compilation module, open internal compilation interface, allowing users to change compilation behavior at the Python layer.
+Graph compilation module. This module opens internal compilation interfaces, allowing users to modify compilation behavior at the Python layer.
 
 Graph compilation
 -----------------
@@ -12,4 +12,4 @@ Graph compilation
     :template: classtemplate.rst
 
     mindspore.graph.register_custom_backend
-
+    mindspore.graph.register_custom_pass

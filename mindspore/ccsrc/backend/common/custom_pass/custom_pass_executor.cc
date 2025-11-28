@@ -18,7 +18,7 @@
 
 #include <memory>
 #include <string>
-#include "backend/common/custom_pass/custom_pass_plugin.h"
+#include "backend/common/custom_pass/custom_pass_plugin_manager.h"
 #include "include/backend/common/pass_manager/graph_optimizer.h"
 #include "include/utils/anfalgo.h"
 #include "utils/log_adapter.h"

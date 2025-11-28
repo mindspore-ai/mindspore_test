@@ -16,7 +16,7 @@
 
 #include "pybind_api/graph/custom_pass_py.h"
 #include <string>
-#include "backend/common/custom_pass/custom_pass_plugin.h"
+#include "backend/common/custom_pass/custom_pass_plugin_manager.h"
 #include "utils/log_adapter.h"
 
 namespace mindspore {

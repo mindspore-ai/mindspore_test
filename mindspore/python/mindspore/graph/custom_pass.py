@@ -20,11 +20,11 @@ This module provides experimental APIs for registering custom optimization passe
 These APIs are subject to change and should be used with caution in production code.
 """
 
-import mindspore._c_expression as _c_expression
+from mindspore import _c_expression
 
 
 def register_custom_pass(pass_name: str, plugin_so_path: str, device: str = "all", stage: str = "") -> bool:
-    """Register a custom pass plugin.
+    """Register a custom pass to modify graph structure for default ``"ms_backend"`` backend.
 
     .. warning::
         This is an experimental API that is subject to change or deletion.
@@ -32,12 +32,12 @@ def register_custom_pass(pass_name: str, plugin_so_path: str, device: str = "all
     Args:
         pass_name (str): Name of the pass expected to be provided by the plugin.
         plugin_so_path (str): Absolute path to the plugin shared library (.so file).
-        device (str): Target device for the pass. Supported values: "cpu", "gpu", "ascend", or "all".
-            Default: "all".
-        stage (str): Pass stage. Reserved field for future use. Default: "".
+        device (str, optional): Target device for the pass. Supported values: ``"cpu"`` , ``"gpu"`` , ``"ascend"`` ,
+            or ``"all"`` . Default: ``"all"`` .
+        stage (str, optional): Pass stage. Reserved field for future use. Default: ``""`` .
 
     Returns:
-        bool: True if plugin loaded successfully, False otherwise.
+        bool. Returns ``True`` if the custom pass is registered successfully, otherwise returns ``False``.
 
     Examples:
         >>> import mindspore.graph as graph
