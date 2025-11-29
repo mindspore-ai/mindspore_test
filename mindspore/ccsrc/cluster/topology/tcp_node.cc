@@ -151,7 +151,7 @@ bool TcpNodeBase::Initialized() {
 }
 
 bool TcpNodeBase::Initialize() {
-  MS_LOG(DEBUG) << "Begin to Initialize TcpNodeBase.";
+  MS_LOG(WARNING) << "Begin to Initialize TcpNodeBase.";
   if (address_id_.empty()) {
     MS_LOG(INFO) << "TcpNodeBase address is None.";
     return false;
@@ -197,6 +197,7 @@ bool TcpNodeBase::Initialize() {
     return false;
   }
   client_ip_ = tcp_client_->GetClientIPByDstUrl(server_url);
+  MS_LOG(WARNING) << "Finish to Initialize TcpNodeBase.";
   return true;
 }
 

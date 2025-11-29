@@ -55,7 +55,7 @@ bool MetaServerNode::Initialize() {
   // Init metadata for the cluster.
   SetMetaData();
 
-  MS_LOG(DEBUG) << "Begin to Initialize TcpNodeBase.";
+  MS_LOG(WARNING) << "Begin to Initialize MetaServerNode.";
   if (address_id_.empty()) {
     MS_LOG(DEBUG) << "MetaServerNode address_id_ is None.";
     // Init the address of meta server node.
@@ -74,6 +74,7 @@ bool MetaServerNode::Initialize() {
 
   // Init the thread for monitoring the state of the cluster topo.
   topo_monitor_ = std::thread(&MetaServerNode::UpdateTopoState, this);
+  MS_LOG(WARNING) << "Finish to Initialize MetaServerNode.";
   return true;
 }
 
