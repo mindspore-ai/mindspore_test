@@ -396,6 +396,24 @@ class BackendFuncGraphMock {
     resource_->set_pipeline_level(pipeline::kLevelJit);
   }
 
+  void SetJitConfig(const py::object &obj) {
+    if (!py::isinstance<py::dict>(obj)) {
+      MS_LOG(WARNING) << "Invalid config:" << obj;
+      return;
+    }
+    std::map<std::string, std::string> jit_config;
+    auto dick_obj = py::cast<py::dict>(obj);
+    for (const auto &pair : dick_obj) {
+      if (!py::isinstance<py::str>(pair.first) || !py::isinstance<py::str>(pair.second)) {
+        MS_LOG(WARNING) << "Invalid config:" << obj;
+        return;
+      }
+      jit_config[py::cast<std::string>(py::cast<py::str>(pair.first))] =
+        py::cast<std::string>(py::cast<py::str>(pair.second));
+    }
+    PhaseManager::GetInstance().set_jit_config(jit_config);
+  }
+
   void Compile() {
     MS_EXCEPTION_IF_NULL(resource_);
     MS_EXCEPTION_IF_NULL(func_graph_);
@@ -447,6 +465,7 @@ void RegBackendGraphMock(py::module *m) {
     .def("set_cell_reuse_", &BackendFuncGraphMock::SetCellReuse, "Executor SetAbstract function.")
     .def("set_input_", &BackendFuncGraphMock::SetInput, "Executor SetAbstract function.")
     .def("set_target_", &BackendFuncGraphMock::SetTarget, "Executor SetAbstract function.")
+    .def("set_jit_config_", &BackendFuncGraphMock::SetJitConfig, "Executor SetAbstract function.")
     .def("infer_", &BackendFuncGraphMock::Infer, "Executor Infer function.")
     .def("native_infer_", &BackendFuncGraphMock::NativeInfer, "Executor Infer function.")
     .def("skip_infer_", &BackendFuncGraphMock::SkipInfer, "Executor Infer function.")

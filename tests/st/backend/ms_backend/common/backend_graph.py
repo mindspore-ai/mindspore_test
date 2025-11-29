@@ -86,5 +86,8 @@ class BackendGraph(BackendGraphMock_):
         '''
         return self.skip_infer_()
 
+    def set_jit_config(self, config):
+        return self.set_jit_config_(config)
+
     def compile(self):
         return self.compile_()
