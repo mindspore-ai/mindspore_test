@@ -2220,7 +2220,7 @@ def inverse_ext(input):
     Compute the inverse of the input matrix.
 
     Args:
-        input (Tensor): A matrix to be calculated. Input `input` must be at least two dimensions, and the size of
+        input (Tensor): A matrix to be calculated. Input `input` must be at least 2-D, at most 6-D, and the size of
             the last two dimensions must be the same size. And the matrix must be invertible.
 
     Returns:
@@ -2235,12 +2235,11 @@ def inverse_ext(input):
         ``Ascend``
 
     Examples:
-        >>> from mindspore import Tensor, ops
-        >>> from mindspore import dtype as mstype
-        >>> x = Tensor([[1., 2.], [3., 4.]], mstype.float32)
-        >>> print(ops.inverse_ext(x))
-        [[-2.   1. ]
-         [ 1.5 -0.5]]
+        >>> import mindspore
+        >>> x = mindspore.tensor([[1., 2.], [3., 4.]], mindspore.float32)
+        >>> print(mindspore.ops.inverse_ext(x))
+        [[-2.0000002   1.0000001 ]
+         [ 1.5000001  -0.50000006]]
     """
     return matrix_inverse_ext(input)
 
