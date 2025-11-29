@@ -247,6 +247,9 @@ int PyFuncCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs, const 
   if (auto ret = KernelMod::Resize(inputs, outputs); ret != KRET_OK) {
     return ret;
   }
+  if (primitive_->HasAttr(kAttrDynInputSizes)) {
+    MS_LOG(EXCEPTION) << "Custom operator with func_type=py_func, Tuple/List inputs are not supported.";
+  }
   func_id_ = GetValue<int64_t>(primitive_->GetAttr("fn_id"));
   fake_output_ = GetValue<bool>(primitive_->GetAttr("fake_output"));
   single_scalar_output_ = GetValue<bool>(primitive_->GetAttr("single_scalar_output"));
