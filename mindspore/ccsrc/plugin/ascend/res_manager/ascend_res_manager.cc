@@ -653,6 +653,10 @@ bool AscendResManager::SyncCopy(const DeviceAddressPtr &dst_device_sync, const D
                                 const DeviceAddressExtPtr &dst_ext) const {
   MS_EXCEPTION_IF_NULL(dst_device_sync);
   MS_EXCEPTION_IF_NULL(src_device_sync);
+  MS_LOG(DEBUG) << "Sync copy from device address:" << src_device_sync->ToString()
+                << " src ext:" << (src_ext == nullptr ? " null" : src_ext->ToString())
+                << " to:" << dst_device_sync->ToString()
+                << " dst ext:" << (dst_ext == nullptr ? " null" : dst_ext->ToString()) << " stream id:" << stream_id;
   if (dst_device_sync->GetDeviceType() == DeviceType::kAscend && src_device_sync->GetDeviceType() == DeviceType::kCPU) {
     return SyncHostToDevice(dst_device_sync, src_device_sync, stream_id, src_ext, dst_ext);
   }
@@ -667,6 +671,10 @@ bool AscendResManager::AsyncCopy(const DeviceAddressPtr &dst_device_sync, const 
                                  const DeviceAddressExtPtr &dst_ext) const {
   MS_EXCEPTION_IF_NULL(dst_device_sync);
   MS_EXCEPTION_IF_NULL(src_device_sync);
+  MS_LOG(DEBUG) << "Sync copy from device address:" << src_device_sync->ToString()
+                << " src ext:" << (src_ext == nullptr ? " null" : src_ext->ToString())
+                << " to:" << dst_device_sync->ToString()
+                << " dst ext:" << (dst_ext == nullptr ? " null" : dst_ext->ToString()) << " stream id:" << stream_id;
   if (dst_device_sync->GetDeviceType() == DeviceType::kAscend && src_device_sync->GetDeviceType() == DeviceType::kCPU) {
     return AsyncHostToDevice(dst_device_sync, src_device_sync, stream_id, keep_src, src_ext, dst_ext);
   }
@@ -829,6 +837,8 @@ bool AscendResManager::CopyDirectly(void *dst, size_t dst_size, const void *src,
 
 bool AscendResManager::BaseCopy(void *dst, const void *src, uint64_t size, aclrtMemcpyKind kind, size_t stream_id,
                                 const DeviceAddressPtr src_device_sync) const {
+  MS_LOG(DEBUG) << "Copy from:" << src << " to:" << dst << " size:" << size << " kind:" << kind
+                << " stream id:" << stream_id << " src device sync:" << src_device_sync;
   if (size == 0 || common::IsCompileSimulation()) {
     return true;
   }
@@ -845,7 +855,7 @@ bool AscendResManager::BaseCopy(void *dst, const void *src, uint64_t size, aclrt
   auto ret_rt_memcpy = CALL_ASCEND_API(aclrtMemcpyAsync, dst, size, src, size, kind, stream);
   if (ret_rt_memcpy != ACL_ERROR_NONE) {
     MS_LOG(ERROR) << "Call runtime rtMemcpyAsync error, src ptr:" << src << " dst ptr:" << dst << " size:" << size
-                  << " stream id:" << stream_id;
+                  << " kind:" << kind << " stream id:" << stream_id << " ret:" << ret_rt_memcpy;
     return false;
   }
 
