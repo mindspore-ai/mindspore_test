@@ -12,6 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+"""
+This test is for msrun launch.
+"""
 import os
 import subprocess
 import json
@@ -81,7 +84,7 @@ def _create_rank_table_file(save_json_to_path, rank_table_dict):
     """
     create rank table file for train or test
     """
-    with open(save_json_to_path, "w") as f:
+    with open(save_json_to_path, "w", encoding='utf-8') as f:
         json.dump(rank_table_dict, f)
 
 
@@ -315,8 +318,8 @@ def test_msrun_with_correct_hostname():
     hostname = socket.gethostname()
     ipaddr = socket.gethostbyname(hostname)
     print(f"The hostname of this node is {hostname}, ip address is {ipaddr}.")
-    cmd = (f"msrun --worker_num=4 --local_worker_num=4 --master_addr={hostname} --master_port=10969 --join=True "\
-            "test_msrun_only_init.py --device_target=Ascend --dataset_path=/home/workspace/mindspore_dataset/mnist")
+    cmd = f"msrun --worker_num=4 --local_worker_num=4 --master_addr={hostname} --master_port=10969 --join=True "\
+            "test_msrun_only_init.py --device_target=Ascend --dataset_path=/home/workspace/mindspore_dataset/mnist"
     result = subprocess.getoutput(cmd)
     assert result.find(f"Convert input host name:{hostname} to ip address:{ipaddr}.") != -1
 
@@ -332,8 +335,8 @@ def test_msrun_with_wrong_hostname():
     ms.set_context(jit_level='O0')
     hostname = "wrong_hostname"
     print(f"The hostname of this node is {hostname}.")
-    cmd = (f"msrun --worker_num=4 --local_worker_num=4 --master_addr={hostname} --master_port=10969 --join=True "\
-            "test_msrun_only_init.py --device_target=Ascend --dataset_path=/home/workspace/mindspore_dataset/mnist")
+    cmd = f"msrun --worker_num=4 --local_worker_num=4 --master_addr={hostname} --master_port=10969 --join=True "\
+            "test_msrun_only_init.py --device_target=Ascend --dataset_path=/home/workspace/mindspore_dataset/mnist"
     result = subprocess.getoutput(cmd)
     assert result.find("DNS resolution has failed") != -1
 
@@ -344,6 +347,7 @@ def _extract_json_data(input_file, header):
 
     inside_json = False
     json_lines = []
+    json_data = []
     for line in lines:
         stripped_line = line.strip()
         if header in stripped_line:
