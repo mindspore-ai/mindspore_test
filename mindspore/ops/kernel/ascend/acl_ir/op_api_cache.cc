@@ -15,6 +15,8 @@
  */
 
 #include "kernel/ascend/acl_ir/op_api_cache.h"
+#include "plugin/ascend/res_manager/symbol_interface/symbol_utils.h"
+#include "plugin/ascend/res_manager/symbol_interface/acl_rt_symbol.h"
 
 namespace mindspore::device::ascend {
 namespace {
@@ -88,6 +90,15 @@ BACKEND_EXPORT thread_local int g_hash_offset = 0;
 BACKEND_EXPORT bool cache_unavailable_first_print = true;
 
 typedef void (*AddTensorAddrToCachedList)(void *addr);
+
+void GatherCoreNumHash() {
+  uint32_t cude_limit = 0;
+  CALL_ASCEND_API(aclrtGetResInCurrentThread, aclrtDevResLimitType::ACL_RT_DEV_RES_CUBE_CORE, &cude_limit);
+  uint32_t vector_limit = 0;
+  CALL_ASCEND_API(aclrtGetResInCurrentThread, aclrtDevResLimitType::ACL_RT_DEV_RES_VECTOR_CORE, &vector_limit);
+  MemcpyToBuf(&cude_limit, sizeof(uint32_t));
+  MemcpyToBuf(&vector_limit, sizeof(uint32_t));
+}
 
 void GatherInfo(mindspore::kernel::KernelTensor *tensor) {
   Gather(tensor);

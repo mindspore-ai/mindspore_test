@@ -21,6 +21,7 @@
 #include <vector>
 #include <utility>
 #include "kernel/ascend/acl_ir/op_api_convert.h"
+#include "include/runtime/utils/runtime_conf/runtime_conf.h"
 
 namespace mindspore::device::ascend {
 typedef aclOpExecutor *(*GetExecCache)(uint64_t, uint64_t *);
@@ -83,6 +84,9 @@ inline void MemcpyToBuf(const void *data_expression, size_t size_expression) {
   g_hash_offset += size_expression;
 }
 
+// Add core num to hash
+BACKEND_EXPORT void GatherCoreNumHash();
+
 // Old cache hash for kbk only when cache is disabled.
 BACKEND_EXPORT void GatherInfo(mindspore::kernel::KernelTensor *);
 BACKEND_EXPORT void GatherInfo(const std::pair<mindspore::kernel::KernelTensor *, bool> &);
@@ -129,7 +133,10 @@ BACKEND_EXPORT inline void GatherInfo(TypeId type_id) { MemcpyToBuf(&type_id, si
 BACKEND_EXPORT void GatherInfo();
 
 template <typename T, typename... Args>
-void GatherInfo(const T &arg, const Args &... args) {
+void GatherInfo(const T &arg, const Args &...args) {
+  if (runtime::RuntimeConf::GetInstance()->IsEnableResLimit()) {
+    GatherCoreNumHash();
+  }
   GatherInfo(arg);
   GatherInfo(args...);
 }
@@ -157,7 +164,7 @@ void RefreshAddr(const Args &values) {}
 inline void RefreshAddr() {}
 
 template <typename T, typename... Args>
-void RefreshAddr(const T &arg, const Args &... args) {
+void RefreshAddr(const T &arg, const Args &...args) {
   RefreshAddr(arg);
   RefreshAddr(args...);
 }
@@ -166,7 +173,7 @@ BACKEND_EXPORT uint64_t calc_hash_id();
 BACKEND_EXPORT uint64_t gen_hash(const void *key, const int len, const uint32_t seed = 0xdeadb0d7);
 
 template <typename... Args>
-bool HitCache(const char *aclnn_api, aclOpExecutor **executor, uint64_t *workspace_size, const Args &... args) {
+bool HitCache(const char *aclnn_api, aclOpExecutor **executor, uint64_t *workspace_size, const Args &...args) {
   static const auto get_exec_cache = device::ascend::GetOpApiFunc("PTAGetExecCache");
   static const auto init_cache_thread_local = device::ascend::GetOpApiFunc("InitPTACacheThreadLocal");
   static const auto set_hash_key = device::ascend::GetOpApiFunc("SetPTAHashKey");
@@ -196,7 +203,7 @@ bool HitCache(const char *aclnn_api, aclOpExecutor **executor, uint64_t *workspa
 
 template <typename... Args>
 bool HitCacheSingle(const char *aclnn_api, aclOpExecutor **executor, uint64_t *workspace_size, uint64_t *hash_id,
-                    const Args &... args) {
+                    const Args &...args) {
   static const auto get_exec_cache = device::ascend::GetOpApiFunc("PTAGetExecCache");
   static const auto init_cache_thread_local = device::ascend::GetOpApiFunc("InitPTACacheThreadLocal");
   static const auto set_hash_key = device::ascend::GetOpApiFunc("SetPTAHashKey");
@@ -252,14 +259,17 @@ BACKEND_EXPORT void GatherHash(const T &value) {
 BACKEND_EXPORT void GatherHash();
 
 template <typename T, typename... Args>
-void GatherHash(const T &arg, const Args &... args) {
+void GatherHash(const T &arg, const Args &...args) {
   GatherHash(arg);
   GatherHash(args...);
 }
 
 template <typename... Args>
-uint64_t AclnnHash(const std::string &arg, const Args &... args) {
+uint64_t AclnnHash(const std::string &arg, const Args &...args) {
   g_hash_offset = 0;
+  if (runtime::RuntimeConf::GetInstance()->IsEnableResLimit()) {
+    GatherCoreNumHash();
+  }
   GatherHash(arg, args...);
   return calc_hash_id();
 }

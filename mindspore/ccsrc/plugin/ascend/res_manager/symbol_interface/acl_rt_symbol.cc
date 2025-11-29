@@ -23,6 +23,7 @@ aclrtCreateEventWithFlagFunObj aclrtCreateEventWithFlag_ = nullptr;
 aclrtCreateEventExWithFlagFunObj aclrtCreateEventExWithFlag_ = nullptr;
 aclrtCreateStreamFunObj aclrtCreateStream_ = nullptr;
 aclrtCreateStreamWithConfigFunObj aclrtCreateStreamWithConfig_ = nullptr;
+aclrtGetResInCurrentThreadFunObj aclrtGetResInCurrentThread_ = nullptr;
 aclrtDestroyContextFunObj aclrtDestroyContext_ = nullptr;
 aclrtDestroyEventFunObj aclrtDestroyEvent_ = nullptr;
 aclrtDestroyStreamFunObj aclrtDestroyStream_ = nullptr;
@@ -110,6 +111,7 @@ void LoadAclRtApiSymbol(const std::string &ascend_path) {
   aclrtSetStreamResLimit_ = DlsymAscendFuncObj(aclrtSetStreamResLimit, handler);
   aclrtResetStreamResLimit_ = DlsymAscendFuncObj(aclrtResetStreamResLimit, handler);
   aclrtUseStreamResInCurrentThread_ = DlsymAscendFuncObj(aclrtUseStreamResInCurrentThread, handler);
+  aclrtGetResInCurrentThread_ = DlsymAscendFuncObj(aclrtGetResInCurrentThread, handler);
   aclrtDestroyContext_ = DlsymAscendFuncObj(aclrtDestroyContext, handler);
   aclrtDestroyEvent_ = DlsymAscendFuncObj(aclrtDestroyEvent, handler);
   aclrtDestroyStream_ = DlsymAscendFuncObj(aclrtDestroyStream, handler);
@@ -180,6 +182,7 @@ void LoadSimulationRtApi() {
   ASSIGN_SIMU(aclrtCreateEventWithFlag);
   ASSIGN_SIMU(aclrtCreateEventExWithFlag);
   ASSIGN_SIMU(aclrtCreateStream);
+  ASSIGN_SIMU(aclrtGetResInCurrentThread);
   ASSIGN_SIMU(aclrtCreateStreamWithConfig);
   ASSIGN_SIMU(aclrtGetDeviceResLimit);
   ASSIGN_SIMU(aclrtSetDeviceResLimit);
