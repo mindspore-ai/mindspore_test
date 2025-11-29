@@ -102,6 +102,13 @@
     :exclude-members: tft_register, on_train_step_begin
     :members:
 
+{% elif fullname=="mindspore.saved_tensors_hooks" %}
+{{ fullname | underline }}
+
+.. autoclass:: {{ name }}
+    :exclude-members:
+    :members:
+
 {% elif objname[0].istitle() %}
 {{ fullname | underline }}
 
