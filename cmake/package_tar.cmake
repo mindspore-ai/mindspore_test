@@ -179,13 +179,6 @@ if(MS_BUILD_GRPC)
             DESTINATION ${INSTALL_LIB_DIR} RENAME libmindspore_address_sorting.so.15 COMPONENT mindspore)
 endif()
 
-## Public header files
-install(
-        DIRECTORY ${CMAKE_SOURCE_DIR}/include
-        DESTINATION ${INSTALL_BASE_DIR}
-        COMPONENT mindspore
-)
-
 ## Public header files for mindapi
 install(
         DIRECTORY ${CMAKE_SOURCE_DIR}/mindspore/core/include/mindapi/base

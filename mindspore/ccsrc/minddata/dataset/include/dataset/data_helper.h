@@ -30,8 +30,8 @@
 #include <string>
 #include <vector>
 
-#include "include/api/dual_abi_helper.h"
-#include "include/api/status.h"
+#include "utils/dual_abi_helper.h"
+#include "utils/status.h"
 #include "minddata/dataset/util/visible.h"
 
 namespace mindspore::dataset {

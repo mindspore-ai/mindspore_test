@@ -20,7 +20,7 @@
 #include <memory>
 #include <vector>
 
-#include "include/api/dual_abi_helper.h"
+#include "utils/dual_abi_helper.h"
 #include "include/dataset/constants.h"
 #include "include/dataset/ms_tensor.h"
 #include "minddata/dataset/util/visible.h"

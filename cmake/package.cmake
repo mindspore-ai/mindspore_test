@@ -402,14 +402,6 @@ if(EXISTS ${CMAKE_SOURCE_DIR}/mindspore/python/mindspore/dataset)
     )
 endif()
 
-## Public header files
-install(
-    DIRECTORY ${CMAKE_SOURCE_DIR}/include
-    DESTINATION ${INSTALL_BASE_DIR}
-    COMPONENT mindspore
-    PATTERN "OWNERS" EXCLUDE
-)
-
 ## Public header files for minddata
 install(
     FILES ${CMAKE_SOURCE_DIR}/mindspore/ccsrc/minddata/dataset/include/dataset/config.h

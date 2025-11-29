@@ -20,7 +20,7 @@
 #include <sys/types.h>
 #endif
 
-#include "include/api/status.h"
+#include "utils/status.h"
 #include "minddata/dataset/core/tensor.h"
 #include "minddata/dataset/core/tensor_row.h"
 #include "minddata/dataset/engine/datasetops/batch_info.h"

@@ -23,8 +23,8 @@
 #include <vector>
 #include <memory>
 
-#include "include/api/data_type.h"
-#include "include/api/dual_abi_helper.h"
+#include "mindspore/ccsrc/include/utils/data_type.h"
+#include "utils/dual_abi_helper.h"
 
 namespace mindspore {
 /// \brief The MSTensor class defines a tensor in MindSpore.

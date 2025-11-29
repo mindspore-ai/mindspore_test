@@ -25,7 +25,6 @@
 #include "include/cluster/topology/collective_manager.h"
 #include "include/utils/anfalgo.h"
 #include "include/utils/utils.h"
-#include "include/api/data_type.h"
 
 namespace mindspore {
 namespace opt {

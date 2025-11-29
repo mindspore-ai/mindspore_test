@@ -30,7 +30,7 @@
 
 #include "nlohmann/json_fwd.hpp"
 
-#include "include/api/dual_abi_helper.h"
+#include "utils/dual_abi_helper.h"
 #include "include/dataset/iterator.h"
 #include "include/dataset/samplers.h"
 #include "include/dataset/text.h"

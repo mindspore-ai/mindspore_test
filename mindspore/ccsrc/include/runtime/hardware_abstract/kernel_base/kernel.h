@@ -27,7 +27,7 @@
 #include <vector>
 #include <algorithm>
 #include "ir/format_utils.h"
-#include "include/api/format.h"
+#include "mindapi/base/format.h"
 #include "ir/anf.h"
 #include "ir/primitive.h"
 #include "ir/tensor.h"

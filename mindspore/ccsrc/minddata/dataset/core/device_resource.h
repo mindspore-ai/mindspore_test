@@ -19,7 +19,7 @@
 
 #include <memory>
 
-#include "include/api/status.h"
+#include "utils/status.h"
 #include "minddata/dataset/core/device_tensor.h"
 #include "minddata/dataset/core/tensor.h"
 

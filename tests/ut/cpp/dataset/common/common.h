@@ -17,7 +17,7 @@
 #define TESTS_UT_CPP_DATASET_COMMON_COMMON_H_
 
 #include "gtest/gtest.h"
-#include "include/api/status.h"
+#include "utils/status.h"
 #include "include/dataset/ms_tensor.h"
 #include "minddata/dataset/core/client.h"
 #include "minddata/dataset/core/de_tensor.h"

@@ -22,7 +22,6 @@
 #include "primitive/nn_ops.h"
 #include "utils/check_convert_utils.h"
 #include "mindapi/helper.h"
-#include "include/api/data_type.h"
 
 namespace mindspore {
 namespace ops {
