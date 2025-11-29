@@ -17,6 +17,7 @@
 
 #include <vector>
 #include <set>
+#include <map>
 #include <memory>
 #include <utility>
 #include <algorithm>
@@ -48,12 +49,31 @@ AnfNodePtrList GetUpdateStateList(const FuncGraphPtr &func_graph) {
 AnfNodePtrList SpreadUpdateState::ExtendInputsOfUpdateState(const AnfNodePtrList &nodes,
                                                             const FuncGraphPtr &func_graph) const {
   AnfNodePtrList result;
+  auto mng = func_graph->manager();
+  MS_EXCEPTION_IF_NULL(mng);
   for (auto node : nodes) {
-    if (node->abstract()->isa<abstract::AbstractTuple>()) {
+    if (node->abstract()->isa<abstract::AbstractTuple>() && !common::AnfAlgo::IsDynamicSequence(node)) {
+      std::map<int64_t, AnfNodePtr> current_getitem;
+      auto &users = mng->node_users()[node];
+      for (const auto &user : users) {
+        if (IsPrimitiveCNode(user.first, prim::kPrimTupleGetItem)) {
+          auto cnode = user.first->cast<CNodePtr>();
+          MS_EXCEPTION_IF_NULL(cnode);
+          auto value_ptr = GetValueNode(cnode->input(kInputNodeOutputIndexInTupleGetItem));
+          MS_EXCEPTION_IF_NULL(value_ptr);
+          auto idx = GetValue<int64_t>(value_ptr);
+          current_getitem[idx] = user.first;
+        }
+      }
       auto node_abstract = node->abstract()->cast<abstract::AbstractTuplePtr>()->elements();
       auto num = node_abstract.size();
       for (size_t i = 0; i < num; i++) {
         auto idx_val = SizeToLong(i);
+        auto iter = current_getitem.find(idx_val);
+        if (iter != current_getitem.end()) {
+          result.push_back(iter->second);
+          continue;
+        }
 
         auto idx = NewValueNode(idx_val);
         MS_EXCEPTION_IF_NULL(idx);
