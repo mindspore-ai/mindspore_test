@@ -83,6 +83,26 @@ std::tuple<int64_t, std::vector<int64_t>, std::vector<int64_t>> GetCustomTuple(c
   return {storage_offset, shape, stride};
 }
 
+void SwapDevicePointer(const DevicePointerPtr &source_storage_device_pointer,
+                       const DeviceAddressPtr &expand_size_device_address) {
+  void *temp_ptr = source_storage_device_pointer->ptr();
+  DevicePointer::Deleter temp_deleter = source_storage_device_pointer->deleter();
+  std::shared_ptr<AddressAllocator> temp_allocator = source_storage_device_pointer->allocator();
+  bool temp_from_mem_pool = source_storage_device_pointer->from_mem_pool();
+
+  source_storage_device_pointer->set_ptr(expand_size_device_address->GetDevicePtr());
+  source_storage_device_pointer->set_deleter(expand_size_device_address->device_pointer()->deleter());
+  source_storage_device_pointer->set_allocator(expand_size_device_address->allocator());
+  source_storage_device_pointer->set_from_mem_pool(expand_size_device_address->from_mem_pool());
+
+  const DevicePointerPtr &expand_size_device_pointer = expand_size_device_address->device_pointer();
+  expand_size_device_pointer->set_ptr(temp_ptr);
+  expand_size_device_pointer->set_deleter(temp_deleter);
+  expand_size_device_pointer->set_allocator(temp_allocator);
+  expand_size_device_pointer->set_from_mem_pool(temp_from_mem_pool);
+  expand_size_device_address->set_device_pointer(source_storage_device_pointer);
+}
+
 std::pair<DeviceAddressPtr, TensorStorageInfoPtr> CreateSourceStorageDeviceAddr(
   const tensor::TensorPtr &base_tensor, const DeviceContext *device_context, int64_t storage_offset,
   const std::vector<int64_t> &shape, const std::vector<int64_t> &stride, const Storage &source_storage) {
@@ -101,13 +121,14 @@ std::pair<DeviceAddressPtr, TensorStorageInfoPtr> CreateSourceStorageDeviceAddr(
     source_device_address = device_context->device_res_manager_->CreateDeviceAddress(
       nullptr, new_bytes_size, shape, DEFAULT_FORMAT, base_tensor->data_type(), device_name,
       source_storage.GetStreamId());
-    device_context->device_res_manager_->AllocateMemory(source_device_address.get());
-    SyncCopy(source_device_address, source_storage.GetDeviceAddress(), source_storage.GetStreamId());
-    const auto &source_storage_deevice_pointer = source_storage.GetDevicePointer();
-    source_storage_deevice_pointer->set_ptr(source_device_address->GetDevicePtr());
-    source_storage_deevice_pointer->set_deleter(source_device_address->device_pointer()->deleter());
-    source_storage_deevice_pointer->set_allocator(source_device_address->allocator());
-    source_device_address->set_device_pointer(source_storage_deevice_pointer);
+    if (!device_context->device_res_manager_->AllocateMemory(source_device_address.get())) {
+      MS_LOG(EXCEPTION) << "Allocate dynamic workspace memory failed";
+    }
+    if (!SyncCopy(source_device_address, source_storage.GetDeviceAddress(), source_storage.GetStreamId())) {
+      MS_LOG(EXCEPTION) << "Sync device to device failed.";
+    }
+    const auto &source_storage_device_pointer = source_storage.GetDevicePointer();
+    SwapDevicePointer(source_storage_device_pointer, source_device_address);
   }
   auto new_storage_info =
     ops::CheckSetStorageInfo(base_tensor, storage_offset, shape, stride, device_name, bytes_size, source_dtype);
@@ -135,13 +156,14 @@ std::pair<DeviceAddressPtr, TensorStorageInfoPtr> CreateSourceTensorDeviceAddr(
     source_device_address = device_context->device_res_manager_->CreateDeviceAddress(
       nullptr, new_bytes_size, shape, DEFAULT_FORMAT, base_tensor->data_type(), device_name,
       device_address->stream_id());
-    device_context->device_res_manager_->AllocateMemory(source_device_address.get());
-    SyncCopy(source_device_address, device_address, device_address->stream_id());
-    const auto &source_storage_deevice_pointer = device_address->device_pointer();
-    source_storage_deevice_pointer->set_ptr(source_device_address->GetDevicePtr());
-    source_storage_deevice_pointer->set_deleter(source_device_address->device_pointer()->deleter());
-    source_storage_deevice_pointer->set_allocator(source_device_address->allocator());
-    source_device_address->set_device_pointer(source_storage_deevice_pointer);
+    if (!device_context->device_res_manager_->AllocateMemory(source_device_address.get())) {
+      MS_LOG(EXCEPTION) << "Allocate dynamic workspace memory failed";
+    }
+    if (!SyncCopy(source_device_address, device_address, device_address->stream_id())) {
+      MS_LOG(EXCEPTION) << "Sync device to device failed.";
+    }
+    const auto &source_storage_device_pointer = device_address->device_pointer();
+    SwapDevicePointer(source_storage_device_pointer, source_device_address);
   }
   auto new_storage_info =
     ops::CheckSetStorageInfo(base_tensor, storage_offset, shape, stride, device_name, bytes_size, source_dtype);

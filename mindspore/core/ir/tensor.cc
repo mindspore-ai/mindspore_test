@@ -286,7 +286,7 @@ size_t Tensor::set_shape(const ShapeVector &shape) {
   auto incoming_size = SizeOf(shape);
   if (!is_shape_unknown && cur_data_size < incoming_size) {
     // For dynamic shape scene.
-    MS_LOG(WARNING) << "It's not recommended to set " << ToString() << " shape to " << shape;
+    MS_LOG(INFO) << "It's not recommended to set " << ToString() << " shape to " << shape;
     if (device_sync_ != nullptr) {
       auto incoming_bytes = incoming_size * DataItemSize();
       if (incoming_bytes > device_sync_->GetSize()) {
