@@ -2239,6 +2239,7 @@ Status Solarize(const std::shared_ptr<Tensor> &input, std::shared_ptr<Tensor> *o
 Status ToTensor(const std::shared_ptr<Tensor> &input, std::shared_ptr<Tensor> *output, const DataType &data_type) {
   try {
     std::shared_ptr<CVTensor> input_cv = CVTensor::AsCVTensor(input);
+    RETURN_UNEXPECTED_IF_NULL(input_cv);
     if (!input_cv->mat().data) {
       RETURN_STATUS_UNEXPECTED("[Internal ERROR] ToTensor: load image failed.");
     }
@@ -2263,6 +2264,7 @@ Status ToTensor(const std::shared_ptr<Tensor> &input, std::shared_ptr<Tensor> *o
     if (input_cv->type() == DataType(DataType::DE_FLOAT16)) {
       RETURN_IF_NOT_OK(TypeCast(input_cv, output, DataType(DataType::DE_FLOAT32)));
       input_cv = CVTensor::AsCVTensor(*output);
+      RETURN_UNEXPECTED_IF_NULL(input_cv);
     }
 
     std::shared_ptr<CVTensor> output_cv;

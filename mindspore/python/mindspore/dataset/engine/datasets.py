@@ -603,8 +603,8 @@ class Dataset:
                   multithreading mode. If `per_batch_map` is a CPU bound task, it is recommended to use
                   multiprocessing mode. Default: ``False`` , use python multithreading mode.
 
-                - max_rowsize (Union[int, list[int]], optional): Maximum size of row in MB that is used for shared memory
-                  allocation to copy data between processes, the total occupied shared memory will increase as
+                - max_rowsize (Union[int, list[int]], optional): Maximum size of row in MB that is used for shared
+                  memory allocation to copy data between processes, the total occupied shared memory will increase as
                   ``num_parallel_workers`` and :func:`mindspore.dataset.config.set_prefetch_size` increase.
                   This is only used if ``python_multiprocessing`` is set to ``True``.
                   Default: ``None`` , allocate shared memory dynamically (deprecated in future version).
@@ -911,8 +911,8 @@ class Dataset:
                 - python_multiprocessing (bool, optional): Parallelize Python operations with multiple worker processes.
                   This option could be beneficial if the Python operation is computational heavy. Default: ``False``.
 
-                - max_rowsize (Union[int, list[int]], optional): Maximum size of row in MB that is used for shared memory
-                  allocation to copy data between processes, the total occupied shared memory will increase as
+                - max_rowsize (Union[int, list[int]], optional): Maximum size of row in MB that is used for shared
+                  memory allocation to copy data between processes, the total occupied shared memory will increase as
                   ``num_parallel_workers`` and :func:`mindspore.dataset.config.set_prefetch_size` increase.
                   This is only used if ``python_multiprocessing`` is set to ``True``.
                   Default: ``None`` , allocate shared memory dynamically (deprecated in future version).
@@ -1033,7 +1033,7 @@ class Dataset:
             >>> dataset = dataset.map(operations, input_columns=["x", "y"],
             ...                       output_columns=["mod2", "mod3", "mod5", "mod7"])
         """
-        if hasattr(self, 'operator_mixed') and getattr(self, 'operator_mixed') is True:
+        if hasattr(self, 'operator_mixed') and self.operator_mixed is True:
             num_parallel_workers = 1
             logger.warning(
                 "Input 'operations' of 'map' includes network computing operators like in mindspore.nn, mindspore.ops, "
@@ -3235,7 +3235,7 @@ class SyncWaitDataset(UnionBaseDataset):
         return cde.SyncWaitNode(children[0], self._condition_name, self._pair.block_func)
 
     def get_sync_notifiers(self):
-        return {**self.children[0].get_sync_notifiers(), **{self._condition_name: self._pair.release_func}}
+        return {**self.children[0].get_sync_notifiers(), self._condition_name: self._pair.release_func}
 
     def is_sync(self):
         return True
@@ -4093,7 +4093,7 @@ class MapDataset(UnionBaseDataset):
         if isinstance(op, transforms.py_transforms_util.FuncWrapper):
             try:
                 op_name = op.transform.__name__
-            except (AttributeError,):
+            except AttributeError:
                 op_name = op.transform.__class__.__name__
         else:
             op_name = op.__class__.__name__

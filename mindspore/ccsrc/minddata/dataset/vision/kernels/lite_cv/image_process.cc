@@ -108,6 +108,7 @@ constexpr int32_t kYUVToBGRColorShift = 6;
 constexpr size_t kBIndex = 0;
 constexpr size_t kGIndex = 1;
 constexpr size_t kRIndex = 2;
+constexpr int32_t kUint8Max = 255;
 
 static bool Equal(const float &a, const float &b) { return std::fabs(a - b) < 1e-6; }
 
@@ -589,20 +590,22 @@ static bool ConvertYUV420SPToBGR(const uint8_t *data, LDataType data_type, bool 
         }
         uint32_t tmp_y = static_cast<uint32_t>(y_buf[0] * kYScale * kY2G) >> kYUVToBGRYShift;
         // b
-        bgr_buf[kBIndex] = std::clamp(static_cast<int32_t>(-(u * kU2B) + tmp_y + kB2B) >> kYUVToBGRColorShift, 0, 255);
+        bgr_buf[kBIndex] =
+          std::clamp(static_cast<int32_t>(-(u * kU2B) + tmp_y + kB2B) >> kYUVToBGRColorShift, 0, kUint8Max);
         // g
         bgr_buf[kGIndex] =
-          std::clamp(static_cast<int32_t>(-(u * kU2G + v * kV2G) + tmp_y + kB2G) >> kYUVToBGRColorShift, 0, 255);
+          std::clamp(static_cast<int32_t>(-(u * kU2G + v * kV2G) + tmp_y + kB2G) >> kYUVToBGRColorShift, 0, kUint8Max);
         // r
-        bgr_buf[kRIndex] = std::clamp(static_cast<int32_t>(-(v * kV2R) + tmp_y + kB2R) >> kYUVToBGRColorShift, 0, 255);
+        bgr_buf[kRIndex] =
+          std::clamp(static_cast<int32_t>(-(v * kV2R) + tmp_y + kB2R) >> kYUVToBGRColorShift, 0, kUint8Max);
 
         tmp_y = static_cast<uint32_t>(y_buf[1] * kYScale * kY2G) >> kYUVToBGRYShift;
         bgr_buf[kBIndex + kChannelThree] =
-          std::clamp(static_cast<int32_t>(-(u * kU2B) + tmp_y + kB2B) >> kYUVToBGRColorShift, 0, 255);
+          std::clamp(static_cast<int32_t>(-(u * kU2B) + tmp_y + kB2B) >> kYUVToBGRColorShift, 0, kUint8Max);
         bgr_buf[kGIndex + kChannelThree] =
-          std::clamp(static_cast<int32_t>(-(u * kU2G + v * kV2G) + tmp_y + kB2G) >> kYUVToBGRColorShift, 0, 255);
+          std::clamp(static_cast<int32_t>(-(u * kU2G + v * kV2G) + tmp_y + kB2G) >> kYUVToBGRColorShift, 0, kUint8Max);
         bgr_buf[kRIndex + kChannelThree] =
-          std::clamp(static_cast<int32_t>(-(v * kV2R) + tmp_y + kB2R) >> kYUVToBGRColorShift, 0, 255);
+          std::clamp(static_cast<int32_t>(-(v * kV2R) + tmp_y + kB2R) >> kYUVToBGRColorShift, 0, kUint8Max);
 
         y_buf += 2;
         uv_buf += 2;
@@ -619,10 +622,12 @@ static bool ConvertYUV420SPToBGR(const uint8_t *data, LDataType data_type, bool 
           v = uv_buf[1];
         }
         uint32_t tmp_y = static_cast<uint32_t>(y_buf[0] * kYScale * kY2G) >> kYUVToBGRYShift;
-        bgr_buf[kBIndex] = std::clamp(static_cast<int32_t>(-(u * kU2B) + tmp_y + kB2B) >> kYUVToBGRColorShift, 0, 255);
+        bgr_buf[kBIndex] =
+          std::clamp(static_cast<int32_t>(-(u * kU2B) + tmp_y + kB2B) >> kYUVToBGRColorShift, 0, kUint8Max);
         bgr_buf[kGIndex] =
-          std::clamp(static_cast<int32_t>(-(u * kU2G + v * kV2G) + tmp_y + kB2G) >> kYUVToBGRColorShift, 0, 255);
-        bgr_buf[kRIndex] = std::clamp(static_cast<int32_t>(-(v * kV2R) + tmp_y + kB2R) >> kYUVToBGRColorShift, 0, 255);
+          std::clamp(static_cast<int32_t>(-(u * kU2G + v * kV2G) + tmp_y + kB2G) >> kYUVToBGRColorShift, 0, kUint8Max);
+        bgr_buf[kRIndex] =
+          std::clamp(static_cast<int32_t>(-(v * kV2R) + tmp_y + kB2R) >> kYUVToBGRColorShift, 0, kUint8Max);
       }
 
       bgr_ptr += bgr_stride;
