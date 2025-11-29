@@ -129,7 +129,7 @@ class DataLoader(Generic[_T_co]):
         pin_memory (bool, optional): Whether to copy data into pinned memory. Default: ``False`` .
         drop_last (bool, optional): Whether to drop the last incomplete batch. Default: ``False`` .
         timeout (float, optional): The timeout for waiting the worker to process the data.
-            Default: ``0.`` , wait forever.
+            Default: ``0.0`` , wait forever.
         worker_init_fn (Union[Callable[[int], None], None], optional): The worker init function to use.
             Default: ``None`` , do nothing.
         multiprocessing_context (Union[multiprocessing.context.BaseContext, str, None], optional): The multiprocessing

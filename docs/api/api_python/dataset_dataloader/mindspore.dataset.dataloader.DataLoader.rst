@@ -2,7 +2,7 @@ mindspore.dataset.dataloader.DataLoader
 =======================================
 
 .. py:class:: mindspore.dataset.dataloader.DataLoader(dataset, batch_size=1, shuffle=None, sampler=None, \
-    batch_sampler=None, num_workers=0, collate_fn=None, pin_memory=False, drop_last=False, timeout=0., \
+    batch_sampler=None, num_workers=0, collate_fn=None, pin_memory=False, drop_last=False, timeout=0.0, \
     worker_init_fn=None, multiprocessing_context=None, generator=None, *, prefetch_factor=None, \
     persistent_workers=False, in_order=True)
 
@@ -24,7 +24,7 @@ mindspore.dataset.dataloader.DataLoader
         - **collate_fn** (Union[_CollateFnType, None], 可选) - 要使用的整理函数。默认值： ``None`` ，使用默认整理函数。
         - **pin_memory** (bool, 可选) - 是否将数据拷贝到锁页内存。默认值： ``False`` 。
         - **drop_last** (bool, 可选) - 是否丢弃最后一个不完整的 Batch 。默认值： ``False`` 。
-        - **timeout** (float, 可选) - 等待工作进程处理数据的超时时间。默认值： ``0.`` ，永久等待。
+        - **timeout** (float, 可选) - 等待工作进程处理数据的超时时间。默认值： ``0.0`` ，永久等待。
         - **worker_init_fn** (Union[Callable[[int], None], None], 可选) - 要使用的工作进程初始化函数。
           默认值： ``None`` ，不执行任何操作。
         - **multiprocessing_context** (Union[multiprocessing.context.BaseContext, str, None], 可选) - 要使用的多进程上下文。
