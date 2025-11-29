@@ -27,11 +27,6 @@ else()
         )
 endif()
 
-list(APPEND _TOOLS_SRC_LIST
-        "${CMAKE_CURRENT_SOURCE_DIR}/execute_order_tracker/execute_order_tracker.cc"
-        "${CMAKE_CURRENT_SOURCE_DIR}/execute_order_tracker/kernel_cache.cc"
-    )
-
 list(APPEND _DATADUMP_SRC_LIST
     "${CMAKE_CURRENT_SOURCE_DIR}/data_dump/cpu_e2e_dump.cc"
     "${CMAKE_CURRENT_SOURCE_DIR}/data_dump/dump_json_parser.cc"

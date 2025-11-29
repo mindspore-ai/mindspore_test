@@ -52,7 +52,7 @@
 #include "include/utils/np_dtypes.h"
 #include "include/utils/amp.h"
 #include "include/frontend/jit/trace/trace_recorder_interface.h"
-#include "runtime/core/graph_executor/pre_launch/comm_execution_order_check.h"
+#include "include/backend/common/exec_order/online_execution_order_check.h"
 #include "pybind_api/graph/pipeline_py.h"
 #include "pybind_api/graph/custom_pass_py.h"
 #include "pybind_api/frombuffer.h"

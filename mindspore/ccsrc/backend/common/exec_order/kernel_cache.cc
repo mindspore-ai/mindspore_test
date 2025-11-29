@@ -13,8 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "include/backend/debug/execute_order_tracker/kernel_cache.h"
+#include "include/backend/common/exec_order/kernel_cache.h"
 #include <utility>
+#include <memory>
+#include <string>
+#include <vector>
 
 namespace mindspore {
 namespace runtime {
