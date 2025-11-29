@@ -254,7 +254,7 @@ class FuncBuilder : public BpropBuilder {
   NodePtr DivMod(const NodePtr &input, const NodePtr &other, const NodePtr &rounding_mode) override;
   NodePtr Slice(const NodePtr &input, const NodePtr &begin, const NodePtr &size) override;
   NodePtr RandIntLike(const NodePtr &input, const NodePtr &low, const NodePtr &high, const NodePtr &seed,
-                      const NodePtr &offset, const NodePtr &dtype) override;
+                      const NodePtr &offset, const NodePtr &dtype, const NodePtr &device) override;
   NodePtr MaxPoolGradWithIndices(const NodePtr &x, const NodePtr &grad, const NodePtr &argmax,
                                  const NodePtr &kernel_size, const NodePtr &strides, const NodePtr &pads,
                                  const NodePtr &dilation, const NodePtr &ceil_mode,
@@ -692,7 +692,7 @@ class FuncBuilder : public BpropBuilder {
                                        const NodePtr &grad_output) override;
   NodePtr LogSoftmaxGrad(const NodePtr &logits, const NodePtr &grad, const NodePtr &axis) override;
   NodePtr RandInt(const NodePtr &low, const NodePtr &high, const NodePtr &shape, const NodePtr &seed,
-                  const NodePtr &offset, const NodePtr &dtype) override;
+                  const NodePtr &offset, const NodePtr &dtype, const NodePtr &device) override;
   NodePtr Frac(const NodePtr &input) override;
   NodePtr ArgMaxExt(const NodePtr &input, const NodePtr &dim, const NodePtr &keepdim) override;
   NodePtr UniqueConsecutive(const NodePtr &input, const NodePtr &return_inverse, const NodePtr &return_counts,

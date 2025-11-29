@@ -1341,7 +1341,7 @@ def randn_like_ext(input, *, dtype=None, device=None):
 
 
 @_function_forbid_reuse
-def randint_ext(*args, generator=None, dtype=None):
+def randint_ext(*args, generator=None, dtype=None, device=None):
     r"""
     randint(low=0, high, size, *, generator=None, dtype=None) -> Tensor
 
@@ -1358,6 +1358,9 @@ def randint_ext(*args, generator=None, dtype=None):
             Default: ``None``, uses the default pseudorandom number generator.
         dtype (:class:`mindspore.dtype`, optional): Designated tensor dtype. If None,
             `mindspore.int64` will be applied. Default: ``None`` .
+        device (str, optional): The specified device of the output tensor. Only ``"Ascend"`` and ``"npu"`` are
+            supported. If `device = None`, the value set by :func:`mindspore.set_device` will be used. 
+            Default: ``None``.
 
     Returns:
         Tensor, with the designated shape and dtype, filled with random numbers from the uniform distribution on
@@ -1366,6 +1369,8 @@ def randint_ext(*args, generator=None, dtype=None):
     Raises:
         TypeError: If `size` is not a tuple.
         TypeError: If `low` or `high` is not integer.
+        RuntimeError: If `device` is ``CPU`` .
+        ValueError: If `device` is ``GPU`` .
 
     Supported Platforms:
         ``Ascend``
@@ -1383,11 +1388,11 @@ def randint_ext(*args, generator=None, dtype=None):
     if len(args) == 2:
         args = [0] + args
     args += [seed, offset]
-    return randint_(*args, dtype=dtype)
+    return randint_(*args, dtype=dtype, device=device)
 
 
 @_function_forbid_reuse
-def randint_like_ext(*args, dtype=None):
+def randint_like_ext(*args, dtype=None, device=None):
     r"""
     randint_like(input, low=0, high, *, dtype=None) -> Tensor
 
@@ -1405,6 +1410,8 @@ def randint_like_ext(*args, dtype=None):
     Keyword Args:
         dtype (:class:`mindspore.dtype`, optional): Designated tensor dtype. If None,
             the same dtype of `input` will be applied. Default: ``None`` .
+        device (str, optional): The specified device of the output tensor. Only ``"Ascend"`` and ``"npu"`` are
+            supported. If `device = None`, the device of `input` will be used. Default: ``None``.
 
     Returns:
         Tensor, with the designated shape and dtype, filled with random numbers from the uniform distribution on
@@ -1412,6 +1419,9 @@ def randint_like_ext(*args, dtype=None):
 
     Raises:
         TypeError: If `low` or `high` is not integer.
+        RuntimeError: If `Input` device is CPU, and `device` is ``None``
+        RuntimeError: If `device` is ``CPU`` .
+        ValueError: If `device` is ``GPU`` .
 
     Supported Platforms:
         ``Ascend``
@@ -1419,7 +1429,7 @@ def randint_like_ext(*args, dtype=None):
     Examples:
         >>> import mindspore as ms
         >>> from mindspore import Tensor, ops
-        >>> a = Tensor([[2, 3, 4], [1, 2, 3]])
+        >>> a = Tensor([[2, 3, 4], [1, 2, 3]]).to('Ascend')
         >>> low = 0
         >>> high = 5
         >>> print(ops.function.random_func.randint_like_ext(a, low, high, dtype=ms.int32).shape)
@@ -1431,7 +1441,7 @@ def randint_like_ext(*args, dtype=None):
     if len(args) == 2:
         args = [args[0], 0, args[1]]
     args += [seed, offset]
-    return randint_like_(*args, dtype=dtype)
+    return randint_like_(*args, dtype=dtype, device=device)
 
 
 @_function_forbid_reuse

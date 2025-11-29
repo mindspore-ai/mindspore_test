@@ -56,26 +56,26 @@ def run_randnlike(tensor, dtype=None, device=None):
 
 @test_utils.run_with_mode
 @test_utils.run_with_cell
-def run_randint(low, high, size, dtype=None, generator=None):
-    return randint_ext(low, high, size, dtype=dtype, generator=generator)
+def run_randint(low, high, size, dtype=None, generator=None, device=None):
+    return randint_ext(low, high, size, dtype=dtype, generator=generator, device=device)
 
 
 @test_utils.run_with_mode
 @test_utils.run_with_cell
-def run_randint_default_low_overload(high, size, dtype=None, generator=None):
-    return randint_ext(high, size, dtype=dtype, generator=generator)
+def run_randint_default_low_overload(high, size, dtype=None, generator=None, device=None):
+    return randint_ext(high, size, dtype=dtype, generator=generator, device=device)
 
 
 @test_utils.run_with_mode
 @test_utils.run_with_cell
-def run_randintlike(tensor, low, high, dtype=None):
-    return randint_like_ext(tensor, low, high, dtype=dtype)
+def run_randintlike(tensor, low, high, dtype=None, device=None):
+    return randint_like_ext(tensor, low, high, dtype=dtype, device=device)
 
 
 @test_utils.run_with_mode
 @test_utils.run_with_cell
-def run_randint_like_default_low_overload(tensor, high, dtype=None):
-    return randint_like_ext(tensor, high, dtype=dtype)
+def run_randint_like_default_low_overload(tensor, high, dtype=None, device=None):
+    return randint_like_ext(tensor, high, dtype=dtype, device=device)
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
@@ -347,4 +347,126 @@ def test_randn_like_with_device(mode):
     Expectation: expect correct result.
     """
     test_name = f"test_randn_like_with_device_impl[{mode}]"
+    _run_test_in_subprocess(test_name)
+
+
+@pytest.mark.parametrize('mode', ['pynative', 'kbk'])
+def test_randint_with_device_impl(mode):
+    """
+    Feature: mint.randint function with device.
+    Description: test function call
+    Expectation: expect correct result.
+    """
+     # Skip if not running in subprocess (MS_DEV_DISABLE_AUTO_H2D should be set in subprocess)
+    if os.environ.get('MS_DEV_DISABLE_AUTO_H2D') != '1':
+        pytest.skip("This test should only run in subprocess")
+
+    shape = (5, 5)
+    low = -10
+    high = 10
+    # 1.device=Ascend
+    x = run_randint(low, high, shape, mode=mode, device='Ascend')
+    assert x.device.startswith('Ascend')
+
+    # 2.device=npu
+    x = run_randint(low, high, shape, mode=mode, device='npu')
+    assert x.device.startswith('Ascend')
+
+    if mode == 'pynative':
+        # 3.device=CPU
+        with pytest.raises(RuntimeError) as err:
+            run_randint(low, high, shape, mode=mode, device='CPU')
+            _pynative_executor.sync()
+        # InplaceRandom op currently doesn't support CPU.
+        assert 'The kernel InplaceRandom unregistered' in str(err.value)
+
+        # 4.device=GPU
+        with pytest.raises(ValueError) as err:
+            run_randint(low, high, shape, mode=mode, device='GPU')
+            _pynative_executor.sync()
+
+    # 5.device=None use global device target
+    ms.set_context(device_target='Ascend')
+    x = run_randint(low, high, shape, mode=mode)
+    assert x.device.startswith('Ascend')
+
+    if mode == 'pynative':
+        # 6.use global device target=CPU
+        ms.set_context(device_target='CPU')
+        with pytest.raises(RuntimeError) as err:
+            run_randint(low, high, shape, mode=mode)
+            _pynative_executor.sync()
+        assert 'The kernel InplaceRandom unregistered' in str(err.value)
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@pytest.mark.parametrize('mode', ['pynative'])
+def test_randint_with_device(mode):
+    """
+    Feature: mint.rand function with device.
+    Description: test function call in subprocess
+    Expectation: expect correct result.
+    """
+    test_name = f"test_randint_with_device_impl[{mode}]"
+    _run_test_in_subprocess(test_name)
+
+
+@pytest.mark.parametrize('mode', ['pynative', 'kbk'])
+def test_randint_like_with_device_impl(mode):
+    """
+    Feature: mint.randint_like function with device.
+    Description: test function call
+    Expectation: expect correct result.
+    """
+    # Skip if not running in subprocess (MS_DEV_DISABLE_AUTO_H2D should be set in subprocess)
+    if os.environ.get('MS_DEV_DISABLE_AUTO_H2D') != '1':
+        pytest.skip("This test should only run in subprocess")
+
+    tensor = ms.Tensor(np.random.randn(5, 5))
+    low = -10
+    high = 10
+    # 1.device=Ascend
+    x = run_randintlike(tensor, low, high, mode=mode, device='Ascend')
+    assert x.device.startswith('Ascend')
+
+    # 2.device=npu
+    x = run_randintlike(tensor, low, high, mode=mode, device='npu')
+    assert x.device.startswith('Ascend')
+
+    if mode == 'pynative':
+        # 3.device=CPU
+        with pytest.raises(RuntimeError) as err:
+            run_randintlike(tensor, low, high, mode=mode, device='CPU')
+            _pynative_executor.sync()
+        # InplaceRandom op currently doesn't support CPU.
+        assert 'The kernel InplaceRandom unregistered' in str(err.value)
+
+        # 4.device=GPU
+        with pytest.raises(ValueError) as err:
+            run_randintlike(tensor, low, high, mode=mode, device='GPU')
+        _pynative_executor.sync()
+
+    # 5.device=None use device of input
+    tensor = tensor.to('Ascend')
+    x = run_randintlike(tensor, low, high, mode=mode)
+    assert x.device == tensor.device
+
+    if mode == 'pynative':
+        # 6.use device of input: CPU
+        tensor = tensor.to('CPU')
+        with pytest.raises(RuntimeError) as err:
+            run_randintlike(tensor, low, high, mode=mode)
+            _pynative_executor.sync()
+        assert 'The kernel InplaceRandom unregistered' in str(err.value)
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@pytest.mark.parametrize('mode', ['pynative'])
+def test_randint_like_with_device(mode):
+    """
+    Feature: mint.randint_like function with device.
+    Description: test function call in subprocess
+    Expectation: expect correct result.
+    """
+    test_name = f"test_randint_like_with_device_impl[{mode}]"
     _run_test_in_subprocess(test_name)
