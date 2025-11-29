@@ -52,7 +52,7 @@ bool HcomAllBroadCastKernel::Launch(const std::vector<KernelTensor *> &inputs, c
   if (use_lccl_) {
     auto lccl_result = lccl_broadcast_func_(lccl_ptr_, inputs[0]->device_ptr(), hccl_count_, hccl_data_type_list_[0],
                                             root_id_, stream_ptr);
-    if (lccl_result != Lcal::LCAL_SUCCESS) {
+    if (lccl_result != Lcal_ms::LCAL_SUCCESS) {
       MS_LOG(EXCEPTION) << "LCCL Broadcast failed.";
     }
     return true;
