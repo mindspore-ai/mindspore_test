@@ -19,7 +19,7 @@
 #include <memory>
 #include <string>
 #include <vector>
-#include "include/backend/optimizer/optimizer.h"
+#include "include/backend/common/pass_manager/optimizer.h"
 #include "primitive/ascend_op_name.h"
 
 namespace mindspore {

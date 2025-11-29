@@ -18,7 +18,7 @@
 #include <utility>
 #include <algorithm>
 #include "include/utils/anfalgo.h"
-#include "include/backend/anf_runtime_algorithm.h"
+#include "include/backend/common/kernel_graph/anf_runtime_algorithm.h"
 #include "ir/graph_utils.h"
 
 namespace mindspore {

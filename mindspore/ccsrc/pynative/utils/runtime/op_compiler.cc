@@ -28,7 +28,7 @@
 
 #include "utils/core_op_utils.h"
 #include "mindapi/base/type_id.h"
-#include "include/backend/anf_runtime_algorithm.h"
+#include "include/backend/common/kernel_graph/anf_runtime_algorithm.h"
 #include "include/utils/pynative/acl_adapter.h"
 #include "tools/profiler/profiler.h"
 #include "primitive/nn_op_name.h"

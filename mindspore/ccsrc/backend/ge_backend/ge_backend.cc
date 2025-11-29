@@ -27,7 +27,7 @@
 #include <vector>
 
 #include "backend/ge_backend/pass/ge_backend_optimization.h"
-#include "include/backend/anf_runtime_algorithm.h"
+#include "include/backend/common/kernel_graph/anf_runtime_algorithm.h"
 #include "ir/manager.h"
 #include "ir/map_tensor.h"
 #include "ir/tensor_new.h"

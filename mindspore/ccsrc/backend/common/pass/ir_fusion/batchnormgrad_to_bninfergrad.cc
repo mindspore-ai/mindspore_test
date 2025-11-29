@@ -19,8 +19,8 @@
 #include <string>
 #include <vector>
 #include "abstract/abstract_value.h"
-#include "include/backend/anf_runtime_algorithm.h"
-#include "include/backend/optimizer/helper.h"
+#include "include/backend/common/kernel_graph/anf_runtime_algorithm.h"
+#include "include/backend/common/pass_manager/helper.h"
 #include "include/utils/anfalgo.h"
 #include "include/utils/utils.h"
 #include "mindapi/base/types.h"

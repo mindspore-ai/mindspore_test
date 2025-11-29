@@ -17,7 +17,7 @@
 #define MINDSPORE_CCSRC_BACKEND_OPTIMIZER_PASS_COMMON_SUBEXPRESSION_ELIMINATION_H_
 #include <string>
 #include "include/backend/visible.h"
-#include "include/backend/optimizer/pass.h"
+#include "include/backend/common/pass_manager/pass.h"
 #include "include/utils/cse.h"
 
 namespace mindspore {

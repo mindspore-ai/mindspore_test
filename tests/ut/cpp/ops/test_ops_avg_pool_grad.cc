@@ -26,7 +26,7 @@
 #include "abstract/abstract_value.h"
 #include "primitive/op_name.h"
 #include "infer/ops_func_impl/avg_pool_grad.h"
-#include "include/backend/optimizer/helper.h"
+#include "include/backend/common/pass_manager/helper.h"
 
 namespace mindspore {
 namespace ops {

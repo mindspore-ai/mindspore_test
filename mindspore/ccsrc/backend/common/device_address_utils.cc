@@ -36,7 +36,7 @@
 #include "include/backend/common/kernel_graph/py_execute_utils.h"
 #include "include/utils/anfalgo.h"
 #include "include/utils/callback.h"
-#include "include/backend/anf_runtime_algorithm.h"
+#include "include/backend/common/kernel_graph/anf_runtime_algorithm.h"
 #include "include/backend/common/ms_device_shape_transfer.h"
 #include "include/runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "runtime/hardware_abstract/utils.h"

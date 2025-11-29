@@ -161,7 +161,7 @@ class BACKEND_COMMON_EXPORT AnfRuntimeAlgorithm {
   static KernelTensorPtr CreateOutputKernelTensorWithDeviceInfo(
     const AnfWithOutIndex &node_with_index, void *const device_ptr, size_t size, const string &format, TypeId dtype_id,
     const ShapeVector &host_shape, const std::string &device_name, uint32_t device_id,
-    const UserDataPtr &user_data = nullptr, uint32_t stream_id = 0, bool is_remote = false);
+    const UserDataPtr &user_data = nullptr, uint32_t stream_id = 0);
 
   // Get all input memory size list for node.
   static std::vector<size_t> GetNodeInputSizeList(const AnfNodePtr &node);
@@ -171,8 +171,6 @@ class BACKEND_COMMON_EXPORT AnfRuntimeAlgorithm {
   static void SetOutputAddr(const DeviceAddressPtr &addr, size_t output_idx, const AnfNodePtr &node);
   // set output kernel tensor of anf node
   static void SetOutputKernelTensor(const KernelTensorPtr &kernel_tensor, size_t output_idx, AnfNode *node);
-  // set alloc stream id
-  static void SetAllocStreamId(const KernelTensorPtr &kernel_tensor, uint32_t stream_id, const AnfNodePtr &node);
   // set workspace device addr of anf_node
   static void SetWorkspaceAddr(const DeviceAddressPtr &addr, size_t output_idx, const AnfNodePtr &node);
   // set workspace kernel tensor of anf_node
@@ -316,11 +314,10 @@ class BACKEND_COMMON_EXPORT AnfRuntimeAlgorithm {
                                             const ValuePtr &value, void *device_ptr, size_t size,
                                             const std::string &format, TypeId dtype_id, const ShapeVector &host_shape,
                                             const string &device_name, uint32_t device_id,
-                                            const UserDataPtr &user_data = nullptr, bool is_remote = false);
+                                            const UserDataPtr &user_data = nullptr);
   static KernelTensorPtr CreateKernelTensor(void *device_ptr, size_t size, Format format, TypeId dtype_id,
                                             const ShapeVector &host_shape, const string &device_name,
-                                            uint32_t device_id, const UserDataPtr &user_data = nullptr,
-                                            bool is_remote = false);
+                                            uint32_t device_id, const UserDataPtr &user_data = nullptr);
 
   // Get device attr string from Parameter.
   static std::string GetParameterDeviceStr(const mindspore::AnfNodePtr &node);

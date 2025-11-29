@@ -17,8 +17,8 @@
 #ifndef MINDSPORE_CCSRC_RUNTIME_HARDWARE_GPU_OPTIMIZER_H_
 #define MINDSPORE_CCSRC_RUNTIME_HARDWARE_GPU_OPTIMIZER_H_
 
-#include "include/backend/optimizer/helper.h"
-#include "include/backend/optimizer/optimizer.h"
+#include "include/backend/common/pass_manager/helper.h"
+#include "include/backend/common/pass_manager/optimizer.h"
 #include "include/backend/common/pass_manager/pass_manager.h"
 #include "backend/common/pass/getitem_tuple.h"
 #include "backend/common/pass/insert_type_transform_op.h"

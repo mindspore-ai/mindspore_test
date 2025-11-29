@@ -18,7 +18,7 @@
 #define MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_OPTIMIZER_HETEROGENEOUS_INSERT_PRE_FETCH_DEPEND_H
 #include <vector>
 
-#include "include/backend/optimizer/optimizer.h"
+#include "include/backend/common/pass_manager/optimizer.h"
 
 namespace mindspore {
 namespace opt {

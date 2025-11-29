@@ -23,8 +23,8 @@
 
 #include "ir/anf.h"
 #include "ir/functor.h"
-#include "include/backend/optimizer/optimizer.h"
-#include "include/backend/optimizer/helper.h"
+#include "include/backend/common/pass_manager/optimizer.h"
+#include "include/backend/common/pass_manager/helper.h"
 #include "include/utils/convert_utils.h"
 #include "include/runtime/hardware_abstract/kernel_base/graph_fusion/framework_utils.h"
 #include "include/runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/infershape_functor.h"

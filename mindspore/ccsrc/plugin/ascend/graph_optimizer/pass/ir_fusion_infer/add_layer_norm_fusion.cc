@@ -22,10 +22,10 @@
 
 #include "primitive/nn_optimizer_ops.h"
 #include "primitive/math_ops.h"
-#include "include/backend/anf_runtime_algorithm.h"
+#include "include/backend/common/kernel_graph/anf_runtime_algorithm.h"
 #include "include/utils/anfalgo.h"
 #include "include/utils/utils.h"
-#include "include/backend/optimizer/helper.h"
+#include "include/backend/common/pass_manager/helper.h"
 
 namespace mindspore {
 namespace opt {
@@ -45,12 +45,12 @@ const AnfNodePtr AddLayernormFusionBase::Process(const FuncGraphPtr &graph, cons
 #include "utils/ms_context.h"
 #include "primitive/nn_optimizer_ops.h"
 #include "primitive/math_ops.h"
-#include "include/backend/anf_runtime_algorithm.h"
+#include "include/backend/common/kernel_graph/anf_runtime_algorithm.h"
 #include "include/utils/anfalgo.h"
 #include "ir/primitive.h"
 #include "include/utils/utils.h"
-#include "include/backend/optimizer/helper.h"
-#include "include/backend/optimizer/optimizer.h"
+#include "include/backend/common/pass_manager/helper.h"
+#include "include/backend/common/pass_manager/optimizer.h"
 #include "primitive/auto_generate/gen_ops_primitive_a.h"
 #include "primitive/auto_generate/gen_ops_primitive_l.h"
 

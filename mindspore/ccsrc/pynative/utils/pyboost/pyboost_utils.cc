@@ -39,7 +39,7 @@
 #include "include/runtime/utils/runtime_conf/runtime_conf.h"
 #include "primitive/auto_generate/gen_ops_primitive_c.h"
 #include "primitive/framework_ops.h"
-#include "mindspore/ccsrc/include/backend/optimizer/helper.h"
+#include "mindspore/ccsrc/include/backend/common/pass_manager/helper.h"
 #include "mindspore/ccsrc/include/backend/common/pass_manager/op_adaptation_info_factory.h"
 
 namespace mindspore {

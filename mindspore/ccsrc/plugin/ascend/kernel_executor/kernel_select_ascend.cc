@@ -23,7 +23,7 @@
 #include "primitive/array_ops.h"
 #include "primitive/nn_ops.h"
 #include "kernel/ascend/hccl/hccl_kernel_metadata.h"
-#include "include/backend/optimizer/helper.h"
+#include "include/backend/common/pass_manager/helper.h"
 #include "primitive/framework_ops.h"
 #include "kernel/ascend/aclnn/kernel_mod_impl/aclnn_kernel_build.h"
 #include "kernel/ascend/aclop/kernel_mod_impl/acl_kernel_build.h"

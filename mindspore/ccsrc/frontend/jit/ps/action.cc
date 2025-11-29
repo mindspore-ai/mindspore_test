@@ -88,7 +88,7 @@
 #include "tools/profiler/profiler.h"
 #include "include/backend/backend_manager/backend_manager.h"
 #include "include/utils/pynative/adapter.h"
-#include "backend/backend_manager/backend_jit_config.h"
+#include "include/backend/backend_manager/backend_jit_config.h"
 #include "primitive/auto_generate/gen_ops_primitive_d.h"
 #include "primitive/auto_generate/gen_ops_primitive_m.h"
 #include "primitive/auto_generate/gen_ops_primitive_p.h"

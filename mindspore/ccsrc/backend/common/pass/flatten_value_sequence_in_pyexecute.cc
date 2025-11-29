@@ -21,7 +21,7 @@
 #include <vector>
 #include <string>
 #include "include/runtime/hardware_abstract/kernel_base/kernel_info.h"
-#include "include/backend/anf_runtime_algorithm.h"
+#include "include/backend/common/kernel_graph/anf_runtime_algorithm.h"
 #include "include/utils/anfalgo.h"
 #include "primitive/framework_ops.h"
 #include "primitive/auto_generate/gen_ops_primitive_p.h"

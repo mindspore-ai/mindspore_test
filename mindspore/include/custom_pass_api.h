@@ -24,15 +24,15 @@
 #include "mindspore/core/include/utils/ms_context.h"
 
 // pass headfiles
-#include "mindspore/ccsrc/include/backend/optimizer/pass.h"
+#include "mindspore/ccsrc/include/backend/common/pass_manager/pass.h"
 #include "mindspore/ccsrc/include/backend/common/pass_manager/pattern_to_pattern.h"
 
 // custom pass plugin headfile
 #include "mindspore/ccsrc/include/backend/common/custom_pass/custom_pass_plugin.h"
 
 // util headfiles
-#include "mindspore/ccsrc/include/backend/anf_runtime_algorithm.h"
-#include "mindspore/ccsrc/include/backend/optimizer/helper.h"
+#include "mindspore/ccsrc/include/backend/common/kernel_graph/anf_runtime_algorithm.h"
+#include "mindspore/ccsrc/include/backend/common/pass_manager/helper.h"
 #include "mindspore/ccsrc/include/utils/anfalgo.h"
 #include "mindspore/ccsrc/include/utils/utils.h"
 

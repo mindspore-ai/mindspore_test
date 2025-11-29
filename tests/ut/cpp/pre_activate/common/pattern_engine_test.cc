@@ -22,9 +22,9 @@
 
 #include "common/common_test.h"
 #include "primitive/math_ops.h"
-#include "include/backend/optimizer/pattern_engine.h"
+#include "include/backend/common/pass_manager/pattern_engine.h"
 #include "backend/common/pass_manager/visitor.h"
-#include "include/backend/optimizer/helper.h"
+#include "include/backend/common/pass_manager/helper.h"
 #include "base/base_ref.h"
 #include "ir/anf.h"
 #include "include/utils/utils.h"

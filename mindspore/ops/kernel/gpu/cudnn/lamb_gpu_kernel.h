@@ -25,7 +25,7 @@
 #include "kernel/gpu/gpu_kernel_factory.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/lamb_impl.cuh"
 #include "infer/lamb.h"
-#include "include/backend/anf_runtime_algorithm.h"
+#include "include/backend/common/kernel_graph/anf_runtime_algorithm.h"
 
 namespace mindspore {
 namespace kernel {

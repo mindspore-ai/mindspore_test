@@ -19,7 +19,7 @@
 #include "primitive/framework_ops.h"
 #include "backend/common/pass/const_input_to_attr.h"
 #include "include/utils/anfalgo.h"
-#include "include/backend/optimizer/helper.h"
+#include "include/backend/common/pass_manager/helper.h"
 #include "primitive/auto_generate/gen_ops_primitive_c.h"
 
 namespace mindspore {

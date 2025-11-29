@@ -18,7 +18,7 @@
 
 #include <string>
 #include "include/utils/anfalgo.h"
-#include "include/backend/anf_runtime_algorithm.h"
+#include "include/backend/common/kernel_graph/anf_runtime_algorithm.h"
 #include "include/runtime/hardware_abstract/kernel_base/graph_fusion/framework_utils.h"
 #include "kernel/ascend/acl_ir/op_api_convert.h"
 #include "plugin/ascend/res_manager/symbol_interface/acl_rt_symbol.h"

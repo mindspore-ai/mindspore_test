@@ -37,7 +37,7 @@
 #include "include/frontend/operator/frontend_primitive_infer.h"
 #include "frontend/parallel/ops_info/ops_utils.h"
 #include "mindspore/ccsrc/frontend/operator/meta_dsl/common/meta_impl.h"
-#include "include/backend/anf_runtime_algorithm.h"
+#include "include/backend/common/kernel_graph/anf_runtime_algorithm.h"
 #include "include/utils/fallback.h"
 #include "include/utils/primfunc_utils.h"
 #include "ir/anf.h"

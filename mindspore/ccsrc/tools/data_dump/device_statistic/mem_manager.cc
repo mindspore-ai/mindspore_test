@@ -20,7 +20,7 @@
 #include <utility>
 #include <vector>
 
-#include "include/backend/anf_runtime_algorithm.h"
+#include "include/backend/common/kernel_graph/anf_runtime_algorithm.h"
 #include "include/runtime/memory/mem_pool/mem_tracker.h"
 #include "include/utils/common.h"
 #include "ir/dtype/tensor_type.h"

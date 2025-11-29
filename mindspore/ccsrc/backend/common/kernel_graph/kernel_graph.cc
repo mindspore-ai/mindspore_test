@@ -20,7 +20,7 @@
 #include <set>
 #include "abstract/ops/primitive_infer_map.h"
 #include "backend/common/kernel_graph/exec_order_builder.h"
-#include "include/backend/anf_runtime_algorithm.h"
+#include "include/backend/common/kernel_graph/anf_runtime_algorithm.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_info.h"
 #include "include/utils/anfalgo.h"
 #include "include/utils/convert_utils.h"

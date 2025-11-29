@@ -30,7 +30,7 @@
 #include "abstract/abstract_function.h"
 #include "include/backend/backend_manager/backend_manager.h"
 #include "backend/ms_backend/graph_partition.h"
-#include "backend/backend_manager/backend_jit_config.h"
+#include "include/backend/backend_manager/backend_jit_config.h"
 #include "include/runtime/hardware_abstract/device_context/device_context.h"
 #include "runtime/core/actors/base/actor_set.h"
 #include "tools/profiler/profiler.h"

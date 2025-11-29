@@ -24,7 +24,7 @@
 #include "ir/anf.h"
 #include "include/utils/utils.h"
 #include "include/utils/parallel_context.h"
-#include "include/backend/optimizer/optimizer.h"
+#include "include/backend/common/pass_manager/optimizer.h"
 #include "frontend/jit/ps/resource.h"
 #include "include/frontend/optimizer/optimizer.h"
 

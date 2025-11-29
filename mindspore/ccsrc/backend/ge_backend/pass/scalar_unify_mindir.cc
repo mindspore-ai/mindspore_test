@@ -18,7 +18,7 @@
 #include <memory>
 #include "primitive/arithmetic_ops.h"
 #include "include/utils/anfalgo.h"
-#include "include/backend/optimizer/helper.h"
+#include "include/backend/common/pass_manager/helper.h"
 
 /* This pass changes the following pattern.
 

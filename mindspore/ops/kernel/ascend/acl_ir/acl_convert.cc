@@ -25,7 +25,7 @@
 #include "kernel/ascend/acl_ir/acl_helper.h"
 #include "ops_utils/op_utils.h"
 #include "device_address/device_address.h"
-#include "include/backend/anf_runtime_algorithm.h"
+#include "include/backend/common/kernel_graph/anf_runtime_algorithm.h"
 #include "kernel/ascend/acl_ir/op_api_util.h"
 #include "plugin/ascend/res_manager/symbol_interface/acl_base_symbol.h"
 #include "plugin/ascend/res_manager/symbol_interface/acl_rt_symbol.h"

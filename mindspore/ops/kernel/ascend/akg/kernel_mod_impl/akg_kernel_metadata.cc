@@ -15,7 +15,7 @@
  */
 #include <string>
 #include "kernel/ascend/akg/kernel_mod_impl/akg_kernel_metadata.h"
-#include "include/backend/anf_runtime_algorithm.h"
+#include "include/backend/common/kernel_graph/anf_runtime_algorithm.h"
 #include "include/utils/anfalgo.h"
 #include "include/runtime/hardware_abstract/kernel_base/oplib/oplib.h"
 #include "include/runtime/hardware_abstract/kernel_base/graph_fusion/framework_utils.h"

@@ -27,7 +27,7 @@
 #include "backend/ms_backend/graph_fusion/adapter/graph_kernel_cluster_cloud.h"
 #include "backend/ms_backend/graph_fusion/convert_input_and_attr.h"
 #include "backend/ms_backend/graph_fusion/core/arithmetic_simplify.h"
-#include "include/backend/anf_runtime_algorithm.h"
+#include "include/backend/common/kernel_graph/anf_runtime_algorithm.h"
 #include "pre_activate/common/pattern_to_pattern_pass_utils.h"
 
 namespace mindspore::graphkernel {

@@ -20,7 +20,7 @@
 #include "primitive/framework_ops.h"
 #include "primitive/nn_ops.h"
 #include "ir/graph_utils.h"
-#include "include/backend/optimizer/helper.h"
+#include "include/backend/common/pass_manager/helper.h"
 #include "include/utils/anfalgo.h"
 
 namespace mindspore {

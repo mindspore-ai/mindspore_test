@@ -17,7 +17,7 @@
 #define MINDSPORE_CCSRC_PLUGIN_DEVICE_CPU_OPTIMIZER_SOFTMAX_GRAD_FUSION_H_
 
 #include <memory>
-#include "include/backend/optimizer/optimizer.h"
+#include "include/backend/common/pass_manager/optimizer.h"
 #include "primitive/math_ops.h"
 
 namespace mindspore {

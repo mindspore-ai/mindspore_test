@@ -18,7 +18,7 @@
 #include <memory>
 #include <vector>
 #include <string>
-#include "include/backend/optimizer/pass.h"
+#include "include/backend/common/pass_manager/pass.h"
 #include "ir/func_graph.h"
 #include "backend/ms_backend/graph_fusion/core/expander.h"
 #include "backend/ms_backend/graph_fusion/expanders/op_desc_registry.h"

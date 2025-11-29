@@ -23,7 +23,7 @@
 #include "common/graph_optimizer_test_framework.h"
 #include "include/runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel_flags.h"
 #include "backend/ms_backend/graph_fusion/adapter/graph_kernel_expander_cloud.h"
-#include "include/backend/anf_runtime_algorithm.h"
+#include "include/backend/common/kernel_graph/anf_runtime_algorithm.h"
 #include "pre_activate/common/pattern_to_pattern_pass_utils.h"
 #include "backend/ms_backend/graph_fusion/expander/base.h"
 #include "ir/graph_utils.h"

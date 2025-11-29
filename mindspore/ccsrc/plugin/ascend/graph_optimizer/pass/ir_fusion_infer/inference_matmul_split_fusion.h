@@ -23,7 +23,7 @@
 #include <set>
 
 #include "plugin/ascend/graph_optimizer/pass/ir_fusion_infer/inference_weight_preprocess_utils.h"
-#include "include/backend/optimizer/pass.h"
+#include "include/backend/common/pass_manager/pass.h"
 #include "ir/func_graph.h"
 #include "ir/anf.h"
 #include "primitive/nn_ops.h"

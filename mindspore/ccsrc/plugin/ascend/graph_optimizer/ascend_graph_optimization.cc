@@ -25,7 +25,7 @@
 #include "plugin/ascend/graph_optimizer/pass/ascend_pass_optimization.h"
 #include "plugin/ascend/graph_optimizer/pass/backend_common_unify_mindir.h"
 #include "utils/ms_context.h"
-#include "include/backend/anf_runtime_algorithm.h"
+#include "include/backend/common/kernel_graph/anf_runtime_algorithm.h"
 #include "ir/graph_utils.h"
 #include "tools/profiler/profiling.h"
 #include "mindspore/ccsrc/utils/ir_dump/dump_proto.h"

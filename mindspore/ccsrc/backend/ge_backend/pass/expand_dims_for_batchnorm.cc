@@ -22,7 +22,7 @@
 #include "primitive/nn_ops.h"
 #include "primitive/sequence_ops.h"
 #include "include/utils/anfalgo.h"
-#include "include/backend/optimizer/helper.h"
+#include "include/backend/common/pass_manager/helper.h"
 
 namespace mindspore {
 namespace opt {

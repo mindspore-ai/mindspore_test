@@ -26,7 +26,7 @@
 #include "utils/hash_map.h"
 #include "ir/anf.h"
 #include "ir/graph_utils.h"
-#include "include/backend/optimizer/pass.h"
+#include "include/backend/common/pass_manager/pass.h"
 
 namespace mindspore::graphkernel {
 // Binary Indexed Trees for max value

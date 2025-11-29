@@ -22,7 +22,7 @@
 #include "primitive/auto_generate/gen_ops_primitive_q.h"
 #include "primitive/nn_ops.h"
 #include "primitive/math_ops.h"
-#include "include/backend/anf_runtime_algorithm.h"
+#include "include/backend/common/kernel_graph/anf_runtime_algorithm.h"
 #include "include/utils/anfalgo.h"
 #include "include/utils/utils.h"
 #include "utils/ms_context.h"

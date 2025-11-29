@@ -15,7 +15,7 @@
  */
 #include "backend/common/pass/transpose_to_reshape_pass.h"
 #include <vector>
-#include "include/backend/optimizer/helper.h"
+#include "include/backend/common/pass_manager/helper.h"
 #include "include/utils/anfalgo.h"
 #include "primitive/auto_generate/gen_ops_primitive_r.h"
 #include "primitive/auto_generate/gen_ops_primitive_t.h"

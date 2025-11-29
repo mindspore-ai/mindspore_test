@@ -23,7 +23,7 @@
 #include "primitive/array_ops.h"
 #include "primitive/framework_ops.h"
 #include "include/utils/anfalgo.h"
-#include "include/backend/optimizer/helper.h"
+#include "include/backend/common/pass_manager/helper.h"
 #include "utils/trace_base.h"
 #include "frontend/parallel/ops_info/ops_utils.h"
 #include "primitive/auto_generate/gen_ops_primitive_d.h"

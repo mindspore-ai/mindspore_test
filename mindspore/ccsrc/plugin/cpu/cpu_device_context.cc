@@ -45,7 +45,7 @@
 #include "utils/trace_base.h"
 #include "include/runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel_flags.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_info.h"
-#include "include/backend/optimizer/optimizer.h"
+#include "include/backend/common/pass_manager/optimizer.h"
 #include "include/backend/common/pass_manager/pass_manager.h"
 #include "backend/common/pass_manager/common_backend_optimization.h"
 #include "backend/common/pass/insert_type_transform_op.h"
@@ -57,7 +57,7 @@
 #include "backend/common/pass/dynamic_sequence_ops_adaptation.h"
 #include "backend/common/expander/fallback/expander_fallback.h"
 #include "backend/common/pass/value_graph_binder.h"
-#include "include/backend/anf_runtime_algorithm.h"
+#include "include/backend/common/kernel_graph/anf_runtime_algorithm.h"
 #include "include/utils/anfalgo.h"
 #include "plugin/cpu/profiler/cpu_profiling.h"
 #if defined(__linux__) && defined(WITH_BACKEND)

@@ -21,7 +21,7 @@
 #include <vector>
 #include <unordered_map>
 
-#include "include/backend/anf_runtime_algorithm.h"
+#include "include/backend/common/kernel_graph/anf_runtime_algorithm.h"
 #include "include/utils/anfalgo.h"
 #include "include/runtime/hardware_abstract/kernel_base/ms_factory.h"
 #include "include/runtime/hardware_abstract/kernel_base/graph_fusion/framework_utils.h"

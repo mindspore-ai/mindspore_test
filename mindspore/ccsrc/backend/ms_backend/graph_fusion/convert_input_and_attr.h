@@ -20,7 +20,7 @@
 #include <set>
 #include <string>
 #include <memory>
-#include "include/backend/optimizer/pass.h"
+#include "include/backend/common/pass_manager/pass.h"
 #include "ops/op_def.h"
 
 namespace mindspore::graphkernel {

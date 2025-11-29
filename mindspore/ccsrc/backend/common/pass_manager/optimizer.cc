@@ -13,14 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "include/backend/optimizer/optimizer.h"
+#include "include/backend/common/pass_manager/optimizer.h"
 #include <memory>
 #include <string>
 #include <vector>
 #include <utility>
 #include "utils/anf_utils.h"
-#include "include/backend/anf_runtime_algorithm.h"
-#include "include/backend/optimizer/helper.h"
+#include "include/backend/common/kernel_graph/anf_runtime_algorithm.h"
+#include "include/backend/common/pass_manager/helper.h"
 
 namespace mindspore {
 namespace opt {

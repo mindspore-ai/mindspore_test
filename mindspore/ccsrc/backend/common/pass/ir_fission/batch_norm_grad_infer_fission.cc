@@ -16,8 +16,8 @@
 #include "backend/common/pass/ir_fission/batch_norm_grad_infer_fission.h"
 #include <string>
 #include <vector>
-#include "include/backend/anf_runtime_algorithm.h"
-#include "include/backend/optimizer/helper.h"
+#include "include/backend/common/kernel_graph/anf_runtime_algorithm.h"
+#include "include/backend/common/pass_manager/helper.h"
 #include "include/utils/anfalgo.h"
 #include "primitive/nn_ops.h"
 #include "ops_utils/op_utils.h"

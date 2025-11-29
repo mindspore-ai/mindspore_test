@@ -25,7 +25,7 @@
 #include <unordered_set>
 #include <vector>
 
-#include "include/backend/anf_runtime_algorithm.h"
+#include "include/backend/common/kernel_graph/anf_runtime_algorithm.h"
 #include "include/utils/anfalgo.h"
 #include "include/utils/comm_manager.h"
 #include "include/utils/common.h"

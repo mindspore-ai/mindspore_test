@@ -33,7 +33,7 @@
 #include <unordered_set>
 #include <utility>
 
-#include "include/backend/anf_runtime_algorithm.h"
+#include "include/backend/common/kernel_graph/anf_runtime_algorithm.h"
 #include "include/utils/anfalgo.h"
 #include "include/utils/common.h"
 #include "ir/tensor_new.h"

@@ -18,7 +18,7 @@
 #define MINDSPORE_CCSRC_BACKEND_OPTIMIZER_GRAPH_KERNEL_CORE_UPDATE_STATE_FORMATTER_H_
 
 #include <vector>
-#include "include/backend/optimizer/pass.h"
+#include "include/backend/common/pass_manager/pass.h"
 #include "primitive/framework_ops.h"
 #include "ir/func_graph.h"
 

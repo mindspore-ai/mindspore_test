@@ -66,7 +66,7 @@
 #include "primitive/auto_generate/gen_ops_primitive_v.h"
 #include "primitive/auto_generate/gen_ops_primitive_d.h"
 #include "include/utils/anfalgo.h"
-#include "include/backend/optimizer/helper.h"
+#include "include/backend/common/pass_manager/helper.h"
 
 using mindspore::tensor::Tensor;
 

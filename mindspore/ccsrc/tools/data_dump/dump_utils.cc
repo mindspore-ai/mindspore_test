@@ -35,7 +35,7 @@
 #include "tools/data_dump/debugger/debugger.h"
 #include "tools/tensor_data.h"
 #endif
-#include "include/backend/anf_runtime_algorithm.h"
+#include "include/backend/common/kernel_graph/anf_runtime_algorithm.h"
 #include "include/runtime/hardware_abstract/device_context/device_context.h"
 #include "include/runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "include/runtime/hardware_abstract/kernel_base/device_tensor_store.h"

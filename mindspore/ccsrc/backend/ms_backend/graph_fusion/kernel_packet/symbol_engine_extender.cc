@@ -33,7 +33,7 @@
 #include "backend/ms_backend/graph_fusion/core/graph_kernel_utils.h"
 #include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/kernel_packet/kernel_packet_engine.h"
 #include "include/runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel_flags.h"
-#include "include/backend/anf_runtime_algorithm.h"
+#include "include/backend/common/kernel_graph/anf_runtime_algorithm.h"
 #include "backend/common/pass/insert_type_transform_op.h"
 #include "primitive/auto_generate/gen_ops_primitive_t.h"
 #include "ir/func_graph_flag.h"

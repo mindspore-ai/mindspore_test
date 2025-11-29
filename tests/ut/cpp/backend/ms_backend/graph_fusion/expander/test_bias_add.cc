@@ -21,7 +21,7 @@
 #include "backend/ms_backend/graph_fusion/expander/base.h"
 #include "ir/graph_utils.h"
 #include "utils/anf_utils.h"
-#include "include/backend/anf_runtime_algorithm.h"
+#include "include/backend/common/kernel_graph/anf_runtime_algorithm.h"
 #include "primitive/auto_generate/gen_ops_primitive_b.h"
 
 namespace mindspore::graphkernel::test {

@@ -17,7 +17,7 @@
 #include "plugin/gpu/graph_optimizer/somas/gpu_somas.h"
 #include <string>
 #include <vector>
-#include "include/backend/optimizer/helper.h"
+#include "include/backend/common/pass_manager/helper.h"
 #include "utils/ms_context.h"
 #include "primitive/framework_op_name.h"
 #include "include/utils/anfalgo.h"

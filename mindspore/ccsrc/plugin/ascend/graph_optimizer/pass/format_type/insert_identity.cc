@@ -19,7 +19,7 @@
 #include <string>
 #include <unordered_set>
 #include "primitive/array_ops.h"
-#include "include/backend/anf_runtime_algorithm.h"
+#include "include/backend/common/kernel_graph/anf_runtime_algorithm.h"
 #include "include/utils/anfalgo.h"
 #include "utils/ms_context.h"
 #include "primitive/nn_op_name.h"

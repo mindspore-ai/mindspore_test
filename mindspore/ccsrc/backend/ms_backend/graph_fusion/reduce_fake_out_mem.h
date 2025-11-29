@@ -19,7 +19,7 @@
 #include <memory>
 #include <set>
 #include "include/runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel_flags.h"
-#include "include/backend/optimizer/pass.h"
+#include "include/backend/common/pass_manager/pass.h"
 #include "backend/ms_backend/graph_fusion/add_atomic_clean.h"
 #include "ir/func_graph.h"
 

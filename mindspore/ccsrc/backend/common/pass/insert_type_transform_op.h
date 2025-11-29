@@ -21,7 +21,7 @@
 #include <vector>
 #include <string>
 #include "include/runtime/hardware_abstract/kernel_base/kernel_build_info.h"
-#include "include/backend/optimizer/optimizer.h"
+#include "include/backend/common/pass_manager/optimizer.h"
 
 namespace mindspore {
 namespace opt {

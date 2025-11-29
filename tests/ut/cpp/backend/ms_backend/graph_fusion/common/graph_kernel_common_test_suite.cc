@@ -20,7 +20,7 @@
 #include "backend/ms_backend/graph_fusion/core/graph_kernel_pass_manager.h"
 #include "ir/func_graph_flag.h"
 #include "ir/graph_utils.h"
-#include "include/backend/anf_runtime_algorithm.h"
+#include "include/backend/common/kernel_graph/anf_runtime_algorithm.h"
 
 namespace mindspore::graphkernel::test {
 class EmptyPass : public mindspore::opt::Pass {

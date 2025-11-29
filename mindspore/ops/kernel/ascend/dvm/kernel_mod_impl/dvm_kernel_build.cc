@@ -22,7 +22,7 @@
 #include <unordered_set>
 #include "kernel/ascend/dvm/kernel_mod_impl/dvm_kernel_mod.h"
 #include "include/utils/anfalgo.h"
-#include "include/backend/anf_runtime_algorithm.h"
+#include "include/backend/common/kernel_graph/anf_runtime_algorithm.h"
 #include "ir/graph_utils.h"
 #include "mindspore/ccsrc/utils/ir_dump/anf_ir_dump.h"
 #include "primitive/math_ops.h"

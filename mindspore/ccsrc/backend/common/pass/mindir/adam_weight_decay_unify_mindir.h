@@ -19,7 +19,7 @@
 #include <vector>
 #include <memory>
 #include <string>
-#include "include/backend/optimizer/optimizer.h"
+#include "include/backend/common/pass_manager/optimizer.h"
 #include "primitive/math_ops.h"
 #include "include/backend/visible.h"
 

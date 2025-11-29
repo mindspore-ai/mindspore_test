@@ -19,7 +19,7 @@
 #include "backend/ms_backend/graph_fusion/adapter/graph_kernel_splitter_with_py.h"
 #include "backend/ms_backend/graph_fusion/adapter/split_model_cpu.h"
 #include "backend/ms_backend/graph_fusion/expander/base.h"
-#include "include/backend/anf_runtime_algorithm.h"
+#include "include/backend/common/kernel_graph/anf_runtime_algorithm.h"
 #include "utils/anf_utils.h"
 
 namespace mindspore::graphkernel::test {

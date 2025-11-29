@@ -25,7 +25,7 @@
 #include "primitive/structure_op_name.h"
 #include "include/utils/parallel_context.h"
 #include "backend/common/kernel_graph/session_factory.h"
-#include "include/backend/optimizer/helper.h"
+#include "include/backend/common/pass_manager/helper.h"
 #include "include/frontend/jit/ps/action_interface.h"
 #include "backend/common/kernel_graph/jit_call_graph.h"
 #include "ir/anf.h"

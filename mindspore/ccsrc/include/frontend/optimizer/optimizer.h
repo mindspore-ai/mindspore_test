@@ -27,7 +27,7 @@
 #include "frontend/optimizer/opt.h"
 #include "frontend/jit/ps/validator.h"
 #include "include/utils/anfalgo.h"
-#include "include/backend/anf_runtime_algorithm.h"
+#include "include/backend/common/kernel_graph/anf_runtime_algorithm.h"
 #include "include/utils/visible.h"
 #include "frontend/jit/ps/resource.h"
 

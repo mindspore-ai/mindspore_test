@@ -23,7 +23,7 @@
 #include "common/graph_optimizer_test_framework.h"
 #include "include/runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel_flags.h"
 #include "backend/ms_backend/graph_fusion/core/graph_kernel_pass_manager.h"
-#include "include/backend/optimizer/optimizer.h"
+#include "include/backend/common/pass_manager/optimizer.h"
 #include "ir/anf.h"
 #include "pre_activate/common/pattern_to_pattern_pass_utils.h"
 #include "include/utils/anfalgo.h"

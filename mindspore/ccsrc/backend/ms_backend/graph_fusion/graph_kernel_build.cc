@@ -25,7 +25,7 @@
 #include <vector>
 #include "primitive/framework_ops.h"
 #include "include/utils/anfalgo.h"
-#include "include/backend/anf_runtime_algorithm.h"
+#include "include/backend/common/kernel_graph/anf_runtime_algorithm.h"
 #include "ir/graph_utils.h"
 #include "include/runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/graph_kernel_json_generator.h"
 #include "backend/ms_backend/graph_fusion/core/graph_builder.h"

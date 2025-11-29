@@ -24,7 +24,7 @@
 #include "abstract/abstract_value.h"
 #include "utils/tensor_construct_utils.h"
 #include "ops/test_ops.h"
-#include "include/backend/optimizer/helper.h"
+#include "include/backend/common/pass_manager/helper.h"
 #include "ir/primitive.h"
 #include "primitive/auto_generate/gen_ops_primitive_s.h"
 

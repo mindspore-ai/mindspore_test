@@ -24,7 +24,7 @@
 #include "primitive/auto_generate/gen_ops_primitive_a.h"
 #include "primitive/math_ops.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_info.h"
-#include "include/backend/anf_runtime_algorithm.h"
+#include "include/backend/common/kernel_graph/anf_runtime_algorithm.h"
 
 namespace mindspore::graphkernel::test {
 namespace {

@@ -32,7 +32,7 @@
 #include "kernel/gpu/gpu_kernel.h"
 #include "kernel/gpu/gpu_kernel_factory.h"
 #include "include/utils/anfalgo.h"
-#include "include/backend/anf_runtime_algorithm.h"
+#include "include/backend/common/kernel_graph/anf_runtime_algorithm.h"
 
 constexpr size_t kSparseFillEmptyRowsInputsNum = 4;
 constexpr size_t kSparseFillEmptyRowsOutputsNum = 4;

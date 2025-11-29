@@ -20,7 +20,7 @@
 #include "mindspore/ccsrc/utils/ir_dump/anf_ir_dump.h"
 #include "include/utils/utils.h"
 #include "kernel/kernel_build_info.h"
-#include "include/backend/optimizer/optimizer.h"
+#include "include/backend/common/pass_manager/optimizer.h"
 
 #define private public
 #define protected public

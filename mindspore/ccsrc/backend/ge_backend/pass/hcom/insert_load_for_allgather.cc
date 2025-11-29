@@ -18,7 +18,7 @@
 #include <vector>
 #include "primitive/other_op_name.h"
 #include "primitive/framework_ops.h"
-#include "include/backend/anf_runtime_algorithm.h"
+#include "include/backend/common/kernel_graph/anf_runtime_algorithm.h"
 #include "include/utils/parallel_context.h"
 #include "primitive/other_ops.h"
 #include "utils/ms_context.h"

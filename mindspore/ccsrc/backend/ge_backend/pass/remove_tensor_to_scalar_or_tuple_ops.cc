@@ -22,7 +22,7 @@
 #include <tuple>
 #include <algorithm>
 #include "include/utils/anfalgo.h"
-#include "include/backend/optimizer/helper.h"
+#include "include/backend/common/pass_manager/helper.h"
 #include "primitive/array_ops.h"
 #include "primitive/arithmetic_ops.h"
 

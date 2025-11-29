@@ -31,7 +31,7 @@
 #include "ir/anf.h"
 #include "ir/device_type.h"
 #include "device_address/device_address.h"
-#include "backend/backend_manager/backend_jit_config.h"
+#include "include/backend/backend_manager/backend_jit_config.h"
 #include "include/backend/visible.h"
 
 namespace mindspore {

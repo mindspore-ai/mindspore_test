@@ -17,7 +17,7 @@
 
 #include "plugin/ascend/kernel_executor/rts/recv.h"
 #include "plugin/ascend/res_manager/stream_manager/ascend_stream_manager.h"
-#include "include/backend/anf_runtime_algorithm.h"
+#include "include/backend/common/kernel_graph/anf_runtime_algorithm.h"
 #include "include/utils/anfalgo.h"
 #include "plugin/ascend/res_manager/symbol_interface/acl_rt_symbol.h"
 #include "plugin/ascend/res_manager/symbol_interface/symbol_utils.h"

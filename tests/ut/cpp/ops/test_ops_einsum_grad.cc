@@ -21,7 +21,7 @@
 #include "ops/test_ops.h"
 #include "infer/grad/einsum_grad.h"
 #include "ops/test_ops_dyn_cases.h"
-#include "include/backend/optimizer/helper.h"
+#include "include/backend/common/pass_manager/helper.h"
 #include "primitive/auto_generate/gen_ops_primitive_e.h"
 
 namespace mindspore {

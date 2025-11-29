@@ -33,7 +33,7 @@
 #include "tools/profiler/profiling.h"
 #include "include/runtime/memory/mem_pool/mem_tracker.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_build_info.h"
-#include "include/backend/anf_runtime_algorithm.h"
+#include "include/backend/common/kernel_graph/anf_runtime_algorithm.h"
 
 namespace mindspore {
 namespace backend {

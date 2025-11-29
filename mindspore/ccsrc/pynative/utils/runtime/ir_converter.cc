@@ -23,7 +23,7 @@
 #include <unordered_map>
 #include <utility>
 #include "include/utils/anfalgo.h"
-#include "include/backend/anf_runtime_algorithm.h"
+#include "include/backend/common/kernel_graph/anf_runtime_algorithm.h"
 #include "backend/common/device_address_utils.h"
 
 namespace mindspore {

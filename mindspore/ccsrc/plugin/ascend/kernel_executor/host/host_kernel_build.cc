@@ -18,7 +18,7 @@
 #include <string>
 #include "plugin/ascend/kernel_executor/host/host_kernel_mod.h"
 #include "include/utils/anfalgo.h"
-#include "include/backend/anf_runtime_algorithm.h"
+#include "include/backend/common/kernel_graph/anf_runtime_algorithm.h"
 #include "utils/log_adapter.h"
 #include "include/runtime/hardware_abstract/kernel_base/graph_fusion/framework_utils.h"
 #include "utils/trace_base.h"

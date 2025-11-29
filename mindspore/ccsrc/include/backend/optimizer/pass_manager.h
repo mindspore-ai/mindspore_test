@@ -22,7 +22,7 @@
 #include <memory>
 #include <map>
 
-#include "include/backend/optimizer/pass.h"
+#include "include/backend/common/pass_manager/pass.h"
 #include "include/backend/common/pass_manager/node_pass.h"
 #include "include/backend/visible.h"
 

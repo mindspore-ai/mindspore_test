@@ -21,7 +21,7 @@
 
 #include "mindspore/ccsrc/utils/ir_dump/anf_ir_dump.h"
 #include "mindspore/ccsrc/utils/ir_dump/dump_proto.h"
-#include "include/backend/optimizer/optimizer.h"
+#include "include/backend/common/pass_manager/optimizer.h"
 #include "tools/profiler/profiling.h"
 #include "include/utils/parallel_context.h"
 #include "backend/common/pass/erase_visit_attr.h"
