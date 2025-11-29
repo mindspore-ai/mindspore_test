@@ -15,17 +15,17 @@ mindspore.parallel.distributed.DistributedDataParallel
         - **process_group** (str，可选) - 梯度规约通信组。默认行为是全局同步。默认值： ``None`` 。
         - **bucket_cap_mb** (int，可选) - 分桶梯度规约的桶大小，单位为MB。不填写时默认采用25MB。默认值： ``None`` 。
         - **find_unused_parameters** (bool，可选) - 是否搜索未使用参数。默认值： ``False`` 。
-        - **average_in_collective** (bool，可选) - 是否在通信后求平均，True时先做AllReduce SUM后scale dp size，否则先做scaling后规约。默认值： ``False`` 。
+        - **average_in_collective** (bool，可选) - 是否在通信后求平均，为 ``True`` 时先做AllReduce SUM后scale dp size，否则先做scaling后规约。默认值： ``False`` 。
         - **static_graph** (bool，可选) - 指明是否是静态网络。当是静态网络时，将忽略参数 `find_unused_parameters`，并在第一个step搜索未使用参数，在第二个step前按执行顺序进行桶重建，以实现更好的性能收益。默认值： ``False`` 。
         - **reducer_mode** (str，可选) - 后端梯度规约模式，``"CppReducer"`` 表示采用CPP后端，``"PythonReducer"`` 表示采用Python后端。默认值： ``"CppReducer"`` 。
 
     返回：
-        被DistributedDataParallel类封装的nn.Cell网络，网络将自动完成反向梯度规约。
+        被 `DistributedDataParallel` 类封装的 `nn.Cell` 网络，网络将自动完成反向梯度规约。
 
     样例：
 
     .. note::
-        - 使能重计算、梯度冻结时，必须在最外层使用 DistributedDataParallel 类进行封装。
+        - 使能重计算、梯度冻结时，必须在最外层使用 `DistributedDataParallel` 类进行封装。
         - 在运行以下示例之前，您需要配置通信环境变量。针对Ascend设备，推荐使用msrun启动方式，无第三方以及配置文件依赖。详见 `msrun启动 <https://www.mindspore.cn/tutorials/zh-CN/master/parallel/msrun_launcher.html>`_ 。
 
 
