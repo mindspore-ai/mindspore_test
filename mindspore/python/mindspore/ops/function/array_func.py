@@ -5666,8 +5666,8 @@ def diagonal_scatter(input, src, offset=0, dim1=0, dim2=1):
     zeros_shape = list(input_shape)
     m, n = input_shape[dim1], input_shape[dim2]
     if m == n:
-        src = src - input_diag
         src = ops.diag_embed(src, offset, dim1, dim2)
+        input = input - ops.diag_embed(input_diag, offset, dim1, dim2)
         return input + src
     if m > n:
         axis = dim2
@@ -5688,8 +5688,8 @@ def diagonal_scatter(input, src, offset=0, dim1=0, dim2=1):
                 zeros_shape.append(input_diag.shape[i] - ax)
         zeros_tensor = zeros(zeros_shape, dtype=src.dtype)
         src = concat((src, zeros_tensor), axis)
-    src = src - input_diag
     src = ops.diag_embed(src, offset, dim1, dim2)
+    input = input - ops.diag_embed(input_diag, offset, dim1, dim2)
     input = input + src
     begin = (0,) * input.ndim
     return slice(input, begin, input_shape)
