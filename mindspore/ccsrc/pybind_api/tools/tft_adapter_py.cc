@@ -200,7 +200,6 @@ void FinalizeCommunication() {
     }
     MS_LOG(WARNING) << "Destroy group, group name: " << item.first << " ok";
   }
-  distributed::collective::CollectiveManager::instance()->ClearInitResult();
   MS_LOG(WARNING) << "Finalize communication end";
 }
 
@@ -209,6 +208,7 @@ void RebuildGroup() {
   MS_LOG(WARNING) << "Try to rebuild group communication";
   UCEException::GetInstance().set_rebuild_group_flag(true);
   auto group_info = distributed::collective::CollectiveManager::instance()->get_group_info();
+  distributed::collective::CollectiveManager::instance()->ClearInitResult();
   device::GroupOptions config = {};
   config.async = true;
   for (const auto &item : group_info) {
