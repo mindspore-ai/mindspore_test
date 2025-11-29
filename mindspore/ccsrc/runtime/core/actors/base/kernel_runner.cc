@@ -26,6 +26,8 @@
 #include <vector>
 #include <string>
 
+#include "include/runtime/hardware_abstract/device_context/device_context.h"
+#include "ir/device_type.h"
 #include "ir/dtype/tensor_type.h"
 #include "runtime/core/graph_executor/pipeline/runtime_pipeline.h"
 #include "runtime/core/actors/base/memory_manager_actor.h"
@@ -36,8 +38,7 @@
 #include "runtime/core/graph_executor/kernel_capture/graph_capture_manager.h"
 #include "include/runtime/hardware_abstract/stream/multi_stream_controller.h"
 #include "async/async.h"
-#include "tools/error_handler/error_config.h"
-#include "tools/error_handler/error_handler.h"
+#include "include/utils/callback.h"
 #include "utils/log_adapter.h"
 #include "include/runtime/memory/mem_pool/mem_tracker.h"
 #include "include/backend/debug/execute_order_tracker/execute_order_tracker.h"
@@ -1506,7 +1507,38 @@ void KernelRunner::DispatchDebugActor(OpContext<KernelTensor> *const context) {
   }
 }
 
-bool KernelRunner::LaunchKernelWithDebug(OpContext<KernelTensor> *const context, const bool skip_launch) {
+bool KernelRunner::PreLaunchKernel() {
+  auto &callbacks = device::KernelExecutor::GetLaunchKernelCallbacks<device::PreLaunchKernelFunc>();
+  for (auto cb_obj : callbacks) {
+    // skip callbacks not for the device
+    if (cb_obj->device_type_ != device::DeviceType::kNone &&
+        cb_obj->device_type_ != device_contexts_[0]->GetDeviceType()) {
+      continue;
+    }
+    auto skip_launch = cb_obj->fn_callback_(kernel_, input_launch_tensors_, output_launch_tensors_, kernel_mod_,
+                                            stream_, device_contexts_[0]);
+    if (skip_launch) {
+      MS_LOG(INFO) << "Callback " << cb_obj->name_ << " skip launch kernel " << kernel_->fullname_with_scope();
+      return true;
+    }
+  }
+  return false;
+}
+
+void KernelRunner::PostLaunchKernel(bool launch_success) {
+  auto &callbacks = device::KernelExecutor::GetLaunchKernelCallbacks<device::PostLaunchKernelFunc>();
+  for (auto cb_obj : callbacks) {
+    // skip callbacks not for the device
+    if (cb_obj->device_type_ != device::DeviceType::kNone &&
+        cb_obj->device_type_ != device_contexts_[0]->GetDeviceType()) {
+      continue;
+    }
+    cb_obj->fn_callback_(kernel_, input_launch_tensors_, output_launch_tensors_, kernel_mod_, stream_,
+                         device_contexts_[0], launch_success);
+  }
+}
+
+bool KernelRunner::LaunchKernelWithDebug(OpContext<KernelTensor> *const context, bool skip_launch) {
   MS_VLOG(VL_RUNTIME_FRAMEWORK_KERNEL) << "Begin launch kernel: " << kernel_->fullname_with_scope();
   static bool is_enable_mem_tracker = device::tracker::MemTrackerManager::GetInstance().IsEnabled();
   if (MS_UNLIKELY(is_enable_mem_tracker)) {
@@ -1519,8 +1551,12 @@ bool KernelRunner::LaunchKernelWithDebug(OpContext<KernelTensor> *const context,
   }
   bool ret = true;
   if (!skip_launch) {
+    skip_launch = PreLaunchKernel();
+  }
+  if (!skip_launch) {
     ret = device_contexts_[0]->GetKernelExecutor()->LaunchKernel(
       kernel_, input_launch_tensors_, workspace_launch_tensors_, output_launch_tensors_, kernel_mod_, stream_);
+    PostLaunchKernel(ret);
   }
   MS_VLOG(VL_RUNTIME_FRAMEWORK_KERNEL) << "End launch kernel: " << kernel_->fullname_with_scope();
   DispatchDebugActor(context);
@@ -2021,21 +2057,9 @@ void KernelRunner::FetchInputByTensorStore(std::vector<KernelTensor *> *const in
 }
 
 bool KernelRunner::IsRunningFailed(const OpContext<KernelTensor> *context) {
-  if (tools::TftConfig::GetInstance()->IsEnableUCE() || tools::TftConfig::GetInstance()->IsEnableARF()) {
-    if (tools::ErrorHandler::GetInstance().GetForceStopFlag() && !tools::ErrorHandler::GetInstance().HasThrownError()) {
-      if (context->error_info_.empty()) {
-        const_cast<OpContext<KernelTensor> *>(context)->error_info_ =
-          std::string(tools::ErrorHandler::GetInstance().GetForceStopErrorMsg());
-        MS_LOG(EXCEPTION) << tools::ErrorHandler::GetInstance().GetForceStopErrorMsg();
-      }
-    }
-    if (tools::ErrorHandler::GetInstance().GetUceFlag() && !tools::ErrorHandler::GetInstance().HasThrownError()) {
-      if (context->error_info_.empty()) {
-        const_cast<OpContext<KernelTensor> *>(context)->error_info_ =
-          std::string(tools::ErrorHandler::GetInstance().GetErrorMsg());
-        MS_LOG(EXCEPTION) << tools::ErrorHandler::GetInstance().GetErrorMsg();
-      }
-    }
+  static auto task_fail_cb = GET_COMMON_CALLBACK(TaskFailCallback, void, std::string *);
+  if (task_fail_cb != nullptr) {
+    task_fail_cb(&const_cast<OpContext<KernelTensor> *>(context)->error_info_);
   }
 
   return context->is_error_;

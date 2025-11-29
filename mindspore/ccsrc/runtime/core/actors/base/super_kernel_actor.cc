@@ -23,6 +23,7 @@
 #include <utility>
 #include <algorithm>
 #include "include/runtime/memory/mem_pool/mem_tracker.h"
+#include "include/utils/callback.h"
 #include "runtime/core/graph_scheduler/base/scheduler_helper.h"
 #include "runtime/core/actors/base/output_actor.h"
 #include "runtime/core/actors/base/memory_manager_actor.h"
@@ -45,7 +46,6 @@
 #include "primitive/auto_generate/gen_ops_primitive_s.h"
 #include "include/cluster/topology/collective_manager.h"
 #include "include/backend/debug/execute_order_tracker/execute_order_tracker.h"
-#include "tools/error_handler/error_config.h"
 #include "runtime/core/actors/remote_memory/mem_counted_cache.h"
 #include "runtime/core/actors/remote_memory/mem_use_analyzer.h"
 
@@ -1773,18 +1773,17 @@ bool SuperKernelActor::IsHighPerfModeAtComp() {
   // These high performance checking flag should be confirmed in compilation phase.
   // They should not be changed in runtime phase so that we could reach optimal performance by avoiding condition
   // judgement.
+  static auto is_tft_disable_hp_mode = GET_COMMON_CALLBACK(IsTftDisableHighPerfMode, bool);
   std::vector<bool> conditions = {
     runtime::IsDisableRuntimeConfig(runtime::kRuntimeHPMode),
     debug_aid_ != nullptr,
     recorder_aid_ != nullptr,
     EnableExecuteOrderDump(),
     device::tracker::MemTrackerManager::GetInstance().IsEnabled(),
-    tools::TftConfig::GetInstance()->IsEnableUCE(),
     mindspore::runtime::RuntimeConf::GetInstance()->launch_blocking(),
     common::GetEnv("MS_ENABLE_CKPT_D2H_ASYNC") == "1",
     memory::mem_pool::IsNeedProfilieMemoryLog(),
-    tools::TftConfig::IsEnableStepTRE(),
-    tools::TftConfig::GetInstance() != nullptr && tools::TftConfig::GetInstance()->IsEnableSaveHcclOpStatus(),
+    is_tft_disable_hp_mode != nullptr && is_tft_disable_hp_mode(),
   };
   // When this function returns false, it means performance is not cirtical in this context.
   // Otherwise runtime will launch kernels with high performance.

@@ -24,13 +24,11 @@
 #include <map>
 #include <functional>
 #include "include/utils/callback.h"
-#include "tools/error_handler/exit_handler.h"
 #include "include/runtime/pipeline/pipeline.h"
 #include "utils/ms_exception.h"
 
 namespace mindspore {
 namespace distributed {
-using mindspore::tools::TFTWaitSem;
 bool Initialize() {
   // If this process participates in the cluster building, we need to initialize cluster context.
   PROF_START(distributed_cluster_init);
@@ -122,10 +120,9 @@ bool InitializeCluster() {
   // Set the callback for the cluster node.
   auto callback = std::make_shared<std::function<void(void)>>([]() {
     MS_LOG(WARNING) << "Callback on exception is called.";
-    if (TFTWaitSem::IsEnable()) {
-      MS_LOG(INFO) << "Start waiting for TFT.";
-      TFTWaitSem::GetInstance().Wait();
-      MS_LOG(INFO) << "End waiting for TFT.";
+    auto tft_wait_sem_cb = GET_COMMON_CALLBACK(TftWaitSemaphore, void);
+    if (tft_wait_sem_cb != nullptr) {
+      tft_wait_sem_cb();
     }
 
     MS_LOG(DEBUG) << "Start finalizing CollectiveManager in abnormal callback.";

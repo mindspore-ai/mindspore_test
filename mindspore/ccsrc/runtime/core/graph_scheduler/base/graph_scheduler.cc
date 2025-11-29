@@ -48,8 +48,6 @@
 #include "include/runtime/utils/runtime_conf/thread_bind_core.h"
 #include "include/runtime/pipeline/pipeline.h"
 #include "runtime/core/graph_executor/pipeline/runtime_pipeline.h"
-#include "tools/error_handler/error_config.h"
-#include "tools/error_handler/error_handler.h"
 #include "tools/profiler/profiler.h"
 #include "actor/actormgr.h"
 #include "async/async.h"
@@ -898,7 +896,11 @@ ActorSet *GraphScheduler::Transform(const GraphCompilerInfo &graph_compiler_info
                                   profiler::GetClockSyscnt(), 1);
 
   CheckInferPerformanceFeature(graph_compiler_info, actor_set.get());
-  tools::ErrorHandler::GetInstance().SaveConstants(graph_compiler_info.graphs_);
+  // save constants for UCE error to resume training
+  static auto tft_save_constants = GET_COMMON_CALLBACK(TftSaveConstants, void, const std::vector<KernelGraphPtr> &);
+  if (tft_save_constants != nullptr) {
+    tft_save_constants(graph_compiler_info.graphs_);
+  }
   return actor_set.get();
 }
 
@@ -971,18 +973,10 @@ void GraphScheduler::Schedule(const ActorSet *actor_set) {
   }
 }
 
-void CheckUceBeforeGraphRun(ActorSet *const actor_set) {
-  if (tools::TftConfig::GetInstance()->IsEnableUCE() || tools::TftConfig::GetInstance()->IsEnableHCCE() ||
-      tools::TftConfig::GetInstance()->IsEnableARF()) {
-    if (tools::ErrorHandler::GetInstance().GetHcceFlag()) {
-      MS_LOG(INFO) << "Restart from step after a hcce error occurs.";
-    } else if (tools::ErrorHandler::GetInstance().GetSuspectRemoteFlag()) {
-      MS_LOG(INFO) << "Restart from step after a SuspectRemote error occurs.";
-    } else if (tools::ErrorHandler::GetInstance().GetUceFlag()) {
-      MS_LOG(INFO) << "Restart from step after a uce error occurs.";
-    } else if (tools::ErrorHandler::GetInstance().GetForceStopFlag()) {
-      MS_LOG(EXCEPTION) << "ForceStopError occurs when execute.";
-    }
+void CheckBeforeGraphRun(ActorSet *const actor_set) {
+  static auto tft_check_cb = GET_COMMON_CALLBACK(TftCheckBeforeGraphRun, void);
+  if (tft_check_cb != nullptr) {
+    tft_check_cb();
   }
   // Some exception could happen after one step is completed, need to check exception at the beginning to avoid thread
   // hanging.
@@ -1003,7 +997,7 @@ void ResetActorState(const std::vector<T> &actors, OpContext<KernelTensor> *cons
   }
 }
 
-void ClearControlActorDataForUce(ActorSet *const actor_set, OpContext<KernelTensor> *const context) {
+void ClearControlActorData(ActorSet *const actor_set, OpContext<KernelTensor> *const context) {
   MS_LOG(INFO) << "Start to clean control actors data.";
   if (actor_set->control_actors_ != nullptr) {
     ResetActorState(actor_set->control_actors_->entrance_actors_, context);
@@ -1015,7 +1009,7 @@ void ClearControlActorDataForUce(ActorSet *const actor_set, OpContext<KernelTens
   MS_LOG(INFO) << "End to clean control actors data.";
 }
 
-void ClearKernelActorDataForUce(ActorSet *const actor_set, OpContext<KernelTensor> *const context) {
+void ClearKernelActorData(ActorSet *const actor_set, OpContext<KernelTensor> *const context) {
   MS_LOG(INFO) << "Start to clean kernel actors data.";
   for (auto &kernel_actor : actor_set->kernel_actors_) {
     if (kernel_actor == nullptr) {
@@ -1054,44 +1048,19 @@ void ClearKernelActorDataForUce(ActorSet *const actor_set, OpContext<KernelTenso
   MS_LOG(INFO) << "End to clean kernel actors data.";
 }
 
-void GraphScheduler::ProcessUceError(ActorSet *const actor_set, OpContext<KernelTensor> *const context) {
-  if (!(tools::TftConfig::GetInstance()->IsEnableUCE() || tools::TftConfig::GetInstance()->IsEnableHCCE() ||
-        tools::TftConfig::GetInstance()->IsEnableARF())) {
-    return;
-  }
+void GraphScheduler::ResetActorState(ActorSet *const actor_set, OpContext<KernelTensor> *const context) {
+  MS_LOG(INFO) << "Clear state start.";
+  ClearKernelActorData(actor_set, context);
+  ClearControlActorData(actor_set, context);
 
-  if (tools::ErrorHandler::GetInstance().HasThrownError()) {
-    if (tools::ErrorHandler::GetInstance().GetForceStopFlag()) {
-      MS_LOG(WARNING) << "There is a ForceStop error, reset the actor state.";
-    }
-    if (tools::ErrorHandler::GetInstance().GetHcceFlag()) {
-      MS_LOG(WARNING) << "There is a HCCE error, reset the actor state.";
-    } else if (tools::ErrorHandler::GetInstance().GetSuspectRemoteFlag()) {
-      MS_LOG(WARNING) << "There is a SuspectRemote error, reset the actor state.";
-    } else if (tools::ErrorHandler::GetInstance().GetUceFlag()) {
-      MS_LOG(WARNING) << "There is a UCE error, reset the actor state.";
-    }
-    MS_LOG(WARNING) << "Clear state start.";
-    ClearKernelActorDataForUce(actor_set, context);
-    ClearControlActorDataForUce(actor_set, context);
-
-    actor_set->loop_count_actor_->ResetState(context);
-    actor_set->output_actor_->ResetState(context);
-    actor_set->is_execution_failed_ = false;
-    ClearActorData(actor_set);
-    if (actor_set != nullptr && actor_set->control_actors_ != nullptr) {
-      control_node_scheduler_.ClearExitActorDeviceTensors(actor_set->control_actors_->exit_actors_);
-    }
-    MsException::Instance().ResetException();
-    MS_LOG(WARNING) << "Clear state end.";
+  actor_set->loop_count_actor_->ResetState(context);
+  actor_set->output_actor_->ResetState(context);
+  actor_set->is_execution_failed_ = false;
+  ClearActorData(actor_set);
+  if (actor_set != nullptr && actor_set->control_actors_ != nullptr) {
+    control_node_scheduler_.ClearExitActorDeviceTensors(actor_set->control_actors_->exit_actors_);
   }
-
-  if (tools::ErrorHandler::GetInstance().GetUceFlag()) {
-    MS_LOG(EXCEPTION) << tools::ErrorHandler::GetInstance().GetErrorMsg();
-  } else if (tools::ErrorHandler::GetInstance().GetForceStopFlag()) {
-    actor_set->is_execution_failed_ = false;
-    MS_LOG(EXCEPTION) << tools::ErrorHandler::GetInstance().GetForceStopErrorMsg();
-  }
+  MS_LOG(INFO) << "Clear state end.";
 }
 
 void RefreshGraphParameterStore(ActorSet *const actor_set, const VectorRef &args) {
@@ -1121,7 +1090,7 @@ void GraphScheduler::Run(ActorSet *const actor_set, const std::vector<std::vecto
   MS_EXCEPTION_IF_NULL(actor_set);
   MS_EXCEPTION_IF_NULL(actor_set->data_prepare_actor_);
 
-  CheckUceBeforeGraphRun(actor_set);
+  CheckBeforeGraphRun(actor_set);
 
   // Create recorder actor in the running to support the profiler in callback scene.
   if (profiler::ProfilerManager::GetInstance()->GetProfilingEnableFlag() && (recorder_aid_ == nullptr)) {
@@ -1184,8 +1153,12 @@ void GraphScheduler::Run(ActorSet *const actor_set, const std::vector<std::vecto
     }
     ResetPipelineAndTraceMemoryStatus();
 
-    // Reset actor state and throw uce exception.
-    ProcessUceError(actor_set, &op_context);
+    // trigger Train Fault Tolerance callbacks for resuming training
+    static auto tft_process_error_cb = GET_COMMON_CALLBACK(TftProcessGraphRunError, void, ActorSet *const,
+                                                           OpContext<KernelTensor> *const, GraphScheduler *const);
+    if (tft_process_error_cb != nullptr) {
+      tft_process_error_cb(actor_set, &op_context, this);
+    }
 
     // May set exception in the wait time, need throw the exception to avoid affecting the next execution.
     MsException::Instance().CheckException();

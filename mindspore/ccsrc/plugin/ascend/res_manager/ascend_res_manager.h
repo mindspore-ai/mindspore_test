@@ -93,7 +93,7 @@ class ASCEND_RES_MANAGER_EXPORT AscendResManager : public DeviceResManager {
 
   bool BindDeviceToCurrentThread(bool force_bind) const override;
   void *GetStream() const override { return AscendStreamMng::GetInstance().default_stream(); }
-  void *GetCopyDataStream() const;
+  void *GetCopyDataStream() const override;
 
   // Relevant function to allocate and free device memory of raw ptr.
   bool AllocateMemory(DeviceAddress *const &address, uint32_t stream_id = UINT32_MAX) const override;
@@ -171,7 +171,6 @@ class ASCEND_RES_MANAGER_EXPORT AscendResManager : public DeviceResManager {
 
   bool GetMemUceInfo(int32_t device_id) override;
   void UceMemRepair(int32_t device_id) override;
-  std::vector<uint64_t> GetOptimizerTimestamps() override;
   void StopDevice(int32_t device_id) override;
   std::vector<std::pair<device::DeviceMemPtr, size_t>> GetMemUceAddr() override;
 

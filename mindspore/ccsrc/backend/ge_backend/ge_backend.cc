@@ -81,7 +81,6 @@
 #include "plugin/ascend/res_manager/mbuf_manager/tensorsummary_utils.h"
 #include "plugin/ascend/res_manager/hccl_adapter/hccl_adapter.h"
 #include "plugin/ascend/res_manager/collective/ascend_collective_comm_lib.h"
-#include "plugin/ascend/res_manager/error_manager/collective_comm_monitor.h"
 #include "ir/func_graph_flag.h"
 
 namespace mindspore {

@@ -19,6 +19,8 @@
 #include "ir/anf.h"
 #include "ir/tensor_new.h"
 #include "include/runtime/hardware_abstract/device_context/device_context_manager.h"
+#include "ir/tensor_storage_info.h"
+#include "tools/error_handler/error_handler.h"
 #include "utils/ms_context.h"
 #include "include/utils/pybind_api/api_register.h"
 #include "include/utils/tensor_py.h"
@@ -28,15 +30,11 @@
 namespace mindspore {
 namespace {
 int SendRecv(const std::vector<py::object> &params, int src_rank, int dst_rank) {
-  const auto &device_name = MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET);
-  auto device_ctx = device::DeviceContextManager::GetInstance().GetDeviceContext(device_name);
-  MS_EXCEPTION_IF_NULL(device_ctx);
-  MS_EXCEPTION_IF_NULL(device_ctx->GetKernelExecutor());
   device::DeviceContextManager::GetInstance().SyncAllStreams();
-  tensor::TensorPtrList params_;
-  (void)std::transform(params.begin(), params.end(), std::back_inserter(params_),
+  tensor::TensorPtrList tensors;
+  (void)std::transform(params.begin(), params.end(), std::back_inserter(tensors),
                        [](const py::object &p) { return tensor::ConvertToTensor(p); });
-  return device_ctx->GetKernelExecutor()->SendRecv(params_, src_rank, dst_rank);
+  return tools::ErrorHandler::GetInstance().SendRecv(tensors, src_rank, dst_rank);
 }
 
 int ResetParams(const std::vector<py::object> &params) {
@@ -76,12 +74,9 @@ py::object DirectCopyToHost(const py::object &param) {
 }
 }  // namespace
 
-void RegSendRecv(py::module *m) {
+void RegParamUtils(py::module *m) {
   (void)m->def("send_recv", &mindspore::SendRecv, "Send and receive parameters", py::arg("params"), py::arg("src_rank"),
                py::arg("dst_rank"));
-}
-
-void RegResetParams(py::module *m) {
   (void)m->def("reset_params", &mindspore::ResetParams, "Reset parameter's value to zero", py::arg("params"));
   (void)m->def("direct_copy_to_host", &mindspore::DirectCopyToHost, "Copy tensor data from device to host directly",
                py::arg("param"));

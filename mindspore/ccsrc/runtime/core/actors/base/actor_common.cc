@@ -28,8 +28,7 @@
 #include "primitive/framework_ops.h"
 #include "primitive/structure_op_name.h"
 #include "include/runtime/hardware_abstract/kernel_base/device_tensor_store.h"
-#include "tools/error_handler/error_config.h"
-#include "tools/error_handler/error_handler.h"
+#include "include/utils/callback.h"
 #include "utils/ms_context.h"
 #include "utils/ms_utils.h"
 #include "include/utils/anfalgo.h"
@@ -72,21 +71,9 @@ bool IsSuperKernelActor(const AnfNodePtr &node, const KernelGraphPtr &kernel_gra
 }
 
 bool IsRunningFailed(const OpContext<KernelTensor> *context) {
-  if (tools::TftConfig::GetInstance()->IsEnableUCE() || tools::TftConfig::GetInstance()->IsEnableARF()) {
-    if (tools::ErrorHandler::GetInstance().GetForceStopFlag() && !tools::ErrorHandler::GetInstance().HasThrownError()) {
-      if (context->error_info_.empty()) {
-        const_cast<OpContext<KernelTensor> *>(context)->error_info_ =
-          std::string(tools::ErrorHandler::GetInstance().GetForceStopErrorMsg());
-        MS_LOG(EXCEPTION) << tools::ErrorHandler::GetInstance().GetForceStopErrorMsg();
-      }
-    }
-    if (tools::ErrorHandler::GetInstance().GetUceFlag() && !tools::ErrorHandler::GetInstance().HasThrownError()) {
-      if (context->error_info_.empty()) {
-        const_cast<OpContext<KernelTensor> *>(context)->error_info_ =
-          std::string(tools::ErrorHandler::GetInstance().GetErrorMsg());
-        MS_LOG(EXCEPTION) << tools::ErrorHandler::GetInstance().GetErrorMsg();
-      }
-    }
+  static auto task_fail_cb = GET_COMMON_CALLBACK(TaskFailCallback, void, std::string *);
+  if (task_fail_cb != nullptr) {
+    task_fail_cb(&const_cast<OpContext<KernelTensor> *>(context)->error_info_);
   }
 
   return (context->error_info_ != "");
@@ -1081,7 +1068,8 @@ void AllocMemAndCopyForParameter(size_t outer_index, size_t inner_index, tensor:
     }
   }
 
-  auto skip_h2d = tools::ErrorHandler::GetInstance().IsRebootNode();
+  static auto is_reboot_node_cb = GET_COMMON_CALLBACK(IsRebootNode, bool);
+  bool skip_h2d = is_reboot_node_cb != nullptr && is_reboot_node_cb();
   if (skip_h2d && graph_parameter_store->GetPositionWeight(outer_index)) {
     return;
   }

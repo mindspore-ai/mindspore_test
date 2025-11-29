@@ -39,6 +39,8 @@ using DeviceContext = mindspore::device::DeviceContext;
 using DeviceContextPtr = std::shared_ptr<DeviceContext>;
 using ParameterStore = mindspore::runtime::ParameterStore;
 using DeviceMemInfo = std::unordered_map<device::DeviceMemPtr, std::unordered_map<std::string, size_t>>;
+using mindspore::tools::ErrorHandler;
+using mindspore::tools::SnapshotMgr;
 namespace {
 DeviceContextPtr GetDeviceCtx() {
   const auto &device_name = MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET);
@@ -55,34 +57,12 @@ constexpr auto RS_UCE_LOWLEVEL = "RS_UCE_LOWLEVEL";
 constexpr auto RS_UNKNOWN = "RS_UNKNOWN";
 }  // namespace
 
-bool SkipHcomInitWait() {
-  auto reboot_type = tools::ErrorHandler::GetInstance().GetRebootType();
-  auto rebuild_flag = tools::ErrorHandler::GetInstance().GetRebuildGroupFlag();
-  return reboot_type == "hot_switch" && !rebuild_flag;
-}
-
-REGISTER_COMMON_CALLBACK(SkipHcomInitWait);
-
-bool SkipSubmitTask() {
-  auto reboot_type = tools::ErrorHandler::GetInstance().GetRebootType();
-  auto rebuild_flag = tools::ErrorHandler::GetInstance().GetRebuildGroupFlag();
-  auto flag = reboot_type == "hot_switch" && !rebuild_flag;
-  if (flag) {
-    MS_LOG(WARNING) << "HOT Switch node no need submit hcom init task before rebuild hcom flag";
-  }
-  return flag;
-}
-REGISTER_COMMON_CALLBACK(SkipSubmitTask);
-
 bool GetMemUceInfo(int32_t device_id) {
   auto device_ctx = GetDeviceCtx();
   return device_ctx->device_res_manager_->GetMemUceInfo(device_id);
 }
 
-std::vector<uint64_t> GetOptimizerTimestamps() {
-  auto device_ctx = GetDeviceCtx();
-  return device_ctx->device_res_manager_->GetOptimizerTimestamps();
-}
+std::vector<uint64_t> GetOptimizerTimestamps() { return ErrorHandler::GetInstance().GetOptimizerTimestamps(); }
 
 bool GetUceLevelWithMemPoolForKbk(const DeviceMemInfo &persistent_mem_blocks_info,
                                   const DeviceMemInfo &common_mem_blocks_info,
@@ -190,8 +170,20 @@ void UceMemRepair(int32_t device_id) {
 void StopDevice(int32_t device_id) {
   auto device_ctx = GetDeviceCtx();
   MS_LOG(WARNING) << "Try to stop device: " << device_id;
+  ErrorHandler::GetInstance().SetForceStopFlag(true);
   device_ctx->device_res_manager_->StopDevice(device_id);
   MS_LOG(WARNING) << "stop device: " << device_id << " end;";
+}
+
+int CleanTdtChannel() {
+  const auto &device_name = MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET);
+  auto device_ctx = device::DeviceContextManager::GetInstance().GetDeviceContext(device_name);
+  MS_EXCEPTION_IF_NULL(device_ctx);
+  device_ctx->Initialize();
+  MS_EXCEPTION_IF_NULL(device_ctx);
+  MS_EXCEPTION_IF_NULL(device_ctx->GetKernelExecutor());
+  device::DeviceContextManager::GetInstance().SyncAllStreams();
+  return device_ctx->GetKernelExecutor()->CleanTdtChannel();
 }
 
 void FinalizeCommunication() {
@@ -208,9 +200,10 @@ void FinalizeCommunication() {
 }
 
 void RebuildGroup() {
+  auto &error_handler = ErrorHandler::GetInstance();
   // rebuild comm
   MS_LOG(WARNING) << "Try to rebuild group communication";
-  tools::ErrorHandler::GetInstance().SetRebuildGroupFlag(true);
+  error_handler.SetRebuildGroupFlag(true);
   auto group_info = distributed::collective::CollectiveManager::instance()->get_group_info();
   distributed::collective::CollectiveManager::instance()->ClearInitResult();
   device::GroupOptions config = {};
@@ -225,37 +218,38 @@ void RebuildGroup() {
   }
   (void)distributed::collective::CollectiveManager::instance()->WaitAllCommInitDone();
   MS_LOG(WARNING) << "All group init done";
-  tools::ErrorHandler::GetInstance().ClearErrorType();
+  error_handler.ClearErrorType();
   MS_LOG(WARNING) << "Rebuild communication end";
 }
-bool IsRebootNode() { return tools::ErrorHandler::GetInstance().IsRebootNode(); }
+bool IsRebootNode() { return ErrorHandler::GetInstance().IsRebootNode(); }
 
 void SetIsRebootNode(bool is_reboot) {
   MS_LOG(WARNING) << "Set is reboot node flag: " << is_reboot;
-  tools::ErrorHandler::GetInstance().SetRebootNode(is_reboot);
+  ErrorHandler::GetInstance().SetRebootNode(is_reboot);
 }
 
 void SetRebootNodeType(const std::string &type) {
   MS_LOG(WARNING) << "Set is reboot node reboot type: " << type;
-  tools::ErrorHandler::GetInstance().SetRebootType(type);
+  ErrorHandler::GetInstance().SetRebootType(type);
 }
 
-string GetRebootNodeType() { return tools::ErrorHandler::GetInstance().GetRebootType(); }
+string GetRebootNodeType() { return ErrorHandler::GetInstance().GetRebootType(); }
 
 void SetIsArf(bool is_arf) {
+  auto &error_handler = ErrorHandler::GetInstance();
   MS_LOG(WARNING) << "Set is arf flag: " << is_arf;
-  tools::ErrorHandler::GetInstance().SetIsArf(is_arf);
+  error_handler.SetIsArf(is_arf);
   if (!is_arf) {
     // reset reboot node flag when reset arf flag at train step end
-    tools::ErrorHandler::GetInstance().SetRebootNode(false);
-    tools::ErrorHandler::GetInstance().SetRebootType("");
-    tools::ErrorHandler::GetInstance().SetRebuildGroupFlag(false);
+    error_handler.SetRebootNode(false);
+    error_handler.SetRebootType("");
+    error_handler.SetRebuildGroupFlag(false);
   }
 }
 
-bool GetIsArf() { return tools::ErrorHandler::GetInstance().IsArf(); }
+bool GetIsArf() { return ErrorHandler::GetInstance().IsArf(); }
 
-void ResetErrorState() { tools::ErrorHandler::GetInstance().SetForceStopFlag(false); }
+void ResetErrorState() { ErrorHandler::GetInstance().SetForceStopFlag(false); }
 
 void RePreLaunchSendRecv(int32_t device_id) {
   MS_LOG(WARNING) << "Try to pre-launch send recv. device id: " << device_id;
@@ -275,8 +269,7 @@ void RePreLaunchSendRecv(int32_t device_id) {
 }
 
 int RegSnapshotParams(const std::map<std::string, py::object> &param_dict) {
-  const auto &device_name = MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET);
-  auto &mem_ckpt_params = tools::SnapshotMgr::GetInstance(device_name)->GetSavedParams();
+  auto &mem_ckpt_params = SnapshotMgr::GetInstance().GetSavedParams();
   if (!mem_ckpt_params.empty()) {
     // parameters has already been registered
     MS_LOG(INFO) << "Parameters has already been registered.";
@@ -293,33 +286,21 @@ int RegSnapshotParams(const std::map<std::string, py::object> &param_dict) {
   return 0;
 }
 
-void ResetSnapshotState() {
-  const auto &device_name = MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET);
-  tools::SnapshotMgr::GetInstance(device_name)->Reset();
-}
+void ResetSnapshotState() { SnapshotMgr::GetInstance().Reset(); }
 
-void ClearSnapshotSavingFlag() {
-  const auto &device_name = MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET);
-  tools::SnapshotMgr::GetInstance(device_name)->SetSavingSnapshot(false);
-}
+void ClearSnapshotSavingFlag() { SnapshotMgr::GetInstance().SetSavingSnapshot(false); }
 
-bool IsSnapshotValid() {
-  const auto &device_name = MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET);
-  return tools::SnapshotMgr::GetInstance(device_name)->IsSnapshotValid();
-}
+bool IsSnapshotValid() { return SnapshotMgr::GetInstance().IsSnapshotValid(); }
 
 std::map<std::string, py::object> GetSnapshotParams() {
-  const auto &device_name = MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET);
-  auto snapshot_mgr = tools::SnapshotMgr::GetInstance(device_name);
-  MS_EXCEPTION_IF_NULL(snapshot_mgr);
-
+  auto &snapshot_mgr = SnapshotMgr::GetInstance();
   // if parameter snapshot has not been generated, return an empty map
-  if (!snapshot_mgr->IsSnapshotValid()) {
+  if (!snapshot_mgr.IsSnapshotValid()) {
     return std::map<std::string, py::object>();
   }
 
   std::map<std::string, py::object> param_dict;
-  for (auto &[name, tensor] : snapshot_mgr->GetSavedParams()) {
+  for (auto &[name, tensor] : snapshot_mgr.GetSavedParams()) {
     if (tensor == nullptr) {
       MS_LOG(WARNING) << "Value of parameter " << name << " is null, skip it.";
       continue;
@@ -330,7 +311,7 @@ std::map<std::string, py::object> GetSnapshotParams() {
   // append step_num to param_dict for resuming training
   constexpr char kStepNum[] = "step_num";
   // since snapshot was saved before optimizer, so here minus 1
-  int step_num = snapshot_mgr->LastSaveStep() - 1;
+  int step_num = snapshot_mgr.LastSaveStep() - 1;
   auto tensor = tensor::from_buffer(kNumberTypeInt32, ShapeVector{}, &step_num, sizeof(step_num));
   param_dict[kStepNum] = tensor::PackTensorToPyObject(tensor);
 
@@ -344,6 +325,7 @@ void RegisterConfig(const py::object &configs) {
 
 void RegTFT(py::module *m) {
   (void)m->def("_stop_device", &mindspore::StopDevice, "Stop the device.");
+  (void)m->def("clean_tdt_channel", &mindspore::CleanTdtChannel, "Clean tdt channel");
   (void)m->def("_repair_device", &mindspore::UceMemRepair, "Repair the device.");
   (void)m->def("_get_uce_process_strategy", &mindspore::GetUceProcessStrategy, "Get UCE process strategy.");
   (void)m->def("_get_uce_mem_info", &mindspore::GetMemUceInfo, "Get UCE mem info.");

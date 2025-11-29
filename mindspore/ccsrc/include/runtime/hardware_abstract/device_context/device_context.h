@@ -17,6 +17,9 @@
 #ifndef MINDSPORE_CCSRC_INCLUDE_RUNTIMR_HARDWARE_ABSTRACT_DEVICE_CONTEXT_DEVICE_CONTEXT_H_
 #define MINDSPORE_CCSRC_INCLUDE_RUNTIMR_HARDWARE_ABSTRACT_DEVICE_CONTEXT_DEVICE_CONTEXT_H_
 
+#include <array>
+#include <cstddef>
+#include <functional>
 #include <map>
 #include <memory>
 #include <string>
@@ -28,9 +31,11 @@
 #include "device_address/device_address.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_tensor.h"
+#include "ir/dtype/number.h"
 #include "ir/tensor.h"
 #include "include/backend/common/kernel_graph/kernel_graph.h"
 #include "runtime/hardware_abstract/visible.h"
+#include "utils/ms_utils.h"
 #ifdef __APPLE__
 #include "async/spinlock.h"
 #endif
@@ -256,6 +261,9 @@ class RUNTIME_HARDWARE_EXPORT DeviceResManager {
   // Get the stream pointer by stream_id.
   virtual void *GetStream(size_t stream_id) const { return nullptr; }
 
+  // Get the stream used for aync ckpt and weight snapshot
+  virtual void *GetCopyDataStream() const { return nullptr; }
+
   // Set currently using stream id.
   virtual void SetCurrentStreamId(size_t stream_id) { return; }
 
@@ -349,9 +357,6 @@ class RUNTIME_HARDWARE_EXPORT DeviceResManager {
     MS_LOG(EXCEPTION) << "Unimplemented interface.";
   }
   virtual bool GetMemUceInfo(int32_t device_id) { return false; }
-  virtual std::vector<uint64_t> GetOptimizerTimestamps() {
-    MS_LOG(EXCEPTION) << "Get optimizer timestamps not support.";
-  }
   virtual void UceMemRepair(int32_t device_id) { MS_LOG(EXCEPTION) << "Uce repair device is not supported."; }
   virtual void StopDevice(int32_t device_id) { MS_LOG(EXCEPTION) << "Uce stop device is not supported."; }
   virtual std::vector<std::pair<device::DeviceMemPtr, size_t>> GetMemUceAddr() { return {}; }
@@ -375,9 +380,51 @@ class RUNTIME_HARDWARE_EXPORT DeviceResManager {
 
 using CallbackFunc = std::function<void(void)>;
 
+using PreLaunchKernelFunc = std::function<bool                                   // skip_launch (return value)
+                                          (const CNodePtr &,                     // kernel
+                                           const std::vector<KernelTensor *> &,  // inputs
+                                           const std::vector<KernelTensor *> &,  // outputs
+                                           KernelMod *,                          // kernel_mod
+                                           void *,                               // stream
+                                           const DeviceContext *)>;              // device_context
+
+using PostLaunchKernelFunc = std::function<void(const CNodePtr &,                     // kernel
+                                                const std::vector<KernelTensor *> &,  // inputs
+                                                const std::vector<KernelTensor *> &,  // outputs
+                                                KernelMod *,                          // kernel_mod
+                                                void *,                               // stream
+                                                const DeviceContext *,                // device_context
+                                                bool)>;                               // launch_success
+
+template <typename CallbackType>
+class RUNTIME_HARDWARE_EXPORT ExecutorCallback {
+ public:
+  ExecutorCallback(const std::string &name, CallbackType &&fn_callback, std::function<bool()> &&fn_is_enabled,
+                   DeviceType device_type, int priority = 0)
+      : name_(name),
+        fn_callback_(std::move(fn_callback)),
+        fn_is_enabled_(std::move(fn_is_enabled)),
+        priority_(priority) {}
+  ~ExecutorCallback() = default;
+  DISABLE_COPY_AND_ASSIGN(ExecutorCallback);
+
+ public:
+  std::string name_;
+  CallbackType fn_callback_;
+  std::function<bool()> fn_is_enabled_;  // whether the callback will be add to runtime callback list
+  DeviceType device_type_ = DeviceType::kNone;
+  int priority_ = 0;  // priority of callback, larger is higher priority, default value is 0.
+};
+
 class RUNTIME_HARDWARE_EXPORT KernelExecutor {
  public:
   virtual ~KernelExecutor() = default;
+
+  template <typename CallbackType>
+  static void RegisterLaunchKernelCallback(const std::shared_ptr<ExecutorCallback<CallbackType>> &callback);
+
+  template <typename CallbackType>
+  static const std::vector<std::shared_ptr<ExecutorCallback<CallbackType>>> &GetLaunchKernelCallbacks();
 
   virtual void Initialize() {}
   virtual void Destroy() {}
@@ -412,10 +459,6 @@ class RUNTIME_HARDWARE_EXPORT KernelExecutor {
   virtual void AddMindIRPass(const KernelGraphPtr &graph) const {}
 
   void SetDeviceContext(DeviceContext *device_context) { device_context_ = device_context; }
-  // Send and receive parameters.
-  virtual int SendRecv(const std::vector<tensor::TensorPtr> &params, int src_rank, int dst_rank) const {
-    MS_LOG(EXCEPTION) << "Send and receive parameters is not supported.";
-  }
   // Clean tdt channel
   virtual int CleanTdtChannel() const { MS_LOG(EXCEPTION) << "Clean tdt channel is not supported."; }
   // Detect stress.
@@ -478,6 +521,28 @@ class DeviceInterface<T, Args...> : public DeviceInterface<Args...> {
     }
   }
 };
+
+template <typename CallbackType>
+class ExecutorCallbackRegister {
+ public:
+  ExecutorCallbackRegister(const std::string &name, CallbackType &&fn_callback, std::function<bool()> &&fn_is_enabled,
+                           DeviceType device_type, int priority) {
+    KernelExecutor::RegisterLaunchKernelCallback(std::make_shared<ExecutorCallback<CallbackType>>(
+      name, std::move(fn_callback), std::move(fn_is_enabled), device_type, priority));
+  }
+
+  ~ExecutorCallbackRegister() = default;
+
+  DISABLE_COPY_AND_ASSIGN(ExecutorCallbackRegister)
+};
+
+#define REGISTER_PRE_LAUNCH_CALLBACK(NAME, CALLBACK, IS_ENABLED, DEVICE_TYPE, PRIORITY)                           \
+  static const device::ExecutorCallbackRegister<device::PreLaunchKernelFunc> g_##NAME##_executor_pre_cb_register( \
+    #NAME, CALLBACK, IS_ENABLED, DEVICE_TYPE, PRIORITY)
+
+#define REGISTER_POST_LAUNCH_CALLBACK(NAME, CALLBACK, IS_ENABLED, DEVICE_TYPE, PRIORITY)                            \
+  static const device::ExecutorCallbackRegister<device::PostLaunchKernelFunc> g_##NAME##_executor_post_cb_register( \
+    #NAME, CALLBACK, IS_ENABLED, DEVICE_TYPE, PRIORITY)
 }  // namespace device
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_INCLUDE_RUNTIMR_HARDWARE_ABSTRACT_DEVICE_CONTEXT_DEVICE_CONTEXT_H_

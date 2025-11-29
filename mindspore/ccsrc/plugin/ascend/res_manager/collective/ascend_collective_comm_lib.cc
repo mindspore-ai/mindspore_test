@@ -22,7 +22,6 @@
 #include "utils/convert_utils_base.h"
 #include "utils/ms_context.h"
 #include "utils/ms_utils.h"
-#include "plugin/ascend/res_manager/error_manager/collective_comm_monitor.h"
 #include "include/cluster/topology/collective_manager.h"
 
 constexpr size_t kPathMax = 4096;
