@@ -323,13 +323,17 @@ class TftHandle:
             logger.warning("tft report reboot init finish ")
             tft.tft_report_error(tft.ReportState.RS_INIT_FINISH.value)
             set_is_reboot_node(True)
-            reboot_type = self.tft.tft_get_reboot_type()
-            logger.warning(f"get reboot type:{reboot_type}")
+            try:
+                reboot_type = self.tft.tft_get_reboot_type()
+                logger.warning(f"get reboot type:{reboot_type}")
+            except Exception as e:  # pylint: disable=broad-except
+                logger.warning(f"get reboot type failed:{e}, only support arf")
+                reboot_type = "arf"
             if reboot_type == "arf":
                 set_reboot_type("arf")
                 ret = tft.tft_wait_next_action()
                 if ret != tft.Action.RETRY.value:
-                    raise RuntimeError("ARF init failed!")
+                    raise RuntimeError("ARF init failed!")  # pylint: disable=W0707
             else:
                 set_reboot_type("hot_switch")
             logger.warning("tft reboot success.")
