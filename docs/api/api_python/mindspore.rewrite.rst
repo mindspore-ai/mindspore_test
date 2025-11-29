@@ -37,7 +37,7 @@ MindSpore的ReWrite模块允许用户通过自定义规则，修改网络的前�
             - **TypeError** - 如果参数 `cell` 不是Cell类型。
             - **TypeError** - 如果参数 `targets` 不是list类型。
             - **TypeError** - 如果参数 `targets` 的成员不是str或者ScopedValue类型。
-            - **TypeError** - 如果参数 `args` 不是ScopedValue类型。
+            - **TypeError** - 如果参数 `args` 的成员不是list或者ScopedValue类型。
             - **TypeError** - 如果参数 `kwargs` 的 `key` 不是str类型或者 `value` 不是ScopedValue类型。
 
     .. py:method:: mindspore.rewrite.Node.create_call_function(function, targets, args=None, kwargs=None)
@@ -162,7 +162,7 @@ MindSpore的ReWrite模块允许用户通过自定义规则，修改网络的前�
         参数：
             - **arg_idx** (int) - 要设置的参数索引。
             - **src_node** (Node) - 输入的节点。
-            - **out_idx** (int，可选) - 指定输入节点的哪个输出作为当前节点输入，则取第一个输出。默认值： ``None`` 。
+            - **out_idx** (int，可选) - 指定输入节点的哪个输出作为当前节点输入。如果为 ``None``，则取第一个输出。默认值： ``None`` 。
 
         异常：
             - **TypeError** - 如果参数 `arg_idx` 不是int类型。
@@ -185,7 +185,7 @@ MindSpore的ReWrite模块允许用户通过自定义规则，修改网络的前�
     - **Input**： `Input` 节点代表SymbolTree的输入，对应方法的参数。
     - **Output**： `Output` 节点代表SymbolTree的输出，对应方法的 `return` 语句。
     - **Tree**： `Tree` 节点代表前向计算中调用了别的网络。
-    - **CellContainer**： `CellContainer` 节点代表在前向计算中调用 :class:`mindspore.nn.SequentialCell` 函数。
+    - **CellContainer**： `CellContainer` 节点代表在前向计算中调用 :class:`mindspore.nn.SequentialCell` 类。
     - **MathOps**： `MathOps` 节点代表在前向计算中的一个运算操作，如加法运算或比较运算。
     - **ControlFlow**： `ControlFlow` 节点代表一个控制流语句，如 `if` 语句。
 
@@ -323,7 +323,7 @@ MindSpore的ReWrite模块允许用户通过自定义规则，修改网络的前�
         - 暂不支持对父类里的方法进行解析。
 
         对于不支持解析的语句，rewrite会为对应语句生成类型为 `NodeType.Python` 的节点，以确保rewrite后的网络可以正常运行。
-        `Python` 节点不支持对语句的输入和输出进行修改，且可能出现变量名与rewrite生成的变量名的问题，此时用户需要手动对变量名进行调整。
+        `Python` 节点不支持对语句的输入和输出进行修改，且可能出现变量名与rewrite生成的变量名不一致的问题，此时用户需要手动对变量名进行调整。
 
         参数：
             - **network** (Cell) - 待修改的网络实例。
