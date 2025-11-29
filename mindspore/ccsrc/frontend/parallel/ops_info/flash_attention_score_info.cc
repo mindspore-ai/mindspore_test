@@ -42,6 +42,7 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_g.h"
 
 namespace mindspore {
 using mindspore::ops::FASInputLayoutMode;
@@ -603,8 +604,12 @@ Status FlashAttentionScoreInfo::InferOutputLayout() {
   std::vector<Shape> softmax_max_sum_tensor_map;
   Shape softmax_max_sum_tensor_shape;
   if (is_flatten_batch_seq_) {
-    softmax_max_tensor_layout_ = query_layout;
-    softmax_sum_tensor_layout_ = query_layout;
+    softmax_max_sum_tensor_map.push_back(query_tensor_map[qkv_batch_dim_]);                              // T
+    softmax_max_sum_tensor_shape.push_back(query_layout.tensor_shape_before().array()[qkv_batch_dim_]);  // T
+    softmax_max_sum_tensor_map.push_back(query_tensor_map[qkv_head_dim_]);                               // N
+    softmax_max_sum_tensor_shape.push_back(head_num_);                                                   // N
+    softmax_max_sum_tensor_map.push_back({MAP_NONE});                                                    // 8
+    softmax_max_sum_tensor_shape.push_back(8);                                                           // 8
   } else {
     softmax_max_sum_tensor_map.push_back(query_tensor_map[qkv_batch_dim_]);                              // B
     softmax_max_sum_tensor_shape.push_back(query_layout.tensor_shape_before().array()[qkv_batch_dim_]);  // B
@@ -614,11 +619,11 @@ Status FlashAttentionScoreInfo::InferOutputLayout() {
     softmax_max_sum_tensor_shape.push_back(query_layout.tensor_shape_before().array()[qkv_seq_dim_]);    // S
     softmax_max_sum_tensor_map.push_back({MAP_NONE});                                                    // 8
     softmax_max_sum_tensor_shape.push_back(8);                                                           // 8
-    softmax_max_tensor_layout_.InitFromExtendVector(query_device_matrix, softmax_max_sum_tensor_map,
-                                                    outputs_shape()[ops::kFlashAttentionScoreOutputSoftmaxMaxIndex]);
-    softmax_sum_tensor_layout_.InitFromExtendVector(query_device_matrix, softmax_max_sum_tensor_map,
-                                                    outputs_shape()[ops::kFlashAttentionScoreOutputSoftmaxSumIndex]);
   }
+  softmax_max_tensor_layout_.InitFromExtendVector(query_device_matrix, softmax_max_sum_tensor_map,
+                                                  outputs_shape()[ops::kFlashAttentionScoreOutputSoftmaxMaxIndex]);
+  softmax_sum_tensor_layout_.InitFromExtendVector(query_device_matrix, softmax_max_sum_tensor_map,
+                                                  outputs_shape()[ops::kFlashAttentionScoreOutputSoftmaxSumIndex]);
 
   // Construct layout for softmax_out
   softmax_out_tensor_layout_.InitFromExtendVector(query_device_matrix, std::vector<Shape>{{MAP_NONE}},
@@ -1201,34 +1206,38 @@ Status FlashAttentionScoreInfo::ReplaceActualSeqLenForSplitSeqInTnd(const CNodeP
   auto manager = func_graph->manager();
   MS_EXCEPTION_IF_NULL(manager);
 
+  // lambda to create cnode
+  auto OpNode = [&](const PrimitivePtr &prim, const std::vector<AnfNodePtr> &inputs) -> AnfNodePtr {
+    AnfNodePtrList full{NewValueNode(prim)};
+    full.reserve(1 + inputs.size());
+    full.insert(full.end(), inputs.begin(), inputs.end());
+    return func_graph->NewCNode(full);
+  };
+
   auto actual_seq_qlen_input_index = ops::kFlashAttentionScoreInputActualSeqQlenIndex + 1;
   auto actual_seq_kvlen_input_index = ops::kFlashAttentionScoreInputActualSeqKVlenIndex + 1;
   auto actual_seq_qlen_node = cnode->input(actual_seq_qlen_input_index);
   auto actual_seq_kvlen_node = cnode->input(actual_seq_kvlen_input_index);
-  std::vector<int64_t> split_info = GetSplitIdAndRank();
-  auto split_id = split_info[kIndex2];
+  auto split_id = GetSplitIdAndRank().at(kIndex2);
 
   AnfNodePtr slice_tq_node;
   AnfNodePtr slice_tk_node;
   AnfNodePtr offset_node;
   AnfNodePtr scatter_indices_node;
   AnfNodePtr scatter_updates_node;
+
+  // Compute slice_tq, slice_tk and offset
   if (dynamic_seq_flag_) {
-    auto query_shape = func_graph->NewCNode(
-      {NewValueNode(prim::kPrimShape), cnode->input(ops::kFlashAttentionScoreInputQueryIndex + 1)});
-    auto key_shape =
-      func_graph->NewCNode({NewValueNode(prim::kPrimShape), cnode->input(ops::kFlashAttentionScoreInputKeyIndex + 1)});
-    auto slice_tq_scalar_node = func_graph->NewCNode(
-      {NewValueNode(prim::kPrimTupleGetItem), query_shape, NewValueNode(MakeValue(qkv_batch_dim_))});
-    auto slice_tk_scalar_node =
-      func_graph->NewCNode({NewValueNode(prim::kPrimTupleGetItem), key_shape, NewValueNode(MakeValue(qkv_batch_dim_))});
-    slice_tq_node = func_graph->NewCNode({NewValueNode(prim::kPrimScalarToTensor), slice_tq_scalar_node});
-    slice_tk_node = func_graph->NewCNode({NewValueNode(prim::kPrimScalarToTensor), slice_tk_scalar_node});
-    offset_node =
-      func_graph->NewCNode({NewValueNode(prim::kPrimMul), slice_tq_node, CreateInt32Tensor(split_id, true)});
+    auto query_shape = OpNode(prim::kPrimShape, {cnode->input(ops::kFlashAttentionScoreInputQueryIndex + 1)});
+    auto key_shape = OpNode(prim::kPrimShape, {cnode->input(ops::kFlashAttentionScoreInputKeyIndex + 1)});
+    auto slice_tq_scalar_node = OpNode(prim::kPrimTupleGetItem, {query_shape, NewValueNode(MakeValue(qkv_batch_dim_))});
+    auto slice_tk_scalar_node = OpNode(prim::kPrimTupleGetItem, {key_shape, NewValueNode(MakeValue(qkv_batch_dim_))});
+    slice_tq_node = OpNode(prim::kPrimScalarToTensor, {slice_tq_scalar_node});
+    slice_tk_node = OpNode(prim::kPrimScalarToTensor, {slice_tk_scalar_node});
+    offset_node = OpNode(prim::kPrimMul, {slice_tq_node, CreateInt32Tensor(split_id, true)});
 
     // Construct update value as kv_len
-    scatter_updates_node = func_graph->NewCNode({NewValueNode(prim::kPrimReshape), slice_tk_node, CreateTuple({1})});
+    scatter_updates_node = OpNode(prim::kPrimReshape, {slice_tk_node, CreateTuple({1})});
   } else {
     int64_t tq = inputs_shape_[GetStrategyRealIndex(ops::kFlashAttentionScoreInputQueryIndex)][qkv_batch_dim_];
     int64_t tk = inputs_shape_[GetStrategyRealIndex(ops::kFlashAttentionScoreInputKeyIndex)][qkv_batch_dim_];
@@ -1246,39 +1255,56 @@ Status FlashAttentionScoreInfo::ReplaceActualSeqLenForSplitSeqInTnd(const CNodeP
   auto dim = inputs_shape_[GetStrategyRealIndex(ops::kFlashAttentionScoreInputActualSeqKVlenIndex)].at(kIndex0);
   if (dim == -1) {
     // actual_seq_kv_len is a dynamic shape input, scatter_indices_node = actual_seq_kvlen.shape[0] - 1
-    auto actual_kv_shape = func_graph->NewCNode(
-      {NewValueNode(prim::kPrimShape), cnode->input(ops::kFlashAttentionScoreInputActualSeqKVlenIndex + 1)});
-    auto actual_kv_dim_scalar = func_graph->NewCNode(
-      {NewValueNode(prim::kPrimTupleGetItem), actual_kv_shape, NewValueNode(MakeValue(kSizeZero))});
-    auto actual_kv_dim_node = func_graph->NewCNode({NewValueNode(prim::kPrimScalarToTensor), actual_kv_dim_scalar});
-    scatter_indices_node =
-      func_graph->NewCNode({NewValueNode(prim::kPrimSub), actual_kv_dim_node, NewValueNode(MakeValue(kSizeOne))});
+    auto actual_kv_shape =
+      OpNode(prim::kPrimShape, {cnode->input(ops::kFlashAttentionScoreInputActualSeqKVlenIndex + 1)});
+    auto actual_kv_dim_node =
+      OpNode(prim::kPrimScalarToTensor,
+             {OpNode(prim::kPrimTupleGetItem, {actual_kv_shape, NewValueNode(MakeValue(kSizeZero))})});
+    scatter_indices_node = OpNode(prim::kPrimSub, {actual_kv_dim_node, NewValueNode(MakeValue(kSizeOne))});
   } else {
-    std::vector<int64_t> scatter_indices = {dim / batch_split_num_ - 1};
+    int64_t scatter_indices[] = {dim / batch_split_num_ - 1};
     ShapeVector scatter_indices_node_shape = {1, 1};
-    scatter_indices_node = ValuePtrToAnfNodePtr(MakeValue(tensor::from_buffer(
-      kNumberTypeInt64, scatter_indices_node_shape, scatter_indices.data(), sizeof(int64_t) * scatter_indices.size())));
-    scatter_indices_node->set_abstract(std::make_shared<abstract::AbstractTensor>(kInt64, scatter_indices_node_shape));
+    scatter_indices_node = ValuePtrToAnfNodePtr(
+      MakeValue(tensor::from_buffer(kNumberTypeInt64, ShapeVector{1, 1}, scatter_indices, sizeof(int64_t))));
+    scatter_indices_node->set_abstract(std::make_shared<abstract::AbstractTensor>(kInt64, ShapeVector{1, 1}));
   }
 
   // new_actual_seq_qlen = clip(actual_seq_qlen - offset, 0, slice_tq)
-  auto qlen_offset_sub_cnode = func_graph->NewCNode({NewValueNode(prim::kPrimSub), actual_seq_qlen_node, offset_node});
-  auto new_actual_seq_qlen_cnode = func_graph->NewCNode(
-    {NewValueNode(prim::kPrimClipByValue), qlen_offset_sub_cnode, CreateInt32Tensor(0, true), slice_tq_node});
+  auto qlen_offset_sub_cnode = OpNode(prim::kPrimSub, {actual_seq_qlen_node, offset_node});
+  auto new_actual_seq_qlen_cnode =
+    OpNode(prim::kPrimClipByValue, {qlen_offset_sub_cnode, CreateInt32Tensor(0, true), slice_tq_node});
   manager->SetEdge(cnode, actual_seq_qlen_input_index, new_actual_seq_qlen_cnode);
 
   // new_actual_seq_kvlen = actual_seq_kvlen - (ReLU(actual_seq_qlen - offset) - new_actual_seq_qlen)
-  auto relu_cnode = func_graph->NewCNode({NewValueNode(prim::kPrimReLU), qlen_offset_sub_cnode});
-  auto kvlen_offset_sub_cnode =
-    func_graph->NewCNode({NewValueNode(prim::kPrimSub), relu_cnode, new_actual_seq_qlen_cnode});
-  auto new_actual_seq_kvlen_cnode =
-    func_graph->NewCNode({NewValueNode(prim::kPrimSub), actual_seq_kvlen_node, kvlen_offset_sub_cnode});
+  auto relu_cnode = OpNode(prim::kPrimReLU, {qlen_offset_sub_cnode});
+  auto kvlen_offset_sub_cnode = OpNode(prim::kPrimSub, {relu_cnode, new_actual_seq_qlen_cnode});
+  auto new_actual_seq_kvlen_cnode = OpNode(prim::kPrimSub, {actual_seq_kvlen_node, kvlen_offset_sub_cnode});
 
-  // new_actual_seq_kvlen[-1] = slice_tk
-  auto scatter_update = func_graph->NewCNode(
-    {NewValueNode(prim::kPrimScatterNdUpdate), new_actual_seq_kvlen_cnode, scatter_indices_node, scatter_updates_node});
+  // new_actual_seq_kvlen[-1] = slice_tk if actual_seq_kvlen[-1] == slice_tk else actual_seq_kvlen[-1]
+  auto GetActualKvLenLastElementNode = [&]() -> AnfNodePtr {
+    int64_t kvlen_dim = inputs_shape_[GetStrategyRealIndex(ops::kFlashAttentionScoreInputActualSeqKVlenIndex)].at(0);
+    if (kvlen_dim == -1) {
+      auto shape = OpNode(prim::kPrimShape, {actual_seq_kvlen_node});
+      auto len = OpNode(prim::kPrimReshape,
+                        {OpNode(prim::kPrimTupleGetItem, {shape, NewValueNode<int64_t>(0)}), CreateTuple({1})});
+      auto last_idx = OpNode(prim::kPrimSub, {OpNode(prim::kPrimScalarToTensor, {len}), NewValueNode<int64_t>(1)});
+      return OpNode(prim::kPrimGather, {actual_seq_kvlen_node, last_idx, NewValueNode(MakeValue(int64_t{0}))});
+    } else {
+      int64_t last_idx_list[] = {kvlen_dim / batch_split_num_ - 1};
+      auto last_idx =
+        ValuePtrToAnfNodePtr(MakeValue(tensor::from_buffer(kNumberTypeInt64, {1}, last_idx_list, sizeof(int64_t))));
+      last_idx->set_abstract(std::make_shared<abstract::AbstractTensor>(kInt64, ShapeVector{1}));
+      return OpNode(prim::kPrimGather,
+                    {actual_seq_kvlen_node, last_idx, NewValueNode<int64_t>(0), NewValueNode<int64_t>(0)});
+    }
+  };
+  auto actual_seq_kvlen_last_value_node = GetActualKvLenLastElementNode();
+  auto equal_node = OpNode(prim::kPrimEqual, {actual_seq_kvlen_last_value_node, scatter_updates_node});
+  scatter_updates_node =
+    OpNode(prim::kPrimSelect, {equal_node, scatter_updates_node, actual_seq_kvlen_last_value_node});
+  auto scatter_update =
+    OpNode(prim::kPrimScatterNdUpdate, {new_actual_seq_kvlen_cnode, scatter_indices_node, scatter_updates_node});
   manager->SetEdge(cnode, actual_seq_kvlen_input_index, scatter_update);
-
   return SUCCESS;
 }
 
