@@ -13,7 +13,7 @@ mindspore.ops.UpperBound
         - **values** (Tensor) - 数据类型与 `sorted_x` 相同的输入Tensor，其秩必须为2，两个输入的shape[0]必须一致。
 
     输出：
-        Tensor，数据列选由 `out_type` 决定，shape与 `values` 一致。
+        Tensor，数据类型由 `out_type` 决定，shape与 `values` 一致。
 
     异常：
         - **TypeError** - `sorted_x` 不是Tensor。
