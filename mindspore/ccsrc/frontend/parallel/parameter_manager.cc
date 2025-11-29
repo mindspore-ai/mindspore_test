@@ -653,8 +653,8 @@ void AutoParallelPostProcess(const FuncGraphPtr &root) {
     }
     auto layout = param->user_data<TensorLayout>();
     auto param_ptr = param->cast<ParameterPtr>();
-    MSTX_RANGE_GUARD(param_ptr->name().c_str(), nullptr, profiler::MSTX_DOMAIN_MODEL_PREPARATION);
     MS_EXCEPTION_IF_NULL(param_ptr);
+    MSTX_RANGE_GUARD(param_ptr->name().c_str(), nullptr, profiler::MSTX_DOMAIN_MODEL_PREPARATION);
     if (!param_ptr->has_default()) {
       continue;
     }
