@@ -1869,8 +1869,6 @@ std::shared_ptr<Strategies> OperatorInfo::GenerateBatchStrategiesWithCheck() {
 
   std::shared_ptr<Strategies> batch_strategy = GenerateBatchStrategies();
   if (batch_strategy->size() != inputs_shape_.size()) {
-    MS_LOG(WARNING) << "The inputs size:" << inputs_shape_.size()
-                    << " is not equal to the generated batch parallel strategies size:" << batch_strategy->size();
     return batch_strategy;
   }
   int64_t shard_size = g_device_manager->stage_device_num();
