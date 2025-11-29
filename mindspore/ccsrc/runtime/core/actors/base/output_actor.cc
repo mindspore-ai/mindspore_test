@@ -1,5 +1,5 @@
 /**
- * Copyright 2021-2023 Huawei Technologies Co., Ltd
+ * Copyright 2021-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -706,6 +706,7 @@ void OutputActor::HandleOutput() {
       const auto &src_address = outputs_[repeat_index[i]]->device_address();
       MS_EXCEPTION_IF_NULL(src_address);
       tensor_device_address->set_device_pointer(src_address->device_pointer());
+      tensor_device_address->SetDeviceType(src_address->GetDeviceType());
       MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
         << "Output actor share the same pointer:" << src_address->device_pointer()
         << " between device address:" << tensor_device_address->ToString() << " and:" << src_address->ToString();

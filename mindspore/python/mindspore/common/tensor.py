@@ -1,4 +1,4 @@
-# Copyright 2020-2024 Huawei Technologies Co., Ltd
+# Copyright 2020-2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -138,7 +138,7 @@ def _init(input_data=None, dtype=None, shape=None, init=None, const_arg=False, d
 
     if input_data is None and shape is None and init is None and dtype is not None:
         validator.check_type_name('dtype', dtype, mstype.number_type + (mstype.bool_, mstype.string), "Tensor")
-        logger.warning(f"For 'Tensor', if 'dtype' is not None, 'input_data', 'shape' or 'init' must not be None.")
+        logger.warning("For 'Tensor', if 'dtype' is not None, 'input_data', 'shape' or 'init' must not be None.")
         return {"dtype": dtype, "shape": [-2], "init": init, "const_arg": const_arg, "device": device}
 
     # If input data is numpy number, convert it to np array
@@ -375,8 +375,8 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
         try:
             data = self._item()
             return float(data)
-        except ValueError:
-            raise ValueError("Only one element tensors can be converted to Python scalars")
+        except ValueError as e:
+            raise ValueError("Only one element tensors can be converted to Python scalars") from e
 
     def __index__(self):
         try:
@@ -714,7 +714,7 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
         rank = self.ndim
         if rank <= 1:
             return self
-        dims = [i for i in range(rank - 1, -1, -1)]
+        dims = list(range(rank - 1, -1, -1))
         return self.permute(dims)
 
     @staticmethod
@@ -2293,7 +2293,7 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
                 raise ValueError('The size of sorter must be the same as the Tensor')
 
         dtype = mstype.int32
-        right = (side == 'right')
+        right = side == 'right'
         search_sorted_ = tensor_operator_registry.get('searchsorted')(dtype, right)
         return search_sorted_(self, v, sorter)
 
@@ -2449,7 +2449,7 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
         pre_axis = []
         if len(size) < x.ndim:
             pre_len = x.ndim - len(size)
-            pre_axis = [axis for axis in range(pre_len)]
+            pre_axis = list(range(pre_len))
         axes = pre_axis
         for i, element in enumerate(size):
             if element != x.shape[i + pre_len] and element == 1:
@@ -2848,6 +2848,24 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('bmm')(self, mat2)
 
+    def to_(self, device=None, non_blocking=False):
+        r"""
+        Performs tensor device inplace conversion.
+        """
+        if not isinstance(non_blocking, bool):
+            raise ValueError(f"The type of 'non_blocking' must be bool, but got {non_blocking}")
+        if device not in ("Ascend", "CPU"):
+            raise ValueError(f"The value of 'to' must be one of ['Ascend', 'CPU'], but got {device}")
+        copy_data = self.to(device=device, non_blocking=non_blocking)
+        self.data.delete_()  # pylint: disable=E0203
+        self.data = copy_data
+        return self
+
+    def delete_(self):
+        r"""
+        Delete tensor data.
+        """
+        return tensor_operator_registry.get('delete_')()(self)
 
     def type(self, dtype=None):
         r"""
@@ -3761,7 +3779,8 @@ def _check_tensor_input(input_data=None, dtype=None, shape=None, init=None):
                 _ = np.array(input_data)
             except ValueError as e:
                 if "The requested array has an inhomogeneous shape" in str(e):
-                    raise TypeError(f"For Tensor, the input_data is {input_data} that contain unsupported element.")
+                    raise TypeError(
+                        f"For Tensor, the input_data is {input_data} that contain unsupported element.") from e
                 raise
 
 
