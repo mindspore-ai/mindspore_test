@@ -22,10 +22,10 @@ tensor_scatter_add:
               unknown errors may be caused.
 
         Args:
-            input_x (Tensor): The target tensor. The dimension of input_x must be no less than indices.shape[-1].
+            input_x (Tensor): The target tensor. The dimension of input_x must be no less than :math:`indices.\text{shape}[-1]`.
             indices (Tensor): The index of input tensor whose data type is mindspore.int32 or mindspore.int64. The rank must be at least 2.
             updates (Tensor): The tensor to update the input tensor, has the same type as input, and updates.
-                Shape should be equal to indices.shape[:-1] + input_x.shape[indices.shape[-1]:].
+                Shape should be equal to :math:`indices.\text{shape}[:-1] + input\_x.\text{shape}[indices.\text{shape}[-1]:]`.
 
         Returns:
             Tensor
