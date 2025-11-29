@@ -206,6 +206,7 @@ constexpr auto kAttrDatadumpOriginalNames = "_datadump_original_names";
 constexpr auto kAttrDatadumpIsMultiop = "_datadump_is_multiop";
 constexpr auto kAttrNeedRecordEvent = "need_record_event";
 constexpr auto kAttrStreamId = "stream_id";
+constexpr auto kAttrCopyStreamId = "copy_stream_id";
 constexpr auto kAttrCubeNum = "cube_num";
 constexpr auto kAttrVectorNum = "vector_num";
 constexpr auto kStreamDistinctionLabel = "stream_distinction_label";

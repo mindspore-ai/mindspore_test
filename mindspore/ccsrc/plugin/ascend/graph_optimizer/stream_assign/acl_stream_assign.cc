@@ -94,6 +94,7 @@ void AssignStreamForCopyOut(const AnfNodePtr &node) {
   copy_out_stream_id = AscendStreamMng::GetInstance().GetStreamId(copy_out_stream);
   AnfAlgo::SetStreamId(copy_out_stream_id, node.get());
   common::AnfAlgo::SetNodeAttr(kAttrStreamId, MakeValue<uint32_t>(copy_out_stream_id), node);
+  common::AnfAlgo::SetNodeAttr(kAttrCopyStreamId, MakeValue<uint32_t>(copy_out_stream_id), node);
 }
 
 void AssignStreamForCopyIn(const AnfNodePtr &node) {
@@ -108,6 +109,7 @@ void AssignStreamForCopyIn(const AnfNodePtr &node) {
   copy_in_stream_id = AscendStreamMng::GetInstance().GetStreamId(copy_in_stream);
   AnfAlgo::SetStreamId(copy_in_stream_id, node.get());
   common::AnfAlgo::SetNodeAttr(kAttrStreamId, MakeValue<uint32_t>(copy_in_stream_id), node);
+  common::AnfAlgo::SetNodeAttr(kAttrCopyStreamId, MakeValue<uint32_t>(copy_in_stream_id), node);
 }
 
 void AssignStreamForMoveTo(const AnfNodePtr &node) {
