@@ -20,15 +20,21 @@ from tests.mark_utils import arg_mark
 from tests.st.ops.share._internal.binary_ops import BinaryOpsFactory
 from tests.st.ops.share._op_info.op_database import get_op_info, binary_op_db
 
+ops_params_dict = {
+    'test_binary_op_reference_forward' : (['pynative'], binary_op_db),
+    'test_binary_op_reference_backward' : (['pynative'], binary_op_db),
+    'test_binary_op_type_promotion': (['pynative'], ['mint.add', 'mint.sub']),
+    'test_binary_op_dynamic_forward': (['kbk'], ['mint.add', 'mint.sub']),
+    'test_binary_op_dynamic_backward': (['kbk'], ['mint.add', 'mint.sub']),
+    'test_binary_op_error': (['pynative', 'kbk'], ['mint.add', 'mint.sub']),
+}
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_ascend910b',
-                      'platform_gpu',
-                      'cpu_linux', 'cpu_windows', 'cpu_macos'],
+@arg_mark(plat_marks=['platform_ascend'],
           level_mark='level0',
           card_mark='onecard',
           essential_mark='essential')
-@pytest.mark.parametrize("mode", ['pynative'])
-@pytest.mark.parametrize("op_info", binary_op_db)
+@pytest.mark.parametrize("mode", ops_params_dict['test_binary_op_reference_forward'][0])
+@pytest.mark.parametrize("op_info", ops_params_dict['test_binary_op_reference_forward'][1])
 def test_binary_op_reference_forward(mode, op_info):
     '''
     Feature: Binary operations
@@ -42,14 +48,12 @@ def test_binary_op_reference_forward(mode, op_info):
     fact.test_op_reference()
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_ascend910b',
-                      'platform_gpu',
-                      'cpu_linux', 'cpu_windows', 'cpu_macos'],
+@arg_mark(plat_marks=['platform_ascend'],
           level_mark='level0',
           card_mark='onecard',
           essential_mark='essential')
-@pytest.mark.parametrize("mode", ['pynative'])
-@pytest.mark.parametrize("op_info", binary_op_db)
+@pytest.mark.parametrize("mode", ops_params_dict['test_binary_op_reference_backward'][0])
+@pytest.mark.parametrize("op_info", ops_params_dict['test_binary_op_reference_backward'][1])
 def test_binary_op_reference_backward(mode, op_info):
     '''
     Feature: Binary operations
@@ -63,12 +67,12 @@ def test_binary_op_reference_backward(mode, op_info):
     fact.test_op_reference(grad_cmp=True)
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_ascend910b'],
+@arg_mark(plat_marks=['platform_ascend'],
           level_mark='level0',
           card_mark='onecard',
           essential_mark='essential')
-@pytest.mark.parametrize("mode", ['pynative'])
-@pytest.mark.parametrize("op_info", ['mint.add', 'mint.sub'])
+@pytest.mark.parametrize("mode", ops_params_dict['test_binary_op_type_promotion'][0])
+@pytest.mark.parametrize("op_info", ops_params_dict['test_binary_op_type_promotion'][1])
 def test_binary_op_type_promotion(mode, op_info):
 
     '''
@@ -84,14 +88,12 @@ def test_binary_op_type_promotion(mode, op_info):
     fact.test_binary_op_scalar_type_promotion()
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_ascend910b',
-                      'platform_gpu',
-                      'cpu_linux', 'cpu_windows', 'cpu_macos'],
+@arg_mark(plat_marks=['platform_ascend'],
           level_mark='level1',
           card_mark='onecard',
           essential_mark='essential')
-@pytest.mark.parametrize("mode", ['kbk'])
-@pytest.mark.parametrize("op_info", ['mint.add', 'mint.sub'])
+@pytest.mark.parametrize("mode", ops_params_dict['test_binary_op_dynamic_forward'][0])
+@pytest.mark.parametrize("op_info", ops_params_dict['test_binary_op_dynamic_forward'][1])
 def test_binary_op_dynamic_forward(mode, op_info):
     '''
     Feature: Binary operations
@@ -106,14 +108,12 @@ def test_binary_op_dynamic_forward(mode, op_info):
     fact.test_op_dynamic(only_dynamic_rank=True)
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_ascend910b',
-                      'platform_gpu',
-                      'cpu_linux', 'cpu_windows', 'cpu_macos'],
+@arg_mark(plat_marks=['platform_ascend'],
           level_mark='level1',
           card_mark='onecard',
           essential_mark='essential')
-@pytest.mark.parametrize("mode", ['kbk'])
-@pytest.mark.parametrize("op_info", ['mint.add', 'mint.sub'])
+@pytest.mark.parametrize("mode", ops_params_dict['test_binary_op_dynamic_backward'][0])
+@pytest.mark.parametrize("op_info", ops_params_dict['test_binary_op_dynamic_backward'][1])
 def test_binary_op_dynamic_backward(mode, op_info):
     '''
     Feature: Binary operations
@@ -128,14 +128,12 @@ def test_binary_op_dynamic_backward(mode, op_info):
     fact.test_op_dynamic(only_dynamic_rank=True, grad_cmp=True)
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_ascend910b',
-                      'platform_gpu',
-                      'cpu_linux', 'cpu_windows', 'cpu_macos'],
+@arg_mark(plat_marks=['platform_ascend'],
           level_mark='level1',
           card_mark='onecard',
           essential_mark='essential')
-@pytest.mark.parametrize("mode", ['pynative', 'kbk'])
-@pytest.mark.parametrize("op_info", ['mint.add', 'mint.sub'])
+@pytest.mark.parametrize("mode", ops_params_dict['test_binary_op_error'][0])
+@pytest.mark.parametrize("op_info", ops_params_dict['test_binary_op_error'][1])
 def test_binary_op_error(mode, op_info):
     '''
     Feature: Binary operations

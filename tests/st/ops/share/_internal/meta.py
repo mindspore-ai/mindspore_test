@@ -929,10 +929,10 @@ class OpsFactory():
                     self.compare_with_torch_dynamic(op_dynamic_inputs=op_dynamic_input)
         except Exception as e:
             error_msg = (f"\ntest_op_dynamic failed:"
-                        f"\nsample_name: {self.sample_name}"
+                        f"\nop_name: {self.op_name}"
                         f"\nmode: {self._context_mode}")
             if 'op_dynamic_input' in locals():
-                error_msg += f"\n{op_dynamic_input.summary()}"
+                error_msg += f"\n{op_dynamic_input.op_compile_input.summary()}"
             print(error_msg)
             raise e
 
