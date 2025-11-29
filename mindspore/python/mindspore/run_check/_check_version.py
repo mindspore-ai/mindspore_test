@@ -127,7 +127,7 @@ class GPUEnvChecker(EnvChecker):
                            "does not match. Please refer to the installation guide for version matching "
                            "information: https://www.mindspore.cn/install. The recommended version is "
                            "CUDA10.1 with cuDNN7.6.x, CUDA11.1 with cuDNN8.0.x and CUDA11.6 with cuDNN8.5.x.")
-        if cudnn_version and int(cudnn_version) < 800 and int(str(self.v).split('.')[0]) > 10:
+        if cudnn_version and int(cudnn_version) < 800 and int(str(self.v).split('.', maxsplit=1)[0]) > 10:
             logger.warning(f"CUDA version {self.v} and cuDNN version {cudnn_version} "
                            "does not match. Please refer to the installation guide for version matching "
                            "information: https://www.mindspore.cn/install. The recommended version is "
@@ -197,7 +197,7 @@ class GPUEnvChecker(EnvChecker):
         cudnn_version = []
         for path in self.cudnn_lib_path:
             real_path = glob.glob(path + "/lib*/libcudnn.so.*.*")
-            if real_path == []:
+            if not real_path:
                 continue
             ls_cudnn = subprocess.run(["ls", real_path[0]], timeout=10, text=True,
                                       capture_output=True, check=False)
@@ -231,9 +231,9 @@ class GPUEnvChecker(EnvChecker):
                              "version has been installed, you can refer to the installation "
                              "guidelines: https://www.mindspore.cn/install")
                 return path_list
-            ldd_r = subprocess.Popen(['ldd', self.library_path], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            ldd_result = subprocess.Popen(['/bin/grep', lib_name], stdin=ldd_r.stdout, stdout=subprocess.PIPE)
-            result = ldd_result.communicate(timeout=5)[0].decode()
+            with subprocess.Popen(['ldd', self.library_path], stdout=subprocess.PIPE, stderr=subprocess.PIPE) as ldd_r:
+                with subprocess.Popen(['/bin/grep', lib_name], stdin=ldd_r.stdout, stdout=subprocess.PIPE) as ldd_res:
+                    result = ldd_res.communicate(timeout=5)[0].decode()
             for i in result.split('\n'):
                 path = i.partition("=>")[2]
                 if path.lower().find("not found") > 0:
@@ -255,7 +255,7 @@ class GPUEnvChecker(EnvChecker):
 
     def _read_version(self, file_path):
         """Get gpu version info in version.txt."""
-        with open(file_path, 'r') as f:
+        with open(file_path, 'r') as f:  # pylint: disable=W1514
             all_info = f.readlines()
             for line in all_info:
                 if line.startswith("CUDA Version"):
@@ -298,7 +298,7 @@ class AscendEnvChecker(EnvChecker):
         cur_version = self._read_version(self.compiler_version)
         custom_version_path = os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                            "../lib/plugin/ascend/custom_ascendc_910b/version.info")
-        with open(custom_version_path, 'r') as f:
+        with open(custom_version_path, 'r', encoding="utf-8") as f:
             all_info = f.readlines()
             for line in all_info:
                 full_version = line.strip().split("=")[1]
@@ -324,7 +324,7 @@ class AscendEnvChecker(EnvChecker):
 
         v = self._read_version(self.compiler_version)
         if v not in self.version:
-            v_list = str([x for x in self.version])
+            v_list = str(list(self.version))
             logger.warning(f"MindSpore version {__version__} and Ascend AI software package (Ascend Data Center "
                            f"Solution)version {v} does not match, the version of software package expect one of "
                            f"{v_list}. Please refer to the match info on: https://www.mindspore.cn/install")
@@ -359,17 +359,6 @@ class AscendEnvChecker(EnvChecker):
                 logger.warning(f"Please pay attention to the above warning, countdown: {i}")
                 time.sleep(1)
 
-    def check_opp_kernel(self):
-        """
-            opp kernel install check
-        """
-        opp_kernel_path = self.ascend_opp_path.replace("opp", "opp_kernel")
-        if not os.path.exists(opp_kernel_path):
-            logger.critical("MindSpore relies on \"Ascend opp_kernel\" folder of the Ascend AI software package ("
-                            "Ascend Data Center Solution). Please check whether they are installed correctly or not, "
-                            "refer to the match info on: https://www.mindspore.cn/install")
-            raise Exception("Ascend opp_kernel is not installed")
-
     def set_env(self):
         curr_path = os.path.realpath(os.path.dirname(__file__))
         cust_aicpu_path = os.path.realpath(os.path.join(curr_path, "../lib/plugin/ascend/custom_aicpu_ops"))
@@ -394,8 +383,6 @@ class AscendEnvChecker(EnvChecker):
 
         # check te version after set te env
         self.check_deps_version()
-
-        self.check_opp_kernel()
 
     def _check_env(self):
         """ascend dependence path check"""
@@ -423,7 +410,7 @@ class AscendEnvChecker(EnvChecker):
 
     def _read_version(self, file_path):
         """get ascend version info"""
-        with open(file_path, 'r') as f:
+        with open(file_path, 'r', encoding="utf-8") as f:
             all_info = f.readlines()
             for line in all_info:
                 if line.startswith("Version="):
