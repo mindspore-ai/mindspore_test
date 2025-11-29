@@ -144,7 +144,7 @@ bool CheckAbstractScalar(const AnfNodePtr &node) {
   return false;
 }
 
-void ValidateAbstract(const AnfNodePtr &node) {
+void ValidateAbstract(const AnfNodePtr &node, const FuncGraphPtr &func_graph) {
   if (node == nullptr) {
     MS_LOG(DEBUG) << "Node to validate is invalid";
     return;
@@ -162,6 +162,24 @@ void ValidateAbstract(const AnfNodePtr &node) {
     MS_LOG(DEBUG) << "AbstractProblem in the graph: " << abstract->ToString();
     return;
   }
+
+  if (abstract->isa<abstract::AbstractEvent>()) {
+    auto scalar_abs = std::make_shared<AbstractScalar>(0);
+    node->set_abstract(scalar_abs);
+    MS_LOG(DEBUG) << "Update event abstract: " << scalar_abs->ToString();
+
+    if (node->isa<ValueNode>()) {
+      ValuePtr val = scalar_abs->BuildValue();
+      MS_EXCEPTION_IF_NULL(val);
+      AnfNodePtr value_node = NewValueNode(val);
+      value_node->set_abstract(scalar_abs);
+      auto mgr = func_graph->manager();
+      MS_EXCEPTION_IF_NULL(mgr);
+      mgr->Replace(node, value_node);
+    }
+    return;
+  }
+
   bool is_legal_abstract = abstract->isa<AbstractType>() || abstract->isa<AbstractFunction>() ||
                            abstract->isa<AbstractTuple>() || abstract->isa<AbstractList>() ||
                            abstract->isa<AbstractTensor>() || abstract->isa<AbstractRowTensor>() ||
@@ -296,7 +314,7 @@ void Validate(const FuncGraphPtr &func_graph) {
     ValidateOperation(node);
   }
   for (const auto &node : all_nodes) {
-    ValidateAbstract(node);
+    ValidateAbstract(node, func_graph);
   }
 }
 }  // namespace validator

@@ -70,6 +70,7 @@
 "mindspore/mindspore/ccsrc/frontend/jit/ps/resource.cc"                                            "readability/fn_size"
 "mindspore/mindspore/ccsrc/frontend/jit/ps/static_analysis/prim.cc"                         "whitespace/indent_namespace"
 "mindspore/mindspore/ccsrc/frontend/jit/ps/executor/executor_py.cc"                         "whitespace/indent_namespace"
+"mindspore/mindspore/ccsrc/frontend/jit/ps/pass.cc"                                         "whitespace/indent_namespace"
 "mindspore/mindspore/ccsrc/pybind_api/init.cc"                                                "readability/fn_size"
 "mindspore/mindspore/ops/kernel/gpu/cuda/math/binary_ops_gpu_kernel.cc"                 "whitespace/indent"
 "mindspore/mindspore/ops/kernel/cpu/native/cast_cpu_kernel.cc"                            "readability/braces"

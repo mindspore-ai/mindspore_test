@@ -1,7 +1,7 @@
 /**
  * This is the C++ adaptation and derivative work of Myia (https://github.com/mila-iqia/myia/).
  *
- * Copyright 2019-2023 Huawei Technologies Co., Ltd
+ * Copyright 2019-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -166,7 +166,20 @@ class Parser {
   FunctionBlockPtr ParseAssert(const FunctionBlockPtr &block, const py::object &node);
   // Process with statement.
   FunctionBlockPtr ParseWith(const FunctionBlockPtr &block, const py::object &node);
-
+  // Check if is StreamCtx.
+  bool IsStreamCtx(const FunctionBlockPtr &block, const py::object &context_expr_obj);
+  // Check if is StreamLimitCtx.
+  bool IsStreamLimitCtx(const FunctionBlockPtr &block, const py::object &context_expr_obj);
+  // New ndoe for arg of StreamCtx node.
+  AnfNodePtr NewStreamCtxArgNode(const FunctionBlockPtr &block, const py::object &context_expr_obj);
+  // New nodes for args of StreamLimitCtx.
+  std::vector<AnfNodePtr> NewStreamLimitCtxArgsNode(const FunctionBlockPtr &block, const py::object &context_expr_obj);
+  // Process with StreamCtx.
+  FunctionBlockPtr StreamCtxBlock(const FunctionBlockPtr &block, const py::object &node,
+                                  const py::object &context_expr_obj);
+  // Process with StreamLimitCtx.
+  FunctionBlockPtr StreamLimitCtxBlock(const FunctionBlockPtr &block, const py::object &node,
+                                       const py::object &context_expr_obj);
   // Process withitem.
   AnfNodePtr ParseWithitem(const FunctionBlockPtr &block, const py::object &node, const AnfNodePtr &context_expr_node);
   // Process the expr and slice node method list.

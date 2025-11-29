@@ -1,7 +1,7 @@
 /**
  * This is the C++ adaptation and derivative work of Myia (https://github.com/mila-iqia/myia/).
  *
- * Copyright 2019-2022 Huawei Technologies Co., Ltd
+ * Copyright 2019-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -81,7 +81,8 @@ static mindspore::HashMap<TypeId, std::string> g_type_2_lable{{kTypeUnknown, "Un
                                                               {kNumberTypeGLUInt, "GLUInt"},
                                                               {kObjectTypeMonad, "Monad"},
                                                               {kObjectTypeUMonad, "UMonad"},
-                                                              {kObjectTypeIOMonad, "IOMonad"}};
+                                                              {kObjectTypeIOMonad, "IOMonad"},
+                                                              {kObjectTypeEventType, "Event"}};
 
 const mindspore::HashMap<TypeId, int> &type_priority_map() {
   static const mindspore::HashMap<TypeId, int> type_priority_map = {

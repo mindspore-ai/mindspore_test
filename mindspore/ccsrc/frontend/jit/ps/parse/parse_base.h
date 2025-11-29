@@ -69,6 +69,9 @@ const char PYTHON_MOD_PRIMITIVE_OP_LABELS_DICT[] = "op_labels";
 const char PYTHON_MOD_PRIMITIVE_OP_DEFAULT_VALUE_DICT[] = "op_args_default_value";
 const char PYTHON_MOD_PARSE_OBJECT_FUNCTION[] = "parse_cb";
 const char PYTHON_MOD_RESOLVE_FUNCTION[] = "resolve_symbol";
+const char PYTHON_MOD_CHECK_IS_STREAM_CTX[] = "check_is_stream_ctx";
+const char PYTHON_MOD_CHECK_IS_STREAM_LIMIT_CTX[] = "check_is_stream_limit_ctx";
+const char PYTHON_MOD_GET_MS_JIT_STREAM_OBJ_ID[] = "get_stream_obj_id";
 const char PYTHON_MOD_RESOLVE_GET_OBJ_KEY[] = "get_object_key";
 const char PYTHON_MOD_PARSE_CHECK_IS_CLASS_MEMBER_OF_SELF[] = "is_class_member_of_self";
 const char PYTHON_MOD_PARSE_CHECK_IS_CLASS_MEMBER_RECURSIVE[] = "is_class_member_recursive";
@@ -121,6 +124,7 @@ const char PYTHON_PARSE_GET_NAMESPACE_SYMBOL[] = "get_namespace_symbol";
 const char PYTHON_PARSE_IS_BUILTIN_FUNCTION_NAME[] = "is_builtin_function_name";
 const char PYTHON_PARSE_GET_LOCATION[] = "get_location";
 const char PYTHON_PARSE_EXPAND_EXPR_STATEMENT[] = "expand_expr_statement";
+const char PYTHON_PARSE_CHECK_EVENT_RECORD_WAIT[] = "check_event_record_wait";
 const char PYTHON_PARSE_GENERATE_SCOPE[] = "generate_scope";
 const char PYTHON_PARSE_GET_SCOPE_NAME[] = "get_scope_name";
 const char PYTHON_PARSE_GET_TYPE[] = "get_type";
@@ -242,6 +246,7 @@ enum ResolveType : int64_t {
   RESOLVE_TYPE_TUPLE = 9,               // Resolve builtin tuple type.
   RESOLVE_TYPE_LIST = 10,               // Resolve builtin list type.
   RESOLVE_TYPE_BUILTIN_METHOD = 11,     // Resolve builtin method.
+  RESOLVE_TYPE_EVENT = 12,              // Resolve event.
   RESOLVE_TYPE_INVALID = 0xFF           // Resolve invalid.
 };
 

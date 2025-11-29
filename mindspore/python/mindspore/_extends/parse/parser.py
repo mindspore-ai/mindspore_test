@@ -43,6 +43,8 @@ from mindspore.common import dtype as mstype
 from mindspore.common.parameter import Parameter
 from mindspore.common import mutable
 from mindspore._extends.ast_checker import AstChecker
+from mindspore.runtime.event import Event
+from mindspore.runtime import StreamCtx, StreamLimitCtx
 from .namespace import Namespace, ModuleNamespace, ClosureNamespace, ClassMemberNamespace
 from .resources import (parse_object_map, parse_augassign_object_map, ops_symbol_map, convert_object_map,
                         convert_class_to_function_map, trope_ns)
@@ -63,6 +65,7 @@ RESOLVE_TYPE_NUMPY_BOOL_NUMBER = 8      # Resolve numpy bool number.
 RESOLVE_TYPE_TUPLE = 9                  # Resolve builtin tuple type.
 RESOLVE_TYPE_LIST = 10                  # Resolve builtin list type.
 RESOLVE_TYPE_BUILTIN_METHOD = 11        # Resolve builtin type.
+RESOLVE_TYPE_EVENT = 12
 RESOLVE_TYPE_INVALID = 0xFF             # Resolve invalid.
 
 # Define the class instance detail type
@@ -364,6 +367,8 @@ def get_obj_type(obj):
         obj_type = RESOLVE_TYPE_NUMPY_BOOL_NUMBER
     elif isinstance(obj, types.BuiltinMethodType) and obj.__qualname__.split('.')[0] == Tensor.__name__:
         obj_type = RESOLVE_TYPE_BUILTIN_METHOD
+    elif isinstance(obj, Event):
+        obj_type = RESOLVE_TYPE_EVENT
     else:
         obj_type = RESOLVE_TYPE_INVALID
     return obj_type
@@ -644,6 +649,28 @@ def expand_expr_statement(node):
         if not AstChecker.check_type(expr_value, "ast.Str"):
             return True, expr_value
     return (False,)
+
+
+def check_event_record_wait(node):
+    """
+    Check is record or wait.
+
+    Returns:
+        record or wait target or None.
+    """
+    if isinstance(node, ast.Expr):
+        expr_value = node.value
+        if isinstance(expr_value, ast.Call):
+            func = expr_value.func
+            if isinstance(func, ast.Attribute) and \
+                    hasattr(func, "attr") and \
+                    hasattr(func, "value"):
+                method = func.attr
+                target = func.value
+                logger.debug("Expand expr, target:%s, method:%s", target, method)
+                if method == "record" or method == "wait":
+                    return target
+    return None
 
 
 def get_ast_namespace_symbol(obj):
@@ -1040,6 +1067,7 @@ class Parser:
 
     def save_source_code(self, attr_name, source_lines):
         """Save cell and func source code to support run graph mode with pyc or so."""
+        # pylint: disable=W1514
         if '/mindspore/' in self.filename or '\\mindspore\\' in self.filename:
             return
         if getattr(self.fn, attr_name, None) == source_lines:
@@ -1055,6 +1083,9 @@ class Parser:
 
     def parse(self):
         """Parse the function or method."""
+        # pylint: disable=W0707
+        # pylint: disable=W1309
+        # pylint: disable=C0207
         logger.debug("fn: %r", self.fn)
         if isinstance(self.fn, (types.FunctionType, types.MethodType)) or \
            type(self.fn).__name__ == 'cython_function_or_method':
@@ -1141,6 +1172,43 @@ class Parser:
 
         logger.debug(f"The name '{var}' is an undefined symbol.")
         return None, None, None
+
+    def check_is_stream_ctx(self, var: str):
+        """Check if is stream_ctx."""
+        logger.debug(f"global_namespace {self.global_namespace.__str__()}.")
+        logger.debug(f"self.global_namespace.__dict__:{self.global_namespace.__dict__}")
+
+        if var in self.global_namespace:
+            logger.debug(f"Found '{var}' in global_namespace {self.global_namespace.__str__()}.")
+            value = self.global_namespace[var]
+            logger.debug(f"value: '{value}'.")
+            if issubclass(value, StreamCtx):
+                logger.debug(f"Found '{value}' is StreamCtx.")
+                return True
+        return var == "StreamCtx"
+
+    def get_stream_obj_id(self, stream_name: str):
+        """Get the object of stream."""
+        if stream_name in self.global_namespace:
+            logger.debug(f"Found '{stream_name}' in global_namespace {self.global_namespace.__str__()}.")
+            stream_obj = self.global_namespace[stream_name]
+            logger.debug(f"stream_obj.stream_id: '{stream_obj.stream_id()}'.")
+            return stream_obj.stream_id()
+        return None
+
+    def check_is_stream_limit_ctx(self, var: str):
+        """Check if is stream_limit_ctx."""
+        logger.debug(f"global_namespace {self.global_namespace.__str__()}.")
+        logger.debug(f"self.global_namespace.__dict__:{self.global_namespace.__dict__}")
+
+        if var in self.global_namespace:
+            logger.debug(f"Found '{var}' in global_namespace {self.global_namespace.__str__()}.")
+            value = self.global_namespace[var]
+            logger.debug(f"value: '{value}'.")
+            if value == StreamLimitCtx or issubclass(value, StreamLimitCtx):
+                logger.debug(f"Found '{value}' is StreamLimitCtx.")
+                return True
+        return var == "StreamLimitCtx"
 
     def check_third_party_library_side_effect(self, var, attr):
         """Check if value is from a third-party library."""

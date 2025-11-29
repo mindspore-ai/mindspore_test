@@ -574,7 +574,12 @@ BuiltInTypeMap &GetMethodMap() {
      }},
     {kObjectTypeJTagged, {}},
     {kObjectTypeSymbolicKeyType, {}},
-    {kObjectTypeEnvType, {}}};
+    {kObjectTypeEnvType, {}},
+    {kObjectTypeEventType,
+     {
+       {"record", prim::kPrimStreamSend},  // event.record()
+       {"wait", prim::kPrimStreamRecv},    // event.wait()
+     }}};
   return method_map;
 }
 

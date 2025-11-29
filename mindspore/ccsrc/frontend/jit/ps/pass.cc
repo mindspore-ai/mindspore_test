@@ -20,7 +20,7 @@
 #include <vector>
 #include <string>
 #include <algorithm>
-
+#include <map>
 #include "primitive/other_ops.h"
 #include "primitive/framework_ops.h"
 #include "utils/hash_map.h"
@@ -105,6 +105,7 @@
 #include "utils/compile_config.h"
 #include "frontend/jit/ps/pipeline_split.h"
 #include "frontend/jit/ps/static_analysis/auto_monad.h"
+#include "frontend/jit/ps/static_analysis/event_method.h"
 #include "frontend/optimizer/irpass/branch_culling.h"
 #include "frontend/optimizer/irpass/meta_fg_eliminate.h"
 #include "frontend/optimizer/irpass/gradient_eliminate.h"
@@ -119,6 +120,7 @@
 #include "frontend/optimizer/irpass/virtualview_op.h"
 #include "frontend/optimizer/irpass/inplace_input_replace.h"
 #include "frontend/optimizer/irpass/isolate_inplace_func_replace.h"
+#include "frontend/optimizer/irpass/with_stream_mark.h"
 #include "frontend/jit/ps/pass_config.h"
 #include "frontend/jit/ps/graph_circle_handler.h"
 #include "primitive/auto_generate/gen_ops_primitive_a.h"
@@ -424,6 +426,9 @@ bool OffloadActivationWrapper(const FuncGraphPtr &root, const opt::OptimizerPtr 
 }
 REGISTER_OPT_PASS_FUNC(OffloadActivationWrapper)
 
+bool EventMethodActionWrapper(const FuncGraphPtr &root, const opt::OptimizerPtr &) { return EventMethod(root); }
+REGISTER_OPT_PASS_FUNC(EventMethodActionWrapper)
+
 bool parallel_mode() {
   std::string parallel_mode = parallel::ParallelContext::GetInstance()->parallel_mode();
   return (parallel_mode == parallel::kAutoParallel) || (parallel_mode == parallel::kSemiAutoParallel);
@@ -451,6 +456,7 @@ void AddMetaMorphosis(const ResourcePtr &resource, const std::string &add_before
       opt::OptPassGroupMap map_meta_morph(
         {{"meta_morphosis", opt::OptPassConfig({irpass.meta_morphosis_}, true)},
          {"meta_morphosis_renormalize", opt::OptPassConfig::Renormalize(true)},
+         {"meta_morphosis_event_method", opt::OptPassConfig(EventMethodActionWrapper, true)},
          {"meta_morphosis_auto_monad_grad", opt::OptPassConfig(ReAutoMonadWrapper, true), jump_to}});
       (void)map_a->insert(it, map_meta_morph.begin(), map_meta_morph.end());
     }
@@ -625,6 +631,7 @@ OptPassGroupMap GetOptPassesA(const opt::irpass::OptimizeIRPassLib &irpass, cons
      {kSwitchSimplifyFlag, opt::OptPassConfig({irpass.switch_simplify_})},
      {"loop_unroll", opt::OptPassConfig({irpass.loop_unroll_before_grad_})},
      {"a_1", a_1},
+     {"with_stream_mark", opt::OptPassConfig(opt::OptPassConfig(opt::irpass::WithStreamMark))},
      {"recompute_prepare", recompute_prepare},
      {"updatestate_depend_eliminate", updatestate_depend_eliminate},
      {"updatestate_assign_eliminate", updatestate_assign_eliminate},
@@ -739,6 +746,7 @@ OptPassGroupMap GetJitOptPassesA(const opt::irpass::OptimizeIRPassLib &irpass, c
     {{kSwitchSimplifyFlag, opt::OptPassConfig({irpass.switch_simplify_})},
      {"loop_unroll", opt::OptPassConfig({irpass.loop_unroll_before_grad_})},
      {"a_1", GetJitOptPassA1(irpass)},
+     {"with_stream_mark", opt::OptPassConfig(opt::OptPassConfig(opt::irpass::WithStreamMark))},
      {"recompute_prepare", opt::OptPassConfig({irpass.set_cell_output_no_recompute_})},
      {"updatestate_depend_eliminate", opt::OptPassConfig(opt::irpass::UpdatestateDependEliminater())},
      {"updatestate_assign_eliminate", opt::OptPassConfig(opt::irpass::UpdatestateAssignEliminater())},

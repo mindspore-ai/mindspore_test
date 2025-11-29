@@ -62,6 +62,7 @@ from mindspore.common.jit_context import jit_context
 from mindspore.common.jit_trace import _jit_trace
 from mindspore.parallel._utils import _init_auto_parallel_context, _clear_auto_parallel_context
 from mindspore._check_jit_forbidden_api import jit_forbidden_register
+from mindspore.runtime.event import Event
 
 # Store jit class compiled pipeline cache.
 ms_compile_cache = set()
@@ -377,6 +378,8 @@ def _handle_arg(obj, arg, has_mutable_arg, is_predict):
         return arg
     elif hasattr(obj, "enable_tuple_broaden") and obj.enable_tuple_broaden and isinstance(arg, tuple) and \
             _check_all_tensor(arg):
+        return arg
+    elif isinstance(arg, Event):
         return arg
     return None
 
