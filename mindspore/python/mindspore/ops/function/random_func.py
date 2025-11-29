@@ -1360,7 +1360,7 @@ def randint_ext(*args, generator=None, dtype=None, device=None):
             `mindspore.int64` will be applied. Default: ``None`` .
         device (str, optional): The specified device of the output tensor. Only ``"Ascend"`` and ``"npu"`` are
             supported. If `device = None`, the value set by :func:`mindspore.set_device` will be used. 
-            Default: ``None``.
+            Default: ``None`` .
 
     Returns:
         Tensor, with the designated shape and dtype, filled with random numbers from the uniform distribution on
@@ -1411,7 +1411,7 @@ def randint_like_ext(*args, dtype=None, device=None):
         dtype (:class:`mindspore.dtype`, optional): Designated tensor dtype. If None,
             the same dtype of `input` will be applied. Default: ``None`` .
         device (str, optional): The specified device of the output tensor. Only ``"Ascend"`` and ``"npu"`` are
-            supported. If `device = None`, the device of `input` will be used. Default: ``None``.
+            supported. If `device = None`, the device of `input` will be used. Default: ``None`` .
 
     Returns:
         Tensor, with the designated shape and dtype, filled with random numbers from the uniform distribution on
@@ -1419,7 +1419,7 @@ def randint_like_ext(*args, dtype=None, device=None):
 
     Raises:
         TypeError: If `low` or `high` is not integer.
-        RuntimeError: If `Input` device is CPU, and `device` is ``None``
+        RuntimeError: If `Input` device is CPU, and `device` is ``None`` .
         RuntimeError: If `device` is ``CPU`` .
         ValueError: If `device` is ``GPU`` .
 
