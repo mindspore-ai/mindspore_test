@@ -133,9 +133,9 @@ class Sigmoid(Cell):
 
 class LogSigmoid(Cell):
     r"""
-    Applies logsigmoid activation element-wise. The input is a Tensor with any valid shape.
+    Applies the LogSigmoid activation function element-wise. The input is a Tensor with any valid shape.
 
-    Logsigmoid is defined as:
+    LogSigmoid is defined as:
 
     .. math::
         \text{LogSigmoid}(x_{i}) = \log(\frac{1}{1 + \exp(-x_i)}),
@@ -148,24 +148,19 @@ class LogSigmoid(Cell):
         :align: center
 
     Inputs:
-        - **input** (Tensor) - The input of LogSigmoid with data type of bfloat16, float16 or float32.
+        - **input** (Tensor) - The input tensor to be processed by LogSigmoid with data type of bfloat16, float16 or float32.
           The shape is :math:`(*)` where :math:`*` means, any number of additional dimensions.
 
     Outputs:
         Tensor, with the same type and shape as the `input`.
-
-    Raises:
-        TypeError: If dtype of `input` is not bfloat16, float16 and float32.
-        TypeError: If `input` is not a Tensor.
 
     Supported Platforms:
         ``Ascend``
 
     Examples:
         >>> import mindspore
-        >>> from mindspore import Tensor
-        >>> net = mint.nn.LogSigmoid()
-        >>> input = Tensor([1.0, 2.0, 3.0], mindspore.float32)
+        >>> net = mindspore.mint.nn.LogSigmoid()
+        >>> input = mindspore.tensor([1.0, 2.0, 3.0], mindspore.float32)
         >>> output = net(input)
         >>> print(output)
         [-0.31326166 -0.12692806 -0.04858734]
