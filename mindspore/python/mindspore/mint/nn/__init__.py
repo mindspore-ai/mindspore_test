@@ -600,10 +600,6 @@ class SELU(Cell):
         [ 2.101402 -1.7462534 9.456309 ]]
     """
 
-    def __init__(self):
-        """Initialize SELU"""
-        super().__init__()
-
     def construct(self, input):
         return F.selu(input)
 
@@ -748,10 +744,6 @@ class Mish(Cell):
         [[-3.0764845e-01 3.9974124e+00 -2.6832507e-03]
          [ 1.9439589e+00 -3.3576239e-02 8.9999990e+00]]
     """
-
-    def __init__(self):
-        """Initialize Mish."""
-        super().__init__()
 
     def construct(self, input):
         return F.mish(input)
@@ -1204,8 +1196,8 @@ class CosineEmbeddingLoss(Cell):
         \end{cases}
 
     Args:
-        margin (float, optional): A tuning factor used in the negative-sample branch,
-            which should be in [-1.0, 1.0]. Default: ``0.0`` .
+        margin (float, optional): A tuning factor used in the negative-sample branch, which should be in [-1.0, 1.0],
+            values outside this range will not raise an error, but have no practical meaning. Default: ``0.0`` .
         reduction (str, optional): Apply specific reduction method to the output: ``'none'`` , ``'mean'`` ,
             ``'sum'`` . Default: ``'mean'`` .
 
@@ -1226,7 +1218,6 @@ class CosineEmbeddingLoss(Cell):
 
     Raises:
         ValueError: If `reduction` is not ``"none"``, ``"mean"`` or ``"sum"``.
-        ValueError: If `margin` is not in the range [-1.0, 1.0].
         ValueError: If the shapes of `input1` and `input2` do not match.
         ValueError: If the shape of `target` does not match the shapes of `input1` and `input2`.
 

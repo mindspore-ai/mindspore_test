@@ -4179,7 +4179,7 @@ def basic_sample_inputs_adaptive_avg_pool1d(op_info: OpInfo, dtype=None, device=
 
     # Ordered as (input shape, output size)
     cases = (
-        #((0, 8, 8), (5,)), ms don't surpport
+        #((0, 8, 8), (5,)), ms doesn't support this case
         ((8, 4, 9), 6),
         ((3, 8, 8), 5),
         ((3, 8, 8), 1)
@@ -4511,6 +4511,8 @@ op_db: Dict[str, OpInfo] = {
         name='mint.nn.functional.batch_norm',
         op=mint.nn.functional.batch_norm,
         ref=torch.nn.functional.batch_norm,
+        # `running_mean` and `running_variance` in  batch_norm cannot have requires_grad True.
+        grad_position=(0, 3, 4),
         # float16 has precision issue
         dtypes_ascend=(ms.float32,),
         # bfloat16 and float16 has precision issue
@@ -4772,7 +4774,8 @@ op_db: Dict[str, OpInfo] = {
         dtypes_gpu=tuple([d for d in dtypes_as_torch if d != ms.bfloat16 and d != ms.bool_] + list(dtypes_extra_uint)),
         # On Ascend 910B, the bf16 results match PTA bitwise, but specified value has large deviation
         # when using random inputs, so we temporarily override the default loss value for bf16.
-        default_loss_override={ms.bfloat16: 4e-2},
+        ascend910b_forward_loss_override={ms.bfloat16: 4e-2},
+        ascend910b_backward_loss_override={ms.bfloat16: 4e-2},
         op_basic_reference_inputs_func=basic_sample_inputs_add_sub_ext,
         op_dynamic_inputs_func=dynamic_sample_inputs_add_sub_ext,
         op_error_inputs_func=error_inputs_add_sub_ext_func,
@@ -5253,7 +5256,11 @@ op_db: Dict[str, OpInfo] = {
         #dtypes_gpu=tuple(d for d in dtypes_as_torch if (d.is_floating_point or d.is_complex) and d != ms.bfloat16),
         dtypes_cpu=(),
         dtypes_gpu=(),
-        default_loss_override={ms.float16: 1e-3, ms.float32: 1e-4},
+        # tanh has precision problem when comparing with torch_cpu, but its result matches torch_npu bitwise.
+        ascend_forward_loss_override={ms.float16: 1e-3, ms.float32: 1e-4},
+        ascend910b_forward_loss_override={ms.float16: 1e-3, ms.float32: 1e-4},
+        ascend_backward_loss_override={ms.float16: 1e-3, ms.float32: 1e-4},
+        ascend910b_backward_loss_override={ms.float16: 1e-3, ms.float32: 1e-4},
         # tanh has precision problem when converting input from half(fp16) to float
         convert_half_to_float=False,
     ),
@@ -5332,7 +5339,8 @@ op_db: Dict[str, OpInfo] = {
         disable_small_value_tensor_inputs=True,
          # The acosh backward is composed of small ops, and mul op accumulates numerical error,
          # therefore a larger loss threshold is used for float16. This issue has been reviewed.
-        default_loss_override={ms.float16: 5e-3},
+        ascend_backward_loss_override={ms.float16: 5e-3},
+        ascend910b_backward_loss_override={ms.float16: 5e-3},
     ),
     'mint.asinh': UnaryOpInfo(
         name='mint.asinh',
@@ -5481,9 +5489,11 @@ op_db: Dict[str, OpInfo] = {
         disable_large_value_tensor_inputs=True,
         disable_extremal_value_tensor_inputs=True,
         convert_half_to_float=True,
-        # The float16 benchmark is not supported, CCB conclusions will be based on actual.
-        # The bfloat16 benchmark is not supported, CCB conclusions will be based on actual.
-        default_loss_override={ms.float16: 0.06, ms.bfloat16:0.1},
+        # For float32 inputs, use 0.0004 on backward according to CCB conclusions.
+        # For float16 inputs, use 0.06 on backward according to CCB conclusions.
+        # For bfloat16 inputs, standard 2 is satisfied. Use 0.1 on backward according to CCB conclusions.
+        ascend_backward_loss_override={ms.float32: 0.0004, ms.float16: 0.06, ms.bfloat16:0.1},
+        ascend910b_backward_loss_override={ms.float32: 0.0004, ms.float16: 0.06, ms.bfloat16:0.1},
     ),
     'Tensor.bfloat16': UnaryOpInfo(
         name='Tensor.bfloat16',
@@ -6340,7 +6350,11 @@ op_db: Dict[str, OpInfo] = {
         op_basic_reference_inputs_func=basic_sample_inputs_mint_cumsum,
         op_extra_reference_inputs_func=extra_sample_inputs_mint_cumsum,
         op_dynamic_inputs_func=None,
-        default_loss_override={ms.float16: 1e-2},
+        # issue ID ICWZN8: cumsum has accumulation bias problem.
+        ascend_forward_loss_override={ms.float16: 1e-2},
+        ascend_backward_loss_override={ms.float16: 1e-2},
+        ascend910b_forward_loss_override={ms.float16: 5e-3},
+        ascend910b_backward_loss_override={ms.float16: 5e-3},
         is_differentiable=False,
     ),
     'mint.index_select': OpInfo(
@@ -6852,7 +6866,11 @@ op_db: Dict[str, OpInfo] = {
         is_differentiable=True,
         # For Conv-family operators with float32 inputs, HF32 is enabled by default.
         # HiSilicon recommends a one-sided 0.1% accuracy guard.
-        default_loss_override={ms.float32: 0.001},
+        # For bfloat16 inputs, standard 2 rather than standard 1 is satisfied.
+        ascend_forward_loss_override={ms.float32: 0.001},
+        ascend_backward_loss_override={ms.float32: 0.001},
+        ascend910b_forward_loss_override={ms.float32: 0.001, ms.bfloat16: 0.08},
+        ascend910b_backward_loss_override={ms.float32: 0.001, ms.bfloat16: 0.08},
     ),
     'mint.nn.functional.linear': OpInfo(
         name='mint.nn.functional.linear',
@@ -6967,8 +6985,10 @@ op_db: Dict[str, OpInfo] = {
         op_basic_reference_inputs_func=basic_sample_inputs_GroupNorm,
         op_extra_reference_inputs_func=None,
         op_dynamic_inputs_func=None,
-        # IBHXMW: on 910A, special shape may has precision difference, HiSilicon confirmed.
-        default_loss_override={ms.float16: 0.009},
+        # IBHXMW: For backward on Ascend, HiSilicon has confirmed that the naive algorithm may cause
+        # precision difference.
+        ascend_backward_loss_override={ms.float16: 0.009},
+        ascend910b_backward_loss_override={ms.float16: 0.002},
     ),
     'mint.nn.LayerNorm': OpInfo(
         name='mint.nn.LayerNorm',

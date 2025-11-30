@@ -75,6 +75,7 @@ class OpsFactory():
         # inner params
         self._douts = None
         self._device = None
+        self._ascend_name = None
         self._context_mode = 'pynative'
         self._op_net_func = ops_common_net
         self._op_grad_func = None
@@ -98,14 +99,15 @@ class OpsFactory():
         self.op_extra_reference_inputs_func = op_info.op_extra_reference_inputs_func
         self.op_dynamic_inputs_func = op_info.op_dynamic_inputs_func
         self.op_error_inputs_func = op_info.op_error_inputs_func
+        self.grad_position = op_info.grad_position
         self._sample_inputs = None
         self._dynamic_inputs = None
 
         # get supported dtypes for the op with entire environment.
         device = ms.context.get_context('device_target').lower()
         if device == 'ascend':
-            self.ascend_name = MSContext.get_instance().get_ascend_soc_version()
-            if self.ascend_name == 'ascend910b':
+            self._ascend_name = MSContext.get_instance().get_ascend_soc_version()
+            if self._ascend_name == 'ascend910b':
                 self.supported_dtypes = op_info.dtypes_ascend910b
             else:
                 self.supported_dtypes = op_info.dtypes_ascend
@@ -131,7 +133,14 @@ class OpsFactory():
 
         self._compare_method = op_info.compare_method
         self._default_golden_loss_func = op_info.default_golden_loss_func
-        self._default_loss_override = op_info.default_loss_override
+        self._ascend_forward_loss_override = op_info.ascend_forward_loss_override
+        self._ascend910b_forward_loss_override = op_info.ascend910b_forward_loss_override
+        self._cpu_forward_loss_override = op_info.cpu_forward_loss_override
+        self._gpu_forward_loss_override = op_info.gpu_forward_loss_override
+        self._ascend_backward_loss_override = op_info.ascend_backward_loss_override
+        self._ascend910b_backward_loss_override = op_info.ascend910b_backward_loss_override
+        self._cpu_backward_loss_override = op_info.cpu_backward_loss_override
+        self._gpu_backward_loss_override = op_info.gpu_backward_loss_override
 
     @final
     def _generate_random_dout(self, return_torch_douts=False):
@@ -188,6 +197,26 @@ class OpsFactory():
         self._op_grad_cell = op_grad_cell if op_grad_cell is not None else self._op_grad_cell
 
     @final
+    def _get_current_loss_override(self, *, grad_cmp: bool = False):
+        """Select override loss dict based on device/backend and forward/backward.
+        
+        Args:
+            grad_cmp: True if comparing gradients (backward), else forward.
+        Returns:
+            dict | None: The selected override mapping for dtype->loss, or None.
+        """
+        device = self._device
+        if device == 'ascend':
+            if self._ascend_name == 'ascend910b':
+                return self._ascend910b_backward_loss_override if grad_cmp else self._ascend910b_forward_loss_override
+            return self._ascend_backward_loss_override if grad_cmp else self._ascend_forward_loss_override
+        if device == 'cpu':
+            return self._cpu_backward_loss_override if grad_cmp else self._cpu_forward_loss_override
+        if device == 'gpu':
+            return self._gpu_backward_loss_override if grad_cmp else self._gpu_forward_loss_override
+        return None
+
+    @final
     def update_inputs(
             self,
             op_sample_inputs: Union[List[OpSampleInput], OpSampleInput] = None,
@@ -241,6 +270,7 @@ class OpsFactory():
             ksize=None,
             op_type=None,
             secend_expect=None,
+            grad_cmp=False,
     ):
         """Assert equality within tolerances using configured comparison.
 
@@ -289,6 +319,22 @@ class OpsFactory():
                     return ms_asnumpy(tensor)
                 return tensor
 
+            if isinstance(actual, (ms.Tensor, torch.Tensor, np.ndarray)):
+                actual_dtype = actual.dtype
+            else:
+                actual_dtype = type(actual)
+
+            loss_override_map = self._get_current_loss_override(grad_cmp=grad_cmp)
+            if loss_override_map and actual_dtype in loss_override_map.keys():
+                loss = loss_override_map[actual_dtype]
+            elif self._default_golden_loss_func:
+                loss = self._default_golden_loss_func(actual_dtype)
+            else:
+                loss = get_default_loss(actual_dtype)
+
+            rtol = loss if rtol is None else rtol
+            atol = loss if atol is None else atol
+
             actual = convert_tensor_to_nparray(actual)
             expect = convert_tensor_to_nparray(expect)
 
@@ -300,14 +346,6 @@ class OpsFactory():
                     expect = expect.astype(actual.dtype)
                 if expect.dtype in extra_uint_np_dtypes and actual.dtype == np.int64:
                     actual = actual.astype(expect.dtype)
-
-            if isinstance(actual, (ms.Tensor, torch.Tensor, np.ndarray)):
-                actual_dtype = actual.dtype
-            else:
-                actual_dtype = type(actual)
-
-            rtol = get_default_loss(actual_dtype) if rtol is None else rtol
-            atol = get_default_loss(actual_dtype) if atol is None else atol
 
             allclose_nparray(expect, actual, rtol, atol)
 
@@ -478,13 +516,20 @@ class OpsFactory():
 
             # get grad_position (must be int or tuple) and instantiate grad_func
             tensor_indices = tuple(i for i, v in enumerate(args_no_dout) if _ms_tensor_supports_grad(v))
-            if self.ref == torch.nn.functional.batch_norm:
-                tensor_indices = (tensor_indices[0],) + tensor_indices[3:]
             if not tensor_indices:
                 grads.append(tuple())
                 warnings.warn(f"No tensor inputs to compute gradients for sample input: {sample_input.summary(True)}")
                 continue
-            grad_func = grad_func or ms.grad(self.op_func_without_kwargs, grad_position=tensor_indices)
+            # Select grad positions: if self.grad_position is provided, keep only those overlapping
+            # with grad-capable tensor indices; otherwise use all grad-capable tensor indices.
+            selected_grad_position = tensor_indices
+            if self.grad_position is not None:
+                selected_grad_position = tuple(i for i in self.grad_position if i in tensor_indices)
+                if not selected_grad_position:
+                    grads.append(tuple())
+                    warnings.warn("The input on the grad position you specified are all undifferentiable.")
+                    continue
+            grad_func = grad_func or ms.grad(self.op_func_without_kwargs, grad_position=selected_grad_position)
             grad_outi = grad_func(*args_no_dout)
             if not isinstance(grad_outi, (tuple, list)):
                 # Single grad output: keep only if the first input is tensor
@@ -505,7 +550,7 @@ class OpsFactory():
         Returns:
             list[tuple]: Per-sample tuple of gradients matching tensor inputs order.
         """
-        # TODO: use customized dout instead of ones_like when ms.grad supports dout input
+        #TODO: use customized dout instead of ones_like when ms.grad supports dout input
         #torch_douts = self._generate_random_dout(return_torch_douts=True)
 
         torch_fn = self.ref
@@ -522,18 +567,15 @@ class OpsFactory():
 
             tensor_inputs = []
             if isinstance(op_input, torch.Tensor) and _torch_dtype_supports_grad(op_input):
-                op_input.requires_grad = True
+                if self.grad_position is None or 0 in self.grad_position:
+                    op_input.requires_grad = True
                 tensor_inputs.append(('input', op_input))
             arg_tensors = []
-            for arg in op_args:
+            for i, arg in enumerate(op_args):
                 if isinstance(arg, torch.Tensor) and _torch_dtype_supports_grad(arg):
-                    arg.requires_grad = True
+                    if self.grad_position is None or i + 1 in self.grad_position:
+                        arg.requires_grad = True
                     arg_tensors.append(arg)
-            # `running_mean` and `running_variance` in  batch_norm cannot have requires_grad True.
-            if self.ref == torch.nn.functional.batch_norm:
-                arg_tensors[0].requires_grad = False
-                arg_tensors[1].requires_grad = False
-                arg_tensors = arg_tensors[2:]
             tensor_inputs.extend(('arg', t) for t in arg_tensors)
 
             outi = torch_fn(op_input, *op_args, **op_kwargs)
@@ -662,8 +704,17 @@ class OpsFactory():
             grads.append(tuple())
             warnings.warn("No tensor inputs to compute gradients for compile input")
             return grads
+        # Select grad positions: if self.grad_position is provided, keep only those overlapping
+        # with grad-capable tensor indices; otherwise use all grad-capable tensor indices.
+        selected_grad_position = tensor_indices
+        if self.grad_position is not None:
+            selected_grad_position = tuple(i for i in self.grad_position if i in tensor_indices)
+            if not selected_grad_position:
+                grads.append(tuple())
+                warnings.warn("The input on the grad position you specified are all undifferentiable.")
+                return grads
 
-        grad_net = self._op_grad_cell(self.op_func_without_kwargs, grad_position=tensor_indices)
+        grad_net = self._op_grad_cell(self.op_func_without_kwargs, grad_position=selected_grad_position)
         grad_net.set_inputs(*compile_inputs)
 
         for running_input in self._dynamic_inputs.op_running_inputs:
@@ -707,12 +758,14 @@ class OpsFactory():
 
             tensor_inputs = []
             if isinstance(op_input, torch.Tensor) and _torch_dtype_supports_grad(op_input):
-                op_input.requires_grad = True
+                if self.grad_position is None or 0 in self.grad_position:
+                    op_input.requires_grad = True
                 tensor_inputs.append(('input', op_input))
             arg_tensors = []
-            for arg in op_args:
+            for i, arg in enumerate(op_args):
                 if isinstance(arg, torch.Tensor) and _torch_dtype_supports_grad(arg):
-                    arg.requires_grad = True
+                    if self.grad_position is None or i + 1 in self.grad_position:
+                        arg.requires_grad = True
                     arg_tensors.append(arg)
             tensor_inputs.extend(('arg', t) for t in arg_tensors)
 
@@ -750,7 +803,6 @@ class OpsFactory():
             ksize: Optional kernel size hint for comparison helpers.
         """
         self._sample_inputs = sample_inputs if isinstance(sample_inputs, list) else [sample_inputs]
-        loss = 0.
 
         if grad_cmp and self.op_info.is_differentiable:
             ms_out = self.grad_mindspore_impl()
@@ -763,38 +815,20 @@ class OpsFactory():
             if isinstance(ms_outi, (tuple, list)) and isinstance(pt_outi, (tuple, list)):
                 # The output of the op maybe a tuple or list for some multi-output ops.
                 for ms_outi_tensor, pt_outi_tensor in zip(ms_outi, pt_outi):
-                    if isinstance(ms_outi_tensor, (ms.Tensor, torch.Tensor, np.ndarray)):
-                        ms_outi_tensor_dtype = ms_outi_tensor.dtype
-                    else:
-                        ms_outi_tensor_dtype = type(ms_outi_tensor)
-                    if self._default_loss_override and ms_outi_tensor_dtype in self._default_loss_override:
-                        loss = self._default_loss_override[ms_outi_tensor_dtype]
-                    else:
-                        loss = self._default_golden_loss_func(ms_outi_tensor_dtype)
                     self.assert_equal(
                         ms_outi_tensor,
                         pt_outi_tensor,
-                        rtol=loss,
-                        atol=loss,
                         compare_method=self._compare_method,
+                        grad_cmp=grad_cmp,
                         ksize=ksize,
                         op_type=OpTypes.COMPUTE_FLOAT
                     )
             else:
-                if isinstance(ms_outi, (ms.Tensor, torch.Tensor, np.ndarray)):
-                    ms_outi_dtype = ms_outi.dtype
-                else:
-                    ms_outi_dtype = type(ms_outi)
-                if self._default_loss_override and ms_outi_dtype in self._default_loss_override:
-                    loss = self._default_loss_override[ms_outi_dtype]
-                else:
-                    loss = self._default_golden_loss_func(ms_outi_dtype)
                 self.assert_equal(
                     ms_outi,
                     pt_outi,
-                    rtol=loss,
-                    atol=loss,
                     compare_method=self._compare_method,
+                    grad_cmp=grad_cmp,
                     ksize=ksize,
                     op_type=OpTypes.COMPUTE_FLOAT
                 )
@@ -826,9 +860,9 @@ class OpsFactory():
             if isinstance(ms_outi, (tuple, list)) and isinstance(pt_outi, (tuple, list)):
                 # The output of the op maybe a tuple or list for some multi-output ops.
                 for ms_outi_tensor, pt_outi_tensor in zip(ms_outi, pt_outi):
-                    self.assert_equal(ms_outi_tensor, pt_outi_tensor)
+                    self.assert_equal(ms_outi_tensor, pt_outi_tensor, grad_cmp=grad_cmp)
             else:
-                self.assert_equal(ms_outi, pt_outi)
+                self.assert_equal(ms_outi, pt_outi, grad_cmp=grad_cmp)
 
     def test_op_reference(
             self,
@@ -994,9 +1028,9 @@ class OpsFactory():
             if isinstance(ms_gradi, (tuple, list)) and isinstance(pt_gradi, (tuple, list)):
                 # The gradient of the op maybe a tuple or list for some multi-tensor input ops.
                 for ms_gradi_tensor, pt_gradi_tensor in zip(ms_gradi, pt_gradi):
-                    self.assert_equal(ms_gradi_tensor, pt_gradi_tensor, rtol, atol)
+                    self.assert_equal(ms_gradi_tensor, pt_gradi_tensor, rtol, atol, grad_cmp=True)
             else:
-                self.assert_equal(ms_gradi, pt_gradi, rtol, atol)
+                self.assert_equal(ms_gradi, pt_gradi, rtol, atol, grad_cmp=True)
 
     def forward_dynamic_shape_cmp(
             self,
@@ -1057,6 +1091,6 @@ class OpsFactory():
             if isinstance(ms_gradi, (tuple, list)) and isinstance(pt_gradi, (tuple, list)):
                 # The gradient of the op maybe a tuple or list for some multi-tensor input ops.
                 for ms_gradi_tensor, pt_gradi_tensor in zip(ms_gradi, pt_gradi):
-                    self.assert_equal(ms_gradi_tensor, pt_gradi_tensor, rtol, atol)
+                    self.assert_equal(ms_gradi_tensor, pt_gradi_tensor, rtol, atol, grad_cmp=True)
             else:
-                self.assert_equal(ms_gradi, pt_gradi, rtol, atol)
+                self.assert_equal(ms_gradi, pt_gradi, rtol, atol, grad_cmp=True)

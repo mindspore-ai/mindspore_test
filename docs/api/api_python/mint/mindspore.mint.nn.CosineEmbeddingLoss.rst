@@ -15,7 +15,7 @@ mindspore.mint.nn.CosineEmbeddingLoss
 
 
     参数：
-        - **margin** (float，可选) - 指定负样本运算中的调节因子，取值范围[-1.0, 1.0]。默认值： ``0.0`` 。
+        - **margin** (float，可选) - 指定负样本运算中的调节因子，取值范围[-1.0, 1.0]，范围外的取值不会报错，但无实际意义。默认值： ``0.0`` 。
         - **reduction** (str，可选) - 指定应用于输出结果的规约计算方式，可选 ``"none"`` 、 ``"mean"`` 、 ``"sum"`` ，默认值： ``"mean"`` 。
 
           - ``"none"`` ：不应用规约方法。
@@ -32,6 +32,5 @@ mindspore.mint.nn.CosineEmbeddingLoss
 
     异常：
         - **ValueError** - `reduction` 不为 ``"none"`` 、 ``"mean"`` 或 ``"sum"`` 。
-        - **ValueError** - `margin` 的值不在范围[-1.0, 1.0]内。
         - **ValueError** - `input1` 和 `input2` 的形状不匹配。
         - **ValueError** - `target` 的形状和 `input1` 及 `input2` 的形状不匹配。
