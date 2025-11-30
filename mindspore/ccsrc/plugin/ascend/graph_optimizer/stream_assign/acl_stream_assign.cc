@@ -300,8 +300,7 @@ void AddEventForUsersSetEvent(const AnfNodePtr &node, std::map<uint32_t, uint32_
     MS_EXCEPTION_IF_NULL(prim);
     auto stream_value = prim->GetAttr(kAttrStreamId);
     MS_EXCEPTION_IF_NULL(stream_value);
-    uint32_t stream_id;
-    stream_id = GetValue<uint32_t>(stream_value);
+    auto stream_id = GetValue<uint32_t>(stream_value);
     (*event_info_map)[new_event_id].second = stream_id;
     common::AnfAlgo::SetNodeAttrSafely(kAttrRecordEvent, MakeValue(reinterpret_cast<uintptr_t>(event)), node);
   } else {
