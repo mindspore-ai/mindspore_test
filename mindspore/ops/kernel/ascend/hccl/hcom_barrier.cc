@@ -17,7 +17,6 @@
 #include "kernel/ascend/hccl/hcom_barrier.h"
 
 #include <string>
-#include "plugin/ascend/res_manager/mem_manager/ascend_memory_manager.h"
 #include "plugin/ascend/res_manager/stream_manager/ascend_stream_manager.h"
 #include "include/runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "plugin/ascend/res_manager/hccl_adapter/hccl_adapter.h"

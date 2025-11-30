@@ -24,7 +24,6 @@
 #include "plugin/gpu/res_manager/gpu_device_manager.h"
 #include "plugin/gpu/res_manager/event_manager/gpu_event.h"
 #include "plugin/gpu/res_manager/mem_manager/gpu_pin_mem_pool.h"
-#include "plugin/gpu/res_manager/mem_manager/gpu_memory_manager.h"
 #include "plugin/gpu/res_manager/device_context_conf/op_precision_conf.h"
 #include "plugin/gpu/res_manager/device_context_conf/op_tuning_conf.h"
 #include "include/cluster/topology/collective_manager.h"
@@ -74,10 +73,13 @@ void GPUResManager::Initialize() {
     MS_LOG(EXCEPTION) << "GPU InitDevice failed.";
   }
 
-  // Initialize memory pool.
-  mem_manager_ = std::make_shared<GPUMemoryManager>();
-  MS_EXCEPTION_IF_NULL(mem_manager_);
-  mem_manager_->Initialize();
+  auto context_ptr = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(context_ptr);
+  auto device_addr = GPUMemoryAllocator::GetInstance().AllocTensorMem(1, false, false, kDefaultStreamIndex);
+  if (!device_addr) {
+    MS_LOG(EXCEPTION) << "Dynamic memory pool init error.";
+  }
+  GPUMemoryAllocator::GetInstance().FreeTensorMem(device_addr);
 
   swap_manager_ = std::make_shared<SwapManager>(GPUDeviceManager::GetInstance().default_stream_id(),
                                                 &GPUMemoryAllocator::GetInstance(), &GPUPinMemPool::GetInstance());
@@ -144,28 +146,29 @@ void GPUResManager::Destroy() {
   GPUDeviceManager::GetInstance().ReleaseDevice();
 
   // Release device memory
-  if (mem_manager_ != nullptr) {
-    mem_manager_->Finalize();
-    mem_manager_ = nullptr;
-  }
+  GPUMemoryAllocator::GetInstance().ReleaseDeviceRes();
 }
+
+void *GPUResManager::AllocateMemory(size_t size, bool from_persistent_mem, bool need_recycle, uint32_t stream_id) {
+  if (!BindDeviceToCurrentThread(false)) {
+    return nullptr;
+  }
+  return GPUMemoryAllocator::GetInstance().AllocTensorMem(size, from_persistent_mem, need_recycle, stream_id);
+}
+
 void *GPUResManager::AllocateMemory(size_t size, uint32_t stream_id) const {
-  MS_EXCEPTION_IF_NULL(mem_manager_);
   if (!BindDeviceToCurrentThread(false)) {
     return nullptr;
   }
   if (swap_manager_ != nullptr) {
     return swap_manager_->AllocDeviceMemory(size, stream_id);
   }
-  return mem_manager_->MallocMemFromMemPool(size, false, false, stream_id);
+  return GPUMemoryAllocator::GetInstance().AllocTensorMem(size, false, false, stream_id);
 }
 
-size_t GPUResManager::GetAvailableMemSize() const { return mem_manager_->GetAvailableMemSize(); }
-
 void GPUResManager::FreeMemory(void *ptr) const {
-  MS_EXCEPTION_IF_NULL(mem_manager_);
   MS_EXCEPTION_IF_NULL(ptr);
-  mem_manager_->FreeMemFromMemPool(ptr);
+  GPUMemoryAllocator::GetInstance().FreeTensorMem(ptr);
 }
 
 void GPUResManager::FreePartMemorys(const std::vector<void *> &free_addrs, const std::vector<void *> &keep_addrs,
@@ -203,8 +206,8 @@ bool GPUResManager::AllocateMemory(DeviceAddress *const &address, uint32_t strea
     if (swap_manager_ != nullptr) {
       device_ptr = swap_manager_->AllocDeviceMemory(address->GetSize(), stream_id);
     } else {
-      device_ptr =
-        mem_manager_->MallocMemFromMemPool(address->GetSize(), address->from_persistent_mem(), false, stream_id);
+      device_ptr = GPUMemoryAllocator::GetInstance().AllocTensorMem(address->GetSize(), address->from_persistent_mem(),
+                                                                    false, stream_id);
     }
   }
 
@@ -234,12 +237,11 @@ std::vector<void *> GPUResManager::AllocateContinuousMemory(const std::vector<si
   if (swap_manager_ != nullptr) {
     return swap_manager_->AllocDeviceContinuousMem(align_size_list, stream_id);
   }
-  return mem_manager_->MallocContinuousMemFromMemPool(align_size_list, stream_id);
+  return GPUMemoryAllocator::GetInstance().AllocContinuousTensorMem(align_size_list, stream_id);
 }
 
 std::pair<std::vector<size_t>, std::vector<size_t>> GPUResManager::AllocDeviceMemoryForTensorList(
   const std::vector<tensor::TensorPtr> &tensor_list, bool enable_mem_align) {
-  MS_EXCEPTION_IF_NULL(mem_manager_);
   std::vector<size_t> before_padding_sizes = GetUniqueTensorListSize(tensor_list);
   std::vector<size_t> after_padding_sizes;
   for (auto &size : before_padding_sizes) {
@@ -337,54 +339,46 @@ tensor::TensorPtr GPUResManager::GetSliceByPaddingShapeHandle(const tensor::Tens
 }
 
 // Relevant function to manage memory statistics
-size_t GPUResManager::GetTotalMemStatistics() const {
-  MS_EXCEPTION_IF_NULL(mem_manager_);
-  return mem_manager_->GetTotalMemStatistics();
-}
+size_t GPUResManager::GetTotalMemStatistics() const { return GPUMemoryAllocator::GetInstance().TotalMemStatistics(); }
+
 size_t GPUResManager::GetTotalUsedMemStatistics() const {
-  MS_EXCEPTION_IF_NULL(mem_manager_);
-  return mem_manager_->GetTotalUsedMemStatistics();
+  return GPUMemoryAllocator::GetInstance().TotalUsedMemStatistics();
 }
+
 size_t GPUResManager::GetTotalIdleMemStatistics() const {
-  MS_EXCEPTION_IF_NULL(mem_manager_);
-  return mem_manager_->GetTotalIdleMemStatistics();
+  return GPUMemoryAllocator::GetInstance().TotalIdleMemStatistics();
 }
 size_t GPUResManager::GetTotalEagerFreeMemStatistics() const {
-  MS_EXCEPTION_IF_NULL(mem_manager_);
-  return mem_manager_->GetTotalEagerFreeMemStatistics();
+  return GPUMemoryAllocator::GetInstance().TotalEagerFreeMemStatistics();
 }
+
 size_t GPUResManager::GetUsedMemPeakStatistics() const {
-  MS_EXCEPTION_IF_NULL(mem_manager_);
-  return mem_manager_->GetUsedMemPeakStatistics();
+  return GPUMemoryAllocator::GetInstance().MaxMemAllocatedStatistics();
 }
+
 size_t GPUResManager::GetReservedMemPeakStatistics() const {
-  MS_EXCEPTION_IF_NULL(mem_manager_);
-  return mem_manager_->GetReservedMemPeakStatistics();
+  return GPUMemoryAllocator::GetInstance().MaxMemReservedStatistics();
 }
+
 std::unordered_map<std::string, std::size_t> GPUResManager::GetBlockCountsStatistics() const {
-  MS_EXCEPTION_IF_NULL(mem_manager_);
-  return mem_manager_->GetBlockCountsStatistics();
+  return GPUMemoryAllocator::GetInstance().BlockCountsStatistics();
 }
+
 std::unordered_map<std::string, std::size_t> GPUResManager::GetBlockUnitSizeStatistics() const {
-  MS_EXCEPTION_IF_NULL(mem_manager_);
-  return mem_manager_->GetBlockUnitSizeStatistics();
+  return GPUMemoryAllocator::GetInstance().BlockUnitSizeStatistics();
 }
+
 DeviceMemInfo GPUResManager::GetCommonMemBlocksInfoStatistics() const {
-  MS_EXCEPTION_IF_NULL(mem_manager_);
-  return mem_manager_->GetCommonMemBlocksInfoStatistics();
+  return GPUMemoryAllocator::GetInstance().CommonMemBlocksInfoStatistics();
 }
+
 DeviceMemInfo GPUResManager::GetPersistentMemBlocksInfoStatistics() const {
-  MS_EXCEPTION_IF_NULL(mem_manager_);
-  return mem_manager_->GetPersistentMemBlocksInfoStatistics();
+  return GPUMemoryAllocator::GetInstance().PersistentMemBlocksInfoStatistics();
 }
-void GPUResManager::ResetMaxMemoryReserved() {
-  MS_EXCEPTION_IF_NULL(mem_manager_);
-  mem_manager_->ResetMaxMemoryReserved();
-}
-void GPUResManager::ResetMaxMemoryAllocated() {
-  MS_EXCEPTION_IF_NULL(mem_manager_);
-  mem_manager_->ResetMaxMemoryAllocated();
-}
+
+void GPUResManager::ResetMaxMemoryReserved() { GPUMemoryAllocator::GetInstance().ResetMaxMemReserved(); }
+
+void GPUResManager::ResetMaxMemoryAllocated() { GPUMemoryAllocator::GetInstance().ResetMaxMemAllocated(); }
 
 DeviceAddressPtr GPUResManager::CreateDeviceAddress() const {
   auto context = MsContext::GetInstance();
@@ -737,6 +731,13 @@ std::shared_ptr<void> GPUResManager::AllocateHostMemory(size_t size) const {
       CudaDriver::FreeHostPinnedMem(ptr);
     }
   });
+}
+
+DynamicMemPool *GPUResManager::GetMemoryPool() {
+  if (MS_UNLIKELY(memory_pool_ == nullptr)) {
+    memory_pool_ = &GPUMemoryAllocator::GetInstance();
+  }
+  return memory_pool_;
 }
 
 MS_REGISTER_HAL_COPY_FUNC(

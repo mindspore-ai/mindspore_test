@@ -20,7 +20,7 @@
 #include <string>
 #include "external/ge/ge_allocator.h"
 #include "device_address/device_address.h"
-#include "include/runtime/hardware_abstract/memory_manager/memory_manager.h"
+#include "include/runtime/hardware_abstract/device_context/device_context.h"
 
 namespace mindspore {
 namespace backend {
@@ -50,7 +50,7 @@ class GeDeviceResManager {
 
  private:
   bool initialized_ = false;
-  std::shared_ptr<device::MemoryManager> mem_manager_{nullptr};
+  device::DeviceResManager *res_manager_{nullptr};
 };
 using GeDeviceResManagerPtr = std::shared_ptr<GeDeviceResManager>;
 

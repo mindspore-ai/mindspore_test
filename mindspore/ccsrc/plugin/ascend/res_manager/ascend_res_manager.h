@@ -63,13 +63,13 @@ class ASCEND_RES_MANAGER_EXPORT AscendResManager : public DeviceResManager {
 
   void Destroy() override;
 
+  void ResetDynamicMemory() override;
   void SetDeterministic() const;
   void SetDebugKernel() const;
 
   void SetAclDeterministic() override;
 
   CollectiveCommunicationLib *collective_comm_lib() const override { return collective_comm_lib_; }
-  std::shared_ptr<MemoryManager> mem_manager() const override { return mem_manager_; }
   std::shared_ptr<SwapManager> swap_manager() const override { return swap_manager_; }
 
   std::vector<void *> AllocateContinuousMemory(const std::vector<size_t> &size_list,
@@ -97,7 +97,7 @@ class ASCEND_RES_MANAGER_EXPORT AscendResManager : public DeviceResManager {
 
   // Relevant function to allocate and free device memory of raw ptr.
   bool AllocateMemory(DeviceAddress *const &address, uint32_t stream_id = UINT32_MAX) const override;
-  void *AllocateStaticMemory(size_t size, uint32_t stream_id = kDefaultStreamIndex) const;
+  void *AllocateMemory(size_t size, bool from_persistent_mem, bool need_recycle, uint32_t stream_id) override;
   void *AllocateMemory(size_t size, uint32_t stream_id = kDefaultStreamIndex) const override;
   void FreeMemory(DeviceAddress *const &address) const override;
   bool IsAbleFreeMemory(DeviceAddress *const &address) const override;
@@ -201,6 +201,11 @@ class ASCEND_RES_MANAGER_EXPORT AscendResManager : public DeviceResManager {
 
   std::shared_ptr<AddressAllocator> shared_mem_allocator() const override { return shared_mem_allocator_; }
 
+  DynamicMemPool *GetMemoryPool() override;
+
+ protected:
+  uint8_t *MallocDynamicMem(size_t size, bool communication_mem) override;
+
  private:
   bool SyncDeviceToHost(const DeviceAddressPtr &dst_device_sync, const DeviceAddressPtr &src_device_sync,
                         size_t stream_id, const DeviceAddressExtPtr &src_ext, const DeviceAddressExtPtr &dst_ext) const;
@@ -252,7 +257,6 @@ class ASCEND_RES_MANAGER_EXPORT AscendResManager : public DeviceResManager {
   std::shared_ptr<SwapManager> swap_manager_{nullptr};
   std::shared_ptr<PinMemoryAllocator> pin_mem_allocator_{nullptr};
   std::shared_ptr<SharedMemoryAllocator> shared_mem_allocator_{nullptr};
-  std::shared_ptr<MemoryManager> mem_manager_{nullptr};
   DeviceEventPtrList device_events_{};
   std::mutex device_events_mutex_;
   uint32_t device_id_{0};

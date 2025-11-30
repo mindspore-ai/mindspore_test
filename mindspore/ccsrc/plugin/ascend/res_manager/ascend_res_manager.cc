@@ -34,13 +34,14 @@
 #include "hccl/hccl.h"
 #include "include/runtime/hardware_abstract/collective/collective_comm_lib_loader.h"
 #include "include/runtime/utils/runtime_conf/runtime_conf.h"
-#include "plugin/ascend/res_manager/mem_manager/ascend_memory_manager.h"
+#include "plugin/ascend/res_manager/mem_manager/ascend_memory_adapter.h"
 #include "plugin/ascend/res_manager/mem_manager/ascend_vmm_adapter.h"
 #include "plugin/ascend/res_manager/mbuf_manager/tensorreport_utils.h"
 #include "plugin/ascend/res_manager/device_context_conf/op_debug_conf.h"
 #include "plugin/ascend/res_manager/event/ascend_event.h"
 #include "plugin/ascend/res_manager/hccl_adapter/hccl_adapter.h"
 #include "plugin/ascend/res_manager/capture_graph/ascend_capture_graph.h"
+#include "plugin/ascend/res_manager/mem_manager/ascend_memory_pool.h"
 #include "plugin/ascend/res_manager/mem_manager/ascend_pin_mem_pool.h"
 #include "plugin/ascend/res_manager/symbol_interface/acl_compiler_symbol.h"
 #include "plugin/ascend/res_manager/symbol_interface/acl_rt_symbol.h"
@@ -74,6 +75,7 @@ namespace device {
 namespace ascend {
 namespace {
 constexpr uint32_t kDefaultHcclExecTimeout = 1800;
+constexpr size_t kAlignBytes = 32;
 
 // Register callbacks for collective methods.
 // These code should be deleted after collective so is extracted.
@@ -295,6 +297,14 @@ void SetPassthroughGeOptions(std::string option_level, OptionMap *options) {
     MS_LOG(INFO) << "Set ge " << option_level << " option: {" << key << ", " << value << "}";
   }
 }
+
+size_t GetCommonAlignSize(size_t input_size) {
+  return ((input_size + kMemAlignSize + kAlignBytes - 1) / kMemAlignSize) * kMemAlignSize;
+}
+
+size_t GetCommunicationAlignSize(size_t input_size) {
+  return ((input_size + kMemAlignSize - 1) / kMemAlignSize) * kMemAlignSize + kTwiceMemAlignSize;
+}
 }  // namespace
 
 std::function<CollectiveCommunicationLib *(void)> gLoadCollectiveCommLibCallback;
@@ -337,13 +347,7 @@ void AscendResManager::Initialize() {
   AscendHalManager::GetInstance().InitDevice(device_id_);
   AscendStreamMng::GetInstance().CreateDefaultStream();
 
-  if (!(IS_VLOG_ON(VL_RUNTIME_FRAMEWORK_MEMORY_ALLOCATE_CHECK))) {
-    mem_manager_ = std::make_shared<AscendMemoryManager>();
-  } else {
-    mem_manager_ = std::make_shared<EnhancedAscendMemoryManager>();
-  }
-  MS_EXCEPTION_IF_NULL(mem_manager_);
-  mem_manager_->Initialize();
+  (void)AscendMemAdapter::GetInstance()->Initialize();
   swap_manager_ = std::make_shared<SwapManager>(kDefaultStreamIndex, &AscendMemoryPool::GetInstance(),
                                                 &AscendPinMemPool::GetInstance());
   // set timeout
@@ -425,11 +429,8 @@ void AscendResManager::Destroy() {
     MS_LOG(EXCEPTION) << "Fail to destroy all streams when reset device.";
   }
   // Release memory.
-  if (mem_manager_ != nullptr) {
-    mem_manager_->Finalize();
-    mem_manager_ = nullptr;
-  }
-
+  AscendMemoryPool::GetInstance().ReleaseDeviceRes();
+  (void)AscendMemAdapter::GetInstance()->DeInitialize();
   (void)ErrorManagerAdapter::Finalize();
 
   // All unmap/free operations will fail after calling aclrtResetDevice in ResetDevice,
@@ -439,12 +440,12 @@ void AscendResManager::Destroy() {
 
   initialized_ = false;
 }
+void AscendResManager::ResetDynamicMemory() { AscendMemAdapter::GetInstance()->ResetDynamicMemory(); }
 
 bool AscendResManager::IsEnableVmm() const { return AscendVmmAdapter::IsEnabled(); }
 
 bool AscendResManager::AllocateMemory(DeviceAddress *const &address, uint32_t stream_id) const {
   MS_EXCEPTION_IF_NULL(address);
-  MS_EXCEPTION_IF_NULL(mem_manager_);
 
   if (address->device_pointer()->ptr() != nullptr) {
     MS_LOG(ERROR) << "Memory leak detected in device address:" << address->ToString();
@@ -460,8 +461,9 @@ bool AscendResManager::AllocateMemory(DeviceAddress *const &address, uint32_t st
   if (MS_UNLIKELY(allocator != nullptr)) {
     device_ptr = allocator->Alloc(address->GetSize(), stream_id);
   } else {
-    device_ptr = mem_manager_->MallocMemFromMemPool(address->GetSize(), address->from_persistent_mem(),
-                                                    address->need_recycle(), stream_id);
+    auto align_size = GetCommonAlignSize(address->GetSize());
+    device_ptr = AscendMemoryPool::GetInstance().AllocTensorMem(align_size, address->from_persistent_mem(),
+                                                                address->need_recycle(), stream_id);
   }
 
   if (!device_ptr) {
@@ -477,21 +479,17 @@ bool AscendResManager::AllocateMemory(DeviceAddress *const &address, uint32_t st
 }
 void *AscendResManager::AllocateMemory(size_t size, uint32_t stream_id) const {
   AscendHalManager::GetInstance().SetContext(device_id_);
-
-  MS_EXCEPTION_IF_NULL(mem_manager_);
-  return mem_manager_->MallocMemFromMemPool(size, false, false, stream_id);
+  auto align_size = GetCommonAlignSize(size);
+  return AscendMemoryPool::GetInstance().AllocTensorMem(align_size, false, false, stream_id);
 }
 
-void *AscendResManager::AllocateStaticMemory(size_t size, uint32_t stream_id) const {
+void *AscendResManager::AllocateMemory(size_t size, bool from_persistent_mem, bool need_recycle, uint32_t stream_id) {
   AscendHalManager::GetInstance().SetContext(device_id_);
-
-  return mem_manager_->MallocMemFromMemPool(size, true, false, stream_id);
+  auto align_size = GetCommonAlignSize(size);
+  return AscendMemoryPool::GetInstance().AllocTensorMem(align_size, from_persistent_mem, need_recycle, stream_id);
 }
 
-size_t AscendResManager::GetMaxUsedMemorySize() const {
-  MS_EXCEPTION_IF_NULL(mem_manager_);
-  return mem_manager_->GetMaxUsedMemorySize();
-}
+size_t AscendResManager::GetMaxUsedMemorySize() const { return AscendMemoryPool::GetInstance().GetMaxUsedMemSize(); }
 
 void AscendResManager::FreeMemory(DeviceAddress *const &address) const {
   MS_EXCEPTION_IF_NULL(address);
@@ -520,17 +518,15 @@ bool AscendResManager::IsAbleFreeMemory(DeviceAddress *const &address) const {
   MS_EXCEPTION_IF_NULL(address);
   void *device_ptr = address->GetMutablePtr();
   auto allocator = address->allocator();
-  MS_EXCEPTION_IF_NULL(mem_manager_);
   if (MS_UNLIKELY(allocator != nullptr)) {
     return true;
   }
-  return mem_manager_->IsAbleFreeMemFromMemPool(device_ptr);
+  return AscendMemoryPool::GetInstance().IsAbleFreeTensorMem(device_ptr);
 }
 
 void AscendResManager::FreeMemory(void *ptr) const {
   MS_EXCEPTION_IF_NULL(ptr);
-  MS_EXCEPTION_IF_NULL(mem_manager_);
-  mem_manager_->FreeMemFromMemPool(ptr);
+  AscendMemoryPool::GetInstance().FreeTensorMem(ptr);
 }
 
 void AscendResManager::FreePartMemorys(const std::vector<void *> &free_addrs, const std::vector<void *> &keep_addrs,
@@ -541,96 +537,110 @@ void AscendResManager::FreePartMemorys(const std::vector<void *> &free_addrs, co
 void AscendResManager::DefragMemory() { AscendMemoryPool::GetInstance().DefragMemory(); }
 
 // Relevant function to manage memory statistics
-size_t AscendResManager::GetTotalMemStatistics() const {
-  MS_EXCEPTION_IF_NULL(mem_manager_);
-  return mem_manager_->GetTotalMemStatistics();
-}
+size_t AscendResManager::GetTotalMemStatistics() const { return AscendMemoryPool::GetInstance().TotalMemStatistics(); }
 
 size_t AscendResManager::GetTotalUsedMemStatistics() const {
-  MS_EXCEPTION_IF_NULL(mem_manager_);
-  return mem_manager_->GetTotalUsedMemStatistics();
+  return AscendMemoryPool::GetInstance().TotalUsedMemStatistics();
 }
 
 size_t AscendResManager::GetTotalIdleMemStatistics() const {
-  MS_EXCEPTION_IF_NULL(mem_manager_);
-  return mem_manager_->GetTotalIdleMemStatistics();
+  return AscendMemoryPool::GetInstance().TotalIdleMemStatistics();
 }
 
 size_t AscendResManager::GetTotalEagerFreeMemStatistics() const {
-  MS_EXCEPTION_IF_NULL(mem_manager_);
-  return mem_manager_->GetTotalEagerFreeMemStatistics();
+  return AscendMemoryPool::GetInstance().TotalEagerFreeMemStatistics();
 }
 
 size_t AscendResManager::GetUsedMemPeakStatistics() const {
-  MS_EXCEPTION_IF_NULL(mem_manager_);
-  return mem_manager_->GetUsedMemPeakStatistics();
+  return AscendMemoryPool::GetInstance().MaxMemAllocatedStatistics();
 }
 
 size_t AscendResManager::GetReservedMemPeakStatistics() const {
-  MS_EXCEPTION_IF_NULL(mem_manager_);
-  return mem_manager_->GetReservedMemPeakStatistics();
+  return AscendMemoryPool::GetInstance().MaxMemReservedStatistics();
 }
 
 std::unordered_map<std::string, std::size_t> AscendResManager::GetBlockCountsStatistics() const {
-  MS_EXCEPTION_IF_NULL(mem_manager_);
-  return mem_manager_->GetBlockCountsStatistics();
+  return AscendMemoryPool::GetInstance().BlockCountsStatistics();
 }
 
 std::unordered_map<std::string, std::size_t> AscendResManager::GetBlockUnitSizeStatistics() const {
-  MS_EXCEPTION_IF_NULL(mem_manager_);
-  return mem_manager_->GetBlockUnitSizeStatistics();
+  return AscendMemoryPool::GetInstance().BlockUnitSizeStatistics();
 }
 
 DeviceMemInfo AscendResManager::GetCommonMemBlocksInfoStatistics() const {
-  MS_EXCEPTION_IF_NULL(mem_manager_);
-  return mem_manager_->GetCommonMemBlocksInfoStatistics();
+  return AscendMemoryPool::GetInstance().CommonMemBlocksInfoStatistics();
 }
 
 DeviceMemInfo AscendResManager::GetPersistentMemBlocksInfoStatistics() const {
-  MS_EXCEPTION_IF_NULL(mem_manager_);
-  return mem_manager_->GetPersistentMemBlocksInfoStatistics();
+  return AscendMemoryPool::GetInstance().PersistentMemBlocksInfoStatistics();
 }
 
 void AscendResManager::ResetMaxMemoryReserved() {
-  MS_EXCEPTION_IF_NULL(mem_manager_);
-  auto memory_pool = mem_manager_->GetMemoryPool();
+  auto memory_pool = GetMemoryPool();
   MS_EXCEPTION_IF_NULL(memory_pool);
   memory_pool->ResetMaxMemReserved();
 }
 
 void AscendResManager::ResetMaxMemoryAllocated() {
-  MS_EXCEPTION_IF_NULL(mem_manager_);
-  auto memory_pool = mem_manager_->GetMemoryPool();
+  auto memory_pool = GetMemoryPool();
   MS_EXCEPTION_IF_NULL(memory_pool);
   memory_pool->ResetMaxMemAllocated();
 }
 
 size_t AscendResManager::EmptyCache() {
-  MS_EXCEPTION_IF_NULL(mem_manager_);
-  auto memory_pool = mem_manager_->GetMemoryPool();
+  auto memory_pool = GetMemoryPool();
   MS_EXCEPTION_IF_NULL(memory_pool);
   return memory_pool->EmptyCache();
 }
 
 void AscendResManager::SwapIn(const void *host_ptr, void *device_ptr, size_t mem_size, void *stream) {
-  (void)mem_manager_->SwapIn(host_ptr, device_ptr, mem_size, stream);
+  if (stream == nullptr) {
+    auto ret_rt_memcpy =
+      CALL_ASCEND_API(aclrtMemcpy, device_ptr, mem_size, host_ptr, mem_size, ACL_MEMCPY_HOST_TO_DEVICE);
+    if (ret_rt_memcpy != ACL_SUCCESS) {
+      MS_EXCEPTION(DeviceProcessError) << "SwapIn aclrtMemcpy failed.";
+    }
+  } else {
+    auto ret_rt_memcpy =
+      CALL_ASCEND_API(aclrtMemcpyAsync, device_ptr, mem_size, host_ptr, mem_size, ACL_MEMCPY_HOST_TO_DEVICE, stream);
+    if (ret_rt_memcpy != ACL_SUCCESS) {
+      MS_EXCEPTION(DeviceProcessError) << "SwapIn aclrtMemcpyAsync failed.";
+    }
+    if (CALL_ASCEND_API(aclrtSynchronizeStreamWithTimeout, stream, -1) != ACL_SUCCESS) {
+      MS_EXCEPTION(DeviceProcessError) << "Call runtime aclrtSynchronizeStreamWithTimeout error.";
+    }
+  }
 }
 
 void AscendResManager::SwapOut(const void *device_ptr, void *host_ptr, size_t mem_size, void *stream) {
-  (void)mem_manager_->SwapOut(device_ptr, host_ptr, mem_size, stream);
+  if (stream == nullptr) {
+    auto ret_rt_memcpy =
+      CALL_ASCEND_API(aclrtMemcpy, host_ptr, mem_size, device_ptr, mem_size, ACL_MEMCPY_DEVICE_TO_HOST);
+    if (ret_rt_memcpy != ACL_SUCCESS) {
+      MS_EXCEPTION(DeviceProcessError) << "SwapOut aclrtMemcpy failed.";
+    }
+  } else {
+    auto ret_rt_memcpy =
+      CALL_ASCEND_API(aclrtMemcpyAsync, host_ptr, mem_size, device_ptr, mem_size, ACL_MEMCPY_DEVICE_TO_HOST, stream);
+    if (ret_rt_memcpy != ACL_SUCCESS) {
+      MS_EXCEPTION(DeviceProcessError) << "SwapOut aclrtMemcpyAsync failed.";
+    }
+    if (CALL_ASCEND_API(aclrtSynchronizeStreamWithTimeout, stream, -1) != ACL_SUCCESS) {
+      MS_EXCEPTION(DeviceProcessError) << "Call runtime aclrtSynchronizeStreamWithTimeout error.";
+    }
+  }
 }
 
 std::vector<void *> AscendResManager::AllocateContinuousMemory(const std::vector<size_t> &size_list,
                                                                uint32_t stream_id) const {
   AscendHalManager::GetInstance().SetContext(device_id_);
 
-  MS_EXCEPTION_IF_NULL(mem_manager_);
   std::vector<size_t> aligned_size_list;
   for (auto size : size_list) {
-    auto align_size = device::MemoryManager::GetCommonAlignSize(size);
+    auto align_size = GetCommonAlignSize(size);
     aligned_size_list.emplace_back(align_size);
   }
-  return mem_manager_->MallocContinuousMemFromMemPool(aligned_size_list, stream_id);
+  return AscendMemoryPool::GetInstance().AllocContinuousTensorMem(aligned_size_list, stream_id);
 }
 
 DeviceAddressPtr AscendResManager::CreateDeviceAddress() const {
@@ -700,6 +710,28 @@ bool SyncStreamForCopy(const AscendResManager *const res_manager, size_t stream_
   return true;
 }
 }  // namespace
+
+DynamicMemPool *AscendResManager::GetMemoryPool() {
+  if (MS_UNLIKELY(memory_pool_ == nullptr)) {
+    memory_pool_ = &AscendMemoryPool::GetInstance();
+  }
+  return memory_pool_;
+}
+
+uint8_t *AscendResManager::MallocDynamicMem(size_t size, bool communication_mem) {
+  size_t align_size = 0;
+  if (communication_mem) {
+    align_size = GetCommunicationAlignSize(size);
+  } else {
+    align_size = GetCommonAlignSize(size);
+  }
+  MS_LOG(INFO) << "Malloc Memory for Dynamic: size[" << align_size << "] communication_mem: " << communication_mem;
+
+  uint8_t *alloc_address = AscendMemAdapter::GetInstance()->MallocDynamicDevMem(align_size);
+  MS_EXCEPTION_IF_NULL(alloc_address);
+  // create protect area [kMemAlignSize -- data -- kMemAlignSize] for communication node memory
+  return communication_mem ? alloc_address + kMemAlignSize : alloc_address;
+}
 
 bool AscendResManager::SyncDeviceToHost(const DeviceAddressPtr &dst_device_sync,
                                         const DeviceAddressPtr &src_device_sync, size_t stream_id,
@@ -1515,13 +1547,12 @@ size_t AscendResManager::DefaultStream() const {
 std::pair<std::vector<size_t>, std::vector<size_t>> AscendResManager::AllocDeviceMemoryForTensorList(
   const std::vector<tensor::TensorPtr> &tensor_list, bool enable_mem_align) {
   MS_LOG(INFO) << "Start AllocDeviceMemoryForTensorList";
-  MS_EXCEPTION_IF_NULL(mem_manager_);
   std::vector<size_t> before_padding_sizes = GetUniqueTensorListSize(tensor_list);
   if (enable_mem_align == false) {
     size_t total_size = std::accumulate(before_padding_sizes.begin(), before_padding_sizes.end(), IntToSize(0));
     auto stream_id = DefaultStream();
-    auto total_align_size = device::MemoryManager::GetCommonAlignSize(total_size);
-    auto device_ptr = mem_manager_->MallocMemFromMemPool(total_align_size, false, false, stream_id);
+    auto total_align_size = GetCommonAlignSize(total_size);
+    auto device_ptr = AscendMemoryPool::GetInstance().AllocTensorMem(total_align_size, false, false, stream_id);
     device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddCompileTimeMemInfo, "PyNative", total_align_size, device_ptr,
                                                    memory::mem_pool::MemType::kContinuousMemory);
     if (!device_ptr) {
@@ -1563,7 +1594,7 @@ std::pair<std::vector<size_t>, std::vector<size_t>> AscendResManager::AllocDevic
 
   std::vector<size_t> after_padding_sizes;
   for (auto &size : before_padding_sizes) {
-    auto align_size = device::MemoryManager::GetCommonAlignSize(size);
+    auto align_size = GetCommonAlignSize(size);
     after_padding_sizes.emplace_back(align_size);
   }
   auto stream_id = DefaultStream();
@@ -1938,18 +1969,36 @@ void *AscendResManager::GetCopyDataStream() const {
 bool AscendResManager::RecordEvent(int64_t task_id_on_stream, uint32_t user_stream_id,
                                    const std::vector<std::pair<uint32_t, DeviceMemPtr>> &memory_stream_addresses,
                                    const DeviceEventPtr &input_event) {
-  return mem_manager_->RecordEvent(task_id_on_stream, user_stream_id, memory_stream_addresses, input_event);
+  if (GetMemoryPool() == nullptr) {
+    MS_LOG(WARNING) << "memory pool is nullptr.";
+    return false;
+  }
+  return GetMemoryPool()->RecordEvent(task_id_on_stream, user_stream_id, memory_stream_addresses, input_event);
 }
 
 bool AscendResManager::WaitEvent(int64_t task_id_on_stream, uint32_t user_stream_id, uint32_t memory_stream_id) {
-  return mem_manager_->WaitEvent(task_id_on_stream, user_stream_id, memory_stream_id);
+  if (GetMemoryPool() == nullptr) {
+    MS_LOG(WARNING) << "memory pool is nullptr.";
+    return false;
+  }
+  return GetMemoryPool()->WaitEvent(task_id_on_stream, user_stream_id, memory_stream_id);
 }
 
 bool AscendResManager::WaitEvent(int64_t task_id_on_stream, uint32_t user_stream_id) {
-  return mem_manager_->WaitEvent(task_id_on_stream, user_stream_id);
+  if (GetMemoryPool() == nullptr) {
+    MS_LOG(WARNING) << "memory pool is nullptr.";
+    return false;
+  }
+  return GetMemoryPool()->WaitEvent(task_id_on_stream, user_stream_id);
 }
 
-bool AscendResManager::SyncAllEvents() { return mem_manager_->SyncAllEvents(); }
+bool AscendResManager::SyncAllEvents() {
+  if (GetMemoryPool() == nullptr) {
+    MS_LOG(WARNING) << "memory pool is nullptr.";
+    return false;
+  }
+  return GetMemoryPool()->SyncAllEvents();
+}
 
 bool AscendResManager::LaunchCallback(std::function<void(void)> callback_func, size_t stream_id, bool is_block) const {
   auto stream = AscendStreamMng::GetInstance().GetStream(stream_id);

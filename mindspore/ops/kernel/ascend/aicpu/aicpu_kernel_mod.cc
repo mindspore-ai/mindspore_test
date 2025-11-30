@@ -32,7 +32,6 @@
 #include "plugin/ascend/res_manager/data_queue/ascend_data_queue.h"
 #include "utils/ms_context.h"
 #include "plugin/ascend/res_manager/stream_manager/ascend_stream_manager.h"
-#include "plugin/ascend/res_manager/mem_manager/ascend_memory_manager.h"
 #include "include/backend/data_queue/data_queue_mgr.h"
 #include "external/graph/types.h"
 #include "plugin/ascend/res_manager/symbol_interface/acl_rt_symbol.h"

@@ -32,7 +32,6 @@
 #include "plugin/ascend/res_manager/hccl_adapter/hccl_adapter.h"
 #include "plugin/ascend/res_manager/collective/multi_ascend_collective_comm_lib.h"
 #include "plugin/ascend/res_manager/collective/ascend_collective_comm_lib.h"
-#include "plugin/ascend/res_manager/mem_manager/ascend_memory_manager.h"
 #include "plugin/ascend/res_manager/hal_manager/ascend_hal_manager.h"
 #include "include/utils/callback.h"
 

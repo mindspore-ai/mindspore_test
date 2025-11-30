@@ -34,7 +34,6 @@
 #include "plugin/gpu/res_manager/device_context_conf/op_tuning_conf.h"
 #include "plugin/gpu/res_manager/device_context_conf/op_precision_conf.h"
 #include "plugin/gpu/res_manager/mem_manager/gpu_pin_mem_pool.h"
-#include "plugin/gpu/res_manager/mem_manager/gpu_memory_manager.h"
 #include "plugin/gpu/res_manager/mem_manager/gpu_memory_allocator.h"
 #include "plugin/gpu/graph_optimizer/pass/base/optimizer.h"
 #include "plugin/gpu/graph_optimizer/pass/base/kernel_info_setter.h"
