@@ -47,6 +47,7 @@
 #include "include/utils/callback.h"
 #include "kernel/cpu/custom/kernel_mod_impl/op_plugin_utils.h"
 #include "ops/op_def.h"
+#include "ops_utils/op_utils.h"
 
 namespace mindspore {
 namespace device {
@@ -518,6 +519,8 @@ void UpdateCustomKernelBuildInfo(const CNodePtr &kernel_node, bool is_akg_op) {
                    << "Infer operator information from inputs. For more details, "
                    << "please refer to 'mindspore.ops.Custom' at https://www.mindspore.cn.";
     }
+  } else if (ops::IsEnableHostNode(kernel_node)) {
+    builder->SetKernelType(KernelType::HOST_KERNEL);
   } else {
     builder->SetKernelType(KernelType::CPU_KERNEL);
   }
@@ -711,6 +714,11 @@ bool IsVmapNotSupported(const CNodePtr &node) {
 std::pair<std::string, ExceptionType> SetKernelInfoWithMsg(const CNodePtr &kernel_node) {
   MS_EXCEPTION_IF_NULL(kernel_node);
   const std::string &op_name = common::AnfAlgo::GetCNodeName(kernel_node);
+  static auto op_plugin_path = common::EnvHelper::GetInstance()->GetEnv("MS_OP_PLUGIN_PATH");
+  if (op_plugin_path != nullptr && ops::IsEnableHostNode(kernel_node)) {
+    UpdateCustomKernelBuildInfo(kernel_node, false);
+    return {};
+  }
   if (IsVmapNotSupported(kernel_node)) {
     std::stringstream ss;
     ss << op_name << " does not support 'batch_rank' on CPU, which means that 'vmap' cannot support " << op_name
@@ -747,7 +755,6 @@ std::pair<std::string, ExceptionType> SetKernelInfoWithMsg(const CNodePtr &kerne
   }
 
   // Check op plugin kernel
-  static auto op_plugin_path = common::EnvHelper::GetInstance()->GetEnv("MS_OP_PLUGIN_PATH");
   if (op_plugin_path != nullptr) {
     static std::once_flag once;
     std::call_once(once, callback::CommonCallback::GetInstance().GetCallback<void>(

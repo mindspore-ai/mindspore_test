@@ -77,6 +77,8 @@
 #include "kernel/cpu/contiguous_cpu_kernel.h"
 #include "kernel/cpu/custom/kernel_mod_impl/op_plugin_utils.h"
 #include "kernel/cpu/custom/kernel_mod_impl/custom_op_plugin_kernel.h"
+#include "mindspore/ops/kernel/host/host_kernel_mod.h"
+#include "mindspore/ops/kernel/host/host_kernel_build.h"
 
 namespace mindspore {
 namespace device {
@@ -507,6 +509,13 @@ void CPUKernelExecutor::CreateKernel(const std::vector<CNodePtr> &nodes) const {
       continue;
     }
     std::string kernel_name = common::AnfAlgo::GetCNodeName(node);
+
+    const auto kernel_type = AnfAlgo::GetKernelType(node);
+    if (kernel_type == KernelType::HOST_KERNEL) {
+      kernel::KernelModPtr kernel_mod_ptr = kernel::HostOpBuild(node);
+      AnfAlgo::SetKernelMod(kernel_mod_ptr, node.get());
+      continue;
+    }
 
     std::shared_ptr<kernel::NativeCpuKernelMod> cpu_kernel =
       std::dynamic_pointer_cast<kernel::NativeCpuKernelMod>(CreateKernelMod(kernel_name));

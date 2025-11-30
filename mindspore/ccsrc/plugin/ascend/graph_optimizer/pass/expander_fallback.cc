@@ -33,7 +33,8 @@ bool ExpanderFallback::Run(const FuncGraphPtr &graph) {
   auto is_kbk = kernel_graph->RunMode() == device::RunMode::kKernelMode;
 
   auto IsEnableAclnn = [&is_kbk](const AnfNodePtr &node) {
-    return is_kbk && kernel::IsRegisteredAclnnOp(common::AnfAlgo::GetCNodeName(node));
+    return is_kbk &&
+           (kernel::IsRegisteredAclnnOp(common::AnfAlgo::GetCNodeName(node)) || common::AnfAlgo::IsViewNode(node));
   };
   auto IsRegisteredAdapter = [](const AnfNodePtr &node) { return device::ascend::ConvertCheck(node); };
 

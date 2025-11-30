@@ -343,6 +343,7 @@ OPS_API size_t CalOutputSize(const std::vector<int64_t> &output_shape, const siz
 OPS_API ValueTuplePtr ConvertShapeVectorToValueTuple(const ShapeVector &shape_vector);
 OPS_API double GetDoubleValueFromScalar(const FP32ImmPtr &scalar);
 OPS_API ScalarPtr FetchRealScalar(const ScalarPtr &scalar);
+OPS_API bool IsEnableHostNode(const AnfNodePtr &node);
 
 static inline void CheckRank(const InferInfoPtr &infer_info, size_t supported_rank, const std::string &op_name,
                              const std::string &input_name) {

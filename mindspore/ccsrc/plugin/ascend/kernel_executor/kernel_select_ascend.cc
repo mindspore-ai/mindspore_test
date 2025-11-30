@@ -28,7 +28,7 @@
 #include "kernel/ascend/aclnn/kernel_mod_impl/aclnn_kernel_build.h"
 #include "kernel/ascend/aclop/kernel_mod_impl/acl_kernel_build.h"
 #include "kernel/ascend/atb/kernel_mod_impl/atb_kernel_build.h"
-#include "plugin/ascend/kernel_executor/host/host_kernel_build.h"
+#include "mindspore/ops/kernel/host/host_kernel_build.h"
 #include "plugin/ascend/kernel_executor/host/host_kernel_metadata.h"
 #include "kernel/ascend/internal/internal_kernel_build.h"
 #include "kernel/ascend/custom/kernel_mod_impl/custom_kernel_build.h"
@@ -773,6 +773,12 @@ std::tuple<bool, std::string, ExceptionType, bool> SelectKernelInfoWithMsg(const
   if (kernel::IsEnableAtb(graph, node)) {
     GenerateKernelBuildInfo(node, KernelType::ATB_KERNEL);
     CollectOpSelectedType(op_name, SelectedKernelType::ATB_KERNEL, op_selected_num, &op_selected_type);
+    return result;
+  }
+
+  if (ops::IsEnableHostNode(node)) {
+    GenerateKernelBuildInfo(node, KernelType::HOST_KERNEL);
+    CollectOpSelectedType(op_name, SelectedKernelType::HOST_KERNEL, op_selected_num, &op_selected_type);
     return result;
   }
 

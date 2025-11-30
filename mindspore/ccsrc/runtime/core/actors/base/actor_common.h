@@ -41,6 +41,7 @@
 #include "tools/profiler/profiler.h"
 #include "primitive/structure_op_name.h"
 #include "primitive/framework_op_name.h"
+#include "ops/op_def.h"
 namespace mindspore {
 namespace runtime {
 using mindspore::session::KernelWithIndex;
@@ -572,7 +573,8 @@ inline bool NeedRunMemTracker() {
 inline bool NeedCheckInputContiguous(const CNodePtr &cnode) {
   MS_EXCEPTION_IF_NULL(cnode);
   auto kernel_type = AnfAlgo::GetKernelType(cnode);
-  if (kernel_type != KernelType::OPAPI_KERNEL && kernel_type != KernelType::INTERNAL_KERNEL) {
+  if (kernel_type != KernelType::OPAPI_KERNEL && kernel_type != KernelType::INTERNAL_KERNEL &&
+      !common::AnfAlgo::IsViewNode(cnode)) {
     return true;
   }
   return false;
