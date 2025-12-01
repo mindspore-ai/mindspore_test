@@ -13,10 +13,9 @@
 # limitations under the License.
 # ============================================================================
 
-
+"""test func shard in python"""
 import os
 import mindspore as ms
-
 from tests.mark_utils import arg_mark
 
 
@@ -28,62 +27,64 @@ def run_case(case_name, master_port):
     cmd = f"export GLOG_v=2 && msrun --worker_num=8 --local_worker_num=8 " \
           f"--master_addr=127.0.0.1 --master_port={master_port} " \
           f"--join=True --log_dir=./{case_name} pytest -s -v " \
-          f"cell_shard_in_python.py::{case_name}"
+          f"func_shard_in_python.py::{case_name}"
     ret = os.system(cmd)
     assert ret == 0
 
 
 @arg_mark(plat_marks=["platform_ascend910b"], level_mark="level0", card_mark="allcards", essential_mark="unessential")
-def test_cell_shard_1():
+def test_func_shard_1():
     '''
     Feature: run shard in python.
-    Description: Test cell shard in python.
+    Description: Test func shard in python.
     Expectation: Run success.
     '''
-    case_name = "test_cell_shard_1"
+    case_name = "test_func_shard_1"
     master_port = 11292
     run_case(case_name, master_port)
 
 
 @arg_mark(plat_marks=["platform_ascend910b"], level_mark="level0", card_mark="allcards", essential_mark="unessential")
-def test_cell_shard_2():
+def test_func_shard_2():
     '''
     Feature: run shard in python.
-    Description: Test cell shard in python.
+    Description: Test func shard in python.
     Expectation: Run success.
     '''
-    case_name = "test_cell_shard_2"
+    case_name = "test_func_shard_2"
     master_port = 11293
     run_case(case_name, master_port)
 
+
 @arg_mark(plat_marks=["platform_ascend910b"], level_mark="level0", card_mark="allcards", essential_mark="unessential")
-def test_cell_shard_3():
+def test_func_shard_3():
     '''
     Feature: run shard in python.
-    Description: Test cell shard in python.
+    Description: Test func shard in python.
     Expectation: Run success.
     '''
-    case_name = "test_cell_shard_3"
+    case_name = "test_func_shard_3"
     master_port = 11294
     run_case(case_name, master_port)
 
+
 @arg_mark(plat_marks=["platform_ascend910b"], level_mark="level0", card_mark="allcards", essential_mark="unessential")
-def test_cell_shard_with_bprop():
+def test_func_shard_with_bprop():
     '''
     Feature: run shard in python.
-    Description: Test cell shard in python.
+    Description: Test func shard in python.
     Expectation: Run success.
     '''
-    case_name = "test_cell_shard_with_bprop"
+    case_name = "test_func_shard_with_bprop"
     master_port = 11295
     run_case(case_name, master_port)
 
 
 @arg_mark(plat_marks=["platform_ascend910b"], level_mark="level0", card_mark="allcards", essential_mark="unessential")
-def test_cell_shard_linear_model_parallel():
+def test_func_shard_linear_model_parallel():
     '''
     Feature: run shard in python.
-    Description: Test linear cell shard in python.
+    Description: Test linear func shard in python.
     Expectation: Run success.
     '''
     case_name = "test_linear_model_parallel"
@@ -92,10 +93,10 @@ def test_cell_shard_linear_model_parallel():
 
 
 @arg_mark(plat_marks=["platform_ascend910b"], level_mark="level0", card_mark="allcards", essential_mark="unessential")
-def test_cell_shard_linear_sequence_parallel():
+def test_func_shard_linear_sequence_parallel():
     '''
     Feature: run shard in python.
-    Description: Test linear cell shard in python.
+    Description: Test linear func shard in python.
     Expectation: Run success.
     '''
     case_name = "test_linear_sequence_parallel"
@@ -104,12 +105,12 @@ def test_cell_shard_linear_sequence_parallel():
 
 
 @arg_mark(plat_marks=["platform_ascend910b"], level_mark="level0", card_mark="allcards", essential_mark="unessential")
-def test_cell_shard_with_parameter_plan():
+def test_func_shard_with_parameter_plan():
     '''
     Feature: run shard in python.
-    Description: Test linear cell shard in python.
+    Description: Test linear func shard in python.
     Expectation: Run success.
     '''
-    case_name = "test_cell_shard_with_parameter_plan"
+    case_name = "test_func_shard_with_parameter_plan"
     master_port = 11297
     run_case(case_name, master_port)

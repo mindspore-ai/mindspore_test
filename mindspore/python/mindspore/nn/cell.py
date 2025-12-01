@@ -1320,89 +1320,11 @@ class Cell(Cell_):
             self._in_strategy = shard_fn.in_strategy
             self._out_strategy = shard_fn.out_strategy
         else:
-            if parameter_plan is not None:
-
-                for param_name, layout in parameter_plan.items():
-                    if not isinstance(layout, Layout):
-                        raise ValueError(f"In python shard, the type of setting in parameter_plan must be Layout, "
-                                         f"but got type {type(layout)}")
-                    result = self._search_parameter_by_name(param_name)
-                    if not result:
-                        logger.warning(
-                            f"{param_name} is not exist, ignored its setting.")
-                        continue
-                    _, _, param = result
-
-                    if isinstance(param, ms.parallel.DTensor):
-                        raise ValueError(f"Parameter {param.name} has been configured layout, "
-                                         f"cannot be set repeatedly.")
-                    param = Shard._set_layout_into_parameter(param, layout)
-                    self._update_parameter_by_name(result, param)
-            self._check_parallel_strategy(in_strategy, "in_strategy")
-            if out_strategy is not None:
-                self._check_parallel_strategy(out_strategy, "out_strategy")
-            if optional_in_strategy is not None:
-                if not isinstance(optional_in_strategy, dict):
-                    raise TypeError(f"The type of optional_in_strategy must be tuple,"
-                                    f" but got {type(optional_in_strategy)}")
-                for k, v in optional_in_strategy.items():
-                    if not isinstance(v, Layout):
-                        raise TypeError(f"The type of {k} item must be Layout, but got {type(v)}")
+            raise ValueError("Cell's shard is currently not supported in PyNative mode.")
 
         self.in_layout = in_strategy
         self.out_layout = out_strategy
         self.optional_in_layout = optional_in_strategy
-
-    def _search_parameter_by_name(self, param_name: str):
-        """
-        Find the parent Cell of the parameter, the parameter's name in the parent Cell, and the parameter object itself
-        Return value: (parent Cell instance, parameter's name in parent Cell, parameter object).
-        Returns None if not found.
-        """
-        # Remove the "self." prefix from param_name (to maintain compatibility with original logic)
-        param_name = param_name.replace("self.", "")
-        # Case 1: The parameter is a direct parameter of the current Cell (not in any sub-Cell)
-        if param_name in self._params:
-            return (self, param_name, self._params[param_name])
-
-        # Case 2: The parameter is in a sub-Cell (supports multi-level nesting, e.g., "net_b.dense1.weight")
-        if "." in param_name:
-            # Split into: sub-Cell path + parameter name (e.g., "net_b.dense1" + "weight")
-            cell_path, param_key = param_name.rsplit(".", 1)
-            try:
-                # Locate the sub-Cell where the parameter resides (supports multi-level paths)
-                target_cell = self.get_sub_cell(cell_path)
-                # Check if the sub-Cell directly contains this parameter
-                if param_key in target_cell._params:
-                    return (target_cell, param_key, target_cell._params[param_key])
-            except AttributeError:
-                # Sub-Cell path does not exist or the parameter is not in that sub-Cell
-                pass
-
-        # Traverse all sub-Cells (recursively) to search for the parameter
-        for _, child_cell in self._cells.items():
-            if isinstance(child_cell, Cell):
-                # Recursively search within the sub-Cell
-                result = child_cell._search_parameter_by_name(param_name)
-                if result is not None:
-                    return result
-
-        return None
-
-    def _update_parameter_by_name(self, result: tuple, new_param: Parameter) -> bool:
-        """
-        Modify the original parameter in a Cell or sub-Cell using the search result
-        Args:
-            result: The tuple returned by _search_parameter_by_name (contains parent Cell, parameter key, old parameter)
-            new_param: New Parameter object (used to replace the original parameter)
-        """
-        parent_cell, param_key, _ = result
-        # Key operation: directly modify the _params dictionary of the parent Cell (original storage location)
-        parent_cell._params[param_key] = new_param
-
-        if param_key in parent_cell.__dict__:
-            parent_cell.__dict__[param_key] = new_param
-        parent_cell._params_list[param_key] = new_param
 
     def _init_check(self):
         for param in self.get_parameters(expand=False):
@@ -1437,6 +1359,8 @@ class Cell(Cell_):
 
     def _parallel_in_args(self, *args, **kwargs):
         """_parallel_in_args"""
+        if context._get_mode() != context.GRAPH_MODE:
+            return args, kwargs
         processed_args = list(args)
         processed_kwargs = dict(kwargs)
 
@@ -1461,9 +1385,17 @@ class Cell(Cell_):
                 processed_kwargs[k] = v.redistribute(to_layout)
         return tuple(processed_args), processed_kwargs
 
+    def _need_out_shard(self):
+        """_need_out_shard"""
+        if context._get_mode() != context.GRAPH_MODE:
+            return False
+        if self.out_layout is None:
+            return False
+        return True
+
     def _parallel_out_args(self, outputs):
         """_parallel_out_args"""
-        if self.out_layout is None:
+        if not self._need_out_shard():
             return outputs
         if isinstance(outputs, (tuple, list)):
             if len(outputs) != len(self.out_layout):

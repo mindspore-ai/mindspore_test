@@ -12,14 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-"""test bmm shard in python"""
+"""bmm shard in python"""
 
 import numpy as np
-
 import mindspore as ms
 import mindspore.communication.management as D
 from mindspore import nn, Tensor
 from mindspore.parallel import Layout
+from mindspore.parallel.spmd.shard import shard
 from tests.st.auto_parallel.utils import global_to_local, local_to_global
 
 
@@ -36,7 +36,8 @@ class BmmExtNet(nn.Cell):
         self.bmm = ms.mint.bmm
         self.relu = ms.nn.ReLU()
         if relu_strategy is not None:
-            self.relu.shard(in_strategy=relu_strategy)
+            stra = { "forward": { "input": relu_strategy}}
+            shard(self.relu, stra)
 
     def construct(self, x, w):
         out = self.bmm(x, w)
@@ -53,7 +54,8 @@ class BmmNet(nn.Cell):
         self.bmm = ms.ops.BatchMatMul(transpose_a=transpose_a, transpose_b=transpose_b)
         self.relu = ms.nn.ReLU()
         if relu_strategy is not None:
-            self.relu.shard(in_strategy=relu_strategy)
+            stra = { "forward": { "input": relu_strategy}}
+            shard(self.relu, stra)
 
     def construct(self, x, w):
         out = self.bmm(x, w)
