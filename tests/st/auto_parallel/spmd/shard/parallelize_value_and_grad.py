@@ -22,6 +22,7 @@ from mindspore import nn
 from mindspore.parallel import Layout, hsdp, init_parameters
 from mindspore.nn.utils import no_init_parameters
 from mindspore.common.initializer import initializer
+from mindspore.parallel.spmd.shard import shard
 from tests.st.auto_parallel.utils import create_dtensor
 
 learning_rate = 0.01
@@ -95,8 +96,11 @@ def base_case(dp, mp, hsdp_shard_size):
     with no_init_parameters():
         model = SimpleModel(input_size, output_size)
 
-    model.shard(in_strategy=(x_layout,), out_strategy=(out_layout,), parameter_plan={"weight": w_layout})
-    model.relu.shard(in_strategy=relu_strategy[0], out_strategy=relu_strategy[1])
+    stra = { "forward": { "input": (x_layout,), "output": (out_layout,)}, "parameter": { "weight": w_layout}}
+    shard(model, stra)
+
+    relu_stra = { "forward": { "input": relu_strategy[0], "output": relu_strategy[1]}}
+    shard(model.relu, relu_stra)
 
     model = hsdp(model, shard_size=hsdp_shard_size, threshold=0)
 
@@ -109,8 +113,8 @@ def base_case(dp, mp, hsdp_shard_size):
     with no_init_parameters():
         model_1 = SimpleModel(input_size, output_size)
 
-    model_1.shard(in_strategy=(x_layout,), out_strategy=(out_layout,), parameter_plan={"weight": w_layout})
-    model_1.relu.shard(in_strategy=relu_strategy[0], out_strategy=relu_strategy[1])
+    shard(model_1, stra)
+    shard(model_1.relu, relu_stra)
 
     model_1 = hsdp(model_1, shard_size=hsdp_shard_size, threshold=0)
 

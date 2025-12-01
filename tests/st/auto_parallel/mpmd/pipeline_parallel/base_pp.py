@@ -22,6 +22,7 @@ from mindspore.nn.utils import no_init_parameters
 from mindspore.communication.management import init, get_rank, get_group_size
 from mindspore.parallel.mpmd.pipeline_parallel import Schedule1F1B, PipelineStage
 from mindspore.parallel import Layout, hsdp, init_parameters, DTensor
+from mindspore.parallel.spmd.shard import shard
 from mindspore.common.initializer import initializer
 
 
@@ -123,8 +124,9 @@ def test_base_pp():
         w_layout = layout("None", "None")
         out_layout = layout("dp", "None")
 
-    model.shard(in_strategy=(in_layout,), out_strategy=(out_layout,),
-                parameter_plan={f"{stage_index}.weight": w_layout})
+    strategy = { "forward": { "input": (in_layout,), "output": (out_layout,)},
+                 "parameter": {f"{stage_index}.weight": w_layout}}
+    shard(model, strategy)
 
     # step 4: hsdp
     model = hsdp(model, shard_size=2, threshold=0, optimizer_level="level1", enable_grad_accumulation=True)

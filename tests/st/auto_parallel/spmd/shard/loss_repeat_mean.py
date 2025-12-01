@@ -20,6 +20,7 @@ import mindspore as ms
 import mindspore.communication.management as D
 from mindspore import nn, Tensor
 from mindspore.parallel import Layout, hsdp
+from mindspore.parallel.spmd.shard import shard
 from tests.st.auto_parallel.utils import create_dtensor
 
 learning_rate = 0.01
@@ -82,8 +83,12 @@ def run_parallel(local_x, local_input_size, local_output_size, x_layout, w_layou
     """run parallel"""
     model = SimpleModel(local_input_size, local_output_size, w_layout)
 
-    model.shard(in_strategy=(x_layout,))
-    model.relu.shard(in_strategy=relu_strategy[0], out_strategy=relu_strategy[1])
+    model_stra = { "forward": { "input": (x_layout,)}}
+    shard(model, model_stra)
+
+    model_relu_stra = { "forward": { "input": relu_strategy[0], "output": relu_strategy[1]}}
+    shard(model.relu, model_relu_stra)
+
     model = hsdp(model, shard_size=hsdp_shard_size, threshold=0)
 
     def forward_fn(data):
