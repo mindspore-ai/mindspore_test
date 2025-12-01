@@ -30,8 +30,7 @@ void AdamaxGpuKernelMod::InOutputResize(const std::vector<KernelTensor *> &input
                                                        inputs[kIndex2]->GetDeviceShapeVector().end());
   std::vector<int64_t> gradient_shape_ = std::vector<int64_t>(inputs[kIndex8]->GetDeviceShapeVector().begin(),
                                                               inputs[kIndex8]->GetDeviceShapeVector().end());
-  input_elements_ = std::accumulate(variable_shape_.begin(), variable_shape_.end(), static_cast<int64_t>(1),
-                                    std::multiplies<int64_t>());
+  input_elements_ = std::accumulate(variable_shape_.begin(), variable_shape_.end(), 1, std::multiplies<int64_t>());
 
   is_null_input_ = (input_elements_ == 0);
 

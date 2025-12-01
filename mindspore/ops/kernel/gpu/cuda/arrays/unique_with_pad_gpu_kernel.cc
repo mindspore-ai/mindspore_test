@@ -101,10 +101,8 @@ int UniqueWithPadGpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs,
     }
     std::vector<size_t> pad_shape =
       std::vector<size_t>(inputs[1]->GetDeviceShapeVector().begin(), inputs[1]->GetDeviceShapeVector().end());
-    auto pad_nums =
-      std::accumulate(pad_shape.begin(), pad_shape.end(), static_cast<int64_t>(1), std::multiplies<int64_t>());
-    auto batch_size =
-      std::accumulate(shape.begin(), shape.begin() + batch_rank_, static_cast<int64_t>(1), std::multiplies<int64_t>());
+    auto pad_nums = std::accumulate(pad_shape.begin(), pad_shape.end(), 1, std::multiplies<int64_t>());
+    auto batch_size = std::accumulate(shape.begin(), shape.begin() + batch_rank_, 1, std::multiplies<int64_t>());
     if (pad_nums != static_cast<int64_t>(batch_size)) {
       MS_LOG(EXCEPTION) << "For '" << kernel_name_
                         << "', the elements num of input 'pad' must be equal to input 'x' batch size, "

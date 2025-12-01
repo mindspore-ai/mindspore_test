@@ -215,8 +215,7 @@ void HcomReceiveKernel::UpdateOutputShapeAndSize(const std::vector<KernelTensor 
     return;
   }
   outputs[kIndex0]->SetShapeVector(real_shape_);
-  size_t all_size = LongToSize(
-    std::accumulate(real_shape_.begin(), real_shape_.end(), static_cast<int64_t>(1), std::multiplies<int64_t>()));
+  size_t all_size = LongToSize(std::accumulate(real_shape_.begin(), real_shape_.end(), 1, std::multiplies<int64_t>()));
   outputs[kIndex0]->set_size(all_size * UnitSizeInBytes(outputs[kIndex0]->dtype_id()));
 }
 

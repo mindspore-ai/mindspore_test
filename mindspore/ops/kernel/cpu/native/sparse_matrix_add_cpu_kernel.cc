@@ -92,13 +92,13 @@ int SparseMatrixAddCpuKernelMod::Resize(const std::vector<KernelTensor *> &input
                                          GetTypeByte(TypeIdToType(types_[kAValuesIdx])));  // value
     // set dense and batch shape for output.
     auto out_dense_shape = inputs[kADenseShapeIdx]->GetShapeVector();
-    auto ele_size = LongToSize(std::accumulate(out_dense_shape.begin(), out_dense_shape.end(), static_cast<int64_t>(1),
-                                               std::multiplies<int64_t>()));
+    auto ele_size =
+      LongToSize(std::accumulate(out_dense_shape.begin(), out_dense_shape.end(), 1, std::multiplies<int64_t>()));
     outputs[kOutDenseShape]->SetShapeVector(out_dense_shape);
     outputs[kOutDenseShape]->set_size(ele_size * UnitSizeInBytes(outputs[kOutDenseShape]->dtype_id()));
     auto out_batch_shape = inputs[kABatchPtrIdx]->GetShapeVector();
-    ele_size = LongToSize(std::accumulate(out_batch_shape.begin(), out_batch_shape.end(), static_cast<int64_t>(1),
-                                          std::multiplies<int64_t>()));
+    ele_size =
+      LongToSize(std::accumulate(out_batch_shape.begin(), out_batch_shape.end(), 1, std::multiplies<int64_t>()));
     outputs[kOutBatch]->SetShapeVector(out_batch_shape);
     outputs[kOutBatch]->set_size(ele_size * UnitSizeInBytes(outputs[kOutBatch]->dtype_id()));
     ret = KRET_OK;

@@ -72,8 +72,7 @@ int FillDiagonalGpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs,
   matrix_row_ = input_shape[kInputDimIndex0];
   matrix_col_ = input_shape[kInputDimIndex1];
   int64_t min_size = std::min(matrix_row_, matrix_col_);
-  input_elements_ =
-    std::accumulate(input_shape.begin(), input_shape.end(), static_cast<int64_t>(1), std::multiplies<int64_t>());
+  input_elements_ = std::accumulate(input_shape.begin(), input_shape.end(), 1, std::multiplies<int64_t>());
   if (input_elements_ == kInputNull) {
     is_null_input_ = true;
   }

@@ -52,12 +52,9 @@ int CdistGpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs, const s
   std::vector<int64_t> in_shape_x = inputs[kIndex0]->GetShapeVector();
   std::vector<int64_t> in_shape_y = inputs[kIndex1]->GetShapeVector();
   std::vector<int64_t> output_shape = outputs[kIndex0]->GetShapeVector();
-  x_elements_ =
-    std::accumulate(in_shape_x.begin(), in_shape_x.end(), static_cast<int64_t>(1), std::multiplies<int64_t>());
-  y_elements_ =
-    std::accumulate(in_shape_y.begin(), in_shape_y.end(), static_cast<int64_t>(1), std::multiplies<int64_t>());
-  out_elements_ =
-    std::accumulate(output_shape.begin(), output_shape.end(), static_cast<int64_t>(1), std::multiplies<int64_t>());
+  x_elements_ = std::accumulate(in_shape_x.begin(), in_shape_x.end(), 1, std::multiplies<int64_t>());
+  y_elements_ = std::accumulate(in_shape_y.begin(), in_shape_y.end(), 1, std::multiplies<int64_t>());
+  out_elements_ = std::accumulate(output_shape.begin(), output_shape.end(), 1, std::multiplies<int64_t>());
   if (out_elements_ == 0) {
     is_null_input_ = true;
   }

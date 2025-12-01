@@ -96,10 +96,9 @@ int LuUnpackGpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs,
                                                             inputs.at(kIndex0)->GetDeviceShapeVector().end());
   std::vector<int64_t> lu_pivots_shape = std::vector<int64_t>(inputs.at(kIndex1)->GetDeviceShapeVector().begin(),
                                                               inputs.at(kIndex1)->GetDeviceShapeVector().end());
-  lu_data_size_ = size_t(
-    std::accumulate(lu_data_shape.begin(), lu_data_shape.end(), static_cast<int64_t>(1), std::multiplies<int64_t>()));
-  lu_pivots_size_ = size_t(std::accumulate(lu_pivots_shape.begin(), lu_pivots_shape.end(), static_cast<int64_t>(1),
-                                           std::multiplies<int64_t>()));
+  lu_data_size_ = size_t(std::accumulate(lu_data_shape.begin(), lu_data_shape.end(), 1, std::multiplies<int64_t>()));
+  lu_pivots_size_ =
+    size_t(std::accumulate(lu_pivots_shape.begin(), lu_pivots_shape.end(), 1, std::multiplies<int64_t>()));
 
   auto lu_data_shape_vec = inputs[kIndex0]->GetShapeVector();
   auto lu_pivots_shape_vec = inputs[kIndex1]->GetShapeVector();

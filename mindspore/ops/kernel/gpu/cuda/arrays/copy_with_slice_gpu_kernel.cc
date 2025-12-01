@@ -63,8 +63,8 @@ bool CopyWithSliceGpuKernel::LaunchCopyWithSliceImpl(const TensorStorageInfoPtr 
   T *copy_src_addr = reinterpret_cast<T *>(src_addr->GetMutablePtr());
   T *self_addr = reinterpret_cast<T *>(dst_addr->GetMutablePtr());
   const auto &output_shape = dst_storage_info->shape;
-  auto output_size = LongToSize(
-    std::accumulate(output_shape.begin(), output_shape.end(), static_cast<int64_t>(1), std::multiplies<int64_t>()));
+  auto output_size =
+    LongToSize(std::accumulate(output_shape.begin(), output_shape.end(), 1, std::multiplies<int64_t>()));
   auto src_is_contiguous = src_storage_info == nullptr || src_storage_info->is_contiguous;
 
   if (dst_storage_info->is_contiguous && src_is_contiguous) {

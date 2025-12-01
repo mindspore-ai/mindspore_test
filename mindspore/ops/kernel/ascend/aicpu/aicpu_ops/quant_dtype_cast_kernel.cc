@@ -52,8 +52,7 @@ void QuantDTypeCastKernel::FixedBitFloatDequantTask() {
   float *output = reinterpret_cast<float *>(io_addrs_[C5NUM]);
 
   // optimize in the pass.
-  int element_cnt =
-    std::accumulate(input_shapes_.begin(), input_shapes_.end(), static_cast<int64_t>(1), std::multiplies<int64_t>());
+  int element_cnt = std::accumulate(input_shapes_.begin(), input_shapes_.end(), 1, std::multiplies<int64_t>());
   if (quant_param_size_ == 1) {
     auto dequant = [&](size_t start, size_t end) {
       for (size_t pos = start; pos < end; pos++) {
@@ -91,8 +90,7 @@ void QuantDTypeCastKernel::FixedBitHalfDequantTask() {
   Eigen::half *output = reinterpret_cast<Eigen::half *>(io_addrs_[C5NUM]);
 
   // optimize in the pass.
-  int element_cnt =
-    std::accumulate(input_shapes_.begin(), input_shapes_.end(), static_cast<int64_t>(1), std::multiplies<int64_t>());
+  int element_cnt = std::accumulate(input_shapes_.begin(), input_shapes_.end(), 1, std::multiplies<int64_t>());
   if (quant_param_size_ == 1) {
     auto dequant = [&](size_t start, size_t end) {
       for (size_t pos = start; pos < end; pos++) {

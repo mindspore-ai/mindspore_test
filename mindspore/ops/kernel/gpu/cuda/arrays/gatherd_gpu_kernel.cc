@@ -45,13 +45,15 @@ bool GatherDGpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &inputs
   return true;
 }
 
-#define REG_INDEX(DT1, DT2, T1, T2)                     \
-  {KernelAttr()                                         \
-     .AddInputAttr(DT1)                                 \
-     .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64) \
-     .AddInputAttr(DT2)                                 \
-     .AddOutputAttr(DT1),                               \
-   &GatherDGpuKernelMod::LaunchKernel<T1, T2>}
+#define REG_INDEX(DT1, DT2, T1, T2)                      \
+  {                                                      \
+    KernelAttr()                                         \
+      .AddInputAttr(DT1)                                 \
+      .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64) \
+      .AddInputAttr(DT2)                                 \
+      .AddOutputAttr(DT1),                               \
+      &GatherDGpuKernelMod::LaunchKernel<T1, T2>         \
+  }
 
 #define GATHER_D_GPU_REGISTER(DT, T) \
   REG_INDEX(DT, kNumberTypeInt64, T, int64_t), REG_INDEX(DT, kNumberTypeInt32, T, int32_t)
@@ -115,8 +117,8 @@ int GatherDGpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs, const
   dim_ = static_cast<size_t>(dim);
 
   rank_ = input_shapes.size();
-  index_num_ = static_cast<size_t>(
-    std::accumulate(index_shapes.begin(), index_shapes.end(), static_cast<int64_t>(1), std::multiplies<int64_t>()));
+  index_num_ =
+    static_cast<size_t>(std::accumulate(index_shapes.begin(), index_shapes.end(), 1, std::multiplies<int64_t>()));
 
   if (input_shapes.size() > kMaxShapeRank) {
     MS_LOG(INTERNAL_EXCEPTION) << "The kernel GatherD only support Tensor whose rank is less than " << kMaxShapeRank

@@ -62,8 +62,7 @@ class SparseSoftmaxCrossEntropyWithLogitsUnifyMindIR {
     } else {
       MS_LOG(EXCEPTION) << "Logits's shape of node SparseSoftmaxCrossEntropyWithLogit is empty";
     }
-    batch_size_ =
-      std::accumulate(labels_shape.begin(), labels_shape.end(), static_cast<int64_t>(1), std::multiplies<int64_t>());
+    batch_size_ = std::accumulate(labels_shape.begin(), labels_shape.end(), 1, std::multiplies<int64_t>());
   }
 
   NodePtr CreateOneHot(const NodePtrList &inputs) {

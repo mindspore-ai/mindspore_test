@@ -948,7 +948,7 @@ DEF_PURE_SHAPE_CALC(g_dense_shapecalc0)
     auto &dout_shape = inputs.at(i3);
 
     auto get_product_dim = [](const ShapeVector &shape) -> int64_t {
-      return std::accumulate(shape.begin(), shape.end() - 1, static_cast<int64_t>(1), std::multiplies<int64_t>());
+      return std::accumulate(shape.begin(), shape.end() - 1, 1, std::multiplies<int64_t>());
     };
 
     ShapeVector x_2d_shape = {get_product_dim(x_shape), x_shape.back()};
@@ -1115,8 +1115,8 @@ DEF_PURE_SHAPE_CALC(g_topk_2)
     auto in_shape = inputs.at(0);
     auto in_lastdim = in_shape.back();
     auto outerdim = inputs.at(1)[0];  // k
-    auto in_shape_1d_x = ShapeVector(
-      1, std::accumulate(in_shape.begin(), in_shape.end(), static_cast<int64_t>(1), std::multiplies<int64_t>()));
+    auto in_shape_1d_x =
+      ShapeVector(1, std::accumulate(in_shape.begin(), in_shape.end(), 1, std::multiplies<int64_t>()));
     return {in_shape_1d_x, {outerdim * in_lastdim}, {in_lastdim}};
   })
   .SetInfer([](const ShapeArray &, const HashSet<size_t> &) -> std::vector<int64_t> { return {1, 1, 1}; });
@@ -1152,8 +1152,8 @@ REG_BPROP_BUILDER("TopK").FreeUselessValues_IO({i0, i1}, {i0}).SetBody(BODYFUNC(
       range_flatten_index_vec[static_cast<size_t>(i)] = i * in_lastdim;
     }
     auto range_flatten_index = ib->Tensor(range_flatten_index_vec, ib->GetDtype(indices));
-    auto in_shape_1d = ib->Value(ShapeVector(
-      1, std::accumulate(in_shape.begin(), in_shape.end(), static_cast<int64_t>(1), std::multiplies<int64_t>())));
+    auto in_shape_1d =
+      ib->Value(ShapeVector(1, std::accumulate(in_shape.begin(), in_shape.end(), 1, std::multiplies<int64_t>())));
     auto ind = ib->Reshape(ind_2d + ib->Reshape(range_flatten_index, {-1, 1}), {-1, 1});
     auto out_grad = ib->ScatterNd(ind, ib->Reshape(dout0, {-1}), in_shape_1d);
     out_grad = ib->Reshape(out_grad, in_shape);

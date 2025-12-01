@@ -181,8 +181,7 @@ void UniqueConsecutiveCpuKernelMod::UniqueConsecutiveNone(const std::vector<Kern
   MS_EXCEPTION_IF_NULL(input_x);
   MS_EXCEPTION_IF_NULL(output_y);
   MS_EXCEPTION_IF_NULL(output_count);
-  int64_t input_total =
-    std::accumulate(input_shape_.begin(), input_shape_.end(), static_cast<int64_t>(1), std::multiplies<int64_t>());
+  int64_t input_total = std::accumulate(input_shape_.begin(), input_shape_.end(), 1, std::multiplies<int64_t>());
   if (input_total > 0) {
     *output_y = *input_x;
     T1 *p = output_y;
@@ -328,16 +327,14 @@ void UniqueConsecutiveCpuKernelMod::UpdateOutputShapeAndSize(const std::vector<K
                                                              const std::vector<KernelTensor *> &outputs) {
   // Update output shape and size
   outputs[kIndex0]->SetShapeVector(output_shape_);
-  auto ele_size = LongToSize(
-    std::accumulate(output_shape_.begin(), output_shape_.end(), static_cast<int64_t>(1), std::multiplies<int64_t>()));
+  auto ele_size =
+    LongToSize(std::accumulate(output_shape_.begin(), output_shape_.end(), 1, std::multiplies<int64_t>()));
   outputs[kIndex0]->set_size(ele_size * UnitSizeInBytes(outputs[kIndex0]->dtype_id()));
   outputs[kIndex1]->SetShapeVector(idx_shape_);
-  ele_size = LongToSize(
-    std::accumulate(idx_shape_.begin(), idx_shape_.end(), static_cast<int64_t>(1), std::multiplies<int64_t>()));
+  ele_size = LongToSize(std::accumulate(idx_shape_.begin(), idx_shape_.end(), 1, std::multiplies<int64_t>()));
   outputs[kIndex1]->set_size(ele_size * UnitSizeInBytes(outputs[kIndex1]->dtype_id()));
   outputs[kIndex2]->SetShapeVector(count_shape_);
-  ele_size = LongToSize(
-    std::accumulate(count_shape_.begin(), count_shape_.end(), static_cast<int64_t>(1), std::multiplies<int64_t>()));
+  ele_size = LongToSize(std::accumulate(count_shape_.begin(), count_shape_.end(), 1, std::multiplies<int64_t>()));
   outputs[kIndex2]->set_size(ele_size * UnitSizeInBytes(outputs[kIndex2]->dtype_id()));
 }
 

@@ -143,11 +143,10 @@ abstract::ShapePtr ReshapeExtInferShape(const PrimitivePtr &primitive, const std
       }
     }
     if (cnt == 1) {
-      int64_t sum_input_shape = std::accumulate(input_shape_vector.begin(), input_shape_vector.end(),
-                                                static_cast<int64_t>(1), std::multiplies<int64_t>());
-      int64_t sum_output_shape = std::accumulate(output_shape_vector.begin(), output_shape_vector.end(),
-                                                 static_cast<int64_t>(1), std::multiplies<int64_t>()) *
-                                 -1;
+      int64_t sum_input_shape =
+        std::accumulate(input_shape_vector.begin(), input_shape_vector.end(), 1, std::multiplies<int64_t>());
+      int64_t sum_output_shape =
+        std::accumulate(output_shape_vector.begin(), output_shape_vector.end(), 1, std::multiplies<int64_t>()) * -1;
       if ((sum_input_shape < sum_output_shape) || (sum_input_shape % sum_output_shape != 0)) {
         MS_EXCEPTION(ValueError) << "ReshapeExt input shape and output shape wrong.";
       }

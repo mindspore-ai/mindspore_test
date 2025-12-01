@@ -64,7 +64,7 @@ TEST_P(TestArithmeticSimplify, test_arithmetic_simplify) {
   ConstructGraph c;
   auto input_a = c.NewTensorInput("input_a", kFloat32, param.a_shape);
   std::vector<float> const_value(
-    std::accumulate(param.const_shape.begin(), param.const_shape.end(), static_cast<int64_t>(1), std::multiplies<int64_t>()), 3);
+    std::accumulate(param.const_shape.begin(), param.const_shape.end(), 1, std::multiplies<int64_t>()), 3);
   auto input_const = c.NewValueNode(
     tensor::from_buffer(kNumberTypeFloat32, param.const_shape, &const_value[0], kNumberTypeFloat32));
   auto axis = c.NewValueNode(tensor::from_vector(param.axis));

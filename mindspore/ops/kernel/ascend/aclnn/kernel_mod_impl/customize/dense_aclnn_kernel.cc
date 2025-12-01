@@ -94,8 +94,7 @@ void DenseAclnnKernelMod::GetWorkSpaceInfo(const std::vector<KernelTensor *> &in
 
       int input_reshape_size = 1;
       if (x_rank_ > kIndex1) {
-        input_reshape_size =
-          std::accumulate(x_shape.begin(), x_shape.end() - 1, static_cast<int64_t>(1), std::multiplies<int64_t>());
+        input_reshape_size = std::accumulate(x_shape.begin(), x_shape.end() - 1, 1, std::multiplies<int64_t>());
       }
       // Generate reshape Input 2D(Input_shape_i0 * Input_shape_i1 * ... Input_shape_ix-1, Input_shape_ix)
       SetFlatternNdLinearTensorStorageInfo(input_kernel_tensor_, input_reshape_size, x_shape);

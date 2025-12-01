@@ -91,16 +91,12 @@ int MaxPoolGradWithArgmaxV2GpuKernelMod::Resize(const std::vector<KernelTensor *
 
   const size_t offset_c = 1;
   const size_t offset_h = 2;
-  x_hw_ =
-    std::accumulate(x_shape.begin() + offset_h, x_shape.end(), static_cast<int64_t>(1), std::multiplies<int64_t>());
-  x_chw_ =
-    std::accumulate(x_shape.begin() + offset_c, x_shape.end(), static_cast<int64_t>(1), std::multiplies<int64_t>());
-  x_nchw_ = std::accumulate(x_shape.begin(), x_shape.end(), static_cast<int64_t>(1), std::multiplies<int64_t>());
-  dy_hw_ =
-    std::accumulate(dy_shape.begin() + offset_h, dy_shape.end(), static_cast<int64_t>(1), std::multiplies<int64_t>());
-  dy_chw_ =
-    std::accumulate(dy_shape.begin() + offset_c, dy_shape.end(), static_cast<int64_t>(1), std::multiplies<int64_t>());
-  dy_nchw_ = std::accumulate(dy_shape.begin(), dy_shape.end(), static_cast<int64_t>(1), std::multiplies<int64_t>());
+  x_hw_ = std::accumulate(x_shape.begin() + offset_h, x_shape.end(), 1, std::multiplies<int64_t>());
+  x_chw_ = std::accumulate(x_shape.begin() + offset_c, x_shape.end(), 1, std::multiplies<int64_t>());
+  x_nchw_ = std::accumulate(x_shape.begin(), x_shape.end(), 1, std::multiplies<int64_t>());
+  dy_hw_ = std::accumulate(dy_shape.begin() + offset_h, dy_shape.end(), 1, std::multiplies<int64_t>());
+  dy_chw_ = std::accumulate(dy_shape.begin() + offset_c, dy_shape.end(), 1, std::multiplies<int64_t>());
+  dy_nchw_ = std::accumulate(dy_shape.begin(), dy_shape.end(), 1, std::multiplies<int64_t>());
   if ((dy_chw_ == 0) || (dy_hw_ == 0)) {
     MS_LOG(ERROR) << "The shape of input_grads is invalid.";
     return KRET_RESIZE_FAILED;

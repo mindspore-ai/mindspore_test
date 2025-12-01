@@ -38,8 +38,7 @@ bool AssignSubFwdGpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
   input_size_ = abstract::TypeIdSize(kernel_attr.GetInputAttr(kIndex0).dtype);
   std::vector<int64_t> input_shape_ = std::vector<int64_t>(inputs.at(kIndex0)->GetDeviceShapeVector().begin(),
                                                            inputs.at(kIndex0)->GetDeviceShapeVector().end());
-  input_elements_ =
-    std::accumulate(input_shape_.begin(), input_shape_.end(), static_cast<int64_t>(1), std::multiplies<int64_t>());
+  input_elements_ = std::accumulate(input_shape_.begin(), input_shape_.end(), 1, std::multiplies<int64_t>());
   is_null_input_ = (input_elements_ == 0);
   if (is_null_input_) {
     InitSizeLists();

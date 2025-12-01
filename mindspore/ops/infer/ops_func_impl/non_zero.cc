@@ -56,7 +56,7 @@ ShapeArray NonZeroFuncImpl::InferShape(const PrimitivePtr &primitive, const Valu
   MS_EXCEPTION_IF_NULL(x_tensor);
   auto x_shape = x_tensor->shape();
   auto x_rank = SizeToLong(x_shape.size());
-  auto x_num = std::accumulate(x_shape.begin(), x_shape.end(), static_cast<int64_t>(1), std::multiplies<int64_t>());
+  auto x_num = std::accumulate(x_shape.begin(), x_shape.end(), 1, std::multiplies<int64_t>());
   return {ShapeVector({x_num, x_rank})};
 }
 

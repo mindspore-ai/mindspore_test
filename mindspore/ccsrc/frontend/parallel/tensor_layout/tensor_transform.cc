@@ -421,8 +421,8 @@ Shape TensorTransform::InferReshapeOp(const Shape &ori_shape, const std::vector<
   if (std::find(ori_shape.begin(), ori_shape.end(), -1) != ori_shape.end()) {
     return op;
   }
-  if (std::accumulate(ori_shape.begin(), ori_shape.end(), static_cast<int64_t>(1), std::multiplies<int64_t>()) !=
-      std::accumulate(op.begin(), op.end(), static_cast<int64_t>(1), std::multiplies<int64_t>())) {
+  if (std::accumulate(ori_shape.begin(), ori_shape.end(), 1, std::multiplies<int64_t>()) !=
+      std::accumulate(op.begin(), op.end(), 1, std::multiplies<int64_t>())) {
     MS_LOG(EXCEPTION) << "Infer redistribution error, cannot convert shape: " << ori_shape << " to shape:" << op;
   }
   MS_LOG(DEBUG) << "It's static shape. Reshape to " << op;

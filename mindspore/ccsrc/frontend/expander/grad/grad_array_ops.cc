@@ -1026,10 +1026,8 @@ DEF_PURE_SHAPE_CALC(g_sort_2)
     }
     auto ind_lastdim = indices_shape.at(indices_rank - 1);
     auto in_lastdim = top_k_input_shape.at(top_k_input_rank - 1);
-    auto x_size = std::accumulate(top_k_input_shape.begin(), top_k_input_shape.end(), static_cast<int64_t>(1),
-                                  std::multiplies<int64_t>());
-    auto outer_dim = std::accumulate(indices_shape.begin(), indices_shape.end() - 1, static_cast<int64_t>(1),
-                                     std::multiplies<int64_t>());
+    auto x_size = std::accumulate(top_k_input_shape.begin(), top_k_input_shape.end(), 1, std::multiplies<int64_t>());
+    auto outer_dim = std::accumulate(indices_shape.begin(), indices_shape.end() - 1, 1, std::multiplies<int64_t>());
     return {top_k_input_shape, {-1, ind_lastdim}, {in_lastdim}, {x_size}, {outer_dim * in_lastdim}};
   })
   .SetInfer([](const ShapeArray &inputs, const HashSet<size_t> &unknown_inputs) -> std::vector<int64_t> {

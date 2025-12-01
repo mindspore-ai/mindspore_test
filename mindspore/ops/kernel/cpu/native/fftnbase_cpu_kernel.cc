@@ -121,7 +121,7 @@ int FFTNBaseCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs,
     calculate_shape_[dim_[i]] = s_[i];
   }
 
-  fft_nums_ = std::accumulate(s_.begin(), s_.end(), static_cast<int64_t>(1), std::multiplies<int64_t>());
+  fft_nums_ = std::accumulate(s_.begin(), s_.end(), 1, std::multiplies<int64_t>());
   norm_weight_ = GetNormalized(fft_nums_, norm_, forward_);
   return KRET_OK;
 }

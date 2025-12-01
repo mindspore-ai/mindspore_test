@@ -229,8 +229,7 @@ void SliceGradGpuKernelMod::ProccessAttr(const std::vector<KernelTensor *> &inpu
   attr_ptr_->size = size_;
   attr_ptr_->begin = begin_;
   attr_ptr_->input_shape = input_shape_;
-  int64_t output_num =
-    std::accumulate(dy_shape_.begin(), dy_shape_.end(), static_cast<int64_t>(1), std::multiplies<int64_t>());
+  int64_t output_num = std::accumulate(dy_shape_.begin(), dy_shape_.end(), 1, std::multiplies<int64_t>());
   attr_ptr_->output_num = output_num;
 }
 

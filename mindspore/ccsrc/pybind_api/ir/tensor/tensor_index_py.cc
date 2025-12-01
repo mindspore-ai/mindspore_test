@@ -565,8 +565,7 @@ static py::array CastToInt(const py::array &input) {
 
 static bool CheckLargeTensor(const ShapeVector &data_shape) {
   constexpr int64_t max_dim = 1024 * 32;
-  int64_t data_shape_dim =
-    std::accumulate(data_shape.begin(), data_shape.end(), static_cast<int64_t>(1), std::multiplies<>());
+  int64_t data_shape_dim = std::accumulate(data_shape.begin(), data_shape.end(), 1, std::multiplies<>());
   return data_shape_dim > max_dim;
 }
 
@@ -1161,8 +1160,7 @@ std::pair<std::vector<TensorIndex>, ShapeVector> TensorIndex::RemoveExpandedDims
 
   ShapeVector broadcast_shape = BroadCastShape(shapes);
   if (has_false) {
-    if (std::accumulate(broadcast_shape.begin(), broadcast_shape.end(), static_cast<int64_t>(1), std::multiplies<>()) !=
-        1) {
+    if (std::accumulate(broadcast_shape.begin(), broadcast_shape.end(), 1, std::multiplies<>()) != 1) {
       MS_EXCEPTION(IndexError) << "Unable to broadcast indices " << broadcast_shape;
     }
     *by_pass = true;
@@ -2195,8 +2193,7 @@ py::object TensorIndex::SetItemByTensor(const ShapeVector &data_shape, bool is_p
       (void)value_transfer_args.emplace_back(py::none());
       (void)value_transfer_types.emplace_back(static_cast<int>(ValueTransferType::kBroadCast));
       (void)value_transfer_args.emplace_back(VectorToPyTuple(updates_shape));
-      int64_t index_shape_dim =
-        std::accumulate(index_shape.begin(), index_shape.end(), static_cast<int64_t>(1), std::multiplies<>());
+      int64_t index_shape_dim = std::accumulate(index_shape.begin(), index_shape.end(), 1, std::multiplies<>());
       if (index_shape_dim <= 1) {
         int64_t first_val = data_shape[0];
         np_index = TensorIndex::np_module_.attr("select")(

@@ -108,8 +108,8 @@ uint32_t FFTShiftCpuKernel::FFTShiftCompute(CpuKernelContext &ctx) {
   std::vector<int64_t> offsets(element_nums, 0);
   for (size_t j = 0; j < dim.size(); j++) {
     int64_t size_j = tensor_shape[dim[j]];
-    int64_t size_back = std::accumulate(tensor_shape.begin() + dim[j] + 1, tensor_shape.end(), static_cast<int64_t>(1),
-                                        std::multiplies<int64_t>());
+    int64_t size_back =
+      std::accumulate(tensor_shape.begin() + dim[j] + 1, tensor_shape.end(), 1, std::multiplies<int64_t>());
     int64_t size_tmp1 = size_j * size_back;
     int64_t size_tmp2 = size_j / 2 * size_back;
 

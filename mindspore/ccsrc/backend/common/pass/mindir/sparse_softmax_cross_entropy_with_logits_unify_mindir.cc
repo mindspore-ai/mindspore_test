@@ -113,8 +113,7 @@ void GetDepthAndBatchSizeFromSparseSoftmaxNode(const AnfNodePtr &sparse_softmax_
     MS_LOG(INTERNAL_EXCEPTION) << "Logits's shape of node [" << sparse_softmax_node->DebugString() << "] is empty"
                                << trace::DumpSourceLines(sparse_softmax_node);
   }
-  *batch_size =
-    std::accumulate(labels_shape.begin(), labels_shape.end(), static_cast<int64_t>(1), std::multiplies<int64_t>());
+  *batch_size = std::accumulate(labels_shape.begin(), labels_shape.end(), 1, std::multiplies<int64_t>());
 }
 CNodePtr CreateOneHot(const FuncGraphPtr &graph, const CNodePtr &sparse_softmax_node, const PatternProcessPass &pass,
                       bool is_convert_const_to_attr = false) {
@@ -336,8 +335,7 @@ CNodePtr CreateTile(const FuncGraphPtr &graph, const CNodePtr &sparse_softmax_no
   if (std::all_of(labels_shape.begin(), labels_shape.end(), [](int64_t value) { return value == 1; })) {
     return nullptr;
   }
-  int64_t batch_size =
-    std::accumulate(labels_shape.begin(), labels_shape.end(), static_cast<int64_t>(1), std::multiplies<int64_t>());
+  int64_t batch_size = std::accumulate(labels_shape.begin(), labels_shape.end(), 1, std::multiplies<int64_t>());
 
   auto tile_primitive = std::make_shared<Primitive>(kTileOpName);
   std::vector<std::string> input_names = {"x", "multiples"};
@@ -394,8 +392,7 @@ CNodePtr CreateRealDiv(const FuncGraphPtr &graph, const CNodePtr &sparse_softmax
   MS_EXCEPTION_IF_NULL(tile_node);
   CheckCNodeInputSize(sparse_softmax_node, kSparseSoftmaxCrossEntropyWithLogitsInputTensorNum);
   auto labels_shape = common::AnfAlgo::GetPrevNodeOutputInferShape(sparse_softmax_node, 1UL);
-  int64_t batch_size =
-    std::accumulate(labels_shape.begin(), labels_shape.end(), static_cast<int64_t>(1), std::multiplies<int64_t>());
+  int64_t batch_size = std::accumulate(labels_shape.begin(), labels_shape.end(), 1, std::multiplies<int64_t>());
   auto y_value = static_cast<float>(batch_size);
   auto y = tensor::from_scalar(y_value, kFloat32);
   auto y_node = CreateValueNode(y, kNumberTypeFloat32);

@@ -538,8 +538,7 @@ void AllToAllAllGatherBatchMatMulFusion::InferInputDimByAllToAllCNode() {
   ep_world_size_ = GetValue<int64_t>(GetAttrFromCNodePrimitive(alltoall_cnode_, kAttrSplitCount));
 
   // expert_size_ = input_shape[0] * input_shape[1] * ... * input_shape[-3]
-  expert_size_ = std::accumulate(input_shape.begin(), input_shape.end() - kSizeTwo, static_cast<int64_t>(1),
-                                 std::multiplies<int64_t>());
+  expert_size_ = std::accumulate(input_shape.begin(), input_shape.end() - kSizeTwo, 1, std::multiplies<int64_t>());
 
   // capacity_size_ = input_shape[-2]
   capacity_size_ = input_shape[input_shape.size() - 2];

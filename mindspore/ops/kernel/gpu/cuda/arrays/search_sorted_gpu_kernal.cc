@@ -62,12 +62,9 @@ int SearchSortedGpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs,
                        [](int64_t x) { return x < 0 ? 0 : LongToSize(x); });
   (void)std::transform(value_shape.begin(), value_shape.end(), std::back_inserter(value_shape_),
                        [](int64_t x) { return x < 0 ? 0 : LongToSize(x); });
-  sequence_size_ = std::accumulate(sequence_shape_.begin(), sequence_shape_.end(), static_cast<int64_t>(1),
-                                   std::multiplies<int64_t>());
-  value_size_ =
-    std::accumulate(value_shape_.begin(), value_shape_.end(), static_cast<int64_t>(1), std::multiplies<int64_t>());
-  output_elements_ =
-    std::accumulate(output_shape.begin(), output_shape.end(), static_cast<int64_t>(1), std::multiplies<int64_t>());
+  sequence_size_ = std::accumulate(sequence_shape_.begin(), sequence_shape_.end(), 1, std::multiplies<int64_t>());
+  value_size_ = std::accumulate(value_shape_.begin(), value_shape_.end(), 1, std::multiplies<int64_t>());
+  output_elements_ = std::accumulate(output_shape.begin(), output_shape.end(), 1, std::multiplies<int64_t>());
   if (output_elements_ == 0) {
     is_null_input_ = true;
   }

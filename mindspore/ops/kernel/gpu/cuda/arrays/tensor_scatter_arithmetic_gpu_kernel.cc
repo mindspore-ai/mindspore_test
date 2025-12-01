@@ -107,8 +107,8 @@ int TensorScatterArithmeticGpuKernelMod::Resize(const std::vector<KernelTensor *
     std::accumulate(update_shape_.begin(), update_shape_.end(), int64_t(1), std::multiplies<int64_t>()));
 
   output_shape_ = outputs.at(kIndex0)->GetShapeVector();
-  output_size_ = static_cast<size_t>(
-    std::accumulate(output_shape_.begin(), output_shape_.end(), static_cast<int64_t>(1), std::multiplies<int64_t>()));
+  output_size_ =
+    static_cast<size_t>(std::accumulate(output_shape_.begin(), output_shape_.end(), 1, std::multiplies<int64_t>()));
   UpdateSize();
   return KRET_OK;
 }

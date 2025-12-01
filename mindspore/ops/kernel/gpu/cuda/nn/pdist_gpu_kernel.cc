@@ -49,10 +49,8 @@ int PDistGpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs, const s
   ResetResource();
   std::vector<int64_t> input_shape = inputs[kIndex0]->GetShapeVector();
   std::vector<int64_t> output_shape = outputs[kIndex0]->GetShapeVector();
-  x_size_ =
-    std::accumulate(input_shape.begin(), input_shape.end(), static_cast<int64_t>(1), std::multiplies<int64_t>());
-  y_size_ =
-    std::accumulate(output_shape.begin(), output_shape.end(), static_cast<int64_t>(1), std::multiplies<int64_t>());
+  x_size_ = std::accumulate(input_shape.begin(), input_shape.end(), 1, std::multiplies<int64_t>());
+  y_size_ = std::accumulate(output_shape.begin(), output_shape.end(), 1, std::multiplies<int64_t>());
   int64_t x_dim = input_shape.size();
   if (x_dim != kRowindex) {
     MS_LOG(ERROR) << "For '" << kernel_name_ << "', the dimension of 'x' must be 2-D, but got " << x_dim << "-D.";

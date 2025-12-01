@@ -46,8 +46,7 @@ int SparseSliceGpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs,
   auto input_indices_shape = inputs[kIndex0]->GetShapeVector();
   auto out_shape = outputs.at(kIndex2)->GetShapeVector();
 
-  auto out_size =
-    std::accumulate(out_shape.begin(), out_shape.end(), static_cast<int64_t>(1), std::multiplies<int64_t>());
+  auto out_size = std::accumulate(out_shape.begin(), out_shape.end(), 1, std::multiplies<int64_t>());
   out_size_ = out_size;
   input_nnz_ = input_indices_shape[0];
   num_dim_ = input_indices_shape[1];

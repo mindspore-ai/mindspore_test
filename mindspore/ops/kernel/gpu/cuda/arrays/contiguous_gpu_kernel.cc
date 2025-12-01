@@ -87,8 +87,8 @@ bool ContiguousGpuKernel::LaunchContiguousImpl(device::DeviceAddress *input,
   T *input_addr = reinterpret_cast<T *>(input->GetMutablePtr());
   T *output_addr = reinterpret_cast<T *>(output->GetMutablePtr());
   const auto &output_shape = input_storage_info->shape;
-  auto output_size = LongToSize(
-    std::accumulate(output_shape.begin(), output_shape.end(), static_cast<int64_t>(1), std::multiplies<int64_t>()));
+  auto output_size =
+    LongToSize(std::accumulate(output_shape.begin(), output_shape.end(), 1, std::multiplies<int64_t>()));
   output_size *= type_size;
   if (input_storage_info->is_contiguous) {
     auto &offset = input_storage_info->storage_offset;

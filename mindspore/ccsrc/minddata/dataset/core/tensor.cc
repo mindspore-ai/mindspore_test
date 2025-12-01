@@ -391,7 +391,7 @@ Status Tensor::CopyStridedArray(unsigned char *dst, unsigned char *src, std::vec
                                 std::vector<dsize_t> strides, uint8_t type_size) {
   RETURN_UNEXPECTED_IF_NULL(dst);
   RETURN_UNEXPECTED_IF_NULL(src);
-  dsize_t size = std::accumulate(shape.begin(), shape.end(), static_cast<dsize_t>(1), std::multiplies<>());
+  dsize_t size = std::accumulate(shape.begin(), shape.end(), 1, std::multiplies<>());
   for (dsize_t i = 0; i < size; ++i) {
     dsize_t offset = 0;
     dsize_t count = i;
