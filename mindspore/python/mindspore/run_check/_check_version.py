@@ -361,17 +361,6 @@ class AscendEnvChecker(EnvChecker):
                 logger.warning(f"Please pay attention to the above warning, countdown: {i}")
                 time.sleep(1)
 
-    def check_opp_kernel(self):
-        """
-            opp kernel install check
-        """
-        opp_kernel_path = self.ascend_opp_path.replace("opp", "opp_kernel")
-        if not os.path.exists(opp_kernel_path):
-            logger.critical("MindSpore relies on \"Ascend opp_kernel\" folder of the Ascend AI software package ("
-                            "Ascend Data Center Solution). Please check whether they are installed correctly or not, "
-                            "refer to the match info on: https://www.mindspore.cn/install")
-            raise Exception("Ascend opp_kernel is not installed")
-
     def set_env(self):
         curr_path = os.path.realpath(os.path.dirname(__file__))
         cust_aicpu_path = os.path.realpath(os.path.join(curr_path, "../lib/plugin/ascend/custom_aicpu_ops"))
@@ -396,8 +385,6 @@ class AscendEnvChecker(EnvChecker):
 
         # check te version after set te env
         self.check_deps_version()
-
-        self.check_opp_kernel()
 
     def _check_env(self):
         """ascend dependence path check"""
