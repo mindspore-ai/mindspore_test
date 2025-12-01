@@ -485,7 +485,6 @@ from mindspore.ops.functional_overload import index_add
 from mindspore.ops.auto_generate.pyboost_inner_prim import squeeze_impl
 from mindspore.ops.auto_generate.gen_ops_prim import equal_ext_op
 
-
 # 1101
 from mindspore.ops.functional_overload import real
 # 1102
@@ -1570,20 +1569,115 @@ def cdist(x1, x2, p=2.0, compute_mode='use_mm_for_euclid_dist_if_necessary'):
     """
     return cdist_(x1, x2, p)
 
+
 @jit_view_unsupported
 def flatten(input, start_dim=0, end_dim=-1):
-    """flatten mint api."""
+    """
+    Flatten a tensor along dimensions from `start_dim` to `end_dim`.
+
+    Args:
+        input (Tensor): The input Tensor.
+        start_dim (int, optional): The first dimension to flatten. Default: ``0`` .
+        end_dim (int, optional): The last dimension to flatten. Default: ``-1`` .
+
+    Returns:
+        Tensor. If no dimensions are flattened, returns the original `input`, otherwise return the flattened Tensor.
+        If `input` is a 0-dimensional Tensor, a 1-dimensional Tensor will be returned.
+
+    Raises:
+        TypeError: If `input` is not a Tensor.
+        TypeError: If `start_dim` or `end_dim` is not int.
+        ValueError: If `start_dim` is greater than `end_dim` after canonicalized.
+        ValueError: If `start_dim` or `end_dim` is not in range of [-input.dim, input.dim-1].
+
+    Supported Platforms:
+        ``Ascend`` ``GPU`` ``CPU``
+
+    Examples:
+        >>> import mindspore
+        >>> import numpy as np
+        >>> from mindspore import Tensor
+        >>> input_x = Tensor(np.ones(shape=[1, 2, 3, 4]), mindspore.float32)
+        >>> output = mindspore.mint.flatten(input_x)
+        >>> print(output.shape)
+        (24,)
+    """
+
     return flatten_ext(input, start_dim, end_dim)
+
 
 @jit_view_unsupported
 def reshape(input, shape):
-    """reshape mint api."""
+    """
+    Reshape the input tensor based on the given shape.
+
+    .. note::
+        The -1 in the parameter `shape` indicates that the size of that dimension is inferred from the other
+        dimensions and the total number of elements in input tensor.
+
+    Args:
+        input (Tensor): The input tensor.
+        shape (Union[tuple[int], list[int], Tensor[int]]): New shape.
+
+    Returns:
+        Tensor
+
+    Supported Platforms:
+        ``Ascend`` ``GPU`` ``CPU``
+
+    Examples:
+        >>> import mindspore
+        >>> input = mindspore.tensor([[-0.1, 0.3, 3.6], [0.4, 0.5, -3.2]], mindspore.float32)
+        >>> # case1: Parameter `shape` does not contain -1.
+        >>> output = mindspore.mint.reshape(input, (3, 2))
+        >>> print(output)
+        [[-0.1  0.3]
+         [ 3.6  0.4]
+         [ 0.5 -3.2]]
+        >>> # case2: Parameter `shape` contains -1.
+        >>> output = mindspore.mint.reshape(input, (-1, 6))
+        >>> print(output)
+        [[-0.1  0.3  3.6  0.4  0.5 -3.2]]
+    """
+
     return mindspore.ops.function.array_func.reshape(input, shape)
+
 
 @jit_view_unsupported
 def t(input):
-    """t mint api."""
+    """
+    Transpose the input tensor.
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
+    Args:
+        input (Tensor): The input tensor.
+
+    Returns:
+        Tensor, transpose 2D tensor, return 1D tensor as it is.
+
+    Raises:
+        ValueError: If the dimension of `input` is greater than 2.
+        ValueError: If `input` is empty.
+        TypeError: If `input` is not a tensor.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import mindspore
+        >>> import numpy as np
+        >>> from mindspore import Tensor
+        >>> input = Tensor(np.array([[1, 2, 3], [4, 5, 6]]), mindspore.float32)
+        >>> output = mindspore.mint.t(input)
+        >>> print(output)
+        [[ 1. 4.]
+         [ 2. 5.]
+         [ 3. 6.]]
+    """
     return mindspore.ops.auto_generate.t_ext(input)
+
 
 __all__ = [
     'conv2d',
