@@ -14,6 +14,7 @@
 # ==============================================================================
 """Dataloader module."""
 
+import atexit
 from enum import Enum
 import multiprocessing
 import numbers
@@ -21,6 +22,7 @@ import os
 import queue
 import threading
 from typing import Any, AnyStr, Callable, Generic, Iterable, Mapping, overload, Protocol, Sequence, TypeVar, Union
+import weakref
 
 import numpy as np
 import numpy.typing as npt
@@ -494,6 +496,11 @@ class _MultiProcessIterator(_Iterator):
             self.pin_worker_thread.start()
         else:
             self.result_queue = self.data_queue
+
+        # Register a termination function using weakref to avoid the object from unable to properly destruct.
+        atexit.register(
+            lambda cleanup: cleanup()() if cleanup() is not None else None, weakref.WeakMethod(self.terminate)
+        )
 
         cde.register_worker_pids(id(self), [os.getpid()] + [data_worker.pid for data_worker in self.data_workers])
         set_sigchld_handler()

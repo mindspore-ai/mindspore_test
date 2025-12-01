@@ -92,7 +92,7 @@ def mix_entropy(entropy_array):
         np.ndarray, the mixed entropy.
     """
     hash_const_a = INIT_A
-    mixer = np.zeros(DEFAULT_POOL_SIZE, dtype=np.uint32)
+    mixer = [0] * DEFAULT_POOL_SIZE
 
     # Add in the entropy up to the pool size.
     for i, _ in enumerate(mixer):
@@ -120,7 +120,7 @@ def generate_state(pool):
     """
     hash_const_b = INIT_B
 
-    state = np.zeros(DEFAULT_POOL_SIZE, dtype=np.uint32)
+    state = [0] * DEFAULT_POOL_SIZE
     for i_dst, data_val in enumerate(pool):
         data_val = (data_val ^ hash_const_b) & MASK32
         hash_const_b = (hash_const_b * MULT_B) & MASK32
