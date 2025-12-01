@@ -1357,63 +1357,6 @@ class Cell(Cell_):
             return True, res
         return False, None
 
-    def _parallel_in_args(self, *args, **kwargs):
-        """_parallel_in_args"""
-        if context._get_mode() != context.GRAPH_MODE:
-            return args, kwargs
-        processed_args = list(args)
-        processed_kwargs = dict(kwargs)
-
-        if self.in_layout is not None:
-            if len(self.in_layout) != len(args):
-                raise ValueError(f"The size of in_layout must be equal to inputs num, but got {len(self.in_layout)} "
-                                 f"and {len(args)}")
-
-            for i, arg in enumerate(args):
-                if not isinstance(arg, Tensor) or arg is None:
-                    continue
-                to_layout = self.in_layout[i]
-                processed_args[i] = arg.redistribute(to_layout)
-
-        if hasattr(self, "optional_in_layout") and self.optional_in_layout:
-            for k, v in kwargs.items():
-                if not isinstance(v, Tensor) or v.layout is None:
-                    continue
-                if k not in self.optional_in_layout:
-                    raise ValueError(f"Key word {k} in optional inputs dose not configured layout.")
-                to_layout = self.optional_in_layout[k]
-                processed_kwargs[k] = v.redistribute(to_layout)
-        return tuple(processed_args), processed_kwargs
-
-    def _need_out_shard(self):
-        """_need_out_shard"""
-        if context._get_mode() != context.GRAPH_MODE:
-            return False
-        if self.out_layout is None:
-            return False
-        return True
-
-    def _parallel_out_args(self, outputs):
-        """_parallel_out_args"""
-        if not self._need_out_shard():
-            return outputs
-        if isinstance(outputs, (tuple, list)):
-            if len(outputs) != len(self.out_layout):
-                raise ValueError(f"The size of outputs and out_layout must be equal, but got {len(outputs)} and "
-                                 f"{len(self.out_layout)}")
-            new_outputs = []
-            for i, arg in enumerate(outputs):
-                if not isinstance(arg, Tensor) or arg is None:
-                    new_outputs.append(arg)
-                    continue
-                to_layout = self.out_layout[i]
-                new_outputs.append(arg.redistribute(to_layout))
-            return tuple(new_outputs)
-        if len(self.out_layout) != 1:
-            raise ValueError(f"The size of outputs and out_layout must be equal, but got 1 and "
-                             f"{len(self.out_layout)}")
-        return outputs.redistribute(self.out_layout[0])
-
     def __call__(self, *args, **kwargs):
         # Run in Graph mode.
         if context._get_mode() == context.GRAPH_MODE and os.getenv("MS_JIT") != '0':
@@ -1438,7 +1381,6 @@ class Cell(Cell_):
             self._init_check()
             self._self_check()
 
-        args, kwargs = self._parallel_in_args(*args, **kwargs)
         if not (self.requires_grad or self._dynamic_shape_inputs or self.mixed_precision_type):
             if not (self._forward_pre_hook or self._forward_hook or self._backward_pre_hook or self._backward_hook or
                     self._shard_fn or self._recompute_cell or (self.has_bprop and _pynative_executor.requires_grad())):
@@ -1448,7 +1390,7 @@ class Cell(Cell_):
         else:
             outputs = self._complex_call(*args, **kwargs)
 
-        return self._parallel_out_args(outputs)
+        return outputs
 
     def _check_layout(self):
         pass

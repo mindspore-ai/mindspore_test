@@ -1040,10 +1040,7 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
         """
         if not self._need_contiguous():
             return self
-        ret = tensor_operator_registry.get('contiguous')(self)
-        if hasattr(self, '_layout'):
-            ret._layout = self.layout
-        return ret
+        return tensor_operator_registry.get('contiguous')(self)
 
     def is_contiguous(self):
         """
