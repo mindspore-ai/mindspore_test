@@ -21,8 +21,8 @@
 #include <vector>
 #include <ostream>
 #include <climits>
-#include "include/api/dual_abi_helper.h"
-#include "include/api/visible.h"
+#include "utils/dual_abi_helper.h"
+#include "mindapi/base/macros.h"
 namespace mindspore {
 enum CompCode : uint32_t {
   kCore = 0x00000000u,
@@ -126,7 +126,7 @@ enum StatusCode : uint32_t {
   kLiteInputParamInvalid = kLite | (0x0FFFFFFF & -600), /**< Invalid input param by user. */
 };
 
-class MS_API Status {
+class MS_CORE_API Status {
  public:
   /// \brief Constructor of Status.
   Status();
@@ -169,7 +169,7 @@ class MS_API Status {
   /// \param[in] status_msg Status message to be set.
   inline void SetStatusMsg(const std::string &status_msg);
   /// \brief Operator <<.
-  MS_API friend std::ostream &operator<<(std::ostream &os, const Status &s);
+  MS_CORE_API friend std::ostream &operator<<(std::ostream &os, const Status &s);
   /// \brief Operator ==.
   bool operator==(const Status &other) const;
   /// \brief Operator ==.

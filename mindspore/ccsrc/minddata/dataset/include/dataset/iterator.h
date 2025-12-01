@@ -23,8 +23,8 @@
 #include <unordered_map>
 #include <vector>
 
-#include "include/api/dual_abi_helper.h"
-#include "include/api/status.h"
+#include "utils/dual_abi_helper.h"
+#include "utils/status.h"
 #include "include/dataset/ms_tensor.h"
 #include "minddata/dataset/util/visible.h"
 

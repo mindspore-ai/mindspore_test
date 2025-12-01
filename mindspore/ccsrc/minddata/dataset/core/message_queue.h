@@ -23,7 +23,7 @@
 #include <sys/types.h>
 #endif
 
-#include "include/api/status.h"
+#include "utils/status.h"
 
 namespace mindspore::dataset {
 #if !defined(_WIN32) && !defined(_WIN64)

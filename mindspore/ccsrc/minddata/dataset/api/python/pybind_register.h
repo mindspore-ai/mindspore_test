@@ -25,7 +25,7 @@
 #include "pybind11/pybind11.h"
 #include "pybind11/stl.h"
 
-#include "include/api/status.h"
+#include "utils/status.h"
 #include "minddata/dataset/util/md_log_adapter.h"
 
 namespace py = pybind11;

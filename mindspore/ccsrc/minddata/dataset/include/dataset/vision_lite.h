@@ -23,7 +23,7 @@
 #include <utility>
 #include <vector>
 
-#include "include/api/status.h"
+#include "utils/status.h"
 #include "include/dataset/constants.h"
 #include "include/dataset/transforms.h"
 #include "minddata/dataset/util/visible.h"

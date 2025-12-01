@@ -23,7 +23,7 @@
 #include <string>
 #include <vector>
 
-#include "include/api/status.h"
+#include "utils/status.h"
 #include "include/dataset/constants.h"
 #include "include/dataset/ms_tensor.h"
 #include "include/dataset/transforms.h"

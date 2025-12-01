@@ -20,7 +20,7 @@
 #include <string>
 #include <vector>
 #include "ir/anf.h"
-#include "include/api/dual_abi_helper.h"
+#include "utils/dual_abi_helper.h"
 #include "include/utils/anfalgo.h"
 
 namespace mindspore {

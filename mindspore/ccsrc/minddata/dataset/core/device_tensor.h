@@ -20,7 +20,7 @@
 #include <memory>
 #include <vector>
 
-#include "include/api/status.h"
+#include "utils/status.h"
 #include "minddata/dataset/core/data_type.h"
 #include "minddata/dataset/core/tensor.h"
 
