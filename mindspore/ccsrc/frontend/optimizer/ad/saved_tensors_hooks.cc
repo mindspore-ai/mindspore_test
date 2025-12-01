@@ -36,7 +36,10 @@ namespace ad {
 const char kUserDataAbs[] = "user_data_abs";
 
 constexpr size_t kCNodeFirstDataInput = 1;
+constexpr size_t kCNodeSecondDataInput = 2;
+constexpr size_t kKGraphOutPutCnodeSize = 3;
 
+namespace {
 class SavedTensorsHooksStack {
  public:
   static SavedTensorsHooksStack &GetInstance() {
@@ -70,8 +73,9 @@ class SavedTensorsHooksStack {
 
   std::stack<std::pair<FuncGraphPtr, FuncGraphPtr>> stk_;
 };
+}  // namespace
 
-WithSavedTensorsHooks::WithSavedTensorsHooks(const FuncGraphPtr &func_graph) {
+SavedTensorsHooks::SavedTensorsHooks(const FuncGraphPtr &func_graph) {
   auto python_obj = func_graph->python_obj();
   if (python_obj == nullptr) {
     return;
@@ -85,7 +89,6 @@ WithSavedTensorsHooks::WithSavedTensorsHooks(const FuncGraphPtr &func_graph) {
 
   auto pack_hook_obj = py::getattr(obj, FUNC_GRAPH_FLAG_PACK_HOOK, py::none());
   auto unpack_hook_obj = py::getattr(obj, FUNC_GRAPH_FLAG_UNPACK_HOOK, py::none());
-
   if (pack_hook_obj.is_none() && unpack_hook_obj.is_none()) {
     py::module mod = python_adapter::GetPyModule(parse::PYTHON_MOD_PARSE_MODULE);
     auto construct_obj = python_adapter::CallPyModFn(mod, parse::PYTHON_MOD_GET_ORIGINAL_CELL_CONSTRUCT, obj);
@@ -126,7 +129,7 @@ WithSavedTensorsHooks::WithSavedTensorsHooks(const FuncGraphPtr &func_graph) {
   SavedTensorsHooksStack::GetInstance().Enter(pack_hook, unpack_hook);
 }
 
-WithSavedTensorsHooks::~WithSavedTensorsHooks() {
+SavedTensorsHooks::~SavedTensorsHooks() {
   if (has_saved_tensors_hooks_) {
     SavedTensorsHooksStack::GetInstance().Exit();
   }
@@ -192,6 +195,7 @@ void SetUserDataAbs(const std::vector<AnfNodePtr> &transf_args, const AnfNodePtr
     for (size_t idx = 0; idx < current_primal_fg->parameters().size(); ++idx) {
       transf_args[idx + 1]->set_user_data(kUserDataAbs, current_primal_fg->parameters()[idx]->abstract());
     }
+    MS_EXCEPTION_IF_NULL(current_primal_fg->output());
     out_value->set_user_data(kUserDataAbs, current_primal_fg->output()->abstract());
   }
 }
@@ -203,17 +207,15 @@ void ClearUserDataAbs(const std::vector<AnfNodePtr> &transf_args, const AnfNodeP
   out_value->set_user_data<abstract::AbstractBase>(kUserDataAbs, nullptr);
 }
 
-bool ApplySavedTensorsHooksOnK(const FuncGraphPtr &k, const FuncGraphPtr &bprop_env_fg,
-                               const FuncGraphPtr current_primal_fg, const CNodePtr &cnode, const AnfNodePtr &out_value,
+bool ApplySavedTensorsHooksOnK(const FuncGraphPtr &k, const FuncGraphPtr &current_primal_fg, const CNodePtr &cnode,
                                const FuncGraphManagerPtr &manager, const std::vector<AnfNodePtr> &transf_args) {
   MS_EXCEPTION_IF_NULL(k);
-  MS_EXCEPTION_IF_NULL(bprop_env_fg);
+  MS_EXCEPTION_IF_NULL(manager);
 
   const auto &saved_tensors_hooks_stk = SavedTensorsHooksStack::GetInstance();
   FuncGraphPtr pack_hook = saved_tensors_hooks_stk.pack_hook();
   FuncGraphPtr unpack_hook = saved_tensors_hooks_stk.unpack_hook();
   if (pack_hook == nullptr && unpack_hook == nullptr) {
-    MS_LOG(DEBUG) << "No packed/unpacked hooks are active.";
     return false;
   }
 
@@ -224,11 +226,21 @@ bool ApplySavedTensorsHooksOnK(const FuncGraphPtr &k, const FuncGraphPtr &bprop_
     return (pack_hook == nullptr ? tensor : k->NewCNodeInOrder({NewValueNode(pack_hook), tensor}));
   };
 
+  auto fprop_cnode = k->output()->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(fprop_cnode);
+  MS_EXCEPTION_IF_CHECK_FAIL(
+    IsPrimitiveCNode(fprop_cnode, prim::kPrimMakeTuple) && fprop_cnode->size() == kKGraphOutPutCnodeSize,
+    std::string("K's output must be a MakeTuple CNode with exactly two elements: (forward_output, bprop), but got ") +
+      fprop_cnode->DebugString());
+  auto bprop_env_fg = GetValueNode<FuncGraphPtr>(fprop_cnode->input(kCNodeSecondDataInput));
+  MS_EXCEPTION_IF_NULL(bprop_env_fg);
+
   auto unpack_tensor = [&bprop_env_fg, &unpack_hook](const AnfNodePtr &packed_tensor) {
     return (unpack_hook == nullptr ? packed_tensor
                                    : bprop_env_fg->NewCNodeInFront({NewValueNode(unpack_hook), packed_tensor}));
   };
 
+  auto out_value = fprop_cnode->input(kCNodeFirstDataInput);
   // Set Abstract to user_data temporarily.
   SetUserDataAbs(transf_args, out_value, cnode, current_primal_fg);
 
@@ -242,7 +254,8 @@ bool ApplySavedTensorsHooksOnK(const FuncGraphPtr &k, const FuncGraphPtr &bprop_
     auto packed_tensor = pack_tensor(saved_tensor);
     auto unpacked_tensor = unpack_tensor(packed_tensor);
     for (auto &[user, idx] : user_idxs) {
-      MS_LOG(DEBUG) << "  Replacing input " << idx << " of user " << user->ToString() << " with unpacked tensor";
+      MS_LOG(DEBUG) << "  Replacing input " << idx << " of user " << user->ToString()
+                    << " with unpacked tensor " + unpacked_tensor->ToString() << ".";
       manager->SetEdge(user, idx, unpacked_tensor);
     }
   }

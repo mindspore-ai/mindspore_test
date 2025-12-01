@@ -18,7 +18,6 @@
 import numpy as np
 import mindspore as ms
 from mindspore import Tensor, ops
-from mindspore.nn import Cell
 from tests.mark_utils import arg_mark
 
 
@@ -29,35 +28,28 @@ def test_for_after_while_in_while():
     Description: Nested control flow (for-after-while-in-while) in jit.
     Expectation: Executes correctly and gradients are computable.
     """
-    class Net(Cell):
-        def __init__(self, loop_count=3):
-            super().__init__()
-            self.loop_count = loop_count
-            self.fla = ops.Flatten()
-            self.add = ops.Add()
+    loop_count = 10
 
-        def construct(self, x):
-            num = self.loop_count
-            while num > 5:
-                x = self.add(x, x)
-                num = num - 1
-                while num < 2:
-                    x = self.fla(x)
-            for _ in range(3):
-                x = self.add(x, x)
-            return x
+    def net(x):
+        num = loop_count
+        while num > 5:
+            x = ops.Add()(x, x)
+            num = num - 1
+            while num < 2:
+                x = ops.Flatten()(x)
+        for _ in range(3):
+            x = ops.Add()(x, x)
+        return x
 
     input_me = Tensor(np.full((2, 3), 2).astype(np.float32))
 
-    net = Net(10)
     out_graph1 = ms.jit(net)(input_me)
     test_fuc = ops.GradOperation()(net)
     out_graph2 = ms.jit(test_fuc)(input_me)
 
-    net = Net(10)
-    out_pynative1 = ms.jit(net)(input_me)
+    out_pynative1 = net(input_me)
     test_fuc = ops.GradOperation()(net)
-    out_pynative2 = ms.jit(test_fuc)(input_me)
+    out_pynative2 = test_fuc(input_me)
     assert np.allclose(out_graph1.asnumpy(),
                        out_pynative1.asnumpy(), 0.0001, 0.0001)
     assert np.allclose(out_graph2.asnumpy(),

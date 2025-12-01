@@ -729,7 +729,7 @@ FuncGraphPtr DFunctor::KUserDefined(const FuncGraphPtr &primal) {
     // Reset defer_inline to enable successive inlining
     primal->set_flag(FUNC_GRAPH_FLAG_DEFER_INLINE, false);
 
-    WithSavedTensorsHooks with_scope(primal);
+    SavedTensorsHooks saved_tensors_hooks_scope(primal);
     auto functor = std::make_shared<DFunctor>(primal, resources_, false, is_grad_by_j_);
     functor->Init();
     functor->k_graph_ = fg;
@@ -891,7 +891,7 @@ AnfNodePtr DFunctor::MapFuncGraphToK(const AnfNodePtr &primal) {
     return NewValueNode(k_user_defined);
   }
 
-  WithSavedTensorsHooks with_scope(func_graph);
+  SavedTensorsHooks saved_tensors_hooks_scope(func_graph);
   auto functor = std::make_shared<DFunctor>(func_graph, resources_, false, is_grad_by_j_);
   functor->Init();
   functor->MapObject();

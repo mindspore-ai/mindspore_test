@@ -23,19 +23,17 @@
 namespace mindspore {
 namespace ad {
 
-class WithSavedTensorsHooks {
+class SavedTensorsHooks {
  public:
-  explicit WithSavedTensorsHooks(const FuncGraphPtr &func_graph);
-  ~WithSavedTensorsHooks();
+  explicit SavedTensorsHooks(const FuncGraphPtr &func_graph);
+  ~SavedTensorsHooks();
 
  private:
   bool has_saved_tensors_hooks_{false};
 };
 
-bool ApplySavedTensorsHooksOnK(const FuncGraphPtr &k, const FuncGraphPtr &bprop_env_fg,
-                               const FuncGraphPtr currrent_primal_fg, const CNodePtr &cnode,
-                               const AnfNodePtr &out_value, const FuncGraphManagerPtr &manager,
-                               const std::vector<AnfNodePtr> &transf_args);
+bool ApplySavedTensorsHooksOnK(const FuncGraphPtr &k, const FuncGraphPtr &current_primal_fg, const CNodePtr &cnode,
+                               const FuncGraphManagerPtr &manager, const std::vector<AnfNodePtr> &transf_args);
 }  // namespace ad
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_FRONTEND_OPTIMIZER_AD_SAVED_TENSORS_HOOKS_H_
