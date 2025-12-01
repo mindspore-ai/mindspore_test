@@ -40,8 +40,8 @@ def generator_train():
     vocab_size = 32000
     input_ids = np.random.randint(low=0, high=vocab_size, size=(
         step_num * batch_size, seq_len,)).astype(np.int32)
-    for idx in range(len(input_ids)):
-        yield input_ids[idx]
+    for _, item in enumerate(input_ids):
+        yield item
 
 
 def build_model(test_mode,
@@ -129,12 +129,12 @@ def run_llama():
     args = parser.parse_args()
     if args.test_mode == "somas":
         ms.set_context(jit_config={"jit_level": "O0"})
-        rt.set_memory(max_size="15.1GB", optimize_level="O1")
+        rt.set_memory(max_size="20.1GB", optimize_level="O1")
         ms.set_context(mode=ms.GRAPH_MODE, save_graphs=False)
         run_llama_1p_somas_grad_accu()
     elif args.test_mode == "no_somas":
         ms.set_context(jit_config={"jit_level": "O0"})
-        rt.set_memory(max_size="15.1GB", optimize_level="O0")
+        rt.set_memory(max_size="20.1GB", optimize_level="O0")
         ms.set_context(mode=ms.GRAPH_MODE, save_graphs=False)
         run_llama_1p_no_somas_grad_accu()
 

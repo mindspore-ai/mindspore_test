@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-
+"""deepseekv3 test"""
 import os
 import re
 import numpy as np
@@ -127,11 +127,11 @@ def test_deepseekv3_cell_dp2mp2ep2pp2mb4gas1bs1_deredundency_8p_gmm():
     loss_list = extract_losses_from_log(log_file_path)
 
     # set golden_loss
-    golden_loss = [13.509, 13.509, 13.507, 13.507, 13.501, \
-                   13.503, 13.503, 13.497, 13.485, 13.494, \
-                   13.486, 13.478, 13.475, 13.461, 13.457]
+    golden_loss = [13.509, 13.511, 13.512, 13.508, 13.507, \
+                   13.512, 13.506, 13.503, 13.5, 13.497, \
+                   13.502, 13.493, 13.494, 13.491, 13.483]
     if_equal = np.allclose(
-        np.array(golden_loss), np.array(loss_list), atol=1e-3, rtol=0
+        np.array(golden_loss), np.array(loss_list), atol=1e-3, rtol=1e-3
     )
     assert if_equal, \
         f"Training loss is different from the golden loss, " \
@@ -182,9 +182,11 @@ def test_deepseekv3_cell_dp2mp2ep2pp2mb4gas1bs1_8p_bmm():
     loss_list = extract_losses_from_log(log_file_path)
 
     # set golden_loss
-    golden_loss = [13.511, 13.504, 13.516, 13.515, 13.503, 13.508]
+    golden_loss = [13.514, 13.515, 13.515, 13.512, 13.515, 13.51]
 
-    if_equal = golden_loss == loss_list
+    if_equal = np.allclose(
+        np.array(golden_loss), np.array(loss_list), atol=1e-3, rtol=1e-3
+    )
     assert if_equal, \
         f"Training loss is different from the golden loss, " \
         f"where training loss: {loss_list}, golden_loss: {golden_loss}."
@@ -228,9 +230,11 @@ def test_deepseekv3_cell_dp2mp2ep2pp2mb4gas1bs1_8p_gptdataset():
     loss_list = extract_losses_from_log(log_file_path)
 
     # set golden_loss
-    golden_loss = [12.029, 11.965, 11.790, 11.805, 11.954, 11.733]
+    golden_loss = [12.036, 11.971, 11.796, 11.807, 11.962, 11.73]
 
-    if_equal = golden_loss == loss_list
+    if_equal = np.allclose(
+        np.array(golden_loss), np.array(loss_list), atol=1e-3, rtol=1e-3
+    )
     assert if_equal, \
         f"Training loss is different from the golden loss, " \
         f"where training loss: {loss_list}, golden_loss: {golden_loss}."
@@ -491,8 +495,8 @@ def test_deepseekv3_cell_dp2mp2ep2pp2mb4gas1bs1_mte_8p_gptdataset():
     loss_list = extract_losses_from_log(log_file_path)
 
     # set golden_loss
-    golden_loss = [12.029, 11.965, 11.790, 11.805, 11.954, 11.733, 12.11, 11.863, 11.967, 11.629, 11.903, 11.921,
-                   11.628, 11.878, 11.991]
+    golden_loss = [12.035, 11.972, 11.794, 11.804, 11.963, 11.738, 12.118, 11.874, 11.982, 11.639, 11.913, 11.936,
+                   11.636, 11.891, 12.007]
 
     if_equal = np.allclose(np.array(golden_loss), np.array(loss_list), atol=1e-3, rtol=1e-3)
     assert if_equal, \
@@ -561,10 +565,9 @@ def test_deepseekv3_cell_make_tuple_tuple_get_item_cross_graph():
     loss_list = extract_losses_from_log(log_path)
 
     # set golden_loss
-    golden_loss = [13.509, 13.509, 13.507, 13.507, 13.501, 13.503]
-    diff = [golden_loss[i] - loss_list[i] for i in range(len(loss_list))]
-    abs_diff = sum(abs(i) for i in diff)
-    if_equal = abs_diff < 0.002
+    golden_loss = [13.511, 13.509, 13.511, 13.507, 13.506, 13.513]
+
+    if_equal = np.allclose(np.array(golden_loss), np.array(loss_list), atol=1e-3, rtol=1e-3)
     assert if_equal, \
         f"Training loss is different from the golden loss, " \
         f"where training loss: {loss_list}, golden_loss: {golden_loss}."

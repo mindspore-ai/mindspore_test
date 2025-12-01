@@ -23,6 +23,7 @@ from tests.mark_utils import arg_mark
 
 
 def run_command(cmd, log_path, tracker_path, somas_check, enable_somas):
+    """run cmd"""
     memory_csv_filename = tracker_path + "/memory_block.csv"
     task_csv_filename = tracker_path + "/task.csv"
     if os.path.isfile(memory_csv_filename):
@@ -33,8 +34,9 @@ def run_command(cmd, log_path, tracker_path, somas_check, enable_somas):
         os.remove(log_path)
     os.system(cmd)
 
-    for line in open(log_path):
-        print(line, end='', flush=True)
+    with open(log_path, encoding='utf-8') as log_file:
+        for line in log_file:
+            print(line, end='', flush=True)
 
     eager_free_para = "Eager free count :"
     eager_free_output = subprocess.check_output(
@@ -58,7 +60,7 @@ def run_command(cmd, log_path, tracker_path, somas_check, enable_somas):
     max_memory_size = 0
     used_peak = 0
     actual_peak_memory = 0
-    with open(log_path, 'r') as file:
+    with open(log_path, 'r', encoding='utf-8') as file:
         for line in file:
             if "MindSpore Used memory size" in line:
                 match = re.search(r'\d+', line)

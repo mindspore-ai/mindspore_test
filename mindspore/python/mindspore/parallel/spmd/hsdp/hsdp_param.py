@@ -238,7 +238,8 @@ class HSDPParam:
         if not self.param.has_init:
             slice_index = self.hsdp_rank % self.shard_size
             local_param = self.param.to_local() if isinstance(self.param, DTensor) else self.param
-            param_slice = ops.split(local_param, local_param.shape[0] // self.shard_size)[slice_index]
+            param_slice = ops.split(local_param, local_param.shape[0] // self.shard_size)[slice_index] + 0
+            self._update_param_data(param_slice)
             self.sharded_param = Parameter(param_slice,
                                            name="sharded_"+self.param.name,
                                            requires_grad=self.param.requires_grad)
@@ -302,17 +303,24 @@ class HSDPParam:
                                       name="acc_grad_"+self.param.name,
                                       requires_grad=False)
         self.param.acc_grad = self.acc_grad
-        self.to_sharded()
         self.sharded = True
         if self.shard_size == self.rank_size:
             self.fully_sharded = True
         else:
             self.fully_sharded = False
 
+    #pylint: disable=W0212
+    def _update_param_data(self, data):
+        """update param data"""
+        if isinstance(self.param, DTensor):
+            self.param.set_data(data)
+        else:
+            self.param._update_data(data)
+
     @_no_grad()
     def to_sharded(self):
         """change parameter to sharded state"""
-        self.param.set_data(self.sharded_param)
+        self._update_param_data(self.sharded_param)
 
     @_no_grad()
     def prefetch_unsharded(self):
@@ -326,13 +334,14 @@ class HSDPParam:
         self.prefetch_data = unshared_param_data
         self.prefetch_handle = handle
 
+    #pylint: disable=W0212
     @_no_grad()
     def to_unsharded(self):
         """change parameter to unsharded state"""
         if self.prefetch_handle is not None:
             self.prefetch_handle.wait()
-            self.sharded_param.set_data(self.param)
-            self.param.set_data(self.prefetch_data)
+            self.sharded_param._update_data(self.param)
+            self._update_param_data(self.prefetch_data)
             self.prefetch_handle = None
             self.prefetch_data = None
             return
@@ -340,8 +349,8 @@ class HSDPParam:
         unshared_param_data, _ = comm.all_gather_into_tensor(self.param.to_local()
                                                              if isinstance(self.param, DTensor) else self.param,
                                                              group=self.sharded_group_name, async_op=False)
-        self.sharded_param.set_data(self.param.to_local() if isinstance(self.param, DTensor) else self.param)
-        self.param.set_data(unshared_param_data)
+        self.sharded_param._update_data(self.param.to_local() if isinstance(self.param, DTensor) else self.param)
+        self._update_param_data(unshared_param_data)
 
     @_no_grad()
     def zero_acc_grad(self):

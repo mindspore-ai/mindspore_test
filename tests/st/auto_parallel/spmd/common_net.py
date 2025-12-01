@@ -20,14 +20,17 @@ from mindspore.common.initializer import initializer
 
 class DenseL2(nn.Cell):
     """dense cell with level 2 depth"""
-    def __init__(self, in_channels, hidden_size):
+    def __init__(self, in_channels, hidden_size, has_bias=True):
         super().__init__()
+        self.has_bias = has_bias
         self.dense1 = nn.Dense(in_channels, hidden_size, weight_init="normal", has_bias=False)
-        self.bias = Parameter(initializer("zeros", [hidden_size], self.dense1.weight.dtype), name="bias")
+        if self.has_bias:
+            self.bias = Parameter(initializer("zeros", [hidden_size], self.dense1.weight.dtype), name="bias")
 
     def construct(self, x):
         x = self.dense1(x)
-        x = mint.add(x, self.bias)
+        if self.has_bias:
+            x = mint.add(x, self.bias)
         return x
 
 class DenseL3(nn.Cell):
@@ -76,12 +79,12 @@ class DenseNet(nn.Cell):
 
 class DenseMutiLayerNet(nn.Cell):
     """dense net with configurable layer number"""
-    def __init__(self, hidden_size, layer_num):
+    def __init__(self, hidden_size, layer_num, has_bias=True):
         super().__init__()
         self.layer_num = layer_num
         self.layers = nn.CellList()
         for _ in range(self.layer_num):
-            layer = DenseL2(hidden_size, hidden_size)
+            layer = DenseL2(hidden_size, hidden_size, has_bias)
             self.layers.append(layer)
 
     def construct(self, x):
