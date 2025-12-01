@@ -28,7 +28,7 @@
 #include "runtime/core/graph_scheduler/base/parameter_store.h"
 #include "runtime/core/graph_executor/pre_launch/pre_launch_comm.h"
 #include "runtime/core/graph_scheduler/base/graph_scheduler.h"
-#include "include/cluster/topology/collective_manager.h"
+#include "include/runtime/hardware_abstract/collective/collective_manager.h"
 #include "ir/tensor_new.h"
 #include "tools/error_handler/error_handler.h"
 #include "tools/error_handler/error_config.h"

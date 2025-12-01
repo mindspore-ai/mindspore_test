@@ -23,7 +23,7 @@
 #include <variant>
 #include <unordered_map>
 #include <algorithm>
-#include "include/cluster/topology/collective_manager.h"
+#include "include/runtime/hardware_abstract/collective/collective_manager.h"
 #include "plugin/ascend/res_manager/hccl_adapter/hccl_adapter.h"
 #include "plugin/ascend/res_manager/collective/ascend_collective_comm_lib.h"
 #include "utils/ms_context.h"

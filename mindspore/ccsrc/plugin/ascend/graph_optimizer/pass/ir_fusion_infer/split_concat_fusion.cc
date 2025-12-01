@@ -26,7 +26,7 @@
 #include "include/utils/anfalgo.h"
 #include "include/backend/common/kernel_graph/anf_runtime_algorithm.h"
 #include "include/backend/common/pass_manager/helper.h"
-#include "include/cluster/topology/collective_manager.h"
+#include "include/runtime/hardware_abstract/collective/collective_manager.h"
 #include "primitive/auto_generate/gen_ops_primitive_c.h"
 #include "primitive/auto_generate/gen_ops_primitive_m.h"
 #include "primitive/auto_generate/gen_ops_primitive_s.h"

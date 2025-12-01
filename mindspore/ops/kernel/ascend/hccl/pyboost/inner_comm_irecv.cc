@@ -22,7 +22,7 @@
 #include "kernel/ascend/hccl/hcom_util.h"
 #include "plugin/ascend/res_manager/hccl_adapter/hccl_adapter.h"
 #include "kernel/ascend/hccl/pyboost/comm_common.h"
-#include "include/cluster/topology/collective_manager.h"
+#include "include/runtime/hardware_abstract/collective/collective_manager.h"
 
 namespace mindspore {
 namespace kernel {

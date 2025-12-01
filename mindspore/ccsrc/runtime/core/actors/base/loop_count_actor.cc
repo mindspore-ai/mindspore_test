@@ -23,10 +23,10 @@
 #include "runtime/core/actors/base/debug_actor.h"
 #include "runtime/core/actors/base/profiler_actor.h"
 #include "runtime/core/actors/control_flow/entrance_actor.h"
-#include "runtime/core/graph_executor/pre_launch/comm_execution_order_check.h"
+#include "include/backend/common/exec_order/online_execution_order_check.h"
 #include "async/async.h"
 #include "utils/log_adapter.h"
-#include "include/cluster/topology/collective_manager.h"
+#include "include/runtime/hardware_abstract/collective/collective_manager.h"
 
 namespace mindspore {
 namespace runtime {

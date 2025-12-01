@@ -21,7 +21,7 @@
 #include <utility>
 #include <memory>
 #include <optional>
-#include "include/cluster/topology/collective_manager.h"
+#include "include/runtime/hardware_abstract/collective/collective_manager.h"
 #if defined(__linux__) && defined(WITH_BACKEND)
 #include "include/cluster/topology/cluster_context.h"
 #else

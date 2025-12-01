@@ -19,7 +19,7 @@
 #include "include/utils/convert_utils.h"
 #include "utils/ms_context.h"
 #include "include/utils/parallel_context.h"
-#include "include/cluster/topology/collective_manager.h"
+#include "include/runtime/hardware_abstract/collective/collective_manager.h"
 
 namespace mindspore {
 namespace {

@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CCSRC_RUNTIME_CORE_GRAPH_EXECUTOR_PRE_LAUNCH_COMM_EXECUTION_ORDER_CHECK_H_
-#define MINDSPORE_CCSRC_RUNTIME_CORE_GRAPH_EXECUTOR_PRE_LAUNCH_COMM_EXECUTION_ORDER_CHECK_H_
+#ifndef MINDSPORE_CCSRC_INCLUDE_BACKEND_COMMON_EXEC_ORDER_ONLINE_EXECUTION_ORDER_CHECK_H_
+#define MINDSPORE_CCSRC_INCLUDE_BACKEND_COMMON_EXEC_ORDER_ONLINE_EXECUTION_ORDER_CHECK_H_
 
 #include <memory>
 #include <map>
@@ -27,12 +27,12 @@
 #include <utility>
 #include "ir/anf.h"
 #include "include/backend/visible.h"
-#include "include/backend/debug/execute_order_tracker/kernel_cache.h"
+#include "include/backend/common/exec_order/kernel_cache.h"
 
 namespace mindspore {
 namespace runtime {
 using KernelVariant = std::variant<CNodePtr, CommPyboostKernelPtr>;
-class BACKEND_EXPORT Process {
+class BACKEND_COMMON_EXPORT Process {
  public:
   static Process &GetInstance() {
     static Process instance;
@@ -95,4 +95,4 @@ class BACKEND_EXPORT Process {
 };
 }  // namespace runtime
 }  // namespace mindspore
-#endif  // MINDSPORE_CCSRC_RUNTIME_CORE_GRAPH_EXECUTOR_PRE_LAUNCH_COMM_EXECUTION_ORDER_CHECK_H_
+#endif  // MINDSPORE_CCSRC_INCLUDE_BACKEND_COMMON_EXEC_ORDER_ONLINE_EXECUTION_ORDER_CHECK_H_

@@ -32,7 +32,7 @@
 #include "primitive/auto_generate/gen_ops_primitive_r.h"
 #include "primitive/auto_generate/gen_ops_primitive_s.h"
 #include "primitive/auto_generate/gen_ops_primitive_t.h"
-#include "include/cluster/topology/collective_manager.h"
+#include "include/runtime/hardware_abstract/collective/collective_manager.h"
 #include "plugin/ascend/graph_optimizer/pass/ir_fusion_infer/inference_weight_preprocess_utils.h"
 
 namespace mindspore {

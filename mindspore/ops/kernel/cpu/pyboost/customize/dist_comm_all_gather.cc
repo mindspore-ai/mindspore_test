@@ -23,7 +23,7 @@
 #include "include/runtime/hardware_abstract/device_context/device_context_manager.h"
 
 #if defined(__linux__) && defined(WITH_BACKEND)
-#include "include/cluster/topology/collective_manager.h"
+#include "include/runtime/hardware_abstract/collective/collective_manager.h"
 #include "utils/misc.h"
 #endif
 

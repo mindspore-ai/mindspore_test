@@ -38,7 +38,7 @@
 #endif
 #include "include/utils/compile_cache_context.h"
 #include "include/utils/config_manager.h"
-#include "include/cluster/topology/collective_manager.h"
+#include "include/runtime/hardware_abstract/collective/collective_manager.h"
 
 namespace mindspore {
 #ifndef MINDIR_EXPORT_TENSOR_LAYOUT_CLIP

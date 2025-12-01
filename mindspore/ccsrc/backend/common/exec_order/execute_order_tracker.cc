@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "include/backend/debug/execute_order_tracker/execute_order_tracker.h"
+#include "include/backend/common/exec_order/execute_order_tracker.h"
 
 #include <fstream>
 #include <functional>
@@ -21,8 +21,12 @@
 #include <sstream>
 #include <iomanip>
 #include <limits>
+#include <memory>
+#include <utility>
+#include <string>
+#include <vector>
 #include "include/utils/common.h"
-#include "include/cluster/topology/collective_manager.h"
+#include "include/runtime/hardware_abstract/collective/collective_manager.h"
 #include "include/utils/anfalgo.h"
 #include "utils/ms_context.h"
 #include "utils/log_adapter.h"

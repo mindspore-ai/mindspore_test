@@ -28,7 +28,7 @@
 #include "include/cluster/rpc/tcp_store.h"
 #include "include/cluster/rpc/tcp_node.h"
 #include "cluster/topology/utils.h"
-#include "include/cluster/topology/collective_manager.h"
+#include "include/runtime/hardware_abstract/collective/collective_manager.h"
 #include "proto/topology.pb.h"
 #include "utils/ms_context.h"
 #include "utils/file_utils.h"

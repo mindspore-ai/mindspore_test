@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "include/cluster/topology/collective_manager.h"
+#include "include/runtime/hardware_abstract/collective/collective_manager.h"
 #include <algorithm>
 #include <string>
 #include <iostream>

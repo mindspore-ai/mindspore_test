@@ -21,7 +21,7 @@
 #include <fstream>
 #include "plugin/ascend/res_manager/hccl_adapter/hccl_adapter.h"
 #include "utils/ms_utils.h"
-#include "include/cluster/topology/collective_manager.h"
+#include "include/runtime/hardware_abstract/collective/collective_manager.h"
 #include "include/utils/anfalgo.h"
 #include "include/utils/callback.h"
 

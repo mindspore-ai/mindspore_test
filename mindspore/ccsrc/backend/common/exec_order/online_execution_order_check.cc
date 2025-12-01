@@ -15,18 +15,21 @@
  */
 #include <memory>
 #include <map>
+#include <utility>
+#include <string>
+#include <vector>
 #include "ops_utils/op_constants.h"
 #include "include/utils/anfalgo.h"
 #include "include/utils/utils.h"
 #include "include/runtime/utils/runtime_conf/runtime_env.h"
 #include "include/runtime/memory/mem_pool/mem_tracker.h"
-#include "include/cluster/topology/collective_manager.h"
+#include "include/runtime/hardware_abstract/collective/collective_manager.h"
 #include "mindspore/core/include/utils/ms_utils.h"
 #include "runtime/hardware_abstract/utils.h"
 #include "include/utils/comm_manager.h"
 #include "primitive/auto_generate/gen_ops_primitive_d.h"
 #include "primitive/auto_generate/gen_ops_primitive_i.h"
-#include "runtime/core/graph_executor/pre_launch/comm_execution_order_check.h"
+#include "include/backend/common/exec_order/online_execution_order_check.h"
 
 namespace mindspore {
 namespace runtime {

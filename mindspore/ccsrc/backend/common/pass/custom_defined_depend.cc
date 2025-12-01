@@ -23,7 +23,7 @@
 #include "primitive/other_ops.h"
 #include "primitive/framework_ops.h"
 #include "utils/file_utils.h"
-#include "include/cluster/topology/collective_manager.h"
+#include "include/runtime/hardware_abstract/collective/collective_manager.h"
 #include "include/utils/comm_manager.h"
 #include "include/utils/common.h"
 #include "primitive/auto_generate/gen_ops_primitive_d.h"

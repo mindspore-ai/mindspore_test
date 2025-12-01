@@ -30,7 +30,7 @@
 #include "mindspore/core/include/utils/distributed_meta.h"
 #include "ir/dtype/ref.h"
 #include "ir/dtype/tensor_type.h"
-#include "include/cluster/topology/collective_manager.h"
+#include "include/runtime/hardware_abstract/collective/collective_manager.h"
 #include "include/utils/common.h"
 #include "include/utils/convert_utils.h"
 #include "utils/file_utils.h"
