@@ -882,7 +882,7 @@ void KernelRunner::SendMemoryAllocReq(OpContext<KernelTensor> *const context) {
   }
 }
 
-void KernelRunner::SendMemoryAllocReqHP(OpContext<KernelTensor> *const context, uint32_t stream_id) {
+void KernelRunner::SendMemoryAllocReqHP(OpContext<KernelTensor> *const context, uint32_t mem_alloc_stream_id) {
   if (device_contexts_[0]->device_res_manager_->swap_manager() != nullptr) {
     MS_EXCEPTION_IF_NULL(kernel_info_);
     for (const auto &out_in : kernel_info_->out_in_ref_map()) {
@@ -902,7 +902,7 @@ void KernelRunner::SendMemoryAllocReqHP(OpContext<KernelTensor> *const context, 
     }
   }
   MemoryManagerActor::GetInstance()->AllocateMemoryHP(&memory_alloc_list_, device_contexts_[0], context, GetAID(),
-                                                      stream_id);
+                                                      mem_alloc_stream_id);
 
   if (ActorDispatcher::enable_trace_dynamic_memory()) {
     if (IsRunningFailed(context)) {

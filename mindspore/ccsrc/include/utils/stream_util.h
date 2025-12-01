@@ -19,5 +19,6 @@
 namespace mindspore {
 constexpr size_t kDefaultStreamIndex = 0;
 constexpr size_t kWorldGroupStreamIndex = 1;
+constexpr size_t kInValidStreamIndex = UINT32_MAX;
 }  // namespace mindspore
 #endif

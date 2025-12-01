@@ -33,7 +33,8 @@ bool AclnnKernelMod::Init(const std::vector<KernelTensor *> &inputs, const std::
 }
 
 int AclnnKernelMod::Resize(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) {
-  if (stream_id_ == UINT32_MAX) {
+  // The first time enter, a value will be assigned to stream_id_.
+  if (stream_id_ == kInValidStreamIndex) {
     if (primitive_ != nullptr && primitive_->HasAttr(kAttrStreamId)) {
       stream_id_ = GetValue<uint32_t>(primitive_->GetAttr(kAttrStreamId));
       device_context_->device_res_manager_->UseStreamResInCurrentThread(stream_id_);
