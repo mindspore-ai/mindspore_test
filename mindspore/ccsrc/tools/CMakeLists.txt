@@ -3,8 +3,6 @@ include_directories(${CMAKE_BINARY_DIR})
 file(STRINGS "${CMAKE_SOURCE_DIR}/version.txt" MSVERSION)
 add_definitions(-DMSVERSION=\"${MSVERSION}\")
 
-set(_TOOLS_SRC_LIST)
-
 if("${ENABLE_HIDDEN}" STREQUAL "OFF" AND NOT MSVC)
     string(REPLACE " -Werror " " " CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
     string(REPLACE " -fvisibility=hidden" " -fvisibility=default" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
@@ -46,12 +44,6 @@ if(NOT CMAKE_SYSTEM_NAME MATCHES "Windows")
     file(GLOB_RECURSE _DEVICE_STATISTIC_LIST "${CMAKE_CURRENT_SOURCE_DIR}/data_dump/device_statistic/*.cc")
 endif()
 list(APPEND _DATADUMP_SRC_LIST ${_DEVICE_STATISTIC_LIST})
-
-list(LENGTH _TOOLS_SRC_LIST debug_files_size)
-if(${debug_files_size} GREATER 0)
-  add_library(_mindspore_tools_obj OBJECT ${_TOOLS_SRC_LIST})
-  add_dependencies(_mindspore_tools_obj proto_input)
-endif()
 
 file(GLOB_RECURSE _TOOLS_SRC_INDEPENDENT_LIST "${CMAKE_CURRENT_SOURCE_DIR}/summary/*.cc")
 list(APPEND _TOOLS_SRC_INDEPENDENT_LIST "${CMAKE_CURRENT_SOURCE_DIR}/callback.cc"
