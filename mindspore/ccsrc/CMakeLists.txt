@@ -35,9 +35,6 @@ endif()
 
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/proto_compile_config.cmake)
 
-add_subdirectory(frontend)
-add_subdirectory(cluster)
-
 set(PROFILER_SUB_COMP
     tools/profiler
     plugin/cpu/profiler
@@ -61,10 +58,6 @@ set_target_properties(mindspore_profiler PROPERTIES INSTALL_RPATH $ORIGIN)
 if(CMAKE_SYSTEM_NAME MATCHES "Windows" OR CMAKE_SYSTEM_NAME MATCHES "Darwin")
     target_link_libraries(mindspore_profiler PRIVATE mindspore::pybind11_module)
 endif()
-
-add_subdirectory(utils)
-add_subdirectory(tools)
-add_subdirectory(backend/common)
 
 set(MS_BACKEND_SUB_COMP
         backend/ms_backend
@@ -95,31 +88,13 @@ target_link_libraries(mindspore_ms_backend PRIVATE mindspore_core mindspore_ops
         mindspore_profiler mindspore_runtime_pipeline mindspore_backend_common mindspore_memory_pool
         mindspore_runtime_utils)
 
-target_link_libraries(mindspore_backend_common PRIVATE mindspore::securec)
-target_link_libraries(mindspore_tools PRIVATE mindspore::securec)
 target_link_libraries(mindspore_ms_backend PRIVATE mindspore::securec)
 if(CMAKE_SYSTEM_NAME MATCHES "Darwin")
-    set_target_properties(mindspore_backend_common PROPERTIES MACOSX_RPATH ON)
-    set_target_properties(mindspore_backend_common PROPERTIES INSTALL_RPATH @loader_path)
     set_target_properties(mindspore_ms_backend PROPERTIES MACOSX_RPATH ON)
     set_target_properties(mindspore_ms_backend PROPERTIES INSTALL_RPATH @loader_path)
 else()
-    set_target_properties(mindspore_backend_common PROPERTIES INSTALL_RPATH $ORIGIN)
     set_target_properties(mindspore_ms_backend PROPERTIES INSTALL_RPATH $ORIGIN)
 endif()
-
-if(NOT WIN32)
-    target_link_libraries(mindspore_backend_common PRIVATE mindspore::ssl mindspore::crypto)
-    target_link_libraries(mindspore_tools PRIVATE mindspore::ssl mindspore::crypto)
-endif()
-
-
-if(CMAKE_SYSTEM_NAME MATCHES "Darwin")
-    target_link_libraries(mindspore_backend_common PRIVATE mindspore::pybind11_module)
-elseif(ENABLE_CPU AND NOT WIN32)
-    target_link_libraries(mindspore_backend_common PRIVATE -Wl,--no-as-needed mindspore::pybind11_module)
-endif()
-
 
 # set c_expression building
 set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
@@ -194,6 +169,11 @@ else()
     set_target_properties(_c_expression PROPERTIES INSTALL_RPATH $ORIGIN:$ORIGIN/lib:$ORIGIN/lib/plugin)
 endif()
 
+add_subdirectory(utils)
+add_subdirectory(tools)
+add_subdirectory(frontend)
+add_subdirectory(cluster)
+add_subdirectory(backend/common)
 add_subdirectory(backend/backend_manager)
 add_subdirectory(runtime/memory/mem_pool)
 add_subdirectory(runtime/hardware_abstract)

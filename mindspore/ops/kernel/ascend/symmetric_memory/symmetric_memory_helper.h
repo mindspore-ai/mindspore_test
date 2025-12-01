@@ -20,7 +20,7 @@
 #include <string>
 #include <unordered_map>
 #include "include/symmetric_memory.h"
-#include "include/api/format.h"
+#include "mindapi/base/format.h"
 #include "ir/anf.h"
 #include "ir/dtype/type_id.h"
 #include "mindapi/base/shape_vector.h"
