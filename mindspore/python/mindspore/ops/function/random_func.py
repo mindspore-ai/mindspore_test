@@ -1209,8 +1209,8 @@ def rand_ext(*size, generator=None, dtype=None, device=None):
 
     Raises:
         ValueError: If `size` contains negative numbers.
-        RuntimeError: If `device` is ``CPU`` .
-        ValueError: If `device` is ``GPU`` .
+        ValueError: If `device` is ``"GPU"`` .
+        RuntimeError: If `device` is ``"CPU"`` .
 
     Supported Platforms:
         ``Ascend``
@@ -1249,9 +1249,9 @@ def rand_like_ext(input, *, dtype=None, device=None):
         the interval :math:`[0, 1)`.
 
     Raises:
-        RuntimeError: If `Input` device is CPU, and `device` is ``None`` .
-        RuntimeError: If `device` is ``CPU`` .
-        ValueError: If `device` is ``GPU`` .
+        RuntimeError: If `Input` device is ``"CPU"``, and `device` is ``None`` .
+        RuntimeError: If `device` is ``"CPU"`` .
+        ValueError: If `device` is ``"GPU"`` .
 
     Supported Platforms:
         ``Ascend``
@@ -1291,8 +1291,8 @@ def randn_ext(*size, generator=None, dtype=None, device=None):
 
     Raises:
         ValueError: If `size` contains negative numbers.
-        RuntimeError: If `device` is ``"CPU"``.
-        ValueError: If `device` is ``"GPU"``.
+        ValueError: If `device` is ``"GPU"`` .
+        RuntimeError: If `device` is ``"CPU"`` .
 
     Supported Platforms:
         ``Ascend``
@@ -1334,6 +1334,7 @@ def randn_like_ext(input, *, dtype=None, device=None):
         the interval :math:`[0, 1)`.
 
     Raises:
+        RuntimeError: If `Input` device is ``"CPU"``, and `device` is ``None`` .
         RuntimeError: If `device` is ``"CPU"``.
         ValueError: If `device` is ``"GPU"``.
 
@@ -1355,7 +1356,7 @@ def randn_like_ext(input, *, dtype=None, device=None):
 @_function_forbid_reuse
 def randint_ext(*args, generator=None, dtype=None, device=None):
     r"""
-    randint(low=0, high, size, *, generator=None, dtype=None) -> Tensor
+    randint(low=0, high, size, *, generator=None, dtype=None, device=None) -> Tensor
 
     Returns a new tensor filled with integer numbers from the uniform distribution over an interval :math:`[low, high)`
     based on the given shape and dtype.
@@ -1381,8 +1382,8 @@ def randint_ext(*args, generator=None, dtype=None, device=None):
     Raises:
         TypeError: If `size` is not a tuple.
         TypeError: If `low` or `high` is not integer.
-        RuntimeError: If `device` is ``CPU`` .
-        ValueError: If `device` is ``GPU`` .
+        RuntimeError: If `device` is ``"CPU"`` .
+        ValueError: If `device` is ``"GPU"`` .
 
     Supported Platforms:
         ``Ascend``
@@ -1406,7 +1407,7 @@ def randint_ext(*args, generator=None, dtype=None, device=None):
 @_function_forbid_reuse
 def randint_like_ext(*args, dtype=None, device=None):
     r"""
-    randint_like(input, low=0, high, *, dtype=None) -> Tensor
+    randint_like(input, low=0, high, *, dtype=None, device=None) -> Tensor
 
     Returns a new tensor filled with integer numbers from the uniform distribution over an interval :math:`[low, high)`
     based on the given dtype and shape of the input tensor.
@@ -1431,9 +1432,9 @@ def randint_like_ext(*args, dtype=None, device=None):
 
     Raises:
         TypeError: If `low` or `high` is not integer.
-        RuntimeError: If `Input` device is CPU, and `device` is ``None`` .
-        RuntimeError: If `device` is ``CPU`` .
-        ValueError: If `device` is ``GPU`` .
+        RuntimeError: If `Input` device is ``"CPU"``, and `device` is ``None`` .
+        RuntimeError: If `device` is ``"CPU"`` .
+        ValueError: If `device` is ``"GPU"`` .
 
     Supported Platforms:
         ``Ascend``

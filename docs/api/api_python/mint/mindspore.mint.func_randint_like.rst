@@ -1,7 +1,7 @@
 mindspore.mint.randint_like
 ===========================
 
-.. py:function:: mindspore.mint.randint_like(input, low=0, high, *, dtype=None, device=None)
+.. py:function:: mindspore.mint.randint_like(input, low=0, high, *, dtype=None, device=None) -> Tensor
 
     返回一个Tensor，其元素为 [ `low` , `high` ) 区间的随机整数，根据 `input` 决定shape和dtype。
 
@@ -22,6 +22,6 @@ mindspore.mint.randint_like
 
     异常：
         - **TypeError** - 如果 `low` 或 `high` 不是整数。
-        - **RuntimeError** - 如果 `input` 的device是 ``CPU`` ，同时 `device` 是 ``None`` 。
-        - **RuntimeError** - 如果 `device` 是 ``CPU`` 。
-        - **ValueError** - 如果 `device` 是 ``GPU`` 。
+        - **RuntimeError** - 如果 `input` 的device是 ``"CPU"`` ，同时 `device` 是 ``None`` 。
+        - **RuntimeError** - 如果 `device` 是 ``"CPU"`` 。
+        - **ValueError** - 如果 `device` 是 ``"GPU"`` 。

@@ -1,7 +1,7 @@
 mindspore.mint.randint
 ======================
 
-.. py:function:: mindspore.mint.randint(low=0, high, size, *, generator=None, dtype=None, device=None)
+.. py:function:: mindspore.mint.randint(low=0, high, size, *, generator=None, dtype=None, device=None) -> Tensor
 
     返回一个Tensor，shape和dtype由输入决定，其元素为 [ `low` , `high` ) 区间的随机整数。
 
@@ -21,5 +21,5 @@ mindspore.mint.randint
     异常：
         - **TypeError** - 如果 `size` 不是tuple。
         - **TypeError** - 如果 `low` 或 `high` 不是整数。
-        - **RuntimeError** - 如果 `device` 是 ``CPU`` 。
-        - **ValueError** - 如果 `device` 是 ``GPU`` 。
+        - **RuntimeError** - 如果 `device` 是 ``"CPU"`` 。
+        - **ValueError** - 如果 `device` 是 ``"GPU"`` 。
