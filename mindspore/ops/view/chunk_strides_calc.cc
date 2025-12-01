@@ -27,6 +27,9 @@ TensorStorageInfoPtrList ChunkStridesCalc(const std::vector<int64_t> &old_shape,
                                           const std::vector<int64_t> &old_strides,
                                           const TensorStorageInfoPtr &storage_info, const int64_t &chunks,
                                           const int64_t &dim) {
+  MS_LOG(DEBUG) << "Chunk: input shape " << old_shape << ", input stride " << old_strides << ", storage_info "
+                << (storage_info != nullptr ? storage_info->ToString() : "null") << ", chunks " << chunks << ", dim "
+                << dim;
   const auto ndim = old_shape.size();
   MS_CHECK_VALUE(ndim > 0, "For 'Chunk', input's rank should be greater than 0, but got " + std::to_string(ndim));
   MS_CHECK_VALUE(chunks > 0, "For 'Chunk', chunks should be greater than 0, but got " + std::to_string(chunks));
@@ -42,6 +45,7 @@ TensorStorageInfoPtrList ChunkStridesCalc(const std::vector<int64_t> &old_shape,
                                                                IsContiguous(old_shape, old_strides));
       }
       std::vector<TensorStorageInfoPtr> storage_info_list(chunks, new_storage_info);
+      MS_LOG(DEBUG) << "Chunk: outputs' storage_info is all the same, which are " << new_storage_info->ToString();
       return storage_info_list;
     }
     MS_EXCEPTION(ValueError) << "For 'Chunk', output_num must be positive, but got 0.";
@@ -65,7 +69,8 @@ TensorStorageInfoPtrList ChunkStridesCalc(const std::vector<int64_t> &old_shape,
     bool is_contiguous = IsContiguous(slice_shape, old_strides);
     auto new_storage_info = std::make_shared<TensorStorageInfo>(std::move(slice_shape), old_strides, new_storage_offset,
                                                                 ori_shape, ori_strides, is_contiguous);
-    (void)storage_info_list.emplace_back(new_storage_info);
+    MS_LOG(DEBUG) << "Chunk: output[" << idx << "] storage_info " << new_storage_info->ToString();
+    (void)storage_info_list.emplace_back(std::move(new_storage_info));
   }
 
   return storage_info_list;

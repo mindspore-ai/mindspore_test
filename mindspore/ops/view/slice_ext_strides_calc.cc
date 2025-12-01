@@ -30,6 +30,10 @@ TensorStorageInfoPtrList SliceExtStridesCalc(const std::vector<int64_t> &old_sha
                                              const std::vector<int64_t> &old_strides,
                                              const TensorStorageInfoPtr &old_storage_info, const int64_t ori_dim,
                                              const int64_t ori_start, const int64_t ori_end, const int64_t step) {
+  MS_LOG(DEBUG) << "SliceExt: input shape " << old_shape << ", input stride " << old_strides << ", storage_info "
+                << (old_storage_info != nullptr ? old_storage_info->ToString() : "null") << ", dim " << ori_dim
+                << ", start " << ori_start << ", end " << ori_end << ", step " << step;
+
   int dim_size = SizeToLong(old_shape.size());
   MS_CHECK_VALUE(dim_size > 0, "slice can not be applied to a 0-dim tensor.");
   MS_CHECK_VALUE(step > 0, "slice step must be positive");
@@ -67,7 +71,7 @@ TensorStorageInfoPtrList SliceExtStridesCalc(const std::vector<int64_t> &old_sha
   auto new_storage_info =
     std::make_shared<TensorStorageInfo>(std::move(new_shape), std::move(new_strides), new_storage_offset,
                                         std::move(ori_shape), std::move(ori_strides), is_contiguous);
-
+  MS_LOG(DEBUG) << "SliceExt: output storage_info " << new_storage_info->ToString();
   return {std::move(new_storage_info)};
 }
 

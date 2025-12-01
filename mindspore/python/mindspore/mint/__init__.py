@@ -32,7 +32,7 @@ from mindspore.ops.function.array_func import ones_like_ext as ones_like
 from mindspore.ops.function.array_func import full_ext as full
 from mindspore.ops.function.array_func import zeros_like_ext as zeros_like
 from mindspore.ops.function.array_func import unique_ext as unique
-from mindspore.ops.function.array_func import chunk_ext as chunk
+from mindspore.ops.function.array_func import chunk_view as chunk
 from mindspore.ops.functional_overload import empty
 from mindspore.ops.functional_overload import empty_like
 from mindspore.ops.function.math_func import isclose
@@ -169,7 +169,7 @@ from mindspore.ops.function.random_func import normal_ext as normal
 # 56
 from mindspore.ops.function.math_func import norm_ext as norm
 # 57
-from mindspore.ops.functional import broadcast_to
+from mindspore.ops.auto_generate import broadcast_to_view as broadcast_to
 # 58
 from mindspore.ops.functional_overload import greater_equal, ge
 
@@ -222,7 +222,7 @@ from mindspore.ops.auto_generate import index_select_ext as index_select
 # 82
 from mindspore.ops.auto_generate import cummin_ext as cummin
 # 83
-from mindspore.ops.auto_generate import narrow
+from mindspore.ops.auto_generate import narrow_view as narrow
 # 84
 
 # 85
@@ -1196,7 +1196,7 @@ def permute(input, dims):
           [ 8. 11.]
           [ 9. 12.]]]
     """
-    return ops.functional.permute(input, dims)
+    return ops.auto_generate.transpose_view(input, dims)
 
 
 def split(tensor, split_size_or_sections, dim=0):

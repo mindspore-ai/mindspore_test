@@ -19,6 +19,7 @@
 #include <string>
 #include <utility>
 #include "utils/check_convert_utils.h"
+#include "utils/core_op_utils.h"
 
 namespace mindspore::ops {
 namespace {
@@ -41,6 +42,9 @@ inline std::pair<std::vector<int64_t>, std::vector<int64_t>> InferSqueezeShapeAn
   }
 
   constexpr size_t bit_set_size = 32;
+  MS_CHECK_VALUE(ndims < bit_set_size,
+                 CheckAndConvertUtils::FormatCommMsg("For 'Squeeze', input's rank should be less than ", bit_set_size,
+                                                     ", but got ", ndims));
   std::bitset<bit_set_size> seen_dims{};
   for (int64_t dim : axis) {
     const auto wrap_dim = DynamicDimWrap(dim, ndims);

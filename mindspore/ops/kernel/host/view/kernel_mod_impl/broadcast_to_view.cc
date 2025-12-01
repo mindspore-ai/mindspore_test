@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 #include "kernel/host/view/kernel_mod_impl/broadcast_to_view.h"
-
+#include <vector>
 #include "kernel/host/view/view_utils.h"
 #include "view/broadcast_to_strides_calc.h"
 
@@ -22,11 +22,10 @@ namespace mindspore {
 namespace kernel {
 void BroadcastToView::UpdateOutputTensorInfo(const std::vector<KernelTensor *> &inputs,
                                              const std::vector<KernelTensor *> &outputs) {
-  ops::OldTensorInfoPtr old_info = GetOldTensorInfo(inputs[kIndex0]);
   auto shape = inputs[kIndex1]->GetValueWithCheck<std::vector<int64_t>>();
-
-  info_ = ops::BroadCastToStrideCalc(old_info->old_shape, old_info->old_strides, inputs[kIndex1]->tensor_storage_info(),
-                                     shape);
+  const auto &input = inputs[kIndex0];
+  info_ =
+    ops::BroadCastToStrideCalc(input->GetShapeVector(), GetTensorStride(input), input->tensor_storage_info(), shape);
   outputs[kIndex0]->set_tensor_storage_info(info_[0]);
 }
 
