@@ -16,7 +16,8 @@ cosine_embedding_loss:
             input1 (Tensor): Input Tensor of shape :math:`(N, D)` or :math:`(D)` , where :math:`N` is the batch size and :math:`D` is the embedding dimension.
             input2 (Tensor): Input Tensor of shape :math:`(N, D)` or :math:`(D)` , which has same dtype as `input1`, and its shape should be the same as `input1` or broadcastable to the shape of `input1`.
             target (Tensor): Target Tensor of shape :math:`(N)` or :math:`()` , contains value 1 or -1.
-            margin (float, optional): A tuning factor used in the negative-sample branch, which should be in [-1.0, 1.0]. Default: ``0.0`` .
+            margin (float, optional): A tuning factor used in the negative-sample branch, which should be in [-1.0, 1.0], values outside this range will not raise an error,
+                but have no practical meaning. Default: ``0.0`` .
             reduction (str, optional): Apply specific reduction method to the output: ``'none'`` , ``'mean'`` ,
                 ``'sum'`` . Default: ``'mean'`` .
 
@@ -29,7 +30,6 @@ cosine_embedding_loss:
 
         Raises:
             ValueError: If `reduction` is not ``"none"``, ``"mean"`` or ``"sum"``.
-            ValueError: If `margin` is not in the range [-1.0, 1.0].
             ValueError: If the shapes of `input1` and `input2` do not match.
             ValueError: If the shape of `target` does not match the shapes of `input1` and `input2`.
         

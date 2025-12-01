@@ -62,6 +62,8 @@ class OpInfo:
         op_dynamic_inputs_func: Function that generates dynamic-shape samples.
         op_error_inputs_func: Function that generates error/negative samples.
 
+        grad_position: The position of the input tensor to compute gradients. Default is None, which means 
+            compute gradients for all input tensors.
         domain: The [low, high) domain of the operator.
         is_differentiable: Whether gradients are expected/computed for the op.
         is_inplace_op: Whether the op mutates its input (in-place semantics).
@@ -101,6 +103,7 @@ class OpInfo:
     op_error_inputs_func: Optional[Callable] = None
 
     # extra options for the op.
+    grad_position: Optional[tuple] = None
     domain: Optional[tuple] = None
     is_differentiable: Optional[bool] = True
     is_inplace_op: Optional[bool] = False
@@ -110,7 +113,14 @@ class OpInfo:
     # comparison params
     compare_method: Optional[str] = 'default_golden'
     default_golden_loss_func: Optional[Callable] = get_default_loss
-    default_loss_override: Optional[dict] = None
+    ascend_forward_loss_override: Optional[dict] = None
+    ascend_backward_loss_override: Optional[dict] = None
+    ascend910b_forward_loss_override: Optional[dict] = None
+    ascend910b_backward_loss_override: Optional[dict] = None
+    cpu_forward_loss_override: Optional[dict] = None
+    cpu_backward_loss_override: Optional[dict] = None
+    gpu_forward_loss_override: Optional[dict] = None
+    gpu_backward_loss_override: Optional[dict] = None
 
     def __post_init__(self):
         if not self.dtypes_intersection:
