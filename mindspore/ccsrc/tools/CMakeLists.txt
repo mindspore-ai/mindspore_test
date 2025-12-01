@@ -65,11 +65,16 @@ list(APPEND _TOOLS_SRC_INDEPENDENT_LIST ${_ERROR_HANDLER_LIST})
 add_library(mindspore_tools SHARED ${_TOOLS_SRC_INDEPENDENT_LIST})
 
 target_link_libraries(mindspore_tools PRIVATE mindspore_core mindspore_common proto_input
-        mindspore_backend_common mindspore_hardware_abstract mindspore_memory_pool mindspore_ms_backend)
+        mindspore_backend_common mindspore_hardware_abstract mindspore_memory_pool mindspore_ms_backend
+        mindspore::securec)
 set_target_properties(mindspore_tools PROPERTIES INSTALL_RPATH $ORIGIN)
 
 if(CMAKE_SYSTEM_NAME MATCHES "Windows" OR CMAKE_SYSTEM_NAME MATCHES "Darwin")
     target_link_libraries(mindspore_tools PRIVATE mindspore::pybind11_module)
+endif()
+
+if(NOT CMAKE_SYSTEM_NAME MATCHES "Windows")
+    target_link_libraries(mindspore_tools PRIVATE mindspore::ssl mindspore::crypto)
 endif()
 
 if(CMAKE_SYSTEM_NAME MATCHES "Windows")

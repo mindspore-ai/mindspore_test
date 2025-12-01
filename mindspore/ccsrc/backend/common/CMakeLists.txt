@@ -20,4 +20,21 @@ endif()
 
 target_link_libraries(mindspore_backend_common PRIVATE mindspore_core mindspore_ops mindspore_common
     proto_input mindspore_memory_pool mindspore_hardware_abstract mindspore_profiler
-    mindspore_runtime_pipeline mindspore_runtime_utils)
+    mindspore_runtime_pipeline mindspore_runtime_utils mindspore::securec)
+
+if(NOT WIN32)
+    target_link_libraries(mindspore_backend_common PRIVATE mindspore::ssl mindspore::crypto)
+endif()
+
+if(CMAKE_SYSTEM_NAME MATCHES "Darwin")
+    target_link_libraries(mindspore_backend_common PRIVATE mindspore::pybind11_module)
+elseif(ENABLE_CPU AND NOT WIN32)
+    target_link_libraries(mindspore_backend_common PRIVATE -Wl,--no-as-needed mindspore::pybind11_module)
+endif()
+
+if(CMAKE_SYSTEM_NAME MATCHES "Darwin")
+    set_target_properties(mindspore_backend_common PROPERTIES MACOSX_RPATH ON)
+    set_target_properties(mindspore_backend_common PROPERTIES INSTALL_RPATH @loader_path)
+else()
+    set_target_properties(mindspore_backend_common PROPERTIES INSTALL_RPATH $ORIGIN)
+endif()
