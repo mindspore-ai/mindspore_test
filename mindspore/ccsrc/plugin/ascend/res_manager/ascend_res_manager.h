@@ -100,7 +100,7 @@ class ASCEND_RES_MANAGER_EXPORT AscendResManager : public DeviceResManager {
   void *AllocateMemory(size_t size, bool from_persistent_mem, bool need_recycle, uint32_t stream_id) override;
   void *AllocateMemory(size_t size, uint32_t stream_id = kDefaultStreamIndex) const override;
   void FreeMemory(DeviceAddress *const &address) const override;
-  bool IsAbleFreeMemory(DeviceAddress *const &address) const override;
+  bool IsNotEventUsedMemory(DeviceAddress *const &address) const override;
   void FreeMemory(void *ptr) const override;
   void FreePartMemorys(const std::vector<void *> &free_addrs, const std::vector<void *> &keep_addrs,
                        const std::vector<size_t> &keep_addr_sizes) const override;
