@@ -61,32 +61,8 @@ if(CMAKE_SYSTEM_NAME MATCHES "Windows" OR CMAKE_SYSTEM_NAME MATCHES "Darwin")
 endif()
 
 add_subdirectory(utils)
-
-set(BACKEND_COMMON_SUB_COMP
-        tools
-        backend/common
-        )
-
-foreach(_comp ${BACKEND_COMMON_SUB_COMP})
-    add_subdirectory(${_comp})
-    string(REPLACE "/" "_" sub ${_comp})
-    if(TARGET _mindspore_${sub}_obj)
-        list(APPEND BACKEND_COMMON_SUB_OBJECTS_SRC $<TARGET_OBJECTS:_mindspore_${sub}_obj>)
-        add_dependencies(_mindspore_${sub}_obj proto_input)
-        if(CMAKE_SYSTEM_NAME MATCHES "Windows")
-            target_compile_definitions(_mindspore_${sub}_obj PRIVATE BACKEND_COMMON_DLL)
-        endif()
-    endif()
-endforeach()
-
-
-set_property(SOURCE ${BACKEND_COMMON_SUB_OBJECTS_SRC} PROPERTY COMPILE_DEFINITIONS
-        SUBMODULE_ID=mindspore::SubModuleId::SM_ME)
-add_library(mindspore_backend_common SHARED ${BACKEND_COMMON_SUB_OBJECTS_SRC})
-target_link_libraries(mindspore_backend_common PRIVATE mindspore_core mindspore_ops mindspore_common
-        proto_input mindspore_memory_pool mindspore_hardware_abstract mindspore_profiler
-        mindspore_runtime_pipeline mindspore_runtime_utils)
-
+add_subdirectory(tools)
+add_subdirectory(backend/common)
 
 set(MS_BACKEND_SUB_COMP
         backend/ms_backend
