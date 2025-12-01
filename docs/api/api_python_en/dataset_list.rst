@@ -405,6 +405,14 @@ Others
     :exclude-members: set_epoch
     :members:
 
+{% elif fullname=="mindspore.dataset.dataloader.RandomSampler" %}
+
+{{ fullname | underline }}
+
+.. autoclass:: {{ name }}
+    :exclude-members: num_samples
+    :members:
+
 {% elif "mindspore.dataset.vision" in fullname and objname[0].istitle() %}
 
 {{ fullname | underline }}
