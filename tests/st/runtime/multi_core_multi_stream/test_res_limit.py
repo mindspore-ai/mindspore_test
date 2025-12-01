@@ -19,15 +19,35 @@ import os
 import mindspore as ms
 from mindspore import context, Tensor, ops
 from tests.mark_utils import arg_mark
-ms.set_device("Ascend")
 context.set_context(mode=context.PYNATIVE_MODE)
 device_id = int(os.getenv('DEVICE_ID', '0'))
-out = ms.runtime.get_device_limit(device_id)
-CUBE_NUM = out["cube_core_num"]
-VECTOR_NUM = out["vector_core_num"]
+CUBE_NUM = 24
+VECTOR_NUM = 48
+
+def function_entry_and_exit(func):
+    """
+    Feature: log function entry exit
+    Description: add log for func
+    Expectation: success
+    """
+    def wrapper(*args, **kwargs):
+        # 打印进入函数的信息
+        print(f"Entering function: {func.__name__}", flush=True)
+        # 调用原函数
+        global CUBE_NUM
+        global VECTOR_NUM
+        out = ms.runtime.get_device_limit(device_id)
+        CUBE_NUM = out["cube_core_num"]
+        VECTOR_NUM = out["vector_core_num"]
+        result = func(*args, **kwargs)
+        # 打印退出函数的信息
+        print(f"Exiting function: {func.__name__}", flush=True)
+        return result
+    return wrapper
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1',
           card_mark='onecard', essential_mark='essential')
+@function_entry_and_exit
 def test_runtime_get_device_limit():
     """
     Feature: runtime stream api.
@@ -43,6 +63,7 @@ def test_runtime_get_device_limit():
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1',
           card_mark='onecard', essential_mark='essential')
+@function_entry_and_exit
 def test_runtime_set_device_limit():
     """
     Feature: runtime stream api.
@@ -88,6 +109,7 @@ def test_runtime_set_device_limit():
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1',
           card_mark='onecard', essential_mark='essential')
+@function_entry_and_exit
 def test_runtime_get_stream_limit():
     """
     Feature: runtime stream api.
@@ -118,6 +140,7 @@ def test_runtime_get_stream_limit():
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1',
           card_mark='onecard', essential_mark='essential')
+@function_entry_and_exit
 def test_runtime_set_stream_limit():
     """
     Feature: runtime stream api.
@@ -158,6 +181,7 @@ def test_runtime_set_stream_limit():
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1',
           card_mark='onecard', essential_mark='essential')
+@function_entry_and_exit
 def test_runtime_reset_stream_limit():
     """
     Feature: runtime stream api.
@@ -183,6 +207,7 @@ def test_runtime_reset_stream_limit():
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1',
           card_mark='onecard', essential_mark='essential')
+@function_entry_and_exit
 def test_runtime_stream_limit_ctx():
     """
     Feature: runtime stream api.

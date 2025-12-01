@@ -22,7 +22,8 @@ def get_device_limit(device):
     Return selected device limit core num.
 
     Note:
-        This interface will synchronize the operator issuance, which may affect performance.
+        - This interface will synchronize the operator issuance, which may affect performance.
+        - Only support PyNative mode, Graph mode is not currently supported.
 
     Args:
         device (int): selected device id.
@@ -46,7 +47,8 @@ def set_device_limit(device, cube_num=-1, vector_num=-1):
     Sets selected device limit.
 
     Note:
-        This interface will synchronize the operator issuance, which may affect performance.
+        - This interface will synchronize the operator issuance, which may affect performance.
+        - Only support PyNative mode, Graph mode is not currently supported.
 
     Args:
         device (int): selected set device id.

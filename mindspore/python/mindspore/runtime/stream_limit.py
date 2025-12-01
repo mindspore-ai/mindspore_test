@@ -24,7 +24,8 @@ def get_stream_limit(stream):
     Return selected stream limit core num.
 
     Note:
-        This interface will synchronize the operator issuance, which may affect performance.
+        - This interface will synchronize the operator issuance, which may affect performance.
+        - Only support PyNative mode, Graph mode is not currently supported.
 
     Args:
         stream (:class:`mindspore.runtime.Stream`): selected stream.
@@ -52,6 +53,9 @@ def set_stream_limit(stream, cube_num=-1, vector_num=-1):
     r"""
     Sets selected stream limit.
 
+    Note:
+        Only support PyNative mode, Graph mode is not currently supported.
+
     Args:
         stream (:class:`mindspore.runtime.Stream`): selected stream.
         cube_num (int, optional): set cube num for stream. Default is ``-1``, indicating that it is not set.
@@ -78,7 +82,8 @@ def reset_stream_limit(stream):
     Reset selected stream limit.
 
     Note:
-        This interface will synchronize the operator issuance, which may affect performance.
+        - This interface will synchronize the operator issuance, which may affect performance.
+        - Only support PyNative mode, Graph mode is not currently supported.
 
     Args:
         stream (:class:`mindspore.runtime.Stream`): selected stream.

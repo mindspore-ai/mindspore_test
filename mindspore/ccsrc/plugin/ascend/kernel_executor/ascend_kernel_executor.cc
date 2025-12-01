@@ -1083,6 +1083,7 @@ void AscendKernelExecutor::CreateKernel(const std::vector<CNodePtr> &nodes) cons
   } else {
     MS_LOG(INFO) << "Skip optimize after create kernel for:" << kernel_graph->ToString();
     ExecKernelModResize(kernel_graph);
+    MS_LOG(INFO) << "Finish exec kernel mod resize for:" << kernel_graph->ToString();
   }
   (void)profiler::CollectHostInfo("Ascend", "CreateKernel", "CreateGeKernel", start_time, profiler::GetClockSyscnt(),
                                   1);
