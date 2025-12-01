@@ -383,6 +383,7 @@ void AscendResManager::Initialize() {
   enable_memory_tracker_ = device::tracker::MemTrackerManager::GetInstance().IsEnabled();
   pin_mem_allocator_ = std::make_shared<PinMemoryAllocator>(swap_manager_);
   shared_mem_allocator_ = SharedMemoryAllocator::getInstance();
+  symmetric_memory_allocator_ = SymmetricMemoryAllocator::getInstance();
   initialized_ = true;
 }
 
@@ -432,6 +433,9 @@ void AscendResManager::Destroy() {
   AscendMemoryPool::GetInstance().ReleaseDeviceRes();
   (void)AscendMemAdapter::GetInstance()->DeInitialize();
   (void)ErrorManagerAdapter::Finalize();
+
+  // Finalize symmetric memory manager.
+  symmetric_memory_allocator_->FinalizeSymmetricMemoryManager();
 
   // All unmap/free operations will fail after calling aclrtResetDevice in ResetDevice,
   // so it must be called before that.
