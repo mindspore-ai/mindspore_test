@@ -931,13 +931,14 @@ int OpAdapterImpl::SetCustomOpAttr(const CusOperatorPtr &op, const PrimitivePtr 
       } else if ((*val_seq)[0]->isa<BoolImm>()) {
         (void)op->SetAttr(item.first, GetValue<const std::vector<bool>>(item.second));
       } else {
-        MS_LOG(EXCEPTION) << "Unsupported custom attribute type in adaptor, prim name: " << prim->name()
-                          << ", attr name: " << item.first << ", value: " << item.second->ToString();
+        MS_LOG(WARNING) << "Unsupported custom attribute type in adaptor, prim name: " << prim->name()
+                        << ", attr name: " << item.first << ", value: " << item.second->ToString();
+        continue;
       }
     } else {
       MS_LOG(WARNING) << "Unsupported custom attribute type in adaptor, prim name: " << prim->name()
                       << ", attr name: " << item.first << ", value: " << item.second->ToString();
-      return static_cast<int>(NOT_FOUND);
+      continue;
     }
 
     if (value_type == SINGLE_VALUE) {
