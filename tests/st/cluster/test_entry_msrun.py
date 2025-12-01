@@ -1,4 +1,4 @@
-# Copyright 2023 Huawei Technologies Co., Ltd
+# Copyright 2023-2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,6 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+"""
+This test is for msrun launch.
+"""
 import os
 import subprocess
 import json
@@ -70,7 +73,7 @@ def _create_rank_table_file(save_json_to_path, rank_table_dict):
     """
     create rank table file for train or test
     """
-    with open(save_json_to_path, "w") as f:
+    with open(save_json_to_path, "w", encoding='utf-8') as f:
         json.dump(rank_table_dict, f)
 
 
@@ -304,8 +307,8 @@ def test_msrun_with_correct_hostname():
     hostname = socket.gethostname()
     ipaddr = socket.gethostbyname(hostname)
     print(f"The hostname of this node is {hostname}, ip address is {ipaddr}.")
-    cmd = (f"msrun --worker_num=4 --local_worker_num=4 --master_addr={hostname} --master_port=10969 --join=True "\
-            "test_msrun_only_init.py --device_target=Ascend --dataset_path=/home/workspace/mindspore_dataset/mnist")
+    cmd = f"msrun --worker_num=4 --local_worker_num=4 --master_addr={hostname} --master_port=10969 --join=True "\
+            "test_msrun_only_init.py --device_target=Ascend --dataset_path=/home/workspace/mindspore_dataset/mnist"
     result = subprocess.getoutput(cmd)
     assert result.find(f"Convert input host name:{hostname} to ip address:{ipaddr}.") != -1
 
@@ -321,8 +324,8 @@ def test_msrun_with_wrong_hostname():
     ms.set_context(jit_level='O0')
     hostname = "wrong_hostname"
     print(f"The hostname of this node is {hostname}.")
-    cmd = (f"msrun --worker_num=4 --local_worker_num=4 --master_addr={hostname} --master_port=10969 --join=True "\
-            "test_msrun_only_init.py --device_target=Ascend --dataset_path=/home/workspace/mindspore_dataset/mnist")
+    cmd = f"msrun --worker_num=4 --local_worker_num=4 --master_addr={hostname} --master_port=10969 --join=True "\
+            "test_msrun_only_init.py --device_target=Ascend --dataset_path=/home/workspace/mindspore_dataset/mnist"
     result = subprocess.getoutput(cmd)
     assert result.find("DNS resolution has failed") != -1
 
@@ -333,6 +336,7 @@ def _extract_json_data(input_file, header):
 
     inside_json = False
     json_lines = []
+    json_data = []
     for line in lines:
         stripped_line = line.strip()
         if header in stripped_line:
@@ -374,3 +378,33 @@ def test_msrun_msn_dump_cgn_metadata():
     assert "node_id" in json_data[0]["device"][0]
     assert "rank_id" in json_data[0]["device"][0]
     assert "role" in json_data[0]["device"][0]
+
+
+@arg_mark(plat_marks=["platform_ascend310p"], level_mark="level0", card_mark="allcards", essential_mark="essential")
+def test_mccl_310p_float32():
+    """
+    Feature: mccl and hccl hybrid in 310P with float32.
+    Description: Launch msrun to run mccl and hccl communication operators with float32.
+    Expectation: Data is correctly transported.
+    """
+    return_code = os.system(
+        "msrun --worker_num=8 --local_worker_num=8 --master_addr=127.0.0.1 "
+        "--master_port=10969 --join=True "
+        "test_mccl_and_hccl.py --dtype float32"
+    )
+    assert return_code == 0
+
+
+@arg_mark(plat_marks=["platform_ascend310p"], level_mark="level0", card_mark="allcards", essential_mark="essential")
+def test_mccl_310p_float16():
+    """
+    Feature: mccl and hccl hybrid in 310P with float16.
+    Description: Launch msrun to run mccl and hccl communication operators with float16.
+    Expectation: Data is correctly transported.
+    """
+    return_code = os.system(
+        "msrun --worker_num=8 --local_worker_num=8 --master_addr=127.0.0.1 "
+        "--master_port=10969 --join=True "
+        "test_mccl_and_hccl.py --dtype float16"
+    )
+    assert return_code == 0
