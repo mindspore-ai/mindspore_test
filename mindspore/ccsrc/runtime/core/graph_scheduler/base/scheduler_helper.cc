@@ -190,12 +190,14 @@ void SchedulerHelper::AddDeviceTensorStore(const AnfNodePtr &anf_node, const Ker
         graph_parameter_store->Push(outer_idx, 0, kernel_tensor, SIZE_MAX);
         const auto &parameter_device = AnfAlgo::GetParameterDeviceStr(anf_node);
         if (!parameter_device.empty()) {
-          if (parameter_device != kToCpu) {
-            MS_LOG(EXCEPTION) << "Device of parameter is supposed to be \"CPU\" if it is set, but got "
+          if (parameter_device != kToCpu && parameter_device != kToRemote) {
+            MS_LOG(EXCEPTION) << "Device of parameter is supposed to be \"CPU\" or \"Remote\" if it is set, but got "
                               << parameter_device;
           }
-          graph_parameter_store->SetOffloaded(outer_idx, 0, true);
-          MS_LOG(INFO) << "Offloaded parameter:" << real_node->fullname_with_scope();
+          if (parameter_device == kToCpu) {
+            graph_parameter_store->SetOffloaded(outer_idx, 0, true);
+            MS_LOG(INFO) << "Offloaded parameter:" << real_node->fullname_with_scope();
+          }
         }
       } else if (store_kernel_tensor->device_address()->GetDeviceType() != device_tensor->GetDeviceType() &&
                  device_tensor->GetDeviceType() != device::DeviceType::kCPU) {

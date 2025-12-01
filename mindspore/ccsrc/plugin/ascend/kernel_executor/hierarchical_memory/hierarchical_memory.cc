@@ -433,20 +433,8 @@ std::optional<ParameterPtr> GetRemoteParameter(const KernelGraphPtr &kernel_grap
     return std::nullopt;
   }
   const auto &parameter = ref_node_res.value();
-  const auto value = parameter->default_param();
-  if (value == nullptr) {
-    return std::nullopt;
-  }
-  const auto meta_tensor = value->cast_ptr<tensor::MetaTensor>();
-  if (meta_tensor == nullptr) {
-    return std::nullopt;
-  }
-
-  const auto &param_info = meta_tensor->param_info();
-  if (param_info == nullptr) {
-    return std::nullopt;
-  }
-  if (!param_info->is_remote_memory()) {
+  const auto &device_str = AnfAlgo::GetParameterDeviceStr(parameter);
+  if (device_str != kToRemote) {
     return std::nullopt;
   }
   return parameter;
@@ -535,42 +523,39 @@ void ExecutionOrderOptimizeWithHierarchicalMemory(const KernelGraphPtr &kernel_g
 
 void AdjustExecutionOrderForHierarchicalMemoryOps(const KernelGraphPtr &kernel_graph) {
   CNodePtrList new_execution_order{};
-  const auto &all_node_users = CollectAllNodeUsers(kernel_graph->execution_order());
+  CNodePtrList remain_h2d_nodes{};
   for (const auto node : kernel_graph->execution_order()) {
     if (IsH2DNode(node)) {
+      (void)remain_h2d_nodes.emplace_back(node);
       continue;
     }
     // ToRemote node should execute right after data is created.
     if (IsD2HNode(node)) {
       constexpr size_t data_index = 1;
       auto data_node = node->input(data_index);
-      auto data_node_iter = std::find(new_execution_order.begin(), new_execution_order.end(), data_node);
-      MS_EXCEPTION_IF_CHECK_FAIL(data_node_iter != new_execution_order.end(), "Find data_node failed.");
-      new_execution_order.insert(data_node_iter + 1, node);
+      if (data_node->isa<CNode>()) {
+        auto data_node_iter = std::find(new_execution_order.begin(), new_execution_order.end(), data_node);
+        MS_EXCEPTION_IF_CHECK_FAIL(data_node_iter != new_execution_order.end(), "Find data_node failed.");
+        new_execution_order.insert(data_node_iter + 1, node);
+      } else {
+        (void)new_execution_order.emplace_back(node);
+      }
       continue;
     }
     const auto &inputs = node->inputs();
     for (auto input : inputs) {
-      if (!IsH2DNode(node)) {
+      if (!IsH2DNode(input)) {
         continue;
       }
-      MS_EXCEPTION_IF_CHECK_FAIL(node->has_user_data("prefetch_distance"), "Fail to find prefetch distance for node");
-      auto cnode = node->cast<CNodePtr>();
-      constexpr size_t data_index = 1;
-      auto data_node = cnode->input(data_index);
-      size_t upper_bound_index = 0;
-      if (data_node->isa<CNode>()) {
-        auto upper_bound_iter = std::find(new_execution_order.begin(), new_execution_order.end(), data_node);
-        MS_EXCEPTION_IF_CHECK_FAIL(upper_bound_iter != new_execution_order.end(), "Fail to find data node");
-        upper_bound_index = std::distance(new_execution_order.begin(), upper_bound_iter) + 1;
+      auto remain_iter = std::find(remain_h2d_nodes.begin(), remain_h2d_nodes.end(), input);
+      if (remain_iter != remain_h2d_nodes.end()) {
+        remain_h2d_nodes.erase(remain_iter);
       }
-      size_t custom_prefetch_distance = *(node->user_data<size_t>("prefetch_distance"));
-      if (new_execution_order.size() - 1 - custom_prefetch_distance <= upper_bound_index) {
-        MS_LOG(EXCEPTION) << "Prefetch distance is too large";
-      }
-      (void)new_execution_order.insert(
-        new_execution_order.begin() + new_execution_order.size() - 1 - custom_prefetch_distance, node);
+      (void)new_execution_order.emplace_back(input->cast<CNodePtr>());
     }
+    (void)new_execution_order.emplace_back(node);
+  }
+  for (const auto &node : remain_h2d_nodes) {
     (void)new_execution_order.emplace_back(node);
   }
   kernel_graph->set_execution_order(new_execution_order);

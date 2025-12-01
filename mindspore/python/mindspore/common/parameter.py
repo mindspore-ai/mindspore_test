@@ -321,10 +321,8 @@ class Parameter(Tensor_):
         self.param_info.parameter_shape = self.shape
         self.param_info.storage_format = storage_format
         if device is not None:
-            if device == "CPU":
+            if device == "CPU" or device == "Remote" :
                 self._set_user_data("parameter_device", device)
-            elif device == "Remote":
-                self.param_info.is_remote_memory = True
             else:
                 raise ValueError(f"Only 'CPU' and 'Remote' is supported for device, but got ${device}.")
 
