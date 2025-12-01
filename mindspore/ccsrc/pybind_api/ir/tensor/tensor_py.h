@@ -45,6 +45,8 @@ class PYBIND_EXPORT TensorPybind {
  public:
   static bool IsPinned(const TensorPy &tensor);
 
+  static bool IsShared(const TensorPy &tensor);
+
   static TensorPtr MakePinMemoryTensor(const TensorPy &tensor);
 
   static py::bytes GetBytes(const Tensor &tensor);

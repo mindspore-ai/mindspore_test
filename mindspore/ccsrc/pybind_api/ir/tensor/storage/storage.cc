@@ -36,4 +36,10 @@ TypeId Storage::GetTypeId() const { return storage_base_->GetTypeId(); }
 uint32_t Storage::GetStreamId() const { return storage_base_->GetStreamId(); }
 const DevicePointerPtr &Storage::GetDevicePointer() const { return storage_base_->GetDevicePointer(); }
 const DeviceAddressPtr &Storage::GetDeviceAddress() const { return storage_base_->GetDeviceAddress(); }
+
+const MapAllocatorPtr &Storage::GetMapAllocator() const { return storage_base_->GetMapAllocator(); }
+void Storage::SetDevicePointer(const DevicePointerPtr device_pointer) {
+  storage_base_->SetDevicePointer(device_pointer);
+}
+
 }  // namespace mindspore

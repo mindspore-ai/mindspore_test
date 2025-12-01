@@ -288,6 +288,8 @@ void AsyncRQueue::ParentBeforeFork() {
     worker_ = nullptr;
   }
   tasks_queue_ = std::make_unique<RingQueue<AsyncTaskPtr, kQueueCapacity>>();
+  thread_id_to_wait_level_.clear();
+  current_level_ = kThreadWaitLevel::kLevelUnknown;
 }
 
 void AsyncRQueue::SetSpin(bool spin) {

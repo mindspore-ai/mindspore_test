@@ -42,6 +42,8 @@ class StorageBase {
   uint32_t GetStreamId() const;
   const DevicePointerPtr &GetDevicePointer() const;
   const DeviceAddressPtr &GetDeviceAddress() const;
+  const MapAllocatorPtr &GetMapAllocator() const;
+  void SetDevicePointer(const DevicePointerPtr device_pointer);
 
  private:
   device::DeviceAddressPtr device_data_{nullptr};

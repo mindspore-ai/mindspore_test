@@ -32,5 +32,8 @@ inline const Storage &StoragePy_Unpack(StoragePy *storage) { return storage->cda
 inline const Storage &StoragePy_Unpack(PyObject *obj) { return StoragePy_Unpack(reinterpret_cast<StoragePy *>(obj)); }
 
 PyObject *CreateStorageObj(const Storage &storage);
+
+PyObject *CreateStoragePyObj(const Storage &storage);
+
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_PYBIND_API_IR_TENSOR_STORAGE_STORAGE_PY_H

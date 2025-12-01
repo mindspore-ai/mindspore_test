@@ -130,6 +130,10 @@ std::pair<DeviceAddressPtr, TensorStorageInfoPtr> CreateSourceStorageDeviceAddr(
     const auto &source_storage_device_pointer = source_storage.GetDevicePointer();
     SwapDevicePointer(source_storage_device_pointer, source_device_address);
   }
+  auto map_allocator = source_storage.GetMapAllocator();
+  if (map_allocator) {
+    source_device_address->set_map_allocator(map_allocator);
+  }
   auto new_storage_info =
     ops::CheckSetStorageInfo(base_tensor, storage_offset, shape, stride, device_name, bytes_size, source_dtype);
 
@@ -1006,6 +1010,17 @@ extern PyObject *TensorPython_is_pinned(PyObject *self, PyObject *args) {
   HANDLE_MS_EXCEPTION_END
 }
 
+extern PyObject *TensorPython_is_shared(PyObject *self, PyObject *args) {
+  HANDLE_MS_EXCEPTION
+  PyType<TensorPy> *tensor = reinterpret_cast<PyType<TensorPy> *>(self);
+  TensorPy &tensor_py = tensor->value;
+  if (TensorPybind::IsShared(tensor_py)) {
+    Py_RETURN_TRUE;
+  }
+  Py_RETURN_FALSE;
+  HANDLE_MS_EXCEPTION_END
+}
+
 extern PyObject *TensorIndex_setitem_index_info(PyObject *self, PyObject *args) {
   HANDLE_MS_EXCEPTION
   PyObject *py_data;
@@ -1475,7 +1490,7 @@ extern PyObject *TensorPython_Storage(PyObject *self, PyObject *args, PyObject *
     }
     auto result = std::make_shared<StorageBase>(device_address, tensorTmp->data_type());
     Storage storage = Storage(result);
-    tensor->value.SetStorage(py::reinterpret_steal<py::object>(CreateStorageObj(storage)));
+    tensor->value.SetStorage(py::reinterpret_steal<py::object>(CreateStoragePyObj(storage)));
   }
   py::object storage_obj = tensor->value.GetStorage();
   return storage_obj.release().ptr();
@@ -1721,6 +1736,22 @@ static PyMethodDef Tensor_methods[] = {
                                     >>> from mindspore import Tensor
                                     >>> x = ms.Tensor([1, 2, 3], ms.int16)
                                     >>> print(x.is_pinned())
+                                    False
+                                )mydelimiter"},
+  {"is_shared", TensorPython_is_shared, METH_NOARGS, R"mydelimiter(
+                                Check whether a Tensor is in the shared memory.
+
+                                Note:
+                                    For Ascend tensor, ``True`` is always returned.
+
+                                Returns:
+                                    Bool. If the tensor is in the shared memory, return ``True``. Otherwise, return ``False``.
+
+                                Examples:
+                                    >>> import mindspore as ms
+                                    >>> from mindspore import Tensor
+                                    >>> x = ms.Tensor([1, 2, 3], ms.int16)
+                                    >>> print(x.is_shared())
                                     False
                                 )mydelimiter"},
   {"setitem_index_info", TensorIndex_setitem_index_info, METH_STATIC | METH_VARARGS, "Set item index information."},

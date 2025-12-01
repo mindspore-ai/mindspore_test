@@ -86,6 +86,25 @@ bool TensorPybind::IsPinned(const tensor::TensorPy &tensor) {
   return false;
 }
 
+bool TensorPybind::IsShared(const tensor::TensorPy &tensor) {
+  const auto &base_tensor = tensor.GetTensor();
+  if (base_tensor->device_address() == nullptr) {
+    MS_LOG(INFO) << "In IsShared function. device_address is nullptr.";
+    return false;
+  }
+  const auto device_address = std::dynamic_pointer_cast<device::DeviceAddress>(base_tensor->device_address());
+  if (device_address->GetDeviceType() == device::DeviceType::kAscend) {
+    MS_LOG(WARNING) << "Tensor.is_shared() will always return true for Ascend tensor. However, reduce_tensor method "
+                       "in mindspore.multiprocessing module does not support Ascend tensor currently, so inter-process "
+                       "communication(IPC) is not available for NPU tensor.";
+    return true;
+  }
+  if (device_address->map_allocator()) {
+    return true;
+  }
+  return false;
+}
+
 TensorPtr TensorPybind::MakePinMemoryTensor(const tensor::TensorPy &tensor) {
   const auto &base_tensor = tensor.GetTensor();
   const auto &shape = base_tensor->shape();
