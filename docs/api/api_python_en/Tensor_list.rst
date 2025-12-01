@@ -95,6 +95,13 @@
     :exclude-members: allocator
     :members:
 
+{% elif fullname=="mindspore.runtime.Stream" %}
+{{ fullname | underline }}
+
+.. autoclass:: {{ name }}
+    :exclude-members: stream_id
+    :members:
+
 {% elif fullname=="mindspore.train.TrainFaultTolerance" %}
 {{ fullname | underline }}
 

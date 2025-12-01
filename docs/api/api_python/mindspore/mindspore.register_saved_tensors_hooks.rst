@@ -1,7 +1,7 @@
 mindspore.register_saved_tensors_hooks
 ======================================
 
-.. py::function:: mindspore.register_saved_tensors_hooks(pack_hook, unpack_hook)
+.. py:function:: mindspore.register_saved_tensors_hooks(pack_hook, unpack_hook)
 
     一个静态图模式下的装饰器，用于自定义保存张量（Saved Tensor）的打包（pack）和解包（unpack）方式。
 
