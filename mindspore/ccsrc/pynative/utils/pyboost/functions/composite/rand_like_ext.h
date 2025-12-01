@@ -1,5 +1,5 @@
 /**
- * Copyright 2024 Huawei Technologies Co., Ltd
+ * Copyright 2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,23 +14,20 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_KERNEL_PYBOOST_CUSTOMIZE_RAND_LIKE_H_
-#define MINDSPORE_MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_KERNEL_PYBOOST_CUSTOMIZE_RAND_LIKE_H_
-
+#ifndef MINDSPORE_MINDSPORE_CCSRC_PYNATIVE_UTILS_PYBOOST_FUNCTIONS_COMPOSITE_RAND_LIKE_EXT_H_
+#define MINDSPORE_MINDSPORE_CCSRC_PYNATIVE_UTILS_PYBOOST_FUNCTIONS_COMPOSITE_RAND_LIKE_EXT_H_
 #include <vector>
 #include <memory>
 #include "ir/tensor.h"
 #include "ir/value.h"
-#include "mindspore/ccsrc/pynative/utils/pyboost/op_runner.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::TensorPtr RandExtAscendCustomize(const std::shared_ptr<OpRunner> &op, const ValueTuplePtr &shape,
-                                         const TensorPtr &seed, const TensorPtr &offset,
-                                         const std::optional<Int64ImmPtr> &dtype,
-                                         const std::optional<Int64ImmPtr> &device);
+tensor::TensorPtr PYBOOST_API rand_like_ext(const tensor::TensorPtr &tensor_tensor, const tensor::TensorPtr &seed,
+                                            const tensor::TensorPtr &offset, const std::optional<Int64ImmPtr> &dtype,
+                                            const std::optional<Int64ImmPtr> &device);
 }  // namespace pyboost
 }  // namespace kernel
 }  // namespace mindspore
-#endif  // MINDSPORE_MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_KERNEL_PYBOOST_CUSTOMIZE_RAND_LIKE_H_
+#endif  // MINDSPORE_MINDSPORE_CCSRC_PYNATIVE_UTILS_PYBOOST_FUNCTIONS_COMPOSITE_RAND_LIKE_EXT_H_

@@ -506,8 +506,9 @@ class COMMON_EXPORT Emitter {
     return Emit("AvgPool3DGradExt",
                 {grad, input, kernel_size, stride, padding, ceil_mode, count_include_pad, divisor_override});
   }
-  virtual NodePtr RandExt(const NodePtr &shape, const NodePtr &seed, const NodePtr &offset, const NodePtr &dtype) {
-    return Emit("RandExt", {shape, seed, offset, dtype});
+  virtual NodePtr RandExt(const NodePtr &shape, const NodePtr &seed, const NodePtr &offset, const NodePtr &dtype,
+                          const NodePtr &device) {
+    return Emit("RandExt", {shape, seed, offset, dtype, device});
   }
   virtual NodePtr GreaterEqualScalar(const NodePtr &input, const NodePtr &other) {
     return Emit("GreaterEqualScalar", {input, other});
@@ -609,8 +610,9 @@ class COMMON_EXPORT Emitter {
   virtual NodePtr BroadcastToView(const NodePtr &input, const NodePtr &shape) {
     return Emit("BroadcastToView", {input, shape});
   }
-  virtual NodePtr RandLikeExt(const NodePtr &tensor, const NodePtr &seed, const NodePtr &offset, const NodePtr &dtype) {
-    return Emit("RandLikeExt", {tensor, seed, offset, dtype});
+  virtual NodePtr RandLikeExt(const NodePtr &tensor, const NodePtr &seed, const NodePtr &offset, const NodePtr &dtype,
+                              const NodePtr &device) {
+    return Emit("RandLikeExt", {tensor, seed, offset, dtype, device});
   }
   virtual NodePtr InplaceExp(const NodePtr &input) { return Emit("InplaceExp", {input}); }
   virtual NodePtr BitwiseAndTensor(const NodePtr &input, const NodePtr &other) {

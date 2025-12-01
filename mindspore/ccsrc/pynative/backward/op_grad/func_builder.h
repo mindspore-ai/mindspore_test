@@ -148,7 +148,8 @@ class FuncBuilder : public BpropBuilder {
   NodePtr AvgPool3DGradExt(const NodePtr &grad, const NodePtr &input, const NodePtr &kernel_size, const NodePtr &stride,
                            const NodePtr &padding, const NodePtr &ceil_mode, const NodePtr &count_include_pad,
                            const NodePtr &divisor_override) override;
-  NodePtr RandExt(const NodePtr &shape, const NodePtr &seed, const NodePtr &offset, const NodePtr &dtype) override;
+  NodePtr RandExt(const NodePtr &shape, const NodePtr &seed, const NodePtr &offset, const NodePtr &dtype,
+                  const NodePtr &device) override;
   NodePtr GreaterEqualScalar(const NodePtr &input, const NodePtr &other) override;
   NodePtr HSigmoidGrad(const NodePtr &grads, const NodePtr &input_x) override;
   NodePtr Swiglu(const NodePtr &input, const NodePtr &dim) override;
@@ -201,7 +202,8 @@ class FuncBuilder : public BpropBuilder {
   NodePtr BCEWithLogitsLoss(const NodePtr &input, const NodePtr &target, const NodePtr &weight,
                             const NodePtr &posWeight, const NodePtr &reduction) override;
   NodePtr BroadcastToView(const NodePtr &input, const NodePtr &shape) override;
-  NodePtr RandLikeExt(const NodePtr &tensor, const NodePtr &seed, const NodePtr &offset, const NodePtr &dtype) override;
+  NodePtr RandLikeExt(const NodePtr &tensor, const NodePtr &seed, const NodePtr &offset, const NodePtr &dtype,
+                      const NodePtr &device) override;
   NodePtr InplaceExp(const NodePtr &input) override;
   NodePtr BitwiseAndTensor(const NodePtr &input, const NodePtr &other) override;
   NodePtr UpsampleNearest3DGrad(const NodePtr &dy, const NodePtr &input_size, const NodePtr &output_size,

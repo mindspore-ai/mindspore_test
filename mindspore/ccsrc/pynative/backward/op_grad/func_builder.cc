@@ -949,8 +949,9 @@ NodePtr FuncBuilder::AvgPool3DGradExt(const NodePtr &grad, const NodePtr &input,
                                       divisor_override);
 }
 
-NodePtr FuncBuilder::RandExt(const NodePtr &shape, const NodePtr &seed, const NodePtr &offset, const NodePtr &dtype) {
-  return NativeFunc::RandExt(shape, seed, offset, dtype);
+NodePtr FuncBuilder::RandExt(const NodePtr &shape, const NodePtr &seed, const NodePtr &offset, const NodePtr &dtype,
+                             const NodePtr &device) {
+  return NativeFunc::RandExt(shape, seed, offset, dtype, device);
 }
 
 NodePtr FuncBuilder::GreaterEqualScalar(const NodePtr &input, const NodePtr &other) {
@@ -1102,8 +1103,8 @@ NodePtr FuncBuilder::BroadcastToView(const NodePtr &input, const NodePtr &shape)
 }
 
 NodePtr FuncBuilder::RandLikeExt(const NodePtr &tensor, const NodePtr &seed, const NodePtr &offset,
-                                 const NodePtr &dtype) {
-  return NativeFunc::RandLikeExt(tensor, seed, offset, dtype);
+                                 const NodePtr &dtype, const NodePtr &device) {
+  return NativeFunc::RandLikeExt(tensor, seed, offset, dtype, device);
 }
 
 NodePtr FuncBuilder::InplaceExp(const NodePtr &input) { return NativeFunc::InplaceExp(input); }
