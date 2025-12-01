@@ -23,13 +23,12 @@ namespace kernel {
 
 void SplitTensorView::UpdateOutputTensorInfo(const std::vector<KernelTensor *> &inputs,
                                              const std::vector<KernelTensor *> &outputs) {
-  ops::OldTensorInfoPtr old_info = GetOldTensorInfo(inputs[kIndex0]);
-
+  const auto &input = inputs[kIndex0];
   auto split_size = inputs[kIndex1]->GetValueWithCheck<int64_t>();
   auto dim = inputs[kIndex2]->GetValueWithCheck<int64_t>();
 
-  info_ = ops::SplitTensorStridesCalc(old_info->old_shape, old_info->old_strides,
-                                      inputs[kIndex0]->tensor_storage_info(), split_size, dim);
+  info_ = ops::SplitTensorStridesCalc(input->GetShapeVector(), GetTensorStride(input), input->tensor_storage_info(),
+                                      split_size, dim);
   for (size_t i = 0; i < outputs.size(); i++) {
     outputs[i]->set_tensor_storage_info(info_[i]);
   }

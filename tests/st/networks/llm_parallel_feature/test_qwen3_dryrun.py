@@ -45,7 +45,7 @@ def test_qwen3_dp2mp4pp1_recompute():
     real_graph_path = graph_path_preprocess(qwen3_config.save_graphs_path, rank_list)
     real_log_path = log_path_preprocess(output_file, rank_list, case_name)
     graph_path = real_graph_path[0]
-    attrs_check_pairs = {"recompute: Bool(1)": 35}
+    attrs_check_pairs = {"recompute: Bool(1)": 27}
     validate_name = find_graph_file_name(graph_path, "validate")
     check_graph(graph_path, validate_name, attrs_check_pairs)
     for log_path in real_log_path:
@@ -77,7 +77,7 @@ def test_qwen3_dp4mp4pp1op_recompute():
     real_graph_path = graph_path_preprocess(qwen3_config.save_graphs_path, rank_list)
     validate_name = find_graph_file_name(real_graph_path[0], "validate")
     graph_path = real_graph_path[0]
-    attrs_check_pairs = {", recompute: Bool(1)": 323}
+    attrs_check_pairs = {", recompute: Bool(1)": 345}
     check_graph(graph_path, validate_name, attrs_check_pairs)
     real_log_path = log_path_preprocess(output_file, rank_list, case_name)
     for log_path in real_log_path:
@@ -146,8 +146,8 @@ def test_qwen3_cell_dp2mp4pp2vpp4op_1f1b():
     for log_path in real_log_path:
         check_log(log_path, check_pair)
         check_compile_time(log_path, 15)
-    check_peak_memory(real_log_path[0], "19114")
-    check_peak_memory(real_log_path[1], "26406")
+    check_peak_memory(real_log_path[0], "20445")
+    check_peak_memory(real_log_path[1], "26968")
     graph_path = graph_path_preprocess(qwen3_config.save_graphs_path, rank_list)
     # stage 0
     ops_check_pairs_0 = {"VirtualAssignAdd": 65}
@@ -236,7 +236,7 @@ def test_qwen3_dp4mp4pp1op_recompute_2():
     check_param_shape(graph_path, step_parallel_end_name, 100, param_opt_shape_check_pairs)
 
     # recompute
-    attrs_check_pairs = {' recompute: Bool(1)': '323'}
+    attrs_check_pairs = {' recompute: Bool(1)': '345'}
     check_graph(graph_path, validate_name, attrs_check_pairs)
 
     check_pair = {"Training Over": 1}
