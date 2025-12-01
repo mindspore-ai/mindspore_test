@@ -74,6 +74,16 @@ void CastKernelTensor(KernelTensor *source, KernelTensor *target, cudaStream_t s
   auto status = Cast(source->size(), source_addr, target_addr, stream);
   CHECK_CUDA_STATUS(status, kernel_name);
 }
+
+template <typename T>
+inline T ComputeScalesBackward(const double scale, const int64_t src_size, const int64_t dst_size) {
+  if (scale > 0.) {
+    return static_cast<T>(scale);
+  } else if (dst_size > 0) {
+    return static_cast<T>(src_size) / dst_size;
+  }
+  return 0;
+}
 }  // namespace kernel
 }  // namespace mindspore
 

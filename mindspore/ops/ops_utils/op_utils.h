@@ -376,5 +376,48 @@ static inline bool UseOptimizedOpImpl() {
       return opt.value();                 \
     }                                     \
   } while (0)
+
+template <typename T>
+inline T ComputeScales(const double &scale, const size_t &input_size, const size_t &output_size) {
+  if (scale > 0.) {
+    return static_cast<T>(1.0 / scale);
+  } else if (output_size > 0) {
+    return (static_cast<T>(input_size) / output_size);
+  }
+  return 0;
+}
+
+inline size_t NearestNeighborSourceIndex(const float &scale, const size_t &dst_index, const size_t &input_size) {
+  size_t src_index = std::min(static_cast<size_t>(floorf(SizeToFloat(dst_index) * scale)), input_size - 1);
+  return src_index;
+}
+
+inline size_t NearestIndex(const size_t &output_index, const size_t &input_size, const size_t &output_size,
+                           const double &scales) {
+  constexpr size_t kNumberTwo = 2;
+  if (output_size == input_size) {
+    // scale_factor = 1
+    return output_index;
+  } else if (output_size == kNumberTwo * input_size) {
+    // scale_factor = 2, shift input index
+    return output_index >> 1;
+  } else {
+    auto scale = ComputeScales<float>(scales, input_size, output_size);
+    return NearestNeighborSourceIndex(scale, output_index, input_size);
+  }
+}
+
+template <typename T>
+inline T AreaPixelComputeScale(int64_t input_size, int64_t output_size, bool align_corners, double scale) {
+  if (align_corners) {
+    if (output_size > 1) {
+      return static_cast<T>(input_size - 1) / (output_size - 1);
+    } else {
+      return static_cast<T>(0);
+    }
+  } else {
+    return ComputeScales<T>(scale, input_size, output_size);
+  }
+}
 }  // namespace mindspore::ops
 #endif  // MINDSPORE_CORE_OPS_OP_UTILS_H

@@ -20,7 +20,7 @@
 #include <memory>
 #include <utility>
 #include <vector>
-#include "include/runtime/hardware_abstract/kernel_base/kernel_utils.h"
+#include "mindspore/ops/ops_utils/op_utils.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/upsample_trilinear_3d_grad_impl.cuh"
 #include "kernel/gpu/cuda/nn/upsample_trilinear_3d_gpu_kernel.h"
 
@@ -88,9 +88,9 @@ bool UpsampleTrilinear3DGradGpuKernelMod::LaunchKernel(const std::vector<KernelT
   auto dinput = GetDeviceAddress<T>(outputs, kIndex0);
   MS_EXCEPTION_IF_NULL(dinput);
 
-  const S depth_scale = AreaPixelComputeScale<S>(dinput_d_, grad_d_, align_corners_, scales_[kIndex0]);
-  const S height_scale = AreaPixelComputeScale<S>(dinput_h_, grad_h_, align_corners_, scales_[kIndex1]);
-  const S width_scale = AreaPixelComputeScale<S>(dinput_w_, grad_w_, align_corners_, scales_[kIndex2]);
+  const S depth_scale = ops::AreaPixelComputeScale<S>(dinput_d_, grad_d_, align_corners_, scales_[kIndex0]);
+  const S height_scale = ops::AreaPixelComputeScale<S>(dinput_h_, grad_h_, align_corners_, scales_[kIndex1]);
+  const S width_scale = ops::AreaPixelComputeScale<S>(dinput_w_, grad_w_, align_corners_, scales_[kIndex2]);
 
   auto status = CalUpsampleTrilinear3DGrad(grad, n_, c_, grad_d_, grad_h_, grad_w_, dinput_d_, dinput_h_, dinput_w_,
                                            depth_scale, height_scale, width_scale, align_corners_, dinput, device_id_,
