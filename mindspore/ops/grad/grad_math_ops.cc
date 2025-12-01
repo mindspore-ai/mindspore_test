@@ -2654,8 +2654,9 @@ REG_BPROP_BUILDER("CumsumExt").FreeUselessValues_IO({i0, i2}, {}).SetBody(BODYFU
   auto dout = ib->GetInput(i4);
   auto dim_value_ptr = dim->BuildValue();
   auto dim_opt = mindspore::GetScalarValue<int64_t>(dim_value_ptr);
+  auto is_dynamic_shape = IsDynamic(x_shape);
   int64_t dim_value;
-  if (dim_opt.has_value()) {
+  if (dim_opt.has_value() && !is_dynamic_shape) {
     dim_value = dim_opt.value();
     auto rank = SizeToLong(x_shape.size());
     if (rank == 0) {
@@ -2670,7 +2671,7 @@ REG_BPROP_BUILDER("CumsumExt").FreeUselessValues_IO({i0, i2}, {}).SetBody(BODYFU
       return {dout, ib->OutZeros(dim), ib->OutZeros(dtype)};
     }
   }
-  if (!IsDynamic(x_shape) && (num_elements <= 1)) {
+  if (!is_dynamic_shape && (num_elements <= 1)) {
     return {dout, ib->OutZeros(dim), ib->OutZeros(dtype)};
   }
   auto flip = ib->ReverseV2(dout, ib->MakeTuple({dim}));

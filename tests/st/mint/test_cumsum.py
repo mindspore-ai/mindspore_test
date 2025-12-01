@@ -19,6 +19,7 @@ import mindspore as ms
 from mindspore import ops, jit
 from mindspore.mint import cumsum
 from tests.st.ops.test_tools.test_op import TEST_OP
+from tests.st.ops.ascend.grad import GradOfFirstInput
 from tests.st.utils import test_utils
 from tests.mark_utils import arg_mark
 
@@ -92,7 +93,7 @@ def test_cumsum_rank_0(mode):
         output1 = cumsum_forward_func(ms.Tensor(x1), dim1)
         output2 = cumsum_forward_func(ms.Tensor(x2), dim2)
         grad1 = cumsum_backward_func(ms.Tensor(x1), dim1)
-        grad2 = cumsum_backward_func(ms.Tensor(x1), dim2)
+        grad2 = cumsum_backward_func(ms.Tensor(x2), dim2)
     else:
         output1 = (jit(cumsum_forward_func, backend="ms_backend", jit_level="O0"))(ms.Tensor(x1), dim1)
         output2 = (jit(cumsum_forward_func, backend="ms_backend", jit_level="O0"))(ms.Tensor(x2), dim2)
@@ -138,3 +139,31 @@ def test_cumsum_dynamic_shape():
     ms_data2, _ = generate_random_input((3, 4, 5, 6), dim2)
     TEST_OP(cumsum_forward_func, [[ms.Tensor(ms_data1), dim1], [ms.Tensor(ms_data2), dim2]],
             disable_mode=['GRAPH_MODE_GE'])
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+def test_cumsum_grad_dynamic_rank():
+    """
+    Feature: mint.cumsum operator
+    Description: Test cumsum ops grad with dynamic rank.
+    Expectation: expect correct result.
+    """
+    ms.set_context(mode=ms.GRAPH_MODE, jit_config={"jit_level": "O0"})
+
+    grad_op = GradOfFirstInput(ms.mint.cumsum, sens_param=False)
+    input_placeholder = ms.Tensor(shape=None, dtype=ms.float32)
+
+    test_shape1 = (10, 3, 4)
+    dim1 = 0
+    input1 = ms.ops.rand(*test_shape1, dtype=ms.float32)
+    grad_op.set_inputs(input_placeholder, dim1)
+    grad1 = grad_op(input1, dim1)
+    expect_grad1 = np.flip(np.cumsum(np.flip(np.ones(test_shape1), dim1), dim1), dim1)
+    np.testing.assert_allclose(grad1.asnumpy(), expect_grad1)
+
+    test_shape2 = (5, 6, 9, 2)
+    dim2 = -3
+    input2 = ms.ops.rand(*test_shape2, dtype=ms.float32)
+    grad_op.set_inputs(input_placeholder, dim2)
+    grad2 = grad_op(input2, dim2)
+    expect_grad2 = np.flip(np.cumsum(np.flip(np.ones(test_shape2), dim2), dim2), dim2)
+    np.testing.assert_allclose(grad2.asnumpy(), expect_grad2)
