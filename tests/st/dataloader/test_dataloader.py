@@ -19,6 +19,9 @@ import os
 import random
 import re
 import signal
+import subprocess
+import sys
+import textwrap
 import time
 import traceback
 
@@ -1105,6 +1108,51 @@ class TestMultiProcessDataLoader:
             f"  init_fd_count:     {init_fd_count}\n"
             f"  final_fd_count:    {final_fd_count}"
         )
+
+    @arg_mark(plat_marks=["cpu_linux"], level_mark="level0", card_mark="onecard", essential_mark="essential")
+    def test_dataloader_cleanup_when_exception_raised(self):
+        """
+        Feature: Test DataLoader cleanup.
+        Description: Test the cleanup of DataLoader multiprocessing iterator when exception raised.
+        Expectation: There is no deadlock.
+        """
+        code = textwrap.dedent(
+            """
+            from mindspore.dataset.dataloader import DataLoader, Dataset
+
+
+            class ErrorDataset(Dataset):
+                def __init__(self, num_samples):
+                    self.num_samples = num_samples
+
+                def __getitem__(self, index):
+                    raise RuntimeError("Data processing failed.")
+
+                def __len__(self):
+                    return self.num_samples
+
+
+            def run():
+                dataloader = DataLoader(ErrorDataset(1), num_workers=2)
+                next(iter(dataloader))
+
+
+            if __name__ == "__main__":
+                run()
+            """
+        )
+
+        try:
+            result = subprocess.run(
+                [sys.executable, "-c", code],
+                capture_output=True,
+                timeout=30,  # Set timeout to 30 seconds.
+                check=False,
+            )
+        except subprocess.TimeoutExpired:
+            raise RuntimeError("DataLoader cleanup timed out.") from None
+
+        assert result.returncode == 1, "The subprocess should raise RuntimeError."
 
     @arg_mark(plat_marks=["platform_ascend"], level_mark="level0", card_mark="onecard", essential_mark="essential")
     def test_pin_memory_thread_exit(self, monkeypatch):
