@@ -54,7 +54,7 @@ tensor::TensorPtr UniformExtAscendCustomize(const std::shared_ptr<OpRunner> &op,
   double a_imm = GetScalarValue(a);
   double b_imm = GetScalarValue(b);
 
-  auto [seed_imm, offset_imm] = UpdateGeneratorState(seed, offset);
+  auto [seed_imm, offset_imm] = GetGeneratorState(seed, offset);
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), tensor_tensor);
   PyBoostUtils::PrepareOpOutputs(op->device_context(), op->stream_id(), op->outputs());
 

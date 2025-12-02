@@ -29,7 +29,7 @@ tensor::TensorPtr NormalTensorTensorAscendCustomize(const std::shared_ptr<OpRunn
                                                     const TensorPtr &offset) {
   MS_LOG(DEBUG) << "NormalTensorTensor call start";
   OpRunner::InferOpOutput(op, mean_tensor, std_tensor, seed, offset);
-  auto [seed_imm, offset_imm] = UpdateGeneratorState(seed, offset);
+  auto [seed_imm, offset_imm] = GetGeneratorState(seed, offset);
 
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), mean_tensor, std_tensor);
   PyBoostUtils::PrepareOpOutputs(op->device_context(), op->stream_id(), op->outputs());

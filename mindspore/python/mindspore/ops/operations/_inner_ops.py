@@ -26,6 +26,7 @@ from mindspore.ops import signature as sig
 from mindspore.ops.operations.math_ops import _infer_shape_reduce
 from mindspore.ops.primitive import PrimitiveWithCheck, PrimitiveWithInfer, prim_attr_register, Primitive, \
     _check_contains_variable
+from mindspore._c_expression import GeneratorImpl
 from mindspore._c_expression import TensorPy as Tensor_
 from mindspore._c_expression import typing, HookType
 from mindspore._c_expression import pyboost_generator, pyboost_cell_backward_hook
@@ -68,14 +69,13 @@ class Generator(Primitive):
         - **state** (Tensor): State tensor, can be used to restore current state.
     """
 
-    @prim_attr_register
-    def __init__(self):
+    def __init__(self, seed, offset):
+        Primitive.__init__(self, "Generator")
         self.add_prim_attr("side_effect_mem", True)
+        self._generator_impl = GeneratorImpl(seed, offset)
 
     def __call__(self, cmd, inputs):
-        if cmd == 0:  # step cmd
-            return inputs[0], inputs[1]
-        return pyboost_generator(self, [cmd, inputs])
+        return self._generator_impl(cmd, inputs)
 
 
 class Quant(PrimitiveWithInfer):
@@ -1048,7 +1048,7 @@ class DynamicStitch(PrimitiveWithCheck):
             data_dim = len(data_shape[i])
             extra = data_dim - indices_dim
             validator.check(f"extra dim of data[{i}]", extra,
-                            f"extra dim of data[0]", base_extra, validator.EQ, self.name)
+                            "extra dim of data[0]", base_extra, validator.EQ, self.name)
             validator.check(f"data[0].shape[{indices_dim0}:]", data_shape[0][indices_dim0:],
                             f"data[{i}].shape[{len(indices_shape[i])}:]",
                             data_shape[i][indices_dim:], validator.EQ, self.name)
@@ -1064,7 +1064,7 @@ class DynamicStitch(PrimitiveWithCheck):
             validator.check_tensor_dtype_valid(f'indices[{i}]', indices_type[i], mstype.int32, self.name)
             validator.check_tensor_dtype_valid(f'data[{i}]', data_type[i],
                                                mstype.number_type + (mstype.bool_,), self.name)
-            validator.check(f"type of data[{i}]", data_type[i], f"type of data[0]",
+            validator.check(f"type of data[{i}]", data_type[i], "type of data[0]",
                             data_type[0], validator.EQ, self.name)
         return data_type[0]
 
@@ -1375,7 +1375,7 @@ class PsROIPooling(PrimitiveWithInfer):
 
         - **features** (Tensor) - The input features, whose shape must be :math:`(N, C, H, W)`.
         - **rois** (Tensor) - The shape is :math:`(rois\_n, 5)`. With data type of float16 or float32.
-          `rois_n` represents the number of RoI. The size of the second dimension must be `5` and the `5` colunms
+          `rois_n` represents the number of RoI. The size of the second dimension must be `5` and the `5` columns
           are :math:`(image\_index, top\_left\_x, top\_left\_y, bottom\_right\_x, bottom\_right\_y)`.
           `image_index` represents the index of image. `top_left_x` and `top_left_y` represent the `x, y`
           coordinates of the top left corner of corresponding RoI, respectively. `bottom_right_x` and `bottom_right_y`
@@ -1495,7 +1495,7 @@ class PartitionedCall(PrimitiveWithInfer):
 
     @prim_attr_register
     def __init__(self, graph, executor_type=""):
-        super(PartitionedCall, self).__init__(self.__class__.__name__)
+        super().__init__(self.__class__.__name__)
         self.add_prim_attr("executor_type", executor_type)
         self.graph = graph
 
@@ -1559,7 +1559,7 @@ class CellBackwardHook(PrimitiveWithInfer):
 
     def __init__(self, cell_id="", cell=None, hook_dict=None):
         """Initialize CellBackwardHook"""
-        super(CellBackwardHook, self).__init__(self.__class__.__name__)
+        super().__init__(self.__class__.__name__)
         self.cell_id = cell_id
         self.cell = cell
         self.hook_dict = weakref.ref(hook_dict)
@@ -1715,8 +1715,8 @@ class Format(PrimitiveWithInfer):
             return {'dtype': mstype.string, 'shape': [], 'value': None}
 
         str_value = str_['value']
-        kwargs = dict()
-        var_value = list()
+        kwargs = {}
+        var_value = []
 
         for item in var:
             if isinstance(item["dtype"], typing.Keyword):
@@ -2014,7 +2014,7 @@ class CheckBprop(PrimitiveWithInfer):
 
     def infer_shape(self, xshapes, yshapes):
         """infer shape"""
-        tips = f"user defined method 'bprop'"
+        tips = "user defined method 'bprop'"
         validator.check_value_type('grads', xshapes, (tuple,), tips)
         validator.check_value_type('params', yshapes, (tuple,), tips)
         if not len(xshapes) == len(yshapes):
@@ -2046,7 +2046,7 @@ class CheckBprop(PrimitiveWithInfer):
 
     def infer_dtype(self, xdtypes, ydtypes):
         """infer dtype"""
-        tips = f"user defined method 'bprop'"
+        tips = "user defined method 'bprop'"
         validator.check_value_type('grads', xdtypes, (tuple,), tips)
         validator.check_value_type('params', ydtypes, (tuple,), tips)
         if not len(xdtypes) == len(ydtypes):
@@ -2241,7 +2241,6 @@ class GetGrad(Primitive):
                 else:
                     nonlocal output
                     output = grads[1]
-                    return
 
         _get_grad(gradients, hash_id)
         if output is None:

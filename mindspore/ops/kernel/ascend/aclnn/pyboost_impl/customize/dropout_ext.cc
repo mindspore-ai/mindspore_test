@@ -28,7 +28,7 @@ tensor::TensorPtr DropoutExtAscendCustomize(const std::shared_ptr<OpRunner> &op,
   // Create device address for input/output tensors.
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), input);
   PyBoostUtils::PrepareOpOutputs(op->device_context(), op->stream_id(), op->outputs());
-  auto [seed_value, offset_value] = UpdateGeneratorState(seed, offset);
+  auto [seed_value, offset_value] = GetGeneratorState(seed, offset);
   // Async
   PyBoostUtils::DispatchRun(std::make_shared<runtime::PyBoostDeviceTask>([op, input, p, seed_value, offset_value]() {
     auto device_context = op->device_context();

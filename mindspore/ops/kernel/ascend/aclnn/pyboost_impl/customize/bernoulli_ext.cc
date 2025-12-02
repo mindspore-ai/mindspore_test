@@ -26,7 +26,7 @@ tensor::TensorPtr BernoulliExtAscendCustomize(const std::shared_ptr<OpRunner> &o
                                               const TensorPtr &seed, const TensorPtr &offset) {
   OpRunner::InferOpOutput(op, input_tensor, seed, offset);
 
-  auto [seed_imm, offset_imm] = UpdateGeneratorState(seed, offset);
+  auto [seed_imm, offset_imm] = GetGeneratorState(seed, offset);
   auto device_context = op->device_context();
   auto outputs = op->outputs();
   PyBoostUtils::PrepareOpInputs(device_context, op->stream_id(), input_tensor);

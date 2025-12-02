@@ -27,7 +27,7 @@ tensor::TensorPtr RandExtAscendCustomize(const std::shared_ptr<OpRunner> &op, co
                                          const std::optional<Int64ImmPtr> &dtype,
                                          const std::optional<Int64ImmPtr> &device) {
   OpRunner::InferOpOutput(op, shape, seed, offset, dtype, device);
-  auto [seed_imm, offset_imm] = UpdateGeneratorState(seed, offset);
+  auto [seed_imm, offset_imm] = GetGeneratorState(seed, offset);
   auto device_context = op->device_context();
   auto outputs = op->outputs();
   PyBoostUtils::PrepareOpOutputs(device_context, op->stream_id(), outputs);

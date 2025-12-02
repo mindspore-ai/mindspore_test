@@ -32,7 +32,7 @@ tensor::TensorPtr NormalFloatFloatAscendCustomize(const std::shared_ptr<OpRunner
   // ValueTuple to std::vector
   auto mean_imm = GetScalarCastValue<float>("NormalFloatFloat", mean_float);
   auto std_imm = GetScalarCastValue<float>("NormalFloatFloat", std_float);
-  auto [seed_imm, offset_imm] = UpdateGeneratorState(seed, offset);
+  auto [seed_imm, offset_imm] = GetGeneratorState(seed, offset);
 
   PyBoostUtils::PrepareOpOutputs(op->device_context(), op->stream_id(), op->outputs());
 

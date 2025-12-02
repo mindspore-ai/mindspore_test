@@ -30,7 +30,7 @@ tensor::TensorPtr DropoutGenMaskExtAscendCustomize(const std::shared_ptr<OpRunne
   auto shape_vector = ConvertValueTupleToVector<int64_t>(shape);
   // Create device address for output tensors.
   PyBoostUtils::PrepareOpOutputs(op->device_context(), op->stream_id(), op->outputs());
-  auto [seed_value, offset_value] = UpdateGeneratorState(seed, offset);
+  auto [seed_value, offset_value] = GetGeneratorState(seed, offset);
   // Async
   PyBoostUtils::DispatchRun(
     std::make_shared<runtime::PyBoostDeviceTask>([op, shape_vector, p, seed_value, offset_value, dtype]() {

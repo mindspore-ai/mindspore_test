@@ -277,10 +277,7 @@ using MemBlockPtr = std::shared_ptr<MemBlock>;
 int8_t GetCubeMathType(bool use_hf32 = false);
 bool IsAllowMatmulHF32();
 bool IsAllowConvHF32();
-
-std::pair<int64_t, int64_t> UpdateGeneratorState(const tensor::TensorPtr &seed, const tensor::TensorPtr &offset,
-                                                 int64_t step = 12);
-
+std::pair<int64_t, int64_t> GetGeneratorState(const tensor::TensorPtr &seed, const tensor::TensorPtr &offset);
 }  // namespace pyboost
 }  // namespace kernel
 }  // namespace mindspore
