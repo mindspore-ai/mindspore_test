@@ -23,11 +23,10 @@ endforeach()
 
 set_property(SOURCE ${SUB_OBJECTS_SRC} PROPERTY COMPILE_DEFINITIONS SUBMODULE_ID=mindspore::SubModuleId::SM_ME)
 add_library(mindspore_frontend SHARED ${SUB_OBJECTS_SRC})
-target_link_libraries(mindspore_frontend PRIVATE mindspore_ms_backend mindspore_core mindspore::pybind11_module
-                      mindspore::securec mindspore_pyboost mindspore_common mindspore_ops
-                      mindspore_backend_manager proto_input mindspore_profiler mindspore_runtime_pipeline
-                      mindspore_backend_common mindspore_hardware_abstract mindspore_runtime_utils mindspore_cluster
-                      mindspore_pynative_utils)
+target_link_libraries(mindspore_frontend PRIVATE mindspore_core mindspore::pybind11_module mindspore::securec
+                      mindspore_common mindspore_ops mindspore_backend_manager proto_input mindspore_profiler
+                      mindspore_runtime_pipeline mindspore_backend_common mindspore_hardware_abstract
+                      mindspore_runtime_utils mindspore_cluster mindspore_pynative_utils)
 if(NOT WIN32)
     target_link_libraries(mindspore_frontend PRIVATE dl)
 endif()
