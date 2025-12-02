@@ -457,7 +457,8 @@ void TftCallback::AsyncSaveSnapshot(const CNodePtr &kernel, DeviceResManager *re
 
   MS_EXCEPTION_IF_NULL(kernel);
   auto kg = std::dynamic_pointer_cast<session::KernelGraph>(kernel->func_graph());
-  if (kg == nullptr) {
+  if (kg == nullptr || !kg->is_graph_run_mode()) {
+    MS_LOG(INFO) << "Skip copy, since kernel graph is " << (kg == nullptr ? "null" : "not graph mode");
     return;
   }
 
