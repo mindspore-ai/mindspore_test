@@ -15,7 +15,7 @@
  */
 
 #include "include/utils/utils.h"
-#include "include/utils/pybind_api/api_register.h"
+#include "pybind_api/utils/utils_api.h"
 
 namespace mindspore {
 // Get whether security is enable

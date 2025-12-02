@@ -25,7 +25,6 @@
 #include "pynative/backward/hook/hook_py.h"
 #include "pynative/backward/hook/saved_tensor_hook.h"
 #include "include/utils/config_manager.h"
-#include "include/utils/pybind_api/api_register.h"
 #include "include/frontend/optimizer/ad/grad_interface.h"
 #include "pynative/utils/runtime/op_executor.h"
 #include "pynative/utils/runtime/op_compiler.h"
@@ -35,7 +34,7 @@
 #include "tools/profiler/profiling.h"
 #include "ir/cell.h"
 #include "include/utils/python_utils.h"
-#include "mindspore/ccsrc/pynative/utils/pyboost/kernel_mod_cache.h"
+#include "pynative/utils/pyboost/kernel_mod_cache.h"
 #include "include/frontend/jit/ps/pass_interface.h"
 #include "include/runtime/pipeline/pipeline.h"
 #include "include/utils/convert_utils_py.h"
@@ -43,6 +42,7 @@
 #include "include/utils/pynative/variable.h"
 #include "pynative/forward/pyboost/converter.h"
 #include "pynative/forward/pyboost/fallback.h"
+#include "pybind_api/pynative/pynative_api.h"
 
 namespace mindspore::pynative {
 std::shared_ptr<PyNativeExecutor> PyNativeExecutor::executor_ = nullptr;

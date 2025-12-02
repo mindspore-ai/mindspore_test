@@ -17,6 +17,7 @@
 #include "pybind_api/gil_scoped_long_running.h"
 #include "include/utils/tensor_py.h"
 #include "mindspore/ccsrc/pynative/backward/op_grad/func_grad.h"
+#include "mindspore/ccsrc/pybind_api/pynative/pynative_api.h"
 
 namespace mindspore {
 namespace pynative {

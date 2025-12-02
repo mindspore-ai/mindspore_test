@@ -13,8 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "include/utils/pybind_api/api_register.h"
+
 #include "frontend/jit/pi/external.h"
+#include "include/frontend/pybind_api.h"
 namespace mindspore {
 namespace pijit {
 namespace py = pybind11;

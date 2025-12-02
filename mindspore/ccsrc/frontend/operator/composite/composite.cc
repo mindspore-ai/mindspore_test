@@ -38,7 +38,7 @@
 #include "frontend/operator/ops.h"
 #include "utils/symbolic.h"
 #include "include/utils/fallback.h"
-#include "include/utils/pybind_api/api_register.h"
+
 #include "ir/signature.h"
 #include "frontend/jit/ps/fallback.h"
 #include "frontend/jit/ps/debug/trace.h"

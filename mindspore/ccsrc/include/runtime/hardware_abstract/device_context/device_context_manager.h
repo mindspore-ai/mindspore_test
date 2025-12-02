@@ -27,8 +27,10 @@
 #include <mutex>
 #include <vector>
 #include "include/runtime/hardware_abstract/device_context/device_context.h"
-#include "include/utils/pybind_api/api_register.h"
 #include "runtime/hardware_abstract/visible.h"
+#include "pybind11/pybind11.h"
+
+namespace py = pybind11;
 
 namespace mindspore {
 namespace plugin_loader {

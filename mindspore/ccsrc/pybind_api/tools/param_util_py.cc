@@ -22,10 +22,11 @@
 #include "ir/tensor_storage_info.h"
 #include "tools/error_handler/error_handler.h"
 #include "utils/ms_context.h"
-#include "include/utils/pybind_api/api_register.h"
+
 #include "include/utils/tensor_py.h"
 #include "include/runtime/hardware_abstract/stream/multi_stream_controller.h"
 #include "runtime/hardware_abstract/utils.h"
+#include "mindspore/ccsrc/pybind_api/tools/tools_api.h"
 
 namespace mindspore {
 namespace {

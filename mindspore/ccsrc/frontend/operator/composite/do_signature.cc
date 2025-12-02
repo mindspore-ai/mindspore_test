@@ -26,7 +26,6 @@
 #include "include/utils/primfunc_utils.h"
 #include "include/utils/amp.h"
 #include "include/utils/convert_utils.h"
-#include "include/utils/pybind_api/api_register.h"
 #include "include/utils/frontend/primitive_utils.h"
 #include "frontend/jit/ps/static_analysis/prim.h"
 #include "frontend/jit/ps/static_analysis/prim_utils.h"

@@ -452,8 +452,8 @@ DO_VIEW_CUSTOMIZE_GRAD_FUNCTION_BODY_TEMPLATE = Template.load_from_file(
     os.path.join(K.WORK_DIR, './mindspore/ccsrc/pynative/forward/pyboost/template/do_view_customize_grad_function.tpl'))
 
 TENSOR_PY_CC_TEMPLATE = Template.load_from_file(
-    os.path.join(K.WORK_DIR, './mindspore/ccsrc/pybind_api/ir/tensor/template/tensor_py_gen.tpl'))
+    os.path.join(K.WORK_DIR, './mindspore/ccsrc/pybind_api/pynative/tensor/template/tensor_py_gen.tpl'))
 TENSOR_PY_H_TEMPLATE = Template.load_from_file(
-    os.path.join(K.WORK_DIR, './mindspore/ccsrc/pybind_api/ir/tensor/template/tensor_py_genH.tpl'))
+    os.path.join(K.WORK_DIR, './mindspore/ccsrc/pybind_api/pynative/tensor/template/tensor_py_genH.tpl'))
 OP_DEF_INC_HEAD_TEMPLATE = Template(
     "#include \"primitive/auto_generate/gen_ops_primitive_${prefix_char}.h\"")

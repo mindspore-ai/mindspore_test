@@ -24,7 +24,7 @@
 #include "include/securec.h"
 #include "ir/tensor.h"
 #include "ir/tensor_new.h"
-#include "pybind_api/ir/tensor/tensor_py.h"
+#include "pybind_api/pynative/tensor/tensor_py.h"
 #include "include/utils/tensor_py.h"
 #include "common/mockcpp.h"
 

@@ -27,7 +27,7 @@
 #include "abstract/dshape.h"
 #include "frontend/operator/cc_implementations.h"
 #include "frontend/operator/ops.h"
-#include "include/utils/pybind_api/api_register.h"
+
 #include "include/utils/fallback.h"
 #include "frontend/jit/ps/fallback.h"
 #include "utils/ms_context.h"

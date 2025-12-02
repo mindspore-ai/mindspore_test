@@ -16,11 +16,11 @@
 #include <vector>
 #include <string>
 
-#include "include/utils/pybind_api/api_register.h"
 #include "include/utils/tensor_py.h"
 #include "tools/tensor_dump/tensordump.h"
 #include "tools/data_dump/dump_control.h"
 #include "utils/ms_context.h"
+#include "mindspore/ccsrc/pybind_api/tools/tools_api.h"
 
 namespace py = pybind11;
 namespace mindspore {

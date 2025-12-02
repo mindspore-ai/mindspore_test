@@ -15,9 +15,10 @@
  * limitations under the License.
  */
 #include <utility>
-#include "include/utils/pybind_api/api_register.h"
+
 #include "tools/profiler/profiling.h"
 #include "tools/profiler/profiler.h"
+#include "mindspore/ccsrc/pybind_api/tools/tools_api.h"
 
 namespace mindspore {
 namespace profiler {

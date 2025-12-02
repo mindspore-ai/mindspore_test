@@ -19,6 +19,7 @@
 #include "include/utils/exception.h"
 #include "include/utils/pyobj_manager.h"
 #include "pynative/backward/hook/custom_function.h"
+#include "pybind_api/pynative/pynative_api.h"
 
 namespace mindspore::pynative::autograd {
 namespace py = pybind11;

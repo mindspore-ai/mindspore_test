@@ -98,12 +98,12 @@ file(GLOB_RECURSE UT_PS_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ./cluster/rpc/
 file(GLOB_RECURSE UT_CCSRC_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ./ccsrc/*.cc)
 file(GLOB_RECURSE UT_OTHERS_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ./debug/*.cc ./place/*.cc)
 file(GLOB_RECURSE UT_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ./stub/*.cc ./common/*.cc ./mock/*.cc
-        ../../../mindspore/ccsrc/pybind_api/resource/manager.cc
+        ../../../mindspore/ccsrc/pybind_api/frontend/manager.cc
         ../../../mindspore/ccsrc/common/python_utils.cc
         ../../../mindspore/ccsrc/pybind_api/utils/log_adapter_py.cc
-        ../../../mindspore/ccsrc/pybind_api/ir/tensor/tensor_py.cc
-        ../../../mindspore/ccsrc/pybind_api/ir/tensor/dlpack_utils.cc
-        ../../../mindspore/ccsrc/pybind_api/ir/tensor/device_type_utils.cc)
+        ../../../mindspore/ccsrc/pybind_api/pynative/tensor/tensor_py.cc
+        ../../../mindspore/ccsrc/pybind_api/pynative/tensor/dlpack_utils.cc
+        ../../../mindspore/ccsrc/pybind_api/pynative/tensor/device_type_utils.cc)
 
 # split minddata
 list(REMOVE_ITEM UT_MINDDATA_SRCS ${UT_MINDDATA_COMMON_SRCS})

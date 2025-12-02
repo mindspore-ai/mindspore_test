@@ -45,7 +45,7 @@
 #include "utils/ms_context.h"
 #include "primitive/op_name.h"
 #ifdef _MSC_VER
-#include "include/utils/pybind_api/api_register.h"
+#include "include/frontend/pybind_api.h"
 #endif
 #include "primitive/auto_generate/gen_ops_primitive_a.h"
 #include "primitive/auto_generate/gen_ops_primitive_m.h"

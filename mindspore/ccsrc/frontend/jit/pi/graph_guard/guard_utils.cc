@@ -22,7 +22,6 @@
 #include "ir/tensor_new.h"
 #include "pybind11/pybind11.h"
 #include "include/frontend/operator/primitive_py.h"
-#include "pybind_api/ir/cell_py.h"
 #include "include/utils/convert_utils_py.h"
 #include "frontend/jit/pi/utils/utils.h"
 #include "include/utils/stub_tensor.h"

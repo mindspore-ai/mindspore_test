@@ -16,6 +16,10 @@
 #include "pybind_api/ops/ops_api.h"
 #include "pybind11/pybind11.h"
 #include "pybind_api/ops/custom/op_def_builder.h"
+#include "include/frontend/jit/ps/pipeline_interface.h"
+#ifdef _WIN32
+#include "kernel/cpu/utils/cpu_utils.h"
+#endif
 
 namespace mindspore {
 namespace py = pybind11;
@@ -33,6 +37,10 @@ void RegPyFuncOpBuilder(py::module *m) {
       "Add an argument. role in {'input','output'}. obj_type is canonical string.")
     .def("register_op", &mindspore::ops::PyFuncOpDefBuilder::Register, "Register the OpDef and its PyFunc kernel");
 }
-void RegOpsModule(py::module *m) { RegPyFuncOpBuilder(m); }
 
+void RegOpsModule(py::module *m) {
+  RegRandomSeededGenerator(m);
+  mindspore::initializer::RegRandomNormal(m);
+  RegPyFuncOpBuilder(m);
+}
 }  // namespace mindspore

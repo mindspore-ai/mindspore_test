@@ -22,7 +22,7 @@
 #include "abstract/dshape.h"
 #include "utils/ms_context.h"
 #include "frontend/jit/ps/fallback.h"
-#include "include/utils/pybind_api/api_register.h"
+
 #include "include/utils/fallback.h"
 #include "ir/signature.h"
 #include "ir/dtype.h"

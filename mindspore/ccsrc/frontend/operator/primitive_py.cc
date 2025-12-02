@@ -21,7 +21,7 @@
 #include "frontend/jit/ps/parse/data_converter.h"
 #include "include/utils/python_adapter.h"
 #include "pybind11/pytypes.h"
-#include "include/utils/pybind_api/api_register.h"
+
 #include "frontend/jit/ps/parse/parse_flags.h"
 #include "mindspore/ccsrc/utils/base_ref_py.h"
 #include "include/utils/convert_utils_py.h"
@@ -524,7 +524,7 @@ py::object PrimitivePyAdapter::GetUserData(const py::str &key) const {
     MS_EXCEPTION_IF_NULL(primitive_data);
     return primitive_data->obj;
   }
-  // Get from primtive adapter.
+  // Get from primitive adapter.
   const auto primitive_data = user_data<PrimitiveUserData>(name);
   MS_EXCEPTION_IF_NULL(primitive_data);
   return primitive_data->obj;
