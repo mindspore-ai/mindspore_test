@@ -24,7 +24,7 @@
 #include "lcal_api.h"
 #include "runtime/hardware_abstract/collective/communication_group.h"
 
-using namespace Lcal;
+using namespace Lcal_ms;
 using LcclPtr = std::shared_ptr<Lccl>;
 using LcocPtr = std::shared_ptr<Lcoc>;
 
