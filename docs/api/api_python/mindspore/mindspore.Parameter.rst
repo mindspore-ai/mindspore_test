@@ -94,11 +94,6 @@
         返回：
             Parameter，返回拷贝的新参数。
 
-    .. py:method:: data
-        :property:
-
-        返回参数对象。
-
     .. py:method:: init_data(layout=None, set_sliced=False)
 
         初始化参数的数据。
