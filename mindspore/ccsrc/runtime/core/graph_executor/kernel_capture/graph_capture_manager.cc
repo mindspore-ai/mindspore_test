@@ -722,6 +722,9 @@ void GraphCaptureManager::Finalize() {
   if (!fix_network_input_for_replay_single_op_.empty()) {
     fix_network_input_for_replay_single_op_.clear();
   }
+  if (!recorded_kernel_output_for_graph_output_.empty()) {
+    recorded_kernel_output_for_graph_output_.clear();
+  }
 }
 }  // namespace runtime
 }  // namespace mindspore
