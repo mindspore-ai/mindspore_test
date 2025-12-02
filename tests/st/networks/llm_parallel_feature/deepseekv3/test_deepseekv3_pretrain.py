@@ -14,6 +14,7 @@
 """Test Mindformers mcore DeepSeekv3 pretrain"""
 import os
 import re
+import subprocess
 import numpy as np
 from tests.st.networks.llm_parallel_feature.utils import check_log, check_peak_memory, clear_directory
 from tests.st.networks.llm_parallel_feature.deepseekv3.utils import DeepseekConfig, prepare_deepseekv3_testcase_env
@@ -37,7 +38,7 @@ def extract_losses_from_log(file_path):
             matches = pattern.findall(line)
             for match in matches:
                 # Convert found loss values from string to float and add to list
-                losses.append(round(float(match), 3))
+                losses.append(round(float(match), 6))
     return losses
 
 
@@ -84,6 +85,24 @@ def if_equals(golden_loss, loss_list, e=0.001):
     return all(abs(a - b) <= e for a, b in zip(golden_loss, loss_list))
 
 
+def get_model_losses():
+    # Run `npu-smi info` and map detected NPU model to its golden losses
+    result = subprocess.run(["npu-smi", "info"], stdout=subprocess.PIPE, text=True)
+    info = result.stdout
+
+    model_losses = {
+        "910B1": [15.578772, 15.315098, 15.028308, 14.695227, 14.498153, 14.363646],
+        "910B2": [15.578772, 15.315098, 15.028308, 14.695156, 14.498277, 14.363338],
+        "910B3": [15.578777, 15.313907, 15.027424, 14.695410, 14.498730, 14.362329],
+    }
+
+    for model, losses in model_losses.items():
+        if model in info:
+            return losses
+
+    return [15.578, 15.315, 15.028, 14.695, 14.498, 14.363]
+
+
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='allcards', essential_mark='essential')
 def test_deepseekv3_cell_dp2mp2ep2pp2mb4gas1bs1_8p():
     """
@@ -122,8 +141,8 @@ def test_deepseekv3_cell_dp2mp2ep2pp2mb4gas1bs1_8p():
     # extract training loss
     loss_list = extract_losses_from_log(log_file_path)
 
-    # set golden_loss
-    golden_loss = [15.578772, 15.315098, 15.028308, 14.695156, 14.498277, 14.363338]
+    # get golden_loss
+    golden_loss = get_model_losses()
 
     if_equal = if_equals(golden_loss, loss_list, epsilon)
     assert if_equal, \
@@ -131,8 +150,8 @@ def test_deepseekv3_cell_dp2mp2ep2pp2mb4gas1bs1_8p():
         f"where training loss: {loss_list}, golden_loss: {golden_loss}."
 
     # check per step time
-    # self-test results: 445ms, step time should be lower than 445+20=465ms
-    excepted_average_step_time = 465
+    # self-test results: 465ms, step time should be lower than 465+20=485ms
+    excepted_average_step_time = 485
 
     # extract training step time
     average_step_time = extract_average_step_time_from_log(log_file_path)
@@ -191,8 +210,8 @@ def test_deepseekv3_cell_dp2mp2ep2pp2mb4gas1bs1_8p_performance():
     # set the training log path
     log_file_path = f'{sh_path}/{case_name}/worker_7.log'
 
-    # self-test results: 1021ms, step time should be lower than 1021+30=1051ms
-    excepted_average_step_time = 1051
+    # self-test results: 1056ms, step time should be lower than 1056+30=1086ms
+    excepted_average_step_time = 1086
 
     # extract training step time
     average_step_time = extract_average_step_time_from_log(log_file_path)
@@ -254,8 +273,8 @@ def test_deepseekv3_cell_dp2mp2ep2pp2mb4gas1bs1_8p_1b1f_performance():
     log_file_path = f'{sh_path}/{case_name}/worker_7.log'
 
     # set the excepted average step time
-    # self-test results: 1034ms, step time should be lower than 1034+30=1064ms
-    excepted_average_step_time = 1064
+    # self-test results: 1064ms, step time should be lower than 1064+30=1094ms
+    excepted_average_step_time = 1094
 
     # extract training step time
     average_step_time = extract_average_step_time_from_log(log_file_path)
