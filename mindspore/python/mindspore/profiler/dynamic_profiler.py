@@ -626,6 +626,14 @@ def worker_dyno_func(loop_flag, poll_interval, shm, rank_id):
         byte_data = DynamicProfilerConfigContext.json_to_bytes(data)
         write_bytes(shm, byte_data)
         time.sleep(poll_interval)
+    if hasattr(proxy, "update_profiler_status"):
+        profiler_status = {
+            DynamicProfilerUtils.PROFILER_STATUS: str(DynamicProfilerUtils.ProfilerStatus.UNINITIALIZED.value),
+            DynamicProfilerUtils.CURRENT_STEP: "-1",
+            DynamicProfilerUtils.START_STEP: "-1",
+            DynamicProfilerUtils.STOP_STEP: "-1",
+        }
+        proxy.update_profiler_status(profiler_status)
     logger.info("Dynolog process done")
 
 
