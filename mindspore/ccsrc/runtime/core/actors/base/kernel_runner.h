@@ -65,7 +65,9 @@ class KernelRunner {
 
   // The memory related operation interface.
   void SendMemoryAllocReq(OpContext<KernelTensor> *const context);
-  void SendMemoryAllocReqHP(OpContext<KernelTensor> *const context, uint32_t stream_id = kDefaultStreamIndex);
+  // High-performance related operation interface. When stream_id is kInValidStreamIndex, the alloc stream
+  // ID of kernel_tensor is used.
+  void SendMemoryAllocReqHP(OpContext<KernelTensor> *const context, uint32_t mem_alloc_stream_id = kInValidStreamIndex);
   void SendMemoryFreeReq(OpContext<KernelTensor> *const context);
 
   const CNodePtr &kernel() const { return kernel_; }

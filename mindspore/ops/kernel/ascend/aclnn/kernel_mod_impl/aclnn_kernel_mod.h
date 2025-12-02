@@ -442,7 +442,7 @@ class OPS_ASCEND_API AclnnKernelMod : public KernelMod {
   size_t capacity_{64};
   std::string fullname_;
   const device::DeviceContext *device_context_;
-  uint32_t stream_id_{UINT32_MAX};
+  uint32_t stream_id_{kInValidStreamIndex};
   static constexpr size_t kWsSizeIndex = 0;
   static constexpr size_t kHashIdIndex = 3;
 };
