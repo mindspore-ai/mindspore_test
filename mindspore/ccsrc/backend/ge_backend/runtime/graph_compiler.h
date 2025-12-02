@@ -28,7 +28,7 @@
 #include "backend/ge_backend/runtime//actor/actor_common.h"
 #include "backend/ge_backend/runtime//control_node_parser.h"
 #include "backend/common/kernel_graph/session_basic.h"
-#include "backend/common/kernel_graph/session_factory.h"
+#include "include/backend/common/kernel_graph/session_factory.h"
 #include "ir/tensor.h"
 #include "include/runtime/hardware_abstract/kernel_base/graph_fusion/framework_utils.h"
 #include "ir/device_type.h"

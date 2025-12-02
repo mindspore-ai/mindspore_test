@@ -22,7 +22,7 @@
 // pyboost headfiles
 #include "mindspore/ccsrc/pynative/utils/pyboost/op_register.h"
 #include "mindspore/ccsrc/pynative/utils/pyboost/pyboost_utils.h"
-#include "backend/common/device_address_utils.h"
+#include "include/backend/common/device_address_utils.h"
 #include "mindspore/ccsrc/pynative/utils/runtime/op_runner.h"
 #include "mindspore/ccsrc/pynative/utils/pyboost/op_runner.h"
 #include "mindspore/ccsrc/pynative/utils/pyboost/functions/auto_generate/functions.h"

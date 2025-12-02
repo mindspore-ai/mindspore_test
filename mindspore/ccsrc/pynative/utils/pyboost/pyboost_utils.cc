@@ -27,7 +27,7 @@
 #include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
 #include "mindspore/ccsrc/pynative/utils/pyboost/kernel_mod_cache.h"
 #include "mindapi/base/type_id.h"
-#include "backend/common/device_address_utils.h"
+#include "include/backend/common/device_address_utils.h"
 #include "ops/ops_frontend_func_impl.h"
 #include "ops/infer_info/infer_info_utils.h"
 #include "ops/op_def.h"

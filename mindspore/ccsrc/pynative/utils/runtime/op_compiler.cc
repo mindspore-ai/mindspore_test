@@ -35,9 +35,9 @@
 #include "primitive/conv_pool_op_name.h"
 #include "pynative/utils/runtime/op_executor.h"
 #include "pynative/utils/runtime/op_runtime_info.h"
-#include "backend/common/device_address_utils.h"
+#include "include/backend/common/device_address_utils.h"
 #include "backend/common/pass_manager/common_backend_optimization.h"
-#include "backend/common/kernel_graph/session_factory.h"
+#include "include/backend/common/kernel_graph/session_factory.h"
 
 namespace mindspore {
 using runtime::DeviceAddressUtils;

@@ -52,7 +52,7 @@
 #include "utils/log_adapter.h"
 #include "include/utils/parallel_context.h"
 #include "include/runtime/hardware_abstract/kernel_base/oplib/oplib.h"
-#include "backend/common/kernel_graph/session_factory.h"
+#include "include/backend/common/kernel_graph/session_factory.h"
 #ifdef ENABLE_DUMP_IR
 #include "include/runtime/hardware_abstract/device_context/device_context_manager.h"
 #endif

@@ -29,7 +29,7 @@
 #include "runtime/core/actors/base/actor_common.h"
 #include "runtime/core/graph_scheduler/control_flow/control_node_parser.h"
 #include "backend/common/kernel_graph/session_basic.h"
-#include "backend/common/kernel_graph/session_factory.h"
+#include "include/backend/common/kernel_graph/session_factory.h"
 #include "ir/tensor.h"
 #include "include/backend/visible.h"
 #include "include/runtime/hardware_abstract/kernel_base/graph_fusion/framework_utils.h"

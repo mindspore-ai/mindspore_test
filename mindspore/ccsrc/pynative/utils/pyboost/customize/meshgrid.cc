@@ -18,7 +18,7 @@
 #include <memory>
 #include <utility>
 #include <string>
-#include "backend/common/device_address_utils.h"
+#include "include/backend/common/device_address_utils.h"
 #include "mindspore/ccsrc/pynative/utils/pyboost/functions/auto_generate/functions.h"
 #include "mindspore/ccsrc/pynative/utils/pyboost/functions/auto_grad_guard.h"
 #include "utils/core_op_utils.h"

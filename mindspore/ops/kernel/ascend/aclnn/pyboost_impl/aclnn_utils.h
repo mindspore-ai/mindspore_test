@@ -25,7 +25,7 @@
 #include <list>
 #include <unordered_map>
 #include <memory>
-#include "backend/common/device_address_utils.h"
+#include "include/backend/common/device_address_utils.h"
 #include "include/runtime/pipeline/pipeline.h"
 #include "include/runtime/utils/runtime_conf/runtime_conf.h"
 #include "kernel/ascend/acl_ir/op_api_exec.h"

@@ -29,7 +29,7 @@
 #include "include/runtime/hardware_abstract/kernel_base/device_tensor_store.h"
 #include "runtime/core/actors/base/actor_common.h"
 #include "runtime/core/graph_scheduler/base/scheduler_helper.h"
-#include "backend/common/device_address_utils.h"
+#include "include/backend/common/device_address_utils.h"
 
 namespace mindspore::pynative {
 namespace {
