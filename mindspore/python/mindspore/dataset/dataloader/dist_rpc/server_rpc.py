@@ -1,18 +1,28 @@
-# SPDX-License-Identifier: Apache-2.0
-"""Reusable RPC server that mirrors LMCache's socket server structure."""
+# Copyright 2025 Huawei Technologies Co., Ltd
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ==============================================================================
+"""Threaded RPC server for coordinator/server-node communication."""
 
-# Standard
 from dataclasses import dataclass
 import socket
 import threading
 from typing import Any, Callable, Dict, Optional
 
-# Third Party
-import torch
+from mindspore import Tensor
 
-# First Party
 from .common import PayloadType, REQUEST_HEADER, RESPONSE_HEADER, RPCMethod
-from .serde import TorchSerializer, deserialize_message, dtype_to_name, serialize_message
+from .serde import MindSporeSerializer, deserialize_message, dtype_to_name, serialize_message
 
 
 RPCHandler = Callable[[Any, "RPCRequestContext"], Any]
@@ -31,7 +41,7 @@ class RPCServer:
         self.host = host
         self.port = port
         self.role = role
-        self._serializer = TorchSerializer()
+        self._serializer = MindSporeSerializer()
         self._handlers: Dict[str, RPCHandler] = {}
         self._server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self._server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -130,7 +140,7 @@ class RPCServer:
         status_code = 200
         if result is None:
             return status_code, PayloadType.JSON, b"", None
-        if isinstance(result, torch.Tensor):
+        if isinstance(result, Tensor):
             dtype_name = dtype_to_name(result.dtype)
             body = self._serializer.to_bytes(result)
             return status_code, PayloadType.TENSOR, body, dtype_name

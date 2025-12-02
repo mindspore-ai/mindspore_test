@@ -1,117 +1,84 @@
-# SPDX-License-Identifier: Apache-2.0
-# Standard
+# Copyright 2025 Huawei Technologies Co., Ltd
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ==============================================================================
+"""Serialization helpers that convert RPC payloads to and from bytes."""
+
 import abc
-import json
-import time
 import io
+import json
 from typing import Any
-# Third Party
-import torch
+
+import numpy as np
+from mindspore import Tensor
+from mindspore import dtype as mstype
 
 
 class Serializer(metaclass=abc.ABCMeta):
     @abc.abstractmethod
-    def to_bytes(self, t: torch.Tensor) -> bytes:
-        """
-        Serialize a pytorch tensor to bytes. The serialized bytes should contain
-        both the data and the metadata (shape, dtype, etc.) of the tensor.
-
-        Input:
-            t: the input pytorch tensor, can be on any device, in any shape,
-               with any dtype
-
-        Returns:
-            bytes: the serialized bytes
-        """
-        raise NotImplementedError
+    def to_bytes(self, tensor: Tensor) -> bytes:
+        """Serialize a MindSpore tensor (any shape/dtype) to bytes."""
 
 
 class SerializerDebugWrapper(Serializer):
-    def __init__(self, s: Serializer):
-        self.s = s
+    def __init__(self, serializer: Serializer):
+        self.serializer = serializer
 
-    def to_bytes(self, t: torch.Tensor) -> bytes:
-        start = time.perf_counter()
-        bs = self.s.to_bytes(t)
-        end = time.perf_counter()
-
-        # logger.debug(f"Serialization took {end - start:.2f} seconds")
-        return bs
+    def to_bytes(self, tensor: Tensor) -> bytes:
+        return self.serializer.to_bytes(tensor)
 
 
 class Deserializer(metaclass=abc.ABCMeta):
-    def __init__(self, dtype):
+    def __init__(self, dtype: Any):
         self.dtype = dtype
 
     @abc.abstractmethod
-    def from_bytes(self, bs: bytes) -> torch.Tensor:
-        """
-        Deserialize a pytorch tensor from bytes.
-
-        Input:
-            bytes: a stream of bytes
-
-        Output:
-            torch.Tensor: the deserialized pytorch tensor
-        """
-        raise NotImplementedError
+    def from_bytes(self, payload: bytes) -> Tensor:
+        """Deserialize bytes into a MindSpore tensor."""
 
 
 class DeserializerDebugWrapper(Deserializer):
-    def __init__(self, d: Deserializer):
-        self.d = d
+    def __init__(self, deserializer: Deserializer):
+        super().__init__(deserializer.dtype)
+        self.deserializer = deserializer
 
-    def from_bytes(self, t: bytes) -> torch.Tensor:
-        start = time.perf_counter()
-        ret = self.d.from_bytes(t)
-        end = time.perf_counter()
-
-        # logger.debug(f"Deserialization took {(end - start) * 1000:.2f} ms")
-        return ret
+    def from_bytes(self, payload: bytes) -> Tensor:
+        return self.deserializer.from_bytes(payload)
 
 
-# class FastSerializer(Serializer):
-#     def __init__(self):
-#         super().__init__()
+class MindSporeSerializer(Serializer):
+    """Serialize tensors via NumPy so both data and metadata are preserved."""
 
-#     def to_bytes(self, t: torch.Tensor) -> bytes:
-#         # make tensor into bit stream
-#         buf = t.contiguous().cpu().view(torch.uint8).numpy().tobytes()
-#         return buf
-
-
-# class FastDeserializer(Deserializer):
-#     def __init__(self, dtype):
-#         super().__init__(dtype)
-
-#     def from_bytes_normal(self, b: bytes) -> torch.Tensor:
-#         print(self.dtype)
-#         return torch.frombuffer(b, dtype=self.dtype)
-
-#     def from_bytes(self, b: bytes) -> torch.Tensor:
-#         return self.from_bytes_normal(b)
+    def to_bytes(self, tensor: Tensor) -> bytes:
+        with io.BytesIO() as buffer:
+            np.save(buffer, tensor.asnumpy(), allow_pickle=False)
+            return buffer.getvalue()
 
 
-class TorchSerializer(Serializer):
-    def __init__(self):
-        super().__init__()
+class MindSporeDeserializer(Deserializer):
+    """Deserialize tensors written by :class:`MindSporeSerializer`."""
 
-    def to_bytes(self, t: torch.Tensor) -> bytes:
-        with io.BytesIO() as f:
-            torch.save(t.cpu().clone().detach(), f)
-            return f.getvalue()
-
-
-class TorchDeserializer(Deserializer):
-    def __init__(self, dtype):
+    def __init__(self, dtype: Any):
         super().__init__(dtype)
 
-    def from_bytes_normal(self, b: bytes) -> torch.Tensor:
-        with io.BytesIO(b) as f:
-            return torch.load(f)
+    def from_bytes_normal(self, payload: bytes) -> np.ndarray:
+        with io.BytesIO(payload) as buffer:
+            return np.load(buffer, allow_pickle=False)
 
-    def from_bytes(self, b: bytes) -> torch.Tensor:
-        return self.from_bytes_normal(b).to(dtype=self.dtype)
+    def from_bytes(self, payload: bytes) -> Tensor:
+        array = self.from_bytes_normal(payload)
+        tensor = Tensor(array)
+        return tensor.astype(self.dtype) if self.dtype is not None else tensor
 
 
 def serialize_message(payload: Any) -> bytes:
@@ -128,14 +95,18 @@ def deserialize_message(data: bytes) -> Any:
     return json.loads(data.decode("utf-8"))
 
 
-def dtype_to_name(dtype: torch.dtype) -> str:
-    """Convert a torch.dtype to a short name suitable for RPC metadata."""
-    return str(dtype).split(".")[-1]
+def dtype_to_name(dtype: Any) -> str:
+    """Convert a MindSpore dtype into a short name for RPC metadata."""
+    if hasattr(dtype, "name"):
+        return dtype.name
+    return str(dtype)
 
 
-def dtype_from_name(name: str) -> torch.dtype:
-    """Convert a dtype string from metadata back into torch.dtype."""
-    try:
-        return getattr(torch, name)
-    except AttributeError as exc:  # pragma: no cover - validation guard
-        raise ValueError(f"Unknown tensor dtype '{name}'") from exc
+def dtype_from_name(name: str) -> Any:
+    """Convert a dtype string from metadata back into a MindSpore dtype."""
+    candidates = {name, name.lower(), name.upper(), name.capitalize()}
+    for candidate in candidates:
+        dtype = getattr(mstype, candidate, None)
+        if dtype is not None:
+            return dtype
+    raise ValueError(f"Unknown tensor dtype '{name}'")

@@ -1,18 +1,28 @@
-# SPDX-License-Identifier: Apache-2.0
-"""Client-side RPC helpers for coordinator and server nodes."""
+# Copyright 2025 Huawei Technologies Co., Ltd
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ==============================================================================
+"""Client-side RPC helpers that talk to the distributed coordinator stack."""
 
-# Standard
 from dataclasses import dataclass
 import socket
 from typing import Any, Dict, Iterable, Sequence
 
-# Third Party
-import torch
+from mindspore import Tensor
 
-# First Party
 from .common import PayloadType, REQUEST_HEADER, RESPONSE_HEADER, RPCMethod
 from .serde import (
-    TorchDeserializer,
+    MindSporeDeserializer,
     deserialize_message,
     dtype_from_name,
     serialize_message,
@@ -34,7 +44,7 @@ class _BaseRPCClient:
         self.host = host
         self.port = port
         self.timeout = timeout
-        self._tensor_deserializers: Dict[str, TorchDeserializer] = {}
+        self._tensor_deserializers: Dict[str, MindSporeDeserializer] = {}
 
     def _call(self, method: RPCMethod, payload: Any) -> RPCResponse:
         method_bytes = method.value.encode("utf-8")
@@ -67,8 +77,8 @@ class _BaseRPCClient:
                 raise ValueError("Tensor response missing dtype metadata")
             deserializer = self._tensor_deserializers.get(dtype_name)
             if deserializer is None:
-                torch_dtype = dtype_from_name(dtype_name)
-                deserializer = TorchDeserializer(torch_dtype)
+                tensor_dtype = dtype_from_name(dtype_name)
+                deserializer = MindSporeDeserializer(tensor_dtype)
                 self._tensor_deserializers[dtype_name] = deserializer
             return deserializer.from_bytes(body)
         raise ValueError(f"Unknown payload type: {payload_type}")
@@ -124,11 +134,10 @@ class ServerNodeRPCClient(_BaseRPCClient):
         response = self._call(RPCMethod.FETCH, payload)
         if response.payload_type not in (PayloadType.TENSOR, PayloadType.BYTES):
              raise ValueError(f"Fetch RPC returned unexpected type: {response.payload_type}")
-        #assert isinstance(response.payload, torch.Tensor)
         return response.payload
 
 
-def fetch_samples(server_host: str, server_port: int, client_id: str, indices: Iterable[int]) -> torch.Tensor:
+def fetch_samples(server_host: str, server_port: int, client_id: str, indices: Iterable[int]) -> Tensor:
     """Utility to perform a one-off fetch call without keeping a client instance."""
     client = ServerNodeRPCClient(server_host, server_port)
     return client.fetch(client_id, list(indices))

@@ -1,40 +1,144 @@
-"""PyTorch-compatible distributed data loader for the client side."""
+# Copyright 2025 Huawei Technologies Co., Ltd
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ==============================================================================
+
+"""MindSpore-friendly distributed data loader for the client side."""
 
 from __future__ import annotations
 
-import sys
 import os
 
-# Enable package-relative imports when executed as a script
-if __name__ == "__main__" and __package__ is None:
-    sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    __package__ = "client"
-
-import time
 import math
 import socket
-from collections.abc import Sequence as SequenceABC
+import time
+from collections.abc import Mapping, Sequence as SequenceABC
 from dataclasses import dataclass
-from typing import Any, Callable, Iterable, Iterator, List, Optional, Sequence
+from typing import Any, Callable, Iterable, Iterator, List, Optional, Protocol, Sequence
 
-try:
-    from torch.utils.data import BatchSampler, Dataset, RandomSampler, Sampler, SequentialSampler
-    from torch.utils.data._utils.collate import default_collate
-except ModuleNotFoundError as exc:  # pragma: no cover - enforced at import time
-    raise ImportError("DistributedDataLoader requires PyTorch to be installed") from exc
+import numpy as np
+from mindspore import Tensor, ops
 
 from .cache import SampleCache, SampleNotReady
 from .rpc_adapter import (
     BatchAssignment,
     ClientInfo,
-    CoordinatorClient,
     FetchRequest,
-    ProcessedSample,
     ServerNodeClient,
     get_rpc_factories,
 )
-from .dataset import DummyTextDataset
 
+
+class Dataset(Protocol):
+    """Minimal dataset protocol compatible with MindSpore tensors."""
+
+    def __len__(self) -> int:  # pragma: no cover - protocol method
+        ...
+
+    def __getitem__(self, index: int) -> Any:  # pragma: no cover - protocol method
+        ...
+
+
+class Sampler(Protocol):
+    """Protocol for index samplers."""
+
+    def __iter__(self) -> Iterator[int]:  # pragma: no cover - protocol method
+        ...
+
+    def __len__(self) -> int:  # pragma: no cover - protocol method
+        ...
+
+
+class SequentialSampler:
+    """Yield dataset indices sequentially."""
+
+    def __init__(self, data_source: Dataset) -> None:
+        self._length = len(data_source)
+
+    def __iter__(self) -> Iterator[int]:
+        return iter(range(self._length))
+
+    def __len__(self) -> int:
+        return self._length
+
+
+class RandomSampler:
+    """Yield dataset indices in a random order."""
+
+    def __init__(self, data_source: Dataset, seed: Optional[int] = None) -> None:
+        self._length = len(data_source)
+        self._initial_seed = seed
+        self._rng = np.random.default_rng(seed)
+
+    def __iter__(self) -> Iterator[int]:
+        permuted = self._rng.permutation(self._length)
+        for idx in permuted:
+            yield int(idx)
+
+    def __len__(self) -> int:
+        return self._length
+
+    def set_epoch(self, epoch: int) -> None:
+        seed = (self._initial_seed or 0) + epoch
+        self._rng = np.random.default_rng(seed)
+
+
+class BatchSampler(Iterable[List[int]]):
+    """Group indices from another sampler into fixed-size batches."""
+
+    def __init__(self, sampler: Sampler, batch_size: int, drop_last: bool) -> None:
+        if batch_size <= 0:
+            raise ValueError("batch_size must be positive")
+        self.sampler = sampler
+        self.batch_size = batch_size
+        self.drop_last = drop_last
+
+    def __iter__(self) -> Iterator[List[int]]:
+        batch: List[int] = []
+        for idx in self.sampler:
+            batch.append(idx)
+            if len(batch) == self.batch_size:
+                yield batch
+                batch = []
+        if batch and not self.drop_last:
+            yield batch
+
+    def __len__(self) -> int:
+        length = len(self.sampler)
+        if self.drop_last:
+            return length // self.batch_size
+        return math.ceil(length / self.batch_size)
+
+
+def _default_collate(batch: Sequence[Any]) -> Any:
+    """Collate a sequence of samples into MindSpore tensors when possible."""
+
+    if not batch:
+        return batch
+
+    elem = batch[0]
+    if isinstance(elem, Tensor):
+        return ops.stack(batch)
+    if isinstance(elem, np.ndarray):
+        return Tensor(np.stack(batch))
+    if isinstance(elem, (int, float, bool)):
+        return Tensor(np.asarray(batch))
+    if isinstance(elem, Mapping):
+        return {key: _default_collate([d[key] for d in batch]) for key in elem}
+    if isinstance(elem, SequenceABC) and not isinstance(elem, (str, bytes)):
+        transposed = list(zip(*batch))
+        return [_default_collate(list(samples)) for samples in transposed]
+    return batch
 
 
 
@@ -68,7 +172,6 @@ class _MicrobatchSequence(SequenceABC):
             yield self[idx]
 
 
-    # 这边是生成一个 microbatch_size 大小的 batch，将会通过 
     def __getitem__(self, index: int | slice) -> Any:
         if isinstance(index, slice):
             return [self[i] for i in range(*index.indices(self._num_microbatches))]
@@ -125,11 +228,11 @@ class DistributedDataLoader(Iterable[Any]):
 
         base_sampler = self._resolve_sampler(dataset, sampler, shuffle)
         self._batch_sampler = BatchSampler(base_sampler, batch_size=batch_size, drop_last=drop_last)
-    
-        self._collate = collate_fn or default_collate
 
-        ### 这里是设置 distributed dataloader 相关逻辑
-        self.cache_size = 1000  # 设置缓存大小，可以根据需要调整
+        self._collate = collate_fn or _default_collate
+
+        # Configure distributed dataloader cache behavior
+        self.cache_size = 1000
         self._cache = SampleCache(max_size=self.cache_size)
 
         client_id = f"{socket.gethostname()}-{os.getpid()}"
@@ -162,9 +265,6 @@ class DistributedDataLoader(Iterable[Any]):
         server_client = self._server_client_factory(assignment)
         return _BatchSession(assignment=assignment, server_client=server_client)
 
-
-    # 这个函数是一个 fetch cache 接口
-    # 如果本地缓存有缺失，就发起 RPC 调用获取
     def _ensure_remote_samples(self, session: _BatchSession, indices: Sequence[int]) -> None:
         missing = [idx for idx in indices if not self._cache.has(idx)]
         if not missing:
@@ -177,18 +277,15 @@ class DistributedDataLoader(Iterable[Any]):
         )
         
         start_time = time.time()
-        samples = session.server_client.fetch(request)       
+        samples = session.server_client.fetch(request)
         end_time = time.time()
-        latency = end_time - start_time        
-        # 自动向 Coordinator 汇报性能
-        # 这里的 server_node_id 就是之前 assign 拿到的 ID
+        latency = end_time - start_time
+        # Report performance metrics back to the coordinator using this server node ID
         self._coordinator_client.report_completion(
             node_id=session.assignment.server_node_id,
             latency=latency
         )
-        
-        
-        #samples = session.server_client.fetch(request)
+
         if not samples:
             raise SampleNotReady("Server node returned no samples for requested indices")
         self._cache.bulk_put(samples)
@@ -204,51 +301,4 @@ class DistributedDataLoader(Iterable[Any]):
         if hasattr(self._batch_sampler.sampler, "set_epoch"):
             self._batch_sampler.sampler.set_epoch(epoch)
 
-
-
-### example
-if __name__ == "__main__":
-    from .rpc_adapter import build_inmemory_rpc, configure_rpc_clients
-
-    # Configure RPC with in-memory mocks for demo purposes
-    coordinator_factory, server_factory = build_inmemory_rpc()
-    configure_rpc_clients(coordinator_factory, server_factory)
-
-    # 3. Define a Dataset shell that only carries metadata/length info
-    class RemoteDataset(DummyTextDataset):
-        def __init__(self, size, seq_length):
-            super().__init__(size, seq_length)
-
-        def __getitem__(self, index):
-            raise RuntimeError(
-                "RemoteDataset samples are materialized via DistributedDataLoader RPCs"
-            )
-
-    # 4. Run Test
-    print("Initializing DistributedDataLoader...")
-    # Create a dataset with 20 items
-    dataset = RemoteDataset(size=20, seq_length=10)
-    
-    # Create loader: batch_size=4, microbatch_size=2
-    # This means each batch (4 items) is split into 2 microbatches (2 items each)
-    loader = DistributedDataLoader(
-        dataset, 
-        batch_size=4, 
-        microbatch_size=2,
-        shuffle=False
-    )
-
-    print("Starting iteration...")
-    for i, micro_batches in enumerate(loader):
-        print(f"Batch {i} received. Contains {len(micro_batches)} microbatches.")
-
-        first_micro = micro_batches[0]
-        print(f"  First microbatch tensor shape: {first_micro['input_ids'].shape}")
-
-        for mb_idx, micro_batch in enumerate(micro_batches):
-            input_ids = micro_batch["input_ids"]
-            print(f"  Microbatch {mb_idx}: input_ids shape {input_ids.shape}")
-            print(f"    First token ids: {input_ids[0].tolist()}")
-
-    print("Done.")
 
