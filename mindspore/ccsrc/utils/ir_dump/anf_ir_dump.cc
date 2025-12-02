@@ -108,9 +108,7 @@ inline bool Skip(const MetaFuncGraphPtr &meta_func_graph) {
          meta_func_graph->isa<prim::StarredUnpackMerge>() || meta_func_graph->isa<prim::IterConverter>() ||
          meta_func_graph->isa<prim::HasNext>() || meta_func_graph->isa<prim::Next>() ||
          meta_func_graph->isa<prim::ForHalfUnrollLess>() || meta_func_graph->isa<prim::DeprecatedTensorMethod>() ||
-         meta_func_graph->isa<prim::MetaImpl>() || meta_func_graph->isa<prim::AccumulateDout>() ||
-         meta_func_graph->isa<prim::GenerateMask>() || meta_func_graph->isa<prim::GetRealBpropOut>() ||
-         meta_func_graph->isa<prim::GenerateBpropOutTuple>() || meta_func_graph->isa<prim::GetDependDoutTuple>();
+         meta_func_graph->isa<prim::MetaImpl>();
 }
 
 void GetMetaFuncGraphText(const MetaFuncGraphPtr &meta_func_graph, std::ostringstream &oss) {

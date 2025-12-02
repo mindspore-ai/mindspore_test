@@ -366,24 +366,6 @@ void SetDumpFlag(const PrimitivePtr &prim, const FuncGraphPtr &bprop_fg) {
   }
 }
 
-FuncGraphPtr AdaptBpropInput(const FuncGraphPtr &bprop_fg) {
-  auto fg = std::make_shared<FuncGraph>();
-  std::vector<AnfNodePtr> res_input = {NewValueNode(bprop_fg)};
-  size_t len = bprop_fg->parameters().size();
-  for (size_t i = 0; i < len; ++i) {
-    auto input = fg->add_parameter();
-    if (i != len - 1) {
-      (void)res_input.emplace_back(input);
-      continue;
-    }
-    auto get_dout = std::make_shared<prim::GetRealBpropOut>("get_dout_from_tuple");
-    (void)res_input.emplace_back(fg->NewCNodeInOrder({NewValueNode(get_dout), input}));
-  }
-  auto res_node = fg->NewCNodeInOrder(res_input);
-  fg->set_output(res_node);
-  return fg;
-}
-
 FuncGraphPtr KPrim::KPrimitive(const CNodePtr &cnode, const ValueNodePtr &value_node,
                                const pipeline::ResourceBasePtr &resources) {
   if (!IsValueNode<Primitive>(value_node)) {
