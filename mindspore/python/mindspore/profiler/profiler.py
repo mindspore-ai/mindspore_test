@@ -17,6 +17,7 @@ import os
 import json
 import warnings
 from typing import Optional, Dict, Callable, Any, Iterable
+import sys
 from sys import getsizeof
 from concurrent.futures import ProcessPoolExecutor, as_completed
 
@@ -1141,6 +1142,9 @@ class Profile:
 
     def __del__(self):
         if self._has_started:
+            if sys.is_finalizing():
+                logger.warning("profile is not stopped at the end of the program. The data may be incomplete.")
+                return
             self.stop()
             logger.warning("profile is stopped at the end of the program.")
 
