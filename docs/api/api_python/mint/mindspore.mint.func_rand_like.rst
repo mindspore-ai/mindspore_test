@@ -16,6 +16,6 @@ mindspore.mint.rand_like
         Tensor，shape和dtype由输入决定其元素为服从均匀分布的 :math:`[0, 1)` 区间的数字。
     
     异常：
-        - **RuntimeError** - 如果 `input` 的device是 ``CPU`` ，同时 `device` 是 ``None`` 。
-        - **RuntimeError** - 如果 `device` 是 ``CPU`` 。
-        - **ValueError** - 如果 `device` 是 ``GPU`` 。
+        - **RuntimeError** - 如果 `input` 的device是 ``"CPU"`` ，同时 `device` 是 ``None`` 。
+        - **RuntimeError** - 如果 `device` 是 ``"CPU"`` 。
+        - **ValueError** - 如果 `device` 是 ``"GPU"`` 。
