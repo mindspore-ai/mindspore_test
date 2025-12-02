@@ -34,25 +34,33 @@ from mindspore.ops.auto_generate import inplace_scatter_add as inplace_scatter_a
 from mindspore.ops.auto_generate import inplace_exponential_op
 from mindspore.ops.auto_generate import Free, GetData, InplaceToDevice
 
-from ... import _checkparam as validator
-from ..._checkparam import check_is_number, check_reshape_shp, check_axis_in_range, \
+from mindspore.common import dtype as mstype
+
+from mindspore import _checkparam as validator
+from mindspore._checkparam import check_is_number, check_reshape_shp, check_axis_in_range, \
     check_axis_valid, check_and_canonicalize_axes
-from ...ops import functional as F
-from ...ops import operations as P
-from ...ops import composite
-from ...ops.operations import array_ops
-from ...ops.composite import MultitypeFuncGraph, env_get, hyper_add, \
+
+from mindspore.ops import functional as F
+from mindspore.ops import operations as P
+from mindspore.ops import composite
+
+from mindspore.ops.composite import MultitypeFuncGraph, env_get, hyper_add, \
     zeros_like, ones_like, multitype_ops, _ones_like_for_grad
-from ...ops.composite.multitype_ops import _constexpr_utils as const_utils
-from ...ops.composite.multitype_ops import _compile_utils as compile_utils
-from ...ops.operations._inner_ops import Format
-from ...ops.operations import _csr_ops
-from ...ops.operations import _map_tensor_ops
-from ...ops.operations._sequence_ops import TensorToScalar
-from ...ops.primitive import constexpr, _primexpr
-from ...common import dtype as mstype
-from ...ops.operations._sequence_ops import ListAppend, ListInsert, SequenceMax, SequenceMin, \
+from mindspore.ops.composite.multitype_ops import _constexpr_utils as const_utils
+from mindspore.ops.composite.multitype_ops import _compile_utils as compile_utils
+
+from mindspore.ops.operations import array_ops
+from mindspore.ops.operations import _csr_ops
+from mindspore.ops.operations import _map_tensor_ops
+
+from mindspore.ops.operations._inner_ops import Format
+
+from mindspore.ops.operations._sequence_ops import TensorToScalar
+from mindspore.ops.operations._sequence_ops import ListAppend, ListInsert, SequenceMax, SequenceMin, \
     SequenceIndex
+
+from mindspore.ops.primitive import constexpr, _primexpr
+
 
 __all__ = ['MultitypeFuncGraph', 'env_get',
            'hyper_add', 'zeros_like', 'ones_like', '_ones_like_for_grad']
@@ -2726,10 +2734,10 @@ def ms_sum(*data):
     if len_data == 2:
         result = data[1]
     if isinstance(x, Tensor):
-        result += x.sum(0)
+        result = result + x.sum(0)
     else:
         for element in x:
-            result += element
+            result = result + element
     return result
 
 

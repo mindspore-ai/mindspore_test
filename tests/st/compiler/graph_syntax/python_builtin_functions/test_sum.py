@@ -15,7 +15,7 @@
 """test python built-in functions in graph mode"""
 import pytest
 import numpy as np
-from mindspore import Tensor, context, nn, jit
+from mindspore import Tensor, context, nn, jit, ops
 from mindspore import dtype as mstype
 from tests.mark_utils import arg_mark
 
@@ -30,6 +30,7 @@ def test_fallback_sum_tensor_n_default_1():
     Description: Description: Test sum(Tensor) in graph mode with tensor and input n is default.
     Expectation: No exception
     """
+
     class Net(nn.Cell):
         def construct(self, x):
             return sum(x)
@@ -48,6 +49,7 @@ def test_fallback_sum_tensor_n_default_2():
     Description: Description: Test sum(Tensor) in graph mode with tensor and input n is default.
     Expectation: No exception
     """
+
     class Net(nn.Cell):
         def construct(self, x):
             return sum(x)
@@ -66,6 +68,7 @@ def test_fallback_sum_with_x_tensor_n_not_default_1():
     Description: Test sum() in graph mode with input x tensor and input n not default.
     Expectation: No exception.
     """
+
     class Net(nn.Cell):
         def construct(self, x, y):
             return sum(x, y)
@@ -84,6 +87,7 @@ def test_fallback_sum_with_x_tensor_n_not_default_2():
     Description: Test sum() in graph mode with input x tensor and input n not default.
     Expectation: No exception.
     """
+
     class Net(nn.Cell):
         def construct(self, x, y):
             return sum(x, y)
@@ -102,6 +106,7 @@ def test_fallback_sum_with_x_list_of_tensor():
     Description: Test sum() in graph mode when input x is list of tensor.
     Expectation: No exception.
     """
+
     class Net(nn.Cell):
         def construct(self, x, y):
             return sum(x, y)
@@ -121,6 +126,7 @@ def test_fallback_sum_with_tensor_0d(mode):
     Description: Test sum() in graph mode when input x is 0d tensor.
     Expectation: No exception.
     """
+
     class Net(nn.Cell):
         def construct(self):
             return sum(Tensor(1))
@@ -139,10 +145,12 @@ def test_fallback_sum_with_x_unsupported_operand_type_error_1():
     Description: Test sum() in graph mode when input x is list of list
     Expectation: TypeError.
     """
+
     @jit(backend="ms_backend")
     def foo():
         x = sum([[1, 2], [3, 4]])
         return x
+
     with pytest.raises(TypeError) as ex:
         foo()
     assert "unsupported operand type" in str(ex.value)
@@ -161,6 +169,7 @@ def test_fallback_sum_with_x_unsupported_operand_type_error_2():
     def foo():
         x = sum({'a': 1, 'b': 2, 'c': 3})
         return x
+
     with pytest.raises(TypeError) as ex:
         foo()
     assert "unsupported operand type" in str(ex.value)
@@ -173,9 +182,33 @@ def test_fallback_sum_with_x_tensor_n_default_2():
     Description: Test sum() in graph mode with input x tensor and input n default.
     Expectation: No exception.
     """
+
     @jit
     def foo():
         x = sum(Tensor([[1, 1], [2, 2]]))
         return x
+
     out = foo()
     assert np.allclose(out.asnumpy(), np.array([3, 3]))
+
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+def test_grad_sum_list_min():
+    """
+    Feature: Grad of sum/list/min.
+    Description: Use grad of sum/list/min.
+    Expectation: No exception.
+    """
+
+    class Net(nn.Cell):
+        def construct(self, x):
+            out = 0
+            out = out + sum(list(x))
+            out = out + min(tuple(x))
+            return out
+
+    context.set_context(jit_config={"jit_level": "O1"})
+    x = Tensor([-1, -2, -3], dtype=mstype.float32)
+    jit_net = Net()
+    jit_out = ops.GradOperation()(jit_net)(x)
+    assert np.allclose(jit_out.asnumpy(), np.array([1, 1, 2]))
