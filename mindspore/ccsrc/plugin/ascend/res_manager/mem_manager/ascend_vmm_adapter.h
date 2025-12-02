@@ -41,9 +41,8 @@ namespace ascend {
 /// @brief Check if enable_mem_huge_1g environment variable is enabled.
 /// @return True if enable_mem_huge_1g is enabled, allocate 1G physical memory each time, false otherwise.
 inline bool IsEnableMemHuge1G() {
-  static const bool is_enable_mem_huge_1g = [] {
-    return memory::mem_pool::IsEnableAllocConfig(memory::mem_pool::kAllocEnableMemHuge1G);
-  }();
+  static const bool is_enable_mem_huge_1g =
+    memory::mem_pool::IsEnableAllocConfig(memory::mem_pool::kAllocEnableMemHuge1G);
   return is_enable_mem_huge_1g;
 }
 
