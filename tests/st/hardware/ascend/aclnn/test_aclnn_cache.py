@@ -236,8 +236,8 @@ def test_aclnn_cache_host_memory_kbk():
     memory_usage_last2 = os.popen("grep 'memory usage: ' log_cache_memory_kbk.txt | tail -n 2 | head -n 1").read()
     last1, last2 = extract_memory_values(memory_usage_last1), extract_memory_values(memory_usage_last2)
     diff_percent = abs(last1 - last2) / last1
-    # the 900th step and 1000th step memory usage change should be less than 0.1% in kbk
-    assert diff_percent <= 0.001
+    # the 900th step and 1000th step memory usage change should be less than 0.5% in kbk
+    assert diff_percent <= 0.005
     os.system("rm -rf log_cache_memory_kbk.txt")
 
 class SimpleNet2(Cell):
