@@ -184,29 +184,31 @@ using CacheTuple = std::tuple<uint64_t, mindspore::device::ascend::aclOpExecutor
     }                                                                                                             \
   } while (false)
 
-#define LAUNCH_KERNEL(name, ws_ptr, ws_size, executor, stream, update_func)                               \
-  runtime::OpExecutor::DispatchLaunchTask(                                                                \
-    [aclnn_name = name, workspace = ws_ptr, ws_size, executor, stream, update_func]() {                   \
-      runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kPynative,                              \
-                                         runtime::ProfilerEvent::kPyNativeLaunchTask, aclnn_name, false); \
-      if (update_func != nullptr) {                                                                       \
-        update_func();                                                                                    \
-      }                                                                                                   \
-      MS_LOG(DEBUG) << "launch task start, " << aclnn_name;                                               \
-      RUN_OP_API_SYNC(aclnn_name, workspace, ws_size, executor, stream);                                  \
-      MS_LOG(DEBUG) << "launch task end, " << aclnn_name;                                                 \
+#define LAUNCH_KERNEL(device_context, name, ws_ptr, ws_size, executor, stream, update_func)                       \
+  runtime::OpExecutor::DispatchLaunchTask(                                                                        \
+    [dev_ctx = device_context, aclnn_name = name, workspace = ws_ptr, ws_size, executor, stream, update_func]() { \
+      runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kPynative,                                      \
+                                         runtime::ProfilerEvent::kPyNativeLaunchTask, aclnn_name, false);         \
+      dev_ctx->device_res_manager_->BindDeviceToCurrentThread(false);                                             \
+      if (update_func != nullptr) {                                                                               \
+        update_func();                                                                                            \
+      }                                                                                                           \
+      MS_LOG(DEBUG) << "launch task start, " << aclnn_name;                                                       \
+      RUN_OP_API_SYNC(aclnn_name, workspace, ws_size, executor, stream);                                          \
+      MS_LOG(DEBUG) << "launch task end, " << aclnn_name;                                                         \
     })
 
-#define LAUNCH_KERNEL_NO_WS(aclnn_name, executor, stream, update_func)                                  \
-  runtime::OpExecutor::DispatchLaunchTask([aclnn_name, executor, stream, update_func]() {               \
-    runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kPynative,                              \
-                                       runtime::ProfilerEvent::kPyNativeLaunchTask, aclnn_name, false); \
-    if (update_func != nullptr) {                                                                       \
-      update_func();                                                                                    \
-    }                                                                                                   \
-    MS_LOG(DEBUG) << "launch task start, " << aclnn_name;                                               \
-    RUN_OP_API_SYNC(aclnn_name, nullptr, 0, executor, stream);                                          \
-    MS_LOG(DEBUG) << "launch task end, " << aclnn_name;                                                 \
+#define LAUNCH_KERNEL_NO_WS(device_context, aclnn_name, executor, stream, update_func)                              \
+  runtime::OpExecutor::DispatchLaunchTask([dev_ctx = device_context, aclnn_name, executor, stream, update_func]() { \
+    runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kPynative,                                          \
+                                       runtime::ProfilerEvent::kPyNativeLaunchTask, aclnn_name, false);             \
+    dev_ctx->device_res_manager_->BindDeviceToCurrentThread(false);                                                 \
+    if (update_func != nullptr) {                                                                                   \
+      update_func();                                                                                                \
+    }                                                                                                               \
+    MS_LOG(DEBUG) << "launch task start, " << aclnn_name;                                                           \
+    RUN_OP_API_SYNC(aclnn_name, nullptr, 0, executor, stream);                                                      \
+    MS_LOG(DEBUG) << "launch task end, " << aclnn_name;                                                             \
   })
 
 #define LAUNCH_ACLNN_SYNC(aclnn_api, device_context, stream_id, ...)                                          \
@@ -239,10 +241,11 @@ using CacheTuple = std::tuple<uint64_t, mindspore::device::ascend::aclOpExecutor
     auto executor_handle = std::get<1>(return_values);                                                        \
     auto update_function = std::get<4>(return_values);                                                        \
     if (ws_size == 0) {                                                                                       \
-      LAUNCH_KERNEL_NO_WS(aclnn_name, executor_handle, stream_ptr, update_function);                          \
+      LAUNCH_KERNEL_NO_WS(device_context, aclnn_name, executor_handle, stream_ptr, update_function);          \
     } else {                                                                                                  \
       auto work_ptr = std::make_shared<kernel::pyboost::MemBlock>(device_context, ws_size, real_stream_id);   \
-      LAUNCH_KERNEL(aclnn_name, work_ptr->ptr_, ws_size, executor_handle, stream_ptr, update_function);       \
+      LAUNCH_KERNEL(device_context, aclnn_name, work_ptr->ptr_, ws_size, executor_handle, stream_ptr,         \
+                    update_function);                                                                         \
     }                                                                                                         \
     runtime::Pipeline::Get().launch_stage()->Wait();                                                          \
     if (!device::ascend::AscendStreamMng::GetInstance().SyncStream(stream_ptr)) {                             \
