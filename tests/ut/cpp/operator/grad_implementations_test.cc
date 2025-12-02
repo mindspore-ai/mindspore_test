@@ -22,7 +22,7 @@
 #include "common/py_func_graph_fetcher.h"
 #include "frontend/optimizer/ad/dfunctor.h"
 #include "mindspore/ccsrc/utils/ir_dump/draw.h"
-#include "include/utils/convert_utils.h"
+#include "utils/convert_utils.h"
 #include "ir/manager.h"
 #include "ir/value.h"
 #include "primitive/auto_generate/gen_ops_primitive_s.h"

@@ -23,7 +23,7 @@
 #include "include/backend/common/kernel_graph/anf_runtime_algorithm.h"
 #include "include/backend/common/pass_manager/helper.h"
 #include "include/utils/anfalgo.h"
-#include "include/utils/convert_utils.h"
+#include "utils/convert_utils.h"
 
 /* This pass changes the following pattern.
 

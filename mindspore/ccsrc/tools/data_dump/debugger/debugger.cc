@@ -32,7 +32,7 @@
 #include "include/runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "include/utils/anfalgo.h"
 #include "include/utils/comm_manager.h"
-#include "include/utils/config_manager.h"
+#include "utils/config_manager.h"
 #include "include/utils/env_config_parser.h"
 #include "mindspore/ccsrc/utils/ir_dump/anf_dump_utils.h"
 #include "mindspore/ccsrc/utils/ir_dump/anf_ir_dump.h"

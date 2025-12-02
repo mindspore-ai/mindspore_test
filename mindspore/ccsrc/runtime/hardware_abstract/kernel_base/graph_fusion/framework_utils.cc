@@ -21,7 +21,7 @@
 #include <utility>
 #include "include/runtime/hardware_abstract/kernel_base/kernel_info.h"
 #include "include/utils/anfalgo.h"
-#include "include/utils/convert_utils.h"
+#include "utils/convert_utils.h"
 #include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
 #include "ir/format_utils.h"
 #include "include/runtime/hardware_abstract/kernel_base/oplib/oplib.h"
@@ -29,6 +29,7 @@
 #include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/kernel_packet/kernel_packet_kernel_mod.h"
 #include "mindapi/base/type_id.h"
 #include "include/utils/common.h"
+#include "include/utils/compile_cache_context.h"
 #include "primitive/framework_ops.h"
 #include "primitive/nn_ops.h"
 #include "primitive/sequence_ops.h"
@@ -43,7 +44,7 @@
 
 namespace mindspore {
 namespace kernel {
-std::string GetCompilerCachePath() { return Common::GetUserDefineCachePath(); }
+std::string GetCompilerCachePath() { return CompileCacheContext::GetInstance().GetUserDefineCachePath(); }
 
 void KernelMeta::Initialize(const std::string &backend) {
   auto config_path = GetCompilerCachePath();

@@ -37,7 +37,7 @@
 #include "include/utils/anfalgo.h"
 #include "utils/log_adapter.h"
 #include "utils/ms_utils.h"
-#include "include/utils/convert_utils.h"
+#include "utils/convert_utils.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_info.h"
 #include "utils/ms_context.h"
 #include "utils/trace_base.h"

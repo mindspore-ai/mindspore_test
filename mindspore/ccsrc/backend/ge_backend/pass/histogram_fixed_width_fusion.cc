@@ -18,7 +18,7 @@
 
 #include <memory>
 #include "include/utils/anfalgo.h"
-#include "include/utils/convert_utils.h"
+#include "utils/convert_utils.h"
 #include "primitive/structure_ops.h"
 #include "primitive/auto_generate/gen_ops_primitive_h.h"
 

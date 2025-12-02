@@ -21,7 +21,7 @@
 #include "include/backend/common/kernel_graph/anf_runtime_algorithm.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_info.h"
 #include "include/backend/common/pass_manager/helper.h"
-#include "include/utils/convert_utils.h"
+#include "utils/convert_utils.h"
 #include "primitive/array_ops.h"
 #include "primitive/math_ops.h"
 #include "primitive/auto_generate/gen_ops_primitive_a.h"

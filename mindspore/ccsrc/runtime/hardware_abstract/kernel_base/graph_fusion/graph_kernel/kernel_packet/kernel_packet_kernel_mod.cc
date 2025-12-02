@@ -24,7 +24,7 @@
 #include "ir/anf.h"
 #include "utils/ms_context.h"
 #include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
-#include "include/utils/convert_utils.h"
+#include "utils/convert_utils.h"
 #include "include/utils/anfalgo.h"
 #include "abstract/abstract_value.h"
 #include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/kernel_packet/kernel_packet_infer_functor.h"

@@ -25,7 +25,7 @@
 #include "backend/ge_backend/runtime/graph_scheduler.h"
 #include "backend/ge_backend/utils/device_address_utils.h"
 #include "device_address/device_address.h"
-#include "include/utils/convert_utils.h"
+#include "utils/convert_utils.h"
 #include "include/runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel_flags.h"
 #include "backend/ge_backend/pass/ge_backend_optimization.h"
 #include "utils/ms_context.h"

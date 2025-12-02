@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "include/utils/convert_utils.h"
+#include "utils/convert_utils.h"
 
 #include <stack>
 #include <map>
@@ -28,7 +28,6 @@
 #include <utility>
 #include <vector>
 
-#include "include/utils/utils.h"
 #include "ir/tensor.h"
 #include "ir/value.h"
 #include "ir/graph_utils.h"
@@ -39,6 +38,10 @@
 #include "primitive/auto_generate/gen_ops_primitive_c.h"
 
 namespace mindspore {
+namespace {
+constexpr auto kTensorValueIsType = "tensor_value_is_type";
+constexpr auto kTensorValueIsEmpty = "tensor_value_is_empty";
+}  // namespace
 bool ValueToBool(const ValuePtr &v, bool *value) {
   MS_EXCEPTION_IF_NULL(v);
   if (v->isa<BoolImm>()) {
@@ -989,8 +992,8 @@ abstract::AbstractBasePtr TransformValueSimpleInfoToAbstract(const ValueSimpleIn
   }
   abstract::AbstractBasePtr out_abs;
   if (value_simple_info.size_ == 1 && !value_simple_info.is_tuple_output_) {
-    out_abs = std::make_shared<abstract::AbstractTensor>(value_simple_info.dtype_vector_[kIndex0],
-                                                         value_simple_info.shape_vector_[kIndex0]);
+    out_abs = std::make_shared<abstract::AbstractTensor>(value_simple_info.dtype_vector_[0],
+                                                         value_simple_info.shape_vector_[0]);
   } else {
     AbstractBasePtrList out_abs_list;
     out_abs_list.resize(value_simple_info.size_);

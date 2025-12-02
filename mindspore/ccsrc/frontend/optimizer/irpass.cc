@@ -26,7 +26,7 @@
 #include "primitive/array_ops.h"
 #include "primitive/arithmetic_ops.h"
 #include "primitive/framework_ops.h"
-#include "include/utils/convert_utils.h"
+#include "utils/convert_utils.h"
 #include "frontend/optimizer/irpass/arithmetic_simplify.h"
 #include "frontend/optimizer/irpass/branch_culling.h"
 #include "frontend/optimizer/irpass/cast_eliminate.h"

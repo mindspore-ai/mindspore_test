@@ -1,5 +1,5 @@
 /**
- * Copyright 2019 Huawei Technologies Co., Ltd
+ * Copyright 2019-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CCSRC_INCLUDE_COMMON_UTILS_CONFIG_MANAGER_H_
-#define MINDSPORE_CCSRC_INCLUDE_COMMON_UTILS_CONFIG_MANAGER_H_
+#ifndef MINDSPORE_CORE_INCLUDE_COMMON_UTILS_CONFIG_MANAGER_H_
+#define MINDSPORE_CORE_INCLUDE_COMMON_UTILS_CONFIG_MANAGER_H_
 
 #include <string>
 #include <memory>
@@ -24,7 +24,7 @@
 #include <sstream>
 
 #include "utils/overload.h"
-#include "include/utils/visible.h"
+#include "mindapi/base/macros.h"
 
 namespace mindspore {
 
@@ -35,7 +35,7 @@ enum ParallelStrategy {
 
 enum DatasetMode { DS_NORMAL_MODE = 0, DS_SINK_MODE };
 
-class COMMON_EXPORT ConfigManager {
+class MS_CORE_API ConfigManager {
  public:
   ConfigManager(const ConfigManager &) = delete;
   ConfigManager &operator=(const ConfigManager &) = delete;
@@ -43,11 +43,6 @@ class COMMON_EXPORT ConfigManager {
 
   ParallelStrategy parallel_strategy() const { return parallel_strategy_; }
   void set_parallel_strategy(ParallelStrategy strategy) { parallel_strategy_ = strategy; }
-
-  const std::map<std::string, std::string> &ge_initialize_options() const { return ge_initialize_options_; }
-  void set_ge_initialize_options(const std::map<std::string, std::string> &options) {
-    ge_initialize_options_ = options;
-  }
 
   DatasetMode dataset_mode() const { return dataset_mode_; }
   void set_dataset_mode(DatasetMode mode) { dataset_mode_ = mode; }
@@ -75,11 +70,6 @@ class COMMON_EXPORT ConfigManager {
 
   void ResetQueue(const std::string &queue_name) noexcept;
   std::string QueueName() const { return queue_name_; }
-  std::map<std::string, std::string> ge_initialize_options_;
-
-  int64_t gpu_loopsink_size() const { return gpu_loopsink_size_; }
-
-  void set_gpu_loopsink_size(const int64_t size) { gpu_loopsink_size_ = size; }
 
  private:
   ConfigManager() = default;
@@ -92,9 +82,8 @@ class COMMON_EXPORT ConfigManager {
   // now only save iter_num_ in the map
   std::map<std::string, int64_t> queue_info_map;
   std::string dataset_phase_{""};
-  int64_t gpu_loopsink_size_{1};
 };
 
 }  // namespace mindspore
 
-#endif  // MINDSPORE_CCSRC_INCLUDE_COMMON_UTILS_CONFIG_MANAGER_H_
+#endif  // MINDSPORE_CORE_INCLUDE_COMMON_UTILS_CONFIG_MANAGER_H_

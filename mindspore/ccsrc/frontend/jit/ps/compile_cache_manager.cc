@@ -37,7 +37,7 @@
 #include "include/cluster/topology/ps_context.h"
 #endif
 #include "include/utils/compile_cache_context.h"
-#include "include/utils/config_manager.h"
+#include "utils/config_manager.h"
 #include "include/runtime/hardware_abstract/collective/collective_manager.h"
 
 namespace mindspore {
@@ -94,7 +94,7 @@ void BuildLayout(const FuncGraphPtr &func_graph, mind_ir::ModelProto *model) {
 namespace pipeline {
 namespace {
 std::string GetCompileCacheDir() {
-  static const std::string user_defined_path = Common::GetUserDefineCachePath();
+  static const std::string user_defined_path = CompileCacheContext::GetInstance().GetUserDefineCachePath();
 
   bool is_distributed = distributed::collective::CollectiveManager::instance()->initialized();
   static const uint32_t rank_id = is_distributed ? GetRank() : 0;

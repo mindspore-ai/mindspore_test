@@ -30,7 +30,7 @@
 #include "include/runtime/hardware_abstract/stream/multi_stream_controller.h"
 #include "include/utils/anfalgo.h"
 #include "include/utils/common.h"
-#include "include/utils/config_manager.h"
+#include "utils/config_manager.h"
 #include "ir/tensor_new.h"
 #include "mindspore/ccsrc/utils/ir_dump/anf_dump_utils.h"
 #include "proto/debug_graph.pb.h"

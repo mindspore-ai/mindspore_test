@@ -21,7 +21,7 @@
 #include <string>
 #include <unordered_set>
 #include <mutex>
-#include "include/utils/convert_utils.h"
+#include "utils/convert_utils.h"
 #include "include/utils/utils.h"
 #include "include/runtime/hardware_abstract/kernel_base/oplib/oplib.h"
 #include "mindapi/base/type_id.h"

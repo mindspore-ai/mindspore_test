@@ -43,7 +43,7 @@
 #include "frontend/parallel/pass/handle_group_info.h"
 #include "frontend/parallel/step_assigned_parallel.h"
 
-#include "include/utils/config_manager.h"
+#include "utils/config_manager.h"
 
 #include "utils/log_adapter.h"
 #include "utils/ms_context.h"

@@ -24,7 +24,7 @@
 #include "pybind_api/gil_scoped_long_running.h"
 #include "pynative/backward/hook/hook_py.h"
 #include "pynative/backward/hook/saved_tensor_hook.h"
-#include "include/utils/config_manager.h"
+#include "utils/config_manager.h"
 #include "include/frontend/optimizer/ad/grad_interface.h"
 #include "pynative/utils/runtime/op_executor.h"
 #include "pynative/utils/runtime/op_compiler.h"

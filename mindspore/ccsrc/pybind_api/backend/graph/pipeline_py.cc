@@ -32,7 +32,7 @@
 #include "utils/ms_context.h"
 #include "utils/compile_config.h"
 #include "utils/ir_dump/anf_ir_dump.h"
-#include "include/utils/config_manager.h"
+#include "utils/config_manager.h"
 #include "load_mindir/load_model.h"
 #include "include/cluster/init.h"
 #include "include/utils/tensor_py.h"

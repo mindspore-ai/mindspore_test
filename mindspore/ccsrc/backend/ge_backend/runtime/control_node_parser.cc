@@ -23,7 +23,7 @@
 #include "primitive/framework_ops.h"
 #include "backend/ge_backend/runtime/actor/actor_common.h"
 #include "backend/ge_backend/utils/device_address_utils.h"
-#include "include/utils/convert_utils.h"
+#include "utils/convert_utils.h"
 #include "abstract/utils.h"
 #include "utils/ms_context.h"
 #include "ir/tensor.h"

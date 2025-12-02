@@ -44,7 +44,7 @@
 #include "primitive/auto_generate/gen_ops_primitive_v.h"
 #include "include/utils/compile_cache_context.h"
 #include "frontend/jit/ps/compile_cache_manager.h"
-#include "include/utils/config_manager.h"
+#include "utils/config_manager.h"
 #include "include/frontend/jit/ps/executor/graph_executor_py.h"
 #include "include/frontend/jit/ps/executor/jit_executor_py.h"
 #include "include/frontend/jit/ps/action_interface.h"

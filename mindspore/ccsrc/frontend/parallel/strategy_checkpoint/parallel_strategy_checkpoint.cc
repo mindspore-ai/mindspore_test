@@ -32,7 +32,7 @@
 #include "ir/dtype/tensor_type.h"
 #include "include/runtime/hardware_abstract/collective/collective_manager.h"
 #include "include/utils/common.h"
-#include "include/utils/convert_utils.h"
+#include "utils/convert_utils.h"
 #include "utils/file_utils.h"
 #include "utils/log_adapter.h"
 

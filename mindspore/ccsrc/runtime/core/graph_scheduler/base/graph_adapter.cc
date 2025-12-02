@@ -21,7 +21,7 @@
 #include <vector>
 #include "ir/tensor.h"
 #include "ir/dtype/tensor_type.h"
-#include "include/utils/convert_utils.h"
+#include "utils/convert_utils.h"
 #include "include/utils/anfalgo.h"
 #include "include/utils/parallel_context.h"
 #include "include/backend/common/kernel_graph/anf_runtime_algorithm.h"

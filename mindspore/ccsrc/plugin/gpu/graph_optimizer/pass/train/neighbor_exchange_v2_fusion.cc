@@ -27,7 +27,7 @@
 #include "primitive/framework_ops.h"
 #include "include/backend/common/kernel_graph/anf_runtime_algorithm.h"
 #include "include/utils/anfalgo.h"
-#include "include/utils/convert_utils.h"
+#include "utils/convert_utils.h"
 #include "include/utils/utils.h"
 #include "plugin/gpu/graph_optimizer/pass/base/kernel_info_setter.h"
 #include "include/backend/common/pass_manager/helper.h"

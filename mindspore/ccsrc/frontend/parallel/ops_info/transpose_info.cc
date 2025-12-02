@@ -24,7 +24,7 @@
 #include <algorithm>
 
 #include "include/utils/parallel_context.h"
-#include "include/utils/convert_utils.h"
+#include "utils/convert_utils.h"
 #include "frontend/parallel/device_manager.h"
 #include "frontend/parallel/device_matrix.h"
 #include "frontend/parallel/dynamic_creator.h"

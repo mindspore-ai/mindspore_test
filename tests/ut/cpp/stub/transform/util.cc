@@ -21,7 +21,7 @@
 #include <map>
 
 #include "include/securec.h"
-#include "include/utils/convert_utils.h"
+#include "utils/convert_utils.h"
 #include "include/utils/utils.h"
 #include "backend/ge_backend/graph_ir/df_graph_manager.h"
 #include "plugin/ascend/res_manager/op_adapter/op_adapter_map.h"

@@ -16,7 +16,7 @@
 
 #include "backend/ge_backend/runtime/actor/control_flow/control_actor.h"
 #include "include/runtime/memory/mem_pool/mem_tracker.h"
-#include "include/utils/convert_utils.h"
+#include "utils/convert_utils.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_info.h"
 #include "primitive/framework_ops.h"
 #include "utils/profile.h"

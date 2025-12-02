@@ -18,7 +18,7 @@
 #include <vector>
 #include <string>
 #include <tuple>
-#include "include/utils/convert_utils.h"
+#include "utils/convert_utils.h"
 #include "backend/common/pass/common/gllo_utils.h"
 #include "primitive/auto_generate/gen_ops_primitive_m.h"
 #include "primitive/auto_generate/gen_ops_primitive_s.h"

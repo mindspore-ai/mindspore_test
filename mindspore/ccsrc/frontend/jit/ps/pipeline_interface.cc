@@ -43,7 +43,7 @@
 #include "include/utils/fallback.h"
 #include "include/utils/tensor_py.h"
 #include "include/utils/parallel_context.h"
-#include "include/utils/config_manager.h"
+#include "utils/config_manager.h"
 #include "include/frontend/jit/ps/action_interface.h"
 #include "mindspore/ccsrc/utils/ir_dump/anf_ir_dump.h"
 #include "mindspore/ccsrc/utils/ir_dump/dump_proto.h"

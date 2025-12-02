@@ -21,7 +21,7 @@
 #include "utils/system/crc32c.h"
 #include "utils/system/env.h"
 #include "utils/log_adapter.h"
-#include "include/utils/convert_utils.h"
+#include "utils/convert_utils.h"
 
 namespace mindspore {
 namespace summary {

@@ -31,7 +31,7 @@
 #include <fstream>
 #include <sstream>
 
-#include "include/utils/config_manager.h"
+#include "utils/config_manager.h"
 #include "primitive/structure_ops.h"
 #include "utils/hash_map.h"
 #include "utils/ms_context.h"

@@ -24,7 +24,7 @@
 #include "include/utils/callback.h"
 #include "ops_utils/op_constants.h"
 #include "utils/ms_context.h"
-#include "include/utils/convert_utils.h"
+#include "utils/convert_utils.h"
 #include "ir/dtype/tensor_type.h"
 
 namespace mindspore {

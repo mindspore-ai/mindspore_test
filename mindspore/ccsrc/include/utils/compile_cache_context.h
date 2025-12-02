@@ -108,6 +108,9 @@ class COMMON_EXPORT CompileCacheContext {
   void set_init_compile_cache(const bool &init) { init_compile_cache_ = init; }
   bool init_compile_cache() const { return init_compile_cache_; }
 
+  std::string GetCompilerCachePath();
+  std::string GetUserDefineCachePath();
+
  private:
   CompileCacheContext() = default;
   ~CompileCacheContext() = default;

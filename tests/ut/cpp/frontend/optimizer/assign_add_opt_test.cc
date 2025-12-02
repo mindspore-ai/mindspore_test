@@ -32,7 +32,7 @@
 #include "mindspore/ccsrc/utils/ir_dump/draw.h"
 #include "mindspore/ccsrc/utils/ir_dump/anf_ir_dump.h"
 #include "frontend/jit/ps/parse/data_converter.h"
-#include "include/utils/convert_utils.h"
+#include "utils/convert_utils.h"
 #include "mindspore/ccsrc/frontend/jit/ps/static_analysis/static_analysis.h"
 #include "primitive/math_ops.h"
 #include "primitive/array_ops.h"

@@ -42,7 +42,7 @@
 #include "ir/func_graph.h"
 #include "ir/tensor_new.h"
 #include "ir/graph_utils.h"
-#include "include/utils/convert_utils.h"
+#include "utils/convert_utils.h"
 #include "include/utils/utils.h"
 #include "utils/shape_utils.h"
 #include "utils/trace_base.h"

@@ -37,7 +37,7 @@
 #include "ir/tensor_new.h"
 #include "include/backend/common/kernel_graph/anf_runtime_algorithm.h"
 #include "include/utils/compile_cache_context.h"
-#include "include/utils/config_manager.h"
+#include "utils/config_manager.h"
 #include "include/runtime/utils/runtime_conf/runtime_env.h"
 #include "load_mindir/load_model.h"
 #include "mindspore/ccsrc/utils/ir_dump/dump_proto.h"

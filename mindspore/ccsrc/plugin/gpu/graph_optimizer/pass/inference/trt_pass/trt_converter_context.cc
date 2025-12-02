@@ -21,7 +21,7 @@
 #include "plugin/gpu/graph_optimizer/pass/inference/trt_pass/trt_loader.h"
 #include "plugin/gpu/graph_optimizer/pass/inference/trt_pass/trt_op_factory.h"
 #include "kernel/gpu/trt/trt_utils.h"
-#include "include/utils/convert_utils.h"
+#include "utils/convert_utils.h"
 #include "include/utils/utils.h"
 #include "utils/singleton.h"
 #include "utils/ms_context.h"
