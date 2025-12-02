@@ -143,7 +143,7 @@ TensorStorageInfoPtr CheckSetStorageInfo(const tensor::TensorPtr &origin_tensor,
   bool shape_unchanged = shape == ori_shape ? true : false;
   bool stride_unchanged = stride == ori_stride ? true : false;
   int64_t storage_nelements = ComputeStorageNelements(storage_offset, shape, stride);
-  int64_t origin_item_size = GetTypeByte(TypeIdToType(origin_tensor->data_type()));
+  int64_t origin_item_size = static_cast<int64_t>(GetTypeByte(TypeIdToType(origin_tensor->data_type())));
   int64_t storage_nelements_bytes = origin_item_size * storage_nelements;
   if (shape_unchanged && stride_unchanged) {
     if (storage_nelements_bytes > source_storage_size) {
@@ -153,7 +153,7 @@ TensorStorageInfoPtr CheckSetStorageInfo(const tensor::TensorPtr &origin_tensor,
     }
   }
 
-  int64_t source_item_size = GetTypeByte(TypeIdToType(source_storage_dtype));
+  int64_t source_item_size = static_cast<int64_t>(GetTypeByte(TypeIdToType(source_storage_dtype)));
   int64_t source_storage_nelements = static_cast<int64_t>(source_storage_size / source_item_size);
   if (storage_nelements_bytes <= source_storage_size) {
     ori_shape = {source_storage_nelements};

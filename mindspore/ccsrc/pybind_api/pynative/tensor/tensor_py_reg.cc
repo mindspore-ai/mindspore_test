@@ -144,7 +144,7 @@ std::pair<DeviceAddressPtr, TensorStorageInfoPtr> CreateSourceTensorDeviceAddr(
   const std::vector<int64_t> &shape, const std::vector<int64_t> &stride, const TensorPtr &source_tensor) {
   const auto &source_dtype = source_tensor->data_type();
   const auto &device_address = source_tensor->device_address();
-  int64_t bytes_size = device_address->GetSize();
+  int64_t bytes_size = static_cast<int64_t>(device_address->GetSize());
   const auto &device_type = device_address->GetDeviceType();
   const std::string &device_name = device::GetDeviceNameByType(device_type);
   int64_t new_bytes_size =
@@ -208,7 +208,7 @@ void SetTensor(TensorPtr &base_tensor, const pynative::ParserArgs &parse_args, c
   PyType<TensorPy> *tensor_tmp = (PyType<TensorPy> *)parse_args.arg_list_[0];
   TensorPtr source_tensor = tensor_tmp->value.GetTensor();
   CheckDtypeConsistency(base_tensor->data_type(), source_tensor->data_type(), false);
-  int64_t storage_offset = source_tensor->storage_offset();
+  int64_t storage_offset = static_cast<int64_t>(source_tensor->storage_offset());
   const std::vector<int64_t> &shape = source_tensor->shape_c();
   const std::vector<int64_t> &stride = source_tensor->stride();
   auto [source_device_address, new_storage_info] =
@@ -225,7 +225,7 @@ void SetTensorCustom(TensorPtr &base_tensor, const pynative::ParserArgs &parse_a
     MS_LOG(EXCEPTION) << "passed in tensor to be used as storage must be contiguous";
   }
   const auto [storage_offset, shape, stride] = GetCustomTuple(parse_args);
-  const int64_t total_offset = storage_offset + source_tensor->storage_offset();
+  const int64_t total_offset = static_cast<int64_t>(storage_offset + source_tensor->storage_offset());
   auto [source_device_address, new_storage_info] =
     CreateSourceTensorDeviceAddr(base_tensor, device_context, total_offset, shape, stride, source_tensor);
   base_tensor->set_(std::move(source_device_address), new_storage_info, shape);
@@ -1998,11 +1998,13 @@ static PyMethodDef Tensor_methods[] = {
   {"from_dlpack", (PyCFunction)TensorPython_FromDLPack, METH_STATIC | METH_VARARGS, "from_dlpack."},
   {"to_dlpack", (PyCFunction)TensorPython_ToDLPack, METH_VARARGS, "to_dlpack."},
   {"set_", (PyCFunction)TensorPython_Set, METH_VARARGS | METH_KEYWORDS, R"mydelimiter(
-                                Sets the underlying storage, size, and stride. 
-                                If source is a tensor, the self tensor will share the same storage with it, along with the same size and stride. 
-                                Modifications to elements of one tensor will be reflected in the other.
+                                Sets the underlying storage, size, and stride.
+                                If source is a tensor, the self tensor will share the same storage with it,
+                                along with the same size and stride. Modifications to elements of one tensor
+                                will be reflected in the other.
 
-                                This method supports multiple parameter combinations, with the valid call signatures as follows:
+                                This method supports multiple parameter combinations,
+                                with the valid call signatures as follows:
 
                                 - ``set_() -> Tensor``:
                                   Parameterless call that sets the current tensor to an uninitialized empty tensor.
@@ -2010,43 +2012,58 @@ static PyMethodDef Tensor_methods[] = {
                                 - ``set_(source: Storage) -> Tensor``:
                                   Sets the underlying storage of the `self` tensor to the specified ``Storage`` .
 
-                                - ``set_(source: Storage, storage_offset: int, size: tuple | list, stride: tuple | list) -> Tensor``:
-                                  Sets the underlying storage of the `self` tensor to the specified ``Storage`` ,
-                                  and simultaneously sets the `size` and `stride` of the `self` tensor to the provided size and stride.
+                                - ``set_(source: Storage, storage_offset: int, \
+                                  size: tuple | list, stride: tuple | list) -> Tensor``:
+                                  Sets the underlying storage of the `self` tensor to the specified ``Storage``,
+                                  and simultaneously sets the `size` and `stride` of the `self` tensor to the
+                                  provided size and stride.
 
                                 - ``set_(source: Tensor) -> Tensor``:
                                   Makes the `self` tensor share the same underlying storage as the `source` tensor,
-                                  and the `storage_offset` , `size` , and `stride` of the `self` tensor are the same as those of the `source` tensor.
+                                  and the `storage_offset`, `size`, and `stride` of the `self` tensor
+                                  are the same as those of the `source` tensor.
 
-                                - ``set_(source: Tensor, storage_offset: int, size: tuple | list, stride: tuple | list) -> Tensor``:
+                                - ``set_(source: Tensor, storage_offset: int, \
+                                  size: tuple | list, stride: tuple | list) -> Tensor``:
                                   Makes the `self` tensor share the same underlying storage as the `source` tensor,
-                                  and simultaneously sets the `size` and `stride` of the `self` tensor to the provided size and stride.
+                                  and simultaneously sets the `size` and `stride` of the `self` tensor to the
+                                  provided size and stride.
 
                                 Note:
-                                    - If the device of the current tensor when calling `set_` is ``CPU`` and it needs to be used on ``Ascend`` subsequently,
-                                      it is recommended to explicitly copy the tensor to Ascend for use.
-                                    - If the device of the current tensor when calling `set_` is ``CPU`` , setting a non-contiguous underlying storage for
-                                      the tensor will cause subsequent in-place modifications on CPU to not take effect.
+                                    - If the device of the current tensor when calling `set_` is ``CPU`` and
+                                      it needs to be used on ``Ascend`` subsequently, it is recommended to
+                                      explicitly copy the tensor to Ascend for use.
+                                    - If the device of the current tensor when calling `set_` is ``CPU``,
+                                      setting a non-contiguous underlying storage for the tensor will cause
+                                      subsequent in-place modifications on CPU to not take effect.
 
                                 Args:
-                                    source (Tensor or Storage, optional): The Tensor or Storage that needs to share the underlying storage. Default: ``None`` .
-                                    storage_offset (int, optional): Specifies the offset of the current tensor relative to the underlying storage. Default: ``0`` .
-                                    size (tuple or list, optional): Specifies the size of the current tensor in the underlying storage.  Default: ``None`` ,
-                                        which uses the underlying size of `source` by default.
-                                    stride (tuple or list, optional): Specifies the stride of the current tensor in the underlying storage. Default: ``None`` ,
-                                        which uses row-contiguous strides by default.
+                                    source (Tensor or Storage, optional): The Tensor or Storage that needs to
+                                        share the underlying storage. Default: ``None`` .
+                                    storage_offset (int, optional): Specifies the offset of the current tensor
+                                        relative to the underlying storage. Default: ``0`` .
+                                    size (tuple or list, optional): Specifies the size of the current tensor in the
+                                        underlying storage.  Default: ``None``, which uses the underlying size
+                                        of `source` by default.
+                                    stride (tuple or list, optional): Specifies the stride of the current tensor
+                                        in the underlying storage. Default: ``None``, which uses
+                                        row-contiguous strides by default.
 
                                 Raises:
-                                    TypeError: The input parameter type does not meet the requirements, or the number of input parameters does not match.
+                                    TypeError: The input parameter type does not meet the requirements,
+                                        or the number of input parameters does not match.
                                     RuntimeError: If the passed size is the same as the original size of self,
                                         the underlying size being set exceeds the underlying size of source.
                                     RuntimeError: The passed storage_offset is less than 0.
                                     RuntimeError: The set size contains a value less than 0.
                                     RuntimeError: The number of elements in the set size and stride is not the same.
                                     RuntimeError: The number of elements in the set size exceeds 8.
-                                    RuntimeError: When source is a Tensor and parameters such as size are provided, but the source tensor is non-contiguous.
-                                    RuntimeError: When source is of Tensor and no other parameters are provided, the dtype of the self tensor and source are different.
-                                    RuntimeError: When source is of Storage, the dtype of the self tensor and source are different.
+                                    RuntimeError: When source is a Tensor and parameters such as size are provided,
+                                        but the source tensor is non-contiguous.
+                                    RuntimeError: When source is of Tensor and no other parameters are provided,
+                                        the dtype of the self tensor and source are different.
+                                    RuntimeError: When source is of Storage, the dtype of the self tensor 
+                                        and source are different.
                                     RuntimeError: The device of the self tensor and source is not the same.
 
                                 Examples:
