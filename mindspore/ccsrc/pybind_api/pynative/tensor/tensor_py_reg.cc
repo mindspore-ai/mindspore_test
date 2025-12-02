@@ -1998,6 +1998,8 @@ static PyMethodDef Tensor_methods[] = {
   {"from_dlpack", (PyCFunction)TensorPython_FromDLPack, METH_STATIC | METH_VARARGS, "from_dlpack."},
   {"to_dlpack", (PyCFunction)TensorPython_ToDLPack, METH_VARARGS, "to_dlpack."},
   {"set_", (PyCFunction)TensorPython_Set, METH_VARARGS | METH_KEYWORDS, R"mydelimiter(
+                                set_(source=None, storage_offset=0, size=None, stride=None) -> Tensor
+
                                 Sets the underlying storage, size, and stride.
                                 If source is a tensor, the self tensor will share the same storage with it,
                                 along with the same size and stride. Modifications to elements of one tensor
@@ -2038,16 +2040,15 @@ static PyMethodDef Tensor_methods[] = {
                                       subsequent in-place modifications on CPU to not take effect.
 
                                 Args:
-                                    source (Tensor or Storage, optional): The Tensor or Storage that needs to
-                                        share the underlying storage. Default: ``None`` .
-                                    storage_offset (int, optional): Specifies the offset of the current tensor
-                                        relative to the underlying storage. Default: ``0`` .
-                                    size (tuple or list, optional): Specifies the size of the current tensor in the
-                                        underlying storage.  Default: ``None``, which uses the underlying size
-                                        of `source` by default.
+                                    source (Tensor or Storage): The Tensor or Storage that needs to share the
+                                        underlying storage.
+                                    storage_offset (int): Specifies the offset of the current tensor relative
+                                        to the underlying storage.
+                                    size (tuple or list): Specifies the size of the current tensor in the
+                                        underlying storage.
                                     stride (tuple or list, optional): Specifies the stride of the current tensor
-                                        in the underlying storage. Default: ``None``, which uses
-                                        row-contiguous strides by default.
+                                        in the underlying storage. Default: ``None``, which uses row-contiguous
+                                        strides by default.
 
                                 Raises:
                                     TypeError: The input parameter type does not meet the requirements,
@@ -2056,13 +2057,14 @@ static PyMethodDef Tensor_methods[] = {
                                         the underlying size being set exceeds the underlying size of source.
                                     RuntimeError: The passed storage_offset is less than 0.
                                     RuntimeError: The set size contains a value less than 0.
+                                    RuntimeError: The set stride contains a value less than 0.
                                     RuntimeError: The number of elements in the set size and stride is not the same.
                                     RuntimeError: The number of elements in the set size exceeds 8.
                                     RuntimeError: When source is a Tensor and parameters such as size are provided,
                                         but the source tensor is non-contiguous.
                                     RuntimeError: When source is of Tensor and no other parameters are provided,
                                         the dtype of the self tensor and source are different.
-                                    RuntimeError: When source is of Storage, the dtype of the self tensor 
+                                    RuntimeError: When source is of Storage, the dtype of the self tensor
                                         and source are different.
                                     RuntimeError: The device of the self tensor and source is not the same.
 
