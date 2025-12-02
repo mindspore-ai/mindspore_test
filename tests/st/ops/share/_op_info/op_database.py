@@ -5489,7 +5489,7 @@ op_db: Dict[str, OpInfo] = {
         disable_large_value_tensor_inputs=True,
         disable_extremal_value_tensor_inputs=True,
         convert_half_to_float=True,
-        # For float32 inputs, use 0.0004 on backward according to CCB conclusions.
+        # For float32 inputs, use 0.0004 under normal-distribution inputs for backward according to CCB conclusions.
         # For float16 inputs, use 0.06 on backward according to CCB conclusions.
         # For bfloat16 inputs, standard 2 is satisfied. Use 0.1 on backward according to CCB conclusions.
         ascend_backward_loss_override={ms.float32: 0.0004, ms.float16: 0.06, ms.bfloat16:0.1},

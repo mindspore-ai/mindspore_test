@@ -64,10 +64,11 @@ ShapeArray NsaCompressAttentionFuncImpl::InferShape(const PrimitivePtr &primitiv
   const int64_t select_block_count = select_block_count_opt.value();
 
   if (head_num <= 0) {
-    MS_EXCEPTION(ValueError) << "For '" << op_name << "', head_num must be greater than 0.";
+    MS_EXCEPTION(ValueError) << "For '" << op_name << "', head_num must be greater than 0, but got: " << head_num;
   }
   if (select_block_count <= 0) {
-    MS_EXCEPTION(ValueError) << "For '" << op_name << "', select_block_count must be greater than 0.";
+    MS_EXCEPTION(ValueError) << "For '" << op_name
+                             << "', select_block_count must be greater than 0, but got: " << select_block_count;
   }
   ShapeVector attention_out_shape = {query_shape[kIndex0], query_shape[kIndex1], value_shape[kIndex2]};
   ShapeVector topk_indices_shape = {query_shape[kIndex0], key_shape[kIndex1], select_block_count};

@@ -864,6 +864,9 @@ def TEST_OP_DYNAMIC(op, inputs_seq, *, disable_mode=None, case_config=None, inpl
             grad = False
         else:
             grad_position = tuple(i for i, arg in enumerate(inputs_seq[0]) if isinstance(arg, Tensor))
+            if not grad_position:
+                warning_log("DynamicTest Grad Test is skipped because there is no differentiable Tensor input.")
+                grad = False
 
         try:
             static_net = create_net(op, grad, grad_position, inplace_update)
