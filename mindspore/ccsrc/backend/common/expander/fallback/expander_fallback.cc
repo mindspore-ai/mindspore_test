@@ -220,7 +220,9 @@ void InsertLoadForInplaceFallback(const CNodePtr &cnode) {
     }
     auto load_cnode = func_graph->NewCNode({NewValueNode(prim::kPrimLoad), input_node, inplace_umonad});
     MS_EXCEPTION_IF_NULL(load_cnode);
-    load_cnode->set_abstract(input_node->abstract());
+    auto ref_abs = dyn_cast<abstract::AbstractRefTensor>(abs);
+    auto load_abs = ref_abs->CloneAsTensor();
+    load_cnode->set_abstract(load_abs);
     manager->SetEdge(cnode, i, load_cnode);
     is_inserted = true;
   }

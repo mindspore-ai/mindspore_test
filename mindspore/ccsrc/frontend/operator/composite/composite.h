@@ -403,69 +403,6 @@ class ForHalfUnrollLess : public MetaFuncGraph {
   friend bool operator==(const ForHalfUnrollLess &lhs, const ForHalfUnrollLess &rhs) { return lhs.name_ == rhs.name_; }
 };
 
-class AccumulateDout : public MetaFuncGraph {
- public:
-  explicit AccumulateDout(const std::string &name) : MetaFuncGraph(name) {}
-  ~AccumulateDout() override = default;
-  MS_DECLARE_PARENT(AccumulateDout, MetaFuncGraph)
-  FuncGraphPtr GenerateFuncGraph(const AbstractBasePtrList &args_abs_list) override;
-  friend bool operator==(const AccumulateDout &lhs, const AccumulateDout &rhs) { return lhs.name_ == rhs.name_; }
-
- private:
-  void CheckAccumulateDoutInputAbstract(const AbstractBasePtrList &args_abs_list);
-  bool IsAddDout();
-  bool IsBuildSwitchNode();
-  FuncGraphPtr BuildAddOutputFG(const std::string &name, const AbstractBasePtrList &args_abs_list);
-  FuncGraphPtr BuildAccumulateInplaceOutputFG(const std::string &name);
-  FuncGraphPtr BuildSelectOutputFG(const std::string &name);
-  FuncGraphPtr BuildChooseOutputFG(const std::string &name);
-  std::map<std::string, int64_t> types_;
-};
-
-class GenerateMask : public MetaFuncGraph {
- public:
-  explicit GenerateMask(const std::string &name) : MetaFuncGraph(name) {}
-  ~GenerateMask() override = default;
-  MS_DECLARE_PARENT(GenerateMask, MetaFuncGraph)
-  FuncGraphPtr GenerateFuncGraph(const AbstractBasePtrList &args_abs_list) override;
-  friend bool operator==(const GenerateMask &lhs, const GenerateMask &rhs) { return lhs.name_ == rhs.name_; }
-};
-
-class GenerateBpropOutTuple : public MetaFuncGraph {
- public:
-  explicit GenerateBpropOutTuple(const std::string &name) : MetaFuncGraph(name) {}
-  ~GenerateBpropOutTuple() override = default;
-  MS_DECLARE_PARENT(GenerateBpropOutTuple, MetaFuncGraph)
-  FuncGraphPtr GenerateFuncGraph(const AbstractBasePtrList &args_abs_list) override;
-  friend bool operator==(const GenerateBpropOutTuple &lhs, const GenerateBpropOutTuple &rhs) {
-    return lhs.name_ == rhs.name_;
-  }
-  void set_ops_type(int64_t ops_type) { ops_type_ = ops_type; }
-
- private:
-  int64_t ops_type_ = OpsType::Type_Normal;
-};
-
-class GetRealBpropOut : public MetaFuncGraph {
- public:
-  explicit GetRealBpropOut(const std::string &name) : MetaFuncGraph(name) {}
-  ~GetRealBpropOut() override = default;
-  MS_DECLARE_PARENT(GetRealBpropOut, MetaFuncGraph)
-  FuncGraphPtr GenerateFuncGraph(const AbstractBasePtrList &args_abs_list) override;
-  friend bool operator==(const GetRealBpropOut &lhs, const GetRealBpropOut &rhs) { return lhs.name_ == rhs.name_; }
-};
-
-class GetDependDoutTuple : public MetaFuncGraph {
- public:
-  explicit GetDependDoutTuple(const std::string &name) : MetaFuncGraph(name) {}
-  ~GetDependDoutTuple() override = default;
-  MS_DECLARE_PARENT(GetDependDoutTuple, MetaFuncGraph)
-  FuncGraphPtr GenerateFuncGraph(const AbstractBasePtrList &args_abs_list) override;
-  friend bool operator==(const GetDependDoutTuple &lhs, const GetDependDoutTuple &rhs) {
-    return lhs.name_ == rhs.name_;
-  }
-};
-
 class RecomputeBlock : public MetaFuncGraph {
  public:
   explicit RecomputeBlock(const std::string &name) : MetaFuncGraph(name) {}
