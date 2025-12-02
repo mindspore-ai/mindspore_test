@@ -349,6 +349,7 @@ PYBIND11_MODULE(_c_expression, m) {
          "Clear resource when phase cached.")
     .def("get_params", &JitExecutorPy::GetParams, py::arg("phase") = py::str(""), "Get Parameters from graph")
     .def("set_jit_config", &JitExecutorPy::SetJitConfig, py::arg("jit_config") = py::dict(), "Set the jit config.")
+    .def("get_jit_config", &JitExecutorPy::GetJitConfig, "Get the jit config.")
     .def("set_queue_name", &JitExecutorPy::set_queue_name, py::arg("queue_name") = py::str(""),
          "Set queue name for the graph loaded from compile cache.")
     .def("get_queue_name", &JitExecutorPy::get_queue_name,
