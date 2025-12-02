@@ -68,7 +68,7 @@ def test_oneside_compare():
     """
     Feature: one-sided signal set and wait based on symmetric memory.
     Description: Verify signal set and wait in symmetric memory scenario with 2 cards.
-    Expectation: success
+    Expectation: rank-1 should successfully wait for the signal set by rank-0.
     """
     return_code = os.system("msrun --worker_num=2 --local_worker_num=2 --join=True pytest -s test_compare.py")
     assert return_code == 0

@@ -15,7 +15,7 @@
  */
 
 #include "kernel/ascend/symmetric_memory/signal_op.h"
-
+#include <vector>
 #include <memory>
 #include "include/runtime/hardware_abstract/kernel_base/kernel.h"
 
@@ -25,8 +25,8 @@ symmetricmemory::SymmetricMemoryOpPtr SymmetricMemorySignalOp::CreateKernel(
   const symmetricmemory::InputsImmutableInfoList &inputs_ii,
   const symmetricmemory::OutputsImmutableInfoList &outputs_ii, const std::vector<KernelTensor *> &ms_inputs,
   const std::vector<KernelTensor *> &ms_outputs) {
-  param_.signal_op = ms_inputs[3]->GetValueWithCheck<int64_t>();
-  param_.target_pe = ms_inputs[4]->GetValueWithCheck<int64_t>();
+  param_.signal_op = ms_inputs[INDEX_3]->GetValueWithCheck<int64_t>();
+  param_.target_pe = ms_inputs[INDEX_4]->GetValueWithCheck<int64_t>();
   return symmetricmemory::CreateSignalOpOp(inputs_ii, outputs_ii, param_,
                                            symmetricmemory::kSymmetricMemorySignalOpOpName);
 }

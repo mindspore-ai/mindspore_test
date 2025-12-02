@@ -37,7 +37,7 @@ class SymmetricMemoryAllocator : public AddressAllocator {
   virtual ~SymmetricMemoryAllocator() = default;
   SymmetricMemoryAllocator(const SymmetricMemoryAllocator &) = delete;
   SymmetricMemoryAllocator &operator=(const SymmetricMemoryAllocator &) = delete;
-  static std::shared_ptr<SymmetricMemoryAllocator> &getInstance();
+  static std::shared_ptr<SymmetricMemoryAllocator> &GetInstance();
   void FinalizeSymmetricMemoryManager();
 
   void *Alloc(size_t size, uint32_t stream_id) override;

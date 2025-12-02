@@ -26,7 +26,7 @@ symmetricmemory::SymmetricMemoryOpPtr SymmetricMemorySignalWaitUntil::CreateKern
   const symmetricmemory::InputsImmutableInfoList &inputs_ii,
   const symmetricmemory::OutputsImmutableInfoList &outputs_ii, const std::vector<KernelTensor *> &ms_inputs,
   const std::vector<KernelTensor *> &ms_outputs) {
-  param_.compare_op = ms_inputs[4]->GetValueWithCheck<int64_t>();
+  param_.compare_op = ms_inputs[INDEX_4]->GetValueWithCheck<int64_t>();
   return symmetricmemory::CreateSignalWaitUntilOp(inputs_ii, outputs_ii, param_,
                                                   symmetricmemory::kSymmetricMemorySignalWaitUntilOpName);
 }

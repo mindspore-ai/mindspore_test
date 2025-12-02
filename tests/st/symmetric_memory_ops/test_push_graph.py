@@ -17,10 +17,11 @@
 import numpy as np
 import mindspore as ms
 from mindspore import nn
+from mindspore.common.api import jit
 from mindspore.communication import init, get_rank, get_group_size
 from mindspore.ops.auto_generate import SignalWaitUntil, PutMemSignal, CreateSymmetricMemory
 
-ms.context.set_context(mode=ms.context.GRAPH_MODE,device_target="Ascend")
+ms.set_device("Ascend")
 ms.context.set_context(op_timeout=30)
 init()
 rank = get_rank()
@@ -29,6 +30,7 @@ if size != 2:
     raise RuntimeError("Symmetric memory push test only support 2 cards.")
 
 class PushNet(nn.Cell):
+    @jit(backend="ms_backend", jit_level="O0")
     def construct(self, tensor):
         share = CreateSymmetricMemory()((3,3,3), ms.float32, group='world_size')
         signal = CreateSymmetricMemory()((1,), ms.int32, group='world_size')
@@ -53,7 +55,7 @@ def test_oneside_push_2p():
     push_net = PushNet()
     output, _ = push_net(tensor)
     if rank == 1:
-        except_output = np.ones((3,3,3)).astype(np.float32)*0.01
-        diff = abs(output.asnumpy() - except_output)
+        expected_output = np.ones((3,3,3)).astype(np.float32)*0.01
+        diff = abs(output.asnumpy() - expected_output)
         error = np.ones([3, 3, 3]) * 1e-5
         assert np.all(diff < error)

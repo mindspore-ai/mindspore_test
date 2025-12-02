@@ -17,10 +17,11 @@
 import numpy as np
 import mindspore as ms
 from mindspore import nn
+from mindspore.common.api import jit
 from mindspore.communication import init, get_rank, get_group_size
 from mindspore.ops.auto_generate import SignalWaitUntil, SignalOp, CreateSymmetricMemory
 
-ms.context.set_context(mode=ms.context.GRAPH_MODE,device_target="Ascend")
+ms.set_device("Ascend")
 ms.context.set_context(op_timeout=30)
 init()
 rank = get_rank()
@@ -29,6 +30,7 @@ if size != 2:
     raise RuntimeError("Symmetric memory compare test only support 2 cards.")
 
 class CompareNet(nn.Cell):
+    @jit(backend="ms_backend", jit_level="O0")
     def construct(self):
         signal = CreateSymmetricMemory()((6,), ms.int32, group='world_size')
         if rank == 0:
@@ -51,8 +53,8 @@ def test_compare():
     """
     Description: Verify the set/add op of SignalOp and comparison operations (eq/lt/gt) of SignalWaitUntil.
     Expectation:
-        1. SignalWaitUntil can wait for the signal to meet the expectation
-        2. the result signal meets the expectation result after set/add SignalOp
+        1. SignalWaitUntil can wait for the signal to meet the expectation.
+        2. The result signal meets the expectation result after set/add SignalOp.
     """
     compare_net = CompareNet()
     signal = compare_net()

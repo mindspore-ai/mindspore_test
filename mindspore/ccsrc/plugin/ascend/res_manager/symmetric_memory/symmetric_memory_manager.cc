@@ -28,7 +28,7 @@ namespace device {
 namespace ascend {
 constexpr char kShmemLibName[] = "libshmem.so";
 constexpr uint64_t kShmemSize = 1024 * 1024 * 1024;
-constexpr char kShmemIpPort[] = "tcp://127.0.0.1:8766";
+constexpr char kShmemIpPort[] = "tcp://127.0.0.1:8769";
 
 std::shared_ptr<SymmetricMemoryManager> &SymmetricMemoryManager::GetInstance() {
   static std::shared_ptr<SymmetricMemoryManager> instance = std::make_shared<SymmetricMemoryManager>();
@@ -106,18 +106,46 @@ void *SymmetricMemoryManager::AllocDeviceMemory(size_t size) {
                         << " is out of range, using default value " << shmem_size_int;
       }
     }
-    InitShmem(rank_id_int, rank_size_int, shmem_size_int, kShmemIpPort);
+    const char *ip_port = GetShmemIpPort();
+    InitShmem(rank_id_int, rank_size_int, shmem_size_int, ip_port);
   }
   MS_EXCEPTION_IF_NULL(plugin_handle_);
   auto ptr = shmem_malloc_(size);
-  MS_LOG(DEBUG) << "Malloc shmem, size: " << size << ", ptr: " << ptr;
+  MS_LOG(DEBUG) << "Malloc symmetric memory, size: " << size << ", ptr: " << ptr;
   return ptr;
 }
 
 void SymmetricMemoryManager::FreeDeviceMemory(void *ptr) {
   MS_EXCEPTION_IF_NULL(plugin_handle_);
-  MS_LOG(DEBUG) << "Free shmem, ptr: " << ptr;
+  MS_LOG(DEBUG) << "Free symmetric memory, ptr: " << ptr;
   shmem_free_(ptr);
+}
+
+const char *SymmetricMemoryManager::GetShmemIpPort() {
+  // get MS_SCHED_HOST and MS_SCHED_PORT of scheduler from environment variables
+  std::string sched_host = common::GetEnv("MS_SCHED_HOST");
+  std::string sched_port_str = common::GetEnv("MS_SCHED_PORT");
+  const char *ip_port = kShmemIpPort;
+  // if MS_SCHED_HOST and MS_SCHED_PORT are set, use them to construct new ip_port
+  if (!sched_host.empty() && !sched_port_str.empty()) {
+    try {
+      int sched_port = std::stoi(sched_port_str);
+      int new_port = sched_port + 13;
+      std::string new_ip_port = "tcp://" + sched_host + ":" + std::to_string(new_port);
+      MS_LOG(INFO) << "Using environment variables for shmem IP port: " << new_ip_port;
+      static std::string g_dynamic_ip_port;
+      g_dynamic_ip_port = new_ip_port;
+      ip_port = g_dynamic_ip_port.c_str();
+    } catch (const std::invalid_argument &e) {
+      MS_LOG(WARNING) << "Invalid MS_SCHED_PORT value: " << sched_port_str << ", using default: " << kShmemIpPort;
+    } catch (const std::out_of_range &e) {
+      MS_LOG(WARNING) << "MS_SCHED_PORT value " << sched_port_str
+                      << " is out of range, using default: " << kShmemIpPort;
+    }
+  } else {
+    MS_LOG(INFO) << "Using default shmem IP port: " << kShmemIpPort;
+  }
+  return ip_port;
 }
 
 void SymmetricMemoryManager::InitPlugin() {

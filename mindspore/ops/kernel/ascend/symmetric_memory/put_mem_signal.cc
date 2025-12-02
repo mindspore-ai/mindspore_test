@@ -15,7 +15,7 @@
  */
 
 #include "kernel/ascend/symmetric_memory/put_mem_signal.h"
-
+#include <vector>
 #include <memory>
 #include "include/runtime/hardware_abstract/kernel_base/kernel.h"
 
@@ -25,9 +25,9 @@ symmetricmemory::SymmetricMemoryOpPtr SymmetricMemoryPutMemSignal::CreateKernel(
   const symmetricmemory::InputsImmutableInfoList &inputs_ii,
   const symmetricmemory::OutputsImmutableInfoList &outputs_ii, const std::vector<KernelTensor *> &ms_inputs,
   const std::vector<KernelTensor *> &ms_outputs) {
-  param_.signal_op = ms_inputs[8]->GetValueWithCheck<int64_t>();
-  param_.target_pe = ms_inputs[9]->GetValueWithCheck<int64_t>();
-  param_.non_blocking = ms_inputs[10]->GetValueWithCheck<bool>();
+  param_.signal_op = ms_inputs[INDEX_8]->GetValueWithCheck<int64_t>();
+  param_.target_pe = ms_inputs[INDEX_9]->GetValueWithCheck<int64_t>();
+  param_.non_blocking = ms_inputs[INDEX_10]->GetValueWithCheck<bool>();
   return symmetricmemory::CreatePutMemSignalOp(inputs_ii, outputs_ii, param_,
                                                symmetricmemory::kSymmetricMemoryPutMemSignalOpName);
 }

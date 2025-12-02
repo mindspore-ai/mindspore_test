@@ -25,8 +25,8 @@ symmetricmemory::SymmetricMemoryOpPtr SymmetricMemoryPutMem::CreateKernel(
   const symmetricmemory::InputsImmutableInfoList &inputs_ii,
   const symmetricmemory::OutputsImmutableInfoList &outputs_ii, const std::vector<KernelTensor *> &ms_inputs,
   const std::vector<KernelTensor *> &ms_outputs) {
-  param_.target_pe = ms_inputs[5]->GetValueWithCheck<int64_t>();
-  param_.non_blocking = ms_inputs[6]->GetValueWithCheck<bool>();
+  param_.target_pe = ms_inputs[INDEX_5]->GetValueWithCheck<int64_t>();
+  param_.non_blocking = ms_inputs[INDEX_6]->GetValueWithCheck<bool>();
   return symmetricmemory::CreatePutMemOp(inputs_ii, outputs_ii, param_, symmetricmemory::kSymmetricMemoryPutMemOpName);
 }
 

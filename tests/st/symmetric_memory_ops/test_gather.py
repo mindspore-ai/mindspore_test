@@ -17,17 +17,19 @@
 import numpy as np
 import mindspore as ms
 from mindspore import nn
+from mindspore.common.api import jit
 from mindspore.communication import init, get_rank, get_group_size
 from mindspore.ops.auto_generate import SignalWaitUntil, PutMemSignal, CreateSymmetricMemory
 
 np.random.seed(0)
-ms.context.set_context(mode=ms.context.GRAPH_MODE,device_target="Ascend")
+ms.set_device("Ascend")
 ms.context.set_context(op_timeout=30)
 init()
 rank = get_rank()
 size = get_group_size()
 
 class GatherNet(nn.Cell):
+    @jit(backend="ms_backend", jit_level="O0")
     def construct(self, tensor, shape, dtype):
         share= CreateSymmetricMemory()(shape, dtype, group='world_size')
         signal= CreateSymmetricMemory()((1,), ms.int32, group='world_size')
@@ -51,6 +53,6 @@ def test_oneside_gather():
     gather_net= GatherNet()
     output, signal= gather_net(tensor, shape, dtype)
     if rank ==0:
-        expect_output= np.array([[i for _ in range(size)]for i in range(size)]).astype(np.float32)
-        assert np.allclose(output.asnumpy(), expect_output)
+        expected_output= np.array([[i for _ in range(size)]for i in range(size)]).astype(np.float32)
+        assert np.allclose(output.asnumpy(), expected_output)
         assert signal.asnumpy() == size

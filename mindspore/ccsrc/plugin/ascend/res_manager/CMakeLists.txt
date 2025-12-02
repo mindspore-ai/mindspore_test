@@ -56,7 +56,7 @@ if(ENABLE_D OR ENABLE_ACL)
     target_link_libraries(mindspore_ascend_res_manager PRIVATE shmem)
   endif()
 
-    set_target_properties(mindspore_ascend_res_manager PROPERTIES
+  set_target_properties(mindspore_ascend_res_manager PROPERTIES
     INSTALL_RPATH $ORIGIN:$ORIGIN/../..:${MS_SYMMETRIC_MEMORY_LIB_PATH})
 endif()
 

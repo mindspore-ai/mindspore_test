@@ -586,7 +586,7 @@ void DeviceAddressUtils::CreateKernelOutputDeviceAddress(const DeviceContext *de
           MS_LOG(DEBUG) << "Use PinMemoryAllocator for MoveTo cpu output. Kernel: " << kernel->fullname_with_scope();
         }
       }
-      SetSymmetricMemoryAllocatorIfNeeded(kernel, device_address, real_device_context);
+      SetSymmetricMemoryAllocator(kernel, device_address, real_device_context);
 
       device_address->SetNodeIndex(kernel, i);
       if (is_from_persistent_mem) {
@@ -602,9 +602,9 @@ void DeviceAddressUtils::CreateKernelOutputDeviceAddress(const DeviceContext *de
   MS_LOG(DEBUG) << "End create kernel output device address for graph:" << graph->ToString();
 }
 
-void DeviceAddressUtils::SetSymmetricMemoryAllocatorIfNeeded(const CNodePtr &kernel,
-                                                             const device::DeviceAddressPtr &device_address,
-                                                             const DeviceContext *device_context) {
+void DeviceAddressUtils::SetSymmetricMemoryAllocator(const CNodePtr &kernel,
+                                                     const device::DeviceAddressPtr &device_address,
+                                                     const DeviceContext *device_context) {
   MS_EXCEPTION_IF_NULL(kernel);
   MS_EXCEPTION_IF_NULL(device_address);
   MS_EXCEPTION_IF_NULL(device_context);

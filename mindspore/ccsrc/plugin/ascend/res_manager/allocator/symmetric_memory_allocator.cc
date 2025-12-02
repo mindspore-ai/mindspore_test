@@ -22,7 +22,7 @@ namespace mindspore {
 namespace device {
 namespace ascend {
 std::shared_ptr<SymmetricMemoryAllocator> SymmetricMemoryAllocator::instance = nullptr;
-std::shared_ptr<SymmetricMemoryAllocator> &SymmetricMemoryAllocator::getInstance() {
+std::shared_ptr<SymmetricMemoryAllocator> &SymmetricMemoryAllocator::GetInstance() {
   static std::shared_ptr<SymmetricMemoryAllocator> instance = std::make_shared<SymmetricMemoryAllocator>();
   return instance;
 }
@@ -38,7 +38,7 @@ void *SymmetricMemoryAllocator::Alloc(size_t size, uint32_t) {
   MS_EXCEPTION_IF_NULL(symmetric_memory_manager_);
   auto device_ptr = symmetric_memory_manager_->AllocDeviceMemory(size);
   if (device_ptr == nullptr) {
-    MS_LOG(ERROR) << "Allocate share memory failed, size: " << size;
+    MS_LOG(ERROR) << "Allocate symmetric memory failed, size: " << size;
   }
   return device_ptr;
 }

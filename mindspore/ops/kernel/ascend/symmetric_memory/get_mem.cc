@@ -1,5 +1,5 @@
 /**
- * Copyright 2024 Huawei Technologies Co., Ltd
+ * Copyright 2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,8 +26,8 @@ symmetricmemory::SymmetricMemoryOpPtr SymmetricMemoryGetMem::CreateKernel(
   const symmetricmemory::InputsImmutableInfoList &inputs_ii,
   const symmetricmemory::OutputsImmutableInfoList &outputs_ii, const std::vector<KernelTensor *> &ms_inputs,
   const std::vector<KernelTensor *> &ms_outputs) {
-  param_.target_pe = ms_inputs[5]->GetValueWithCheck<int64_t>();
-  param_.non_blocking = ms_inputs[6]->GetValueWithCheck<bool>();
+  param_.target_pe = ms_inputs[INDEX_5]->GetValueWithCheck<int64_t>();
+  param_.non_blocking = ms_inputs[INDEX_6]->GetValueWithCheck<bool>();
   return symmetricmemory::CreateGetMemOp(inputs_ii, outputs_ii, param_, symmetricmemory::kSymmetricMemoryGetMemOpName);
 }
 
