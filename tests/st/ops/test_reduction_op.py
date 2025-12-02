@@ -21,14 +21,19 @@ from tests.st.ops.share._internal.reduction_ops import ReductionOpsFactory
 from tests.st.ops.share._op_info.op_database import get_op_info, reduction_op_db
 import mindspore
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_ascend910b',
-                      'platform_gpu',
-                      'cpu_linux', 'cpu_windows', 'cpu_macos'],
+ops_params_dict = {
+    'test_reduction_op_reference_forward' : (['pynative'], reduction_op_db),
+    'test_reduction_op_reference_backward' : (['pynative'], reduction_op_db),
+    'test_reduction_op_dynamic_forward': (['kbk'], reduction_op_db),
+    'test_reduction_op_dynamic_backward': (['kbk'], reduction_op_db),
+}
+
+@arg_mark(plat_marks=['platform_ascend'],
           level_mark='level0',
           card_mark='onecard',
           essential_mark='essential')
-@pytest.mark.parametrize("mode", ['pynative'])
-@pytest.mark.parametrize("op_info", reduction_op_db)
+@pytest.mark.parametrize("mode", ops_params_dict['test_reduction_op_reference_forward'][0])
+@pytest.mark.parametrize("op_info", ops_params_dict['test_reduction_op_reference_forward'][1])
 def test_reduction_op_reference_forward(mode, op_info):
     '''
     Feature: Reduction operations
@@ -43,14 +48,12 @@ def test_reduction_op_reference_forward(mode, op_info):
     fact.test_op_reference()
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_ascend910b',
-                      'platform_gpu',
-                      'cpu_linux', 'cpu_windows', 'cpu_macos'],
+@arg_mark(plat_marks=['platform_ascend'],
           level_mark='level0',
           card_mark='onecard',
           essential_mark='essential')
-@pytest.mark.parametrize("mode", ['pynative'])
-@pytest.mark.parametrize("op_info", reduction_op_db)
+@pytest.mark.parametrize("mode", ops_params_dict['test_reduction_op_reference_backward'][0])
+@pytest.mark.parametrize("op_info", ops_params_dict['test_reduction_op_reference_backward'][1])
 def test_reduction_op_reference_backward(mode, op_info):
     '''
     Feature: Reduction operations
@@ -66,14 +69,12 @@ def test_reduction_op_reference_backward(mode, op_info):
 
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_ascend910b',
-                      'platform_gpu',
-                      'cpu_linux', 'cpu_windows', 'cpu_macos'],
+@arg_mark(plat_marks=['platform_ascend'],
           level_mark='level1',
           card_mark='onecard',
           essential_mark='essential')
-@pytest.mark.parametrize("mode", ['kbk'])
-@pytest.mark.parametrize("op_info", reduction_op_db)
+@pytest.mark.parametrize("mode", ops_params_dict['test_reduction_op_dynamic_forward'][0])
+@pytest.mark.parametrize("op_info", ops_params_dict['test_reduction_op_dynamic_forward'][1])
 def test_reduction_op_dynamic_forward(mode, op_info):
     '''
     Feature: Reduction operations
@@ -89,14 +90,12 @@ def test_reduction_op_dynamic_forward(mode, op_info):
 
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_ascend910b',
-                      'platform_gpu',
-                      'cpu_linux', 'cpu_windows', 'cpu_macos'],
+@arg_mark(plat_marks=['platform_ascend'],
           level_mark='level1',
           card_mark='onecard',
           essential_mark='essential')
-@pytest.mark.parametrize("mode", ['kbk'])
-@pytest.mark.parametrize("op_info", reduction_op_db)
+@pytest.mark.parametrize("mode", ops_params_dict['test_reduction_op_dynamic_backward'][0])
+@pytest.mark.parametrize("op_info", ops_params_dict['test_reduction_op_dynamic_backward'][1])
 def test_reduction_op_dynamic_backward(mode, op_info):
     '''
     Feature: Reduction operations
