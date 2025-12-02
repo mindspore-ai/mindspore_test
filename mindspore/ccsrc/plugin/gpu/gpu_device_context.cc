@@ -285,6 +285,109 @@ void GPUKernelExecutor::FuseOperators(const KernelGraphPtr &graph) const {
 }
 
 namespace {
+bool IsAllNopNode(const session::KernelGraph *const graph) {
+  MS_EXCEPTION_IF_NULL(graph);
+  auto execution_order = graph->execution_order();
+  for (auto &cnode : execution_order) {
+    MS_EXCEPTION_IF_NULL(cnode);
+    if (!common::AnfAlgo::IsNopNode(cnode)) {
+      return false;
+    }
+  }
+  return true;
+}
+
+bool NeedHideNode(const std::vector<AnfNodePtr> &outputs, const AnfNodePtr &node, bool need_keep_output_nop_node) {
+  MS_EXCEPTION_IF_NULL(node);
+  // if node is not a nop node, keep it in execution order
+  if (!common::AnfAlgo::IsNopNode(node)) {
+    return false;
+  }
+  // if node is nop node and the graph is dynamic graph, check if the nop node is graph's output.
+  if (need_keep_output_nop_node) {
+    auto iter = find(outputs.begin(), outputs.end(), node);
+    if (iter != outputs.end()) {
+      return false;
+    }
+  }
+  return true;
+}
+
+void HideNopNode(session::KernelGraph *const graph) {
+  MS_EXCEPTION_IF_NULL(graph);
+  if (IsAllNopNode(graph) == true) {
+    return;
+  }
+  auto execution_order = graph->execution_order();
+  auto outputs = common::AnfAlgo::GetAllOutput(graph->output());
+  // If the graph has flag kFlagEnableZeroCopyInGraph, it means in subgraph sink mode, the inputs and outputs memory of
+  // graph should not be allocated, and the node should not be skipped.
+  bool need_keep_output_nop_node = (graph->is_dynamic_shape() || graph->has_flag(kFlagEnableZeroCopyInGraph));
+  MS_LOG(INFO) << "nop node info (Before Remove) size: " << execution_order.size();
+  std::vector<CNodePtr> new_nodes;
+  for (auto &cnode : execution_order) {
+    MS_EXCEPTION_IF_NULL(cnode);
+    if (NeedHideNode(outputs, cnode, need_keep_output_nop_node)) {
+      common::AnfAlgo::SetNodeAttr(kAttrSkipNopOpAddr, MakeValue(true), cnode);
+      common::AnfAlgo::SetNodeAttr(kAttrSkipNopOpExecution, MakeValue(true), cnode);
+    } else {
+      new_nodes.push_back(cnode);
+    }
+  }
+  graph->set_execution_order(new_nodes);
+  MS_LOG(INFO) << "nop node info (After Remove) size: " << graph->execution_order().size();
+}
+
+void RemoveNopNode(session::KernelGraph *const graph) {
+  MS_EXCEPTION_IF_NULL(graph);
+  if (IsAllNopNode(graph) == true) {
+    return;
+  }
+  bool changed = true;
+  while (changed) {
+    changed = false;
+    std::vector<CNodePtr> new_nodes;
+    auto outputs = graph->outputs();
+    bool is_dynamic_graph = graph->is_dynamic_shape();
+    for (auto &cnode : graph->execution_order()) {
+      MS_EXCEPTION_IF_NULL(cnode);
+      // ignore nop node itself
+      if (NeedHideNode(outputs, cnode, is_dynamic_graph)) {
+        common::AnfAlgo::SetNodeAttr(kAttrSkipNopOpAddr, MakeValue(true), cnode);
+        common::AnfAlgo::SetNodeAttr(kAttrSkipNopOpExecution, MakeValue(true), cnode);
+        continue;
+      }
+      // Replace the input which is nop node
+      std::vector<AnfNodePtr> new_inputs;
+      new_inputs.push_back(cnode->input(0));
+      bool need_update = false;
+      for (size_t i = 1; i < cnode->size(); ++i) {
+        auto input = cnode->input(i);
+        MS_EXCEPTION_IF_NULL(input);
+        auto cinput = input->cast<CNodePtr>();
+        if (cinput == nullptr || !common::AnfAlgo::IsNopNode(cinput)) {
+          new_inputs.push_back(input);
+          continue;
+        }
+        constexpr auto kInputSize = 2;
+        if (cinput->size() == kInputSize) {
+          new_inputs.push_back(cinput->input(1));
+          need_update = true;
+          changed = true;
+        } else {
+          new_inputs.push_back(input);
+        }
+      }
+      if (need_update) {
+        cnode->set_inputs(new_inputs);
+      }
+      // push into new execution list
+      new_nodes.push_back(cnode);
+    }
+    graph->set_execution_order(new_nodes);
+  }
+}
+
 void RunOpOptimize(const KernelGraphPtr &kernel_graph) {
   MS_EXCEPTION_IF_NULL(kernel_graph);
   auto optimizer = std::make_shared<opt::GraphOptimizer>();
@@ -309,7 +412,7 @@ void RunOpHideNopNode(const KernelGraphPtr &kernel_graph) {
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
   if (!ms_context->get_param<bool>(MS_CTX_ENABLE_PYNATIVE_INFER)) {
-    opt::HideNopNode(kernel_graph.get());
+    HideNopNode(kernel_graph.get());
   }
 }
 
@@ -317,7 +420,7 @@ void RunOpRemoveNopNode(const KernelGraphPtr &kernel_graph) {
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
   if (!ms_context->get_param<bool>(MS_CTX_ENABLE_PYNATIVE_INFER)) {
-    opt::RemoveNopNode(kernel_graph.get());
+    RemoveNopNode(kernel_graph.get());
   }
 }
 

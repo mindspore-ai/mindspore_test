@@ -141,12 +141,6 @@ BACKEND_COMMON_EXPORT AnfNodePtr CreateTensorMoveOp(const FuncGraphPtr &graph, c
 BACKEND_COMMON_EXPORT std::vector<AnfNodePtr> InsertTensorMoveForGraphOutput(const FuncGraphPtr &graph,
                                                                              const AnfNodePtr &node);
 
-bool IsAllNopNode(const session::KernelGraph *const graph);
-
-BACKEND_COMMON_EXPORT void HideNopNode(session::KernelGraph *const graph);
-
-BACKEND_COMMON_EXPORT void RemoveNopNode(session::KernelGraph *const graph);
-
 BACKEND_COMMON_EXPORT CNodePtr CreatTupleGetItemNode(const FuncGraphPtr &func_graph, const AnfNodePtr &node,
                                                      size_t output_idx);
 
