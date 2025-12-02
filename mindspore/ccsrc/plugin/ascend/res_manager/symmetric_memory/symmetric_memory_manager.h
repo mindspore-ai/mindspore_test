@@ -29,7 +29,7 @@
 namespace mindspore {
 namespace device {
 namespace ascend {
-class ASCEND_RES_MANAGER_EXPORT SymmetricMemoryManager {
+class SymmetricMemoryManager {
  public:
   static std::shared_ptr<SymmetricMemoryManager> &GetInstance();
   void Finalize();
@@ -47,6 +47,7 @@ class ASCEND_RES_MANAGER_EXPORT SymmetricMemoryManager {
   struct compare {
     bool operator()(const DeviceAddressPtr &l, const DeviceAddressPtr &r) const { return l->GetSize() < r->GetSize(); }
   };
+  const char *GetShmemIpPort();
   void InitPlugin();
   void FinalizePlugin();
   void *plugin_handle_ = nullptr;
