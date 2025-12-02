@@ -3,7 +3,7 @@ mindspore.mint.empty_like
 
 .. py:function:: mindspore.mint.empty_like(input, *, dtype=None, device=None, pin_memory=False) -> Tensor
 
-    创建一个未初始化的Tesnor，shape和 `input` 相同，dtype由 `dtype` 决定，Tensor使用的内存由 `device` 决定，参数 `pin_memory` 为 ``True`` ，表示使用锁页内存。
+    创建一个未初始化的Tensor，shape和 `input` 相同，dtype由 `dtype` 决定，Tensor使用的内存由 `device` 决定，参数 `pin_memory` 为 ``True`` ，表示使用锁页内存。
 
     参数：
         - **input** (Tensor) - 任意维度的Tensor。

@@ -29,8 +29,8 @@ mindspore.ops.NonMaxSuppressionV3
         - **TypeError** - `boxes` 的数据类型不是float16或者float32。
         - **TypeError** - `scores` 的数据类型不是float16或者float32。
         - **TypeError** - `max_output_size` 不是Tensor或者Scalar或者其数据类型不是int32或int64。
-        - **TypeError** - `iou_threshold` 不是Tesnor或者Scalar，或者其数据类型不是float16或float32。
-        - **TypeError** - `score_threshold` 不是Tesnor或者Scalar，或者其数据类型不是float16或float32。
+        - **TypeError** - `iou_threshold` 不是Tensor或者Scalar，或者其数据类型不是float16或float32。
+        - **TypeError** - `score_threshold` 不是Tensor或者Scalar，或者其数据类型不是float16或float32。
         - **ValueError** - `boxes` 的shape长度不是2或者第二维度的值不是4。
         - **ValueError** - `scores` shape长度不是1。
         - **ValueError** - `max_output_size` 、 `iou_threshold` 或 `score_threshold` 的shape长度不是0。
