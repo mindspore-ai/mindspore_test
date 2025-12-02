@@ -17,6 +17,7 @@ import os
 import json
 import warnings
 from typing import Optional, Dict, Callable, Any, Iterable
+import sys
 from sys import getsizeof
 from concurrent.futures import ProcessPoolExecutor, as_completed
 
@@ -661,7 +662,7 @@ class Profiler:
             raise TypeError(f"For 'Profiler.op_analyse()', the parameter op_name must be str or list, "
                             f"but got type {type(op_name)}")
         if not op_name:
-            raise TypeError(f"For 'Profiler.op_analyse()', the parameter op_name cannot be "", '' or [].")
+            raise TypeError("For 'Profiler.op_analyse()', the parameter op_name cannot be None.")
 
         from mindspore.profiler.common.profiler_op_analyse import OpAnalyser
         dev_id = self._prof_context.device_id if device_id is None else device_id
@@ -1141,6 +1142,9 @@ class Profile:
 
     def __del__(self):
         if self._has_started:
+            if sys.is_finalizing():
+                logger.warning("profile is not stopped at the end of the program. The data may be incomplete.")
+                return
             self.stop()
             logger.warning("profile is stopped at the end of the program.")
 
