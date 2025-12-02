@@ -274,3 +274,91 @@ def test_internal_parameter_in_same_group():
     out = root_graph(x, y)
     print(out)
     assert np.allclose(out.asnumpy(), np.ones(shape).astype(np.float32) * 6)
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_print_output_control_flow():
+    """
+    Feature: Test print output of kernel graph.
+    Description: Trans output to value node.
+    Expectation: Run success.
+    """
+    shape = (3, 4)
+
+    root_graph = BackendGraph()
+    root_para_1 = root_graph.add_parameter(ms.float32, shape)
+    root_para_2 = root_graph.add_parameter(ms.float32, shape)
+
+    a = BackendGraph()
+    sub_para_1 = a.add_parameter(ms.float32, shape)
+    a.add_return(sub_para_1)
+    sub_graph_value_node = root_graph.add_valuenode(a)
+
+    print_1 = root_graph.add_cnode("Print", root_para_2)
+    call = root_graph.add_cnode(sub_graph_value_node, root_para_1)
+
+    U = root_graph.add_valuenode(UMonad())
+    updatestate = root_graph.add_cnode("UpdateState", U, call, print_1)
+    depend_2 = root_graph.add_cnode("Depend", root_para_2, updatestate)
+    root_graph.add_return(depend_2)
+    root_graph.infer()
+    root_graph.compile()
+    x = Tensor(np.ones(shape).astype(np.float32))
+    y = Tensor(np.ones(shape).astype(np.float32))
+    out = root_graph(x, y)
+    print(out)
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_print_output():
+    """
+    Feature: Test print output of kernel graph.
+    Description: Trans output to value node.
+    Expectation: Run success.
+    """
+    shape = (3, 4)
+
+    root_graph = BackendGraph()
+    root_para_1 = root_graph.add_parameter(ms.float32, shape)
+    root_para_2 = root_graph.add_parameter(ms.float32, shape)
+    print_1 = root_graph.add_cnode("Print", root_para_2)
+    add = root_graph.add_cnode("Add", root_para_1, root_para_2)
+    depend_1 = root_graph.add_cnode("Depend", root_para_1, print_1)
+    sub = root_graph.add_cnode("Sub", root_para_1, depend_1)
+    root_graph.set_target(add, "CPU")
+    root_graph.set_target(sub, "CPU")
+    U = root_graph.add_valuenode(UMonad())
+    updatestate = root_graph.add_cnode("UpdateState", U, sub, print_1)
+    depend_2 = root_graph.add_cnode("Depend", root_para_2, updatestate)
+    mul = root_graph.add_cnode("Mul", depend_2, sub)
+    root_graph.add_return(mul)
+    root_graph.infer()
+    root_graph.compile()
+    x = Tensor(np.ones(shape).astype(np.float32))
+    y = Tensor(np.ones(shape).astype(np.float32))
+    out = root_graph(x, y)
+    print(out)
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_cse_with_ref():
+    """
+    Feature: Test cse with ref.
+    Description: Cannot eliminate node with ref.
+    Expectation: Run success.
+    """
+    shape = (3, 4)
+
+    root_graph = BackendGraph()
+    para = root_graph.add_parameter(ms.float32, shape)
+    add1 = root_graph.add_cnode("Add", para, para)
+    add2 = root_graph.add_cnode("Add", para, para)
+    assign = root_graph.add_cnode(root_graph.add_valuenode(P.Assign()), add1, para)
+    depend = root_graph.add_cnode("Depend", add1, assign)
+    add3 = root_graph.add_cnode("Add", depend, add2)
+    root_graph.add_return(add3)
+    root_graph.infer()
+    root_graph.compile()
+    x = Tensor(np.ones(shape).astype(np.float32))
+    out = root_graph(x)
+    assert np.allclose(out.asnumpy(), np.ones(shape).astype(np.float32) * 3)

@@ -1718,10 +1718,15 @@ void ControlNodeScheduler::LinkArrowByKernel(const AnfNodePtr &kernel, ControlAc
     // Link arrow from actor of output node to exit actor of kernel graph.
     auto kernel_with_index = parser->FetchBackendNodeByFrontNode(from_node_with_index);
     auto backoff_kernel_with_index = parser->FetchBackendOutputByKernelGraph(graph, from_node_with_index);
+    MS_LOG(DEBUG) << "backend node:"
+                  << (kernel_with_index.first == nullptr ? "null" : kernel_with_index.first->DebugString())
+                  << " backoff node:"
+                  << (backoff_kernel_with_index.first == nullptr ? "null"
+                                                                 : backoff_kernel_with_index.first->DebugString())
+                  << " for front node:" << from_node->DebugString();
     // If front node and backend node are not the same type, maybe the output node has been replaced by pass,
     // the output arrow should be linked to the new node.
-    if (kernel_with_index.first != nullptr && kernel_with_index.first->isa<CNode>() &&
-        common::AnfAlgo::CheckPrimitiveType(kernel_with_index.first, prim::kPrimNPUClearFloatStatusV2) &&
+    if ((kernel_with_index.first == nullptr || kernel_with_index.first->isa<CNode>()) &&
         backoff_kernel_with_index.first != nullptr && backoff_kernel_with_index.first->isa<ValueNode>()) {
       MS_LOG(INFO) << "Backend node has been replaced from:" << kernel_with_index.first->DebugString()
                    << " to:" << backoff_kernel_with_index.first->DebugString();
