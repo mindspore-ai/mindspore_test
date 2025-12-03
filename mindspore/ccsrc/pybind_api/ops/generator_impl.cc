@@ -100,7 +100,8 @@ py::object GeneratorImpl::get_state() const {
 py::object GeneratorImpl::seed() const {
   auto seed = static_cast<param_type>(std::random_device()());
   *seed_data_ = seed;
-  return py::make_tuple(seed);
+  *offset_data_ = 0;
+  return py::make_tuple(tensor::PackTensorToPyObject(seed_));
 }
 
 py::object GeneratorImpl::step(const py::handle &step_py) {

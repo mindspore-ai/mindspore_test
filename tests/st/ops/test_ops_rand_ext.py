@@ -208,6 +208,38 @@ def test_randlike_randomness(mode):
     assert np.all(y1 == y2)
     assert np.all(z1 == z2)
 
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+def test_rand_generator_consistency():
+    """
+    Feature: rand function.
+    Description: test generator consistency of random op in graph and pynative mode
+    Expectation: expect correct result.
+    """
+    @test_utils.run_with_cell
+    def randn_cell(shape, dtype=None, generator=None, device=None):
+        return randn_ext(shape, dtype=dtype, generator=generator, device=device)
+
+    ms.set_context(mode=ms.GRAPH_MODE, jit_level="O0")
+    generator = ms.Generator()
+    generator.manual_seed(5)
+
+    shape = (2, 2)
+
+    out1 = randn_ext(shape, generator=generator).asnumpy()
+    state = generator.get_state()
+    out2 = randn_ext(shape, generator=generator).asnumpy()
+    assert not np.all(out1 == out2)
+    generator.set_state(state) # reset state to after out1
+    out_after_reset = randn_cell(shape, generator=generator).asnumpy() # should output the same as out2
+    assert np.all(out2 == out_after_reset)
+    out3 = randn_cell(shape, generator=generator).asnumpy() # 3rd output from graph mode
+    generator.set_state(state) # reset state to after out1
+    randn_ext(shape, generator=generator).asnumpy()
+    out3_pynative = randn_ext(shape, generator=generator).asnumpy() # 3rd output from pynative mode
+    assert np.all(out3 == out3_pynative)
+
+
+
 def _run_test_in_subprocess(test_name):
     """
     Run a test function in subprocess with MS_DEV_DISABLE_AUTO_H2D=1.
