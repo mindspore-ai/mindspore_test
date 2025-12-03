@@ -547,20 +547,20 @@ class TrainFaultTolerance(Callback):
             self.assign(cb_params.network.optimizer.tft_g_one_flag, self.g_one)
         else:
             raise ValueError("TFT feature need optimizer or network's optimizer!")
-        # pause train
-        if self.envs is None:
-            self.envs = os.getenv("MS_ENABLE_TFT", "")
-        if any([opt in self.envs for opt in ["TSP:1", "ARF:1"]]):  # pylint: disable=R1729
-            logger.info("Go into tft_pause_train.")
-            self.tft.tft_pause_train(self.cur_step_num)
 
         self._reset_arf_on_step_end(run_context)
 
     def _end_update_report(self, status, cur_step):
+        """check overflow: no need end update and pause train if training overflow"""
         if int(direct_copy_to_host(status)) != 1:
-            # check overflow: no need end update if overflow
             self.tft.tft_end_updating_os(cur_step + self.initial_step)
             logger.info("End updating step to tft.")
+            # pause train
+            if self.envs is None:
+                self.envs = os.getenv("MS_ENABLE_TFT", "")
+            if any([opt in self.envs for opt in ["TSP:1", "ARF:1"]]):  # pylint: disable=R1729
+                logger.info("Go into tft_pause_train.")
+                self.tft.tft_pause_train(self.cur_step_num + self.initial_step)
 
     def _reset_arf_on_step_end(self, run_context):
         """reset arf flag on train step end"""
