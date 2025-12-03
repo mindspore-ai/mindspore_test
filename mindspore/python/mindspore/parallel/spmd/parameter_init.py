@@ -13,39 +13,45 @@
 # limitations under the License.
 # ============================================================================
 """Parameter init"""
-import mindspore as ms
 
-def init_parameters(cell):
+def init_parameters(cell, stage_index=0):
     r"""
         init parameters.
 
         Args:
             cell(Cell): The cell to init parameters.
+            stage_index: stage index for init.
         Raises:
             ValueError: If the `cell` is not a cell.
     """
+    import mindspore as ms
     from mindspore.nn.cell import Cell
     from mindspore.parallel._tensor import _get_slice_index
     if not isinstance(cell, Cell):
         raise ValueError("cell's type must be Cell but got {}.".format(type(cell)))
+    if not isinstance(stage_index, int):
+        raise ValueError("stage_index's type must be int but got {}.".format(type(stage_index)))
     for param in cell.get_parameters(expand=True):
-        if not isinstance(param, ms.parallel.DTensor):
-            if param.has_init:
-                param.init_data()
-            continue
+        param_is_dtensor = isinstance(param, ms.parallel.DTensor)
         if not param.has_init:
             continue
         data_slice_index = None
         if hasattr(param, "hsdp_init_index"):
             data_slice_index = param.hsdp_init_index
-        elif param.layout is not None:
+        elif param_is_dtensor and param.layout is not None:
             data_slice_index = _get_slice_index(param.layout.device_matrix, param.layout.tensor_map, None)
-        local_shape = param.local_shape if isinstance(param, ms.parallel.DTensor) else param.shape
+        local_shape = param.shape
+        init_tensor = param.init_mode
+        if param_is_dtensor:
+            local_shape = param.local_shape
+            init_tensor = param.init_mode.to_local()
+            if isinstance(init_tensor, ms.Parameter):
+                init_tensor = init_tensor.init_mode
+
         if data_slice_index is not None:
-            init_data = param.init_mode.to_local().init_data(slice_index=int(data_slice_index), shape=local_shape)
+            init_data = init_tensor.init_data(slice_index=int(data_slice_index) + stage_index, shape=local_shape)
         else:
-            init_data = param.init_mode.to_local().init_data(shape=local_shape)
-        init_data = init_data.to(param.device)
+            init_data = init_tensor.init_data(shape=local_shape)
         param.init_mode = None
         param.init = None
         param.set_data(init_data)

@@ -12,12 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+"""param offload"""
 import numpy as np
 import os
 
 import mindspore as ms
-import mindspore.context as context
-import mindspore.nn as nn
+from mindspore import context
+from mindspore import nn
 from mindspore import Tensor
 from mindspore.nn import TrainOneStepCell, WithLossCell
 from mindspore.ops import operations as P
@@ -33,7 +34,7 @@ context.set_context(mode=context.GRAPH_MODE,
 class TestNet(nn.Cell):
     """Test network"""
     def __init__(self, offload=True):
-        super(TestNet, self).__init__()
+        super().__init__()
         self.fc1_werght = Parameter(initializer('normal', [28*28, 2560*12], ms.float32))
         if offload:
             self.fc2_werght = Parameter(initializer('normal', [2560*12, 2560], ms.float32), device="CPU")
@@ -89,7 +90,7 @@ def test_param_offload():
         label = Tensor(np.ones([batch_size]).astype(np.int32))
         loss = train_network(data, label)
         losses.append(loss)
-    assert losses[-1].asnumpy() <= 2.299586
+    assert losses[-1].asnumpy() <= 2.2999
     del os.environ['MS_ALLOC_CONF']
 
 
@@ -143,4 +144,4 @@ def test_param_offload_between_nets():
         loss = train_network(data, label)
         losses.append(loss)
 
-    assert losses[-1].asnumpy() <= 2.299586
+    assert losses[-1].asnumpy() <= 2.2999

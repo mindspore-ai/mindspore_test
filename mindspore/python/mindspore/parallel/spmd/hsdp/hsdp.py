@@ -13,7 +13,9 @@
 # limitations under the License.
 # ============================================================================
 """hybrid shard data parallel interface"""
+from typing import Optional
 from mindspore.parallel.spmd.hsdp.hsdp_utils import OptimizerLevel
+from mindspore._c_expression.typing import Type
 
 origin_class_to_extend_class = {}
 optimizer_level_map = {
@@ -102,8 +104,43 @@ def _extend_cell_with_hsdp_interface(cell):
         origin_class_to_extend_class[origin_class] = extend_class
     cell.__class__ = extend_class
 
-def hsdp(cell, shard_size=-1, threshold=64, optimizer_level="level1", enable_grad_accumulation=False, grad_scale=1.0,
-         reduce_dtype=None, comm_async=False, comm_fusion=False, bucket_size=-1):
+def _check_hsdp_input_valid(cell, shard_size, threshold, optimizer_level, enable_grad_accumulation, grad_scale,
+                            reduce_dtype, comm_async, comm_fusion, bucket_size):
+    """check hsdp input valid"""
+    from mindspore.nn.cell import Cell
+    if not isinstance(cell, Cell):
+        raise ValueError(f"cell's type must be Cell but got {type(cell)}.")
+    if not isinstance(shard_size, int) or (shard_size <= 0 and shard_size != -1):
+        raise ValueError(f"shard_size must be a positive integer, but got {shard_size}.")
+    if not isinstance(threshold, int) or threshold < 0:
+        raise ValueError(f"threshold must be a positive integer or 0, but got {threshold}.")
+    if optimizer_level not in ["level1", "level2", "level3"]:
+        raise ValueError(f"Optimizer level should in ['level1', 'level2', 'level3'], but got {optimizer_level}.")
+    if not isinstance(enable_grad_accumulation, bool):
+        raise ValueError(f"enable_grad_accumulation must be bool but got {enable_grad_accumulation}.")
+    if not isinstance(grad_scale, float):
+        raise ValueError(f"grad_scale must be float but got {grad_scale}.")
+    if reduce_dtype is not None and not isinstance(reduce_dtype, Type):
+        raise ValueError(f"reduce_dtype must be mindspore.dtype but got {reduce_dtype}.")
+    if not isinstance(comm_async, bool):
+        raise ValueError(f"comm_async must be bool but got {comm_async}.")
+    if not isinstance(comm_fusion, bool):
+        raise ValueError(f"comm_fusion must be bool but got {comm_fusion}.")
+    if not isinstance(bucket_size, int) or (bucket_size < 0 and bucket_size != -1):
+        raise ValueError(f"bucket_size must be a positive integer or 0, but got {bucket_size}.")
+
+def hsdp(
+        cell,
+        shard_size: Optional[int] = -1,
+        threshold: Optional[int] = 64,
+        optimizer_level: Optional[str] = "level1",
+        enable_grad_accumulation: Optional[bool] = False,
+        grad_scale: Optional[float] = 1.0,
+        reduce_dtype: Optional[Type] = None,
+        comm_async: Optional[bool] = False,
+        comm_fusion: Optional[bool] = False,
+        bucket_size: Optional[int] = -1
+):
     r"""
         apply hybrid sharded data parallel.
 
@@ -136,10 +173,10 @@ def hsdp(cell, shard_size=-1, threshold=64, optimizer_level="level1", enable_gra
             grad_scale (float, optional): gradient will scale with grad_scale.
             reduce_dtype (float, optional): gradient reduce dtype. Default value is None, which means gradient
                 will be reduced with its origin dtype.
-            comm_async (bool, optional): reduce gradient with async communication op for communication overlap. 
+            comm_async (bool, optional): reduce gradient with async communication op for communication overlap.
                 When comm_async is enable, ``hsdp_wait_grad_handle`` should be called before using generated
                 gradient. Default value is False, which means gradient will be reduced with sync communication op.
-            comm_fusion (bool, optional): fuse forward parameter allgathers and backward gradient reducescatters or 
+            comm_fusion (bool, optional): fuse forward parameter allgathers and backward gradient reducescatters or
                 allreduces into buffers communication to reduce the number of communication op. ``bucket_size` will
                 further control the size of backward gradient reduce buffer size.
                 Default value is False, which means communication op is not fused and will run one by one.
@@ -159,29 +196,19 @@ def hsdp(cell, shard_size=-1, threshold=64, optimizer_level="level1", enable_gra
             ValueError: If `comm_fusion` is not bool.
             ValueError: If the `bucket_size` is not a positive integer or -1.
         """
-    from mindspore.nn.cell import Cell
-    if not isinstance(cell, Cell):
-        raise ValueError(f"cell's type must be Cell but got {type(cell)}.")
-    if not isinstance(shard_size, int) or (shard_size <= 0 and shard_size != -1):
-        raise ValueError(f"shard_size must be a positive integer, but got {shard_size}.")
-    if not isinstance(threshold, int) or threshold < 0:
-        raise ValueError(f"threshold must be a positive integer or 0, but got {threshold}.")
-    if optimizer_level not in ["level1", "level2", "level3"]:
-        raise ValueError(f"Optimizer level should in ['level1', 'level2', 'level3'], but got {optimizer_level}.")
+    _check_hsdp_input_valid(
+        cell,
+        shard_size,
+        threshold,
+        optimizer_level,
+        enable_grad_accumulation,
+        grad_scale,
+        reduce_dtype,
+        comm_async,
+        comm_fusion,
+        bucket_size
+    )
     optimizer_level = optimizer_level_map.get(optimizer_level)
-    if not isinstance(enable_grad_accumulation, bool):
-        raise ValueError(f"enable_grad_accumulation must be bool but got {enable_grad_accumulation}.")
-    if not isinstance(grad_scale, float):
-        raise ValueError(f"grad_scale must be float but got {grad_scale}.")
-    from mindspore._c_expression import typing
-    if reduce_dtype is not None and not isinstance(reduce_dtype, typing.Type):
-        raise ValueError(f"reduce_dtype must be mindspore.dtype but got {reduce_dtype}.")
-    if not isinstance(comm_async, bool):
-        raise ValueError(f"comm_async must be bool but got {comm_async}.")
-    if not isinstance(comm_fusion, bool):
-        raise ValueError(f"comm_fusion must be bool but got {comm_fusion}.")
-    if not isinstance(bucket_size, int) or (bucket_size < 0 and bucket_size != -1):
-        raise ValueError(f"bucket_size must be a positive integer or 0, but got {bucket_size}.")
     _extend_cell_with_hsdp_interface(cell)
     cell.hsdp_init(
         cell,

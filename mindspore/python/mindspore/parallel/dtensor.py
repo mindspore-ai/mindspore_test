@@ -42,6 +42,8 @@ class DTensor(Tensor):
         if not layout:
             raise ValueError("Layout is None")
         device_local_tensor = local_tensor if local_tensor.has_init else local_tensor.to(device)
+        if local_tensor.has_init:
+            local_tensor.init_device = device
         t = Tensor._make_subclass(cls, device_local_tensor)
         t._local_tensor = device_local_tensor
         t._layout = layout

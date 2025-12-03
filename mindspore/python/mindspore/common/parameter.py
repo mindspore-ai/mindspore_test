@@ -254,11 +254,17 @@ class Parameter(Tensor_):
         rc = sys.getrefcount(default_input)
         init_param = getattr(cls, "init_param", True)
         # pylint: disable-msg=C0123
+        device = kwargs.get("device", None)
+        if device is not None and device == "CPU":
+            default_input.init_device = device
         if isinstance(default_input, Tensor) and not isinstance(default_input, Parameter)\
                 and type(default_input) != Tensor:
             input_class = type(default_input)
             new_type = Parameter._get_combined_class(input_class)
-            obj = input_class.__new__(new_type, default_input)
+            if device is not None:
+                obj = input_class.__new__(new_type, default_input, device=device)
+            else:
+                obj = input_class.__new__(new_type, default_input)
             obj.init_mode = None
             obj.is_default_input_init = init_data_flag
             if obj.has_init:
@@ -608,15 +614,17 @@ class Parameter(Tensor_):
         x.requires_aggr = self.requires_aggr
         if self.cache_shape:
             x.cache_shape = self.cache_shape
+        device = self._get_user_data("parameter_device")
+        if device is not None:
+            x._set_user_data("parameter_device", device)
         if init != 'same':
             shape = self._shape
             dtype = self.dtype
             tensor = initializer(init, shape=shape, dtype=dtype)
+            if device is not None:
+                tensor.init_device = device
             x.set_data(tensor)
             x.init = tensor.init
-        device = self._get_user_data("parameter_device")
-        if device is not None:
-            x._set_user_data("parameter_device", device)
         return x
 
     @property

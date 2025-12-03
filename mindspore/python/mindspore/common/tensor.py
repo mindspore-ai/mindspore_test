@@ -1952,6 +1952,102 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('clamp_')(self, min, max)
 
+    def _init_ascend_data(self, shape, dtype, slice_index):
+        """
+        init ascend data with operator
+        """
+        if context.get_context("device_target") != "Ascend":
+            return False
+        from mindspore import ops, mint
+        from mindspore.common.initializer import Zero, One, Normal, Uniform
+
+        if len(shape) < 1:
+            shape = ()
+        elif isinstance(shape, list):
+            shape = tuple(shape)
+        elif not isinstance(shape, tuple):
+            return False
+        if slice_index is not None:
+            slice_index = int(slice_index)
+        try:
+            data = None
+            if isinstance(self.init, Zero):
+                data = mint.zeros(shape, dtype=dtype)
+            elif isinstance(self.init, One):
+                data = mint.ones(shape, dtype=dtype)
+            elif isinstance(self.init, Normal):
+                data = ops.normal(shape, self.init.mean, self.init.sigma, seed=slice_index)
+                if dtype != mstype.float32:
+                    data = ops.cast(data, dtype)
+            elif isinstance(self.init, Uniform):
+                minval = tensor(-self.init.scale, dtype=mstype.float32)
+                maxval = tensor(self.init.scale, dtype=mstype.float32)
+                data = ops.uniform(shape, minval, maxval, seed=slice_index)
+                if dtype != mstype.float32:
+                    data = ops.cast(data, dtype)
+            if data is None:
+                return False
+            if hasattr(self, "init_device") and self.init_device != "Ascend":
+                data = data.to(self.init_device)
+            self.assign_value(data)
+        except NotImplementedError as e:
+            logger.info(f"init data using ascend op failed! {str(e)}")
+            return False
+        except TypeError as e:
+            logger.info(f"init data with type error! {str(e)}")
+            return False
+        return True
+
+    def _init_numpy_data(self, shape, dtype, slice_index):
+        """
+        init numpy array with cpu function
+        """
+        from mindspore.common.initializer import Zero as ZeroInitializer
+        try:
+            if isinstance(self.init, ZeroInitializer):
+                data = np.zeros(shape, dtype=mstype._dtype_to_nptype(dtype))  # pylint:disable=protected-access
+            else:
+                data = np.ndarray(shape, dtype=mstype._dtype_to_nptype(dtype))  # pylint:disable=protected-access
+        except ValueError as e:
+            msg = "Error shape={}".format(shape)
+            logger.critical(msg)
+            raise ValueError(msg) from e
+
+        class seed_context:
+            """Set and restore seed."""
+
+            def __init__(self, init):
+                self.init = init
+                global_seed = get_seed()
+                self._np_seed = np.random.get_state()[1][0]
+                self.need_set_seed = slice_index is not None
+                self._global_seed = global_seed
+                self._seed_offset = 1
+                if self.need_set_seed:
+                    self._seed_offset = get_group_size() * 2
+
+            def __enter__(self):
+                if self.need_set_seed:
+                    self.seed = self.init.seed
+                    if self._global_seed is not None:
+                        np.random.seed(slice_index + self._global_seed)
+                        self.init.seed = slice_index + self._global_seed
+                    else:
+                        np.random.seed(slice_index + Tensor.delta_seed)
+                        self.init.seed = slice_index + Tensor.delta_seed
+                        Tensor.delta_seed += self._seed_offset
+
+            def __exit__(self, ptype, value, trace):
+                if self.need_set_seed:
+                    np.random.seed(self._np_seed)
+                    self.init.seed, _ = self.seed
+
+        with seed_context(self.init):
+            if (not isinstance(self.init, ZeroInitializer)) \
+                    and not is_reboot_node():
+                self.init(data)
+        self.assign_value(TensorPy_.from_numpy(data))
+
     def init_data(self, slice_index=None, shape=None, opt_shard_group=None):
         """
         Get the tensor format data of this Tensor.
@@ -1992,57 +2088,13 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
         if shape is None:
             shape = self.shape
 
-        from mindspore.common.initializer import Zero as ZeroInitializer
-
         is_qint4x2 = self.dtype == mstype.qint4x2
-        try:
-            dtype_ = mstype.int8 if is_qint4x2 else self.dtype
-            if isinstance(self.init, ZeroInitializer):
-                data = np.zeros(shape, dtype=mstype._dtype_to_nptype(dtype_))  # pylint:disable=protected-access
-            else:
-                data = np.ndarray(shape, dtype=mstype._dtype_to_nptype(dtype_))  # pylint:disable=protected-access
-        except ValueError as e:
-            msg = "Error shape={}".format(shape)
-            logger.critical(msg)
-            raise ValueError(msg) from e
+        dtype_ = mstype.int8 if is_qint4x2 else self.dtype
 
-        class seed_context:
-            """Set and restore seed."""
+        if not self._init_ascend_data(shape, dtype_, slice_index):
+            self._init_numpy_data(shape, dtype_, slice_index)
 
-            def __init__(self, init):
-                self.init = init
-                global_seed = get_seed()
-                self._np_seed = np.random.get_state()[1][0]
-                self.need_set_seed = slice_index is not None
-                self._global_seed = global_seed
-                self._seed_offset = 1
-                if self.need_set_seed:
-                    self._seed_offset = get_group_size() * 2
-
-            def __enter__(self):
-                if self.need_set_seed:
-                    self.seed = self.init.seed
-                    if self._global_seed is not None:
-                        np.random.seed(slice_index + self._global_seed)
-                        self.init.seed = slice_index + self._global_seed
-                    else:
-                        np.random.seed(slice_index + Tensor.delta_seed)
-                        self.init.seed = slice_index + Tensor.delta_seed
-                        Tensor.delta_seed += self._seed_offset
-
-            def __exit__(self, ptype, value, trace):
-                if self.need_set_seed:
-                    np.random.seed(self._np_seed)
-                    self.init.seed, _ = self.seed
-
-        with seed_context(self.init):
-            if (not isinstance(self.init, ZeroInitializer)) \
-                    and not is_reboot_node():
-                self.init(data)
         self.init = None
-
-        self.assign_value(TensorPy_.from_numpy(data))
-
         if is_qint4x2:
             self.set_dtype(mstype.qint4x2)
 
@@ -3755,15 +3807,16 @@ def _check_tensor_input(input_data=None, dtype=None, shape=None, init=None):
     if init is not None and (shape is None or dtype is None):
         raise ValueError("init, dtype and shape must have values at the same time.")
 
-    if input_data is not None:
-        if isinstance(input_data, (tuple, list)):
-            try:
-                _ = np.array(input_data)
-            except ValueError as e:
-                if "The requested array has an inhomogeneous shape" in str(e):
-                    raise TypeError(f"For Tensor, the input_data is {input_data} that contain unsupported element.")\
-                        from e
-                raise
+    if input_data is None:
+        return
+    if not isinstance(input_data, (tuple, list)):
+        return
+    try:
+        _ = np.array(input_data)
+    except ValueError as e:
+        if "The requested array has an inhomogeneous shape" in str(e):
+            raise TypeError(f"For Tensor, the input_data is {input_data} that contain unsupported element.") from e
+        raise
 
 
 def _check_tensor_dynamic_shape(dtype=None, shape=None, init=None):
