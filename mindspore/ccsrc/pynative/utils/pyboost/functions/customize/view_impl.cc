@@ -15,7 +15,7 @@
  */
 
 #include "mindspore/ccsrc/pynative/utils/pyboost/functions/customize/view_impl.h"
-#include "mindspore/ccsrc/pynative/utils/pyboost/functions/auto_generate/functions.h"
+#include "mindspore/ccsrc/include/pynative/utils/pyboost/functions/auto_generate/functions.h"
 
 namespace mindspore::kernel::pyboost {
 mindspore::tensor::TensorPtr t_ext_impl(const mindspore::tensor::TensorPtr &input) {

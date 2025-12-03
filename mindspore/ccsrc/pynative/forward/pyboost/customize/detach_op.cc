@@ -17,14 +17,14 @@
 #include "include/utils/tensor_py.h"
 #include "include/utils/tensor_utils.h"
 #include "pynative/utils/pyboost/functions/auto_grad_guard.h"
-#include "pynative/utils/pynative_utils.h"
-#include "pynative/forward/pyboost/forward_task.h"
+#include "include/pynative/utils/pynative_utils.h"
+#include "include/pynative/forward/pyboost/forward_task.h"
 #include "pynative/utils/pyboost/pyboost_utils.h"
 #include "pybind_api/pynative/pynative_api.h"
 
 namespace mindspore::pynative {
 static const char *OP_NAME = "Detach";
-py::object PYNATIVE_EXPORT PyboostDetach(const py::object &input) {
+py::object PyboostDetach(const py::object &input) {
   runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kPynative, runtime::ProfilerEvent::kRunOp, OP_NAME, false,
                                      true);
   if (!tensor::IsTensorPy(input)) {

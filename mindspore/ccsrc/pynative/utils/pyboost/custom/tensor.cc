@@ -24,8 +24,8 @@
 #include "ir/format_utils.h"
 #include "ir/tensor_new.h"
 #include "include/utils/tensor_utils.h"
-#include "mindspore/ccsrc/pynative/utils/pynative_utils.h"
-#include "mindspore/ccsrc/pynative/utils/pyboost/functions/auto_generate/functions.h"
+#include "include/pynative/utils/pynative_utils.h"
+#include "mindspore/ccsrc/include/pynative/utils/pyboost/functions/auto_generate/functions.h"
 
 namespace ms {
 namespace {

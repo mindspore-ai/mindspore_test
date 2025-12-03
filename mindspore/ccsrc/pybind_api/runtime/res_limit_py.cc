@@ -24,7 +24,7 @@
 #include "utils/ms_context.h"
 #include "pybind_api/runtime/utils_py.h"
 #include "pybind_api/runtime/runtime_api.h"
-#include "pynative/utils/pynative_utils.h"
+#include "include/pynative/utils/pynative_utils.h"
 #include "utils/stream_guard.h"
 #include "utils/ms_exception.h"
 

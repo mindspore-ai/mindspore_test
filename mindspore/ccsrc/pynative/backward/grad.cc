@@ -39,7 +39,7 @@
 #include "pynative/backward/top_cell.h"
 #include "pynative/backward/op_grad/func_grad.h"
 #include "pynative/backward/grad_utils.h"
-#include "pynative/utils/pynative_utils.h"
+#include "include/pynative/utils/pynative_utils.h"
 #include "pynative/utils/runtime/op_executor.h"
 #include "utils/log_adapter.h"
 #include "mindspore/ccsrc/pynative/utils/pyboost/grad_functions/pyboost_grad_functions.h"

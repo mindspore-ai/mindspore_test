@@ -21,9 +21,8 @@
 #include <utility>
 #include <vector>
 #include "tools/profiler/profiler.h"
-#include "pynative/utils/pynative_utils.h"
-#include "pynative/forward/pyboost/forward_task.h"
-#include "pynative/utils/runtime/task/device_task.h"
+#include "include/runtime/pipeline/pipeline.h"
+#include "include/pynative/forward/pyboost/forward_task.h"
 #include "pynative/utils/runtime/op_executor.h"
 #include "plugin/ascend/res_manager/hal_manager/ascend_hal_manager.h"
 #include "plugin/ascend/res_manager/hccl_adapter/plugin/hccl_plugin.h"

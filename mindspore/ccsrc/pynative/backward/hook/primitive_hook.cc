@@ -19,7 +19,7 @@
 #include <string>
 #include "include/utils/frontend/primitive_utils.h"
 #include "include/utils/tensor_py.h"
-#include "pynative/utils/pynative_execute.h"
+#include "include/pynative/utils/pynative_execute.h"
 
 namespace mindspore {
 namespace {

@@ -35,7 +35,7 @@ struct JitCompileInfo {
   bool is_dynamic_shape_{false};
 };
 
-class PYNATIVE_EXPORT Jit {
+class Jit {
  public:
   Jit() = default;
   ~Jit() = default;

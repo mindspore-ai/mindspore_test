@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "mindspore/ccsrc/pynative/parallel/reducer.h"
+#include "include/pynative/parallel/reducer.h"
 #include "pybind_api/pynative/pynative_api.h"
 #include "pybind_api/pynative/tensor/tensor_py.h"
 #include "pynative/backward/function.h"

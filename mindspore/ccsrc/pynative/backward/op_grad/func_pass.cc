@@ -19,7 +19,7 @@
 #include <vector>
 #include <functional>
 #include "ir/tensor_new.h"
-#include "pynative/utils/pynative_utils.h"
+#include "include/pynative/utils/pynative_utils.h"
 #include "primitive/sequence_ops.h"
 #include "primitive/nn_ops.h"
 #include "ops_utils/op_utils.h"

@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include "include/pynative/parallel/reducer.h"
 #include <vector>
 #include <string>
 #include <memory>
@@ -22,13 +23,12 @@
 #include "include/cluster/init.h"
 #include "tools/profiler/profiler.h"
 #include "include/runtime/pipeline/pipeline.h"
-#include "pynative/utils/pyboost/functions/auto_generate/functions.h"
+#include "include/pynative/utils/pyboost/functions/auto_generate/functions.h"
 #include "pynative/utils/pyboost/functions/auto_grad_guard.h"
 #include "pynative/backward/hook/hook_py.h"
-#include "pynative/utils/pynative_utils.h"
-#include "pynative/utils/pynative_execute.h"
+#include "include/pynative/utils/pynative_utils.h"
+#include "include/pynative/utils/pynative_execute.h"
 #include "pynative/backward/op_grad/func_grad.h"
-#include "pynative/parallel/reducer.h"
 
 namespace mindspore {
 namespace pynative {

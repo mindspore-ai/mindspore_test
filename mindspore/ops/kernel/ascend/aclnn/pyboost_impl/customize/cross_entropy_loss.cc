@@ -24,7 +24,7 @@
 #include "mindspore/ccsrc/pynative/utils/pyboost/pyboost_utils.h"
 #include "kernel/ascend/aclnn/pyboost_impl/aclnn_utils.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
-#include "pynative/utils/pyboost/functions/auto_generate/functions.h"
+#include "include/pynative/utils/pyboost/functions/auto_generate/functions.h"
 namespace mindspore {
 namespace kernel {
 namespace pyboost {

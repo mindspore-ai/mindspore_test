@@ -23,7 +23,7 @@
 #include "mindspore/ccsrc/pynative/utils/pyboost/op_runner.h"
 #include "mindspore/ccsrc/pynative/utils/pyboost/op_register.h"
 #include "mindspore/ccsrc/pynative/utils/pyboost/auto_generate/non_zero.h"
-#include "mindspore/ccsrc/pynative/utils/pyboost/functions/auto_generate/functions.h"
+#include "mindspore/ccsrc/include/pynative/utils/pyboost/functions/auto_generate/functions.h"
 #include "mindspore/ccsrc/pynative/utils/pyboost/functions/auto_grad_guard.h"
 
 namespace mindspore {

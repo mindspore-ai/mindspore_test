@@ -21,7 +21,7 @@
 #include <memory>
 #include "ops/op_def.h"
 #include "include/op_enum.h"
-#include "pynative/forward/pyboost/arg_handler_py.h"
+#include "include/pynative/forward/pyboost/arg_handler_py.h"
 #include "frontend/jit/ps/parse/data_converter.h"
 #include "utils/anf_utils.h"
 #include "include/utils/tensor_py.h"

@@ -20,7 +20,7 @@
 #include <map>
 #include "mindapi/base/types.h"
 #include "pynative/utils/pyboost/functions/composite/to_base.h"
-#include "pynative/utils/pyboost/functions/auto_generate/functions.h"
+#include "include/pynative/utils/pyboost/functions/auto_generate/functions.h"
 
 namespace mindspore {
 namespace kernel {

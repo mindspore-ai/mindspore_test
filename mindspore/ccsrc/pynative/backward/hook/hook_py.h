@@ -30,15 +30,15 @@ struct RegisterHook {
   /// \brief Register a backward hook
   ///
   /// \ void
-  PYNATIVE_EXPORT static uint64_t RegisterTensorBackwardHook(const tensor::TensorPtr &tensor, const py::function &hook);
+  static uint64_t RegisterTensorBackwardHook(const tensor::TensorPtr &tensor, const py::function &hook);
 
   /// \brief Remove a backward hook
   ///
   /// \ void
-  PYNATIVE_EXPORT static void RemoveTensorBackwardHook(uint64_t handle_id);
-  PYNATIVE_EXPORT static py::list GetHooks(const tensor::TensorPtr &tensor);
-  PYNATIVE_EXPORT static unsigned RegisterCppTensorBackwardHook(const tensor::TensorPtr &tensor, const CppHookFn &hook);
-  PYNATIVE_EXPORT static void RemoveCppTensorBackwardHook(const tensor::TensorPtr &tensor, unsigned hook_id);
+  static void RemoveTensorBackwardHook(uint64_t handle_id);
+  static py::list GetHooks(const tensor::TensorPtr &tensor);
+  static unsigned RegisterCppTensorBackwardHook(const tensor::TensorPtr &tensor, const CppHookFn &hook);
+  static void RemoveCppTensorBackwardHook(const tensor::TensorPtr &tensor, unsigned hook_id);
 
   static void ClearHookMap();
 };

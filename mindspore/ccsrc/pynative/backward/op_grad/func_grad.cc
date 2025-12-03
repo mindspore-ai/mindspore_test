@@ -30,7 +30,7 @@
 #include "pybind_api/gil_scoped_long_running.h"
 #include "include/utils/frontend/primitive_utils.h"
 #include "include/utils/pynative/common_utils.h"
-#include "pynative/utils/pynative_utils.h"
+#include "include/pynative/utils/pynative_utils.h"
 #include "primitive/framework_ops.h"
 #include "include/runtime/pipeline/pipeline.h"
 #include "pynative/backward/hook/custom_function.h"
@@ -41,7 +41,7 @@
 #include "pynative/backward/hook/function_py.h"
 #include "primitive/auto_generate/gen_ops_primitive_c.h"
 #include "mindspore/ccsrc/pynative/utils/pyboost/functions/auto_grad_guard.h"
-#include "mindspore/ccsrc/pynative/utils/pyboost/functions/auto_generate/functions.h"
+#include "mindspore/ccsrc/include/pynative/utils/pyboost/functions/auto_generate/functions.h"
 #include "pynative/backward/saved_tensor.h"
 
 namespace mindspore::pynative::autograd {

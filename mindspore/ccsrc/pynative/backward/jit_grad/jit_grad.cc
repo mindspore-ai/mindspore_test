@@ -21,7 +21,7 @@
 #include "primitive/framework_op_name.h"
 #include "primitive/sequence_ops.h"
 #include "pynative/backward/grad_utils.h"
-#include "pynative/utils/pynative_utils.h"
+#include "include/pynative/utils/pynative_utils.h"
 #include "ir/func_graph_cloner.h"
 #include "include/utils/pynative/common_utils.h"
 #include "include/utils/pynative/adapter.h"

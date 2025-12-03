@@ -16,7 +16,7 @@
 
 #include "pynative/utils/pyboost/functions/composite/rand_like_ext.h"
 #include "pynative/utils/pyboost/functions/composite/empty_like.h"
-#include "pynative/utils/pyboost/functions/auto_generate/functions.h"
+#include "include/pynative/utils/pyboost/functions/auto_generate/functions.h"
 
 namespace mindspore {
 namespace kernel {

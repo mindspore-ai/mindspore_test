@@ -17,7 +17,7 @@
 #include "kernel/ascend/aclnn/pyboost_impl/customize/index.h"
 #include "kernel/ascend/aclnn/pyboost_impl/auto_generate/inner_non_zero.h"
 #include "kernel/ascend/aclnn/pyboost_impl/auto_generate/inner_index.h"
-#include "mindspore/ccsrc/pynative/utils/pyboost/functions/auto_generate/functions.h"
+#include "mindspore/ccsrc/include/pynative/utils/pyboost/functions/auto_generate/functions.h"
 #include "mindspore/ccsrc/pynative/utils/pyboost/functions/auto_grad_guard.h"
 #include "kernel/ascend/aclnn/pyboost_impl/aclnn_utils.h"
 #include "mindspore/ccsrc/pynative/utils/pyboost/op_register.h"

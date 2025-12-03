@@ -16,7 +16,7 @@
 
 #include "primitive/auto_generate/gen_ops_def.h"
 #include "mindspore/ccsrc/pynative/utils/pyboost/functions/auto_grad_reg.h"
-#include "pynative/utils/pynative_utils.h"
+#include "include/pynative/utils/pynative_utils.h"
 #include "mindspore/ccsrc/pynative/utils/pyboost/op_runner.h"
 #include "mindspore/ccsrc/pynative/utils/pyboost/functions/auto_grad_guard.h"
 #include "pynative/backward/grad_utils.h"

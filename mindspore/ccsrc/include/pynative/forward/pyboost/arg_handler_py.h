@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CCSRC_PYBIND_API_IR_ARG_HANDLER_H
-#define MINDSPORE_CCSRC_PYBIND_API_IR_ARG_HANDLER_H
+#ifndef MINDSPORE_CCSRC_INCLUDE_PYNATIVE_FORWARD_PYBOOST_ARG_HANDLER_H
+#define MINDSPORE_CCSRC_INCLUDE_PYNATIVE_FORWARD_PYBOOST_ARG_HANDLER_H
 
 #include <string>
 #include <memory>
@@ -58,4 +58,4 @@ PYNATIVE_EXPORT PyObject *ScalarTensorToFloat(const std::string &op_name, const 
 }  // namespace pynative
 }  // namespace mindspore
 
-#endif  // MINDSPORE_CCSRC_PYBIND_API_IR_ARG_HANDLER_H
+#endif  // MINDSPORE_CCSRC_INCLUDE_PYNATIVE_FORWARD_PYBOOST_ARG_HANDLER_H

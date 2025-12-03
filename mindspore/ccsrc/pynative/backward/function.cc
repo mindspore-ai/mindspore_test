@@ -16,8 +16,8 @@
 
 #include "include/utils/convert_utils_py.h"
 #include "include/utils/tensor_py.h"
-#include "pynative/utils/pynative_execute.h"
-#include "pynative/utils/pynative_utils.h"
+#include "include/pynative/utils/pynative_execute.h"
+#include "include/pynative/utils/pynative_utils.h"
 #include "pynative/backward/grad_utils.h"
 #include "pynative/backward/function.h"
 #include "pynative/backward/op_grad/func_grad.h"

@@ -18,7 +18,7 @@
 #include <functional>
 #include "kernel/ascend/aclnn/pyboost_impl/auto_generate/inner_inplace_index_put.h"
 #include "kernel/ascend/aclnn/pyboost_impl/auto_generate/inner_non_zero.h"
-#include "mindspore/ccsrc/pynative/utils/pyboost/functions/auto_generate/functions.h"
+#include "mindspore/ccsrc/include/pynative/utils/pyboost/functions/auto_generate/functions.h"
 #include "mindspore/ccsrc/pynative/utils/pyboost/functions/auto_grad_guard.h"
 #include "plugin/ascend/res_manager/stream_manager/ascend_stream_manager.h"
 #include "mindspore/ccsrc/pynative/utils/pyboost/pyboost_utils.h"

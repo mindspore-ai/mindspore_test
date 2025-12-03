@@ -13,23 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "pynative/forward/pyboost/auto_generate/pyboost_core.h"
+#include "include/pynative/forward/pyboost/auto_generate/pyboost_core.h"
 #include "pybind_api/pynative/pynative_api.h"
-#include "pynative/utils/pynative_execute.h"
+#include "include/pynative/utils/pynative_execute.h"
 #include "pynative/backward/grad_utils.h"
-#include "pynative/utils/pynative_utils.h"
-#include "pynative/forward/pyboost/converter.h"
+#include "include/pynative/utils/pynative_utils.h"
+#include "include/pynative/forward/pyboost/converter.h"
 #include "include/utils/tensor_py.h"
 #include "include/utils/tensor_utils.h"
 #include "pybind_api/gil_scoped_long_running.h"
 #include "pynative/utils/predict_out_type_map.h"
-#include "pynative/forward/pyboost/forward_task.h"
+#include "include/pynative/forward/pyboost/forward_task.h"
 #include "include/frontend/jit/trace/trace_recorder_interface.h"
 #include "primitive/auto_generate/gen_ops_def.h"
 #include "pynative/forward/pyboost/comm_handle_py.h"
 #include "mindspore/ccsrc/pynative/forward/pyboost/auto_generate/tensor_func_utils.h"
 #include "mindspore/ccsrc/pynative/utils/pyboost/functions/auto_grad_guard.h"
-#include "mindspore/ccsrc/pynative/utils/pyboost/functions/auto_generate/functions.h"
+#include "mindspore/ccsrc/include/pynative/utils/pyboost/functions/auto_generate/functions.h"
 #include "mindspore/ops/include/view/view_infer_function.h"
 ${include_op_header}
 
