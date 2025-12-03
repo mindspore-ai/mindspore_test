@@ -8,7 +8,7 @@ mindspore.ops.TensorScatterMul
     .. math::
         output\left [indices  \right ] = input\_x\times  update
 
-    更多参考相见 :func:`mindspore.ops.tensor_scatter_mul`。
+    更多参考详见 :func:`mindspore.ops.tensor_scatter_mul`。
 
     输入：
         - **input_x** (Tensor) - 输入Tensor。 `input_x` 的维度必须大于等于indices.shape[-1]。
