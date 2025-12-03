@@ -37,7 +37,7 @@
 #include "primitive/array_ops.h"
 #include "primitive/framework_ops.h"
 #include "include/backend/backend_manager/backend_jit_config.h"
-#include "backend/common/kernel_graph/kernel_graph_mgr.h"
+#include "include/backend/common/kernel_graph/kernel_graph_mgr.h"
 #include "plugin/ascend/res_manager/device_context_conf/op_debug_conf.h"
 #include "plugin/ascend/res_manager/device_context_conf/op_precision_conf.h"
 #include "plugin/ascend/res_manager/stream_manager/ascend_stream_manager.h"

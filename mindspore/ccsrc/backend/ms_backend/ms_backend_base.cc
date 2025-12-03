@@ -49,7 +49,7 @@
 #include "primitive/sequence_ops.h"
 #include "primitive/sparse_tensor_ops.h"
 #include "primitive/nn_ops.h"
-#include "backend/common/device_address_utils.h"
+#include "include/backend/common/device_address_utils.h"
 #include "runtime/core/graph_executor/pre_launch/pre_launch_comm.h"
 #include "include/runtime/hardware_abstract/stream/multi_stream_controller.h"
 #include "runtime/hardware_abstract/utils.h"

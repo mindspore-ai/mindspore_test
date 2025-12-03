@@ -30,7 +30,7 @@
 #include "primitive/auto_generate/gen_ops_primitive_s.h"
 #include "primitive/auto_generate/gen_ops_primitive_u.h"
 #include "include/runtime/hardware_abstract/device_context/device_context_manager.h"
-#include "backend/common/device_address_utils.h"
+#include "include/backend/common/device_address_utils.h"
 
 namespace mindspore {
 namespace runtime {

@@ -26,7 +26,7 @@
 #include "include/runtime/hardware_abstract/device_context/device_context.h"
 #include "mindspore/ccsrc/pynative/utils/runtime/op_runner.h"
 #include "mindspore/core/include/utils/ms_utils.h"
-#include "mindspore/ccsrc/backend/common/device_address_utils.h"
+#include "include/backend/common/device_address_utils.h"
 #include "mindspore/ccsrc/include/runtime/utils/runtime_conf/runtime_conf.h"
 #include "mindspore/core/include/utils/ms_context.h"
 

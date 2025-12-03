@@ -16,7 +16,7 @@
 
 #include "include/utils/callback.h"
 #include "include/cluster/init.h"
-#include "backend/common/device_address_utils.h"
+#include "include/backend/common/device_address_utils.h"
 #include "include/runtime/hardware_abstract/device_context/device_context.h"
 #include "runtime/core/actors/dynamic_shape/kernel_async_infer_actor.h"
 #include "runtime/core/actors/dynamic_shape/kernel_async_resize_actor.h"

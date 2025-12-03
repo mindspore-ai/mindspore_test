@@ -42,7 +42,7 @@ using mindspore::profiler::ProfilerManager;
 #include "include/frontend/jit/ps/parse/py_data_convert.h"
 #include "include/frontend/operator/frontend_primitive_infer.h"
 #include "include/runtime/pipeline/pipeline.h"
-#include "backend/common/device_address_utils.h"
+#include "include/backend/common/device_address_utils.h"
 #include "backend/common/kernel_graph/session_basic.h"
 #include "include/runtime/utils/runtime_conf/runtime_conf.h"
 #include "pynative/backward/grad_utils.h"

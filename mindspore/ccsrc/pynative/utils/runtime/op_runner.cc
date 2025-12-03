@@ -32,7 +32,7 @@
 #include "ir/device_type.h"
 #include "ir/map_tensor.h"
 #include "include/utils/convert_utils.h"
-#include "backend/common/device_address_utils.h"
+#include "include/backend/common/device_address_utils.h"
 #include "pynative/utils/runtime/op_runtime_info.h"
 #include "pynative/utils/runtime/op_executor.h"
 #include "pynative/utils/runtime/op_compiler.h"

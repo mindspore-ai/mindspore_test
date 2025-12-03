@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef MINDSPORE_CCSRC_RUNTIME_DEVICE_MS_DEVICE_SHAPE_TRANSFER_H_
-#define MINDSPORE_CCSRC_RUNTIME_DEVICE_MS_DEVICE_SHAPE_TRANSFER_H_
+#ifndef MINDSPORE_CCSRC_INCLUDE_BACKEND_COMMON_MS_DEVICE_SHAPE_TRANSFER_H_
+#define MINDSPORE_CCSRC_INCLUDE_BACKEND_COMMON_MS_DEVICE_SHAPE_TRANSFER_H_
 #include <algorithm>
 #include <functional>
 #include <map>
@@ -466,4 +466,4 @@ class BACKEND_COMMON_EXPORT FormatHelper {
 }  // namespace trans
 }  // namespace mindspore
 
-#endif  // MINDSPORE_CCSRC_RUNTIME_DEVICE_MS_DEVICE_SHAPE_TRANSFER_H_
+#endif  // MINDSPORE_CCSRC_INCLUDE_BACKEND_COMMON_MS_DEVICE_SHAPE_TRANSFER_H_

@@ -27,7 +27,7 @@
 #include <string>
 
 #include "include/runtime/hardware_abstract/stream/multi_stream_controller.h"
-#include "backend/common/device_address_utils.h"
+#include "include/backend/common/device_address_utils.h"
 #include "runtime/core/actors/base/memory_manager_actor.h"
 #include "runtime/core/actors/base/output_actor.h"
 #include "runtime/core/actors/base/recorder_actor.h"

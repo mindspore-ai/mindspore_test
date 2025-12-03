@@ -24,7 +24,7 @@
 #include "primitive/nn_op_name.h"
 #include "primitive/structure_op_name.h"
 #include "include/utils/parallel_context.h"
-#include "backend/common/kernel_graph/session_factory.h"
+#include "include/backend/common/kernel_graph/session_factory.h"
 #include "include/backend/common/pass_manager/helper.h"
 #include "include/frontend/jit/ps/action_interface.h"
 #include "backend/common/kernel_graph/jit_call_graph.h"
@@ -46,7 +46,7 @@
 #include "include/cluster/topology/ps_context.h"
 #endif
 
-#include "backend/common/device_address_utils.h"
+#include "include/backend/common/device_address_utils.h"
 #include "backend/common/pass_manager/dynamic_shape_helper.h"
 #include "include/runtime/pipeline/pipeline.h"
 #include "include/runtime/pipeline/task/run_graph_task.h"
