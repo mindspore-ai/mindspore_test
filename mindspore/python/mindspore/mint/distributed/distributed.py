@@ -96,7 +96,7 @@ safe_builtins = {
 
 def get_cache_group_size(group=GlobalComm.WORLD_COMM_GROUP):
     """get cache group size."""
-    global _GROPU_SIZE_CACHE
+    global _GROPU_SIZE_CACHE # pylint: disable=global-variable-not-assigned
     if group not in _GROPU_SIZE_CACHE:
         _GROPU_SIZE_CACHE[group] = _get_size_helper(group)
     group_size = _GROPU_SIZE_CACHE[group]
@@ -105,7 +105,7 @@ def get_cache_group_size(group=GlobalComm.WORLD_COMM_GROUP):
 
 def get_cache_group_rank(group=GlobalComm.WORLD_COMM_GROUP):
     """get cache rank id."""
-    global _GROPU_RANK_CACHE
+    global _GROPU_RANK_CACHE # pylint: disable=global-variable-not-assigned
     if group not in _GROPU_RANK_CACHE:
         _GROPU_RANK_CACHE[group] = _get_rank_helper(group)
     group_rank = _GROPU_RANK_CACHE[group]
@@ -185,17 +185,8 @@ class TCPStore:
         ``Ascend``
 
     Examples:
-        .. note::
-            Before running the following examples, you need to configure the communication environment variables.
-
-            For Ascend devices, it is recommended to use the msrun startup method
-            without any third-party or configuration file dependencies.
-            Please see the `msrun start up
-            <https://www.mindspore.cn/tutorials/en/master/parallel/msrun_launcher.html>`_
-            for more details.
-
         >>> from mindspore.mint.distributed import TCPStore
-        >>> store = TCPStore("127.0.0.1", 1234)
+        >>> store = TCPStore("127.0.0.1", 1234, is_master=True)
     """
 
     def __init__(self, host_name, port, world_size=None, is_master=False, timeout=timedelta(seconds=300),
@@ -271,17 +262,8 @@ class TCPStore:
             ``Ascend``
 
         Examples:
-            .. note::
-                Before running the following examples, you need to configure the communication environment variables.
-
-                For Ascend devices, it is recommended to use the msrun startup method
-                without any third-party or configuration file dependencies.
-                Please see the `msrun start up
-                <https://www.mindspore.cn/tutorials/en/master/parallel/msrun_launcher.html>`_
-                for more details.
-
             >>> from mindspore.mint.distributed import TCPStore
-            >>> store = TCPStore("127.0.0.1", 1234)
+            >>> store = TCPStore("127.0.0.1", 1234, is_master=True)
             >>> store.add("first_key", 1)
         """
         if not isinstance(key, str):
@@ -315,17 +297,8 @@ class TCPStore:
             ``Ascend``
 
         Examples:
-            .. note::
-                Before running the following examples, you need to configure the communication environment variables.
-
-                For Ascend devices, it is recommended to use the msrun startup method
-                without any third-party or configuration file dependencies.
-                Please see the `msrun start up
-                <https://www.mindspore.cn/tutorials/en/master/parallel/msrun_launcher.html>`_
-                for more details.
-
             >>> from mindspore.mint.distributed import TCPStore
-            >>> store = TCPStore("127.0.0.1", 1234)
+            >>> store = TCPStore("127.0.0.1", 1234, is_master=True)
             >>> store.set("first_key", "first_value")
         """
         if not isinstance(key, str):
@@ -361,17 +334,8 @@ class TCPStore:
             ``Ascend``
 
         Examples:
-            .. note::
-                Before running the following examples, you need to configure the communication environment variables.
-
-                For Ascend devices, it is recommended to use the msrun startup method
-                without any third-party or configuration file dependencies.
-                Please see the `msrun start up
-                <https://www.mindspore.cn/tutorials/en/master/parallel/msrun_launcher.html>`_
-                for more details.
-
             >>> from mindspore.mint.distributed import TCPStore
-            >>> store = TCPStore("127.0.0.1", 1234)
+            >>> store = TCPStore("127.0.0.1", 1234, is_master=True)
             >>> store.set("first_key", "first_value")
             >>> data = store.get("first_key")
             >>> print(data)
@@ -402,17 +366,8 @@ class TCPStore:
             ``Ascend``
 
         Examples:
-            .. note::
-                Before running the following examples, you need to configure the communication environment variables.
-
-                For Ascend devices, it is recommended to use the msrun startup method
-                without any third-party or configuration file dependencies.
-                Please see the `msrun start up
-                <https://www.mindspore.cn/tutorials/en/master/parallel/msrun_launcher.html>`_
-                for more details.
-
             >>> from mindspore.mint.distributed import TCPStore
-            >>> store = TCPStore("127.0.0.1", 1234)
+            >>> store = TCPStore("127.0.0.1", 1234, is_master=True)
             >>> store.set("first_key", "first_value")
             >>> # This should return true
             >>> store.delete_key("first_key")
@@ -1794,7 +1749,7 @@ def batch_isend_irecv(p2p_op_list):
     remotes_ranks = []
     tags = []
     if not p2p_op_list:
-        raise TypeError(f"p2p_op_list can not be empty list.")
+        raise TypeError("p2p_op_list can not be empty list.")
     for _, p2p_op in enumerate(p2p_op_list):
         if not isinstance(p2p_op, P2POp):
             raise TypeError("The elements in p2p_op_list must be type of P2POp.")
@@ -3141,7 +3096,7 @@ def scatter_object_list(scatter_object_output_list, scatter_object_input_list, s
             "but got 'group' type : {}.".format(type(group))
         )
     if not isinstance(scatter_object_output_list, list) or not scatter_object_output_list:
-        raise TypeError(f"The scatter_object_output_list can not be empty.")
+        raise TypeError("The scatter_object_output_list can not be empty.")
     if not isinstance(src, int):
         raise TypeError("For scatter_object_list, the src must be int")
     group_size = get_cache_group_size(group)
@@ -3313,12 +3268,13 @@ def broadcast_object_list(object_list, src=0, group=None, device=None):
     if not isinstance(src, int):
         raise TypeError("For broadcast_object_list, the src must be int")
     if not isinstance(object_list, list) or not object_list:
-        raise TypeError(f"The object_list can not be empty.")
+        raise TypeError("The object_list can not be empty.")
     rank_id = get_cache_group_rank()
     tensor_sizes = []
     tensor_list = []
     size = 0
     object_size_list = [Tensor([0], dtype=mstype.int32) for i in range(len(object_list))]
+    object_tensor = None
     if rank_id == src:
         tensor_list, tensor_sizes = zip(
             *[_object_to_tensor(obj) for obj in object_list]
