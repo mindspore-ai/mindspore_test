@@ -451,17 +451,8 @@ class TCPStore:
         ``Ascend``
 
     Examples:
-        .. note::
-            Before running the following examples, you need to configure the communication environment variables.
-
-            For Ascend devices, it is recommended to use the msrun startup method
-            without any third-party or configuration file dependencies.
-            Please see the `msrun start up
-            <https://www.mindspore.cn/tutorials/en/master/parallel/msrun_launcher.html>`_
-            for more details.
-
         >>> from mindspore.ops.communication import TCPStore
-        >>> store = TCPStore("127.0.0.1", 1234)
+        >>> store = TCPStore("127.0.0.1", 1234, is_master=True)
     """
 
     def __init__(self, host_name, port, world_size=None, is_master=False, timeout=timedelta(seconds=300),
@@ -537,17 +528,8 @@ class TCPStore:
             ``Ascend``
 
         Examples:
-            .. note::
-                Before running the following examples, you need to configure the communication environment variables.
-
-                For Ascend devices, it is recommended to use the msrun startup method
-                without any third-party or configuration file dependencies.
-                Please see the `msrun start up
-                <https://www.mindspore.cn/tutorials/en/master/parallel/msrun_launcher.html>`_
-                for more details.
-
             >>> from mindspore.ops.communication import TCPStore
-            >>> store = TCPStore("127.0.0.1", 1234)
+            >>> store = TCPStore("127.0.0.1", 1234, is_master=True)
             >>> store.add("first_key", 1)
         """
         if not isinstance(key, str):
@@ -581,17 +563,8 @@ class TCPStore:
             ``Ascend``
 
         Examples:
-            .. note::
-                Before running the following examples, you need to configure the communication environment variables.
-
-                For Ascend devices, it is recommended to use the msrun startup method
-                without any third-party or configuration file dependencies.
-                Please see the `msrun start up
-                <https://www.mindspore.cn/tutorials/en/master/parallel/msrun_launcher.html>`_
-                for more details.
-
             >>> from mindspore.ops.communication import TCPStore
-            >>> store = TCPStore("127.0.0.1", 1234)
+            >>> store = TCPStore("127.0.0.1", 1234, is_master=True)
             >>> store.set("first_key", "first_value")
         """
         if not isinstance(key, str):
@@ -627,17 +600,8 @@ class TCPStore:
             ``Ascend``
 
         Examples:
-            .. note::
-                Before running the following examples, you need to configure the communication environment variables.
-
-                For Ascend devices, it is recommended to use the msrun startup method
-                without any third-party or configuration file dependencies.
-                Please see the `msrun start up
-                <https://www.mindspore.cn/tutorials/en/master/parallel/msrun_launcher.html>`_
-                for more details.
-
             >>> from mindspore.ops.communication import TCPStore
-            >>> store = TCPStore("127.0.0.1", 1234)
+            >>> store = TCPStore("127.0.0.1", 1234, is_master=True)
             >>> store.set("first_key", "first_value")
             >>> data = store.get("first_key")
             >>> print(data)
@@ -668,17 +632,8 @@ class TCPStore:
             ``Ascend``
 
         Examples:
-            .. note::
-                Before running the following examples, you need to configure the communication environment variables.
-
-                For Ascend devices, it is recommended to use the msrun startup method
-                without any third-party or configuration file dependencies.
-                Please see the `msrun start up
-                <https://www.mindspore.cn/tutorials/en/master/parallel/msrun_launcher.html>`_
-                for more details.
-
             >>> from mindspore.ops.communication import TCPStore
-            >>> store = TCPStore("127.0.0.1", 1234)
+            >>> store = TCPStore("127.0.0.1", 1234, is_master=True)
             >>> store.set("first_key", "first_value")
             >>> # This should return true
             >>> store.delete_key("first_key")
