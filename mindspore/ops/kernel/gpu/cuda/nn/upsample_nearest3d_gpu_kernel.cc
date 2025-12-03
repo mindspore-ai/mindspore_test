@@ -23,7 +23,7 @@
 #include <utility>
 #include <vector>
 #include "include/runtime/hardware_abstract/kernel_base/kernel.h"
-#include "include/runtime/hardware_abstract/kernel_base/kernel_utils.h"
+#include "mindspore/ops/ops_utils/op_utils.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/upsample_nearest_3d_impl.cuh"
 #include "utils/log_adapter.h"
 
@@ -85,9 +85,9 @@ bool UpsampleNearest3dGpuKernelMod::LaunchKernel(const std::vector<KernelTensor 
   auto output = GetDeviceAddress<T>(outputs, kIndex0);
   MS_EXCEPTION_IF_NULL(output);
 
-  const float scale_d = ComputeScales<float>(scales_[kIndex0], input_shape_[kIndex2], output_shape_[kIndex2]);
-  const float scale_h = ComputeScales<float>(scales_[kIndex1], input_shape_[kIndex3], output_shape_[kIndex3]);
-  const float scale_w = ComputeScales<float>(scales_[kIndex2], input_shape_[kIndex4], output_shape_[kIndex4]);
+  const float scale_d = ops::ComputeScales<float>(scales_[kIndex0], input_shape_[kIndex2], output_shape_[kIndex2]);
+  const float scale_h = ops::ComputeScales<float>(scales_[kIndex1], input_shape_[kIndex3], output_shape_[kIndex3]);
+  const float scale_w = ops::ComputeScales<float>(scales_[kIndex2], input_shape_[kIndex4], output_shape_[kIndex4]);
   auto status = CalUpsampleNearest3d<T>(input, input_shape_[kIndex0], input_shape_[kIndex1], input_shape_[kIndex2],
                                         input_shape_[kIndex3], input_shape_[kIndex4], output_shape_[kIndex2],
                                         output_shape_[kIndex3], output_shape_[kIndex4], scale_d, scale_h, scale_w,

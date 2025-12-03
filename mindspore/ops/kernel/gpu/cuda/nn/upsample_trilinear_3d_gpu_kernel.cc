@@ -23,7 +23,7 @@
 #include <utility>
 #include <vector>
 #include "include/runtime/hardware_abstract/kernel_base/kernel.h"
-#include "include/runtime/hardware_abstract/kernel_base/kernel_utils.h"
+#include "mindspore/ops/ops_utils/op_utils.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/upsample_trilinear_3d_impl.cuh"
 
 namespace mindspore {
@@ -93,9 +93,9 @@ bool UpsampleTrilinear3DGpuKernelMod::LaunchKernel(const std::vector<KernelTenso
   auto y_ptr = GetDeviceAddress<T>(outputs, kIndex0);
   MS_EXCEPTION_IF_NULL(y_ptr);
 
-  const S depth_scale = AreaPixelComputeScale<S>(input_d_, output_d_, align_corners_, scales_[kIndex0]);
-  const S height_scale = AreaPixelComputeScale<S>(input_h_, output_h_, align_corners_, scales_[kIndex1]);
-  const S width_scale = AreaPixelComputeScale<S>(input_w_, output_w_, align_corners_, scales_[kIndex2]);
+  const S depth_scale = ops::AreaPixelComputeScale<S>(input_d_, output_d_, align_corners_, scales_[kIndex0]);
+  const S height_scale = ops::AreaPixelComputeScale<S>(input_h_, output_h_, align_corners_, scales_[kIndex1]);
+  const S width_scale = ops::AreaPixelComputeScale<S>(input_w_, output_w_, align_corners_, scales_[kIndex2]);
 
   auto status = CalUpsampleTrilinear3D<T, S>(x_ptr, n_, c_, input_d_, input_h_, input_w_, output_d_, output_h_,
                                              output_w_, depth_scale, height_scale, width_scale, align_corners_, y_ptr,
