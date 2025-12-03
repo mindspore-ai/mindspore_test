@@ -668,7 +668,7 @@ def check_event_record_wait(node):
                 method = func.attr
                 target = func.value
                 logger.debug("Expand expr, target:%s, method:%s", target, method)
-                if method == "record" or method == "wait":
+                if method in ("record", "wait"):
                     return target
     return None
 
