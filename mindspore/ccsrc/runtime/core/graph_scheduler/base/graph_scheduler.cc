@@ -2490,13 +2490,28 @@ void GraphScheduler::LinkDataArrowForInternalParameter(AbstractActor *const, Abs
     // front node ---> actor.
     if (graph_output_to_actor_.count(front_output_with_index) == 0) {
       MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, front_output_node)
-        << "#dmsg#Runtime error info:#dmsg#Can't find actor by front node:"
-        << common::AnfAlgo::GetNodeDebugString(front_output_node)
-        << ", internal parameter:" << common::AnfAlgo::GetNodeDebugString(internal_parameter);
+        << "#dmsg#Runtime error info:#dmsg#Can't find actor by front node:" << front_output_node->DebugString()
+        << ", internal parameter:" << internal_parameter->DebugString();
     }
     auto actor_pair = graph_output_to_actor_[front_output_with_index];
-    MS_EXCEPTION_IF_NULL(actor_pair.first);
+    real_from_actor = actor_pair.first;
     MS_EXCEPTION_IF_NULL(actor_pair.second.first);
+    real_from_kernel_with_output_idx = common::AnfAlgo::FetchRealNodeSkipMonadControl(actor_pair.second);
+    if (real_from_actor == nullptr) {
+      if (!actor_pair.second.first->isa<ValueNode>()) {
+        MS_LOG(EXCEPTION) << "Cannot get from actor by front node:" << front_output_node->DebugString()
+                          << " index:" << front_output_with_index.second
+                          << " for internal parameter:" << internal_parameter->DebugString()
+                          << " to actor:" << to_actor->GetAID();
+      }
+      MS_LOG(INFO) << "Cannot get from actor by front node:" << front_output_node->DebugString()
+                   << " index:" << front_output_with_index.second
+                   << " for internal parameter:" << internal_parameter->DebugString()
+                   << " to actor:" << to_actor->GetAID() << " and check the device tensor store.";
+      LinkDataArrowForDeviceTensorStore(real_from_actor, to_actor, real_from_kernel_with_output_idx,
+                                        to_kernel_with_input_idx, graph);
+      return;
+    }
     MS_LOG(INFO) << "Graph " << graph->graph_id() << " internal parameter:" << internal_parameter->DebugString()
                  << ", corresponding front node:" << front_output_node->fullname_with_scope()
                  << " with index:" << front_output_with_index.second
@@ -2504,9 +2519,7 @@ void GraphScheduler::LinkDataArrowForInternalParameter(AbstractActor *const, Abs
                  << " node:" << actor_pair.second.first->fullname_with_scope()
                  << " with index:" << actor_pair.second.second << ", to actor:" << to_actor->GetAID().Name()
                  << " with index:" << to_kernel_with_input_idx.second;
-    real_from_actor = actor_pair.first;
     // The data arrow need skip the monad node.
-    real_from_kernel_with_output_idx = common::AnfAlgo::FetchRealNodeSkipMonadControl(actor_pair.second);
     kernel_type = actor_pair.first->type_;
 
     // The format of internal parameter need update in the heterogeneous scene.
