@@ -420,7 +420,7 @@ bool OverlapGradReduce::DoOverlapGradReduce(const KernelGraphPtr &kernel_graph, 
     return false;
   }
   if (grad_reduce_user_list.empty()) {
-    MS_LOG(WARNING) << "grad_reduce_user_list is empty, no need to optimize, skip it.";
+    MS_LOG(DEBUG) << "grad_reduce_user_list is empty, no need to optimize, skip it.";
     return false;
   }
   auto manager = kernel_graph->manager();
