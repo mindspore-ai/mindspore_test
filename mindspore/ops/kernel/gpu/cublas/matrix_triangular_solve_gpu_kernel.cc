@@ -99,7 +99,8 @@ void BroadcastBatchIndices(const std::vector<int64_t> &a_batch_shape, const std:
                            std::vector<int64_t> batch_shape, std::vector<int64_t> *a_broadcast_indices,
                            std::vector<int64_t> *b_broadcast_indices) {
   // compute intermediate variables
-  size_t batch_elements = std::accumulate(batch_shape.begin(), batch_shape.end(), 1, std::multiplies<int64_t>());
+  size_t batch_elements =
+    std::accumulate(batch_shape.begin(), batch_shape.end(), static_cast<int64_t>(1), std::multiplies<int64_t>());
   size_t rank = batch_shape.size();
   std::vector<int64_t> a_reshape = a_batch_shape;
   std::vector<int64_t> b_reshape = b_batch_shape;
@@ -169,9 +170,12 @@ int MatrixTriangularSolveGpuKernelMod::Resize(const std::vector<KernelTensor *> 
 
   std::vector<int64_t> a_shape = std::vector<int64_t>(inputs.at(kIndex0)->GetShapeVector());
   std::vector<int64_t> b_shape = std::vector<int64_t>(inputs.at(kIndex1)->GetShapeVector());
-  size_t a_elements = std::accumulate(a_shape.begin(), a_shape.end(), 1, std::multiplies<int64_t>());
-  size_t b_elements = std::accumulate(b_shape.begin(), b_shape.end(), 1, std::multiplies<int64_t>());
-  size_t output_elements = std::accumulate(output_shape.begin(), output_shape.end(), 1, std::multiplies<int64_t>());
+  size_t a_elements =
+    std::accumulate(a_shape.begin(), a_shape.end(), static_cast<int64_t>(1), std::multiplies<int64_t>());
+  size_t b_elements =
+    std::accumulate(b_shape.begin(), b_shape.end(), static_cast<int64_t>(1), std::multiplies<int64_t>());
+  size_t output_elements =
+    std::accumulate(output_shape.begin(), output_shape.end(), static_cast<int64_t>(1), std::multiplies<int64_t>());
   m_ = a_shape[a_shape.size() - 1];
   n_ = b_shape[b_shape.size() - 1];
   a_batch_num_ = static_cast<int64_t>(a_elements / (m_ * m_));

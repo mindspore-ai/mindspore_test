@@ -69,7 +69,8 @@ BaseShapePtr Unique2FuncImpl::InferShape(const PrimitivePtr &primitive,
   MS_EXCEPTION_IF_NULL(shape_x);
   auto x_shape_vector = shape_x->GetShapeVector();
 
-  auto y_max_shape = std::accumulate(x_shape_vector.begin(), x_shape_vector.end(), 1, std::multiplies<int64_t>());
+  auto y_max_shape =
+    std::accumulate(x_shape_vector.begin(), x_shape_vector.end(), static_cast<int64_t>(1), std::multiplies<int64_t>());
   abstract::BaseShapePtr out_shape_ptr = std::make_shared<abstract::Shape>(ShapeVector{y_max_shape});
 
   // indices, when return_inverse=false, its still this shape, otherwise cann will raise error
@@ -96,7 +97,8 @@ ShapeArray Unique2FuncImpl::InferShape(const PrimitivePtr &primitive, const Valu
   const auto &x_tensor = input_values[kIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(x_tensor);
   auto x_shape_vector = x_tensor->shape();
-  auto y_max_shape = std::accumulate(x_shape_vector.begin(), x_shape_vector.end(), 1, std::multiplies<int64_t>());
+  auto y_max_shape =
+    std::accumulate(x_shape_vector.begin(), x_shape_vector.end(), static_cast<int64_t>(1), std::multiplies<int64_t>());
 
   return {ShapeVector{y_max_shape}, x_shape_vector, ShapeVector{y_max_shape}};
 }

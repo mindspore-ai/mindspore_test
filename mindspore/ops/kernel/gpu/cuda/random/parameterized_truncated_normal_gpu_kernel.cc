@@ -81,11 +81,16 @@ int ParameterizedTruncatedNormalGpuKernelMod::Resize(const std::vector<KernelTen
                                                         inputs.at(kIndex3)->GetDeviceShapeVector().end());
   std::vector<int64_t> max_shape = std::vector<int64_t>(inputs.at(kIndex4)->GetDeviceShapeVector().begin(),
                                                         inputs.at(kIndex4)->GetDeviceShapeVector().end());
-  int64_t mean_elements = std::accumulate(mean_shape.begin(), mean_shape.end(), 1, std::multiplies<int64_t>());
-  stdevs_elements_ = std::accumulate(stdevs_shape.begin(), stdevs_shape.end(), 1, std::multiplies<int64_t>());
-  int64_t min_elements = std::accumulate(min_shape.begin(), min_shape.end(), 1, std::multiplies<int64_t>());
-  int64_t max_elements = std::accumulate(max_shape.begin(), max_shape.end(), 1, std::multiplies<int64_t>());
-  output_elements_ = std::accumulate(output_shape.begin(), output_shape.end(), 1, std::multiplies<int64_t>());
+  int64_t mean_elements =
+    std::accumulate(mean_shape.begin(), mean_shape.end(), static_cast<int64_t>(1), std::multiplies<int64_t>());
+  stdevs_elements_ =
+    std::accumulate(stdevs_shape.begin(), stdevs_shape.end(), static_cast<int64_t>(1), std::multiplies<int64_t>());
+  int64_t min_elements =
+    std::accumulate(min_shape.begin(), min_shape.end(), static_cast<int64_t>(1), std::multiplies<int64_t>());
+  int64_t max_elements =
+    std::accumulate(max_shape.begin(), max_shape.end(), static_cast<int64_t>(1), std::multiplies<int64_t>());
+  output_elements_ =
+    std::accumulate(output_shape.begin(), output_shape.end(), static_cast<int64_t>(1), std::multiplies<int64_t>());
 
   scalar_mean_ = (mean_elements == 1);
   scalar_stdevs_ = (stdevs_elements_ == 1);

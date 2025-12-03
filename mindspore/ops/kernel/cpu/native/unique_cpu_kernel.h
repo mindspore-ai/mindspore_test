@@ -152,8 +152,8 @@ class UniqueCpuKernelMod : public NativeCpuKernelMod {
                              "but got the shape of 'input': "
                           << input_shape << " and 'batch_rank': " << batch_rank_;
       }
-      batch_size_ =
-        std::accumulate(input_shape.begin(), input_shape.begin() + batch_rank_, 1, std::multiplies<int64_t>());
+      batch_size_ = std::accumulate(input_shape.begin(), input_shape.begin() + batch_rank_, static_cast<int64_t>(1),
+                                    std::multiplies<int64_t>());
       input_size_ = static_cast<size_t>(input_shape[batch_rank_]);
     }
     if (primitive_->HasAttr(SORTED)) {

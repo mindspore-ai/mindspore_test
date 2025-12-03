@@ -68,8 +68,10 @@ int InplaceOpGpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs,
     band_size_ *= input_shape_x[i];
   }
   first_dimension_ = input_shape_x[kIndex0];
-  input_elements_x = std::accumulate(input_shape_x.begin(), input_shape_x.end(), 1, std::multiplies<int64_t>());
-  input_elements_v = std::accumulate(input_shape_v.begin(), input_shape_v.end(), 1, std::multiplies<int64_t>());
+  input_elements_x =
+    std::accumulate(input_shape_x.begin(), input_shape_x.end(), static_cast<int64_t>(1), std::multiplies<int64_t>());
+  input_elements_v =
+    std::accumulate(input_shape_v.begin(), input_shape_v.end(), static_cast<int64_t>(1), std::multiplies<int64_t>());
   size_t input_size_x = input_elements_x * unit_size_;
   size_t indices_size = indices_.size() * sizeof(int64_t);
   output_size_list_.push_back(input_size_x);

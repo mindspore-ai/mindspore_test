@@ -88,9 +88,10 @@ abstract::TupleShapePtr UniqueWithPadInferShape(const PrimitivePtr &primitive,
 
   constexpr int64_t kNumZero = 0;
   if (!is_dynamic && batch_rank != kNumZero) {
-    auto pad_num = std::accumulate(pad_shape.begin(), pad_shape.end(), 1, std::multiplies<int64_t>());
-    auto input_batch =
-      std::accumulate(x_shape.begin(), x_shape.begin() + SizeToLong(batch_rank), 1, std::multiplies<int64_t>());
+    auto pad_num =
+      std::accumulate(pad_shape.begin(), pad_shape.end(), static_cast<int64_t>(1), std::multiplies<int64_t>());
+    auto input_batch = std::accumulate(x_shape.begin(), x_shape.begin() + SizeToLong(batch_rank),
+                                       static_cast<int64_t>(1), std::multiplies<int64_t>());
     (void)CheckAndConvertUtils::CheckInteger("elements num of input 'pad'", pad_num, kEqual, input_batch, prim_name);
   }
   auto x_shape_ptr = std::make_shared<abstract::Shape>(x_shape);

@@ -597,7 +597,8 @@ void BlockInvalid(const PrimitivePtr &primitive, const std::vector<AbstractBaseP
   auto x_type_id = x_type->element()->type_id();
   auto need_block = type_to_blocksize_map.find(x_type_id) != type_to_blocksize_map.end();
   if (need_block && !IsDynamic(out_shape)) {
-    auto output_size = std::accumulate(out_shape.cbegin(), out_shape.cend(), 1, std::multiplies<int64_t>());
+    auto output_size =
+      std::accumulate(out_shape.cbegin(), out_shape.cend(), static_cast<int64_t>(1), std::multiplies<int64_t>());
     auto valid_min_size = type_to_blocksize_map[x_type_id] * kKernelSize;
     if (output_size < valid_min_size) {
       MS_EXCEPTION(ValueError)

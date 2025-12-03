@@ -124,7 +124,8 @@ int ApplyFtrlCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs,
   }
 
   if (!lr_shape.empty()) {
-    batch_size_ = std::accumulate(lr_shape.begin(), lr_shape.end(), 1, std::multiplies<int64_t>());
+    batch_size_ =
+      std::accumulate(lr_shape.begin(), lr_shape.end(), static_cast<int64_t>(1), std::multiplies<int64_t>());
   }
 
   if (batch_size_ <= 0) {
@@ -133,7 +134,8 @@ int ApplyFtrlCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs,
     return KRET_RESIZE_FAILED;
   }
 
-  int64_t temp_elements_ = std::accumulate(var_shape.begin(), var_shape.end(), 1, std::multiplies<int64_t>());
+  int64_t temp_elements_ =
+    std::accumulate(var_shape.begin(), var_shape.end(), static_cast<int64_t>(1), std::multiplies<int64_t>());
   input_elements_ = static_cast<size_t>(temp_elements_ / batch_size_);
 
   return 0;
@@ -214,19 +216,17 @@ bool ApplyFtrlCpuKernelMod::Launch(const std::vector<kernel::KernelTensor *> &in
 }
 
 #define APPLY_FTRL_ADD_KERNEL_FTRL(input_dtype) \
-  {                                             \
-    KernelAttr()                                \
-      .AddInputAttr(kNumberType##input_dtype)   \
-      .AddInputAttr(kNumberType##input_dtype)   \
-      .AddInputAttr(kNumberType##input_dtype)   \
-      .AddInputAttr(kNumberType##input_dtype)   \
-      .AddInputAttr(kNumberType##input_dtype)   \
-      .AddInputAttr(kNumberType##input_dtype)   \
-      .AddInputAttr(kNumberType##input_dtype)   \
-      .AddInputAttr(kNumberType##input_dtype)   \
-      .AddOutputAttr(kNumberType##input_dtype)  \
-      .AddOutInRef(0, 0)                        \
-  }
+  {KernelAttr()                                 \
+     .AddInputAttr(kNumberType##input_dtype)    \
+     .AddInputAttr(kNumberType##input_dtype)    \
+     .AddInputAttr(kNumberType##input_dtype)    \
+     .AddInputAttr(kNumberType##input_dtype)    \
+     .AddInputAttr(kNumberType##input_dtype)    \
+     .AddInputAttr(kNumberType##input_dtype)    \
+     .AddInputAttr(kNumberType##input_dtype)    \
+     .AddInputAttr(kNumberType##input_dtype)    \
+     .AddOutputAttr(kNumberType##input_dtype)   \
+     .AddOutInRef(0, 0)}
 
 std::vector<KernelAttr> ApplyFtrlCpuKernelMod::GetOpSupport() {
   static std::vector<KernelAttr> support_list = {

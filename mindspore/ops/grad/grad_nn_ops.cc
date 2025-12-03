@@ -384,13 +384,8 @@ REG_BPROP_BUILDER("Conv2DExt").SetUnusedInputs({i7}).SetBody(BODYFUNC(ib) {
   auto &batchfy = ret_batchfy[i0];
   auto batchfy_conditional = ib->Equal(ib->TupleGetItem(batchfy, i0), ib->Value<int64_t>(1));
   auto cond_out_batchfy = ib->Conditional(
-    batchfy_conditional,
-    [&](Emitter *e) -> NodePtrList {
-      return {x, dout};
-    },
-    [&](Emitter *e) -> NodePtrList {
-      return {e->ExpandDims(x, i0), e->ExpandDims(dout, i0)};
-    });
+    batchfy_conditional, [&](Emitter *e) -> NodePtrList { return {x, dout}; },
+    [&](Emitter *e) -> NodePtrList { return {e->ExpandDims(x, i0), e->ExpandDims(dout, i0)}; });
   nx = ib->TupleGetItem(cond_out_batchfy, i0);
   ndout = ib->TupleGetItem(cond_out_batchfy, i1);
 
@@ -476,9 +471,7 @@ DEF_PURE_SHAPE_CALC(g_conv2d_padding_shapecalc)
       return {{symmetric_padding}, pad_nd, padding_l, padding_neg_pad, {batchfy_value}};
     }
   })
-  .SetInfer([](const ShapeArray &inputs, const HashSet<size_t> &) -> std::vector<int64_t> {
-    return {1, 4, 2, 4, 1};
-  });
+  .SetInfer([](const ShapeArray &inputs, const HashSet<size_t> &) -> std::vector<int64_t> { return {1, 4, 2, 4, 1}; });
 
 REG_BPROP_BUILDER("Conv2DPadding").SetUnusedInputs({i7}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(i0);
@@ -507,13 +500,8 @@ REG_BPROP_BUILDER("Conv2DPadding").SetUnusedInputs({i7}).SetBody(BODYFUNC(ib) {
   auto batchfy_conditional = ib->Equal(ib->TupleGetItem(batchfy, 0), ib->Value<int64_t>(1));
 
   auto conv_out_batchfy = ib->Conditional(
-    batchfy_conditional,
-    [&](Emitter *e) -> NodePtrList {
-      return {x, dout};
-    },
-    [&](Emitter *e) -> NodePtrList {
-      return {e->ExpandDims(x, 0), e->ExpandDims(dout, 0)};
-    });
+    batchfy_conditional, [&](Emitter *e) -> NodePtrList { return {x, dout}; },
+    [&](Emitter *e) -> NodePtrList { return {e->ExpandDims(x, 0), e->ExpandDims(dout, 0)}; });
 
   auto batchfy_x = ib->TupleGetItem(conv_out_batchfy, 0);
   auto batchfy_dout = ib->TupleGetItem(conv_out_batchfy, 1);
@@ -635,13 +623,8 @@ REG_BPROP_BUILDER("Conv3DExt").SetUnusedInputs({i7}).SetBody(BODYFUNC(ib) {
   auto &batchfy = ret_batchfy[i0];
   auto batchfy_conditional = ib->Equal(ib->TupleGetItem(batchfy, i0), ib->Value<int64_t>(1));
   auto cond_out_batchfy = ib->Conditional(
-    batchfy_conditional,
-    [&](Emitter *e) -> NodePtrList {
-      return {x, dout};
-    },
-    [&](Emitter *e) -> NodePtrList {
-      return {e->ExpandDims(x, i0), e->ExpandDims(dout, i0)};
-    });
+    batchfy_conditional, [&](Emitter *e) -> NodePtrList { return {x, dout}; },
+    [&](Emitter *e) -> NodePtrList { return {e->ExpandDims(x, i0), e->ExpandDims(dout, i0)}; });
   nx = ib->TupleGetItem(cond_out_batchfy, i0);
   ndout = ib->TupleGetItem(cond_out_batchfy, i1);
 
@@ -723,9 +706,7 @@ DEF_PURE_SHAPE_CALC(g_convolution_str_shapecalc)
       return {{symmetric_padding}, pad_nd, padding_l, padding_neg_pad};
     }
   })
-  .SetInfer([](const ShapeArray &inputs, const HashSet<size_t> &) -> std::vector<int64_t> {
-    return {1, 4, 2, 4};
-  });
+  .SetInfer([](const ShapeArray &inputs, const HashSet<size_t> &) -> std::vector<int64_t> { return {1, 4, 2, 4}; });
 
 REG_BPROP_BUILDER("ConvolutionStr").SetUnusedInputs({i9}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(i0);
@@ -839,13 +820,8 @@ REG_BPROP_BUILDER("Conv1DExt").SetUnusedInputs({i7}).SetBody(BODYFUNC(ib) {
   auto &batchfy = ret_batchfy[i0];
   auto batchfy_conditional = ib->Equal(ib->TupleGetItem(batchfy, i0), ib->Value<int64_t>(1));
   auto cond_out_batchfy = ib->Conditional(
-    batchfy_conditional,
-    [&](Emitter *e) -> NodePtrList {
-      return {x, dout};
-    },
-    [&](Emitter *e) -> NodePtrList {
-      return {e->ExpandDims(x, i0), e->ExpandDims(dout, i0)};
-    });
+    batchfy_conditional, [&](Emitter *e) -> NodePtrList { return {x, dout}; },
+    [&](Emitter *e) -> NodePtrList { return {e->ExpandDims(x, i0), e->ExpandDims(dout, i0)}; });
   nx = ib->TupleGetItem(cond_out_batchfy, i0);
   ndout = ib->TupleGetItem(cond_out_batchfy, i1);
 
@@ -972,7 +948,7 @@ DEF_PURE_SHAPE_CALC(g_dense_shapecalc0)
     auto &dout_shape = inputs.at(i3);
 
     auto get_product_dim = [](const ShapeVector &shape) -> int64_t {
-      return std::accumulate(shape.begin(), shape.end() - 1, 1, std::multiplies<int64_t>());
+      return std::accumulate(shape.begin(), shape.end() - 1, static_cast<int64_t>(1), std::multiplies<int64_t>());
     };
 
     ShapeVector x_2d_shape = {get_product_dim(x_shape), x_shape.back()};
@@ -1131,9 +1107,7 @@ REG_BPROP_BUILDER("ThresholdGrad").FreeUselessValues(FreeTensorsOfThresholdGrad)
 });
 
 DEF_PURE_SHAPE_CALC(g_topk_1)
-  .SetCalc([](const ShapeArray &inputs) -> ShapeArray {
-    return {{-1, inputs.at(0).back()}};
-  })
+  .SetCalc([](const ShapeArray &inputs) -> ShapeArray { return {{-1, inputs.at(0).back()}}; })
   .SetInfer([](const ShapeArray &, const HashSet<size_t> &) -> std::vector<int64_t> { return {2}; });
 
 DEF_PURE_SHAPE_CALC(g_topk_2)
@@ -1141,13 +1115,11 @@ DEF_PURE_SHAPE_CALC(g_topk_2)
     auto in_shape = inputs.at(0);
     auto in_lastdim = in_shape.back();
     auto outerdim = inputs.at(1)[0];  // k
-    auto in_shape_1d_x =
-      ShapeVector(1, std::accumulate(in_shape.begin(), in_shape.end(), 1, std::multiplies<int64_t>()));
+    auto in_shape_1d_x = ShapeVector(
+      1, std::accumulate(in_shape.begin(), in_shape.end(), static_cast<int64_t>(1), std::multiplies<int64_t>()));
     return {in_shape_1d_x, {outerdim * in_lastdim}, {in_lastdim}};
   })
-  .SetInfer([](const ShapeArray &, const HashSet<size_t> &) -> std::vector<int64_t> {
-    return {1, 1, 1};
-  });
+  .SetInfer([](const ShapeArray &, const HashSet<size_t> &) -> std::vector<int64_t> { return {1, 1, 1}; });
 
 REG_BPROP_BUILDER("TopK").FreeUselessValues_IO({i0, i1}, {i0}).SetBody(BODYFUNC(ib) {
   auto input_x = ib->GetInput(i0);
@@ -1180,8 +1152,8 @@ REG_BPROP_BUILDER("TopK").FreeUselessValues_IO({i0, i1}, {i0}).SetBody(BODYFUNC(
       range_flatten_index_vec[static_cast<size_t>(i)] = i * in_lastdim;
     }
     auto range_flatten_index = ib->Tensor(range_flatten_index_vec, ib->GetDtype(indices));
-    auto in_shape_1d =
-      ib->Value(ShapeVector(1, std::accumulate(in_shape.begin(), in_shape.end(), 1, std::multiplies<int64_t>())));
+    auto in_shape_1d = ib->Value(ShapeVector(
+      1, std::accumulate(in_shape.begin(), in_shape.end(), static_cast<int64_t>(1), std::multiplies<int64_t>())));
     auto ind = ib->Reshape(ind_2d + ib->Reshape(range_flatten_index, {-1, 1}), {-1, 1});
     auto out_grad = ib->ScatterNd(ind, ib->Reshape(dout0, {-1}), in_shape_1d);
     out_grad = ib->Reshape(out_grad, in_shape);
@@ -1942,9 +1914,7 @@ DEF_PURE_SHAPE_CALC(g_max_pool_grad)
     auto w = x2_shape.at(i3);
     return {{b}, {b, -1}, {1, c * h * w}};
   })
-  .SetInfer([](const ShapeArray &, const HashSet<size_t> &) -> std::vector<int64_t> {
-    return {1, 2, 2};
-  });
+  .SetInfer([](const ShapeArray &, const HashSet<size_t> &) -> std::vector<int64_t> { return {1, 2, 2}; });
 REG_BPROP_BUILDER("MaxPoolGrad").SetUnusedInputs({i2, i3}).SetBody(BODYFUNC(ib) {
   auto device_target = ib->GetTargetFromContext();
   auto is_ascend = device_target == "Ascend";
@@ -2640,13 +2610,8 @@ REG_BPROP_BUILDER("BatchNorm").FreeUselessValues_IO({i2}, {i0, i1}).SetBody(BODY
     }
   } else {
     auto cond_out = ib->Conditional(
-      is_training,
-      [&out](Emitter *e) -> NodePtrList {
-        return {e->TupleGetItem(out, 3), e->TupleGetItem(out, 4)};
-      },
-      [&mean, &variance](Emitter *e) -> NodePtrList {
-        return {mean, variance};
-      });
+      is_training, [&out](Emitter *e) -> NodePtrList { return {e->TupleGetItem(out, 3), e->TupleGetItem(out, 4)}; },
+      [&mean, &variance](Emitter *e) -> NodePtrList { return {mean, variance}; });
     saved_mean = ib->TupleGetItem(cond_out, 0);
     saved_variance = ib->TupleGetItem(cond_out, 1);
   }
@@ -2761,13 +2726,8 @@ REG_BPROP_BUILDER("BatchNormGradExt").SetUnusedInputs({i3, i4, i9}).SetBody(BODY
     }
   } else {
     auto cond_out = ib->Conditional(
-      training,
-      [&saved_mean, &saved_rstd](Emitter *e) -> NodePtrList {
-        return {saved_mean, saved_rstd};
-      },
-      [&running_mean, &running_var](Emitter *e) -> NodePtrList {
-        return {running_mean, running_var};
-      });
+      training, [&saved_mean, &saved_rstd](Emitter *e) -> NodePtrList { return {saved_mean, saved_rstd}; },
+      [&running_mean, &running_var](Emitter *e) -> NodePtrList { return {running_mean, running_var}; });
     mean = ib->TupleGetItem(cond_out, 0);
     var = ib->TupleGetItem(cond_out, 1);
   }

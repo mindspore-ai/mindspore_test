@@ -3296,7 +3296,8 @@ bool AnfAlgo::IsNeededShape(const CNodePtr &cnode) {
     return true;
   }
   auto a2a_shape = cnode->input(kIndex1)->abstract()->GetShape()->GetShapeVector();
-  auto a2a_size = std::accumulate(a2a_shape.begin(), a2a_shape.end(), 1, std::multiplies<int64_t>());
+  auto a2a_size =
+    std::accumulate(a2a_shape.begin(), a2a_shape.end(), static_cast<int64_t>(1), std::multiplies<int64_t>());
   if (std::find(a2a_shape.begin(), a2a_shape.end(), -1) != a2a_shape.end()) {
     auto input_node = GetInputNode(cnode->input(kIndex1), [&](const CNodePtr &cnode) {
       bool filter = IsPrimitiveCNode(cnode, prim::kPrimDepend) || IsPrimitiveCNode(cnode, prim::kPrimLoad) ||
@@ -3310,8 +3311,8 @@ bool AnfAlgo::IsNeededShape(const CNodePtr &cnode) {
     if (input_cnode->input(kIndex1)->abstract() && input_cnode->input(kIndex1)->abstract()->isa<AbstractTensor>() &&
         input_cnode->input(kIndex1)->abstract()->GetShape()) {
       auto a2a_input_shape = input_cnode->input(kIndex1)->abstract()->GetShape()->GetShapeVector();
-      auto a2a_input_size =
-        std::accumulate(a2a_input_shape.begin(), a2a_input_shape.end(), 1, std::multiplies<int64_t>());
+      auto a2a_input_size = std::accumulate(a2a_input_shape.begin(), a2a_input_shape.end(), static_cast<int64_t>(1),
+                                            std::multiplies<int64_t>());
       if (std::find(a2a_input_shape.begin(), a2a_input_shape.end(), -1) != a2a_input_shape.end()) {
         return true;
       }

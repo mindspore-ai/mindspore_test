@@ -335,7 +335,8 @@ void PyBoostUtils::MallocForInput(const DeviceContext *device_context, const ten
   }
 
   if (device_address->size() == 0) {
-    auto shape_size = std::accumulate(tensor->shape().begin(), tensor->shape().end(), 1, std::multiplies<int64_t>());
+    auto shape_size = std::accumulate(tensor->shape().begin(), tensor->shape().end(), static_cast<int64_t>(1),
+                                      std::multiplies<int64_t>());
     if (shape_size != 0) {
       return;
     }

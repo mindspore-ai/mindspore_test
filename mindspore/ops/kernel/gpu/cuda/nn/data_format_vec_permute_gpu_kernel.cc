@@ -87,7 +87,8 @@ int DataFormatVecPermuteGpuKernelMod::Resize(const std::vector<KernelTensor *> &
                   << " input shape size " << in_shape_size << " output shape size" << output_shape_size;
     return KRET_RESIZE_FAILED;
   }
-  output_elements_ = std::accumulate(output_shape_.begin(), output_shape_.end(), 1, std::multiplies<int64_t>());
+  output_elements_ =
+    std::accumulate(output_shape_.begin(), output_shape_.end(), static_cast<int64_t>(1), std::multiplies<int64_t>());
   if (output_elements_ == 0) {
     is_null_input_ = true;
   }
