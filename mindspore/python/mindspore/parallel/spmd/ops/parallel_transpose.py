@@ -39,7 +39,7 @@ class TransposeDistributedOp(DistributedOp):
         """
 
         layout = layouts[0]
-        axis = extra_args
+        axis = extra_args[0]
         in_tensor_map = layout.alias_tensor_map
 
         if len(in_tensor_map) != len(axis):

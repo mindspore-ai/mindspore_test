@@ -89,3 +89,7 @@ CellBackwardHook:
   distributed_op_file: parallel_tuple_elementwise
   infer_layout_suffix: WithTupleExpand
 
+Tile:
+  dist_op_name: _tile_dist_op
+  distributed_op_class: ElementWiseDistributedOp
+  distributed_op_file: parallel_elementwise
