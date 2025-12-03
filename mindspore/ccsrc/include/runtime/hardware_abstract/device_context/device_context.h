@@ -193,10 +193,10 @@ class RUNTIME_HARDWARE_EXPORT DeviceResManager {
   virtual bool AllocateMemory(DeviceAddress *const &address, uint32_t stream_id = UINT32_MAX) const;
   virtual void FreeMemory(DeviceAddress *const &address) const;
   virtual size_t GetMaxUsedMemorySize() const { return 0; }
-  /// \brief Check if the device memory can be safely freed
-  /// \param[in] address The device address to check
-  /// \return bool True if memory can be freed, false otherwise
-  virtual bool IsAbleFreeMemory(DeviceAddress *const &address) const { return true; }
+  /// \brief Check if the memory is not event used
+  /// \param[in] device_addr The device memory address to check
+  /// \return bool True when no event bind on device address
+  virtual bool IsNotEventUsedMemory(DeviceAddress *const &address) const { return true; }
 
   // Relevant function to manage memory statistics
   virtual size_t GetTotalMemStatistics() const { return 0; }

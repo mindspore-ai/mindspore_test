@@ -518,14 +518,14 @@ void AscendResManager::FreeMemory(DeviceAddress *const &address) const {
   address->set_ptr(nullptr);
 }
 
-bool AscendResManager::IsAbleFreeMemory(DeviceAddress *const &address) const {
+bool AscendResManager::IsNotEventUsedMemory(DeviceAddress *const &address) const {
   MS_EXCEPTION_IF_NULL(address);
   void *device_ptr = address->GetMutablePtr();
   auto allocator = address->allocator();
   if (MS_UNLIKELY(allocator != nullptr)) {
     return true;
   }
-  return AscendMemoryPool::GetInstance().IsAbleFreeTensorMem(device_ptr);
+  return AscendMemoryPool::GetInstance().IsNotEventUsedTensorMem(device_ptr);
 }
 
 void AscendResManager::FreeMemory(void *ptr) const {

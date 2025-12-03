@@ -608,7 +608,7 @@ void AbstractDynamicMemPool::FreeTensorMem(const DeviceMemPtr &device_addr) {
   (void)DoFreeTensorMem(device_addr);
 }
 
-bool AbstractDynamicMemPool::IsAbleFreeTensorMem(const DeviceMemPtr &device_addr) {
+bool AbstractDynamicMemPool::IsNotEventUsedTensorMem(const DeviceMemPtr &device_addr) {
   auto &&it = addr_mem_buf_allocators_.find(device_addr);
   if (MS_LIKELY(it != addr_mem_buf_allocators_.end())) {
     auto mem_buf = it->second.first;

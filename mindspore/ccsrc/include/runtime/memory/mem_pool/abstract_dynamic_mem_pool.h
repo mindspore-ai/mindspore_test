@@ -501,10 +501,10 @@ class BACKEND_EXPORT AbstractDynamicMemPool : virtual public DynamicMemPool {
   // The main program entry of memory free.
   void FreeTensorMem(const DeviceMemPtr &device_addr) override;
 
-  /// \brief Check if the tensor memory can be safely freed
+  /// \brief Check if the memory is not event used
   /// \param[in] device_addr The device memory address to check
-  /// \return bool True if memory can be freed, false otherwise
-  bool IsAbleFreeTensorMem(const DeviceMemPtr &device_addr) override;
+  /// \return bool True when no event bind on device address
+  bool IsNotEventUsedTensorMem(const DeviceMemPtr &device_addr) override;
 
   bool DoFreeTensorMem(const DeviceMemPtr &device_addr) override;
   // The main program entry of part memory free and part memory keep.

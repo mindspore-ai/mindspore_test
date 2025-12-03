@@ -57,8 +57,13 @@ struct ConditionSwitchInfo {
   ConditionSwitchInfo(KernelRunnerPtr kernel_actor, bool *true_branch_enable)
       : kernel_actor_ptr(kernel_actor),
         true_branch_enable_ptr(true_branch_enable),
+        cur_idx(0),
         true_branch_node_nums(0),
-        false_branch_node_nums(0) {}
+        false_branch_node_nums(0),
+        start_true_idx(0),
+        end_true_idx(0),
+        start_false_idx(0),
+        end_false_idx(0) {}
 
   std::string ToString() const {
     std::ostringstream os;

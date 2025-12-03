@@ -44,7 +44,7 @@ bool MemActionMgr::IsKernelTensorCanBeMoved(const KernelTensorPtr &kernel_tensor
   device::DeviceContextKey src_key = {src_type, device_id};
   auto src_ctx = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(src_key);
   MS_EXCEPTION_IF_NULL(src_ctx);
-  if (!src_ctx->device_res_manager_->IsAbleFreeMemory(src_addr.get())) {
+  if (!src_ctx->device_res_manager_->IsNotEventUsedMemory(src_addr.get())) {
     MS_VLOG(VL_REMOTE_MEM_INFO) << "Unable free: " << kernel_tensor->ToString() << " , src_addr: " << src_addr;
     return false;
   }
@@ -184,7 +184,7 @@ bool MemActionMgr::InsertRecordWaitEvents(uint32_t src_stream_id, uint32_t dst_s
   auto &multi_stream_controller = device::DeviceContextManager::GetInstance().GetMultiStreamController(
     device_context->device_context_key().device_type_);
   MS_EXCEPTION_IF_NULL(multi_stream_controller);
-  bool result = multi_stream_controller->DispatchRecordWaitEvent(src_stream_id, dst_stream_id);
+  bool result = multi_stream_controller->DispatchRecordWaitEvent(dst_stream_id, src_stream_id);
   auto last_task_id_on_stream = multi_stream_controller->GetTaskIdOnStream(src_stream_id);
   MS_VLOG(VL_REMOTE_MEM_INFO) << "Get current task id: " << last_task_id_on_stream << " , stream id: " << src_stream_id;
   auto last_task_id_on_stream2 = multi_stream_controller->GetTaskIdOnStream(dst_stream_id);
