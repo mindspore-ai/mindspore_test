@@ -166,11 +166,12 @@ int64_t ExtractStreamId(const std::string &text) {
     pos++;
   }
   int64_t result = 0;
+  int64_t decimal_num = 10;
   bool found_digit = false;
 
   while (pos < text.length() && std::isdigit(text[pos])) {
     found_digit = true;
-    result = result * 10 + (text[pos] - '0');
+    result = result * decimal_num + (text[pos] - '0');
     pos++;
   }
   return found_digit ? result : -1;
