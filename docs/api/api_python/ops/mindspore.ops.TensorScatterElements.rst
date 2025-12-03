@@ -6,7 +6,7 @@ mindspore.ops.TensorScatterElements
     将 `updates` 中所有的元素按照 `reduction` 指定的归约操作写入 `input_x` 中 `indices` 指定的索引处。
     `axis` 控制scatter操作的方向。
 
-    更多参考相见 :func:`mindspore.ops.tensor_scatter_elements`。
+    更多参考详见 :func:`mindspore.ops.tensor_scatter_elements`。
 
     .. warning::
         如果 `indices` 中有多个索引向量对应于同一位置，则输出中该位置值是不确定的。
