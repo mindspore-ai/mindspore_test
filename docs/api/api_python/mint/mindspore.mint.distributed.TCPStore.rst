@@ -24,11 +24,6 @@ mindspore.mint.distributed.TCPStore
     返回：
         ``TCPStore`` 对象。
 
-    样例：
-
-    .. note::
-        .. include:: mindspore.mint.comm_note.rst
-
     .. py:method:: add(key, amount)
 
         第一次调用 `add` 函数时，给定一个键值，会在存储中创建一个带有该键值对应的计数器，计数器的初始值为 `amount` 。后续使用相同键调用 `add` 函数会进行增量操作按数量进行计数。
@@ -45,11 +40,6 @@ mindspore.mint.distributed.TCPStore
             - **TypeError** - 当 `amount` 不是整数。
             - **RuntimeError** - 如果 `add` 和 `set` 传入相同的 `key` ，且 `set` 传入的 `value` 无法正确转换成数值，此时调用 `add` 会报错。
 
-        样例：
-
-        .. note::
-            .. include:: mindspore.mint.comm_note.rst
-
     .. py:method:: delete_key(key)
 
         从存储中删除与 `key` 关联的键值对。
@@ -62,11 +52,6 @@ mindspore.mint.distributed.TCPStore
 
         异常：
             - **TypeError** - 当 `key` 不是字符串。
-
-        样例：
-
-        .. note::
-            .. include:: mindspore.mint.comm_note.rst
 
     .. py:method:: get(key)
 
@@ -82,11 +67,6 @@ mindspore.mint.distributed.TCPStore
             - **TypeError** - 当 `key` 不是字符串。
             - **RuntimeError** - 当 `get` 执行超时。
 
-        样例：
-
-        .. note::
-            .. include:: mindspore.mint.comm_note.rst
-
     .. py:method:: set(key, value)
 
         根据提供的 `key` 和 `value` 将键值对插入到存储中。如果存储中已经存在 `key` ，它将使用新提供的 `value` 覆盖旧值。
@@ -98,9 +78,3 @@ mindspore.mint.distributed.TCPStore
         异常：
             - **TypeError** - 当 `key` 不是字符串。
             - **TypeError** - 当 `value` 不是字符串或者字节类型。
-
-        样例：
-
-        .. note::
-            .. include:: mindspore.mint.comm_note.rst
-
