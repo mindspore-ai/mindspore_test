@@ -28,6 +28,7 @@
 #include "plugin/ascend/kernel_executor/kernel_select_ascend.h"
 #include "plugin/ascend/kernel_executor/rts/rt_kernel_build.h"
 #include "plugin/ascend/graph_optimizer/stream_assign/acl_stream_assign.h"
+#include "mindspore/ops/ops_utils/op_constants.h"
 
 namespace mindspore {
 namespace device {
@@ -44,6 +45,9 @@ using ReplaceInfo = std::pair<KernelWithIndex, std::vector<KernelWithIndex>>;
 using ReplaceInfoList = std::vector<ReplaceInfo>;
 using OffloadInfo = std::pair<KernelWithIndex, ReplaceInfoList>;
 using OffloadInfoList = std::vector<OffloadInfo>;
+using ConditionSwitchInfoPtr = std::shared_ptr<ConditionSwitchInfo>;
+constexpr auto kSwitchTrueBranchNum = "TrueBranchNodeNum";
+constexpr auto kSwitchFalseBranchNum = "FalseBranchNodeNum";
 
 bool NeedOffloadParameter(const KernelGraphPtr &kernel_graph) {
   return kernel_graph->has_user_data("offload_parameter");
@@ -510,6 +514,91 @@ void ReplaceParameterLoadWithRemoteMemoryNode(const KernelGraphPtr &kernel_graph
   }
   kernel_graph->set_execution_order(new_execution_order);
 }
+
+// Set branch information attributes for the Switch node
+void SetBranchInfoForSwitchNode(const ConditionSwitchInfoPtr &switch_info) {
+  MS_EXCEPTION_IF_NULL(switch_info);
+  auto switch_cnode = switch_info->switch_cnode;
+  MS_EXCEPTION_IF_NULL(switch_cnode);
+  switch_cnode->AddAttr(kSwitchTrueBranchNum, MakeValue(switch_info->true_branch_node_num));
+  switch_cnode->AddAttr(kSwitchFalseBranchNum, MakeValue(switch_info->false_branch_node_num));
+}
+
+// Handle the ConditionGather node, process the whole control flow
+void ProcessConditionGatherNode(std::vector<ConditionSwitchInfoPtr> *switch_index, CNodePtrList *true_branch_cnodes,
+                                CNodePtrList *false_branch_cnodes, CNodePtrList *new_execution_order,
+                                const CNodePtr &cnode, const std::string &subgraph_name) {
+  MS_EXCEPTION_IF_NULL(switch_index);
+  MS_EXCEPTION_IF_NULL(true_branch_cnodes);
+  MS_EXCEPTION_IF_NULL(false_branch_cnodes);
+  MS_EXCEPTION_IF_NULL(new_execution_order);
+  MS_EXCEPTION_IF_NULL(cnode);
+  auto lastest_switch_info = switch_index->back();
+  CNodePtrList switch_kernel_cnodes;
+  MS_EXCEPTION_IF_NULL(lastest_switch_info);
+  auto true_branch_size = lastest_switch_info->true_branch_node_num;
+  // Mark true branch range
+  if (true_branch_size > true_branch_cnodes->size()) {
+    MS_LOG(EXCEPTION) << "Invalid true branch node num: " << true_branch_size << " , "
+                      << lastest_switch_info->true_branch_node_num;
+  }
+  switch_kernel_cnodes.insert(switch_kernel_cnodes.end(), true_branch_cnodes->end() - true_branch_size,
+                              true_branch_cnodes->end());
+  true_branch_cnodes->resize(true_branch_cnodes->size() - true_branch_size);
+  // Mark false branch range
+  auto false_branch_size = lastest_switch_info->false_branch_node_num;
+  if (false_branch_size > false_branch_cnodes->size()) {
+    MS_LOG(EXCEPTION) << "Invalid false branch node num: " << false_branch_size << " , "
+                      << lastest_switch_info->false_branch_node_num;
+  }
+  switch_kernel_cnodes.insert(switch_kernel_cnodes.end(), false_branch_cnodes->end() - false_branch_size,
+                              false_branch_cnodes->end());
+  false_branch_cnodes->resize(false_branch_cnodes->size() - false_branch_size);
+  MS_VLOG(VL_REMOTE_MEM_INFO) << "Switch scope, true branch size: " << true_branch_size
+                              << ", false branch size: " << false_branch_size;
+  switch_kernel_cnodes.emplace_back(cnode);
+  SetBranchInfoForSwitchNode(lastest_switch_info);
+  switch_index->pop_back();
+
+  if (switch_index->empty()) {
+    // Single control flow, just append to the execution order
+    new_execution_order->insert(new_execution_order->end(), switch_kernel_cnodes.begin(), switch_kernel_cnodes.end());
+  } else {
+    // Nested control flow, update outer switch info
+    auto outer_switch_info = switch_index->back();
+    bool is_true_branch = subgraph_name == outer_switch_info->true_subgraph;
+    if (is_true_branch) {
+      true_branch_cnodes->insert(true_branch_cnodes->end(), switch_kernel_cnodes.begin(), switch_kernel_cnodes.end());
+      outer_switch_info->true_branch_node_num += switch_kernel_cnodes.size();
+    } else {
+      false_branch_cnodes->insert(false_branch_cnodes->end(), switch_kernel_cnodes.begin(), switch_kernel_cnodes.end());
+      outer_switch_info->false_branch_node_num += switch_kernel_cnodes.size();
+    }
+  }
+}
+
+// Create a ConditionSwitchInfo object for the ConditionSwitch cnode
+ConditionSwitchInfoPtr CreateConditionSwitchInfo(const CNodePtr &cnode) {
+  MS_EXCEPTION_IF_NULL(cnode);
+  const auto &inline_sub_graph_names = cnode->GetAttr(kInlineSubGraphName);
+  if (inline_sub_graph_names == nullptr || !inline_sub_graph_names->isa<ValueTuple>()) {
+    MS_LOG(EXCEPTION) << "Invalid condition switch node: " << cnode->DebugString();
+  }
+  const auto &tuple_name = inline_sub_graph_names->cast<ValueTuplePtr>()->value();
+  constexpr size_t tuple_name_size = 2;
+  if (tuple_name.size() != tuple_name_size) {
+    MS_LOG(EXCEPTION) << "Invalid condition switch node: " << cnode->DebugString()
+                      << ", tuple name size: " << tuple_name.size();
+  }
+  MS_LOG(INFO) << "Condition switch cnode: " << cnode->DebugString()
+               << ", sub graph name: " << inline_sub_graph_names->ToString();
+  constexpr size_t true_branch_index = 1;
+  constexpr size_t false_branch_index = 0;
+  auto true_branch_name = GetValue<std::string>(tuple_name[true_branch_index]);
+  auto false_branch_name = GetValue<std::string>(tuple_name[false_branch_index]);
+  auto cur_switch_info = std::make_shared<ConditionSwitchInfo>(cnode, true_branch_name, false_branch_name);
+  return cur_switch_info;
+}
 }  // namespace
 
 void ExecutionOrderOptimizeWithHierarchicalMemory(const KernelGraphPtr &kernel_graph) {
@@ -616,6 +705,68 @@ void AddEventToHierarchicalMemoryOps(const KernelGraphPtr &kernel_graph) {
     }
   }
   MS_EXCEPTION_IF_CHECK_FAIL(copy_to_remote_event_map.empty(), "Remain recv node to insert.");
+  kernel_graph->set_execution_order(new_execution_order);
+}
+
+// Reorder the control flow nodes in the execution order, keep true branch and false branch nodes together
+void ReorderControlFlowNodes(const KernelGraphPtr &kernel_graph) {
+  static const bool use_hierarchical_memory_with_sliding_window =
+    common::GetEnv("MS_DEV_HIERARCHICAL_MEMORY") == "1" && common::GetCompileConfig("ENABLE_REMOTE_MEM_SLIDE") == "1";
+  if (!use_hierarchical_memory_with_sliding_window) {
+    return;
+  }
+  MS_EXCEPTION_IF_NULL(kernel_graph);
+  const auto &cnodes = kernel_graph->execution_order();
+  std::vector<ConditionSwitchInfoPtr> switch_index;
+  CNodePtrList true_branch_cnodes;
+  CNodePtrList false_branch_cnodes;
+  CNodePtrList new_execution_order{};
+  const auto &cnode_branch_map = kernel_graph->inline_sub_graph_kernels();
+  for (const auto &cnode : cnodes) {
+    MS_EXCEPTION_IF_NULL(cnode);
+    // Not in control flow node
+    if (switch_index.empty()) {
+      if (!IsPrimitiveCNode(cnode, prim::kPrimConditionSwitch)) {
+        new_execution_order.emplace_back(cnode);
+      } else {
+        auto cur_switch_info = CreateConditionSwitchInfo(cnode);
+        switch_index.push_back(cur_switch_info);
+        new_execution_order.emplace_back(cnode);
+      }
+      continue;
+    }
+
+    const auto &branch_subgraph_name_iter = cnode_branch_map.find(cnode);
+    std::string branch_subgraph_name = "";
+    if (branch_subgraph_name_iter != cnode_branch_map.end()) {
+      branch_subgraph_name = branch_subgraph_name_iter->second;
+    } else if (!IsPrimitiveCNode(cnode, prim::kPrimConditionGather) || switch_index.size() != 1) {
+      MS_LOG(EXCEPTION) << "Invalid node in control flow: " << cnode->DebugString();
+    }
+
+    // ConditionGather, process the whole control flow
+    if (IsPrimitiveCNode(cnode, prim::kPrimConditionGather)) {
+      ProcessConditionGatherNode(&switch_index, &true_branch_cnodes, &false_branch_cnodes, &new_execution_order, cnode,
+                                 branch_subgraph_name);
+      continue;
+    }
+
+    auto &lastest_switch_info = switch_index.back();
+    MS_EXCEPTION_IF_NULL(lastest_switch_info);
+    if (lastest_switch_info->true_subgraph == branch_subgraph_name) {
+      true_branch_cnodes.emplace_back(cnode);
+      lastest_switch_info->true_branch_node_num++;
+    } else {
+      false_branch_cnodes.emplace_back(cnode);
+      lastest_switch_info->false_branch_node_num++;
+    }
+
+    // Nested control flow scene
+    if (IsPrimitiveCNode(cnode, prim::kPrimConditionSwitch)) {
+      auto cur_switch_info = CreateConditionSwitchInfo(cnode);
+      switch_index.push_back(cur_switch_info);
+    }
+  }
   kernel_graph->set_execution_order(new_execution_order);
 }
 }  // namespace hierarchical_memory

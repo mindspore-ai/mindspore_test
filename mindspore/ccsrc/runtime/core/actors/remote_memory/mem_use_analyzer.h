@@ -69,13 +69,13 @@ class MemUseAnalyzer {
   MemCountedCachePtr mem_counted_cache_{nullptr};
 
   // Original kernel tensors map user_indexes
-  std::unordered_map<KernelTensorPtr, std::queue<size_t>> kernel_tensor_info_;
+  mindspore::HashMap<KernelTensorPtr, std::queue<size_t>> kernel_tensor_info_;
   // Original kernel tensors map copied kernel tensors
-  std::unordered_map<KernelTensorPtr, KernelTensorPtr> original_tensors_copyed_map_;
+  mindspore::HashMap<KernelTensorPtr, KernelTensorPtr> original_tensors_copyed_map_;
   // Copied kernel tensors map original kernel tensors
-  std::unordered_map<KernelTensorPtr, KernelTensorPtr> copyed_tensors_original_map_;
+  mindspore::HashMap<KernelTensorPtr, KernelTensorPtr> copyed_tensors_original_map_;
   // KernelActor map idx
-  std::unordered_map<KernelRunner *, size_t> kernel_actor_idx_map_;
+  mindspore::HashMap<KernelRunner *, size_t> kernel_actor_idx_map_;
   std::vector<KernelTensorPtr> output_kernel_tensors_;
   SuperKernelActor *super_kernel_actor_;
   size_t copy_out_stream_id_;
@@ -83,8 +83,8 @@ class MemUseAnalyzer {
   size_t max_idx_;
 
   // ConditionSwitch info
-  std::unordered_map<KernelRunner *, ConditionSwitchInfoPtr> switch_info_map_;
-  std::vector<ConditionSwitchInfoPtr> latest_switch_infos_;
+  mindspore::HashMap<KernelRunner *, ConditionSwitchBranchInfoPtr> switch_info_map_;
+  std::vector<ConditionSwitchBranchInfoPtr> latest_switch_infos_;
   std::vector<KernelRunnerPtr> kernel_actors_;
   size_t old_horizon_;
 };
