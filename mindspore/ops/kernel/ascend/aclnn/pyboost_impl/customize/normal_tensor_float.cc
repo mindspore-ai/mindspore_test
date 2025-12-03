@@ -31,7 +31,7 @@ tensor::TensorPtr NormalTensorFloatAscendCustomize(const std::shared_ptr<OpRunne
   MS_LOG(DEBUG) << "NormalTensorFloat call start";
   OpRunner::InferOpOutput(op, mean_tensor, std, seed, offset);
   auto std_imm = GetScalarCastValue<float>("NormalTensorFloat", std);
-  auto [seed_imm, offset_imm] = UpdateGeneratorState(seed, offset);
+  auto [seed_imm, offset_imm] = GetGeneratorState(seed, offset);
 
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), mean_tensor);
   PyBoostUtils::PrepareOpOutputs(op->device_context(), op->stream_id(), op->outputs());

@@ -53,7 +53,7 @@ tensor::TensorPtr InplaceUniformAscendCustomize(const std::shared_ptr<OpRunner> 
   double from_imm = GetScalarValue(from, "from");
   double to_imm = GetScalarValue(to, "to");
 
-  auto [seed_imm, offset_imm] = UpdateGeneratorState(seed, offset);
+  auto [seed_imm, offset_imm] = GetGeneratorState(seed, offset);
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), input_tensor);
   op->set_outputs({input_tensor});
 

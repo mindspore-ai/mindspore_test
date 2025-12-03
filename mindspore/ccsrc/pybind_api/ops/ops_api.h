@@ -26,6 +26,7 @@ namespace initializer {
 void RegRandomNormal(py::module *m);
 }
 void RegRandomSeededGenerator(py::module *m);
+void RegGeneratorImpl(const py::module *m);
 void RegPyFuncOpBuilder(py::module *m);
 void RegOpsModule(py::module *m);
 }  // namespace mindspore

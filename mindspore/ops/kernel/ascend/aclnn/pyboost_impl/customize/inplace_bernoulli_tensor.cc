@@ -28,7 +28,7 @@ tensor::TensorPtr InplaceBernoulliTensorAscendCustomize(const std::shared_ptr<Op
                                                         const TensorPtr &p, const TensorPtr &seed,
                                                         const TensorPtr &offset) {
   MS_LOG(DEBUG) << "Call InplaceBernoulliTensor start";
-  auto [seed_imm, offset_imm] = UpdateGeneratorState(seed, offset);
+  auto [seed_imm, offset_imm] = GetGeneratorState(seed, offset);
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), input, p);
   op->set_outputs({input});
   // Async

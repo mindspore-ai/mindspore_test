@@ -40,6 +40,7 @@ void RegPyFuncOpBuilder(py::module *m) {
 
 void RegOpsModule(py::module *m) {
   RegRandomSeededGenerator(m);
+  RegGeneratorImpl(m);
   mindspore::initializer::RegRandomNormal(m);
   RegPyFuncOpBuilder(m);
 }

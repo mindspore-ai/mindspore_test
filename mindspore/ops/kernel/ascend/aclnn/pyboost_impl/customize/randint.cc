@@ -27,7 +27,7 @@ tensor::TensorPtr RandIntAscendCustomize(const std::shared_ptr<OpRunner> &op, co
                                          const TensorPtr &offset, const std::optional<Int64ImmPtr> &dtype,
                                          const std::optional<Int64ImmPtr> &device) {
   OpRunner::InferOpOutput(op, low, high, shape, seed, offset, dtype, device);
-  auto [seed_imm, offset_imm] = UpdateGeneratorState(seed, offset);
+  auto [seed_imm, offset_imm] = GetGeneratorState(seed, offset);
   auto low_imm = GetValueWithCheck<int64_t>(low);
   auto high_imm = GetValueWithCheck<int64_t>(high);
   auto device_context = op->device_context();

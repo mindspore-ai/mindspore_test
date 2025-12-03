@@ -54,7 +54,7 @@ tensor::TensorPtr InplaceNormalAscendCustomize(const std::shared_ptr<OpRunner> &
     // For the aclnnInplacenormal operator, mean and std must be of the float type.
     float mean_value = GetScalarValueToFloat(mean, "mean");
     float std_value = GetScalarValueToFloat(std, "std");
-    auto [seed_value, offset_value] = UpdateGeneratorState(seed, offset);
+    auto [seed_value, offset_value] = GetGeneratorState(seed, offset);
 
     MS_LOG(DEBUG) << "InplaceNormal launch start";
     LAUNCH_ACLNN(aclnnInplaceNormal, device_context, op->stream_id(), input, mean_value, std_value, seed_value,

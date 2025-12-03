@@ -30,7 +30,7 @@ tensor::TensorPtr InplaceBernoulliScalarAscendCustomize(const std::shared_ptr<Op
   MS_LOG(DEBUG) << "Call InplaceBernoulliScalar start";
   auto p_scalar = p->cast<ScalarPtr>();
   MS_EXCEPTION_IF_NULL(p_scalar);
-  auto [seed_imm, offset_imm] = UpdateGeneratorState(seed, offset);
+  auto [seed_imm, offset_imm] = GetGeneratorState(seed, offset);
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), input);
   op->set_outputs({input});
   // Async
