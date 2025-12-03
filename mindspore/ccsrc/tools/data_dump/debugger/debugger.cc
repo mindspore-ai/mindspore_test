@@ -27,7 +27,7 @@
 #include <tuple>
 #include <vector>
 
-#include "backend/common/kernel_graph/session_basic.h"
+#include "include/backend/common/kernel_graph/session_basic.h"
 #include "include/backend/common/kernel_graph/anf_runtime_algorithm.h"
 #include "include/runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "include/utils/anfalgo.h"

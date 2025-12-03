@@ -18,7 +18,7 @@
 #include <string>
 #include "include/backend/common/kernel_graph/kernel_graph.h"
 #include "primitive/math_ops.h"
-#include "backend/common/kernel_graph/session_basic.h"
+#include "include/backend/common/kernel_graph/session_basic.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_info.h"
 #include "frontend/operator/ops.h"
 #include "utils/log_adapter.h"

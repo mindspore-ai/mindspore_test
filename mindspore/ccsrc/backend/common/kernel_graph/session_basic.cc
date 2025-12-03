@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "backend/common/kernel_graph/session_basic.h"
+#include "include/backend/common/kernel_graph/session_basic.h"
 
 #include <algorithm>
 #include <set>
@@ -37,7 +37,7 @@
 #include "include/utils/config_manager.h"
 #include "include/backend/common/kernel_graph/anf_runtime_algorithm.h"
 #include "include/utils/anfalgo.h"
-#include "backend/common/pass_manager/common_backend_optimization.h"
+#include "include/backend/common/pass_manager/common_backend_optimization.h"
 #include "include/backend/common/pass_manager/helper.h"
 #include "include/backend/common/pass_manager/op_adaptation_info_factory.h"
 #include "pynative/utils/base.h"

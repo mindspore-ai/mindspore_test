@@ -65,7 +65,7 @@
 #endif
 
 #include "mindspore/ccsrc/pynative/forward/pyboost/auto_generate/tensor_func_utils.h"
-#include "backend/common/somas/somas.h"
+#include "include/backend/common/somas/somas.h"
 #include "include/utils/pyobj_manager.h"
 
 #include "pybind11/pybind11.h"

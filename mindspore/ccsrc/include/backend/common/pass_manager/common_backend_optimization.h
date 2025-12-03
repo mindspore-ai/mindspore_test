@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef MINDSPORE_CCSRC_BACKEND_OPTIMIZER_COMMON_COMMON_BACKEND_OPTIMIZATION_H_
-#define MINDSPORE_CCSRC_BACKEND_OPTIMIZER_COMMON_COMMON_BACKEND_OPTIMIZATION_H_
+#ifndef MINDSPORE_CCSRC_INCLUDE_BACKEND_COMMON_PASS_MANAGER_COMMON_BACKEND_OPTIMIZATION_H_
+#define MINDSPORE_CCSRC_INCLUDE_BACKEND_COMMON_PASS_MANAGER_COMMON_BACKEND_OPTIMIZATION_H_
 #include <memory>
 #include "include/backend/common/kernel_graph/kernel_graph.h"
 #include "include/backend/common/pass_manager/pass_manager.h"
@@ -33,4 +33,4 @@ BACKEND_COMMON_EXPORT void OptimizationForAnyTypeKernelGraph(const std::shared_p
 }  // namespace opt
 }  // namespace mindspore
 
-#endif  // MINDSPORE_CCSRC_BACKEND_OPTIMIZER_COMMON_COMMON_BACKEND_OPTIMIZATION_H_
+#endif  // MINDSPORE_CCSRC_INCLUDE_BACKEND_COMMON_PASS_MANAGER_COMMON_BACKEND_OPTIMIZATION_H_

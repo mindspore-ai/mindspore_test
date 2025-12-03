@@ -16,7 +16,7 @@
 
 #include "plugin/ascend/graph_optimizer/pass/expander_fallback.h"
 #include <vector>
-#include "backend/common/expander/fallback/expander_fallback.h"
+#include "include/backend/common/expander/fallback/expander_fallback.h"
 #include "backend/common/pass/value_graph_binder.h"
 #include "ir/device_type.h"
 #include "ir/graph_utils.h"

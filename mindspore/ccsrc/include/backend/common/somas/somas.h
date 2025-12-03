@@ -14,8 +14,8 @@
  * limitations under the License.
 */
 
-#ifndef MINDSPORE_CCSRC_BACKEND_COMMON_SOMAS_SOMAS_H_
-#define MINDSPORE_CCSRC_BACKEND_COMMON_SOMAS_SOMAS_H_
+#ifndef MINDSPORE_CCSRC_INCLUDE_BACKEND_COMMON_SOMAS_SOMAS_H_
+#define MINDSPORE_CCSRC_INCLUDE_BACKEND_COMMON_SOMAS_SOMAS_H_
 
 #include <map>
 #include <memory>
@@ -264,4 +264,4 @@ class SomasRegister {
 #define REG_SOMAS(S, T, C) static const somas::SomasRegister g_##S##_reg(T, []() { return std::make_shared<C>(); })
 }  // namespace somas
 }  // namespace mindspore
-#endif  // MINDSPORE_CCSRC_BACKEND_COMMON_SOMAS_SOMAS_H_
+#endif  // MINDSPORE_CCSRC_INCLUDE_BACKEND_COMMON_SOMAS_SOMAS_H_

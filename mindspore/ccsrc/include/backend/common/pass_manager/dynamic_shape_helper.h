@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CCSRC_BACKEND_COMMON_OPTIMIZER_DYNAMIC_SHAPE_DYNAMIC_SHAPE_HELPER_H
-#define MINDSPORE_CCSRC_BACKEND_COMMON_OPTIMIZER_DYNAMIC_SHAPE_DYNAMIC_SHAPE_HELPER_H
+#ifndef MINDSPORE_CCSRC_INCLUDE_BACKEND_COMMON_PASS_MANAGER_DYNAMIC_SHAPE_HELPER_H
+#define MINDSPORE_CCSRC_INCLUDE_BACKEND_COMMON_PASS_MANAGER_DYNAMIC_SHAPE_HELPER_H
 
 #include <vector>
 #include <memory>
@@ -42,4 +42,4 @@ BACKEND_COMMON_EXPORT abstract::AbstractBasePtr InferShapeAndType(const Primitiv
 BACKEND_COMMON_EXPORT void UpdateKernelTensorType(const TypePtr &type,
                                                   const std::vector<kernel::KernelTensor *> &output_kernel_tensors);
 }  // namespace mindspore::opt::dynamic_shape
-#endif  // MINDSPORE_CCSRC_BACKEND_COMMON_OPTIMIZER_DYNAMIC_SHAPE_DYNAMIC_SHAPE_HELPER_H
+#endif  // MINDSPORE_CCSRC_INCLUDE_BACKEND_COMMON_PASS_MANAGER_DYNAMIC_SHAPE_HELPER_H
