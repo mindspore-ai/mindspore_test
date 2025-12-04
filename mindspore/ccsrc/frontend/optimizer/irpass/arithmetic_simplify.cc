@@ -33,6 +33,32 @@
 namespace mindspore {
 namespace opt {
 namespace irpass {
+namespace {
+bool HasSameTypeId(const AnfNodePtr &lhs, const AnfNodePtr &rhs) {
+  if (lhs == nullptr || rhs == nullptr) {
+    return false;
+  }
+  auto lhs_abs = lhs->abstract();
+  auto rhs_abs = rhs->abstract();
+  if (lhs_abs == nullptr || rhs_abs == nullptr) {
+    return false;
+  }
+  auto lhs_type = lhs_abs->GetType();
+  auto rhs_type = rhs_abs->GetType();
+  if (lhs_type == nullptr || rhs_type == nullptr) {
+    return false;
+  }
+  if (lhs_type->isa<TensorType>() && rhs_type->isa<TensorType>()) {
+    auto lhs_tensor_type = lhs_type->cast<TensorTypePtr>();
+    auto rhs_tensor_type = rhs_type->cast<TensorTypePtr>();
+    if (lhs_tensor_type->element() == nullptr || rhs_tensor_type->element() == nullptr) {
+      return false;
+    }
+    return lhs_tensor_type->element()->type_id() == rhs_tensor_type->element()->type_id();
+  }
+  return lhs_type->type_id() == rhs_type->type_id();
+}
+}  // namespace
 AnfNodePtr ArithmeticSimplify::operator()(const OptimizerPtr &, const AnfNodePtr &node) {
   PatternNode x;
   PatternNode y;
@@ -80,13 +106,19 @@ AnfNodePtr ArithmeticSimplify::operator()(const OptimizerPtr &, const AnfNodePtr
     // If node is AbstractRefTensor, We should not simplify it, after simplification, the result may be incorrect.
     return node->abstract() != nullptr && node->abstract()->isa<abstract::AbstractRefTensor>();
   };
+
+  auto IsMulByOneTypeCompatible = [&node, &x, &one_](const AnfNodePtr &) {
+    // Check if x and one_ have the same type, otherwise Mul(x, 1) cannot be simplified to x
+    return HasSameTypeId(x.GetNode(node), one_.GetNode(node));
+  };
   MATCH_REPLACE_IF(node, PBinOperation(mindspore::prim::kPrimAdd, x.get_object(), zero_.get_object(), true), x,
                    x.CheckFunc(IsAddByZeroSimplifiable, node));  // Add by zero
 
   MATCH_REPLACE(node, PBinOperation(prim::kPrimScalarAdd, x, zero_scalar_, true), x);  // Scalar Add by zero
   // Multiply by one
   MATCH_REPLACE_IF(node, PBinOperation(mindspore::prim::kPrimMul, x.get_object(), one_.get_object(), true),
-                   any_const.WithValueOf(x), !one_.CheckFunc(IsParam, node) && !IsRefTensorNode());
+                   any_const.WithValueOf(x),
+                   !one_.CheckFunc(IsParam, node) && !IsRefTensorNode() && x.CheckFunc(IsMulByOneTypeCompatible, node));
   MATCH_REPLACE(node, PBinOperation(prim::kPrimScalarMul, x, one_scalar_, true), x);  // Scalar Mul by one
   // Muls Scalar by one
   MATCH_REPLACE_IF(node, PBinOperation(mindspore::prim::kPrimMuls, x.get_object(), one_scalar_, false), x,

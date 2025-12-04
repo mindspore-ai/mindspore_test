@@ -30,6 +30,7 @@ from mindspore.ops.auto_generate.gen_ops_prim import (
 from mindspore.ops.auto_generate.gen_ops_prim import (
     floor_div_op, floor_div_scalar_op
 )
+from mindspore.ops.auto_generate import (mul, muls)
 # 1 common import
 
 # 2 common import
@@ -882,7 +883,9 @@ def tensor_minimum(input, other):
 
 # 70 mul
 def tensor_mul(input, other):
-    return F.mul(input, other)
+    if isinstance(input, Tensor) and isinstance(other, (int, float, bool)):
+        return muls(input, other)
+    return mul(input, other)
 
 
 # 71 nan_to_num

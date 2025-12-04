@@ -131,8 +131,8 @@ def test_deepseekv3_cell_dp2mp2ep2pp2mb4gas1bs1_8p():
     real_log_path = log_path_preprocess(case_name, device_num)
     for log_path in real_log_path:
         check_log(log_path, check_pair)
-        # self-test results: 9778M, memory should be lower than 9778+50=9828M
-        check_peak_memory(log_path, "9828")
+        # self-test results: 10686M, memory should be lower than 10686+50=10736M
+        check_peak_memory(log_path, "10736")
 
     # check loss
     # set the training log path

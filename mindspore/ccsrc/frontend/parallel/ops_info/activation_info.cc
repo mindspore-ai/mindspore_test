@@ -19,6 +19,7 @@
 #include <algorithm>
 #include <memory>
 #include <vector>
+#include <string>
 #include <utility>
 #include <functional>
 #include <numeric>

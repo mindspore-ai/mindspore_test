@@ -59,6 +59,7 @@
 #include "backend/ge_backend/pass/expand_dims_for_batchnorm.h"
 #include "backend/ge_backend/pass/dropout_gen_mask_depend.h"
 #include "backend/ge_backend/pass/add_cast_for_ge.h"
+#include "backend/ge_backend/pass/promote_cast_for_mul.h"
 #include "backend/ge_backend/pass/nan_to_num_for_ge.h"
 #include "backend/ge_backend/pass/unfold_nested_output.h"
 #include "backend/ge_backend/pass/unfold_maketuple.h"
@@ -331,6 +332,7 @@ void GEBackendOptimization(const KernelGraphPtr &kernel_graph) {
   opt_ge_pm->AddPass(std::make_shared<mindspore::opt::ExpandDimsForBatchNorm>());
   opt_ge_pm->AddPass(std::make_shared<mindspore::opt::DropoutGenMaskDepend>());
   opt_ge_pm->AddPass(std::make_shared<mindspore::opt::AddCastForGe>());
+  opt_ge_pm->AddPass(std::make_shared<mindspore::opt::PromoteCastForMul>());
   opt_ge_pm->AddPass(std::make_shared<mindspore::opt::NanToNumForGe>());
   opt_ge_pm->AddPass(std::make_shared<mindspore::opt::ResizeBilinearAddAttr>());
   opt_ge_pm->AddPass(std::make_shared<mindspore::opt::AscendConvertTupleInputToDynamicInput>(true, true));

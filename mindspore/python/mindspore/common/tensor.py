@@ -396,11 +396,8 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
     def __rsub__(self, other):
         return tensor_operator_registry.get('__sub__')(other, self)
 
-    def __mul__(self, other):
-        return tensor_operator_registry.get('__mul__')(self, other)
-
     def __rmul__(self, other):
-        return self.__mul__(other)
+        return self.mul(other)
 
     def __matmul__(self, other):
         return tensor_operator_registry.get('__matmul__')(self, other)

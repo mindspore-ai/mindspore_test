@@ -11,4 +11,6 @@ muls:
             dtype: tensor
     dispatch:
         enable: True
+        CPU: MulsCPU
+        GPU: MulsGPU
         Ascend: MulsAscend

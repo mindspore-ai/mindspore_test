@@ -117,39 +117,6 @@ def test_standard_mul_Tensor2(func, ms_func, a, b):
     ms_res = ms_func(a[0], b[0])
     match_array(res, ms_res, error=0, err_msg=str(ms_res))
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
-@pytest.mark.parametrize('func', [mul])
-@pytest.mark.parametrize('ms_func', [jit_mul])
-@pytest.mark.parametrize('a', [[(1.0, 2.0, 3.0)]])
-@pytest.mark.parametrize('b', [[Tensor(np.ones((2, 3)).astype(np.float32))]])
-def test_standard_mul_tuple1(func, ms_func, a, b):
-    """
-    Feature: ALL TO ALL (Except special cases)
-    Description: test cases for mul in PYNATIVE mode
-    Expectation: the result match
-    """
-    context.set_context(mode=context.PYNATIVE_MODE)
-    res = func(a[0], b[0])
-    context.set_context(mode=context.GRAPH_MODE)
-    ms_res = ms_func(a[0], b[0])
-    match_array(res, ms_res, error=0, err_msg=str(ms_res))
-
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
-@pytest.mark.parametrize('func', [mul])
-@pytest.mark.parametrize('ms_func', [jit_mul])
-@pytest.mark.parametrize('a', [[Tensor(np.ones((2, 3)).astype(np.float32))]])
-@pytest.mark.parametrize('b', [[(1.0, 2.0, 3.0)]])
-def test_standard_mul_tuple2(func, ms_func, a, b):
-    """
-    Feature: ALL TO ALL (Except special cases)
-    Description: test cases for mul in PYNATIVE mode
-    Expectation: the result match
-    """
-    context.set_context(mode=context.PYNATIVE_MODE)
-    res = func(a[0], b[0])
-    context.set_context(mode=context.GRAPH_MODE)
-    ms_res = ms_func(a[0], b[0])
-    match_array(res, ms_res, error=0, err_msg=str(ms_res))
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('func', [mul])

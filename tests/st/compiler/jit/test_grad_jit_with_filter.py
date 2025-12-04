@@ -19,7 +19,7 @@ import subprocess
 import numpy as np
 from mindspore import Tensor, Parameter, ParameterTuple, jit, ops, context
 from mindspore._extends.parse import compile_config
-import mindspore.nn as nn
+from mindspore import nn
 from mindspore.ops.auto_generate import TransposeView
 from tests.mark_utils import arg_mark
 
@@ -402,7 +402,7 @@ def test_jit_grad_with_weights():
         expect1 = np.array([2, 2]).astype(np.float32)
         out1 = ops.grad(net, weights=weights1)(x)  # pylint: disable=not-callable
         assert np.allclose(out1[0].asnumpy(), expect1)
-        para = '= PrimFunc_Mul('
+        para = '= PrimFunc_Muls('
         out_before = get_from_ir_before_filter(para, save_graphs_path)
         assert out_before == "3"
         out_after = get_from_ir_after_filter(para, save_graphs_path)

@@ -231,7 +231,7 @@ static AnfNodePtr FindExpandDimsWIthGradScale(const AnfNodePtr &node_ptr, const 
       }
       return queue_node;
     }
-    if (!IsSomePrimitiveList(cnode, {ENVIRONGET, MUL, SQUARE, REDUCE_SUM, EXPAND_DIMS, DEPEND, CAST, REF_TO_EMBED,
+    if (!IsSomePrimitiveList(cnode, {ENVIRONGET, MUL, MULS, SQUARE, REDUCE_SUM, EXPAND_DIMS, DEPEND, CAST, REF_TO_EMBED,
                                      EMBED, LOAD, SUM_EXT})) {
       continue;
     }

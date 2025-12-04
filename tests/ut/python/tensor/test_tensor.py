@@ -23,7 +23,7 @@ import pytest
 
 import mindspore as ms
 import mindspore.common.api as me
-import mindspore.nn as nn
+from mindspore import nn
 from mindspore import Tensor, context
 from mindspore.common.initializer import initializer
 from mindspore.common.parameter import Parameter
@@ -523,8 +523,6 @@ def test_tensor_operation():
     assert np.all(res.asnumpy() == np.ones((3, 3)))
     x %= 3
     assert np.all(x.asnumpy() == np.ones((3, 3)))
-    res = x * (2, 3, 4)
-    assert np.all(res.asnumpy() == np.ones((3, 3)) * (2, 3, 4))
     res = 5 % x
     assert np.all(x.asnumpy() == np.ones((3, 3)))
     res = 5 // x

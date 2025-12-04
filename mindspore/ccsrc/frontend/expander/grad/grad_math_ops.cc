@@ -1879,14 +1879,26 @@ REG_BPROP_BUILDER("Mul").FreeUselessValues(FreeTensorsOfMul).SetBody(BODYFUNC(ib
   NodePtr bc_dx = nullptr;
   NodePtr bc_dy = nullptr;
   if (x->need_compute_grad_out()) {
-    bc_dx = ib->Mul(y, dout);
+    bc_dx = ib->Emit("Mul", {y, dout});
   }
   if (y->need_compute_grad_out()) {
-    bc_dy = ib->Mul(x, dout);
+    bc_dy = ib->Emit("Mul", {x, dout});
   }
   auto ret = BinopGradCommon(ib, x, y, bc_dx, bc_dy);
-  auto dx = x->need_compute_grad_out() ? ib->Cast(ret[i0], ib->GetDtype(x)) : ret[i0];
-  auto dy = y->need_compute_grad_out() ? ib->Cast(ret[i1], ib->GetDtype(y)) : ret[i1];
+  auto dx = ret[i0];
+  if (x->need_compute_grad_out()) {
+    auto x_type = ib->GetDtype(x);
+    if (ib->GetDtypeId(dx) != x_type->type_id()) {
+      dx = ib->Cast(dx, x_type);
+    }
+  }
+  auto dy = ret[i1];
+  if (y->need_compute_grad_out()) {
+    auto y_type = ib->GetDtype(y);
+    if (ib->GetDtypeId(dy) != y_type->type_id()) {
+      dy = ib->Cast(dy, y_type);
+    }
+  }
   return {dx, dy};
 });
 
@@ -1898,7 +1910,11 @@ REG_BPROP_BUILDER("Muls").SetUnusedInputs({i0, i2}).SetBody(BODYFUNC(ib) {
 
   NodePtr bc_dx = nullptr;
   bc_dx = ib->Muls(dout, alpha);
-  return {ib->Cast(bc_dx, x_dtype), ib->OutZeros(alpha)};
+  auto dx = bc_dx;
+  if (ib->GetDtypeId(dx) != x_dtype->type_id()) {
+    dx = ib->Cast(dx, x_dtype);
+  }
+  return {dx, ib->OutZeros(alpha)};
 });
 
 REG_BPROP_BUILDER("Sub").FreeUselessValues_IO({i0, i1}, {}).SetBody(BODYFUNC(ib) {

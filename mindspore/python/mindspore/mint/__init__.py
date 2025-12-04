@@ -97,7 +97,7 @@ from mindspore.ops.functional import log
 # 20
 
 # 21
-from mindspore.ops.function.math_func import mul_ext as mul
+from mindspore.ops.functional_overload import mul
 # 22
 from mindspore.ops.functional import cumprod
 # 23
