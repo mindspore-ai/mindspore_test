@@ -54,7 +54,7 @@ def test_chunk_forward_backward(mode):
         out = chunk_forward_func(x, chunks, dims)
     else:
         context.set_context(mode=ms.GRAPH_MODE)
-        out = (jit(chunk_forward_func, jit_level="O0"))(x, chunks, dims)
+        out = (jit(chunk_forward_func, jit_level="O0", backend="ms_backend"))(x, chunks, dims)
 
     for res, exp in zip(out, expect):
         assert np.allclose(res.asnumpy(), exp)
