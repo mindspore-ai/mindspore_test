@@ -1,21 +1,40 @@
+# Copyright 2025 Huawei Technologies Co., Ltd
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ==============================================================================
+"""
+RPC server for datanode.
+"""
+
+
 import argparse
 import pandas as pd
-import torch
+import mindspore
 import io
 import time
-from concurrent.futures import ThreadPoolExecutor
 
+from concurrent.futures import ThreadPoolExecutor
 from dist_rpc.server_rpc import ServerNodeRPCServer
 from dist_rpc.client_rpc import CoordinatorRPCClient
 from dist_server.data_node.processor import DataProcessor
 
-# 全局处理器
+#global processor
 processor = None
 executor = ThreadPoolExecutor(max_workers=4)
 
-def handle_fetch(payload, ctx):
+def handle_fetch(payload):
     """
-    Payload 格式: {'indices': [1, 2, 3], 'client_id': '...'}
+    Payload Format: {'indices': [1, 2, 3], 'client_id': '...'}
     """
     indices = payload.get("indices", [])
     if not indices:
@@ -28,9 +47,8 @@ def handle_fetch(payload, ctx):
         return None
     
     buffer = io.BytesIO()
-    torch.save(result_dict, buffer)
+    mindspore.save(result_dict, buffer)
     return buffer.getvalue() 
-
 
 def register_to_coordinator(coordinator_host, coordinator_port, local_port, node_id="node_0"):
     client = CoordinatorRPCClient(coordinator_host, coordinator_port)
@@ -51,19 +69,17 @@ def main():
     parser.add_argument("--coord_host", type=str, default="127.0.0.1") 
     parser.add_argument("--coord_port", type=int, default=9100)        
     parser.add_argument("--node_id", type=str, default="node_0")       
-    parser.add_argument("--metadata", type=str, default="/home/lyh/ray_temp/metadata.parquet")
-    parser.add_argument("--tokenizer", type=str, default="/home/lyh/ray_temp/models--openai--clip-vit-base-patch32")
+    parser.add_argument("--metadata", type=str)
+    parser.add_argument("--tokenizer", type=str)
     args = parser.parse_args()
 
-    # 1. 加载数据
     print(f"Loading metadata from {args.metadata}...")
     df = pd.read_parquet(args.metadata)
     
-    # 2. 初始化处理器
     global processor
     processor = DataProcessor(args.tokenizer, df)
 
-    # 3. 启动 RPC Server
+    #start up RPC Server
     server = ServerNodeRPCServer("0.0.0.0", args.port)
     server.on_fetch(handle_fetch)
     

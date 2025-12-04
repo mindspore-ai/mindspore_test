@@ -1,17 +1,31 @@
-import time
-import collections
-import io
+# Copyright 2025 Huawei Technologies Co., Ltd
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ==============================================================================
+"""
+Load balancing policy.
+"""
 
 class CoordinatorPolicy:
     def __init__(self):
-        # 存储节点信息: {node_id: {'host': str, 'port': int, 'stats': dict}}
+        #  {node_id: {'host': str, 'port': int, 'stats': dict}}
         self.nodes = {} 
         self.EMA_ALPHA = 0.2
         print("--- [Policy] Weighted + Latency-Aware Policy initialized. ---")
 
     def register_node(self, node_id, host, port, weight=1.0):
         """
-        注册或更新节点信息
+        Register node
         """
         if node_id not in self.nodes:
             self.nodes[node_id] = {
@@ -28,9 +42,9 @@ class CoordinatorPolicy:
             self.nodes[node_id]["host"] = host
             self.nodes[node_id]["port"] = port
 
-    def assign_best_node(self, client_id, indices):
+    def assign_best_node(self):
         """
-        根据负载均衡算法选择最佳节点
+        Slect node
         """
         if not self.nodes:
             return None
@@ -64,12 +78,12 @@ class CoordinatorPolicy:
 
     def report_completion(self, node_id, latency):
         """
-        Client 汇报任务完成，更新节点延迟统计
+        Report 
         """
         if node_id in self.nodes:
-            stats = self.nodes[node_id]["stats"]
-            
-            stats["outstanding_requests"] = max(0, stats["outstanding_requests"] - 1)
-            
+            stats = self.nodes[node_id]["stats"]            
+            stats["outstanding_requests"] = max(0, stats["outstanding_requests"] - 1)            
             current_avg = stats["avg_latency"]
             stats["avg_latency"] = (self.EMA_ALPHA * latency) + ((1 - self.EMA_ALPHA) * current_avg)
+        else:
+            pass

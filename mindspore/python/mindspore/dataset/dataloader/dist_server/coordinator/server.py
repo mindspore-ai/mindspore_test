@@ -1,17 +1,35 @@
+# Copyright 2025 Huawei Technologies Co., Ltd
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ==============================================================================
+"""
+RPC server for coordinator
+"""
+
+
 from dist_rpc.server_rpc import CoordinatorRPCServer
 from .policy import CoordinatorPolicy
 from dist_rpc.common import RPCMethod
-import io
 
 class CoordinatorService:
     def __init__(self):
-        self.servers = [] # [{'host': '1.2.3.4', 'port': 9200}, ...]
+        self.servers = [] 
         self.pointer = 0
         self.policy = CoordinatorPolicy()
 
     def handle_register(self, payload, ctx):
         """
-        Payload: {'host': '...', 'port': 9200, ...}
+        Payload: {'node_id': '...','host': '...', 'port': 9200, 'latency': int}
         """
         host = ctx.client_address[0]
         node_id = payload.get("client_id")
@@ -22,26 +40,16 @@ class CoordinatorService:
         
         return "OK"
 
-    def handle_assign(self, payload, ctx):
+    def handle_assign(self, payload):
         client_id = payload.get("client_id")
         indices = payload.get("indices")
         node = self.policy.assign_best_node(client_id, indices)
         
         if node is None:
            raise RuntimeError("No available server nodes")
-        '''
-        if not self.servers:
-            raise RuntimeError("No ServerNodes available!")
-        
-        node = self.servers[self.pointer]
-        self.pointer = (self.pointer + 1) % len(self.servers)
-        '''
         return node
     
-    def handle_report_completion(self, payload, ctx):
-        """
-        Payload 格式: {'node_id': 'servenode_node_0', 'latency': 0.15}
-        """
+    def handle_report_completion(self, payload):
         node_id = payload.get("node_id")
         latency = payload.get("latency")
 

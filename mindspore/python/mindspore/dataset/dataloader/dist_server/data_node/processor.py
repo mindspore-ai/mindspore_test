@@ -1,10 +1,28 @@
+# Copyright 2025 Huawei Technologies Co., Ltd
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ==============================================================================
+"""
+Data preprocessor.
+"""
+
+
 import torch
 import cv2
 import numpy as np
 import albumentations as A
 from albumentations.pytorch import ToTensorV2
 from transformers import AutoTokenizer
-import pandas as pd
 import os
 import sys
 
@@ -43,27 +61,22 @@ class DataProcessor:
                 truncation=True,
                 max_length=self.text_max_length,
                 return_tensors="pt"
-            )
-            
+            )            
             input_ids = tokenized_output['input_ids'].squeeze(0)
             attention_mask = tokenized_output['attention_mask'].squeeze(0)
-
-            return (image_tensor, input_ids, attention_mask)
-
-        
+            return image_tensor, input_ids, attention_mask   
+             
         except Exception as e:
             worker_pid = os.getpid()
             print(f"--- [PID {worker_pid}] !!! ERROR IN GET_ITEM !!!", file=sys.stderr, flush=True)
             print(f"    Index: {index} | Path: {image_path}", file=sys.stderr, flush=True)
             print(f"    Error: {e}", file=sys.stderr, flush=True)
-            return (None, None, None)
-
+            return None, None, None
 
     def get_batch(self, indices):
         batch_images = []
         batch_input_ids = []
-        batch_masks = []
-        
+        batch_masks = []        
         for idx in indices:
             images,input_ids,masks = self.get_item(index=idx)
             if images is not None:                
