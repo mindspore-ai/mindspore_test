@@ -51,30 +51,33 @@ void RegPyNativeModule(py::module *m) {
   (void)m->def("frombuffer", &mindspore::tensor::TensorFrombuffer, py::arg("buffer"), py::arg("dtype"),
                py::arg("count") = -1, py::arg("offset") = 0,
                R"(
-    Create a 1-D tensor from an object implements the buffer interface. The returned tensor shares the same memory space as the buffer.
+                Create a 1-D tensor from an object implements the buffer interface.
+                The returned tensor shares the same memory space as the buffer.
 
-    Args:
-        - **buffer** (buffer) - An object that exposes the buffer interface.
-        - **dtype** (mindspore.dtype) - The desired data type for the tensor.
-        - **count** (int, optional) - The number of items to read. Default: ``-1`` .
-        - **offset** (int, optional) - The offset in bytes. Default: ``0`` .
+                Args:
+                    buffer (buffer): An object that exposes the buffer interface.
+                    dtype (mindspore.dtype): The desired data type for the tensor.
+                    count (int, optional): The number of items to read. Default: ``-1`` .
+                    offset (int, optional): The offset in bytes. Default: ``0`` .
 
-    Returns:
-        Tensor, a 1-D tensor containing the data from the buffer.
+                Returns:
+                    Tensor, a 1-D tensor containing the data from the buffer.
 
-    Raises:
-        - **RuntimeError** - If `count` is a negative number less than -1.
-        - **RuntimeError** - If the buffer length is less than or equal to 0, or if `count` is 0.
-        - **RuntimeError** - If `offset` is not within the range [0, buffer length - 1].
-        - **RuntimeError** - When `count` is -1, if (buffer length - `offset`) is not divisible by the element size.
-        - **RuntimeError** - If the remaining buffer size after `offset` is insufficient to accommodate the requested number of elements.
-
-    Examples:
-        >>> import mindspore
-        >>> data = bytearray([1, 2, 3, 4, 5, 6])
-        >>> tensor = mindspore.frombuffer(data, dtype=mindspore.uint8)
-        >>> print(tensor)
-        [1 2 3 4 5 6]
+                Raises:
+                    RuntimeError: If `count` is a negative number less than -1.
+                    RuntimeError: If the buffer length is less than or equal to 0, or if `count` is 0.
+                    RuntimeError: If `offset` is not within the range [0, buffer length - 1].
+                    RuntimeError: When `count` is -1, if (buffer length - `offset`) is
+                                  not divisible by the element size.
+                    RuntimeError: If the remaining buffer size after `offset` is insufficient to
+                                  accommodate the requested number of elements.
+               
+                Examples:
+                    >>> import mindspore
+                    >>> data = bytearray([1, 2, 3, 4, 5, 6])
+                    >>> tensor = mindspore.frombuffer(data, dtype=mindspore.uint8)
+                    >>> print(tensor)
+                    [1 2 3 4 5 6]
     )");
 }
 

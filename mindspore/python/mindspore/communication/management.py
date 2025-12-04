@@ -132,11 +132,11 @@ def init(backend_name=None):
           and the instantiation and execution of any operation and net.
 
     Args:
-        backend_name (str): Backend, using ``"hccl"`` / ``"nccl"`` / ``"mccl"``.
-                            ``"hccl"`` should be used for Ascend hardware platforms,
-                            ``"nccl"`` for GPU hardware platforms and ``"mccl"`` for CPU hardware platforms.
-                            If not set, inference is automatically made based on the hardware
-                            platform type (device_target). Default: ``None`` .
+        backend_name (str, optional): Backend, using ``"hccl"`` / ``"nccl"`` / ``"mccl"``.
+            ``"hccl"`` should be used for Ascend hardware platforms,
+            ``"nccl"`` for GPU hardware platforms and ``"mccl"`` for CPU hardware platforms.
+            If not set, inference is automatically made based on the hardware
+            platform type (device_target). Default: ``None`` .
 
     Raises:
         TypeError: If `backend_name` is not a string.
@@ -330,8 +330,8 @@ def get_rank(group=GlobalComm.WORLD_COMM_GROUP):
         This method should be used after init().
 
     Args:
-        group (str): The communication group to work on. Normally, the group should be created by create_group,
-                     otherwise, using the default group. Default: ``GlobalComm.WORLD_COMM_GROUP`` .
+        group (str, optional): The communication group to work on. Normally, the group should be created by
+            create_group, otherwise, using the default group. Default: ``GlobalComm.WORLD_COMM_GROUP`` .
 
     Returns:
         int, the rank ID of the calling process within the group.
@@ -375,8 +375,8 @@ def get_local_rank(group=GlobalComm.WORLD_COMM_GROUP):
         This method should be used after init().
 
     Args:
-        group (str): The communication group to work on. Normally, the group should be created by create_group,
-                     otherwise, using the default group. Default: ``GlobalComm.WORLD_COMM_GROUP``.
+        group (str, optional): The communication group to work on. Normally, the group should be created by
+            create_group, otherwise, using the default group. Default: ``GlobalComm.WORLD_COMM_GROUP``.
 
     Returns:
         int, the local rank ID of the calling process within the group.
@@ -422,8 +422,8 @@ def get_group_size(group=GlobalComm.WORLD_COMM_GROUP):
         This method should be used after init().
 
     Args:
-        group (str): The communication group to work on. Normally, the group should be created by create_group,
-                     otherwise, using the default group. Default: ``GlobalComm.WORLD_COMM_GROUP``.
+        group (str, optional): The communication group to work on. Normally, the group should be created by
+            create_group, otherwise, using the default group. Default: ``GlobalComm.WORLD_COMM_GROUP``.
 
     Returns:
         int, the rank size of the group.
@@ -468,8 +468,8 @@ def get_local_rank_size(group=GlobalComm.WORLD_COMM_GROUP):
         This method should be used after init().
 
     Args:
-        group (str): The communication group to work on. The group is created by create_group
-                     or the default world communication group. Default: ``GlobalComm.WORLD_COMM_GROUP`` .
+        group (str, optional): The communication group to work on. The group is created by create_group
+            or the default world communication group. Default: ``GlobalComm.WORLD_COMM_GROUP`` .
 
     Returns:
         int, the local rank size where the calling process is within the group.
@@ -745,8 +745,8 @@ def get_comm_name(group=GlobalComm.WORLD_COMM_GROUP):
         This method should be used after init().
 
     Args:
-        group (str): The communication group to work on. Normally, the group should be created by create_group,
-                     otherwise, using the default group. Default: ``GlobalComm.WORLD_COMM_GROUP`` .
+        group (str, optional): The communication group to work on. Normally, the group should be created by
+            create_group, otherwise, using the default group. Default: ``GlobalComm.WORLD_COMM_GROUP`` .
 
     Returns:
         string, the inner communicator name of the group.
