@@ -3993,11 +3993,12 @@ def to_(input_x, device=None, non_blocking=False):
     return inplace_to_device_(input_x, device, non_blocking)
 
 
-def delete_(input_x):
+def delete_(input_x, non_blocking=False):
     r"""
     Delete tensor data.
     """
-    return free_(input_x)
+    sync = not non_blocking
+    return free_(input_x, sync)
 
 
 def data(input_x):

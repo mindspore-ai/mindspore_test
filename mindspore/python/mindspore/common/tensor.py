@@ -2854,15 +2854,18 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
         if device not in ("Ascend", "CPU"):
             raise ValueError(f"The value of 'to' must be one of ['Ascend', 'CPU'], but got {device}")
         copy_data = self.to(device=device, non_blocking=non_blocking)
-        self.data.delete_()  # pylint: disable=E0203
+        self.data.delete_(non_blocking)  # pylint: disable=E0203
         self.data = copy_data
         return self
 
-    def delete_(self):
+    def delete_(self, non_blocking=False):
         r"""
         Delete tensor data.
         """
-        return tensor_operator_registry.get('delete_')()(self)
+        if not isinstance(non_blocking, bool):
+            raise ValueError(f"The type of 'non_blocking' must be bool, but got {non_blocking}")
+        sync = not non_blocking
+        return tensor_operator_registry.get('delete_')()(self, sync)
 
     def type(self, dtype=None):
         r"""
