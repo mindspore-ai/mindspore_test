@@ -166,20 +166,13 @@ class Parser {
   FunctionBlockPtr ParseAssert(const FunctionBlockPtr &block, const py::object &node);
   // Process with statement.
   FunctionBlockPtr ParseWith(const FunctionBlockPtr &block, const py::object &node);
-  // Check if is StreamCtx.
-  bool IsStreamCtx(const FunctionBlockPtr &block, const py::object &context_expr_obj);
-  // Check if is StreamLimitCtx.
-  bool IsStreamLimitCtx(const FunctionBlockPtr &block, const py::object &context_expr_obj);
-  // New ndoe for arg of StreamCtx node.
-  AnfNodePtr NewStreamCtxArgNode(const FunctionBlockPtr &block, const py::object &context_expr_obj);
-  // New nodes for args of StreamLimitCtx.
-  std::vector<AnfNodePtr> NewStreamLimitCtxArgsNode(const FunctionBlockPtr &block, const py::object &context_expr_obj);
-  // Process with StreamCtx.
-  FunctionBlockPtr StreamCtxBlock(const FunctionBlockPtr &block, const py::object &node,
-                                  const py::object &context_expr_obj);
-  // Process with StreamLimitCtx.
-  FunctionBlockPtr StreamLimitCtxBlock(const FunctionBlockPtr &block, const py::object &node,
-                                       const py::object &context_expr_obj);
+  // Check whether it is currently BaseCtx, which currently supports StreamCtx or StreamLimitCtx.
+  int64_t IsBaseCtx(const FunctionBlockPtr &block, const py::object &context_expr_obj);
+  // New nodes for args of StreamCtx or StreamLimitCtx.
+  std::vector<AnfNodePtr> NewBaseCtxArgsNode(const FunctionBlockPtr &block, const py::object &context_expr_obj);
+  // Process with BaseCtx, which currently supports StreamCtx or StreamLimitCtx.
+  FunctionBlockPtr BaseCtxBlock(const FunctionBlockPtr &block, const py::object &node,
+                                const py::object &context_expr_obj, int64_t base_ctx_type);
   // Process withitem.
   AnfNodePtr ParseWithitem(const FunctionBlockPtr &block, const py::object &node, const AnfNodePtr &context_expr_node);
   // Process the expr and slice node method list.
@@ -483,6 +476,9 @@ class Parser {
   mindspore::HashMap<std::string, mindspore::HashMap<std::string, std::vector<AnfNodePtr>>> getattr_nodes_map_;
   // Store the values for input args of top graph.
   ValuePtrList args_value_list_;
+  // For auxiliary checking of nested scenarios.
+  int64_t stream_ctx_count_ = 0;
+  int64_t stream_limit_ctx_count_ = 0;
 };
 
 // AST node type define code to ast.

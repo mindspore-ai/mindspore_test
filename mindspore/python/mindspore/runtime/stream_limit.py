@@ -16,7 +16,7 @@
 from mindspore._c_expression import get_stream_limit as get_stream_limit_
 from mindspore._c_expression import set_stream_limit as set_stream_limit_
 from mindspore._c_expression import reset_stream_limit as reset_stream_limit_
-from .stream import Stream
+from .stream import Stream, CtxBase
 
 
 def get_stream_limit(stream):
@@ -104,7 +104,7 @@ def reset_stream_limit(stream):
     reset_stream_limit_(stream)
 
 
-class StreamLimitCtx:
+class StreamLimitCtx(CtxBase):
     r"""
     Context-manager that selects a given stream core number limit.
 

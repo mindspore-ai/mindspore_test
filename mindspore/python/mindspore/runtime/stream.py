@@ -1,4 +1,4 @@
-# Copyright 2024 Huawei Technologies Co., Ltd
+# Copyright 2024-2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -409,8 +409,11 @@ def communication_stream():
             return None
     return Stream(stream=communication_stream_())
 
+class CtxBase:
+    ctx_attr = True
 
-class StreamCtx:
+
+class StreamCtx(CtxBase):
     r"""
     Context-manager that selects a given stream.
 

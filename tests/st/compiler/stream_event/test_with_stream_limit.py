@@ -15,6 +15,7 @@
 """Test StreamLimitCtx"""
 # pylint: disable=W1514
 import os
+import pytest
 import re
 import shutil
 import numpy as np
@@ -404,3 +405,29 @@ def test_with_stream_event_with_morph_multi_cse():
     assert len(vector_num) == 7
     assert len(cube_num) == 7
     assert len(muls_num) == 2
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_with_stream_limit_nested():
+    """
+    Feature: Support with stream.
+    Description: Support with stream.
+    Expectation: Run success.
+    """
+
+    class MyMsJitStreamCtxNet(nn.Cell):
+        def construct(self, x):
+            y = x * 2
+            with MyMsJitStreamCtx(s1):
+                z = a + b + x
+                with StreamLimitCtx(s1, 8, 8):
+                    y = y + ops.abs(a)
+                    with StreamLimitCtx(s2, 2, 2):
+                        y2 = y + ops.abs(a)
+            return z - y2
+
+    with pytest.raises(RuntimeError) as info:
+        net = MyMsJitStreamCtxNet()
+        x = Tensor(np.ones([3, 3]), ms.float32)
+        net(x)
+    assert "Nested with StreamLimitCtx statements are not supported in graph mode." in str(info.value)
