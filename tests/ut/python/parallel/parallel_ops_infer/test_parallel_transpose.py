@@ -11,7 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+"""test ut for parallel transpose infer layout"""
+import math
 import pytest
 from mindspore.parallel import Layout
 from mindspore.parallel.spmd.ops.parallel_transpose import TransposeDistributedOp
@@ -26,12 +27,15 @@ class TestTransposeDistributedOp:
         Description: Test transpose operation with valid 2D layout and axis permutation
         Expectation: Output layout tensor map correctly permuted according to axis
         """
-        input_layout = Layout(device_matrix=[2, 2], alias_name="input")
-        layout_with_tensor_map = input_layout(0, 1)
-        
-        op = TransposeDistributedOp()
-        result_layout = op.infer_layout([layout_with_tensor_map], (1, 0))
-        
+        dev_mat = (2, 2)
+        aliases= ("dp", "tp")
+        rank_list = list(range(math.prod(dev_mat)))
+        input_layout = Layout(device_matrix=dev_mat, alias_name=aliases, rank_list=rank_list)
+        layout_with_tensor_map = input_layout("tp", "dp")
+
+        op = TransposeDistributedOp('Transpose')
+        result_layout = op.infer_layout([layout_with_tensor_map], ((1, 0),))
+
         assert result_layout.tensor_map == (1, 0)
         assert result_layout.device_matrix == input_layout.device_matrix
         assert result_layout.alias_name == input_layout.alias_name
@@ -42,12 +46,15 @@ class TestTransposeDistributedOp:
         Description: Test transpose operation with 3D layout and complex axis permutation
         Expectation: Output layout tensor map correctly follows the given permutation
         """
-        input_layout = Layout(device_matrix=[2, 2, 2], alias_name="input_3d")
-        layout_with_tensor_map = input_layout(0, 1, 2)
-        
-        op = TransposeDistributedOp()
-        result_layout = op.infer_layout([layout_with_tensor_map], (2, 0, 1))
-        
+        dev_mat = (2, 2, 2)
+        aliases= ("dp", "cp", "tp")
+        rank_list = list(range(math.prod(dev_mat)))
+        input_layout = Layout(device_matrix=dev_mat, alias_name=aliases, rank_list=rank_list)
+        layout_with_tensor_map = input_layout("tp", "cp", "dp")
+
+        op = TransposeDistributedOp('Transpose')
+        result_layout = op.infer_layout([layout_with_tensor_map], ((2, 0, 1),))
+
         assert result_layout.tensor_map == (2, 0, 1)
         assert result_layout.device_matrix == input_layout.device_matrix
         assert result_layout.alias_name == input_layout.alias_name
@@ -58,13 +65,16 @@ class TestTransposeDistributedOp:
         Description: Test transpose operation with mismatched tensor map and axis dimensions
         Expectation: Raise ValueError with appropriate message
         """
-        input_layout = Layout(device_matrix=[2, 2], alias_name="mismatch_test")
-        layout_with_tensor_map = input_layout(0, 1)
-        
-        op = TransposeDistributedOp()
-        
+        dev_mat = (2, 2)
+        aliases= ("dp", "tp")
+        rank_list = list(range(math.prod(dev_mat)))
+        input_layout = Layout(device_matrix=dev_mat, alias_name=aliases, rank_list=rank_list)
+        layout_with_tensor_map = input_layout("tp", "dp")
+
+        op = TransposeDistributedOp('Transpose')
+
         with pytest.raises(ValueError, match="Input tensor shape and permutation must have the same size"):
-            op.infer_layout([layout_with_tensor_map], (1, 0, 2))
+            op.infer_layout([layout_with_tensor_map], ((1, 0, 2),))
 
     def test_negative_index_error(self):
         """
@@ -72,13 +82,16 @@ class TestTransposeDistributedOp:
         Description: Test transpose operation with negative index in axis permutation
         Expectation: Raise ValueError for invalid permutation
         """
-        input_layout = Layout(device_matrix=[2, 2, 2], alias_name="invalid_test")
-        layout_with_tensor_map = input_layout(0, 1, 2)
-        
-        op = TransposeDistributedOp()
-        
+        dev_mat = (2, 2, 2)
+        aliases= ("dp", "cp", "tp")
+        rank_list = list(range(math.prod(dev_mat)))
+        input_layout = Layout(device_matrix=dev_mat, alias_name=aliases, rank_list=rank_list)
+        layout_with_tensor_map = input_layout("tp", "cp", "dp")
+
+        op = TransposeDistributedOp('Transpose')
+
         with pytest.raises(ValueError, match="Invalid permutation"):
-            op.infer_layout([layout_with_tensor_map], (-1, 0, 1))
+            op.infer_layout([layout_with_tensor_map], ((-1, 0, 1),))
 
     def test_out_of_range_index_error(self):
         """
@@ -86,13 +99,16 @@ class TestTransposeDistributedOp:
         Description: Test transpose operation with axis index exceeding tensor dimensions
         Expectation: Raise ValueError for invalid permutation due to out of range index
         """
-        input_layout = Layout(device_matrix=[2, 2], alias_name="range_test")
-        layout_with_tensor_map = input_layout(0, 1)
-        
-        op = TransposeDistributedOp()
-        
+        dev_mat = (2, 2)
+        aliases= ("dp", "tp")
+        rank_list = list(range(math.prod(dev_mat)))
+        input_layout = Layout(device_matrix=dev_mat, alias_name=aliases, rank_list=rank_list)
+        layout_with_tensor_map = input_layout("tp", "dp")
+
+        op = TransposeDistributedOp('Transpose')
+
         with pytest.raises(ValueError, match="Invalid permutation"):
-            op.infer_layout([layout_with_tensor_map], (0, 2))
+            op.infer_layout([layout_with_tensor_map], ((0, 2),))
 
     def test_duplicate_indices_error(self):
         """
@@ -100,13 +116,16 @@ class TestTransposeDistributedOp:
         Description: Test transpose operation with duplicate indices in axis permutation
         Expectation: Raise ValueError for invalid permutation due to duplicate indices
         """
-        input_layout = Layout(device_matrix=[2, 2, 2], alias_name="duplicate_test")
-        layout_with_tensor_map = input_layout(0, 1, 2)
-        
-        op = TransposeDistributedOp()
-        
+        dev_mat = (2, 2, 2)
+        aliases= ("dp", "cp", "tp")
+        rank_list = list(range(math.prod(dev_mat)))
+        input_layout = Layout(device_matrix=dev_mat, alias_name=aliases, rank_list=rank_list)
+        layout_with_tensor_map = input_layout("tp", "cp", "dp")
+
+        op = TransposeDistributedOp('Transpose')
+
         with pytest.raises(ValueError, match="Invalid permutation"):
-            op.infer_layout([layout_with_tensor_map], (1, 1, 0))
+            op.infer_layout([layout_with_tensor_map], ((1, 1, 0),))
 
     def test_identity_transpose(self):
         """
@@ -114,12 +133,15 @@ class TestTransposeDistributedOp:
         Description: Test transpose operation with identity permutation (no change)
         Expectation: Output layout identical to input layout
         """
-        input_layout = Layout(device_matrix=[2, 2, 2], alias_name="identity_test")
-        layout_with_tensor_map = input_layout(1, 0, 2)
-        
-        op = TransposeDistributedOp()
-        result_layout = op.infer_layout([layout_with_tensor_map], (0, 1, 2))
-        
+        dev_mat = (2, 2, 2)
+        aliases= ("dp", "cp", "tp")
+        rank_list = list(range(math.prod(dev_mat)))
+        input_layout = Layout(device_matrix=dev_mat, alias_name=aliases, rank_list=rank_list)
+        layout_with_tensor_map = input_layout("cp", "tp", "dp")
+
+        op = TransposeDistributedOp('Transpose')
+        result_layout = op.infer_layout([layout_with_tensor_map], ((0, 1, 2),))
+
         assert result_layout.tensor_map == (1, 0, 2)
         assert result_layout.device_matrix == input_layout.device_matrix
         assert result_layout.alias_name == input_layout.alias_name

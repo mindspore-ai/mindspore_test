@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-
+"""test st for parallel transpose"""
 import time
 import numpy as np
 import mindspore as ms
@@ -46,6 +46,7 @@ def create_tensor(data):
 
 
 def run_standalone(x):
+    """run SimpleModel with input x in standalone mode."""
     model = SimpleModel()
 
     def forward_fn(data):
@@ -66,6 +67,7 @@ def run_standalone(x):
 
 
 def run_parallel(local_x, x_layout):
+    """run SimpleModel with input x in parallel mode."""
     model = SimpleModel()
 
     model.transpose.shard(in_strategy=(x_layout,))
@@ -89,6 +91,7 @@ def run_parallel(local_x, x_layout):
 
 
 def base_case(dp, mp):
+    """run case."""
     D.init()
 
     # standalone
@@ -108,7 +111,7 @@ def base_case(dp, mp):
     parallel_output = run_parallel(local_x, x_layout)
 
     # compare output
-    assert np.allclose(standalone_output.asnumpy()[::dp, ::mp, :], 
+    assert np.allclose(standalone_output.asnumpy()[::dp, ::mp, :],
                        parallel_output.asnumpy(), 0.001, 0.001)
 
 

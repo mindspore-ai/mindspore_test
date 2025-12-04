@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+"""run parallel transpose st with msrun launcher"""
 import os
-
 
 def test_shard_in_python_pynative():
     '''

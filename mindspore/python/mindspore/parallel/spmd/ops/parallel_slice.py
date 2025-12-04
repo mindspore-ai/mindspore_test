@@ -47,7 +47,7 @@ class SliceDistributedOp(DistributedOp):
             raise ValueError(f"Layout must be a tuple of length 1, but got {len(layout)}")
         layout = layout[0]
         shard_dim = self._is_shard_dim(layout)
-        for i in range(len(begin)):
+        for i, _ in enumerate(begin):
             if (shard_dim[i] != 1 and end[i] - begin[i] != shape[i]) and shape[i] != -1:
                 raise ValueError(
                     f"Slice: When a dimension({i}) is not fully fetched, the dimension can not be split now, "
@@ -71,6 +71,6 @@ class SliceDistributedOp(DistributedOp):
         end = extra_args[1]
         global_shape = extra_args[2]
         shard_dim = self._check_layout(input_layouts, begin, end, global_shape)
-        new_begin = tuple([begin[i] // shard_dim[i] for i in range(len(begin))])
-        new_end = tuple([end[i] // shard_dim[i] for i in range(len(end))])
+        new_begin = tuple(begin[i] // shard_dim[i] for i in range(len(begin)))
+        new_end = tuple(end[i] // shard_dim[i] for i in range(len(end)))
         return input_layouts[0], new_begin, new_end

@@ -45,7 +45,7 @@ class TransposeDistributedOp(DistributedOp):
         if len(in_tensor_map) != len(axis):
             raise ValueError(f"Input tensor shape and permutation must have the same size."
                              f"Got {len(in_tensor_map)} and {len(axis)}")
-        
+
         # check if axis is a permutation
         num = len(in_tensor_map)
         seen = set()
@@ -53,7 +53,7 @@ class TransposeDistributedOp(DistributedOp):
             if v < 0 or v >= num or v in seen:
                 raise ValueError("Invalid permutation")
             seen.add(v)
-        
+
         out_tensor_map = type(in_tensor_map)(in_tensor_map[i] for i in axis)
 
         output_layout = Layout(
@@ -65,4 +65,3 @@ class TransposeDistributedOp(DistributedOp):
         out_layout = output_layout(*out_tensor_map)
 
         return out_layout
-    
