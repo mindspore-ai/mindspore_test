@@ -19,7 +19,7 @@ nsa_compress:
         compress_stride (int): Step between adjacent windows.
 
     Keyword Args:
-        actual_seq_len (tuple[int] or list[int]): Per-batch sequence lengths in prefix-sum mode. The sequence must be
+        actual_seq_len (Union[tuple[int], list[int]]): Per-batch sequence lengths in prefix-sum mode. The sequence must be
           non-decreasing and its last element must equal T.
 
     Returns:

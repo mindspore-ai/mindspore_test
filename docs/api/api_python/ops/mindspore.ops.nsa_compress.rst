@@ -1,7 +1,7 @@
 mindspore.ops.nsa_compress
 ==========================
 
-.. py:function:: mindspore.ops.nsa_compress(input, weight, compress_block_size, compress_stride, *, actual_seq_len)
+.. py:function:: mindspore.ops.nsa_compress(input, weight, compress_block_size, compress_stride, *, actual_seq_len) -> Tensor
 
     使用 NSA Compress 算法在 KV 序列维度进行压缩，以降低长上下文训练中的注意力计算开销。
 
@@ -20,7 +20,7 @@ mindspore.ops.nsa_compress
         - **compress_stride** (int) - 相邻滑窗间距。
 
     关键字参数：
-        - **actual_seq_len** (tuple[int] 或 list[int]) - 批次序列长度（前缀和），必须为非递减整数序列，且末元素等于 ``T``。
+        - **actual_seq_len** (Union[tuple[int], list[int]]) - 批次序列长度（前缀和），必须为非递减整数序列，且末元素等于 ``T``。
 
     返回：
         Tensor。形状为 ``(T', N, D)``，数据类型与 `input` 相同。 :math:`T'` 由 `actual_seq_len`、 `compress_block_size`、 `compress_stride` 联合决定。

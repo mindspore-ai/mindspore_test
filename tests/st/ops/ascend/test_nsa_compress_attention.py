@@ -30,7 +30,6 @@ torch.use_deterministic_algorithms(True)
 
 try:
     from einops import rearrange
-    HAS_EINOPS = True
 except ImportError as exc:
     raise ValueError("einops not found") from exc
 
@@ -238,14 +237,9 @@ def torch_cpu_generate_golden(q, k, v, scale_value, head_num, compress_block_siz
         qi = q[cu_seqlens_q[i]:cu_seqlens_q[i + 1]]
         ki = k[cu_seqlens_k[i]:cu_seqlens_k[i + 1]]
         vi = v[cu_seqlens_k[i]:cu_seqlens_k[i + 1]]
-        if HAS_EINOPS:
-            qi = rearrange(qi, 's n d -> 1 n s d')
-            ki = rearrange(ki, 's n d -> 1 n s d')
-            vi = rearrange(vi, 's n d -> 1 n s d')
-        else:
-            qi = qi.unsqueeze(0)
-            ki = ki.unsqueeze(0)
-            vi = vi.unsqueeze(0)
+        qi = rearrange(qi, 's n d -> 1 n s d')
+        ki = rearrange(ki, 's n d -> 1 n s d')
+        vi = rearrange(vi, 's n d -> 1 n s d')
 
         if N1 != N2:
             ki = broadcast_kv(N1, N2, ki, ki.dtype)
@@ -280,14 +274,9 @@ def torch_cpu_generate_golden(q, k, v, scale_value, head_num, compress_block_siz
         topki = topki_total[:, :, :, :select_block_count]
         topki_with_n = topki_total[:, :, :, :select_block_count + TOPK_CHECK_OUT_SUFFIX]
 
-        if HAS_EINOPS:
-            atten_out[cu_seqlens_q[i]:cu_seqlens_q[i + 1]] = rearrange(outi_golden, '1 n s d -> s n d')
-            topk_indices[cu_seqlens_q[i]:cu_seqlens_q[i + 1]] = rearrange(topki, '1 n s d -> s n d')
-            topk_indices_with_n[cu_seqlens_q[i]:cu_seqlens_q[i + 1]] = rearrange(topki_with_n, '1 n s d -> s n d')
-        else:
-            atten_out[cu_seqlens_q[i]:cu_seqlens_q[i + 1]] = outi_golden.squeeze(0)
-            topk_indices[cu_seqlens_q[i]:cu_seqlens_q[i + 1]] = topki.squeeze(0).permute(1, 0, 2)
-            topk_indices_with_n[cu_seqlens_q[i]:cu_seqlens_q[i + 1]] = topki_with_n.squeeze(0).permute(1, 0, 2)
+        atten_out[cu_seqlens_q[i]:cu_seqlens_q[i + 1]] = rearrange(outi_golden, '1 n s d -> s n d')
+        topk_indices[cu_seqlens_q[i]:cu_seqlens_q[i + 1]] = rearrange(topki, '1 n s d -> s n d')
+        topk_indices_with_n[cu_seqlens_q[i]:cu_seqlens_q[i + 1]] = rearrange(topki_with_n, '1 n s d -> s n d')
 
         x_maxi = x_maxi.broadcast_to(1, N1, cur_seq_q_len, 8).contiguous().view(-1)
         x_sumi = x_sumi.broadcast_to(1, N1, cur_seq_q_len, 8).contiguous().view(-1)
@@ -1107,7 +1096,7 @@ def test_nsa_compress_attention_empty_input_tensor_forward_backward(context_mode
     ("compress_stride", 15),
     ("select_block_size", 15),
     ("select_block_count", 33),
-    ("d_not_multiple_16", 0),
+    ("d_not_multiple_16", 5),
 ])
 def test_nsa_compress_attention_exception_invalid_parameters(context_mode, invalid_param):
     """

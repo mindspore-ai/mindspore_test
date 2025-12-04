@@ -24,8 +24,8 @@ mindspore.ops.nsa_select_attention
 
     关键字参数：
         - **atten_mask** (Tensor，可选) - 注意力掩码张量。目前不支持。默认： ``None`` 。
-        - **actual_seq_qlen** (list[int]，可选) - 每个 batch 中 `query` 对应的大小（前缀和模式），必须为非递减整数序列，最后一个值等于 :math:`T_1` 。
-        - **actual_seq_kvlen** (list[int]，可选) - 每个 batch 中 `key` 和 `value` 对应的大小（前缀和模式），必须为非递减整数序列，最后一个值等于 :math:`T_2` 。
+        - **actual_seq_qlen** (Union[tuple[int], list[int]]) - 每个 batch 中 `query` 对应的大小（前缀和模式），必须为非递减整数序列，最后一个值等于 :math:`T_1` 。
+        - **actual_seq_kvlen** (Union[tuple[int], list[int]]) - 每个 batch 中 `key` 和 `value` 对应的大小（前缀和模式），必须为非递减整数序列，最后一个值等于 :math:`T_2` 。
 
     返回：
         一个Tensor元组，包含 `attention_out`、`softmax_max` 和 `softmax_sum` 。

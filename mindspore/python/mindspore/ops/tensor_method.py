@@ -449,8 +449,7 @@ from mindspore.ops.auto_generate.gen_ops_prim import inplace_log_op
 # 1031 masked_scatter
 from mindspore.ops.auto_generate import masked_scatter
 
-from .._checkparam import check_axis_in_range
-from ..ops.composite.multitype_ops import _compile_utils as compile_utils
+from mindspore._checkparam import check_axis_in_range
 
 
 ########################################functions########################################
@@ -1690,7 +1689,7 @@ def deprecated_tensor_take(x, indices, axis=None, mode='clip'):
     shape_a = a.shape
     shape_indices = indices.shape
     size_indices = indices.size
-    indices = compile_utils.check_indices(shape_a[axis], indices, mode)
+    indices = utils.check_indices(shape_a[axis], indices, mode)
 
     # reshapes indices to shape (Ni..., Nj..., Nk)
     shape_ni = tuple_slice(shape_a, None, axis)
@@ -2020,6 +2019,22 @@ def _tensor_nsa_compress(input, weight, compress_block_size, compress_stride, *,
     raise RuntimeError("'nsa_compress' is only supported on Ascend.")
 
 
-def _tensor_nsa_compress_attention(*args, **kwargs):
+def _tensor_nsa_compress_attention(
+        query,
+        key,
+        value,
+        scale_value,
+        head_num,
+        compress_block_size,
+        compress_stride,
+        select_block_size,
+        select_block_count,
+        *,
+        topk_mask=None,
+        atten_mask=None,
+        actual_seq_qlen=None,
+        actual_cmp_seq_kvlen=None,
+        actual_sel_seq_kvlen=None,
+    ):
     """Placeholder for unsupported devices: nsa_compress_attention."""
-    raise RuntimeError("'nsa_compress_attention' is not supported on this device.")
+    raise RuntimeError("'nsa_compress_attention' is only supported on Ascend.")

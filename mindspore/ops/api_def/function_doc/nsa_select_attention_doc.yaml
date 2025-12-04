@@ -38,9 +38,9 @@ nsa_select_attention:
 
     Keyword Args:
         atten_mask (Tensor, optional): The attention mask tensor. Currently not supported. Default: ``None`` .
-        actual_seq_qlen (list[int]): Size of `query` corresponding to each batch, given in cumulative (prefix-sum) mode,
+        actual_seq_qlen (Union[tuple[int], list[int]]): Size of `query` corresponding to each batch, given in cumulative (prefix-sum) mode,
             sequence of non-decreasing integers with the last value equal to :math:`T_1` .
-        actual_seq_kvlen (list[int]): Size of `key` and `value` corresponding to each batch, given in cumulative (prefix-sum) mode,
+        actual_seq_kvlen (Union[tuple[int], list[int]]): Size of `key` and `value` corresponding to each batch, given in cumulative (prefix-sum) mode,
             sequence of non-decreasing integers with the last value equal to :math:`T_2` .
 
     Returns:
