@@ -18,7 +18,7 @@ import pytest
 import torch
 
 import mindspore as ms
-from mindspore import Tensor, context, mint
+from mindspore import Tensor, mint
 from mindspore import dtype as mstype
 from mindspore.common.api import _pynative_executor
 
@@ -218,10 +218,12 @@ class TestMulModule:
 
 
 def _set_mode(mode):
-    if mode == ms.GRAPH_MODE:
-        context.set_context(mode=ms.GRAPH_MODE, jit_level='O0', device_target='Ascend')
+    if mode == 'pynative':
+        ms.context.set_context(mode=ms.PYNATIVE_MODE)
+    elif mode == 'kbk':
+        ms.context.set_context(mode=ms.GRAPH_MODE, jit_level='O0')
     else:
-        context.set_context(mode=ms.PYNATIVE_MODE, device_target='Ascend')
+        ms.context.set_context(mode=ms.GRAPH_MODE, jit_level='O2')
 
 
 DTYPE_MAP = {
@@ -240,8 +242,9 @@ DTYPE_MAP = {
 def is_float_type(dtype):
     return dtype in (mstype.float16, mstype.float32, mstype.float64, mstype.bfloat16)
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
-@pytest.mark.parametrize('context_mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
+@arg_mark(plat_marks=['platform_ascend910b'],
+          level_mark='level0', card_mark='onecard', essential_mark='essential')
+@pytest.mark.parametrize('context_mode', ['pynative', 'kbk', 'ge'])
 @pytest.mark.parametrize('dtype_x', DTYPE_MAP.keys())
 @pytest.mark.parametrize('dtype_y', DTYPE_MAP.keys())
 def test_mint_mul_mixed_precision_combinations(context_mode, dtype_x, dtype_y):
@@ -264,8 +267,9 @@ def test_mint_mul_mixed_precision_combinations(context_mode, dtype_x, dtype_y):
         module.grad_cmp()
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
-@pytest.mark.parametrize('context_mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
+@arg_mark(plat_marks=['cpu_linux', 'platform_gpu', 'platform_ascend910b'],
+          level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@pytest.mark.parametrize('context_mode', ['pynative', 'kbk', 'ge'])
 @pytest.mark.parametrize('shapes', [
     ((3, 1, 5), (1, 4, 5)), # Basic broadcast
     ((1, 64, 1, 1), (32, 1, 1, 1)), # Multi-dim broadcast
@@ -287,13 +291,14 @@ def test_mint_mul_broadcast(context_mode, shapes):
     module.grad_cmp()
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
-@pytest.mark.parametrize('context_mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
+@arg_mark(plat_marks=['cpu_linux', 'platform_gpu', 'platform_ascend910b'],
+          level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@pytest.mark.parametrize('context_mode', ['pynative', 'kbk', 'ge'])
 @pytest.mark.parametrize('params', [
     # 7D: (2, 1, 2, 1, 4, 8, 8) * (2, 3, 2, 5, 4, 1, 1) -> (2, 3, 2, 5, 4, 8, 8), FP32
     {'shape1': (2, 1, 2, 1, 4, 8, 8), 'shape2': (2, 3, 2, 5, 4, 1, 1), 'dtype': mstype.float32},
     # 4D: Large Shape, Same shape, BF16
-    {'shape1': (16, 200, 400, 15), 'shape2': (16, 200, 400, 15), 'dtype': mstype.bfloat16},
+    {'shape1': (16, 200, 400, 15), 'shape2': (16, 200, 400, 15), 'dtype': mstype.float16},
     # 6D: Large Shape, Same shape, FP32
     {'shape1': (8, 8, 8, 8, 8, 8), 'shape2': (8, 8, 8, 8, 8, 8), 'dtype': mstype.float32},
     # 8D: Same shape, FP16
@@ -317,8 +322,9 @@ def test_mint_mul_large_shape_high_dims(context_mode, params):
     module.grad_cmp()
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
-@pytest.mark.parametrize('context_mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
+@arg_mark(plat_marks=['platform_ascend910b'],
+          level_mark='level0', card_mark='onecard', essential_mark='essential')
+@pytest.mark.parametrize('context_mode', ['pynative', 'kbk', 'ge'])
 @pytest.mark.parametrize('dtype_x', DTYPE_MAP.keys())
 @pytest.mark.parametrize('scalar_y', [2.0, 2, True])
 def test_mint_mul_scalar_tensor_promotion(context_mode, dtype_x, scalar_y):
@@ -338,8 +344,9 @@ def test_mint_mul_scalar_tensor_promotion(context_mode, dtype_x, scalar_y):
         module.grad_cmp()
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
-@pytest.mark.parametrize('context_mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
+@arg_mark(plat_marks=['cpu_linux', 'platform_gpu', 'platform_ascend910b'],
+          level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@pytest.mark.parametrize('context_mode', ['pynative', 'kbk', 'ge'])
 def test_mint_mul_special_values(context_mode):
     """
     Feature: mint.mul robustness
@@ -355,8 +362,9 @@ def test_mint_mul_special_values(context_mode):
     module.grad_cmp()
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
-@pytest.mark.parametrize('context_mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
+@arg_mark(plat_marks=['cpu_linux', 'platform_gpu', 'platform_ascend910b'],
+          level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@pytest.mark.parametrize('context_mode', ['pynative', 'kbk', 'ge'])
 def test_mint_mul_empty_tensor(context_mode):
     """
     Feature: mint.mul empty tensor
@@ -373,8 +381,9 @@ def test_mint_mul_empty_tensor(context_mode):
     module.grad_cmp()
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
-@pytest.mark.parametrize('context_mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
+@arg_mark(plat_marks=['cpu_linux', 'platform_gpu', 'platform_ascend910b'],
+          level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@pytest.mark.parametrize('context_mode', ['pynative', 'kbk', 'ge'])
 def test_mint_mul_exception_shape_mismatch(context_mode):
     """
     Feature: mint.mul exception
@@ -390,8 +399,9 @@ def test_mint_mul_exception_shape_mismatch(context_mode):
         _pynative_executor.sync()
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
-@pytest.mark.parametrize('context_mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
+@arg_mark(plat_marks=['cpu_linux', 'platform_gpu', 'platform_ascend910b'],
+          level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@pytest.mark.parametrize('context_mode', ['pynative', 'kbk'])
 def test_mint_mul_dynamic_shape_test_op(context_mode):
     """
     Feature: Dynamic shape/rank for mint.mul

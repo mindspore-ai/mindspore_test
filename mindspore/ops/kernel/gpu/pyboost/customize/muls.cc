@@ -29,7 +29,7 @@ void MulsGPUCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &inpu
   // the Muls primitive does not support GPU, so use Mul instead.
   const auto mul_op = CREATE_PYBOOST_OP(Mul, device_name);
 
-  // handle type promotion manually since the GPU kernelmod Pow does not support it
+  // handle type promotion manually since the GPU kernelmod Mul does not support it
   const auto out_dtype = op->output(0)->Dtype();
   auto input_tensor_cast = input_tensor;
   if (input_tensor->Dtype()->type_id() != out_dtype->type_id()) {

@@ -41,11 +41,11 @@ def _trans_scalar_inputs(x, y):
     If an op accepts multiple inputs and support scalar input by broadcasting it to another input, it requires
     special process(like Mul op) or different broadcast in taylor rule.
     """
-    if not x.shape:
+    if not hasattr(x, 'shape') or not x.shape:
         trans_x = zeros_like(y)
         trans_x[0] = x
         return trans_x, y
-    if not y.shape:
+    if not hasattr(y, 'shape') or not y.shape:
         trans_y = zeros_like(x)
         trans_y[0] = y
         return x, trans_y
@@ -72,8 +72,11 @@ def taylor_add_or_sub(self):
 
 def _taylor_fprop_mul(input_x, input_y):
     """The rule to generate `Mul` taylor rule."""
-    if not input_x.shape or not input_y.shape:
+    is_scalar_x = not hasattr(input_x, 'shape') or not input_x.shape
+    is_scalar_y = not hasattr(input_y, 'shape') or not input_y.shape
+    if is_scalar_x and is_scalar_y:
         return input_x * input_y
+    input_x, input_y = _trans_scalar_inputs(input_x, input_y)
     primals = ops.mul(input_x[0], input_y[0])
     series_num = len(input_x) - 1
     factorial = _factorial(series_num)
@@ -88,6 +91,7 @@ def _taylor_fprop_mul(input_x, input_y):
 
 
 @taylor_fprop_getters.register(P.Mul)
+@taylor_fprop_getters.register("Muls")
 def taylor_mul(self):
     """Higher order derivatives rule definition for `Mul` operation."""
 

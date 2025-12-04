@@ -165,17 +165,8 @@
 "mindspore/mindspore/python/mindspore/nn/layer/container.py"                                         "access-member-before-definition"
 "mindspore/mindspore/python/mindspore/ops_generate/common/template.py"                              "line-too-long"
 "mindspore/mindspore/python/mindspore/ops/function/array_func.py"                                   "consider-using-generator"
-"mindspore/mindspore/python/mindspore/nn/wrap/cell_wrapper.py"                                       "super-with-arguments"
-"mindspore/mindspore/python/mindspore/nn/wrap/cell_wrapper.py"                                       "unnecessary-comprehension"
-"mindspore/mindspore/python/mindspore/ops/function/clip_func.py"                                     "unnecessary-lambda-assignment"
-"mindspore/mindspore/python/mindspore/ops/function/clip_func.py"                                     "super-with-arguments"
-"mindspore/tests/st/compiler/jit/test_grad_jit_with_filter.py"                                       "super-with-arguments"
-"mindspore/tests/st/mint/overload/test_mint_mul.py"                                                  "missing-module-docstring"
 "mindspore/tests/st/tensor/overload/test_mul.py"                                                     "missing-module-docstring"
-"mindspore/tests/ut/python/parallel/test_global_norm.py"                                             "super-with-arguments"
-"mindspore/tests/ut/python/parallel/test_global_norm.py"                                             "unspecified-encoding"
 "mindspore/tests/ut/python/tensor/test_tensor.py"                                                    "super-with-arguments"
-"mindspore/mindspore/python/mindspore/nn/wrap/cell_wrapper.py"                                       "superfluous-parens"
 
 
 "mindspore/mindspore/ccsrc/plugin/device/ascend/kernel/ascendc/cmake/util"                                               "missing-docstring"
@@ -194,9 +185,6 @@
 "mindspore/mindspore/python/mindspore/mint/nn/layer/normalization.py"                                                    "pointless-string-statement"
 "mindspore/mindspore/python/mindspore/mint/nn/layer/normalization.py"                                                    "no-else-return"
 "mindspore/mindspore/python/mindspore/mint/nn/layer/_functions.py"                                                       "missing-docstring"
-"mindspore/mindspore/python/mindspore/common/tensor.py"                                                                  "superfluous-parens"
-"mindspore/mindspore/python/mindspore/common/tensor.py"                                                                  "unnecessary-comprehension"
-" mindspore/mindspore/python/mindspore/mint/__init__.py"                                                                 "consider-using-from-import"
 "mindspore/mindspore/python/mindspore/ops/composite/multitype_ops/mul_impl.py"                                           "arguments-out-of-order"
 
 # MindData
