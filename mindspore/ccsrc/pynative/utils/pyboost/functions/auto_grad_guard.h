@@ -21,7 +21,7 @@
 #include <utility>
 #include <memory>
 #include "ir/tensor.h"
-#include "ir/device_type.h"
+#include "device_address/device_type.h"
 #include "utils/device_manager_conf.h"
 #include "utils/ms_utils.h"
 #include "include/backend/visible.h"

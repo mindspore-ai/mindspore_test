@@ -70,6 +70,7 @@ class Layout {
 };
 using LayoutPtr = std::shared_ptr<Layout>;
 using LayoutMap = std::map<string, LayoutPtr>;
+
 class MS_CORE_API MindIRLoader {
  public:
   MindIRLoader() = default;

@@ -30,7 +30,7 @@
 #include "include/backend/common/pass_manager/op_adaptation_info_factory.h"
 #include "include/utils/pynative/common_utils.h"
 #include "include/pynative/utils/pynative_utils.h"
-#include "utils/core_op_utils.h"
+#include "ops/op_def_utils.h"
 #include "utils/check_convert_utils.h"
 #include "pynative/backward/grad_utils.h"
 #include "frontend/operator/cc_implementations.h"

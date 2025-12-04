@@ -29,6 +29,7 @@
       ".gitignore",
       "requirements.txt",
       "mindspore/lite/tools/kernel_builder/ascend/scripts",
+      "mindspore/core/README_CN.md",
       "third_party/patch",
       "config"
     ],

@@ -25,7 +25,7 @@
 #include "abstract/abstract_value.h"
 #include "include/utils/stub_tensor.h"
 #include "ir/anf.h"
-#include "ir/device_type.h"
+#include "device_address/device_type.h"
 #include "utils/simple_info.h"
 #include "ops/op_def.h"
 #include "mindspore/ccsrc/pynative/utils/pyboost/functions/base.h"

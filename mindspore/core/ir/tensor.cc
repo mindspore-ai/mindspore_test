@@ -36,7 +36,7 @@
 #include "utils/system/env.h"
 #include "utils/temp_file_manager.h"
 #include "utils/ms_context.h"
-#include "ir/device_address_maker.h"
+#include "device_address/device_address_maker.h"
 #include "ir/tensor_new.h"
 #include "ir/dtype/tensor_type.h"
 #include "utils/stream_guard.h"

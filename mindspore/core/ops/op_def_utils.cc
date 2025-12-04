@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "utils/core_op_utils.h"
+#include "ops/op_def_utils.h"
 #include <vector>
 #include <string>
 #include <memory>

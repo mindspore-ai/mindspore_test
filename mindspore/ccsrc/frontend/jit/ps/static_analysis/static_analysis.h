@@ -399,6 +399,8 @@ void SynchronizeSequenceElementsUseFlagsForFuncGraphArgs(const AnalysisEnginePtr
                                                          const CNodePtr &cnode,
                                                          const AbstractFunctionPtr &base_func_graph_func,
                                                          const AnalysisContextPtr &fg_context);
+
+void SynchronizeSuccessiveInputs(const AbstractBasePtr &old_arg, const AbstractBasePtr &new_arg);
 }  // namespace abstract
 }  // namespace mindspore
 

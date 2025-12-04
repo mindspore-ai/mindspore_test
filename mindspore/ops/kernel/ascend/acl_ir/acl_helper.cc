@@ -33,7 +33,7 @@
 #include "include/backend/common/ms_device_shape_transfer.h"
 #include "kernel/ascend/acl_ir/acl_adapter_info.h"
 #include "kernel/ascend/acl_ir/ge_adapter_info.h"
-#include "utils/core_op_utils.h"
+#include "ops/op_def_utils.h"
 #include "primitive/auto_generate/gen_ops_primitive_c.h"
 #include "primitive/auto_generate/gen_ops_primitive_e.h"
 #include "primitive/auto_generate/gen_ops_primitive_f.h"

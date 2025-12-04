@@ -42,6 +42,7 @@
 #include "include/backend/common/kernel_graph/kernel_graph.h"
 #include "utils/convert_utils.h"
 #include "device_address/device_address.h"
+#include "device_address/convert_tensor_utils.h"
 #include "include/backend/common/pass_manager/helper.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_build_info.h"
@@ -178,18 +179,6 @@ bool ContainScalarOut(const AbstractBasePtr &abs) {
     return has_scalar_out;
   }
   return false;
-}
-
-void HalfToFloat(void *dst, const void *src, size_t elem_num) {
-  if (dst == nullptr || src == nullptr) {
-    return;
-  }
-  auto half_data = static_cast<const float16 *>(src);
-  auto float_data = static_cast<float *>(dst);
-  for (size_t i = 0; i < elem_num; ++i) {
-    float tmp = half_to_float(half_data[i]);
-    float_data[i] = tmp;
-  }
 }
 }  // namespace
 
@@ -2350,7 +2339,7 @@ std::string AnfRuntimeAlgorithm::GetValueByDeviceAddress(KernelTensor *const ker
     constexpr size_t kFloat16TypeSize = 2;
     for (size_t i = 0; is_vaild_index(i, size / kFloat16TypeSize); ++i) {
       float fp32 = 0;
-      HalfToFloat(&fp32, buf + i * kFloat16TypeSize, 1);
+      device::HalfToFloat(&fp32, buf + i * kFloat16TypeSize, 1);
       value += std::to_string(fp32);
       value += ", ";
     }

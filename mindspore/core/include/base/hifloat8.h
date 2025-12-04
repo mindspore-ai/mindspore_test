@@ -24,10 +24,11 @@
 #include <ostream>
 #include <limits>
 #include <functional>
+#include "mindapi/base/macros.h"
 
 // Implement HiFloat8 for mindspore  https://arxiv.org/abs/2409.16626
 namespace mindspore {
-class HiFloat8 {
+class MS_CORE_API HiFloat8 {
  public:
   static constexpr uint8_t value_mask = 0x7f;
   static constexpr uint8_t true_value = 0x08;

@@ -15,7 +15,7 @@
  */
 
 #include "tests/ut/cpp/ops/meta_op/dense.h"
-#include "utils/core_op_utils.h"
+#include "ops/op_def_utils.h"
 #include "utils/check_convert_utils.h"
 #include "primitive/array_ops.h"
 #include "mindspore/ops/ops_utils/op_constants.h"

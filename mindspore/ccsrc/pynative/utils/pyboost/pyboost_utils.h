@@ -32,7 +32,6 @@
 #include "utils/simple_info.h"
 #include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
 #include "include/utils/pynative/abstract_converter.h"
-#include "ops/infer_info/value_infer_info_adapter.h"
 #include "ops/ops_func_impl/simple_infer.h"
 #include "tools/profiler/profiler.h"
 

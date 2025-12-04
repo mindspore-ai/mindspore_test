@@ -17,7 +17,6 @@
 #ifndef MINDSPORE_CCSRC_FRONTEND_OPERATOR_PRIMITIVE_PY_UTILS_H_
 #define MINDSPORE_CCSRC_FRONTEND_OPERATOR_PRIMITIVE_PY_UTILS_H_
 
-#include <set>
 #include <string>
 #include <vector>
 #include "pybind11/pybind11.h"

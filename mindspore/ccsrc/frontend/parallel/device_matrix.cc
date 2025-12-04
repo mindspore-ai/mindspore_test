@@ -26,7 +26,7 @@
 
 #include "frontend/parallel/status.h"
 #include "utils/log_adapter.h"
-#include "frontend/parallel/tensor_layout/map.h"
+#include "include/frontend/parallel/tensor_layout/map.h"
 #include "utils/convert_utils_base.h"
 
 namespace mindspore {

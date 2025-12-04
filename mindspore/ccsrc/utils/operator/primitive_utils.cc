@@ -1,5 +1,5 @@
 /**
- * Copyright 2020-2022 Huawei Technologies Co., Ltd
+ * Copyright 2020-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -218,7 +218,7 @@ static inline std::vector<std::string> GetRealTypes(const std::vector<std::strin
   }
   return real_types;
 }
-} // namespace
+}  // namespace
 
 std::string BuildOpErrorMsg(const ops::OpDefPtr &op_def, const std::vector<std::string> &op_type_list) {
   std::stringstream init_arg_ss;

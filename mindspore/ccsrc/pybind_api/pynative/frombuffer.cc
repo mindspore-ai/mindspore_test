@@ -21,7 +21,7 @@
 #include "pybind11/pybind11.h"
 #include "include/utils/exception.h"
 #include "include/utils/tensor_py.h"
-#include "ir/device_address_maker.h"
+#include "device_address/device_address_maker.h"
 #include "ir/dtype.h"
 #include "ir/tensor.h"
 #include "utils/log_adapter.h"

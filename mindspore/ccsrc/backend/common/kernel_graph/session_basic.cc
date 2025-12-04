@@ -33,7 +33,6 @@
 #include "ir/map_tensor.h"
 #include "ir/tensor_new.h"
 #include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
-#include "base/base_ref_utils.h"
 #include "utils/config_manager.h"
 #include "include/backend/common/kernel_graph/anf_runtime_algorithm.h"
 #include "include/utils/anfalgo.h"

@@ -38,7 +38,7 @@ MS_CORE_API std::vector<DependOn> GetValueDepends(const PrimitivePtr &prim, size
 
 using InferFunc = std::function<SymbolPtr(OperationBuilder *)>;
 using DependFunc = std::function<std::vector<DependOn>(const PrimitivePtr &, size_t)>;
-struct MS_CORE_API OperationBuilderInfo {
+struct OperationBuilderInfo {
   InferFunc build_shape_func{nullptr};
   InferFunc build_value_func{nullptr};
   DependFunc shape_depend_func{nullptr};

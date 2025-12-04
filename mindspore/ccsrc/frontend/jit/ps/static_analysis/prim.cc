@@ -2303,9 +2303,6 @@ void AddLabelsToPrimitiveFunction(const PrimitivePtr &prim_func) {
     (void)prim_func->AddAttr(attr_name, converted_ret);
   }
 }
-}  // namespace
-
-namespace {
 
 AnfNodePtr ConvertArgsToInputs(const PrimitivePtr &prim, const AnfNodeWeakPtrList &inputs, const FuncGraphPtr &fg,
                                const AnalysisEnginePtr &engine, const AnfNodeConfigPtr &out_conf) {
@@ -2360,6 +2357,18 @@ bool IsPrimitiveAbstract(const AnfNodePtr &op_node, const AnalysisEnginePtr &eng
   auto op_abs = eval_func(op_node);
   MS_EXCEPTION_IF_NULL(op_abs);
   return op_abs->isa<PrimitiveAbstractClosure>();
+}
+
+ValuePtr GetRefKeyValue(const AbstractBasePtr &abs) {
+  auto abs_ref = abs->cast_ptr<AbstractRefTensor>();
+  if (abs_ref != nullptr) {
+    return abs_ref->ref_key_value();
+  }
+  auto abs_map_tensor = abs->cast_ptr<AbstractMapTensor>();
+  if (abs_map_tensor != nullptr) {
+    return abs_map_tensor->ref_key_value();
+  }
+  return nullptr;
 }
 }  // namespace
 
@@ -5260,6 +5269,14 @@ PrimEvaluatorMap &GetPrimEvaluatorConstructors() {
   }
 
   return constructor;
+}
+
+AbstractBasePtr SensitivityTransform(const AbstractBasePtr &spec) {
+  auto f_spec = dyn_cast_ptr<AbstractFunction>(spec);
+  if (f_spec != nullptr) {
+    return std::make_shared<AbstractScalar>(kValueAny, std::make_shared<EnvType>());
+  }
+  return spec->Clone();
 }
 }  // namespace abstract
 }  // namespace mindspore

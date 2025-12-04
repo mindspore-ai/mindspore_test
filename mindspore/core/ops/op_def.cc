@@ -37,26 +37,4 @@ void AddOpDef(const std::string &op_name, const OpDefPtr op_def) { (void)GetOpDe
 
 bool IsPrimitiveFunction(const std::string &op_name) { return GetOpDef(op_name) != nullptr; }
 
-std::vector<OP_DTYPE> GetSourceDtypeByArgHandler(const std::string &arg_handler_func) {
-  static std::map<std::string, std::vector<OP_DTYPE>> arg_handler_map = {
-    {"to_pair", {OP_DTYPE::DT_INT, OP_DTYPE::DT_FLOAT, OP_DTYPE::DT_TUPLE_ANY, OP_DTYPE::DT_LIST_ANY}},
-    {"to_kernel_size", {OP_DTYPE::DT_INT, OP_DTYPE::DT_TUPLE_ANY, OP_DTYPE::DT_LIST_ANY}},
-    {"to_strides", {OP_DTYPE::DT_INT, OP_DTYPE::DT_TUPLE_ANY, OP_DTYPE::DT_LIST_ANY}},
-    {"to_rates", {OP_DTYPE::DT_INT, OP_DTYPE::DT_TUPLE_ANY, OP_DTYPE::DT_LIST_ANY}},
-    {"to_dilations", {OP_DTYPE::DT_INT, OP_DTYPE::DT_TUPLE_ANY, OP_DTYPE::DT_LIST_ANY}},
-    {"to_output_padding", {OP_DTYPE::DT_INT, OP_DTYPE::DT_TUPLE_ANY, OP_DTYPE::DT_LIST_ANY}},
-    {"to_2d_paddings", {OP_DTYPE::DT_INT, OP_DTYPE::DT_TUPLE_ANY, OP_DTYPE::DT_LIST_ANY}},
-    {"dtype_to_type_id", {OP_DTYPE::DT_TYPE}},
-    {"str_to_enum", {OP_DTYPE::DT_STR}},
-    {"_scalar_tensor_to_scalar", {OP_DTYPE::DT_NUMBER, OP_DTYPE::DT_TENSOR}},
-    {"_scalar_tensor_to_int", {OP_DTYPE::DT_INT, OP_DTYPE::DT_TENSOR}},
-    {"_scalar_tensor_to_float", {OP_DTYPE::DT_FLOAT, OP_DTYPE::DT_TENSOR}},
-    {"_normalize_int_sequence", {OP_DTYPE::DT_INT, OP_DTYPE::DT_TUPLE_ANY, OP_DTYPE::DT_LIST_ANY, OP_DTYPE::DT_TENSOR}},
-  };
-  auto iter = arg_handler_map.find(arg_handler_func);
-  if (iter == arg_handler_map.end()) {
-    MS_LOG(INTERNAL_EXCEPTION) << "Miss definition of arg_handler '" << arg_handler_func << "' here.";
-  }
-  return iter->second;
-}
 }  // namespace mindspore::ops

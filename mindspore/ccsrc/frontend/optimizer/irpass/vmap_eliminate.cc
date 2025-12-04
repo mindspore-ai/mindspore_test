@@ -30,7 +30,6 @@
 #include "utils/hash_map.h"
 #include "utils/compile_config.h"
 #include "ir/func_graph_cloner.h"
-#include "base/complex_storage.h"
 #include "frontend/optimizer/irpass/gradient_eliminate.h"
 #include "frontend/parallel/step_parallel_utils.h"
 #include "frontend/operator/composite/vmap.h"

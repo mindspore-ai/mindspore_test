@@ -1109,9 +1109,6 @@ MS_CORE_API bool IsOneOfPrimitiveCNode(const AnfNodePtr &node, const PrimitiveSe
 // Check whether two primitives are same.
 MS_CORE_API bool IsPrimitiveEquals(const PrimitivePtr &prim1, const PrimitivePtr &prim2);
 
-// Get number of AbstractMonad
-MS_CORE_API size_t GetAbstractMonadNum(const AbstractBasePtrList &args);
-
 // Check whether the given node has monad abstract.
 MS_CORE_API bool HasAbstractMonad(const AnfNodePtr &node);
 
@@ -1129,9 +1126,6 @@ MS_CORE_API bool GetPrimitiveFlag(const PrimitivePtr &prim, const std::string &a
 
 // Gets effect info from a primitive by its attributes.
 MS_CORE_API EffectInfo GetPrimEffectInfo(const PrimitivePtr &prim);
-
-// Check if monad state is equivalent for the connected two nodes, not strict but more faster.
-MS_CORE_API bool IsStateEquivalent(const AnfNodePtr &outer, const AnfNodePtr &inner);
 
 // Check if the node is DeadNode.
 MS_CORE_API bool IsDeadNode(const AnfNodePtr &node);
@@ -1188,7 +1182,6 @@ MS_CORE_API void reset_id_with_offset();
 using TaggedNodeMap = mindspore::HashMap<AnfNodePtr, size_t>;
 using TaggedGraph = std::pair<FuncGraphPtr, TaggedNodeMap>;
 MS_CORE_API std::string GetCNodeTarget(const AnfNodePtr &node);
-std::string GetOriginNodeTarget(const AnfNodePtr &node);
 MS_CORE_API bool ContainMultiTarget(const AnfNodePtrList &nodes);
 struct GraphSegment {
   GraphSegment(const AnfNodePtrList &nodes, bool is_cut) : nodes_(nodes), is_cut_(is_cut) {}

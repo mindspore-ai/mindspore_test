@@ -33,7 +33,7 @@
 #include "ir/tensor_storage_info.h"
 #include "mindapi/base/format.h"
 #include "mindapi/base/types.h"
-#include "ir/device_type.h"
+#include "device_address/device_type.h"
 #include "ir/format_utils.h"
 #include "device_address/map_memory_allocator.h"
 
@@ -44,7 +44,7 @@ namespace tensor {
 class TensorData;
 using TensorDataPtr = std::shared_ptr<TensorData>;
 }  // namespace tensor
-class AddressAllocator {
+class MS_CORE_API AddressAllocator {
  public:
   /**
    * @brief Allocate memory for device address
@@ -69,7 +69,7 @@ class AddressAllocator {
 // DevicePointer encapsulates pointer and reference count-related operations, and supports custom allocator and
 // delteter resources. In Ref scenarios, KernelTensor of different DeviceAddress may hold the same DevicePointer
 // object.
-class DevicePointer {
+class MS_CORE_API DevicePointer {
  public:
   // The arguments are pointer and a bool variable that identifies whether pointer is from the memory pool.
   using Deleter = std::function<void(void *, bool)>;

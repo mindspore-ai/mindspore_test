@@ -31,7 +31,7 @@
 #include "view/view_strides_calculator.h"
 #include "include/runtime/pipeline/async_rqueue.h"
 #include "pynative/utils/runtime/op_backend/op_backend.h"
-#include "ir/device_type.h"
+#include "device_address/device_type.h"
 
 namespace mindspore {
 namespace pynative {

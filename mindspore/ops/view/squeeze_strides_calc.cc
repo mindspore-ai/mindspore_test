@@ -19,7 +19,7 @@
 #include <string>
 #include <utility>
 #include "utils/check_convert_utils.h"
-#include "utils/core_op_utils.h"
+#include "ops/op_def_utils.h"
 
 namespace mindspore::ops {
 namespace {

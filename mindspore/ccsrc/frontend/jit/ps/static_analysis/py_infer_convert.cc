@@ -25,6 +25,7 @@
 #include "ir/core_ops_primitive.h"
 #include "abstract/abstract_function.h"
 #include "frontend/jit/ps/parse/resolve.h"
+#include "frontend/jit/ps/static_analysis/auto_monad.h"
 #include "frontend/jit/ps/static_analysis/static_analysis.h"
 #include "include/frontend/jit/ps/parse/py_data_convert.h"
 

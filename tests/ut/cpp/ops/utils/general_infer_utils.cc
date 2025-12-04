@@ -33,9 +33,9 @@
 #include "utils/shape_utils.h"
 #include "abstract/abstract_value.h"
 #include "abstract/utils.h"
-#include "ops/infer_info/abstract_infer_info_adapter.h"
-#include "ops/infer_info/value_infer_info_adapter.h"
 #include "ops_utils/op_utils.h"
+#include "mindspore/core/ops/infer_info/value_infer_info_adapter.h"
+#include "ops/infer_info/abstract_infer_info_adapter.h"
 #include "mindspore/ccsrc/frontend/operator/meta_dsl/common/meta_impl.h"
 
 namespace UT {

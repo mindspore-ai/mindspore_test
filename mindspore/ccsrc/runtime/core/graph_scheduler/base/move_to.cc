@@ -19,7 +19,7 @@
 #include <algorithm>
 #include "utils/stream_guard.h"
 #include "include/runtime/hardware_abstract/device_context/device_context.h"
-#include "ir/device_type.h"
+#include "device_address/device_type.h"
 #include "include/runtime/memory/mem_pool/mem_tracker.h"
 #include "device_address/device_address.h"
 #include "include/runtime/hardware_abstract/device_context/device_context_manager.h"

@@ -21,7 +21,7 @@
 #include <string>
 #include "ir/tensor.h"
 #include "include/utils/tensor_py.h"
-#include "utils/core_op_utils.h"
+#include "ops/op_def_utils.h"
 #include "include/runtime/pipeline/pipeline.h"
 #include "infer/ops_func_impl/generator.h"
 #include "pybind_api/gil_scoped_long_running.h"

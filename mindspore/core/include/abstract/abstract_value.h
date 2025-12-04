@@ -1860,7 +1860,7 @@ using AttrValueMap = mindspore::HashMap<std::string, ValuePtr>;
 using AttrValueMapPtr = std::shared_ptr<AttrValueMap>;
 
 // The class to save evaluated result: abstract value and modified attribute
-class EvalResult : public Base {
+class MS_CORE_API EvalResult : public Base {
  public:
   EvalResult(const AbstractBasePtr &abs, const AttrValueMapPtr &attr)
       : abstract_(abs), attribute_(attr), has_side_effect_node_(false) {}
@@ -1893,12 +1893,8 @@ class Config : public Base {
 using ConfigPtr = std::shared_ptr<Config>;
 using ConfigPtrList = std::vector<ConfigPtr>;
 
-MS_CORE_API std::string ExtractLoggingInfo(const std::string &info);
 MS_CORE_API void SynchronizeSequenceElementsUseFlagsRecursively(const AbstractSequencePtr &lhs_sequence,
                                                                 const AbstractSequencePtr &rhs_sequence);
-MS_CORE_API ValuePtr GetRefKeyValue(const AbstractBasePtr &abs);
-
-MS_CORE_API void SynchronizeSuccessiveInputs(const AbstractBasePtr &old_arg, const AbstractBasePtr &new_arg);
 }  // namespace abstract
 }  // namespace mindspore
 #endif  // MINDSPORE_CORE_ABSTRACT_ABSTRACT_VALUE_H_

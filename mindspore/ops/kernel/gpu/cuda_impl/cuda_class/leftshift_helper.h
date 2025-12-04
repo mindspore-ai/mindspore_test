@@ -22,7 +22,7 @@
 #include <vector>
 #include "kernel/gpu/cuda_impl/cuda_class/helper_base.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/leftshift_impl.cuh"
-#include "utils/core_op_utils.h"
+#include "ops/op_def_utils.h"
 
 namespace mindspore {
 namespace cukernel {

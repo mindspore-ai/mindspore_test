@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "frontend/parallel/tensor_layout/map.h"
+#include "include/frontend/parallel/tensor_layout/map.h"
 #include <algorithm>
 #include <utility>
 #include "frontend/parallel/status.h"

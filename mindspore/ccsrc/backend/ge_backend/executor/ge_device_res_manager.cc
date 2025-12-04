@@ -21,7 +21,7 @@
 #include "plugin/ascend/res_manager/symbol_interface/symbol_utils.h"
 #include "plugin/ascend/res_manager/hal_manager/ascend_hal_manager.h"
 #include "utils/ms_context.h"
-#include "ir/device_type.h"
+#include "device_address/device_type.h"
 #include "include/runtime/hardware_abstract/device_context/device_context.h"
 #include "include/runtime/hardware_abstract/device_context/device_context_manager.h"
 

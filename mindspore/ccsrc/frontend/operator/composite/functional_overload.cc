@@ -40,6 +40,31 @@
 namespace mindspore {
 namespace prim {
 namespace {
+using OP_DTYPE = mindspore::ops::OP_DTYPE;
+
+std::vector<OP_DTYPE> GetSourceDtypeByArgHandler(const std::string &arg_handler_func) {
+  static std::map<std::string, std::vector<OP_DTYPE>> arg_handler_map = {
+    {"to_pair", {OP_DTYPE::DT_INT, OP_DTYPE::DT_FLOAT, OP_DTYPE::DT_TUPLE_ANY, OP_DTYPE::DT_LIST_ANY}},
+    {"to_kernel_size", {OP_DTYPE::DT_INT, OP_DTYPE::DT_TUPLE_ANY, OP_DTYPE::DT_LIST_ANY}},
+    {"to_strides", {OP_DTYPE::DT_INT, OP_DTYPE::DT_TUPLE_ANY, OP_DTYPE::DT_LIST_ANY}},
+    {"to_rates", {OP_DTYPE::DT_INT, OP_DTYPE::DT_TUPLE_ANY, OP_DTYPE::DT_LIST_ANY}},
+    {"to_dilations", {OP_DTYPE::DT_INT, OP_DTYPE::DT_TUPLE_ANY, OP_DTYPE::DT_LIST_ANY}},
+    {"to_output_padding", {OP_DTYPE::DT_INT, OP_DTYPE::DT_TUPLE_ANY, OP_DTYPE::DT_LIST_ANY}},
+    {"to_2d_paddings", {OP_DTYPE::DT_INT, OP_DTYPE::DT_TUPLE_ANY, OP_DTYPE::DT_LIST_ANY}},
+    {"dtype_to_type_id", {OP_DTYPE::DT_TYPE}},
+    {"str_to_enum", {OP_DTYPE::DT_STR}},
+    {"_scalar_tensor_to_scalar", {OP_DTYPE::DT_NUMBER, OP_DTYPE::DT_TENSOR}},
+    {"_scalar_tensor_to_int", {OP_DTYPE::DT_INT, OP_DTYPE::DT_TENSOR}},
+    {"_scalar_tensor_to_float", {OP_DTYPE::DT_FLOAT, OP_DTYPE::DT_TENSOR}},
+    {"_normalize_int_sequence", {OP_DTYPE::DT_INT, OP_DTYPE::DT_TUPLE_ANY, OP_DTYPE::DT_LIST_ANY, OP_DTYPE::DT_TENSOR}},
+  };
+  auto iter = arg_handler_map.find(arg_handler_func);
+  if (iter == arg_handler_map.end()) {
+    MS_LOG(INTERNAL_EXCEPTION) << "Miss definition of arg_handler '" << arg_handler_func << "' here.";
+  }
+  return iter->second;
+}
+
 size_t GetHashIdForFunctionalCache(const std::string &functional_name, const AbstractBasePtrList &args_abs_list,
                                    bool is_method) {
   return hash_combine(
@@ -91,7 +116,7 @@ bool MatchPrimitiveArgDtype(const std::string &prim_name, const ops::OpInputArg 
                        [&input_dtype](const ops::OP_DTYPE &dtype) { return MatchExpectedDtype(input_dtype, dtype); });
   }
   if (!op_arg.arg_handler_.empty()) {
-    auto src_dtypes = ops::GetSourceDtypeByArgHandler(op_arg.arg_handler_);
+    auto src_dtypes = GetSourceDtypeByArgHandler(op_arg.arg_handler_);
     return std::any_of(src_dtypes.cbegin(), src_dtypes.cend(),
                        [&input_dtype](const ops::OP_DTYPE &dtype) { return MatchExpectedDtype(input_dtype, dtype); });
   }

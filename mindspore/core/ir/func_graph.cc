@@ -1055,7 +1055,7 @@ FuncGraphLoopBreaker &FuncGraphLoopBreaker::Inst() {
   return mgr;
 }
 
-MS_CORE_API const FuncGraphChecker &FuncGraphBase::GetChecker(const std::string &checker_name) {
+const FuncGraphChecker &FuncGraphBase::GetChecker(const std::string &checker_name) {
   auto it = checkers_.find(checker_name);
   if (it == checkers_.cend()) {
     static const auto empty_checker = FuncGraphChecker();
@@ -1064,8 +1064,7 @@ MS_CORE_API const FuncGraphChecker &FuncGraphBase::GetChecker(const std::string 
   return *(it->second);
 }
 
-MS_CORE_API void FuncGraphBase::AddChecker(const std::string &checker_name,
-                                           const std::shared_ptr<FuncGraphChecker> &new_checker) {
+void FuncGraphBase::AddChecker(const std::string &checker_name, const std::shared_ptr<FuncGraphChecker> &new_checker) {
   (void)checkers_.emplace(checker_name, new_checker);
 }
 

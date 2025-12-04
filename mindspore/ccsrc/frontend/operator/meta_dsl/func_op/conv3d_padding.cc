@@ -18,7 +18,7 @@
 #include <string>
 #include "ir/dtype/type.h"
 #include "utils/shape_utils.h"
-#include "utils/core_op_utils.h"
+#include "ops/op_def_utils.h"
 #include "utils/check_convert_utils.h"
 #include "primitive/array_ops.h"
 #include "primitive/sequence_ops.h"

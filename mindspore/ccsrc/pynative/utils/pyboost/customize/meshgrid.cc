@@ -21,7 +21,7 @@
 #include "include/backend/common/device_address_utils.h"
 #include "include/pynative/utils/pyboost/functions/auto_generate/functions.h"
 #include "mindspore/ccsrc/pynative/utils/pyboost/functions/auto_grad_guard.h"
-#include "utils/core_op_utils.h"
+#include "ops/op_def_utils.h"
 
 namespace mindspore {
 namespace kernel {

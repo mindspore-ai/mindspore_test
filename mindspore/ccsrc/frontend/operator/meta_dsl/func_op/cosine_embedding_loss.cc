@@ -19,7 +19,7 @@
 #include <unordered_set>
 #include "ir/dtype/type.h"
 #include "utils/shape_utils.h"
-#include "utils/core_op_utils.h"
+#include "ops/op_def_utils.h"
 #include "utils/check_convert_utils.h"
 #include "mindapi/base/types.h"
 #include "primitive/array_ops.h"

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "ir/device_type.h"
+#include "device_address/device_type.h"
 #include <string>
 #include "utils/log_adapter.h"
 

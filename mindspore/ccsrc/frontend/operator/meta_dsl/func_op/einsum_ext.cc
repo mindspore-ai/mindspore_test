@@ -20,7 +20,7 @@
 #include <utility>
 #include "ir/dtype/type.h"
 #include "utils/shape_utils.h"
-#include "utils/core_op_utils.h"
+#include "ops/op_def_utils.h"
 #include "utils/check_convert_utils.h"
 #include "mindspore/ops/ops_utils/op_constants.h"
 #include "primitive/auto_generate/gen_ops_primitive_b.h"

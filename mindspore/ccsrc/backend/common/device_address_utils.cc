@@ -44,7 +44,7 @@
 #include "pybind_api/gil_scoped_long_running.h"
 #include "include/runtime/memory/mem_pool/mem_tracker.h"
 #ifdef ENABLE_DEBUGGER
-#include "ir/device_type.h"
+#include "device_address/device_type.h"
 #endif
 #include "include/runtime/pipeline/pipeline.h"
 #include "primitive/auto_generate/gen_ops_primitive_c.h"

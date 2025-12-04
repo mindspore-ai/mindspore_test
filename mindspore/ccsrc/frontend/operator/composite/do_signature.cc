@@ -28,9 +28,11 @@
 #include "include/utils/operator/primitive_utils.h"
 #include "frontend/jit/ps/static_analysis/prim.h"
 #include "frontend/jit/ps/static_analysis/prim_utils.h"
+#include "frontend/jit/ps/static_analysis/auto_monad.h"
 #include "ir/anf.h"
 #include "ir/dtype.h"
 #include "ir/dtype/ref.h"
+#include "ir/func_graph_flag.h"
 #include "ir/core_ops_primitive.h"
 #include "ops/op_def.h"
 #include "utils/flags.h"
@@ -41,7 +43,6 @@
 #include "primitive/auto_generate/gen_ops_primitive_m.h"
 #include "primitive/auto_generate/gen_ops_primitive_s.h"
 #include "primitive/auto_generate/gen_ops_primitive_t.h"
-#include "ir/func_graph_flag.h"
 
 namespace mindspore {
 // namespace to support composite operators definition

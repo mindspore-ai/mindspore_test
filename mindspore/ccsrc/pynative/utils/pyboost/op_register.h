@@ -26,7 +26,7 @@
 #include "mindspore/ccsrc/pynative/utils/pyboost/op_runner.h"
 #include "pynative/utils/runtime/op_runner.h"
 #include "mindspore/ccsrc/pynative/utils/pyboost/pyboost_utils.h"
-#include "ir/device_type.h"
+#include "device_address/device_type.h"
 
 namespace mindspore {
 namespace kernel {

@@ -95,7 +95,7 @@ class Location {
   std::string line_str_;
 };
 
-class TraceContext {
+class MS_CORE_API TraceContext {
  public:
   explicit TraceContext(const LocationPtr &loc);
   explicit TraceContext(const TraceInfoPtr &trace_info);
@@ -347,27 +347,11 @@ class MS_CORE_API GraphDebugInfo : public DebugInfo {
 
 using GraphDebugInfoPtr = std::shared_ptr<GraphDebugInfo>;
 
-inline TraceContext::TraceContext(const LocationPtr &loc) : location_(loc) {
-  auto top = TraceManager::CurrentContextInfo();
-  if (top != nullptr) {
-    trace_info_ = top->trace_info();
-  }
-  if (location_ != nullptr) {
-    MS_LOG(DEBUG) << "location_: " << location_->DebugString();
-  } else {
-    MS_LOG(DEBUG) << "location_ is null";
-  }
-}
-
-inline TraceContext::TraceContext(const TraceInfoPtr &trace_info) : trace_info_(trace_info) {}
-
 struct MS_CORE_API DebugInfoCompare {
   bool operator()(const DebugInfoPtr &left, const DebugInfoPtr &right) const;
 };
 
-MS_CORE_API void UpdateInlineCNodeDebugInfo(const AnfNodePtr &caller, const AnfNodePtr &callee);
-
-MS_CORE_API std::vector<DebugInfoPtr> GetDebugInfoList(const DebugInfoPtr &debug_info);
+void UpdateInlineCNodeDebugInfo(const AnfNodePtr &caller, const AnfNodePtr &callee);
 }  // namespace mindspore
 
 #endif  // MINDSPORE_CORE_UTILS_INFO_H_

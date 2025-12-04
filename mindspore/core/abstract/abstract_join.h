@@ -1,5 +1,7 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * This is the C++ adaptation and derivative work of Myia (https://github.com/mila-iqia/myia/).
+ *
+ * Copyright 2019-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,13 +15,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef MINDSPORE_CORE_BASE_BASE_REF_UTILS_H
-#define MINDSPORE_CORE_BASE_BASE_REF_UTILS_H
-#include <vector>
-#include "ir/tensor.h"
-#include "base/base_ref.h"
+
+#ifndef MINDSPORE_CORE_ABSTRACT_JOIN_H_
+#define MINDSPORE_CORE_ABSTRACT_JOIN_H_
+
+#include <utility>
+#include <memory>
+#include <functional>
+#include "utils/shape_utils.h"
+#include "abstract/abstract_value.h"
 
 namespace mindspore {
-MS_CORE_API std::vector<tensor::TensorPtr> TransformVectorRefToMultiTensor(const VectorRef &base_ref);
+namespace abstract {
+ShapePtr ShapeJoin(const ShapePtr &shape1, const ShapePtr &shape2);
+ValuePtr ValueJoin(const ValuePtr &value1, const ValuePtr &value2);
+}  // namespace abstract
 }  // namespace mindspore
-#endif  // MINDSPORE_CORE_BASE_BASE_REF_UTILS_H
+#endif  // MINDSPORE_CORE_ABSTRACT_JOIN_H_
