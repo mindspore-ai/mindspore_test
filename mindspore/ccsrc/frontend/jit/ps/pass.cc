@@ -1752,14 +1752,9 @@ bool OptAfterJitGradPass(const ResourcePtr &resource) {
     opt::OptPassConfig({irpass.ad_related_special_op_eliminate_, irpass.special_op_eliminate_,
                         irpass.dump_gradient_eliminate_, irpass.virtual_view_grad_op_eliminate_});
 
-  opt::OptPassConfig mutable_op_eliminate = opt::OptPassConfig({
-    irpass.mutable_op_eliminate_,
-  });
-  OptPassGroupMap map({
-    {"ad_related_special_op_eliminate", ad_related_special_op_eliminate},
-    {"updatestate_depend_eliminate", opt::OptPassConfig(opt::irpass::UpdatestateDependEliminater())},
-    {"mutable_op_eliminate", mutable_op_eliminate},
-  });
+  OptPassGroupMap map(
+    {{"ad_related_special_op_eliminate", ad_related_special_op_eliminate},
+     {"updatestate_depend_eliminate", opt::OptPassConfig(opt::irpass::UpdatestateDependEliminater())}});
   if (pynative::GradState::Get().RequiresGrad()) {
     opt::OptPassConfig inline_after_jit_grad =
       opt::OptPassConfig({irpass.reset_defer_inline_, irpass.inline_}, false, true);
@@ -1812,9 +1807,7 @@ bool MutableEliminatePass(const ResourcePtr &resource) {
   MS_EXCEPTION_IF_NULL(func_graph);
   opt::irpass::OptimizeIRPassLib irpass;
 
-  OptPassGroupMap map({{"mutable_op_eliminate", opt::OptPassConfig({irpass.mutable_op_eliminate_})},
-                       {"mutable_op_eliminate_renormalize", opt::OptPassConfig::Renormalize()},
-                       {"mutable_op_eliminate_switch_simplify", opt::OptPassConfig({irpass.switch_simplify_})}});
+  OptPassGroupMap map({{"mutable_op_eliminate", opt::OptPassConfig({irpass.mutable_op_eliminate_})}});
 
   auto opt_mutable_eliminate = opt::Optimizer::MakeOptimizer("mutable_eliminate", resource, map);
   (void)opt_mutable_eliminate->step(func_graph, false);
