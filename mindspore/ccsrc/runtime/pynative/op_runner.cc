@@ -803,6 +803,7 @@ std::vector<kernel::KernelTensor *> GetOutputKernelTensors(const std::vector<Edg
 }
 
 void CheckInputTensorStream(const TensorPtr &tensor) {
+  MS_EXCEPTION_IF_NULL(tensor);
   const auto &address = tensor->device_address();
   if (address == nullptr) {
     MS_LOG(INFO) << "Input tensor address is null, " << tensor->ToString();
