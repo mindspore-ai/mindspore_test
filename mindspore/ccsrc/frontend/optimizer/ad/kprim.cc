@@ -36,7 +36,7 @@
 #include "frontend/operator/meta_dsl/common/meta_impl.h"
 #include "frontend/expander/bprop/bprop.h"
 #include "frontend/expander/bprop/bprop_meta_func_graph.h"
-#include "include/utils/frontend/primitive_utils.h"
+#include "include/utils/operator/primitive_utils.h"
 #include "include/utils/utils.h"
 #include "utils/symbolic.h"
 #include "utils/ms_context.h"

@@ -42,7 +42,7 @@
 #include "frontend/jit/ps/parse/parse_base.h"
 #include "frontend/optimizer/opt.h"
 #include "frontend/operator/composite/composite.h"
-#include "include/utils/fallback.h"
+#include "include/utils/pipeline/fallback.h"
 #include "include/utils/convert_utils_py.h"
 #include "include/frontend/jit/ps/action_interface.h"
 #include "ir/anf.h"

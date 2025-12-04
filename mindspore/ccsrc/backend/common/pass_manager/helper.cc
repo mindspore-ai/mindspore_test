@@ -33,7 +33,7 @@
 #include "include/utils/utils.h"
 #include "base/base_ref.h"
 #include "include/backend/common/kernel_graph/anf_runtime_algorithm.h"
-#include "include/utils/fallback.h"
+#include "include/utils/pipeline/fallback.h"
 #include "include/utils/anfalgo.h"
 #include "utils/log_adapter.h"
 #include "utils/ms_utils.h"

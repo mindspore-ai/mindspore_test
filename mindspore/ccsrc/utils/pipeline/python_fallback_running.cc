@@ -13,22 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-#ifndef MINDSPORE_CCSRC_INCLUDE_COMMON_UTILS_PYTHON_FALLBACK_RUNNING_H_
-#define MINDSPORE_CCSRC_INCLUDE_COMMON_UTILS_PYTHON_FALLBACK_RUNNING_H_
-
-#include "include/utils/visible.h"
+#include "include/utils/pipeline/python_fallback_running.h"
 
 namespace mindspore {
-class COMMON_EXPORT ScopedFallbackRunning final {
- public:
-  ScopedFallbackRunning();
-  ~ScopedFallbackRunning();
+ScopedFallbackRunning::ScopedFallbackRunning() { on_ = true; }
 
-  inline static bool on() { return on_; }
-
- private:
-  inline static bool on_{false};
-};
+ScopedFallbackRunning::~ScopedFallbackRunning() { on_ = false; }
 }  // namespace mindspore
-#endif  // MINDSPORE_CCSRC_INCLUDE_COMMON_UTILS_PYTHON_FALLBACK_RUNNING_H_

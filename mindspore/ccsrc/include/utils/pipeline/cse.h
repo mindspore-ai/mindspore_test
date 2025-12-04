@@ -16,8 +16,8 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CCSRC_INCLUDE_COMMON_UTILS_CSE_H_
-#define MINDSPORE_CCSRC_INCLUDE_COMMON_UTILS_CSE_H_
+#ifndef MINDSPORE_CCSRC_INCLUDE_UTILS_PIPELINE_CSE_H_
+#define MINDSPORE_CCSRC_INCLUDE_UTILS_PIPELINE_CSE_H_
 
 #include <vector>
 #include <map>
@@ -63,4 +63,4 @@ COMMON_EXPORT BasePtr AbsOf(const AnfNodePtr &node, bool ignore_fg_abs_tracking_
 }  // namespace opt
 }  // namespace mindspore
 
-#endif  // MINDSPORE_CCSRC_INCLUDE_COMMON_UTILS_CSE_H_
+#endif  // MINDSPORE_CCSRC_INCLUDE_UTILS_PIPELINE_CSE_H_

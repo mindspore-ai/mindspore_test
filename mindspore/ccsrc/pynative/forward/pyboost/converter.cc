@@ -30,7 +30,7 @@
 #include "include/utils/tensor_utils.h"
 #include "include/utils/python_attr.h"
 #include "include/utils/pynative/py_parse.h"
-#include "include/utils/frontend/primitive_utils.h"
+#include "include/utils/operator/primitive_utils.h"
 #include "mindspore/core/include/utils/value_utils.h"
 #include "include/utils/pynative/storage_py.h"
 
@@ -979,11 +979,11 @@ std::string GetTypeErrorMsg(bool is_kwd, int error_idx, PyObject *obj, const Fun
   Py_DECREF(type_obj);
   const char *name_str = PyUnicode_AsUTF8(name_attr);
   if (is_kwd) {
-    error_msg = ": argument '" + param.name_ + "' must be " + ops::EnumToString(param.type_) + " but got " +
+    error_msg = ": argument '" + param.name_ + "' must be " + prim::OpDTypeToString(param.type_) + " but got " +
                 std::string(name_str) + ".";
   } else {
     error_msg = ": argument '" + param.name_ + "' (position " + std::to_string(arg_pos) + ")" + " must be " +
-                ops::EnumToString(param.type_);
+                prim::OpDTypeToString(param.type_);
     error_msg += (error_idx >= 0)
                    ? " but found type of " + std::string(name_str) + " at pos " + std::to_string(error_idx) + "."
                    : ", not " + std::string(name_str) + ".";
@@ -1171,9 +1171,9 @@ std::string FunctionSignature::ToString() {
       kw_only_flag = true;
       param_ss << "*, ";
     }
-    std::vector<std::string> type_list = {ops::EnumToString(param.type_)};
+    std::vector<std::string> type_list = {prim::OpDTypeToString(param.type_)};
     std::transform(param.cast_types_.begin(), param.cast_types_.end(), std::back_inserter(type_list),
-                   [](const auto &type) { return ops::EnumToString(type); });
+                   [](const auto &type) { return prim::OpDTypeToString(type); });
     if (param.allow_none_) {
       type_list.emplace_back("None");
     }
@@ -1290,7 +1290,7 @@ bool ListTypeCheck(PyObject *obj, const ops::OP_DTYPE &type, int &idx, bool full
       return CheckPySequenceType<CPythonTuple>(obj, idx, py_parse::ParseUtilsCheckScalar, fullcheck);
     default:
       MS_LOG(EXCEPTION) << "Performing a list type check and encountered an unexpected type, which is "
-                        << ops::EnumToString(type);
+                        << prim::OpDTypeToString(type);
   }
   return false;
 }
@@ -1620,7 +1620,7 @@ void ParserArgs::PrintConvertError(size_t index) {
   }
   ss << signature_->name_ << "():";
   ss << " argument \'" << signature_->params_[param_idx].name_ << "\'(position " << param_idx << ") should be "
-     << ops::EnumToString(dst_types_[index]);
+     << prim::OpDTypeToString(dst_types_[index]);
   if (!PyTuple_Check(obj) && !PyList_Check(obj)) {
     ss << ", but got " << PyParser::BuildPyObjectInputTypeString(obj) << ".";
   } else {

@@ -19,7 +19,7 @@
 #include "ir/func_graph.h"
 #include "ir/tensor.h"
 #include "ir/manager.h"
-#include "include/utils/cse.h"
+#include "include/utils/pipeline/cse.h"
 #include "utils/log_adapter.h"
 #include "utils/hashing.h"
 #include "utils/convert_utils.h"

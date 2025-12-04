@@ -27,7 +27,7 @@
 #include "primitive/structure_ops.h"
 #include "primitive/sequence_ops.h"
 #include "primitive/framework_ops.h"
-#include "include/utils/fallback.h"
+#include "include/utils/pipeline/fallback.h"
 #include "include/utils/python_adapter.h"
 #include "include/utils/convert_utils_py.h"
 #include "utils/log_adapter.h"

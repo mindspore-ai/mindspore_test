@@ -19,7 +19,7 @@
 #include "frontend/jit/ps/static_analysis/builtin_prim.h"
 
 #include "include/utils/convert_utils_py.h"
-#include "include/utils/fallback.h"
+#include "include/utils/pipeline/fallback.h"
 #include "primitive/math_ops.h"
 #include "primitive/sequence_ops.h"
 #include "frontend/jit/ps/fallback.h"

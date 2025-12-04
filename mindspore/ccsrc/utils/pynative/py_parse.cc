@@ -31,7 +31,7 @@
 #include "include/utils/tensor_py.h"
 #include "include/utils/stub_tensor.h"
 #include "include/utils/tensor_utils.h"
-#include "include/utils/primfunc_utils.h"
+#include "include/utils/operator/primitive_utils.h"
 
 #if NPY_API_VERSION < 0x0000000d
 #error Current Numpy version is too low, the required version is not less than 1.19.3.
@@ -653,12 +653,12 @@ const ConverterMap &GetConverters() {
 
 void ReportGetConverterError(int32_t dtype) {
   if ((dtype >> kTypeShiftBits) == 0) {
-    MS_LOG(EXCEPTION) << "Can not find converter for dtype[" << ops::EnumToString(static_cast<ops::OP_DTYPE>(dtype))
+    MS_LOG(EXCEPTION) << "Can not find converter for dtype[" << prim::OpDTypeToString(static_cast<ops::OP_DTYPE>(dtype))
                       << "].";
   } else {
     MS_LOG(EXCEPTION) << "Can not find converter for src_type["
-                      << ops::EnumToString(static_cast<ops::OP_DTYPE>(dtype >> kTypeShiftBits)) << "] and dst_type["
-                      << ops::EnumToString(static_cast<ops::OP_DTYPE>(dtype & kDstMask)) << "].";
+                      << prim::OpDTypeToString(static_cast<ops::OP_DTYPE>(dtype >> kTypeShiftBits)) << "] and dst_type["
+                      << prim::OpDTypeToString(static_cast<ops::OP_DTYPE>(dtype & kDstMask)) << "].";
   }
 }
 

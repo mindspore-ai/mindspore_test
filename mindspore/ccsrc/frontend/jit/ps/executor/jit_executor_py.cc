@@ -31,7 +31,7 @@
 #include "frontend/optimizer/ad/dfunctor.h"
 #include "frontend/optimizer/ad/prim_bprop_optimizer.h"
 #include "utils/phase.h"
-#include "include/utils/fallback.h"
+#include "include/utils/pipeline/fallback.h"
 #include "include/utils/compile_cache_context.h"
 #include "include/backend/backend_manager/backend_manager.h"
 #include "include/utils/pynative/grad_state.h"

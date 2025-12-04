@@ -46,7 +46,7 @@
 #include "ir/cell.h"
 #include "ir/graph_utils.h"
 #include "include/utils/amp.h"
-#include "include/utils/fallback.h"
+#include "include/utils/pipeline/fallback.h"
 #include "include/utils/utils.h"
 #include "include/utils/python_adapter.h"
 #include "include/utils/convert_utils_py.h"

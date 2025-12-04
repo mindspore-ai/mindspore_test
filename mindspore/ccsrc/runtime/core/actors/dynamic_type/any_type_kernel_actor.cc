@@ -20,7 +20,7 @@
 #include <functional>
 #include "mindspore/ccsrc/utils/ir_dump/anf_ir_dump.h"
 #include "primitive/framework_ops.h"
-#include "include/utils/fallback.h"
+#include "include/utils/pipeline/fallback.h"
 #include "ir/graph_utils.h"
 #include "include/backend/common/kernel_graph/py_execute_utils.h"
 #include "primitive/auto_generate/gen_ops_primitive_r.h"

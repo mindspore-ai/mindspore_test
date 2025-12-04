@@ -17,7 +17,7 @@
 #include "include/backend/common/kernel_graph/py_execute_utils.h"
 
 #include "include/utils/anfalgo.h"
-#include "include/utils/fallback.h"
+#include "include/utils/pipeline/fallback.h"
 #include "include/runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "include/runtime/hardware_abstract/device_context/device_context.h"
 #include "runtime/hardware_abstract/utils.h"

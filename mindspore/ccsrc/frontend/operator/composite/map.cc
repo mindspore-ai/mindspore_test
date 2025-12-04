@@ -26,8 +26,7 @@
 #include "abstract/abstract_value.h"
 #include "abstract/abstract_function.h"
 #include "abstract/dshape.h"
-#include "include/utils/fallback.h"
-
+#include "include/utils/pipeline/fallback.h"
 #include "frontend/jit/ps/debug/trace.h"
 #include "frontend/operator/ops.h"
 #include "utils/ms_context.h"

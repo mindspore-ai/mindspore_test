@@ -18,7 +18,7 @@
 #include <string>
 #include "include/backend/visible.h"
 #include "include/backend/common/pass_manager/pass.h"
-#include "include/utils/cse.h"
+#include "include/utils/pipeline/cse.h"
 
 namespace mindspore {
 namespace opt {

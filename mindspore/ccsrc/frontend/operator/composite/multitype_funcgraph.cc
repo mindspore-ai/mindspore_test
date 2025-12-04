@@ -22,8 +22,7 @@
 #include "abstract/dshape.h"
 #include "utils/ms_context.h"
 #include "frontend/jit/ps/fallback.h"
-
-#include "include/utils/fallback.h"
+#include "include/utils/pipeline/fallback.h"
 #include "ir/signature.h"
 #include "ir/dtype.h"
 #include "ir/dtype/tensor_type.h"

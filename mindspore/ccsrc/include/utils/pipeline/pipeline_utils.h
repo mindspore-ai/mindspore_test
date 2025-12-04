@@ -14,18 +14,18 @@
  * limitations under the License.
  */
 
-#include "utils/frontend/auto_generate/functional_signature_map.h"
+#ifndef MINDSPORE_CCSRC_INCLUDE_UTILS_PIPELINE_PIPELINE_UTILS_H_
+#define MINDSPORE_CCSRC_INCLUDE_UTILS_PIPELINE_PIPELINE_UTILS_H_
 
-#include <map>
-#include <vector>
-#include <string>
+#include "pybind11/pybind11.h"
+#include "include/utils/visible.h"
 
-namespace mindspore::ops {
-std::map<std::string, std::vector<std::string>> tensor_method_overload_signature_map = {
-  ${tensor_method_sigs_map}
-};
+namespace py = pybind11;
 
-std::map<std::string, std::vector<std::string>> function_overload_signature_map = {
-  ${mint_sigs_map}
-};
-}  // namespace mindspore::ops
+namespace mindspore {
+namespace pipeline {
+COMMON_EXPORT void CheckArgsValid(const py::object &source, const py::tuple &args);
+}  // namespace pipeline
+}  // namespace mindspore
+
+#endif  // MINDSPORE_CCSRC_INCLUDE_UTILS_PIPELINE_PIPELINE_UTILS_H_

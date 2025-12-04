@@ -38,8 +38,8 @@
 #include "frontend/parallel/ops_info/ops_utils.h"
 #include "mindspore/ccsrc/frontend/operator/meta_dsl/common/meta_impl.h"
 #include "include/backend/common/kernel_graph/anf_runtime_algorithm.h"
-#include "include/utils/fallback.h"
-#include "include/utils/primfunc_utils.h"
+#include "include/utils/pipeline/fallback.h"
+#include "include/utils/operator/primitive_utils.h"
 #include "ir/anf.h"
 #include "ir/cell.h"
 #include "ir/dtype/tensor_type.h"
@@ -879,7 +879,7 @@ void PrimitiveFunctionEvaluator::CheckArgsSizeAndType(const AbstractBasePtrList 
       continue;
     }
     if (!ValidateArgOptional(real_abs_args[i], op_args[i]) &&
-        !ops::ValidateArgsType(real_abs_args[i], op_args[i].arg_dtype_)) {
+        !abstract::ValidateArgsType(real_abs_args[i], op_args[i].arg_dtype_)) {
       std::vector<std::string> op_type_list;
       for (const auto &op_abs : real_abs_args) {
         (void)op_type_list.emplace_back(op_abs->BuildType()->ToString());
@@ -887,7 +887,7 @@ void PrimitiveFunctionEvaluator::CheckArgsSizeAndType(const AbstractBasePtrList 
       MS_INTERNAL_EXCEPTION(TypeError)
         << "For Operator[" << op_def_->name_ << "], " << op_args[i].arg_name_ << "'s type '"
         << real_abs_args[i]->BuildType()->ToString() << "' does not match expected type '"
-        << ops::EnumToString(op_args[i].arg_dtype_)
+        << prim::OpDTypeToString(op_args[i].arg_dtype_)
         << "'.\nThe reason may be: lack of definition of type cast, or incorrect type when creating the node.";
     }
   }

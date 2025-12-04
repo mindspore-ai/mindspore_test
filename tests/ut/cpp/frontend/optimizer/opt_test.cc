@@ -37,7 +37,7 @@
 
 #include "mindspore/ccsrc/utils/ir_dump/draw.h"
 #include "frontend/operator/ops.h"
-#include "include/utils/cse.h"
+#include "include/utils/pipeline/cse.h"
 #include "utils/convert_utils.h"
 #include "include/frontend/jit/ps/action_interface.h"
 #include "primitive/auto_generate/gen_ops_primitive_m.h"

@@ -407,10 +407,10 @@ FUNCTIONAL_MAP_H_TEMPLATE = Template.load_from_file(
     os.path.join(K.WORK_DIR, './mindspore/ccsrc/frontend/operator/composite/template/functional_map_h.tpl'))
 
 FUNCTIONAL_SIGNATURE_MAP_CC_TEMPLATE = Template.load_from_file(
-    os.path.join(K.WORK_DIR, './mindspore/ccsrc/utils/frontend/template/functional_signature_map_cc.tpl'))
+    os.path.join(K.WORK_DIR, './mindspore/ccsrc/utils/operator/template/functional_signature_map_cc.tpl'))
 
 FUNCTIONAL_SIGNATURE_MAP_H_TEMPLATE = Template.load_from_file(
-    os.path.join(K.WORK_DIR, './mindspore/ccsrc/utils/frontend/template/functional_signature_map_h.tpl'))
+    os.path.join(K.WORK_DIR, './mindspore/ccsrc/utils/operator/template/functional_signature_map_h.tpl'))
 
 ADD_TENSOR_DOCS_TEMPLATE = Template.load_from_file(
     os.path.join(K.WORK_DIR, './mindspore/ccsrc/pynative/forward/pyboost/template/tensor_docs_py.tpl'))

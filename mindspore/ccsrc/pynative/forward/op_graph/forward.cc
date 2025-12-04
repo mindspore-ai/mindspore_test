@@ -30,7 +30,7 @@
 #include "include/pynative/utils/pynative_utils.h"
 #include "pybind_api/gil_scoped_long_running.h"
 #include "include/utils/amp.h"
-#include "include/utils/python_fallback_running.h"
+#include "include/utils/pipeline/python_fallback_running.h"
 #include "utils/ms_context.h"
 #include "include/pynative/forward/pyboost/forward_task.h"
 #include "pynative/utils/predict_out_type_map.h"

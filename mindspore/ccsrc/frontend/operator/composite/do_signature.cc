@@ -23,10 +23,9 @@
 #include "abstract/param_validator.h"
 #include "frontend/operator/cc_implementations.h"
 #include "frontend/operator/ops.h"
-#include "include/utils/primfunc_utils.h"
 #include "include/utils/amp.h"
 #include "utils/convert_utils.h"
-#include "include/utils/frontend/primitive_utils.h"
+#include "include/utils/operator/primitive_utils.h"
 #include "frontend/jit/ps/static_analysis/prim.h"
 #include "frontend/jit/ps/static_analysis/prim_utils.h"
 #include "ir/anf.h"
@@ -191,9 +190,9 @@ void CheckPrimInputType(const ValuePtr &function, const AbstractBasePtrList &arg
     }
     auto cast_dtypes = op_arg.cast_dtype_;
     bool match = std::any_of(cast_dtypes.cbegin(), cast_dtypes.cend(),
-                             [&abs](const ops::OP_DTYPE &dtype) { return ops::ValidateArgsType(abs, dtype); });
+                             [&abs](const ops::OP_DTYPE &dtype) { return abstract::ValidateArgsType(abs, dtype); });
     if (!match) {
-      MS_EXCEPTION(TypeError) << ops::BuildOpInputsErrorMsg(op_def, op_arg.arg_name_, abs->BuildType());
+      MS_EXCEPTION(TypeError) << prim::BuildOpInputsErrorMsg(op_def, op_arg.arg_name_, abs->BuildType());
     }
   }
 }

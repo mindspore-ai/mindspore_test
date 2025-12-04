@@ -28,7 +28,7 @@
 #include "ir/graph_utils.h"
 #include "ir/func_graph_cloner.h"
 #include "pybind_api/gil_scoped_long_running.h"
-#include "include/utils/frontend/primitive_utils.h"
+#include "include/utils/operator/primitive_utils.h"
 #include "include/utils/pynative/common_utils.h"
 #include "include/pynative/utils/pynative_utils.h"
 #include "primitive/framework_ops.h"

@@ -24,7 +24,7 @@
 #include "frontend/optimizer/irpass.h"
 #include "frontend/optimizer/anf_visitor.h"
 #include "utils/ms_utils.h"
-#include "include/utils/frontend/primitive_utils.h"
+#include "include/utils/operator/primitive_utils.h"
 #include "frontend/operator/ops.h"
 #include "frontend/optimizer/ad/grad.h"
 #include "frontend/optimizer/irpass/meta_fg_prim_eliminate.h"

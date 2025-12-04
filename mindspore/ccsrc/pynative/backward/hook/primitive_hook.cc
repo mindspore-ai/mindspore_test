@@ -17,7 +17,7 @@
 #include "pynative/backward/hook/primitive_hook.h"
 #include <memory>
 #include <string>
-#include "include/utils/frontend/primitive_utils.h"
+#include "include/utils/operator/primitive_utils.h"
 #include "include/utils/tensor_py.h"
 #include "include/pynative/utils/pynative_execute.h"
 
