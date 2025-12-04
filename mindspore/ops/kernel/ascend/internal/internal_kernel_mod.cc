@@ -50,7 +50,8 @@ bool InternalKernelMod::Init(const std::vector<KernelTensor *> &inputs, const st
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
   auto soc = ms_context->ascend_soc_version();
-  if (soc.find("ascend910_93") != std::string::npos || soc.find("ascend910b") != std::string::npos) {
+  if (HAS_ASCEND_API(aclmdlRICaptureGetInfo) &&
+      (soc.find("ascend910_93") != std::string::npos || soc.find("ascend910b") != std::string::npos)) {
     is_aclgraph_supported_ = true;
   }
 
