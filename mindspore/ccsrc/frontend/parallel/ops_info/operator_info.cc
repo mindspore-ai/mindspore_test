@@ -1878,8 +1878,6 @@ std::shared_ptr<Strategies> OperatorInfo::GenerateBatchStrategiesWithCheck() {
     auto stra = batch_strategy->at(i);
     auto input_shape = inputs_shape_.at(i);
     if (stra.size() != input_shape.size()) {
-      MS_LOG(WARNING) << "The " << i << " input size:" << input_shape.size() << " is not equal to the " << i
-                      << " generated batch parallel strategy size:" << stra.size();
       return batch_strategy;
     }
     for (size_t j = 0; j < input_shape.size(); ++j) {
