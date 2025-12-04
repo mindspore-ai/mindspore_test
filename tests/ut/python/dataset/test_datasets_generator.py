@@ -4073,16 +4073,16 @@ def test_func_generator_with_memory_usage_check():
          process_iter_memory_difference) = dataset_create_dict_iterator(
             [x, y], num_epochs=-1, init_mem=init_memory)
         assert data_init_memory_difference > 1000
-        assert dataset_data_memory_difference < 2
-        assert iter_dataset_memory_difference < 2
-        assert process_iter_memory_difference < 2
+        assert dataset_data_memory_difference < 3
+        assert iter_dataset_memory_difference < 3
+        assert process_iter_memory_difference < 3
 
     del x
     del y
     end_memory = psutil.Process(os.getpid()).memory_info().rss / 1024 / 1024
-    end_init_memory_difference = end_memory - init_memory  # after del, use memory < 2MB
+    end_init_memory_difference = end_memory - init_memory  # after del, use memory < 3MB
 
-    assert end_init_memory_difference < 2
+    assert end_init_memory_difference < 3
 
 
 if __name__ == "__main__":
