@@ -26,6 +26,7 @@ from mindspore.parallel._utils import _get_device_num, _need_to_full, _to_full_s
 from mindspore import _checkparam as Validator
 from mindspore import log as logger
 from mindspore.parallel._utils import _is_in_auto_parallel_mode
+from mindspore.amp import _ascend_910a_target
 
 
 def _init_sink_dataset(dataset, sink_size, input_signature, create_info):
@@ -242,8 +243,11 @@ def data_sink(fn, dataset, sink_size=1, jit_config=None, input_signature=None):
         real_sink_fun = _get_sink_fun(sink_fun, key_info, is_info_queue, dataset, jit_config)
 
         loop = sink_size
-        if (jit_config is not None and jit_config.jit_config_dict["jit_level"] == "O2"
-                and context.get_context('mode') == context.GRAPH_MODE) or _is_in_auto_parallel_mode():
+
+        if (context.get_context('mode') == context.GRAPH_MODE and jit_config and
+                (jit_config.jit_config_dict["jit_level"] == "O2" or
+                 (_ascend_910a_target() and not jit_config.jit_config_dict["jit_level"]) or
+                 _is_in_auto_parallel_mode())):
             logger.warning("If sink_size is needed, both forward and backward operations need to be placed in a cell.")
             loop = 1
 
