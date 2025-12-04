@@ -14,7 +14,7 @@
 # ============================================================================
 """Data sink help for minddata dataset"""
 from functools import wraps
-import mindspore.ops as ops
+from mindspore import ops
 from mindspore import context
 from mindspore.common.dtype import _pytype_to_dtype
 from mindspore.common.api import jit
@@ -24,6 +24,9 @@ import mindspore.dataset as ds
 from mindspore._c_expression import _set_dataset_mode_config
 from mindspore.parallel._utils import _get_device_num, _need_to_full, _to_full_shapes, _get_pipeline_stages
 from mindspore import _checkparam as Validator
+from mindspore import log as logger
+from mindspore.parallel._utils import _is_in_auto_parallel_mode
+from mindspore.amp import _ascend_910a_target
 
 
 def _init_sink_dataset(dataset, sink_size, input_signature, create_info):
@@ -31,7 +34,7 @@ def _init_sink_dataset(dataset, sink_size, input_signature, create_info):
     Initialize data sinking
     """
     if hasattr(dataset, '__transfer_dataset__'):
-        raise ValueError(f"The dataset has been used with network.")
+        raise ValueError("The dataset has been used with network.")
 
     dataset_size = dataset.get_dataset_size()
     dataset_types, dataset_shapes = _get_types_and_shapes(dataset)
@@ -44,7 +47,7 @@ def _init_sink_dataset(dataset, sink_size, input_signature, create_info):
 
     # Don't enable dynamic shape(multi-subgraph) feature in pp/data_broadcast mode,
     # otherwise get_data_info will stuck since some rank do not consume data.
-    use_pipeline_parallel = (context.get_auto_parallel_context("pipeline_stages") > 1)
+    use_pipeline_parallel = context.get_auto_parallel_context("pipeline_stages") > 1
     data_broadcast = enable_data_broadcast()
 
     if use_pipeline_parallel or data_broadcast:
@@ -238,8 +241,17 @@ def data_sink(fn, dataset, sink_size=1, jit_config=None, input_signature=None):
 
         real_sink_fun = _get_sink_fun(sink_fun, key_info, is_info_queue, dataset, jit_config)
 
+        loop = sink_size
+
+        if (context.get_context('mode') == context.GRAPH_MODE and jit_config and
+                (jit_config.jit_config_dict["jit_level"] == "O2" or
+                 (_ascend_910a_target() and not jit_config.jit_config_dict["jit_level"]) or
+                 _is_in_auto_parallel_mode())):
+            logger.warning("If sink_size is needed, both forward and backward operations need to be placed in a cell.")
+            loop = 1
+
         out = None
-        for _ in range(sink_size):
+        for _ in range(loop):
             out = real_sink_fun()
 
         return out
