@@ -1097,11 +1097,14 @@ class TestMultiProcessDataLoader:
 
         final_fd_count = len(os.listdir("/proc/self/fd"))
 
-        # When using the 'spawn' or 'forkserver' start methods, a resource tracker will be created,
-        # which consumes some file descriptor.
         if multiprocessing_context is None:
             multiprocessing_context = multiprocessing
-        remain_fd = 0 if multiprocessing_context.get_start_method() == "fork" else 2
+        if multiprocessing_context.get_start_method() == "fork":
+            remain_fd = 0
+        elif multiprocessing_context.get_start_method() == "spawn":
+            remain_fd = 1  # Resource tracker will consume 1 file descriptor.
+        else:  # forkserver
+            remain_fd = 2  # Resource tracker and forkserver will consume 2 file descriptors.
 
         assert final_fd_count <= init_fd_count + remain_fd, (
             "File descriptor count mismatch:\n"
