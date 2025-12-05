@@ -41,7 +41,7 @@ class RUNTIME_HARDWARE_EXPORT SwapManager {
   void FreeDeviceMemory(void *ptr);
 
   // Host memory
-  void *AllocHostMemory(size_t size);
+  void *AllocHostMemory(size_t size, uint32_t stream_id = kDefaultStreamIndex);
   void FreeHostMemory(void *ptr);
 
   // File
