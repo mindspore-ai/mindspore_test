@@ -59,7 +59,7 @@ def test_filter_grad_jit_psjit():
     compile_config.GRAD_JIT_FILTER = "1"
     context.set_context(mode=context.PYNATIVE_MODE)
     try:
-        save_graphs_path = "./test_jit_grad_with_filter"
+        save_graphs_path = "./test_jit_grad_with_filter1"
         os.environ["MS_DEV_SAVE_GRAPHS"] = "1"
         os.environ["MS_DEV_SAVE_GRAPHS_PATH"] = save_graphs_path
         if os.path.exists(save_graphs_path):
@@ -162,7 +162,7 @@ def test_filter_grad_jit_psjit_with_multiple_position_2():
     compile_config.GRAD_JIT_FILTER = "1"
     context.set_context(mode=context.PYNATIVE_MODE)
     try:
-        save_graphs_path = "./test_jit_grad_with_filter"
+        save_graphs_path = "./test_jit_grad_with_filter2"
         os.environ["MS_DEV_SAVE_GRAPHS"] = "1"
         os.environ["MS_DEV_SAVE_GRAPHS_PATH"] = save_graphs_path
         if os.path.exists(save_graphs_path):
@@ -392,7 +392,7 @@ def test_jit_grad_with_weights():
     """
     x = Tensor(np.array([1, 2]).astype(np.float32))
     try:
-        save_graphs_path = "./test_jit_grad_with_filter"
+        save_graphs_path = "./test_jit_grad_with_filter3"
         os.environ["MS_DEV_SAVE_GRAPHS"] = "1"
         os.environ["MS_DEV_SAVE_GRAPHS_PATH"] = save_graphs_path
         if os.path.exists(save_graphs_path):
