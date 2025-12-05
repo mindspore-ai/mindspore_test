@@ -2000,13 +2000,13 @@ static PyMethodDef Tensor_methods[] = {
   {"set_", (PyCFunction)TensorPython_Set, METH_VARARGS | METH_KEYWORDS, R"mydelimiter(
                                 set_(source=None, storage_offset=0, size=None, stride=None) -> Tensor
 
-                                Sets the underlying storage, size, and stride.
-                                If source is a tensor, the self tensor will share the same storage with it,
-                                along with the same size and stride. Modifications to elements of one tensor
-                                will be reflected in the other.
+                                Sets the underlying storage, size, and stride. If source is a tensor, the
+                                self tensor will share the same storage with it, along with the same size
+                                and stride. Modifications to elements of one tensor will be reflected in
+                                the other.
 
-                                This method supports multiple parameter combinations,
-                                with the valid call signatures as follows:
+                                This method supports multiple parameter combinations, with the valid call
+                                signatures as follows:
 
                                 - ``set_() -> Tensor``:
                                   Parameterless call that sets the current tensor to an uninitialized empty tensor.
@@ -2014,7 +2014,7 @@ static PyMethodDef Tensor_methods[] = {
                                 - ``set_(source: Storage) -> Tensor``:
                                   Sets the underlying storage of the `self` tensor to the specified ``Storage`` .
 
-                                - ``set_(source: Storage, storage_offset: int, \
+                                - ``set_(source: Storage, storage_offset: int,
                                   size: tuple | list, stride: tuple | list) -> Tensor``:
                                   Sets the underlying storage of the `self` tensor to the specified ``Storage``,
                                   and simultaneously sets the `size` and `stride` of the `self` tensor to the
@@ -2025,7 +2025,7 @@ static PyMethodDef Tensor_methods[] = {
                                   and the `storage_offset`, `size`, and `stride` of the `self` tensor
                                   are the same as those of the `source` tensor.
 
-                                - ``set_(source: Tensor, storage_offset: int, \
+                                - ``set_(source: Tensor, storage_offset: int,
                                   size: tuple | list, stride: tuple | list) -> Tensor``:
                                   Makes the `self` tensor share the same underlying storage as the `source` tensor,
                                   and simultaneously sets the `size` and `stride` of the `self` tensor to the
