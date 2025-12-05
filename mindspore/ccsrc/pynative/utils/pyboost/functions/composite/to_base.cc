@@ -71,8 +71,9 @@ ToProcessor &ToProcessor::Device() {
 ToProcessor &ToProcessor::Copy() {
   if (origin_ == tensor_.get() && copy_) {
     auto dtype_ptr = MakeValue<int64_t>(static_cast<int64_t>(dtype_))->cast<Int64ImmPtr>();
-    auto new_output =
-      pyboost::empty_like(tensor_, dtype_ptr, GetDeviceByDeviceType(device_type_), std::make_shared<BoolImm>(false));
+    bool pin_memory = non_blocking_ && device_type_ == device::DeviceType::kCPU;
+    auto new_output = pyboost::empty_like(tensor_, dtype_ptr, GetDeviceByDeviceType(device_type_),
+                                          std::make_shared<BoolImm>(pin_memory));
     auto non_blocking_ptr = MakeValue<bool>(static_cast<int64_t>(non_blocking_))->cast<BoolImmPtr>();
     pyboost::inplace_copy(new_output, tensor_, non_blocking_ptr);
     tensor_ = new_output;
