@@ -29,6 +29,6 @@ mindspore.ops.SparseApplyFtrl
     异常：
         - **TypeError** - 如果 `lr` 、 `l1` 、 `l2` 或 `lr_power` 不是float类型。
         - **TypeError** - 如果 `use_locking` 不是bool。
-        - **TypeError** - 如果 `var` 、 `grad` 、`linear` 或者 `grad` 的数据类型既不是float16也不是float32。
+        - **TypeError** - 如果 `var` 、 `accum` 、 `linear` 或者 `grad` 的数据类型既不是float16也不是float32。
         - **TypeError** - 如果 `indices` 不是int32也不是int64类型。
-        - **RuntimeError** - 如果 `var` 、 `grad` 、`linear` 或者 `grad` 不支持数据类型转换。
+        - **RuntimeError** - 如果 `var` 、 `accum` 、 `linear` 或者 `grad` 不支持数据类型转换。
