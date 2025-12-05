@@ -32,4 +32,4 @@
           - GPU: 与 `logits` 的shape和数据类型相同。
 
     输出：
-        Tensor，如果 `reduction` 为'none'，则输出Tensor的shape与 `input` 的shape相同，否则shape为 :math:`()`。
+        Tensor，如果 `reduction` 为 ``'none'``，则输出Tensor的shape与 `logits` 的shape相同，否则shape为 :math:`()`。
