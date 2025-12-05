@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef MINDSPORE_CCSRC_BACKEND_SESSION_SESSION_BASIC_H
-#define MINDSPORE_CCSRC_BACKEND_SESSION_SESSION_BASIC_H
+#ifndef MINDSPORE_CCSRC_INCLUDE_BACKEND_COMMON_KERNEL_GRAPH_SESSION_BASIC_H
+#define MINDSPORE_CCSRC_INCLUDE_BACKEND_COMMON_KERNEL_GRAPH_SESSION_BASIC_H
 
 #include <vector>
 #include <string>
@@ -93,4 +93,4 @@ BACKEND_COMMON_EXPORT void DumpGraphExeOrder(const std::string &file_name, const
                                              const std::vector<CNodePtr> &execution_order);
 uint32_t GetRankId();
 }  // namespace mindspore
-#endif  // MINDSPORE_CCSRC_BACKEND_SESSION_SESSION_BASIC_H
+#endif  // MINDSPORE_CCSRC_INCLUDE_BACKEND_COMMON_KERNEL_GRAPH_SESSION_BASIC_H

@@ -20,7 +20,7 @@
 #include "primitive/framework_ops.h"
 #include "include/utils/callback.h"
 #include "include/utils/anfalgo.h"
-#include "backend/common/pass_manager/common_backend_optimization.h"
+#include "include/backend/common/pass_manager/common_backend_optimization.h"
 #include "include/runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel_flags.h"
 #include "plugin/ascend/graph_optimizer/pass/ascend_pass_optimization.h"
 #include "plugin/ascend/graph_optimizer/pass/backend_common_unify_mindir.h"

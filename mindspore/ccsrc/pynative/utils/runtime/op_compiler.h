@@ -25,7 +25,7 @@
 #include <set>
 #include "utils/ms_utils.h"
 #include "include/backend/common/kernel_graph/kernel_graph.h"
-#include "backend/common/kernel_graph/session_basic.h"
+#include "include/backend/common/kernel_graph/session_basic.h"
 #include "include/runtime/hardware_abstract/device_context/device_context.h"
 #include "pynative/utils/runtime/ir_converter.h"
 

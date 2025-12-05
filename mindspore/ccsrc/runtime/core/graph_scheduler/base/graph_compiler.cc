@@ -31,7 +31,7 @@
 #include "device_address/device_address.h"
 #include "utils/convert_utils.h"
 #include "include/runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel_flags.h"
-#include "backend/common/pass_manager/common_backend_optimization.h"
+#include "include/backend/common/pass_manager/common_backend_optimization.h"
 #include "include/backend/common/custom_pass/custom_pass_executor.h"
 #include "utils/ms_context.h"
 #include "ir/tensor.h"

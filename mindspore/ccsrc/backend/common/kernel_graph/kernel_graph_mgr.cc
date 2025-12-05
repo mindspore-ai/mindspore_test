@@ -28,7 +28,7 @@
 #include "primitive/sequence_ops.h"
 #include "primitive/framework_ops.h"
 #include "mindspore/ccsrc/utils/ir_dump/anf_ir_dump.h"
-#include "backend/common/pass_manager/common_backend_optimization.h"
+#include "include/backend/common/pass_manager/common_backend_optimization.h"
 #include "backend/common/kernel_graph/jit_call_graph.h"
 #include "utils/log_adapter.h"
 #include "utils/trace_base.h"

@@ -41,7 +41,7 @@
 #include "include/runtime/hardware_abstract/kernel_base/kernel_info.h"
 #include "utils/ms_context.h"
 #include "utils/trace_base.h"
-#include "backend/common/pass_manager/dynamic_shape_helper.h"
+#include "include/backend/common/pass_manager/dynamic_shape_helper.h"
 #include "tools/profiler/profiler.h"
 #include "abstract/ops/primitive_infer_map.h"
 #include "ops/op_def.h"

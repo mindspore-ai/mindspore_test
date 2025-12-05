@@ -23,7 +23,7 @@
 #include <utility>
 #include <mutex>
 #include "utils/ms_utils.h"
-#include "backend/common/kernel_graph/session_basic.h"
+#include "include/backend/common/kernel_graph/session_basic.h"
 #include "include/backend/visible.h"
 
 namespace mindspore {

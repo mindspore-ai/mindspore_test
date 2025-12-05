@@ -28,7 +28,7 @@
 #include "ir/anf.h"
 #include "base/base_ref.h"
 #include "backend/ms_backend/graph_partition.h"
-#include "backend/common/kernel_graph/session_basic.h"
+#include "include/backend/common/kernel_graph/session_basic.h"
 #include "include/runtime/hardware_abstract/device_context/device_context.h"
 #include "runtime/core/graph_scheduler/base/graph_scheduler.h"
 #include "runtime/core/graph_scheduler/base/graph_adapter.h"
