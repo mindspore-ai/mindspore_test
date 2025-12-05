@@ -34,15 +34,6 @@ tensor::TensorPtr empty_like(const tensor::TensorPtr &input_tensor, const std::o
                              const std::optional<Int64ImmPtr> &device, const BoolImmPtr &pin_memory) {
   MS_LOG(DEBUG) << "In empty_like function";
 
-  device::DeviceType device_target;
-  if (EnableDispatch()) {
-    device_target = get_device(input_tensor, dtype, device, pin_memory);
-  } else {
-    device_target = OpRunStatus::Get().device_target();
-  }
-
-  OpRunStatus::Get().HeterBarrier(device_target);
-
   bool skip_tracker = ProfileTracker::ProfileTrackerTask(prim::kPrimEmptyLike);
 
   MS_LOG(DEBUG) << "Call EmptyLikeCustomize start";

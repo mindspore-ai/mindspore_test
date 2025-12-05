@@ -34,15 +34,6 @@ tensor::TensorPtr empty(const ValueTuplePtr &size, const std::optional<Int64ImmP
                         const std::optional<Int64ImmPtr> &device, const BoolImmPtr &pin_memory) {
   MS_LOG(DEBUG) << "In empty function";
 
-  device::DeviceType device_target;
-  if (EnableDispatch()) {
-    device_target = get_device(size, dtype, device, pin_memory);
-  } else {
-    device_target = OpRunStatus::Get().device_target();
-  }
-
-  OpRunStatus::Get().HeterBarrier(device_target);
-
   bool skip_tracker = ProfileTracker::ProfileTrackerTask(prim::kPrimEmpty);
 
   MS_LOG(DEBUG) << "Call EmptyCustomize start";
