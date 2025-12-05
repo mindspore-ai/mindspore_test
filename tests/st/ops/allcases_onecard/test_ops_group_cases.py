@@ -282,6 +282,8 @@ ops_group_cases_registry_level1 = {
          ("ascend910b",), 4, None],
         [test_func_conv2d.test_conv2d_backward,
          ("ascend910b",), 4, ((ms.GRAPH_MODE, ms.PYNATIVE_MODE),)],
+        [test_func_conv2d.test_conv2d_backward_fp16,
+         ("ascend910b",), 4, ((ms.GRAPH_MODE, ms.PYNATIVE_MODE),)],
         [test_func_conv2d.test_conv2d_vmap,
          ("ascend910b",), 4, ((ms.GRAPH_MODE, ms.PYNATIVE_MODE),)],
         [test_ops_concat.test_concat_binary_cases,
