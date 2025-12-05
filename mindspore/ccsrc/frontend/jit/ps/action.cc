@@ -2174,6 +2174,8 @@ std::vector<ActionItem> VmPipeline(const ResourcePtr &resource, bool trace_flag,
 
     // Mind Compiler finish.
     (void)actions.emplace_back(std::make_pair(kValidate, ValidateAction));
+
+    (void)actions.emplace_back(std::make_pair(kBackendPass, BackendPass));
   }
 
   if (erase_parse) {
@@ -2190,8 +2192,6 @@ std::vector<ActionItem> VmPipeline(const ResourcePtr &resource, bool trace_flag,
   if (common::GetEnv(kSimulationLevel) == kSimulationLevelCompileGraph) {
     return actions;
   }
-
-  (void)actions.emplace_back(std::make_pair(kBackendPass, BackendPass));
 
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
