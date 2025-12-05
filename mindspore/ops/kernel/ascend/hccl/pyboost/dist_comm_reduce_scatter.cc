@@ -39,8 +39,12 @@ void DistCommReduceScatterAscendCustomize(const std::shared_ptr<OpRunner> &op, c
 
   auto rank_size_imm = GetValue<int64_t>(rank_size);
   auto input_shape = other_tensor->shape();
-  input_shape[0] = static_cast<int64_t>(input_shape[0] * rank_size_imm);
-
+  int64_t input_shape_size = 0;
+  for (const auto &scatter_tensor : scatter_tensors) {
+    auto shape = scatter_tensor->shape();
+    input_shape_size += static_cast<int64_t>(shape[0]);
+  }
+  input_shape[0] = static_cast<int64_t>(input_shape_size);
   TensorPtr input_tensor =
     tensor::from_spec(static_cast<TypeId>(other_tensor->data_type_c()), input_shape, device::DeviceType::kNone);
   PyBoostUtils::PrepareOpInputs(op->device_context(), kDefaultStreamIndex, other_tensor, scatter_tensors);
@@ -51,9 +55,13 @@ void DistCommReduceScatterAscendCustomize(const std::shared_ptr<OpRunner> &op, c
     auto device_context = op->device_context();
     PyBoostUtils::MallocOpInputs(device_context, scatter_tensors);
     PyBoostUtils::MallocOpOutputs(device_context, {other_tensor, input_tensor});
+    auto hccl_data_type = HcomUtil::ConvertHcclType(other_tensor->data_type());
+    auto hccl_count = 1;
+    auto out_shape = other_tensor->shape();
+    for (size_t i = 0; i < out_shape.size(); i++) {
+      hccl_count = hccl_count * out_shape[i];
+    }
 
-    auto [hccl_count, hccl_data_type] =
-      HcomUtil::GetHcclCountAndTypeFromTensor(op->primitive(), input_tensor, rank_size_imm);
     auto op_type_enum = HcomUtil::GetHcomReduceOpType(GetValue<std::string>(op_type));
 
     const auto &op_name = op->primitive()->name();
