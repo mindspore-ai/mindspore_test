@@ -1369,7 +1369,7 @@ class HSwish(Cell):
 
 class HSigmoid(Cell):
     r"""
-    Applies Hard Sigmoid activation function element-wise.
+    Applies the Hard Sigmoid activation function element-wise.
 
     Hard Sigmoid is defined as:
 
@@ -1387,24 +1387,19 @@ class HSigmoid(Cell):
         :align: center
 
     Inputs:
-        - **input** (Tensor) - The input of HSigmoid.
+        - **input** (Tensor) - The input tensor to be processed by Hard Sigmoid.
 
     Outputs:
         Tensor, with the same type and shape as the `input`.
-
-    Raises:
-        TypeError: If `input` is not a Tensor.
-        TypeError: If `input` is neither int nor float.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> from mindspore import Tensor, nn
         >>> import numpy as np
-        >>> input = Tensor(np.array([-1, -2, 0, 2, 1]), mindspore.float16)
-        >>> hsigmoid = nn.HSigmoid()
+        >>> input = mindspore.tensor(np.array([-1, -2, 0, 2, 1]), mindspore.float16)
+        >>> hsigmoid = mindspore.nn.HSigmoid()
         >>> result = hsigmoid(input)
         >>> print(result)
         [0.3333 0.1666 0.5    0.8335 0.6665]
