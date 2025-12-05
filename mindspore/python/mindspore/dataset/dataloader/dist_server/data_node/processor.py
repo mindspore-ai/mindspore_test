@@ -17,11 +17,10 @@ Data preprocessor.
 """
 
 
-import torch
+import mindspore
 import cv2
 import numpy as np
 import albumentations as A
-from albumentations.pytorch import ToTensorV2
 from transformers import AutoTokenizer
 import os
 import sys
@@ -36,8 +35,7 @@ class DataProcessor:
             A.Normalize(
                 mean=[0.48145466, 0.4578275, 0.40821073], 
                 std=[0.26862954, 0.26130258, 0.27577711],
-            ),
-            ToTensorV2() 
+            )
         ])
         
         self.tokenizer = AutoTokenizer.from_pretrained(tokenizer_path)
@@ -52,8 +50,10 @@ class DataProcessor:
             
             img_bytes = open(image_path, 'rb').read()
             img_np = cv2.imdecode(np.frombuffer(img_bytes, np.uint8), cv2.IMREAD_COLOR)
-            img_rgb = cv2.cvtColor(img_np, cv2.COLOR_BGR2RGB)           
-            image_tensor = self.image_transform(image=img_rgb)['image']
+            img_rgb = cv2.cvtColor(img_np, cv2.COLOR_BGR2RGB)  
+            transformed = self.image_transform(image=img_rgb)
+            image_np = transformed['image']         
+            image_tensor = mindspore.Tensor(image_np.transpose(2, 0, 1), dtype=mindspore.float32)
             
             tokenized_output = self.tokenizer(
                 caption,
@@ -73,6 +73,7 @@ class DataProcessor:
             print(f"    Error: {e}", file=sys.stderr, flush=True)
             return None, None, None
 
+
     def get_batch(self, indices):
         batch_images = []
         batch_input_ids = []
@@ -88,7 +89,7 @@ class DataProcessor:
             return None
 
         return {
-            "images": torch.stack(batch_images),
-            "input_ids": torch.stack(batch_input_ids),
-            "masks": torch.stack(batch_masks)
+            "images": mindspore.ops.stack(batch_images),
+            "input_ids": mindspore.ops.tack(batch_input_ids),
+            "masks": mindspore.ops.stack(batch_masks)
         }
