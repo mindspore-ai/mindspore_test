@@ -115,15 +115,21 @@ void SetDevicePtrDeleterMaker(device::DeviceType device_type, DevicePtrDeleterMa
   g_deleter_func[static_cast<int>(device_type)] = func;
 }
 
-DeviceAddress::DeviceAddress() { device_pointer_ = std::make_shared<DevicePointer>(); }
+DeviceAddress::DeviceAddress() {
+  device_pointer_ = std::make_shared<DevicePointer>();
+  MS_LOG(DEBUG) << "Construct device address:" << ToString();
+}
 
 DeviceAddress::DeviceAddress(void *device_ptr, size_t size)
-    : device_pointer_(std::make_shared<DevicePointer>(device_ptr)), size_(size) {}
+    : device_pointer_(std::make_shared<DevicePointer>(device_ptr)), size_(size) {
+  MS_LOG(DEBUG) << "Construct device address:" << ToString();
+}
 
 DeviceAddress::DeviceAddress(void *ptr, size_t size, const std::string &device_name)
     : device_pointer_(std::make_shared<DevicePointer>(ptr)), size_(size) {
   device_type_ = device::GetDeviceTypeByName(device_name);
   SetDevicePtrDeleter();
+  MS_LOG(DEBUG) << "Construct device address:" << ToString();
 }
 
 DeviceAddress::DeviceAddress(void *ptr, size_t size, const string &format, TypeId type_id,
@@ -135,6 +141,7 @@ DeviceAddress::DeviceAddress(void *ptr, size_t size, const string &format, TypeI
   device_type_ = device::GetDeviceTypeByName(device_name);
   format_ = kernel::GetFormatFromStrToEnum(format);
   SetDevicePtrDeleter();
+  MS_LOG(DEBUG) << "Construct device address:" << ToString();
 }
 
 DeviceAddress::DeviceAddress(void *ptr, size_t size, const ShapeVector &shape_vector, const Format &format,
@@ -147,6 +154,7 @@ DeviceAddress::DeviceAddress(void *ptr, size_t size, const ShapeVector &shape_ve
       device_type_(device::GetDeviceTypeByName(device_name)),
       shape_vector_(shape_vector) {
   SetDevicePtrDeleter();
+  MS_LOG(DEBUG) << "Construct device address:" << ToString();
 }
 
 DeviceAddress::DeviceAddress(void *ptr, size_t size, const std::string &format, TypeId type_id,
@@ -159,6 +167,7 @@ DeviceAddress::DeviceAddress(void *ptr, size_t size, const std::string &format, 
   dtype_id_ = type_id;
   format_ = kernel::GetFormatFromStrToEnum(format);
   SetDevicePtrDeleter();
+  MS_LOG(DEBUG) << "Construct device address:" << ToString();
 }
 
 DeviceAddress::DeviceAddress(const DeviceAddress &other) {
@@ -176,12 +185,11 @@ DeviceAddress::DeviceAddress(const DeviceAddress &other) {
   shape_vector_ = other.shape_vector_;
   padding_type_ = other.padding_type();
   SetDevicePtrDeleter();
+  MS_LOG(DEBUG) << "Construct device address:" << ToString();
 }
 
 DeviceAddress::~DeviceAddress() {
-  if (IS_OUTPUT_ON(mindspore::kDebug) && device_pointer_ != nullptr && GetPtr() != nullptr) {
-    MS_LOG(DEBUG) << "Maybe memory leak detect in device address:" << ToString();
-  }
+  MS_LOG(DEBUG) << "Destruct device address:" << ToString();
   device_pointer_ = nullptr;
 }
 
