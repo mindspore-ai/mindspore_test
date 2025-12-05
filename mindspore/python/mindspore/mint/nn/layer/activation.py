@@ -148,7 +148,8 @@ class LogSigmoid(Cell):
         :align: center
 
     Inputs:
-        - **input** (Tensor) - The input tensor to be processed by LogSigmoid with data type of bfloat16, float16 or float32.
+        - **input** (Tensor) - The input tensor to be processed by LogSigmoid
+          with data type of bfloat16, float16 or float32.
           The shape is :math:`(*)` where :math:`*` means, any number of additional dimensions.
 
     Outputs:
