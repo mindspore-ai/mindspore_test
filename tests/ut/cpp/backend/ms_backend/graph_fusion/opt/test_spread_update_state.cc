@@ -17,7 +17,7 @@
 #include "backend/ms_backend/graph_fusion/common/graph_kernel_common_test_suite.h"
 #include "backend/ms_backend/graph_fusion/core/update_state_formatter.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_info.h"
-#include "include/backend/anf_runtime_algorithm.h"
+#include "include/backend/common/kernel_graph/anf_runtime_algorithm.h"
 
 namespace mindspore::graphkernel::test {
 namespace {
