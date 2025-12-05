@@ -200,7 +200,7 @@ def _handle_training_result_error(model, tft_obj):
     if _is_snapshot_valid():
         for param in train_network.trainable_params():
             if param.name in new_param_dict:
-                logger.info(f"Copy param {param.name()}")
+                logger.info(f"Copy param {param.name}")
                 param.copy_(new_param_dict[param.name])
             else:
                 logger.warning(f"Not found param {param.name} in snapshot")
