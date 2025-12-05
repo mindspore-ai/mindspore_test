@@ -26,4 +26,4 @@ mindspore.ops.SparseSlice
         - **ValueError** - `indices` 和 `values` 对应元素数量不一致。
         - **ValueError** - `indices[1]` 与 `shape` 的shape不一致。
         - **ValueError** - `shape` 与 `start` 的shape不一致。
-        - **ValueError** - `shape` 与 `size` git的shape不一致。
+        - **ValueError** - `shape` 与 `size` 的shape不一致。
