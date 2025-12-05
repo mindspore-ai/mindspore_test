@@ -17,7 +17,7 @@
 #include "pybind11/pybind11.h"
 #include "include/utils/np_dtypes.h"
 #include "include/utils/amp.h"
-#include "include/utils/config_manager.h"
+#include "utils/config_manager.h"
 
 namespace py = pybind11;
 namespace mindspore {

@@ -34,7 +34,7 @@
 #include "ir/tensor_new.h"
 #include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
 #include "base/base_ref_utils.h"
-#include "include/utils/config_manager.h"
+#include "utils/config_manager.h"
 #include "include/backend/common/kernel_graph/anf_runtime_algorithm.h"
 #include "include/utils/anfalgo.h"
 #include "backend/common/pass_manager/common_backend_optimization.h"

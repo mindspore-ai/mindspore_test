@@ -18,7 +18,7 @@
 #include "include/runtime/hardware_abstract/kernel_base/oplib/oplib.h"
 #include "utils/log_adapter.h"
 #include "include/utils/anfalgo.h"
-#include "include/utils/convert_utils.h"
+#include "utils/convert_utils.h"
 #include "include/backend/common/pass_manager/helper.h"
 #include "primitive/framework_ops.h"
 #include "primitive/auto_generate/gen_ops_primitive_d.h"

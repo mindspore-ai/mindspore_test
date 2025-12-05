@@ -348,49 +348,6 @@ bool Common::FileExists(const std::string &filepath) {
   return cache_file_existed;
 }
 
-std::string Common::GetUserDefineCachePath() {
-  static std::string config_path = "";
-  if (config_path != "") {
-    return config_path;
-  }
-  config_path = MsContext::GetInstance()->get_param<std::string>(MS_CTX_COMPILE_CACHE_PATH);
-  if (config_path.empty()) {
-    config_path = common::GetEnv(kCompilerCachePath);
-  }
-  if (config_path.empty()) {
-    config_path = "./";
-  } else {
-    (void)FileUtils::CreateNotExistDirs(config_path, true);
-  }
-  if (config_path[config_path.length() - 1] != '/') {
-    config_path += "/";
-  }
-  return config_path;
-}
-
-std::string Common::GetCompilerCachePath() {
-  static const std::string user_defined_path = GetUserDefineCachePath();
-  std::string rank_id_str = common::GetEnv(kRankID);
-  if (rank_id_str.empty()) {
-    MS_LOG(DEBUG) << "Environment variable 'RANK_ID' is empty, using the default value: 0";
-    rank_id_str = "0";
-  }
-  const std::string compile_cache_dir = user_defined_path + "rank_" + rank_id_str + "/";
-  return compile_cache_dir;
-}
-
-std::string Common::GetKernelMetaTempDir() {
-  auto cache_path = GetUserDefineCachePath();
-  std::string rank_id_str = common::GetEnv(kRankID);
-  if (rank_id_str.empty()) {
-    MS_LOG(DEBUG) << "Environment variable 'RANK_ID' is empty, using the default value: 0";
-    rank_id_str = "0";
-  }
-  auto kernel_meta_temp_dir = cache_path + +"rank_" + rank_id_str + "/kernel_meta_temp_dir/";
-  (void)FileUtils::CreateNotExistDirs(kernel_meta_temp_dir, true);
-  return kernel_meta_temp_dir;
-}
-
 uint64_t Common::GetTimeStamp() {
   auto cur_sys_time = std::chrono::system_clock::now();
   auto timestamp = std::chrono::duration_cast<std::chrono::microseconds>(cur_sys_time.time_since_epoch()).count();

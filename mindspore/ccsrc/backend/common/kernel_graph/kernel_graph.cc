@@ -23,7 +23,7 @@
 #include "include/backend/common/kernel_graph/anf_runtime_algorithm.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_info.h"
 #include "include/utils/anfalgo.h"
-#include "include/utils/convert_utils.h"
+#include "utils/convert_utils.h"
 #include "include/utils/utils.h"
 #include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
 #include "include/runtime/hardware_abstract/kernel_base/graph_fusion/framework_utils.h"

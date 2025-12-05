@@ -22,7 +22,7 @@
 #include "include/utils/cse.h"
 #include "utils/log_adapter.h"
 #include "utils/hashing.h"
-#include "include/utils/convert_utils.h"
+#include "utils/convert_utils.h"
 
 namespace mindspore {
 namespace pipeline {

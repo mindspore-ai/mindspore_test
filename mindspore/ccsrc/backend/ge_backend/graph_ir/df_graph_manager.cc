@@ -24,7 +24,6 @@
 #include "include/utils/python_adapter.h"
 #endif
 #include "include/utils/compile_cache_context.h"
-#include "include/utils/common.h"
 #include "include/utils/utils.h"
 
 namespace mindspore::backend::ge_backend {
@@ -83,7 +82,7 @@ Status DfGraphManager::AddGraph(const std::string &name, const DfGraphPtr &graph
     }
     ge_graph_key = NormalizeString(ge_graph_key);
     new_options.insert_or_assign(kGeGraphKey, ge_graph_key);
-    auto ge_cache_path = Common::GetCompilerCachePath() + kGeCache;
+    auto ge_cache_path = compile_cache_context.GetCompilerCachePath() + kGeCache;
     (void)mindspore::FileUtils::CreateNotExistDirs(ge_cache_path, true);
     new_options.insert_or_assign(kGeGraphCompilerCacheDir, ge_cache_path);
     MS_LOG(INFO) << "Use GE graph compile cache, GE graph compile cache dir: " << ge_cache_path

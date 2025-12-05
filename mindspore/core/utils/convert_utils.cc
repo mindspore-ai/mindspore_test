@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "mindspore/ccsrc/include/utils/convert_utils.h"
+#include "utils/convert_utils.h"
 
 #include <stack>
 #include <map>

@@ -24,7 +24,7 @@
 #include "include/backend/common/kernel_graph/anf_runtime_algorithm.h"
 #include "include/backend/common/pass_manager/helper.h"
 #include "include/utils/anfalgo.h"
-#include "include/utils/convert_utils.h"
+#include "utils/convert_utils.h"
 #include "backend/ge_backend/graph_ir/utils.h"
 #include "plugin/ascend/res_manager/op_adapter/op_adapter_map.h"
 #include "plugin/ascend/res_manager/op_adapter/op_adapter_util.h"

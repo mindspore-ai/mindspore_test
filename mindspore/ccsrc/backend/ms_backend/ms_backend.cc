@@ -32,7 +32,7 @@
 #include "mindspore/ccsrc/utils/base_ref_py.h"
 #include "pybind_api/pybind_patch.h"
 #include "include/utils/callbacks.h"
-#include "include/utils/convert_utils.h"
+#include "utils/convert_utils.h"
 #include "include/utils/convert_utils_py.h"
 #include "utils/log_adapter.h"
 #include "utils/ms_utils.h"

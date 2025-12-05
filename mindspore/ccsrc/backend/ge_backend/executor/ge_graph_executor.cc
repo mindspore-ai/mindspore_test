@@ -218,7 +218,7 @@ bool CacheFileExists(const std::string &name) {
   if (!dep_files_hash.empty()) {
     ge_graph_key = dep_files_hash + "_" + ge_graph_key;
   }
-  auto ge_cache_path = Common::GetCompilerCachePath() + kGeCache;
+  auto ge_cache_path = compile_cache_context.GetCompilerCachePath() + kGeCache;
   ge_graph_key = NormalizeString(ge_graph_key);
   auto cache_idx_file = ge_cache_path + "/" + ge_graph_key + ".idx";
   struct stat buffer;

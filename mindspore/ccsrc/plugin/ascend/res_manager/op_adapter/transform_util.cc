@@ -20,7 +20,7 @@
 #include <algorithm>
 #include <complex>
 
-#include "include/utils/convert_utils.h"
+#include "utils/convert_utils.h"
 #include "include/utils/utils.h"
 #include "utils/shape_utils.h"
 #include "plugin/ascend/res_manager/op_adapter/op_adapter_util.h"

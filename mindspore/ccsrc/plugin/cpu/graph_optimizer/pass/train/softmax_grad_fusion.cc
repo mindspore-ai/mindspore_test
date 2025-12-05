@@ -21,7 +21,7 @@
 #include "primitive/math_ops.h"
 #include "include/utils/anfalgo.h"
 #include "include/backend/common/pass_manager/helper.h"
-#include "include/utils/convert_utils.h"
+#include "utils/convert_utils.h"
 #include "include/utils/utils.h"
 #include "primitive/auto_generate/gen_ops_primitive_m.h"
 #include "primitive/auto_generate/gen_ops_primitive_r.h"

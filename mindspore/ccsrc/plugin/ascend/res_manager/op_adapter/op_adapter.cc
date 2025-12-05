@@ -23,7 +23,7 @@
 #include "utils/check_convert_utils.h"
 #include "op_proto/inc/split_combination_ops.h"
 #include "graph/operator_factory.h"
-#include "include/utils/convert_utils.h"
+#include "utils/convert_utils.h"
 #include "include/utils/utils.h"
 #include "plugin/ascend/res_manager/op_adapter/io_format_map.h"
 #include "plugin/ascend/res_manager/op_adapter/transform_util.h"

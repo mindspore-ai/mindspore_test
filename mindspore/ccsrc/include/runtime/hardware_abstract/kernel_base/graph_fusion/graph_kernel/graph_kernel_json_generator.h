@@ -26,7 +26,7 @@
 #include "nlohmann/json.hpp"
 #include "include/runtime/hardware_abstract/kernel_base/oplib/opinfo.h"
 #include "include/runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/graph_kernel_callback.h"
-#include "include/utils/convert_utils.h"
+#include "utils/convert_utils.h"
 #include "runtime/hardware_abstract/visible.h"
 
 namespace mindspore::graphkernel {

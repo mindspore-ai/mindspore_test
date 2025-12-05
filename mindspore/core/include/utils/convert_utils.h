@@ -35,7 +35,7 @@
 #include "ir/func_graph.h"
 #include "ir/kernel_tensor_value.h"
 #include "ir/signature.h"
-#include "include/utils/visible.h"
+#include "mindapi/base/macros.h"
 #include "utils/simple_info.h"
 
 namespace mindspore {
@@ -43,9 +43,9 @@ namespace tensor {
 class Tensor;
 }  // namespace tensor
 
-COMMON_EXPORT bool BaseRefToBool(const BaseRef &in, bool *out);
-COMMON_EXPORT bool BaseRefToInt(const ValuePtr &v, int64_t *value);
-COMMON_EXPORT bool ValueToBool(const ValuePtr &in, bool *out);
+MS_CORE_API bool BaseRefToBool(const BaseRef &in, bool *out);
+MS_CORE_API bool BaseRefToInt(const ValuePtr &v, int64_t *value);
+MS_CORE_API bool ValueToBool(const ValuePtr &in, bool *out);
 
 // Isomorphism
 struct PairHasher {
@@ -62,15 +62,15 @@ enum EquivState { kNotEquiv = 0, kEquiv = 1, kPending = 2 };
 using FuncGraphPairMapEquiv = mindspore::HashMap<std::pair<FuncGraphPtr, FuncGraphPtr>, EquivState, PairHasher>;
 using NodeMapEquiv = mindspore::HashMap<AnfNodePtr, AnfNodePtr>;
 
-COMMON_EXPORT bool Isomorphic(const FuncGraphPtr &g1, const FuncGraphPtr &g2, FuncGraphPairMapEquiv *equiv_func_graph,
-                              NodeMapEquiv *equiv_node);
+MS_CORE_API bool Isomorphic(const FuncGraphPtr &g1, const FuncGraphPtr &g2, FuncGraphPairMapEquiv *equiv_func_graph,
+                            NodeMapEquiv *equiv_node);
 
-COMMON_EXPORT tensor::TensorPtr ScalarToTensor(const ScalarPtr &scalar,
-                                               const std::optional<TypePtr> &dtype = std::nullopt);
+MS_CORE_API tensor::TensorPtr ScalarToTensor(const ScalarPtr &scalar,
+                                             const std::optional<TypePtr> &dtype = std::nullopt);
 
-COMMON_EXPORT tensor::TensorPtr SequenceToTensor(const ValueSequencePtr &sequence);
+MS_CORE_API tensor::TensorPtr SequenceToTensor(const ValueSequencePtr &sequence);
 
-COMMON_EXPORT ValuePtr CreateValueFromTensor(const tensor::TensorPtr &tensor);
+MS_CORE_API ValuePtr CreateValueFromTensor(const tensor::TensorPtr &tensor);
 
 template <typename T>
 std::vector<T> TensorValueToVector(const tensor::TensorPtr &tensor) {
@@ -85,35 +85,35 @@ std::vector<T> TensorValueToVector(const tensor::TensorPtr &tensor) {
   return value;
 }
 
-COMMON_EXPORT void TensorValueToTensor(const ValuePtr &value, std::vector<tensor::TensorPtr> *tensors);
+MS_CORE_API void TensorValueToTensor(const ValuePtr &value, std::vector<tensor::TensorPtr> *tensors);
 
-COMMON_EXPORT size_t CountValueNum(const ValueSequencePtr &value_sequence);
+MS_CORE_API size_t CountValueNum(const ValueSequencePtr &value_sequence);
 
-COMMON_EXPORT KernelTensorValuePtr ConvertValueToKernelTensorValue(const ValuePtr &value);
+MS_CORE_API KernelTensorValuePtr ConvertValueToKernelTensorValue(const ValuePtr &value);
 
-COMMON_EXPORT tensor::MetaSparseTensorPtr TensorListToSparseTensor(const abstract::AbstractBasePtr &abs_sparse,
-                                                                   const tensor::TensorPtrList &tensor_list);
+MS_CORE_API tensor::MetaSparseTensorPtr TensorListToSparseTensor(const abstract::AbstractBasePtr &abs_sparse,
+                                                                 const tensor::TensorPtrList &tensor_list);
 // Convert base shape to shape vector, support the tuple shape.
-COMMON_EXPORT std::vector<ShapeVector> BaseShapeToShapeVector(const abstract::BaseShapePtr &base_shape);
+MS_CORE_API std::vector<ShapeVector> BaseShapeToShapeVector(const abstract::BaseShapePtr &base_shape);
 // Convert base shape to shape, not support the tuple shape.
-COMMON_EXPORT ShapeVector BaseShapeToShape(const abstract::BaseShapePtr &base_shape);
+MS_CORE_API ShapeVector BaseShapeToShape(const abstract::BaseShapePtr &base_shape);
 
-COMMON_EXPORT ValuePtr UpdateValueByAttrDataType(const ValuePtr &value, const std::string &attr_data_type);
+MS_CORE_API ValuePtr UpdateValueByAttrDataType(const ValuePtr &value, const std::string &attr_data_type);
 
-COMMON_EXPORT std::map<SignatureEnumDType, std::pair<TypeId, bool>> GetSignatureTypeMap(
+MS_CORE_API std::map<SignatureEnumDType, std::pair<TypeId, bool>> GetSignatureTypeMap(
   const std::vector<SignatureEnumDType> &dtypes, const std::vector<TypeId> &args_type_id,
   const std::vector<bool> &args_is_tensor, const std::set<size_t> &write_indices = {});
 
-COMMON_EXPORT TypeId ConvertTypeForTensorsOrScalars(const TypeId &type1, const TypeId &type2);
+MS_CORE_API TypeId ConvertTypeForTensorsOrScalars(const TypeId &type1, const TypeId &type2);
 
-COMMON_EXPORT bool IsFloatTensor(const TypeId &type_id, bool is_tensor);
+MS_CORE_API bool IsFloatTensor(const TypeId &type_id, bool is_tensor);
 
-COMMON_EXPORT TypeId GetMixPrecisionPromoteType(const std::vector<TypeId> &args_type_id,
-                                                const std::vector<bool> &args_is_tensor);
+MS_CORE_API TypeId GetMixPrecisionPromoteType(const std::vector<TypeId> &args_type_id,
+                                              const std::vector<bool> &args_is_tensor);
 
-COMMON_EXPORT std::string ValueSimpleInfoToString(const ValueSimpleInfo &value_simple_info);
+MS_CORE_API std::string ValueSimpleInfoToString(const ValueSimpleInfo &value_simple_info);
 
-COMMON_EXPORT abstract::AbstractBasePtr TransformValueSimpleInfoToAbstract(const ValueSimpleInfo &value_simple_info);
+MS_CORE_API abstract::AbstractBasePtr TransformValueSimpleInfoToAbstract(const ValueSimpleInfo &value_simple_info);
 
 template <typename T>
 ValuePtr OptionalToValue(const std::optional<T> &val) {

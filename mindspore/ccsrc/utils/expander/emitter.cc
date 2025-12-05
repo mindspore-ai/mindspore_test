@@ -28,7 +28,7 @@
 #include "primitive/math_ops.h"
 #include "primitive/array_ops.h"
 #include "primitive/framework_ops.h"
-#include "include/utils/convert_utils.h"
+#include "utils/convert_utils.h"
 #include "ir/functor.h"
 #include "ops/primitive_c.h"
 #include "utils/check_convert_utils.h"

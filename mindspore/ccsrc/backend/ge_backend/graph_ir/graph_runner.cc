@@ -24,7 +24,7 @@
 #include "pybind11/pybind11.h"
 #endif
 #include "utils/log_adapter.h"
-#include "include/utils/config_manager.h"
+#include "utils/config_manager.h"
 #include "sys/time.h"
 #include "include/utils/utils.h"
 #include "include/utils/callbacks.h"

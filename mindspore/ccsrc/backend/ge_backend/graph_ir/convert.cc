@@ -28,8 +28,7 @@
 #include "op_proto/inc/state_ops.h"
 #include "mindspore/ccsrc/utils/ir_dump/anf_ir_dump.h"
 #include "include/utils/anfalgo.h"
-#include "include/utils/config_manager.h"
-#include "include/utils/parallel_context.h"
+#include "utils/config_manager.h"
 #include "include/utils/utils.h"
 #include "backend/ge_backend/graph_ir/utils.h"
 #include "ir/graph_utils.h"
@@ -53,6 +52,7 @@
 #include "plugin/ascend/res_manager/op_adapter/op_adapter_desc.h"
 #include "plugin/ascend/res_manager/op_adapter/op_adapter_map.h"
 #ifdef ENABLE_D
+#include "include/utils/parallel_context.h"
 #include "backend/ge_backend/graph_ir/storage_format_convertor.h"
 #endif
 #include "utils/check_convert_utils.h"
@@ -4009,6 +4009,7 @@ void DfGraphConvertor::ConvertHcomFusionId(const CNodePtr &node) {
     MS_LOG(INFO) << "cell reuse not support all fusion";
     fusion = 0;
   }
+#ifdef ENABLE_D
   MS_EXCEPTION_IF_NULL(parallel::ParallelContext::GetInstance());
   auto parallel_mode = parallel::ParallelContext::GetInstance()->parallel_mode();
   if (!MsContext::GetInstance()->get_param<bool>(MS_CTX_ENABLE_TASK_OPT) &&
@@ -4016,6 +4017,7 @@ void DfGraphConvertor::ConvertHcomFusionId(const CNodePtr &node) {
     fusion_id = 0;
     fusion = 0;
   }
+#endif
   (void)op->SetAttr("fusion_id", fusion_id);
   (void)op->SetAttr("fusion", fusion);
   AddCommAttrForHcclNode(node, op);

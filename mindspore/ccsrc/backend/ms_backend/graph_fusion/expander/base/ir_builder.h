@@ -24,7 +24,7 @@
 #include "ir/tensor_new.h"
 #include "utils/hash_map.h"
 #include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
-#include "include/utils/convert_utils.h"
+#include "utils/convert_utils.h"
 #include "include/utils/utils.h"
 #include "backend/ms_backend/graph_fusion/expander/base/node.h"
 #include "backend/ms_backend/graph_fusion/expander/base/emitter.h"

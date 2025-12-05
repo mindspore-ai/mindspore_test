@@ -1,5 +1,6 @@
 file(GLOB_RECURSE _UTILS_SRC_LIST "*.cc")
 list(REMOVE_ITEM _UTILS_SRC_LIST ${CMAKE_SOURCE_DIR}/mindspore/ccsrc/utils/ir_dump/onnx/onnx_exporter.cc)
+list(REMOVE_ITEM _UTILS_SRC_LIST ${CMAKE_SOURCE_DIR}/mindspore/ccsrc/utils/convert_utils.cc)
 
 file(STRINGS "${TOP_DIR}/version.txt" VERSION)
 add_definitions(-DVERSION=\"${VERSION}\")

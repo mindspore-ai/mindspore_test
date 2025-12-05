@@ -15,7 +15,7 @@
  */
 #include "utils/ms_exception.h"
 #include "include/utils/convert_utils_py.h"
-#include "include/utils/convert_utils.h"
+#include "utils/convert_utils.h"
 #include "include/utils/stub_tensor.h"
 #include "pybind_api/gil_scoped_long_running.h"
 #include "tools/profiler/profiler.h"

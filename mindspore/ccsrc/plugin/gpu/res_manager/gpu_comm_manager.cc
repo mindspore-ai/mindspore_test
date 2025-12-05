@@ -16,7 +16,7 @@
 
 #include "include/utils/comm_manager.h"
 #include "primitive/ascend_op_name.h"
-#include "include/utils/convert_utils.h"
+#include "utils/convert_utils.h"
 #include "utils/ms_context.h"
 #include "include/utils/parallel_context.h"
 #include "include/runtime/hardware_abstract/collective/collective_manager.h"

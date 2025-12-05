@@ -21,7 +21,7 @@
 #include "frontend/jit/pi/graph_build/func_graph_builder.h"
 #include "frontend/jit/pi/graph_capture/abstract_wrapper.h"
 #include "mindspore/ccsrc/utils/ir_dump/anf_ir_dump.h"
-#include "include/utils/convert_utils.h"
+#include "utils/convert_utils.h"
 #include "primitive/arithmetic_ops.h"
 #include "primitive/other_ops.h"
 #include "primitive/auto_generate/gen_ops_primitive_i.h"

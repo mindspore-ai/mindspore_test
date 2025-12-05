@@ -21,7 +21,7 @@
 #include <string>
 #include <type_traits>
 #include <vector>
-#include "include/utils/convert_utils.h"
+#include "utils/convert_utils.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/transpose_impl.cuh"
 #include "kernel/gpu/gpu_kernel.h"
 #include "kernel/gpu/gpu_kernel_factory.h"

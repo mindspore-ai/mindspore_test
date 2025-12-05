@@ -23,7 +23,7 @@
 #include <vector>
 #include <set>
 #include <tuple>
-#include "include/utils/convert_utils.h"
+#include "utils/convert_utils.h"
 #include "pynative/utils/runtime/op_executor.h"
 #include "view/view_strides_calculator.h"
 #include "include/backend/common/device_address_utils.h"

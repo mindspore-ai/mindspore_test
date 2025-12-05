@@ -28,7 +28,7 @@
 #include "runtime/core/graph_scheduler/base/parameter_store.h"
 #include "include/backend/common/device_address_utils.h"
 #include "runtime/core/graph_scheduler/base/scheduler_helper.h"
-#include "include/utils/convert_utils.h"
+#include "utils/convert_utils.h"
 #include "abstract/utils.h"
 #include "utils/ms_context.h"
 #include "ir/tensor.h"
