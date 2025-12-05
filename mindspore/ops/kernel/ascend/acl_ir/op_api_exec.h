@@ -168,10 +168,10 @@ class GraphCache {
       case ProcessCacheType::kGetOutputShape:
         return FillShapeListFromTuple(converted_params_);
       case ProcessCacheType::kReleaseParamsAndExecutor:
-        ReleaseConvertTypes(converted_params_);
         if (release_executor_func != nullptr) {
           release_executor_func(executor_);
         }
+        ReleaseConvertTypes(converted_params_);
         break;
       case ProcessCacheType::kReleaseParams:
         ReleaseConvertTypes(converted_params_);
