@@ -608,6 +608,9 @@ class GELU(Cell):
     r"""
     Activation function GELU (Gaussian Error Linear Unit).
 
+    For more details, refer to the paper `Gaussian Error Linear Units (GELUs) <https://arxiv.org/abs/1606.08415>`_,
+    or the paper `BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding <https://arxiv.org/abs/1810.04805>`_.
+
     Refer to :func:`mindspore.mint.nn.functional.gelu` for more details.
 
     GELU Activation Function Graph:
@@ -620,15 +623,14 @@ class GELU(Cell):
 
     Examples:
         >>> import mindspore
-        >>> from mindspore import Tensor, mint
         >>> import numpy as np
-        >>> input = Tensor(np.array([[-1.0, 4.0, -8.0], [2.0, -5.0, 9.0]]), mindspore.float32)
-        >>> gelu = mint.nn.GELU()
+        >>> input = mindspore.tensor(np.array([[-1.0, 4.0, -8.0], [2.0, -5.0, 9.0]]), mindspore.float32)
+        >>> gelu = mindspore.mint.nn.GELU()
         >>> output = gelu(input)
         >>> print(output)
         [[-1.58655241e-01  3.99987316e+00 -0.00000000e+00]
          [ 1.95449972e+00 -1.41860323e-06  9.0000000e+00]]
-        >>> gelu = mint.nn.GELU(approximate="tanh")
+        >>> gelu = mindspore.mint.nn.GELU(approximate="tanh")
         >>> output = gelu(input)
         >>> print(output)
         [[-1.58808023e-01  3.99992990e+00 -3.10779147e-21]
