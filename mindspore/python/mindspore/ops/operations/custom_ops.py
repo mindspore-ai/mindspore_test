@@ -22,7 +22,6 @@ import sys
 import ast
 import hashlib
 import stat
-import copy
 import inspect
 import importlib
 import platform
@@ -158,15 +157,15 @@ def _compile_aot(file):
         else:
             raise ValueError("The source file must be a cc/cpp/cu file, but get: {}".format(file))
 
-        proc = subprocess.Popen(
-            cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=False)
+        with subprocess.Popen(
+                cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=False) as proc:
 
-        (out, _) = proc.communicate(timeout=30)
+            (out, _) = proc.communicate(timeout=30)
 
-        if proc.returncode != 0:
-            msg = "Compilation error in compiling {}:\n".format(file)
-            msg += out.decode('utf-8')
-            raise RuntimeError(msg)
+            if proc.returncode != 0:
+                msg = "Compilation error in compiling {}:\n".format(file)
+                msg += out.decode('utf-8')
+                raise RuntimeError(msg)
 
     return func_path
 
@@ -680,7 +679,7 @@ class Custom(ops.PrimitiveWithInfer):
                 logger.warning("Fail to remove the existing file. Check the definition of the function {} "
                                "in the file: {}".format(self.func_name, op_imply_path))
 
-        with open(op_imply_path, 'at') as file:
+        with open(op_imply_path, 'at', encoding='utf-8') as file:
             if platform.system() != "Windows":
                 fcntl.flock(file.fileno(), fcntl.LOCK_EX)
             file.seek(0, 2)
@@ -764,26 +763,6 @@ class Custom(ops.PrimitiveWithInfer):
                     if isinstance(item, dict) and item.get("value") is not None:
                         self.add_prim_attr(item[KEY_NAME], item["value"])
 
-    def _convert_attr_to_input(self, ori_reg_info):
-        """convert attr to input"""
-        if not self.is_ascend_c or not ori_reg_info.get("attr"):
-            return ori_reg_info
-
-        reg_info = copy.deepcopy(ori_reg_info)
-        start_index = len(reg_info.get("inputs", []))
-        for i, attr_item in enumerate(reg_info.get("attr", [])):
-            new_input = {
-                'index': start_index + i,
-                'name': attr_item['name'],
-                'paramType': attr_item['paramType']}
-            reg_info['inputs'].append(new_input)
-            for dtype_format_item in reg_info.get("dtype_format", []):
-                new_dtype_format_item = list(dtype_format_item)
-                new_dtype_format_item.insert(start_index + i, DataType.None_None)
-                reg_info['dtype_format'][reg_info['dtype_format'].index(dtype_format_item)] = new_dtype_format_item
-        reg_info['attr'] = []
-        return reg_info
-
     def _register_info(self, info):
         """Register reg_info."""
         reg_info = info
@@ -814,15 +793,14 @@ class Custom(ops.PrimitiveWithInfer):
                 continue
             # Register
             reg_info = self._reformat_reg_info(reg_info, target)
-            new_reg_info = self._convert_attr_to_input(reg_info)
-            reg_info_str = json.dumps(new_reg_info)
+            reg_info_str = json.dumps(reg_info)
             op_lib = Oplib()
             if not op_lib.reg_op(reg_info_str, self.imply_path):
                 raise ValueError("{}, the registration information is registered failed. Use 'CustomRegOp' to "
                                  "generate the registration information, then pass it to 'reg_info' or use "
                                  "'custom_info_register' to bind it to 'func' if 'func' is a function."
                                  .format(self.log_prefix))
-            self._save_attr(new_reg_info)
+            self._save_attr(reg_info)
             self._save_register_status(target)
 
     def _get_expanded_list(self, data):
@@ -1143,7 +1121,7 @@ class Custom(ops.PrimitiveWithInfer):
         custom_builder = CustomCodeGenerator()
         callback_func = custom_builder.generate_callback_by_types(func_name, self.reg_info, input_output_types)
 
-        with open(file_path, 'w') as f:
+        with open(file_path, 'w', encoding='utf-8') as f:
             f.write(callback_func)
 
         custom_callback_func_path = _compile_aot(file_path)
@@ -1165,11 +1143,11 @@ class Custom(ops.PrimitiveWithInfer):
         custom_info_generator = CustomInfoGenerator(func_name)
         api_types = custom_info_generator.get_aclnn_api_types()
         custom_builder = CustomCodeGenerator()
-        if api_types == []:
+        if not api_types:
             api_types = custom_builder.get_api_types_by_reg_info(self.reg_info)
 
         callback_func = custom_builder.generate_callback_by_types(func_name, self.reg_info, api_types)
-        with open(file_path, 'w') as f:
+        with open(file_path, 'w', encoding='utf-8') as f:
             f.write(callback_func)
 
         custom_callback_func_path = _compile_aot(file_path)
