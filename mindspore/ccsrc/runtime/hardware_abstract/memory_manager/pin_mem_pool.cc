@@ -32,11 +32,11 @@ PinMemPool::PinMemPool() {
   pinned_mem_ = offload_context->enable_pinned_mem();
 }
 
-void *PinMemPool::AllocPinMem(size_t size) {
+void *PinMemPool::AllocPinMem(size_t size, uint32_t stream_id) {
   if (!inited_) {
     Init();
   }
-  return AllocTensorMem(size);
+  return AllocTensorMem(size, false, false, stream_id);
 }
 
 size_t PinMemPool::AllocDeviceMem(size_t alloc_size, DeviceMemPtr *addr) {

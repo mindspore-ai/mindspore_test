@@ -1394,9 +1394,9 @@ void SuperKernelActor::BuildAndLinkKernelActors() {
       auto ret =
         GraphCaptureManager::GetInstance().FindSupportCaptureKernelPositions(kernel_actors_, device_contexts_[0]);
       if (ret) {
-        size_t stream_id = kIndex3;
+        size_t stream_id;
         device_contexts_[0]->device_res_manager_->CreateStream(&stream_id);
-        MS_LOG(WARNING) << "Create new stream for capture graph, stream id: " << stream_id;
+        MS_LOG(WARNING) << "Set new stream for capture graph, stream id: " << stream_id;
         GraphCaptureManager::GetInstance().SetStreamId(stream_id);
         MS_LOG(INFO) << "Enable acl graph for graph: " << graph_->ToString() << ", phase: " << graph_phase_;
       } else {
