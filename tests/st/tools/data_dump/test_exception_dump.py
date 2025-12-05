@@ -48,6 +48,8 @@ class MoveToNet(ms.nn.Cell):
 
 def run_exception_net():
     ms.set_context(jit_config={"jit_level": "O0"})
+    ms.device_context.ascend.op_debug.aclinit_config({"dump": {"dump_scene": "lite_exception"}})
+
     input_params = Tensor(np.random.uniform(0, 1, size=(64,)).astype("float32"))
     input_indices = Tensor(np.array([100000, 101]), ms.int32)
     input_axis = 0
