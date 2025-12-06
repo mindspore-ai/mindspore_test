@@ -1,7 +1,7 @@
 ## make protobuf files
-
+# refresh the onnx sha256sum
 __download_pkg(onnx https://gitee.com/mirrors/ONNX/repository/archive/v1.6.0
-8470ee37fa44510c0ffca591bd17a0b4160ae23f5989014030456778fcb740a1)
+56a2606f684821213ad2a61713521eb9027bd8ac05520be3fb26e997787cedd7)
 file(COPY ${onnx_SOURCE_DIR}/onnx/onnx.proto DESTINATION ${TOP_DIR}/third_party/proto/onnx)
 file(GLOB ONNX_PROTO "" ${CMAKE_SOURCE_DIR}/third_party/proto/onnx/onnx.proto)
 message("onnx proto path is :" ${ONNX_PROTO})
