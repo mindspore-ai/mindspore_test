@@ -6738,8 +6738,7 @@ def amax(input, axis=None, keepdims=False, *, initial=None, where=None):
 
 def amax_ext(input, dim=(), keepdim=False):
     r"""
-    Computes the maximum value of of all elements along the specified `dim` dimension of the `input`,
-    and retains the dimension based on the `keepdim` parameter.
+    Compute the maximum value of all elements along the specified dimension.
 
     .. warning::
         This is an experimental API that is subject to change or deletion.
@@ -6747,27 +6746,11 @@ def amax_ext(input, dim=(), keepdim=False):
     Args:
         input (Tensor): Input tensor.
         dim (Union[int, tuple(int), list(int)], optional): The dimension to be reduced,
-            the value should be within `[-len(input.shape), len(input.shape) - 1]`,
-            when the `dim` is `()`, all dimensions are reduced, default: ``()``.
-        keepdim (bool, optional): Whether the output tensor retains the dimension `dim`, default: ``False``.
+            when the `dim` is `()`, all dimensions are reduced. Default ``()``.
+        keepdim (bool, optional): Whether the output tensor retains the dimension `dim`. Default ``False``.
 
     Returns:
-        Tensor, has same type as `input`, and the shape changes according to the values of `dim` and `keepdim`.
-
-        - If `dim` is `()`, and `keepdim` is False, the output is a 0-D tensor representing the maximum value of
-          all elements in the `input` tensor.
-        - If `dim` is `1`, and `keepdim` is False, the shape of output is
-          :math:`(input.shape[0], input.shape[2], ..., input.shape[n])`.
-        - If `dim` is `(1, 2)`, and `keepdim` is False, the shape of output is
-          :math:`(input.shape[0], input.shape[3], ..., input.shape[n])`.
-
-    Raises:
-        TypeError: If `input` is not a Tensor.
-        TypeError: If `dim` is not an int or tuple(int) or list(int).
-        TypeError: If `keepdim` is not a bool.
-        ValueError: If the value of any elements of `dim` is not in the range
-            `[-len(input.shape), len(input.shape) - 1]`.
-        RuntimeError: If any element of `dim` is repeated.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``CPU``
@@ -6775,44 +6758,45 @@ def amax_ext(input, dim=(), keepdim=False):
     Examples:
         >>> import mindspore
         >>> import numpy as np
-        >>> from mindspore import Tensor
-        >>> from mindspore import ops
-        >>> x = Tensor(np.random.randn(3, 4, 5, 6).astype(np.float32))
-        >>> output = ops.function.math_func.amax_ext(x, 1, keepdim=True)
-        >>> result = output.shape
-        >>> print(result)
+        >>> x = mindspore.tensor(np.random.randn(3, 4, 5, 6).astype(np.float32))
+        >>> output = mindspore.ops.function.math_func.amax_ext(x, dim=1, keepdim=True)
+        >>> print(output.shape)
         (3, 1, 5, 6)
-        >>> # case 1: Reduces a dimension by the maximum value of all elements in the dimension.
-        >>> x = Tensor(np.array([[[1, 1, 1, 1, 1, 1], [2, 2, 2, 2, 2, 2], [3, 3, 3, 3, 3, 3]],
+        >>> # case 1: Reduce a dimension by the maximum value of all elements in the dimension.
+        >>> x = mindspore.tensor(np.array([[[1, 1, 1, 1, 1, 1], [2, 2, 2, 2, 2, 2], [3, 3, 3, 3, 3, 3]],
         ... [[4, 4, 4, 4, 4, 4], [5, 5, 5, 5, 5, 5], [6, 6, 6, 6, 6, 6]],
         ... [[7, 7, 7, 7, 7, 7], [8, 8, 8, 8, 8, 8], [9, 9, 9, 9, 9, 9]]]),
         ... mindspore.float32)
-        >>> output = ops.function.math_func.amax_ext(x)
+        >>> output = mindspore.ops.function.math_func.amax_ext(x)
         >>> print(output)
         9.0
         >>> print(output.shape)
         ()
-        >>> # case 2: Reduces a dimension along axis 0.
-        >>> output = ops.function.math_func.amax_ext(x, 0, True)
+        >>> # case 2: Reduce a dimension along axis 0.
+        >>> output = mindspore.ops.function.math_func.amax_ext(x, dim=0, keepdim=True)
         >>> print(output)
         [[[7. 7. 7. 7. 7. 7.]
           [8. 8. 8. 8. 8. 8.]
           [9. 9. 9. 9. 9. 9.]]]
-        >>> # case 3: Reduces a dimension along axis 1.
-        >>> output = ops.function.math_func.amax_ext(x, 1, True)
+        >>> # case 3: Reduce a dimension along axis 1.
+        >>> output = mindspore.ops.function.math_func.amax_ext(x, dim=1, keepdim=True)
         >>> print(output)
         [[[3. 3. 3. 3. 3. 3.]]
+        <BLANKLINE>
          [[6. 6. 6. 6. 6. 6.]]
+        <BLANKLINE>
          [[9. 9. 9. 9. 9. 9.]]]
-        >>> # case 4: Reduces a dimension along axis 2.
-        >>> output = ops.function.math_func.amax_ext(x, 2, True)
+        >>> # case 4: Reduce a dimension along axis 2.
+        >>> output = mindspore.ops.function.math_func.amax_ext(x, dim=2, keepdim=True)
         >>> print(output)
         [[[1.]
           [2.]
           [3.]]
+        <BLANKLINE>
          [[4.]
           [5.]
           [6.]]
+        <BLANKLINE>
          [[7.]
           [8.]
           [9.]]]
