@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef MINDSPORE_OPS_VIEW_VIEW_INFER_REG_H_
-#define MINDSPORE_OPS_VIEW_VIEW_INFER_REG_H_
+#ifndef MINDSPORE_OPS_INCLUDE_VIEW_VIEW_INFER_REG_H_
+#define MINDSPORE_OPS_INCLUDE_VIEW_VIEW_INFER_REG_H_
 
 #include <string_view>
 #include "mindapi/base/macros.h"
@@ -41,4 +41,4 @@ struct ViewFunctionHolder {
 
 #define CALL_VIEW_INFER_FUNCTION(name, ...) ops::ViewFunctionHolder<ops::CompileHashString(#name)>::func(__VA_ARGS__)
 }  // namespace mindspore::ops
-#endif  // MINDSPORE_OPS_VIEW_VIEW_INFER_REG_H_
+#endif  // MINDSPORE_OPS_INCLUDE_VIEW_VIEW_INFER_REG_H_

@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef MINDSPORE_OPS_VIEW_UNSTACK_STRIDES_CALC_H_
-#define MINDSPORE_OPS_VIEW_UNSTACK_STRIDES_CALC_H_
+#ifndef MINDSPORE_OPS_INCLUDE_VIEW_UNSTACK_STRIDES_CALC_H_
+#define MINDSPORE_OPS_INCLUDE_VIEW_UNSTACK_STRIDES_CALC_H_
 
 #include <vector>
 #include "view/view_strides_calculator.h"
@@ -27,4 +27,4 @@ OPS_API TensorStorageInfoPtrList UnstackStridesCalc(const std::vector<int64_t> &
 OPS_API TensorStorageInfoPtrList UnstackCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs);
 }  // namespace ops
 }  // namespace mindspore
-#endif  // MINDSPORE_OPS_VIEW_UNSTACK_STRIDES_CALC_H_
+#endif  // MINDSPORE_OPS_INCLUDE_VIEW_UNSTACK_STRIDES_CALC_H_

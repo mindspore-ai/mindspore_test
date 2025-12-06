@@ -13,17 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef MINDSPORE_CORE_OPS_VIEW_SPLIT_TENSOR_VIEW_STRIDES_CALC_H
-#define MINDSPORE_CORE_OPS_VIEW_SPLIT_TENSOR_VIEW_STRIDES_CALC_H
+#ifndef MINDSPORE_OPS_INCLUDE_VIEW_VIEW_DTYPE_STRIDES_CALC_H
+#define MINDSPORE_OPS_INCLUDE_VIEW_VIEW_DTYPE_STRIDES_CALC_H
 
 #include <vector>
+#include <utility>
 #include "view/view_strides_calculator.h"
 
 namespace mindspore {
 namespace ops {
-OPS_API TensorStorageInfoPtrList SplitTensorViewBasicTypeCalc(const mindspore::tensor::TensorPtr &input_tensor,
-                                                              const int64_t &split_size, const int64_t &dim);
+using BasicCalcResult = std::pair<TensorStorageInfoPtr, TypeId>;
+OPS_API BasicCalcResult ViewDtypeBasicTypeCalc(const tensor::TensorPtr &input_tensor, const int64_t &dtype_ptr);
 }  // namespace ops
 }  // namespace mindspore
 
-#endif  // MINDSPORE_CORE_OPS_VIEW_SPLIT_TENSOR_VIEW_STRIDES_CALC_H
+#endif  // MINDSPORE_OPS_INCLUDE_VIEW_VIEW_DTYPE_STRIDES_CALC_H

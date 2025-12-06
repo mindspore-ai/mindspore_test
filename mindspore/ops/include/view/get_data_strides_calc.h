@@ -1,5 +1,5 @@
 /**
- * Copyright 2023 Huawei Technologies Co., Ltd
+ * Copyright 2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,17 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-#ifndef MINDSPORE_CORE_OPS_VIEW_SQUEEZE_STRIDES_CALC_H_
-#define MINDSPORE_CORE_OPS_VIEW_SQUEEZE_STRIDES_CALC_H_
+#ifndef MINDSPORE_OPS_INCLUDE_VIEW_GET_DATA_STRIDES_CALC_H
+#define MINDSPORE_OPS_INCLUDE_VIEW_GET_DATA_STRIDES_CALC_H
 
 #include <vector>
 #include "view/view_strides_calculator.h"
+#include "view/reshape_strides_calc.h"
 
 namespace mindspore {
 namespace ops {
-OPS_API TensorStorageInfoPtrList SqueezeBasicTypeCalc(const mindspore::tensor::TensorPtr &input_tensor,
-                                                      const std::vector<int64_t> &axis);
+OPS_API TensorStorageInfoPtr GetDataBasicTypeCalc(const tensor::TensorPtr &input_tensor);
 }  // namespace ops
 }  // namespace mindspore
-#endif  // MINDSPORE_CORE_OPS_VIEW_SQUEEZE_STRIDES_CALC_H_
+
+#endif  // MINDSPORE_OPS_INCLUDE_VIEW_GET_DATA_STRIDES_CALC_H
