@@ -1066,6 +1066,7 @@ class Tile(Primitive):
         return res
 
     def check_elim(self, *args):
+        """check elim"""
         base_tensor, dims = args
         if not isinstance(base_tensor, Tensor):
             raise TypeError(f"For '{self.name}', the type of 'input' must be Tensor, "
@@ -1306,8 +1307,15 @@ def infer_value_for_Tile(input, dims):
     """Infer value for Tile op."""
     if input is None or dims is None or None in dims:
         return None
-    return Tensor(np.tile(input.asnumpy(), dims))
-
+    if input.dtype == mstype.bfloat16:
+        a = input.astype(mstype.float32).asnumpy()
+        b = np.tile(a, dims)
+        c = Tensor(b)
+        return c.astype(mstype.bfloat16)
+    a = input.asnumpy()
+    b = np.tile(a, dims)
+    c = Tensor(b)
+    return c
 
 def infer_value_for_EqualExt(x, y):
     """Infer value for EqualExt op."""
