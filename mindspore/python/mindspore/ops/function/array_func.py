@@ -5120,7 +5120,7 @@ def argmax(input, dim=None, keepdim=False):
         keepdim (bool, optional): Whether the output tensor has dim retained. Default ``False`` .
 
     Returns:
-        Tensor, contains the index of the maximum value.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
