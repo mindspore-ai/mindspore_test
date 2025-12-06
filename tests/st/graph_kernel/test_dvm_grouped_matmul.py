@@ -49,6 +49,20 @@ class GroupedMatmulNetGroupType2(nn.Cell):
         return [ops.cast(res, ms.float32) + 2]
 
 
+class GroupedMatmulNetGroupListScalar(nn.Cell):
+    """Neural network for testing GroupedMatmul with group type 0."""
+
+    def __init__(self, group_list):
+        super().__init__()
+        self.group_list = group_list
+        self.gmm = GroupedMatmul(split_item=3, group_type=0)
+
+    def construct(self, x, weight, bias):
+        out = self.gmm([x], [weight], [bias], None,
+                       None, None, None, self.group_list)
+        return out
+
+
 def get_output(net, args, args_dyn=None, enable_graph_kernel=False):
     """Get output from network with optional dynamic shape and graph kernel settings."""
     if enable_graph_kernel:
@@ -56,10 +70,9 @@ def get_output(net, args, args_dyn=None, enable_graph_kernel=False):
         context.set_context(graph_kernel_flags="--enable_cluster_ops=GroupedMatmul,Reshape")
     else:
         context.set_context(jit_config={"jit_level": "O0"})
-    net_obj = net()
     if args_dyn:
-        net_obj.set_inputs(*args_dyn)
-    output = net_obj(*args)
+        net.set_inputs(*args_dyn)
+    output = net(*args)
     return output
 
 
@@ -93,10 +106,10 @@ def test_dvm_grouped_matmul_splititem3_grouptype0(M0, K0, N0, E0, group_list_np)
     group_list = ms.Tensor(group_list_np, dtype=ms.int64)
 
     expect = get_output(
-        GroupedMatmulNetGroupType0, [x, w, b, group_list], enable_graph_kernel=False
+        GroupedMatmulNetGroupType0(), [x, w, b, group_list], enable_graph_kernel=False
     )
     output = get_output(
-        GroupedMatmulNetGroupType0, [x, w, b, group_list], enable_graph_kernel=True
+        GroupedMatmulNetGroupType0(), [x, w, b, group_list], enable_graph_kernel=True
     )
     assert np.allclose(expect[0].asnumpy(), output[0].asnumpy(), 1e-3, 1e-3)
 
@@ -128,7 +141,7 @@ def test_dvm_grouped_matmul_splititem3_grouptype2(M0, K0, N0, E0, group_list_np)
     group_list = ms.Tensor(group_list_np, dtype=ms.int64)
 
     expect = get_output(
-        GroupedMatmulNetGroupType2, [x, w, group_list], enable_graph_kernel=False
+        GroupedMatmulNetGroupType2(), [x, w, group_list], enable_graph_kernel=False
     )
     # Produce dirty data
     a = ms.Tensor(np.full([1024, 1024], np.nan, np.float16))
@@ -137,7 +150,7 @@ def test_dvm_grouped_matmul_splititem3_grouptype2(M0, K0, N0, E0, group_list_np)
     c.asnumpy()
 
     output = get_output(
-        GroupedMatmulNetGroupType2, [x, w, group_list], enable_graph_kernel=True
+        GroupedMatmulNetGroupType2(), [x, w, group_list], enable_graph_kernel=True
     )
     assert np.allclose(expect[0].asnumpy(), output[0].asnumpy(), 1e-3, 1e-3)
 
@@ -177,9 +190,54 @@ def test_dvm_grouped_matmul_dyn_shape(M0, K0, N0, E0, group_list_np):
         group_list,
     ]
     expect = get_output(
-        GroupedMatmulNetGroupType0, args, args_dyn, enable_graph_kernel=False
+        GroupedMatmulNetGroupType0(), args, args_dyn, enable_graph_kernel=False
     )
     output = get_output(
-        GroupedMatmulNetGroupType0, args, args_dyn, enable_graph_kernel=True
+        GroupedMatmulNetGroupType0(), args, args_dyn, enable_graph_kernel=True
+    )
+    assert np.allclose(expect[0].asnumpy(), output[0].asnumpy(), 1e-3, 1e-3)
+
+
+@arg_mark(
+    plat_marks=["platform_ascend910b"],
+    level_mark="level1",
+    card_mark="onecard",
+    essential_mark="unessential",
+)
+@pytest.mark.parametrize(
+    "M0, K0, N0, E0, group_list_np",
+    [
+        (320, 256, 128, 1, [320]),
+        (320, 256, 128, 2, [256, 320]),
+    ],
+)
+def test_dvm_grouped_matmul_grouplist_scalar(M0, K0, N0, E0, group_list_np):
+    """
+    Feature: Test grouped_matmul
+    Description: semi_auto_parallel
+    Expectation: shape is as expected.
+    """
+    ms.set_context(mode=ms.GRAPH_MODE)
+
+    np_x_all = np.random.uniform(0.1, 2, size=[M0, K0]).astype(np.float16)
+    np_w_all = np.random.uniform(0.1, 1, size=[E0, K0, N0]).astype(np.float16)
+    np_b_all = np.random.uniform(0.1, 1, size=[E0, N0]).astype(np.float16)
+
+    x = ms.Tensor(np_x_all)
+    w = ms.Tensor(np_w_all)
+    b = ms.Tensor(np_b_all)
+
+    group_list = ms.Tensor(group_list_np, dtype=ms.int64)
+    args = [x, w, b]
+    args_dyn = [
+        Tensor(shape=(None, K0), dtype=ms.float16),
+        Tensor(shape=(None, K0, None), dtype=ms.float16),
+        Tensor(shape=(E0, None), dtype=ms.float16),
+    ]
+    expect = get_output(
+        GroupedMatmulNetGroupListScalar(group_list), args, args_dyn, enable_graph_kernel=False
+    )
+    output = get_output(
+        GroupedMatmulNetGroupListScalar(group_list), args, args_dyn, enable_graph_kernel=True
     )
     assert np.allclose(expect[0].asnumpy(), output[0].asnumpy(), 1e-3, 1e-3)
