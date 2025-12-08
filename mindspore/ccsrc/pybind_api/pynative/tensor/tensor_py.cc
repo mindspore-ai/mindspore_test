@@ -663,7 +663,7 @@ uintptr_t TensorPybind::DataPtr(const TensorPtr &tensor) {
 }
 
 std::string TensorPybind::GetDevice(const TensorPtr &tensor) {
-  runtime::Pipeline::Get().WaitForward();
+  runtime::Pipeline::Get().WaitBackend();
   const auto &device_address = std::dynamic_pointer_cast<device::DeviceAddress>(tensor->device_address());
   if (device_address == nullptr) {
     return "CPU";
