@@ -20,7 +20,7 @@
 
 #include "utils/compile_config.h"
 #include "include/utils/anfalgo.h"
-#include "include/backend/anf_runtime_algorithm.h"
+#include "include/backend/common/kernel_graph/anf_runtime_algorithm.h"
 #include "primitive/framework_ops.h"
 #include "primitive/other_ops.h"
 #include "primitive/auto_generate/gen_ops_primitive_c.h"
