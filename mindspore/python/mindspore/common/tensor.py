@@ -2847,7 +2847,28 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
 
     def to_(self, device=None, non_blocking=False):
         r"""
-        Performs tensor device inplace conversion.
+        In-place version of :func:`mindspore.Tensor.to`, converts the device of the original tensor to the specified
+        `device` and returns the tensor.
+
+        .. warning::
+            This is an experimental API that is subject to change or deletion.
+
+        Args:
+            device (str, optional): Specifies the hardware device where the output tensor is located.
+                Default: ``None``.
+            non_blocking (bool, optional): Whether to perform asynchronous data conversion.
+                If ``True``, the data conversion is asynchronous; if ``False``, the data conversion is synchronous.
+                Default: ``False``.
+
+        Returns:
+            Tensor, the modified `self` itself, which is stored on the specified `device`.
+
+        Examples:
+            >>> import mindspore as ms
+            >>> x = ms.Tensor([1, 2, 3, 4])
+            >>> x.to_(device="Ascend", non_blocking=True)
+            >>> print(x.device)
+            "Ascend:0"
         """
         if not isinstance(non_blocking, bool):
             raise ValueError(f"The type of 'non_blocking' must be bool, but got {non_blocking}")
@@ -2860,7 +2881,28 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
 
     def delete_(self, non_blocking=False):
         r"""
-        Delete tensor data.
+        Actively releases the memory of the tensor on the `device` or `host`.
+
+        .. warning::
+            This is an experimental API that is subject to change or deletion.
+
+        Args:
+            non_blocking (bool, optional): Whether to release memory asynchronously.
+                If ``True``, the memory is released asynchronously; if ``False``, the memory is released synchronously.
+                Default: ``False``.
+
+        Returns:
+            Tensor, the modified `self` itself, with its data memory already released.
+
+        Examples:
+            >>> import mindspore as ms
+            >>> x = ms.Tensor([1, 2, 3, 4])
+            >>> y = x.to(device="Ascend", non_blocking=True)
+            >>> x.delete_(non_blocking=True)
+            Tensor(shape=[4], dtype=Int64, value= [0, 0, 0, 0])
+            >>> x.data = y
+            >>> print(x.device)
+            "Ascend:0"
         """
         if not isinstance(non_blocking, bool):
             raise ValueError(f"The type of 'non_blocking' must be bool, but got {non_blocking}")
