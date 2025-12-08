@@ -2273,7 +2273,8 @@ bool ParseVersion(const std::string &version_str, int32_t *major, int32_t *minor
     end = version_str.find('.', start);
   }
   parts.push_back(version_str.substr(start));
-  if (parts.size() < 2) {
+  constexpr size_t kMinVersionParts = 2;
+  if (parts.size() < kMinVersionParts) {
     return false;
   }
   try {
@@ -2295,8 +2296,10 @@ void CheckAndWarnMindIRVersion(const mind_ir::ModelProto &model_proto) {
     MS_LOG(DEBUG) << "Loaded legacy MindIR without version info, using version: " << kLegacyMindIRVersion;
   }
 
-  int32_t loaded_major, loaded_minor;
-  int32_t current_major, current_minor;
+  int32_t loaded_major;
+  int32_t loaded_minor;
+  int32_t current_major;
+  int32_t current_minor;
   if (!ParseVersion(loaded_version, &loaded_major, &loaded_minor) ||
       !ParseVersion(kCurrentMindIRVersion, &current_major, &current_minor)) {
     MS_LOG(ERROR) << "Failed to parse MindIR version, compatibility check skipped.";

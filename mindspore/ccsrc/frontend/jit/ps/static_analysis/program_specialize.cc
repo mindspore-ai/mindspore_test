@@ -246,7 +246,7 @@ void PurifyAbstractOfSequence(ProgramSpecializer *const specializer) {
       auto &inputs = node->cast<CNodePtr>()->inputs();
       for (size_t i = 1; i < inputs.size(); ++i) {
         if (IsPartialDeadNode(inputs[i])) {
-          MS_LOG(DEBUG) << "Collect for erasing elements[" << i - 1 << "] DeadNode as zero for " << node << "/"
+          MS_LOG(DEBUG) << "Collect for erasing elements[" << (i - 1) << "] DeadNode as zero for " << node << "/"
                         << node->DebugString(AnfNode::DebugStringLevel::kLevel2);
           (void)specializer->dead_node_list().emplace_back(std::pair(node, i - 1));
         }
