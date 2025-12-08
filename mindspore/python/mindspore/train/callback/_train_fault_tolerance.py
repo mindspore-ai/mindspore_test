@@ -578,6 +578,7 @@ class TrainFaultTolerance(Callback):
                                       :class:`mindspore.train.RunContext` for detail.
         """
         cb_params = run_context.original_args()
+        self.cb_params = cb_params
         if self._enable_snapshot():
             param_dict = {}
             for param in cb_params.train_network.trainable_params():
@@ -586,14 +587,12 @@ class TrainFaultTolerance(Callback):
         if self._only_enable_tsp():
             return
         if self._only_enable_tre() or self._only_enable_ckpt_d2h_async():
-            self.cb_params = cb_params
             return
         sink_size = cb_params.get("sink_size", 0)
         if sink_size > 1:
             raise ValueError("TFT feature doesn't support sink_size > 1.")
         logger.info("Set args to TFT.")
         self.tft.tft_set_step_args(cb_params)
-        self.cb_params = cb_params
         cb_params.is_arf = check_is_arf()
 
     def end(self, run_context):
