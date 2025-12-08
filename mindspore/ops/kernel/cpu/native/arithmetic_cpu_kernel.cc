@@ -1,5 +1,5 @@
 /**
- * Copyright 2020-2023 Huawei Technologies Co., Ltd
+ * Copyright 2020-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -124,6 +124,15 @@ class ArithmeticCpuTypeFunc : public CpuKernelFunc {
     if (l < output_shape_.size()) {
       for (size_t i = 0; i < output_shape_.size() - l; ++i) {
         (void)input_shape2_.insert(input_shape2_.begin(), 1);
+      }
+    }
+    // Check broadcast validity
+    for (size_t i = 0; i < output_shape_.size(); ++i) {
+      if (input_shape1_[i] != 1 && input_shape2_[i] != 1 && input_shape1_[i] != input_shape2_[i]) {
+        MS_LOG(ERROR) << "For '" << kernel_name_ << "', shape mismatch, cannot broadcast: "
+                      << "Input1: " << input_shape1_ << ", Input2: " << input_shape2_ << ". Mismatch at dim " << i
+                      << ": " << input_shape1_[i] << " vs " << input_shape2_[i];
+        return KRET_RESIZE_FAILED;
       }
     }
     input_element_num1_.clear();
