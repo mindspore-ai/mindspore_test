@@ -47,6 +47,12 @@ void Pipeline::WaitForward() {
   launch_stage_->Wait();
 }
 
+void Pipeline::WaitBackend() {
+  GilReleaseWithCheck gil_release;
+  frontend_stage_->Wait();
+  backend_stage_->Wait();
+}
+
 void Pipeline::WaitFrontend() {
   GilReleaseWithCheck gil_release;
   frontend_stage_->Wait();
