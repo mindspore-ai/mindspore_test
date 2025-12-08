@@ -28,7 +28,7 @@ class RUNTIME_HARDWARE_EXPORT PinMemPool : public DynamicMemPoolBestFit, public 
  public:
   ~PinMemPool() = default;
   virtual void PinnedMemAlloc(DeviceMemPtr *addr, size_t size) = 0;
-  void *AllocPinMem(size_t size);
+  void *AllocPinMem(size_t size, uint32_t stream_id = kDefaultStreamIndex);
 
   void RegisterPinnedMem(void *addr, size_t size) override {
     MS_LOG(INFO) << "Default register pinned mem addr = " << addr << " and size = " << size << ".";

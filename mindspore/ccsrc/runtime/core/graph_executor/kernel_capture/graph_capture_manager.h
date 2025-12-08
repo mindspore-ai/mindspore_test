@@ -104,9 +104,7 @@ class GraphCaptureManager {
                                    size_t index);
 
   // In replay mode, recover the op's output device_ptr, shape and size.
-  void RecoverGraphOutputKernelInfo(const KernelRunnerPtr &kernel_actor, size_t index);
-
-  void PreprocessGraphOutputForReplayGraph(const std::vector<KernelRunnerPtr> &kernel_runners);
+  void RecoverGraphOutputKernelInfo();
 
   // Using the kv_cache and weight results recorded during the capture phase, verify whether the addresses
   // fetched during replay phase have changed.
@@ -120,6 +118,8 @@ class GraphCaptureManager {
   bool IsNonFixedInputInReplay(const KernelRunnerPtr &kernel_runner, size_t kernel_input_index);
 
   void SetShapeKey();
+
+  void ResetShapeKey() { shape_key_ = ""; }
 
   const std::string &ShapeKey() const { return shape_key_; }
 
@@ -151,6 +151,8 @@ class GraphCaptureManager {
   }
 
   size_t GetStreamId() const { return stream_id_; }
+
+  void ResetAclgraphStatus();
 
   void Finalize();
 
@@ -189,6 +191,9 @@ class GraphCaptureManager {
 
   std::map<std::string, std::map<KernelRunnerWithIdx, std::vector<KernelTensorPtr>>>
     fix_network_input_for_replay_single_op_;
+
+  mindspore::HashMap<std::string, std::vector<std::pair<KernelRunnerWithIdx, std::vector<size_t>>>>
+    recorded_kernel_output_for_graph_output_;
 
   std::string shape_key_{""};
 

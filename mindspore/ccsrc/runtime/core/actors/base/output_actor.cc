@@ -721,11 +721,12 @@ void OutputActor::HandleOutput() {
     // If enable kernel launch capture, the kernel output as graph output will be captured and can not release device
     // memory.
     if (GraphCaptureManager::GetInstance().GetEnableGraphCapture() && GraphCaptureManager::GetInstance().InReplay()) {
-      GraphCaptureManager::GetInstance().SetInReplay(false);
+      MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
+        << "Free kernel tensor in aclgraph replay: " << kernel_tensor->ToString();
       kernel_tensor->set_device_ptr(nullptr);
     } else {
       MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
-        << "Free kernel tensor:" << kernel_tensor << " for actor:" << GetAID();
+        << "Free kernel tensor:" << kernel_tensor->ToString() << " for actor:" << GetAID();
       MemoryManagerActor::GetInstance()->FreeMemoryByRefCount(kernel_tensor.get(), real_device_context,
                                                               GetAID().Name());
     }
@@ -734,6 +735,7 @@ void OutputActor::HandleOutput() {
       device_tensor->GetPtr(), device_tensor->type_id(), device_tensor->GetShapeVector(),
       device_tensor->GetTensorStorageInfo());
   }
+  GraphCaptureManager::GetInstance().ResetAclgraphStatus();
 }
 
 void OutputActor::UpdateOutputDeviceAddress() {
