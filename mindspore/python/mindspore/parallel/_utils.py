@@ -403,7 +403,7 @@ def _dynamic_shape_for_dataset(dataset_shapes, dynamic_shapes):
         raise ValueError("The dataset shapes size of {} is not equal to "
                          "dynamic shapes size of {}".format(dataset_shapes, dynamic_shapes))
     ret = dataset_shapes
-    for i in range(len(dynamic_shapes)):
+    for i, _ in enumerate(dynamic_shapes):
         if len(dataset_shapes[i]) != len(dynamic_shapes[i]):
             raise ValueError("The dataset shapes size of {} is not equal to "
                              "dynamic shapes size of {}".format(dataset_shapes, dynamic_shapes))
@@ -515,7 +515,7 @@ def _get_parameter_broadcast():
     parameter_broadcast = auto_parallel_context().get_parameter_broadcast()
 
     if parallel_mode in ("data_parallel", "hybrid_parallel") and parameter_broadcast is False and get_seed() is None:
-        logger.warning("You are suggested to use mindspore.context.set_auto_parallel_context(parameter_broadcast=True)"
+        logger.info("You are suggested to use mindspore.context.set_auto_parallel_context(parameter_broadcast=True)"
                        " or mindspore.common.set_seed() to share parameters among multi-devices.")
 
     return parameter_broadcast
