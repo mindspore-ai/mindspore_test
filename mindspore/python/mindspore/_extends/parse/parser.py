@@ -1173,20 +1173,6 @@ class Parser:
         logger.debug(f"The name '{var}' is an undefined symbol.")
         return None, None, None
 
-    def check_is_stream_ctx(self, var: str):
-        """Check if is stream_ctx."""
-        logger.debug(f"global_namespace {self.global_namespace.__str__()}.")
-        logger.debug(f"self.global_namespace.__dict__:{self.global_namespace.__dict__}")
-
-        if var in self.global_namespace:
-            logger.debug(f"Found '{var}' in global_namespace {self.global_namespace.__str__()}.")
-            value = self.global_namespace[var]
-            logger.debug(f"value: '{value}'.")
-            if issubclass(value, StreamCtx):
-                logger.debug(f"Found '{value}' is StreamCtx.")
-                return True
-        return var == "StreamCtx"
-
     def get_stream_obj_id(self, stream_name: str):
         """Get the object of stream."""
         if stream_name in self.global_namespace:
@@ -1196,8 +1182,8 @@ class Parser:
             return stream_obj.stream_id()
         return None
 
-    def check_is_stream_limit_ctx(self, var: str):
-        """Check if is stream_limit_ctx."""
+    def check_is_base_ctx(self, var: str):
+        """Check if is CtxBase, which currently supports StreamCtx or StreamLimitCtx."""
         logger.debug(f"global_namespace {self.global_namespace.__str__()}.")
         logger.debug(f"self.global_namespace.__dict__:{self.global_namespace.__dict__}")
 
@@ -1205,10 +1191,17 @@ class Parser:
             logger.debug(f"Found '{var}' in global_namespace {self.global_namespace.__str__()}.")
             value = self.global_namespace[var]
             logger.debug(f"value: '{value}'.")
-            if value == StreamLimitCtx or issubclass(value, StreamLimitCtx):
+            if issubclass(value, StreamCtx):
+                logger.debug(f"Found '{value}' is StreamCtx.")
+                return 1
+            if issubclass(value, StreamLimitCtx):
                 logger.debug(f"Found '{value}' is StreamLimitCtx.")
-                return True
-        return var == "StreamLimitCtx"
+                return 2
+        if var == "StreamCtx":
+            return 1
+        if var == "StreamLimitCtx":
+            return 2
+        return 0
 
     def check_third_party_library_side_effect(self, var, attr):
         """Check if value is from a third-party library."""

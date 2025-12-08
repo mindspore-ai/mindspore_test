@@ -4610,67 +4610,40 @@ AnfNodePtr Parser::ParseWithitem(const FunctionBlockPtr &block, const py::object
   return enter_node;
 }
 
-bool Parser::IsStreamCtx(const FunctionBlockPtr &block, const py::object &context_expr_obj) {
+int64_t Parser::IsBaseCtx(const FunctionBlockPtr &block, const py::object &context_expr_obj) {
   py::object function_ast_node = python_adapter::GetPyObjAttr(context_expr_obj, "func");
-  bool is_stream_ctx = false;
-  auto arg_type =
-    AstSubType(py::cast<int32_t>(ast_->CallParseModFunction(PYTHON_PARSE_GET_AST_TYPE, function_ast_node)));
-  if (arg_type == AST_SUB_TYPE_NAME) {
-    std::string name_id = py::cast<std::string>(python_adapter::GetPyObjAttr(function_ast_node, "id"));
-    MS_LOG(DEBUG) << "The name of call node is: " << name_id;
-    is_stream_ctx = ast_->CallParserObjMethod(PYTHON_MOD_CHECK_IS_STREAM_CTX, name_id).cast<bool>();
-  } else if (arg_type == AST_SUB_TYPE_ATTRIBUTE) {
-    auto attr_name = py::cast<std::string>(python_adapter::GetPyObjAttr(function_ast_node, "attr"));
-    is_stream_ctx = ast_->CallParserObjMethod(PYTHON_MOD_CHECK_IS_STREAM_CTX, attr_name).cast<bool>();
-  }
-  return is_stream_ctx;
-}
-
-AnfNodePtr Parser::NewStreamCtxArgNode(const FunctionBlockPtr &block, const py::object &context_expr_obj) {
-  py::list args = python_adapter::GetPyObjAttr(context_expr_obj, "args");
-  if (args.size() != 1) {
-    MS_LOG(EXCEPTION) << "Only supports a stream in the with statement.";
-  }
-  auto stream_id_node = ParseExprNode(block, args[0]);
-  return stream_id_node;
-}
-
-std::vector<AnfNodePtr> Parser::NewStreamLimitCtxArgsNode(const FunctionBlockPtr &block,
-                                                          const py::object &context_expr_obj) {
-  py::list args = python_adapter::GetPyObjAttr(context_expr_obj, "args");
-  constexpr size_t limit_args_size = 3;
-  if (args.size() != limit_args_size) {
-    MS_LOG(EXCEPTION) << "Only supports 3 args in the with StreamLimitCtx statement.";
-  }
-  constexpr size_t stream_id_index = 0;
-  constexpr size_t cube_num_index = 1;
-  constexpr size_t vector_num_index = 2;
-  auto stream_id_node = ParseExprNode(block, args[stream_id_index]);
-  auto cube_num_node = ParseExprNode(block, args[cube_num_index]);
-  auto vector_num_node = ParseExprNode(block, args[vector_num_index]);
-  return {stream_id_node, cube_num_node, vector_num_node};
-}
-
-bool Parser::IsStreamLimitCtx(const FunctionBlockPtr &block, const py::object &context_expr_obj) {
-  py::object function_ast_node = python_adapter::GetPyObjAttr(context_expr_obj, "func");
+  int64_t base_ctx_type = 0;
   auto arg_type =
     AstSubType(py::cast<int32_t>(ast_->CallParseModFunction(PYTHON_PARSE_GET_AST_TYPE, function_ast_node)));
   MS_LOG(DEBUG) << "arg_type: " << arg_type;
-  bool is_stream_limit_ctx = false;
   if (arg_type == AST_SUB_TYPE_NAME) {
     std::string name_id = py::cast<std::string>(python_adapter::GetPyObjAttr(function_ast_node, "id"));
     MS_LOG(DEBUG) << "The name of call node is: " << name_id;
-    is_stream_limit_ctx = ast_->CallParserObjMethod(PYTHON_MOD_CHECK_IS_STREAM_LIMIT_CTX, name_id).cast<bool>();
+    base_ctx_type = ast_->CallParserObjMethod(PYTHON_MOD_CHECK_IS_BASE_CTX, name_id).cast<int64_t>();
   } else if (arg_type == AST_SUB_TYPE_ATTRIBUTE) {
-    std::string attr_name = py::cast<std::string>(python_adapter::GetPyObjAttr(function_ast_node, "attr"));
-    MS_LOG(DEBUG) << "The name of call node is: " << attr_name;
-    is_stream_limit_ctx = ast_->CallParserObjMethod(PYTHON_MOD_CHECK_IS_STREAM_LIMIT_CTX, attr_name).cast<bool>();
+    auto attr_name = py::cast<std::string>(python_adapter::GetPyObjAttr(function_ast_node, "attr"));
+    base_ctx_type = ast_->CallParserObjMethod(PYTHON_MOD_CHECK_IS_BASE_CTX, attr_name).cast<int64_t>();
   }
-  return is_stream_limit_ctx;
+  return base_ctx_type;
 }
 
-FunctionBlockPtr Parser::StreamCtxBlock(const FunctionBlockPtr &block, const py::object &node,
-                                        const py::object &context_expr_obj) {
+std::vector<AnfNodePtr> Parser::NewBaseCtxArgsNode(const FunctionBlockPtr &block, const py::object &context_expr_obj) {
+  py::list args = python_adapter::GetPyObjAttr(context_expr_obj, "args");
+  constexpr size_t min_args_size = 1;
+  constexpr size_t max_args_size = 3;
+  if (args.size() != min_args_size && args.size() != max_args_size) {
+    MS_LOG(EXCEPTION) << "Only supports 1 or 3 args in the with BaseCtx statement.";
+  }
+  std::vector<AnfNodePtr> arg_nodes;
+  for (size_t index = 0; index < args.size(); ++index) {
+    auto arg_node = ParseExprNode(block, args[index]);
+    arg_nodes.emplace_back(arg_node);
+  }
+  return arg_nodes;
+}
+
+FunctionBlockPtr Parser::BaseCtxBlock(const FunctionBlockPtr &block, const py::object &node,
+                                      const py::object &context_expr_obj, int64_t base_ctx_type) {
   FunctionBlockPtr body_block = MakeFunctionBlock();
   MS_EXCEPTION_IF_NULL(body_block);
   block->Jump(body_block, {});
@@ -4680,87 +4653,76 @@ FunctionBlockPtr Parser::StreamCtxBlock(const FunctionBlockPtr &block, const py:
   MS_EXCEPTION_IF_NULL(original_body_func);
   auto original_body_block = body_block;
 
-  py::object body_node = python_adapter::GetPyObjAttr(node, "body");
-  body_block = ParseStatements(body_block, body_node);
-
-  auto stream_id_node = NewStreamCtxArgNode(block, context_expr_obj);
-  FunctionBlockPtr after_block = MakeFunctionBlock();
-  after_block->Mature();
-  auto after_func = after_block->func_graph();
-  MS_EXCEPTION_IF_NULL(after_func);
-
-  // GetStreamInfo(kFuncGraphFlagStreamCtxAfter, stream_id_node) add to after_func
-  auto get_stream_info_op = NewValueNode(prim::kPrimGetStreamInfo);
-  AnfNodePtrList with_stream_after_nodes_inputs{get_stream_info_op, NewValueNode(kFuncGraphFlagStreamCtxAfter),
-                                                stream_id_node};
-  auto with_stream_after_node = after_func->NewCNode(with_stream_after_nodes_inputs);
-  after_func->set_flag(FUNC_GRAPH_FLAG_NO_INLINE, true);
-  after_block->AddIsolatedNode(with_stream_after_node);
-
-  auto body_func = body_block->func_graph();
-  MS_EXCEPTION_IF_NULL(body_func);
-  if (body_func->get_return() == nullptr) {
-    body_block->Jump(after_block, {});
-  }
-
-  // GetStreamInfo(kFuncGraphFlagStreamId, stream_id_node) add to body_func
-  AnfNodePtrList with_stream_node_inputs{get_stream_info_op, NewValueNode(kFuncGraphFlagStreamId), stream_id_node};
-  if (original_body_func != body_func) {
-    auto with_stream_node = original_body_func->NewCNode(with_stream_node_inputs);
-    original_body_func->set_flag(FUNC_GRAPH_FLAG_NO_INLINE, true);
-    original_body_block->AddIsolatedNode(with_stream_node);
+  auto arg_nodes = NewBaseCtxArgsNode(block, context_expr_obj);
+  if (base_ctx_type == 1) {
+    stream_ctx_count_++;
+    if (stream_ctx_count_ > 1) {
+      MS_LOG(EXCEPTION) << "Nested with StreamCtx statements are not supported in graph mode.";
+    }
   } else {
-    auto with_stream_node = body_func->NewCNode(with_stream_node_inputs);
-    body_func->set_flag(FUNC_GRAPH_FLAG_NO_INLINE, true);
-    body_block->AddIsolatedNode(with_stream_node);
+    stream_limit_ctx_count_++;
+    if (stream_limit_ctx_count_ > 1) {
+      MS_LOG(EXCEPTION) << "Nested with StreamLimitCtx statements are not supported in graph mode.";
+    }
   }
-
-  return after_block;
-}
-
-FunctionBlockPtr Parser::StreamLimitCtxBlock(const FunctionBlockPtr &block, const py::object &node,
-                                             const py::object &context_expr_obj) {
-  FunctionBlockPtr body_block = MakeFunctionBlock();
-  MS_EXCEPTION_IF_NULL(body_block);
-  auto body_func_graph = body_block->func_graph();
-  MS_EXCEPTION_IF_NULL(body_func_graph);
-  block->Jump(body_block, {});
-  body_block->Mature();
-
-  auto original_body_func = body_block->func_graph();
-  MS_EXCEPTION_IF_NULL(original_body_func);
-
   py::object body_node = python_adapter::GetPyObjAttr(node, "body");
   body_block = ParseStatements(body_block, body_node);
-  FunctionBlockPtr after_block = MakeFunctionBlock();
-  after_block->Mature();
-  auto after_func = after_block->func_graph();
-  MS_EXCEPTION_IF_NULL(after_func);
 
   constexpr size_t stream_id_index = 0;
   constexpr size_t cube_num_index = 1;
   constexpr size_t vector_num_index = 2;
-  auto arg_nodes = NewStreamLimitCtxArgsNode(block, context_expr_obj);
-  // GetStreamInfo(kFuncGraphFlagStreamLimitCtxAfter, stream_id_node) add to StreamLimitCTx after_func.
+
+  auto stream_id_node = arg_nodes[stream_id_index];
+  FunctionBlockPtr after_block = MakeFunctionBlock();
+  after_block->Mature();
+  auto after_func = after_block->func_graph();
+  MS_EXCEPTION_IF_NULL(after_func);
   auto get_stream_info_op = NewValueNode(prim::kPrimGetStreamInfo);
-  AnfNodePtrList with_stream_limit_after_node_inputs{
-    get_stream_info_op, NewValueNode(kFuncGraphFlagStreamLimitCtxAfter), arg_nodes[stream_id_index]};
-  auto with_stream_limit_after_node = after_func->NewCNode(with_stream_limit_after_node_inputs);
+  AnfNodePtrList nodes_inputs;
+  if (base_ctx_type == 1) {
+    // GetStreamInfo(kFuncGraphFlagStreamCtxAfter, stream_id_node) add to after_func
+    nodes_inputs = {get_stream_info_op, NewValueNode(kFuncGraphFlagStreamCtxAfter), stream_id_node};
+  } else if (base_ctx_type == 2) {
+    // GetStreamInfo(kFuncGraphFlagStreamLimitCtxAfter, stream_id_node) add to StreamLimitCTx after_func.
+    nodes_inputs = {get_stream_info_op, NewValueNode(kFuncGraphFlagStreamLimitCtxAfter), stream_id_node};
+  }
+
+  auto after_node = after_func->NewCNode(nodes_inputs);
   after_func->set_flag(FUNC_GRAPH_FLAG_NO_INLINE, true);
-  after_block->AddIsolatedNode(with_stream_limit_after_node);
+  after_block->AddIsolatedNode(after_node);
+
   auto body_func = body_block->func_graph();
   MS_EXCEPTION_IF_NULL(body_func);
   if (body_func->get_return() == nullptr) {
     body_block->Jump(after_block, {});
   }
-  // GetStreamInfo(kFuncGraphFlagStreamLimitId, stream_id_node, cube_num_node, vector_num_node)
-  // add to StreamLimitCTx body_func.
-  AnfNodePtrList with_stream_node_inputs{get_stream_info_op, NewValueNode(kFuncGraphFlagStreamLimitId),
-                                         arg_nodes[stream_id_index], arg_nodes[cube_num_index],
-                                         arg_nodes[vector_num_index]};
-  auto with_stream_node = body_func->NewCNode(with_stream_node_inputs);
-  body_func->set_flag(FUNC_GRAPH_FLAG_NO_INLINE, true);
-  body_block->AddIsolatedNode(with_stream_node);
+  if (base_ctx_type == 1) {
+    // GetStreamInfo(kFuncGraphFlagStreamId, stream_id_node) add to body_func
+    AnfNodePtrList with_stream_node_inputs{get_stream_info_op, NewValueNode(kFuncGraphFlagStreamId), stream_id_node};
+    if (original_body_func != body_func) {
+      auto with_stream_node = original_body_func->NewCNode(with_stream_node_inputs);
+      original_body_func->set_flag(FUNC_GRAPH_FLAG_NO_INLINE, true);
+      original_body_block->AddIsolatedNode(with_stream_node);
+    } else {
+      auto with_stream_node = body_func->NewCNode(with_stream_node_inputs);
+      body_func->set_flag(FUNC_GRAPH_FLAG_NO_INLINE, true);
+      body_block->AddIsolatedNode(with_stream_node);
+    }
+  } else if (base_ctx_type == 2) {
+    // GetStreamInfo(kFuncGraphFlagStreamLimitId, stream_id_node, cube_num_node, vector_num_node)
+    // add to StreamLimitCTx body_func.
+    AnfNodePtrList with_stream_node_inputs{get_stream_info_op, NewValueNode(kFuncGraphFlagStreamLimitId),
+                                           arg_nodes[stream_id_index], arg_nodes[cube_num_index],
+                                           arg_nodes[vector_num_index]};
+    auto with_stream_node = body_func->NewCNode(with_stream_node_inputs);
+    body_func->set_flag(FUNC_GRAPH_FLAG_NO_INLINE, true);
+    body_block->AddIsolatedNode(with_stream_node);
+  }
+  if (base_ctx_type == 1) {
+    stream_ctx_count_--;
+  } else {
+    stream_limit_ctx_count_--;
+  }
   return after_block;
 }
 
@@ -4781,18 +4743,10 @@ FunctionBlockPtr Parser::ParseWith(const FunctionBlockPtr &block, const py::obje
     // mean context_expr is Sample(), sample is optional_vars
     py::object context_expr_obj = python_adapter::GetPyObjAttr(items_obj, "context_expr");
 
-    // with StreamCtx(s1):
-    bool is_stream_ctx = IsStreamCtx(block, context_expr_obj);
-    MS_LOG(DEBUG) << "is_stream_ctx:" << is_stream_ctx;
-    if (is_stream_ctx) {
-      return StreamCtxBlock(block, node, context_expr_obj);
-    }
-
-    // with StreamLimitCtx(s1, cube_num, vector_num):
-    bool is_stream_limit_ctx = IsStreamLimitCtx(block, context_expr_obj);
-    MS_LOG(DEBUG) << "is_stream_limit_ctx:" << is_stream_limit_ctx;
-    if (is_stream_limit_ctx) {
-      return StreamLimitCtxBlock(block, node, context_expr_obj);
+    int64_t base_ctx_type = IsBaseCtx(block, context_expr_obj);
+    MS_LOG(DEBUG) << "base_ctx_type:" << base_ctx_type;
+    if (base_ctx_type != 0) {
+      return BaseCtxBlock(block, node, context_expr_obj, base_ctx_type);
     }
 
     AnfNodePtr context_expr_node = ParseExprNode(block, context_expr_obj);

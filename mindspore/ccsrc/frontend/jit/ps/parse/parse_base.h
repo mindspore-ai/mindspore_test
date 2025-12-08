@@ -71,6 +71,7 @@ const char PYTHON_MOD_PARSE_OBJECT_FUNCTION[] = "parse_cb";
 const char PYTHON_MOD_RESOLVE_FUNCTION[] = "resolve_symbol";
 const char PYTHON_MOD_CHECK_IS_STREAM_CTX[] = "check_is_stream_ctx";
 const char PYTHON_MOD_CHECK_IS_STREAM_LIMIT_CTX[] = "check_is_stream_limit_ctx";
+const char PYTHON_MOD_CHECK_IS_BASE_CTX[] = "check_is_base_ctx";
 const char PYTHON_MOD_GET_MS_JIT_STREAM_OBJ_ID[] = "get_stream_obj_id";
 const char PYTHON_MOD_RESOLVE_GET_OBJ_KEY[] = "get_object_key";
 const char PYTHON_MOD_PARSE_CHECK_IS_CLASS_MEMBER_OF_SELF[] = "is_class_member_of_self";

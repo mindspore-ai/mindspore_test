@@ -189,7 +189,6 @@ def test_my_ms_jit_stream_ctx_mutli():
     assert (pynative_grad_out.asnumpy() == graph_grad_out.asnumpy()).all()
 
 
-@pytest.mark.skip(reason='Not support yet')
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_my_ms_jit_stream_ctx_nest():
     """
@@ -207,27 +206,11 @@ def test_my_ms_jit_stream_ctx_nest():
                     y = a - y
             return y + z
 
-    save_path = "./test_my_ms_jit_stream_ctx_nest"
-    os.environ['MS_DEV_DUMP_IR_PASSES'] = 'validate'
-    ms.set_context(jit_config={"jit_level": "O0"}, save_graphs=True, save_graphs_path=save_path)
-    net = MyMsJitStreamCtxMutliNet()
-    x = Tensor(np.ones([3, 3]), ms.float32)
-    out = net(x)
-    os.unsetenv('MS_DEV_DUMP_IR_PASSES')
-    assert (out.asnumpy() == (x * 2).asnumpy()).all()
-    content = read_file(save_path)
-    stream_id_num = re.findall('stream_id', content)
-    try:
-        shutil.rmtree(save_path)
-    except FileNotFoundError:
-        pass
-    assert len(stream_id_num) == 2
-    ms.set_context(save_graphs=False)
-    ms.set_context(mode=ms.context.PYNATIVE_MODE)
-    pynative_grad_out = grad(net)(x)
-    ms.set_context(mode=ms.context.GRAPH_MODE, jit_config={"jit_level": "O0"})
-    graph_grad_out = grad(net)(x)
-    assert (pynative_grad_out.asnumpy() == graph_grad_out.asnumpy()).all()
+    with pytest.raises(RuntimeError) as info:
+        net = MyMsJitStreamCtxMutliNet()
+        x = Tensor(np.ones([3, 3]), ms.float32)
+        net(x)
+    assert "Nested with StreamCtx statements are not supported in graph mode." in str(info.value)
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
@@ -316,7 +299,6 @@ def test_basic_stream_block_annotation_2():
     assert (pynative_grad_out.asnumpy() == graph_grad_out.asnumpy()).all()
 
 
-@pytest.mark.skip(reason='Not support yet')
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_nested_stream_blocks():
     """
@@ -332,33 +314,16 @@ def test_nested_stream_blocks():
                 with MsJitStreamCtx(s2):
                     x2 = x1 + Tensor(np.ones([2, 2], dtype=np.float32))
                     x3 = x2 + Tensor(np.ones([2, 2], dtype=np.float32))
-                x4 = x3 + Tensor(np.ones([2, 2], dtype=np.float32))
+                x4 = x3 - Tensor(np.ones([2, 2], dtype=np.float32))
             return x4
 
-    save_path = "./test_nested_stream_blocks"
-    os.environ['MS_DEV_DUMP_IR_PASSES'] = 'validate'
-    ms.set_context(jit_config={"jit_level": "O0"}, save_graphs=True, save_graphs_path=save_path)
-    x = Tensor(np.ones([2, 2], dtype=np.float32))
-    net = NestedStreamNet()
-    result = net(x)
-    os.unsetenv('MS_DEV_DUMP_IR_PASSES')
-    content = read_file(save_path)
-    stream_id_num = re.findall('stream_id', content)
-    try:
-        shutil.rmtree(save_path)
-    except FileNotFoundError:
-        pass
-    assert np.allclose(result, Tensor(np.ones([2, 2], dtype=np.float32)) * 5)
-    assert len(stream_id_num) == 4
-    ms.set_context(save_graphs=False)
-    ms.set_context(mode=ms.context.PYNATIVE_MODE)
-    pynative_grad_out = grad(net)(x)
-    ms.set_context(mode=ms.context.GRAPH_MODE, jit_config={"jit_level": "O0"})
-    graph_grad_out = grad(net)(x)
-    assert (pynative_grad_out.asnumpy() == graph_grad_out.asnumpy()).all()
+    with pytest.raises(RuntimeError) as info:
+        x = Tensor(np.ones([2, 2], dtype=np.float32))
+        net = NestedStreamNet()
+        net(x)
+    assert "Nested with StreamCtx statements are not supported in graph mode." in str(info.value)
 
 
-@pytest.mark.skip(reason='Not support yet')
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_complex_nested_streams():
     """
@@ -380,27 +345,11 @@ def test_complex_nested_streams():
                 x5 = x4 + t
             return x5
 
-    save_path = "./test_complex_nested_streams"
-    os.environ['MS_DEV_DUMP_IR_PASSES'] = 'validate'
-    ms.set_context(jit_config={"jit_level": "O0"}, save_graphs=True, save_graphs_path=save_path)
-    x = Tensor(np.ones([2, 2], dtype=np.float32))
-    net = ComplexStreamsNet()
-    result = net(x)
-    os.unsetenv('MS_DEV_DUMP_IR_PASSES')
-    content = read_file(save_path)
-    stream_id_num = re.findall('stream_id', content)
-    try:
-        shutil.rmtree(save_path)
-    except FileNotFoundError:
-        pass
-    assert np.allclose(result, Tensor(np.ones([2, 2], dtype=np.float32)) * 6)
-    assert len(stream_id_num) == 5
-    ms.set_context(save_graphs=False)
-    ms.set_context(mode=ms.context.PYNATIVE_MODE)
-    pynative_grad_out = grad(net)(x)
-    ms.set_context(mode=ms.context.GRAPH_MODE, jit_config={"jit_level": "O0"})
-    graph_grad_out = grad(net)(x)
-    assert (pynative_grad_out.asnumpy() == graph_grad_out.asnumpy()).all()
+    with pytest.raises(RuntimeError) as info:
+        x = Tensor(np.ones([2, 2], dtype=np.float32))
+        net = ComplexStreamsNet()
+        net(x)
+    assert "Nested with StreamCtx statements are not supported in graph mode." in str(info.value)
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
