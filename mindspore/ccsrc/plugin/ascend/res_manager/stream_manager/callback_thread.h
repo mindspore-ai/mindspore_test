@@ -28,7 +28,12 @@ void *callback_thread_func(void *data);
 
 // Callback thread for ascend streams.
 struct CallbackThread {
-  ~CallbackThread() { cancel(); }
+  ~CallbackThread() {
+    cancel();
+    if (thread_) {
+      pthread_join(thread_, nullptr);
+    }
+  }
 
   // pthread_cancel may cause bug now, so just set flag to false.
   void cancel() {
