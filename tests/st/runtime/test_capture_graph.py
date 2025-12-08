@@ -11,10 +11,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+"""
+The tests of mindspore, used to test aclgraph.
+"""
 import os
 import subprocess
-from tests.st.runtime.run_capture_graph import Net1, SeqNet, expected_output
+from tests.st.runtime.run_capture_graph import Net1, SeqNet, expected_output, Net_Multi_Output
 from tests.mark_utils import arg_mark
 import numpy as np
 import mindspore.ops as P
@@ -67,6 +69,41 @@ def test_dynamic_shape_for_capture_graph():
             expected = expected_output(i)
             assert np.allclose(output_np, expected), \
                 f"Output {output_np} does not match expected {expected} at step {i}"
+
+
+@arg_mark(
+    plat_marks=['platform_ascend910b'],
+    level_mark='level0',
+    card_mark='onecard',
+    essential_mark='essential'
+)
+def test_dynamic_shape_for_capture_graph_with_multi_output():
+    """
+    Feature: graph mode support capture graph
+    Description: Test dynamic shape scene and dyn value for capture graph when net has multi output
+    Expectation: No exception and result is correct
+    """
+    rt.set_kernel_launch_capture(True)
+    new_input1 = Tensor(np.ones((2, 5)).astype(np.float32))
+    dyn_input_data = Tensor(shape=[2, None], dtype=mstype.float32)
+    base_shape = (2, 3)
+
+    net = Net_Multi_Output()
+    net.set_inputs(dyn_input_data)
+    net.phase = "increment"
+
+    for i in range(1, 20):
+        if i == 5:
+            output, _ = net(new_input1)
+            output_np = output.asnumpy()
+        else:
+            input_data1 = Tensor(np.full(base_shape, i).astype(np.float32))
+            output, _ = net(input_data1)
+            output_np = output.asnumpy()
+            expected = expected_output(i)
+            assert np.allclose(output_np, expected), \
+                f"Output {output_np} does not match expected {expected} at step {i}"
+
 
 @arg_mark(
     plat_marks=['platform_ascend910b'],
