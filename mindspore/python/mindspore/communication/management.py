@@ -140,8 +140,8 @@ def init(backend_name=None):
 
     Raises:
         TypeError: If `backend_name` is not a string.
-        RuntimeError: If device target is invalid, or backend is invalid, or distributed initialization fails,
-                      or the environment variables RANK_ID/MINDSPORE_HCCL_CONFIG_PATH
+        RuntimeError: If device target is invalid, or backend is invalid, or distributed initialization fails.
+        RuntimeError: If the environment variables RANK_ID/MINDSPORE_HCCL_CONFIG_PATH
                       have not been exported when backend is HCCL.
 
     Supported Platforms:

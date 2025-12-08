@@ -10,15 +10,15 @@ mindspore.communication.comm_func.all_to_all_single_with_output_shape
         - 仅支持PyNative模式，目前不支持Graph模式。
 
     参数：
-        - **output_shape** (Union(Tensor, Tuple(int))) - 表示接收Tensor的形状。
+        - **output_shape** (Union(Tensor, tuple(int))) - 表示接收Tensor的形状。
         - **tensor** (Tensor) - 要发送到远端设备的Tensor。
-        - **output_split_sizes** (Union(Tuple(int), List(int)), 可选) - 接收Tensor在0维的切分大小列表。默认值：``None``，表示均匀切分。
-        - **input_split_sizes** (Union(Tuple(int), List(int)), 可选) - 发送Tensor在0维的切分大小列表。默认值：``None``，表示均匀切分。
+        - **output_split_sizes** (Union(tuple(int), List(int)), 可选) - 接收Tensor在0维的切分大小列表。默认值：``None``，表示均匀切分。
+        - **input_split_sizes** (Union(tuple(int), List(int)), 可选) - 发送Tensor在0维的切分大小列表。默认值：``None``，表示均匀切分。
         - **group** (str, 可选) - 工作的通信组。默认值：``None``，表示在Ascend上使用 ``hccl_world_group``，在GPU上使用 ``nccl_world_group``。
         - **async_op** (bool, 可选) - 本算子是否是异步算子。默认值： ``False`` 。
 
     返回：
-        Tuple(Tensor, CommHandle)，其中Tensor为从远端设备接收分块并合并的结果。
+        tuple(Tensor, CommHandle)，其中Tensor为从远端设备接收分块并合并的结果。
         如果从其他设备接收的Tensor为空，则返回空张量，且张量数值无意义。
         若 `async_op` 是 ``True``，CommHandle是一个异步工作句柄；若 `async_op` 是 ``False``，CommHandle将返回 ``None``。
 

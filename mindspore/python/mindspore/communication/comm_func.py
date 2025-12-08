@@ -549,12 +549,13 @@ def batch_isend_irecv(p2p_op_list):
     Note:
         - The 'isend' and 'irecv' of `P2POp` in `p2p_op_list` between ranks need to match each other.
         - `P2POp` in `p2p_op_list` can only use the same communication group.
-        - `tag` of `P2POp` in `p2p_op_list` is not support yet.
+        - `tag` of `P2POp` in `p2p_op_list` is not supported yet.
         - `tensor` of `P2POp` in `p2p_op_list` will not be modified by result inplace.
         - Only support PyNative mode, Graph mode is not currently supported.
 
     Args:
-        p2p_op_list(P2POp): list contains `P2POp`. `P2POp` is type of :class:`mindspore.communication.comm_func.P2POp`
+        p2p_op_list (List[P2POp]): list contains `P2POp`. `P2POp` is type of
+            :class:`mindspore.communication.comm_func.P2POp`.
 
     Returns:
         tuple(Tensor). Output tensors is corresponding to `p2p_op_list`.
@@ -1373,21 +1374,21 @@ def all_to_all_single_with_output_shape(output_shape, tensor, output_split_sizes
         Only support PyNative mode, Graph mode is not currently supported.
 
     Args:
-        output_shape (Union(Tensor, Tuple(int))): shape to indicate the shape
-          of tensor gathered concatenated from remote rank.
+        output_shape (Union(Tensor, tuple(int))): shape to indicate the shape
+            of tensor gathered concatenated from remote rank.
         tensor (Tensor): tensor to be scattered to remote rank.
-        output_split_sizes (Union(Tuple(int), List(int))): output split size at dim 0. If set to None,
-            it means equally split by ``world_size``. Default: None.
-        input_split_sizes (Union(Tuple(int), List(int))): input split size at dim 0. If set to None,
-            it means equally split by ``world_size``. Default: None.
+        output_split_sizes (Union(tuple(int), List(int)), optional): output split size at dim 0.
+            Default: ``None``, which means equally split by ``world_size``.
+        input_split_sizes (Union(tuple(int), List(int)), optional): input split size at dim 0.
+            Default: ``None``, which means equally split by ``world_size``.
         group (str, optional): The communication group to work on.
-            Default: None, which means "hccl_world_group" on Ascend, "nccl_world_group" on GPU.
+            Default: ``None``, which means "hccl_world_group" on Ascend, "nccl_world_group" on GPU.
         async_op (bool, optional): Whether this operator should be an async operator. Default: ``False`` .
 
     Returns:
-        Tuple(Tensor, CommHandle), the output tensor is gathered concatenated from remote ranks.
+        tuple(Tensor, CommHandle), the output tensor is gathered concatenated from remote ranks.
         If the numel of tensor gathered from remote is zero, it will return a Tensor with shape `()`,
-        and value has no actual meanning. CommHandle is an async work handle, if `async_op` is set to True.
+        and value has no actual meaning. CommHandle is an async work handle, if `async_op` is set to True.
         CommHandle will be None, when `async_op` is False.
 
     Raises:
