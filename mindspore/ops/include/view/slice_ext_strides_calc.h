@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef MINDSPORE_CORE_OPS_VIEW_SLICE_STRIDES_EXT_CALC_H
-#define MINDSPORE_CORE_OPS_VIEW_SLICE_STRIDES_EXT_CALC_H
+#ifndef MINDSPORE_OPS_INCLUDE_VIEW_SLICE_EXT_STRIDES_CALC_H
+#define MINDSPORE_OPS_INCLUDE_VIEW_SLICE_EXT_STRIDES_CALC_H
 
 #include <vector>
 #include "view/view_strides_calculator.h"
@@ -32,4 +32,4 @@ OPS_API TensorStorageInfoPtrList SliceExtBasicTypeCalc(const mindspore::tensor::
 }  // namespace ops
 }  // namespace mindspore
 
-#endif  // MINDSPORE_CORE_OPS_VIEW_SLICE_STRIDES_EXT_CALC_H
+#endif  // MINDSPORE_OPS_INCLUDE_VIEW_SLICE_EXT_STRIDES_CALC_H

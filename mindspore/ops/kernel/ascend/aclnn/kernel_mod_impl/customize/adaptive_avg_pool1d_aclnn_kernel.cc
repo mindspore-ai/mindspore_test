@@ -18,10 +18,11 @@
 #include <vector>
 #include <memory>
 #include <functional>
+#include <utility>
 #include "ir/tensor.h"
 #include "kernel/ascend/acl_ir/op_api_convert.h"
 #include "abstract/ops/primitive_infer_map.h"
-#include "mindspore/ops/view/expand_dims_strides_calc.h"
+#include "mindspore/ops/include/view/expand_dims_strides_calc.h"
 
 namespace mindspore {
 namespace kernel {

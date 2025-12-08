@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_OPS_VIEW_SQUEEZE_STRIDES_CALC_H_
-#define MINDSPORE_OPS_VIEW_SQUEEZE_STRIDES_CALC_H_
+#ifndef MINDSPORE_OPS_INCLUDE_VIEW_SQUEEZE_STRIDES_CALC_H_
+#define MINDSPORE_OPS_INCLUDE_VIEW_SQUEEZE_STRIDES_CALC_H_
 
 #include <vector>
 #include "view/view_strides_calculator.h"
@@ -26,4 +26,4 @@ OPS_API TensorStorageInfoPtrList SqueezeBasicTypeCalc(const mindspore::tensor::T
                                                       const std::vector<int64_t> &axis);
 }  // namespace ops
 }  // namespace mindspore
-#endif  // MINDSPORE_OPS_VIEW_SQUEEZE_STRIDES_CALC_H_
+#endif  // MINDSPORE_OPS_INCLUDE_VIEW_SQUEEZE_STRIDES_CALC_H_

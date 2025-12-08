@@ -21,6 +21,7 @@
 #include <tuple>
 #include <string>
 #include <memory>
+#include <utility>
 
 #include "ir/tensor_new.h"
 #include "pybind11/complex.h"
@@ -45,7 +46,7 @@
 #include "mindspore/ccsrc/pynative/backward/backward_node_py.h"
 #include "pynative/forward/pyboost/converter.h"
 #include "pynative/forward/pyboost/fallback.h"
-#include "mindspore/ops/view/view_strides_calculator.h"
+#include "mindspore/ops/include/view/view_strides_calculator.h"
 #include "pynative/utils/pyboost/pyboost_utils.h"
 #include "pynative/utils/runtime/op_runner.h"
 
@@ -890,7 +891,7 @@ PyObject *TensorPy_make_subclass(PyTypeObject *, PyObject *args, PyObject *kwarg
 
   auto local_tensor = ConvertPyObjectToTensor(local_tensor_obj);
 
-  PyTypeObject *type = (PyTypeObject *)cls_obj;
+  PyTypeObject *type = reinterpret_cast<PyTypeObject *>(cls_obj);
   // alloc memory
   PyObject *obj = type->tp_alloc(type, 0);
   MS_EXCEPTION_IF_NULL(obj);
