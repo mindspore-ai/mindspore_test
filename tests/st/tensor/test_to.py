@@ -378,7 +378,6 @@ def test_tensor_to_device_for_graph():
     os.environ["MS_DEV_HIERARCHICAL_MEMORY"] = "0"
 
 
-@pytest.mark.skip(reason="RuntimeError occurred when enable MS_DEV_HIERARCHICAL_MEMORY")
 @arg_mark(plat_marks=['platform_ascend910b'],
           level_mark='level0',
           card_mark='onecard',

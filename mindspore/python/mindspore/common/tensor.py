@@ -2874,7 +2874,7 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
             raise ValueError(f"The type of 'non_blocking' must be bool, but got {non_blocking}")
         if device not in ("Ascend", "CPU"):
             raise ValueError(f"The value of 'to' must be one of ['Ascend', 'CPU'], but got {device}")
-        copy_data = self.to(device=device, non_blocking=non_blocking)
+        copy_data = self.to(device=device, non_blocking=non_blocking, copy=True)
         self.data.delete_(non_blocking)  # pylint: disable=E0203
         self.data = copy_data
         return self

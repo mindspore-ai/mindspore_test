@@ -149,12 +149,11 @@ def test_tensor_data_del(input_x, non_blocking):
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
-@pytest.mark.skip(reason="RuntimeError occurred when running it multiple times")
 @pytest.mark.parametrize("mode", [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 @pytest.mark.parametrize("input_x", [Tensor([1, 2, 3, 4]), Parameter(Tensor([1, 2, 3, 4]), name='param')])
 @pytest.mark.parametrize("device_type", ["Ascend", "CPU"])
 @pytest.mark.parametrize("non_blocking", [True, False])
-def test_tensor_explict_inplace_to(mode, input_x, device_type, non_blocking):
+def test_tensor_explicit_inplace_to(mode, input_x, device_type, non_blocking):
     """
     Feature: Tensor.data in-place modification
     Description: Test Tensor.data in-place modification.
@@ -163,7 +162,7 @@ def test_tensor_explict_inplace_to(mode, input_x, device_type, non_blocking):
 
     class Net(nn.Cell):
         def construct(self, x, device_type, non_blocking):
-            y = x.to(device=device_type, non_blocking=non_blocking)
+            y = x.to(device=device_type, non_blocking=non_blocking, copy=True)
             x.data.delete_(non_blocking)
             x.data = y
             return x, y
@@ -179,7 +178,6 @@ def test_tensor_explict_inplace_to(mode, input_x, device_type, non_blocking):
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
-@pytest.mark.skip(reason="RuntimeError occurred when running it multiple times")
 @pytest.mark.parametrize("mode", [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 @pytest.mark.parametrize("input_x", [Tensor([1, 2, 3, 4]), Parameter(Tensor([1, 2, 3, 4]), name='param')])
 @pytest.mark.parametrize("device_type", ["Ascend", "CPU"])

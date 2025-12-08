@@ -66,6 +66,15 @@ bool IsD2HNode(const AnfNodePtr &node) {
 
 bool IsH2DNode(const AnfNodePtr &node) { return IsOneOfPrimitiveCNode(node, {prim::kPrimCopyToDevice}); }
 
+bool IsViewOrInplaceNode(const AnfNodePtr &node) {
+  MS_EXCEPTION_IF_NULL(node);
+  if (!node->isa<CNode>()) {
+    return false;
+  }
+  const auto &prim = GetValueNode<PrimitivePtr>(node->cast<CNodePtr>()->input(0));
+  return prim != nullptr && (prim->graph_view_prim() || prim->inplace_prim());
+}
+
 CNodePtr BuildToHostNode(const KernelGraphPtr &kernel_graph, const AnfNodePtr &data_node) {
   const std::string &prim_name = prim::kPrimCopyToHost->name();
   auto prim = std::make_shared<Primitive>(prim_name);
@@ -543,15 +552,31 @@ void AdjustExecutionOrderForHierarchicalMemoryOps(const KernelGraphPtr &kernel_g
       continue;
     }
     const auto &inputs = node->inputs();
-    for (auto input : inputs) {
+    if (IsViewOrInplaceNode(node)) {
+      auto new_end = std::remove_if(remain_h2d_nodes.begin(), remain_h2d_nodes.end(), [&](const CNodePtr &h2d_node) {
+        constexpr size_t h2d_data_idx = 1;
+        const auto &h2d_data = h2d_node->input(h2d_data_idx);
+        bool found =
+          std::any_of(inputs.begin(), inputs.end(), [&h2d_data](const auto &input) { return input == h2d_data; });
+        if (found) {
+          (void)new_execution_order.emplace_back(h2d_node);
+        }
+        return found;
+      });
+      remain_h2d_nodes.erase(new_end, remain_h2d_nodes.end());
+      new_execution_order.emplace_back(node);
+      continue;
+    }
+
+    for (const auto &input : inputs) {
       if (!IsH2DNode(input)) {
         continue;
       }
       auto remain_iter = std::find(remain_h2d_nodes.begin(), remain_h2d_nodes.end(), input);
       if (remain_iter != remain_h2d_nodes.end()) {
         remain_h2d_nodes.erase(remain_iter);
+        (void)new_execution_order.emplace_back(input->cast<CNodePtr>());
       }
-      (void)new_execution_order.emplace_back(input->cast<CNodePtr>());
     }
     (void)new_execution_order.emplace_back(node);
   }
