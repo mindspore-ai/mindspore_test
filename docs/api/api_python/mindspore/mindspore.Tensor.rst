@@ -112,7 +112,9 @@ mindspore.Tensor
     mindspore.Tensor.cummin
     mindspore.Tensor.cumprod
     mindspore.Tensor.cumsum
+    mindspore.Tensor.data
     mindspore.Tensor.deg2rad
+    mindspore.Tensor.delete_
     mindspore.Tensor.diag
     mindspore.Tensor.diagflat
     mindspore.Tensor.diagonal
@@ -366,6 +368,7 @@ mindspore.Tensor
     mindspore.Tensor.tensor_split
     mindspore.Tensor.tile
     mindspore.Tensor.to
+    mindspore.Tensor.to_
     mindspore.Tensor.to_coo
     mindspore.Tensor.to_csr
     mindspore.Tensor.tolist

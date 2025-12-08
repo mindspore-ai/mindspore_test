@@ -786,8 +786,22 @@ static PyGetSetDef PyTensorPython_getseters[] = {
   {"_grad_node", (getter)TensorPython_grad_node, nullptr, "Get the backward node.", NULL},
   {"_version", (getter)TensorPython_get_version, nullptr, "Get tensor's version.", NULL},
   {"_output_index", (getter)TensorPython_get_output_index, nullptr, "Get tensor's output index."},
-  {"data", (getter)TensorPython_get_data, TensorPython_set_data,
-   "An attribute that provides access to the raw data without tracking its computational history for autograd", NULL},
+  {"data", (getter)TensorPython_get_data, TensorPython_set_data, R"mydelimiter(
+                                Get access to the raw data without tracking its computational history for autograd.
+
+                                .. warning::
+                                    This is an experimental API that is subject to change or deletion.
+
+                                Returns:
+                                    Tensor, a new tensor that shares the data storage with the original tensor.
+
+                                Examples:
+                                    >>> import mindspore as ms
+                                    >>> tensor = ms.Tensor([1, 2, 3, 4])
+                                    >>> print(tensor.data)
+                                    [1 2 3 4]
+                                )mydelimiter",
+   NULL},
   {NULL}  // Sentinel
 };
 
