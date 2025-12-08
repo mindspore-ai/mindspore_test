@@ -225,9 +225,8 @@ bool AscendDumpMemToFile(const kernel::KernelTensorPtr &kt, const std::string &f
     mindspore::tensor::TensorPtr out_tensor = tensor::from_spec(host_type, host_shape, device::DeviceType::kCPU);
     MS_EXCEPTION_IF_NULL(out_tensor);
     size_t host_size = LongToSize(out_tensor->DataNBytes());
-    auto clone_device_address = host_context->device_res_manager_->CreateDeviceAddress(
-      addr.GetMutablePtr(), addr.GetSize(), kt->GetShapeVector(), kt->format(), kt->dtype_id(),
-      device::GetDeviceNameByType(addr.GetDeviceType()), addr.stream_id());
+    auto clone_device_address = std::make_shared<device::DeviceAddress>(addr.GetMutablePtr(), addr.GetSize(),
+                                                                        addr.GetDeviceType(), addr.stream_id());
     MS_EXCEPTION_IF_NULL(out_tensor->device_address());
     // No need add device address info for same device address.
     ret = SyncCopy(out_tensor->device_address(), clone_device_address, addr.stream_id());

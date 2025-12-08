@@ -247,9 +247,8 @@ TensorPtr DLPackUtils::FromDLPack(DLManagedTensor *dlpack) {
   device_context->device_res_manager_->BindDeviceToCurrentThread(false);
   auto stream_id = device_context->device_res_manager_->GetCurrentStreamId();
   auto address_size = GetTypeByte(TypeIdToType(type_id)) * SizeOf(ori_shape);
-  auto device_address = device_context->device_res_manager_->CreateDeviceAddress(
-    nullptr, address_size, storage_info->shape, DEFAULT_FORMAT, type_id,
-    device::GetDeviceNameByType(device_context->device_context_key().device_type_), stream_id);
+  auto device_address =
+    std::make_shared<device::DeviceAddress>(nullptr, address_size, device_context->GetDeviceType(), stream_id);
 
   device_address->set_tensor_storage_info(storage_info);
   tensor->set_device_address(device_address);

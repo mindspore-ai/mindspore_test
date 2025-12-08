@@ -115,57 +115,17 @@ void SetDevicePtrDeleterMaker(device::DeviceType device_type, DevicePtrDeleterMa
   g_deleter_func[static_cast<int>(device_type)] = func;
 }
 
-DeviceAddress::DeviceAddress() {
+DeviceAddress::DeviceAddress(device::DeviceType device_type) {
   device_pointer_ = std::make_shared<DevicePointer>();
+  device_type_ = device_type;
   MS_LOG(DEBUG) << "Construct device address:" << ToString();
 }
 
-DeviceAddress::DeviceAddress(void *device_ptr, size_t size)
-    : device_pointer_(std::make_shared<DevicePointer>(device_ptr)), size_(size) {
-  MS_LOG(DEBUG) << "Construct device address:" << ToString();
-}
-
-DeviceAddress::DeviceAddress(void *ptr, size_t size, const std::string &device_name)
-    : device_pointer_(std::make_shared<DevicePointer>(ptr)), size_(size) {
-  device_type_ = device::GetDeviceTypeByName(device_name);
-  SetDevicePtrDeleter();
-  MS_LOG(DEBUG) << "Construct device address:" << ToString();
-}
-
-DeviceAddress::DeviceAddress(void *ptr, size_t size, const string &format, TypeId type_id,
-                             const std::string &device_name) {
-  device_pointer_ = std::make_shared<DevicePointer>();
-  device_pointer_->set_ptr(ptr);
-  size_ = size;
-  dtype_id_ = type_id;
-  device_type_ = device::GetDeviceTypeByName(device_name);
-  format_ = kernel::GetFormatFromStrToEnum(format);
-  SetDevicePtrDeleter();
-  MS_LOG(DEBUG) << "Construct device address:" << ToString();
-}
-
-DeviceAddress::DeviceAddress(void *ptr, size_t size, const ShapeVector &shape_vector, const Format &format,
-                             TypeId type_id, const std::string &device_name, uint32_t stream_id)
+DeviceAddress::DeviceAddress(void *ptr, size_t size, device::DeviceType device_type, uint32_t stream_id)
     : device_pointer_(std::make_shared<DevicePointer>(ptr)),
       stream_id_(stream_id),
       size_(size),
-      format_(format),
-      dtype_id_(type_id),
-      device_type_(device::GetDeviceTypeByName(device_name)),
-      shape_vector_(shape_vector) {
-  SetDevicePtrDeleter();
-  MS_LOG(DEBUG) << "Construct device address:" << ToString();
-}
-
-DeviceAddress::DeviceAddress(void *ptr, size_t size, const std::string &format, TypeId type_id,
-                             const KernelWithIndex &node_index, const std::string &device_name)
-    : node_index_(node_index) {
-  device_pointer_ = std::make_shared<DevicePointer>();
-  device_pointer_->set_ptr(ptr);
-  size_ = size;
-  device_type_ = device::GetDeviceTypeByName(device_name);
-  dtype_id_ = type_id;
-  format_ = kernel::GetFormatFromStrToEnum(format);
+      device_type_(device_type) {
   SetDevicePtrDeleter();
   MS_LOG(DEBUG) << "Construct device address:" << ToString();
 }
@@ -178,11 +138,7 @@ DeviceAddress::DeviceAddress(const DeviceAddress &other) {
   tensor_storage_info_ = other.tensor_storage_info_;
   stream_id_ = other.stream_id_;
   size_ = other.size_;
-  format_ = other.format_;
-  dtype_id_ = other.dtype_id_;
   device_type_ = other.device_type_;
-  dtype_id_ = other.dtype_id_;
-  shape_vector_ = other.shape_vector_;
   padding_type_ = other.padding_type();
   SetDevicePtrDeleter();
   MS_LOG(DEBUG) << "Construct device address:" << ToString();
@@ -199,10 +155,8 @@ std::string DeviceAddress::ToString() const {
   if (tensor_storage_info_ != nullptr) {
     ofs << tensor_storage_info_->ToString();
   }
-  ofs << " size:" << size_ << " format:" << format_ << " dtype:" << dtype_id_ << " device id:" << device_id()
-      << " device name:" << device::GetDeviceNameByType(device_type_) << " shape vector:{";
-  std::for_each(shape_vector_.begin(), shape_vector_.end(), [&ofs](ShapeValueDType axis) { ofs << axis << " "; });
-  ofs << "} device point:";
+  ofs << " size:" << size_ << " device id:" << device_id()
+      << " device name:" << device::GetDeviceNameByType(device_type_) << " device point:";
   if (device_pointer_ == nullptr) {
     ofs << "0";
   } else {

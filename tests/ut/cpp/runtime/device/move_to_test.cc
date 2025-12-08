@@ -27,7 +27,6 @@
 #include "ir/tensor.h"
 #include "ir/tensor_new.h"
 
-
 namespace mindspore {
 namespace device {
 using device::DeviceAddressPtr;
@@ -85,7 +84,7 @@ TEST_F(MoveToTest, TestNoNeedMove) {
   std::vector<int64_t> input = {2, 2, 2, 2};
   TypePtr type = kInt64;
   auto src_tensor = tensor::from_vector(input, type);
-  auto ptr = std::make_shared<DeviceAddress>(input.data(), input.size() * sizeof(int64_t), kCPUDevice);
+  auto ptr = std::make_shared<DeviceAddress>(input.data(), input.size() * sizeof(int64_t), device::DeviceType::kCPU);
   src_tensor->set_device_address(ptr);
   auto dst_tensor = tensor::from_spec(src_tensor->data_type(), src_tensor->shape(), device::DeviceType::kCPU);
   dst_tensor->set_device_address(nullptr);

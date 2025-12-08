@@ -34,8 +34,7 @@ DeviceAddressPtr MakeTestDeviceAddress(TypeId data_type, const ShapeVector &shap
     device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext({DeviceType::kCPU, device_id});
   MS_EXCEPTION_IF_NULL(device_context);
   MS_EXCEPTION_IF_NULL(device_context->device_res_manager_);
-  auto device_address = device_context->device_res_manager_->CreateDeviceAddress(
-    data_ptr, data_size, shape, Format::DEFAULT_FORMAT, data_type, "CPU", 0);
+  auto device_address = std::make_shared<device::DeviceAddress>(data_ptr, data_size, DeviceType::kCPU, 0);
   device_address->SetDevicePointerDeleter(std::move(deleter));
   return device_address;
 }

@@ -78,16 +78,12 @@ std::pair<std::vector<size_t>, std::vector<size_t>> CPUResManager::AllocDeviceMe
     MS_LOG(DEBUG) << "Clear ptr:" << device_ptr_list[i] << ", size:" << after_padding_sizes[i];
   }
 
-  auto ms_context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(ms_context);
-  const auto &device_name = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
-
   // create device for all tensor in tensor list
   for (size_t i = 0; i < tensor_list.size(); ++i) {
     const auto &tensor = tensor_list[i];
     const auto &ptr = device_ptr_list[i];
-    auto device_address = CreateDeviceAddress(ptr, before_padding_sizes[i], tensor->shape(), Format::DEFAULT_FORMAT,
-                                              tensor->data_type(), device_name, stream_id);
+    auto device_address =
+      std::make_shared<device::DeviceAddress>(ptr, before_padding_sizes[i], device::DeviceType::kCPU, stream_id);
     MS_LOG(DEBUG) << "Create DeviceAddress, ptr:" << ptr << ", size:" << before_padding_sizes[i]
                   << ", shape:" << tensor->shape() << ", data_type:" << TypeIdToString(tensor->data_type());
     MS_EXCEPTION_IF_NULL(device_address);
@@ -124,12 +120,7 @@ tensor::TensorPtr CPUResManager::GetSliceByTensorListIndexHandle(const std::vect
   auto ptr = tensor_list[start]->device_address()->GetMutablePtr();
 
   auto stream_id = DefaultStream();
-  auto ms_context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(ms_context);
-  const auto &device_name = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
-
-  auto device_address =
-    CreateDeviceAddress(ptr, size, shape, Format::DEFAULT_FORMAT, tensor->data_type(), device_name, stream_id);
+  auto device_address = std::make_shared<device::DeviceAddress>(ptr, size, device::DeviceType::kCPU, stream_id);
   tensor->set_device_address(device_address);
   return tensor;
 }
@@ -146,34 +137,12 @@ tensor::TensorPtr CPUResManager::GetSliceByPaddingShapeHandle(const tensor::Tens
   auto offset_size = start * type_size;
 
   auto stream_id = DefaultStream();
-  auto ms_context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(ms_context);
-  const auto &device_name = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
-
-  auto device_address = CreateDeviceAddress(reinterpret_cast<uint8_t *>(ptr) + offset_size, tensor_size, shape,
-                                            Format::DEFAULT_FORMAT, type_id, device_name, stream_id);
+  auto device_address = std::make_shared<device::DeviceAddress>(reinterpret_cast<uint8_t *>(ptr) + offset_size,
+                                                                tensor_size, device::DeviceType::kCPU, stream_id);
   MS_LOG(DEBUG) << "Create DeviceAddress, offset size to ptr0:" << offset_size << ", tensor_size:" << tensor_size
                 << ", shape:" << shape << ", data_type:" << TypeIdToString(type_id);
   tensor->set_device_address(device_address);
   return tensor;
-}
-
-DeviceAddressPtr CPUResManager::CreateDeviceAddress() const {
-  auto device_address = std::make_shared<DeviceAddress>(nullptr, 0, kCPUDevice);
-  auto context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(context);
-  auto device_name = device::DeviceType::kCPU;
-  device_address->SetDeviceType(device_name);
-  return device_address;
-}
-
-DeviceAddressPtr CPUResManager::CreateDeviceAddress(void *ptr, size_t size, const ShapeVector &shape_vector,
-                                                    const Format &format, TypeId type_id,
-                                                    const std::string &device_name, uint32_t stream_id) const {
-  auto device_address =
-    std::make_shared<DeviceAddress>(ptr, size, shape_vector, format, type_id, kCPUDevice, stream_id);
-
-  return device_address;
 }
 
 bool CPUResManager::SyncCopy(const DeviceAddressPtr &dst_device_sync, const DeviceAddressPtr &src_device_sync,

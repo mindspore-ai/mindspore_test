@@ -1023,13 +1023,8 @@ KernelTensorPtr AnfRuntimeAlgorithm::CreateKernelTensor(const abstract::BaseShap
                                                         const ShapeVector &host_shape, const string &device_name,
                                                         uint32_t device_id, const UserDataPtr &user_data,
                                                         bool is_remote) {
-  device::DeviceContextKey host_key = {device::GetDeviceTypeByName(device_name), device_id};
-  device::DeviceContext *host_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
-  MS_EXCEPTION_IF_NULL(host_context);
-  MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
-
-  auto device_address = host_context->device_res_manager_->CreateDeviceAddress(
-    device_ptr, size, host_shape, kernel::GetFormatFromStrToEnum(format), dtype_id, device_name, 0);
+  auto device_address =
+    std::make_shared<device::DeviceAddress>(device_ptr, size, device::GetDeviceTypeByName(device_name), 0);
   MS_EXCEPTION_IF_NULL(device_address);
   if (common::GetEnv("MS_DEV_HIERARCHICAL_MEMORY") == "1") {
     device_address->set_remote(is_remote);
@@ -1047,12 +1042,8 @@ KernelTensorPtr AnfRuntimeAlgorithm::CreateKernelTensor(void *device_ptr, size_t
                                                         const ShapeVector &host_shape, const string &device_name,
                                                         uint32_t device_id, const UserDataPtr &user_data,
                                                         bool is_remote) {
-  device::DeviceContextKey host_key = {device::GetDeviceTypeByName(device_name), device_id};
-  device::DeviceContext *host_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
-  MS_EXCEPTION_IF_NULL(host_context);
-  MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
-  auto device_address = host_context->device_res_manager_->CreateDeviceAddress(device_ptr, size, host_shape, format,
-                                                                               dtype_id, device_name, 0);
+  auto device_address =
+    std::make_shared<device::DeviceAddress>(device_ptr, size, device::GetDeviceTypeByName(device_name), 0);
   MS_EXCEPTION_IF_NULL(device_address);
   auto kernel_tensor = std::make_shared<kernel::KernelTensor>(device_address, dtype_id, host_shape, user_data);
   MS_LOG(DEBUG) << "Create kernel tensor:" << kernel_tensor->ToString();

@@ -108,7 +108,7 @@ kernel::KernelTensorPtr MemActionMgr::InsertCopyDataTask(uint32_t stream_id,
   device::DeviceContextKey dst_key = {dst_ty, device_id};
   auto dst_ctx = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(dst_key);
   MS_EXCEPTION_IF_NULL(dst_ctx);
-  auto dst_addr = dst_ctx->device_res_manager_->CreateDeviceAddress();
+  auto dst_addr = std::make_shared<device::DeviceAddress>(dst_ctx->GetDeviceType());
   auto new_tensor =
     std::make_shared<kernel::KernelTensor>(dst_addr, kernel_tensor->GetShape(), kernel_tensor->GetType(), nullptr);
   new_tensor->set_size(kernel_tensor->GetSize());

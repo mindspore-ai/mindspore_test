@@ -50,11 +50,6 @@ class GPUResManager : public DeviceResManager {
   std::vector<void *> AllocateContinuousMemory(const std::vector<size_t> &size_list,
                                                uint32_t stream_id = kDefaultStreamIndex) const override;
 
-  DeviceAddressPtr CreateDeviceAddress() const override;
-  DeviceAddressPtr CreateDeviceAddress(void *ptr, size_t size, const ShapeVector &shape_vector, const Format &format,
-                                       TypeId type_id, const std::string &device_name,
-                                       uint32_t stream_id) const override;
-
   bool SyncCopy(const DeviceAddressPtr &dst_device_sync, const DeviceAddressPtr &src_device_sync, size_t stream_id,
                 const DeviceAddressExtPtr &src_ext = nullptr,
                 const DeviceAddressExtPtr &dst_ext = nullptr) const override;

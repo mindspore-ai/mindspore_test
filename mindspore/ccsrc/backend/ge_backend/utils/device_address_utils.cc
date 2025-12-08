@@ -406,17 +406,12 @@ KernelTensorPtr DeviceAddressUtils::CloneEmptyKernelTensor(const KernelTensorPtr
 
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
-  auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
   const auto &device_name = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
-  device::DeviceContextKey host_key = {device::GetDeviceTypeByName(device_name), device_id};
-  device::DeviceContext *host_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
-  MS_EXCEPTION_IF_NULL(host_context);
-  MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
   auto new_kernel_tensor = old_kernel_tensor->CloneKernelTensor();
   MS_EXCEPTION_IF_NULL(new_kernel_tensor);
-  auto new_device_address = host_context->device_res_manager_->CreateDeviceAddress(
-    old_device_address->device_pointer()->ptr(), old_device_address->size(), old_kernel_tensor->GetShapeVector(),
-    old_kernel_tensor->format(), old_kernel_tensor->dtype_id(), device_name, old_device_address->stream_id());
+  auto new_device_address =
+    std::make_shared<device::DeviceAddress>(old_device_address->device_pointer()->ptr(), old_device_address->size(),
+                                            device::GetDeviceTypeByName(device_name), old_device_address->stream_id());
   new_kernel_tensor->set_device_address(new_device_address);
   new_kernel_tensor->SetDeviceType(device::GetDeviceTypeByName(device_name));
   new_kernel_tensor->set_device_ptr(nullptr);

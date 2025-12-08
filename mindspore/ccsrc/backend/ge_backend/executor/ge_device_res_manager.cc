@@ -196,7 +196,7 @@ bool GeDeviceResManager::SyncCopyStream() const {
 device::DeviceAddressPtr GeDeviceResManager::CreateDeviceAddress() const {
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
-  auto device_address = std::make_shared<device::DeviceAddress>(nullptr, 0, kAscendDevice);
+  auto device_address = std::make_shared<device::DeviceAddress>(nullptr, 0, device::DeviceType::kAscend);
   device_address->SetDeviceType(device::GetDeviceTypeByName(ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET)));
   return device_address;
 }
