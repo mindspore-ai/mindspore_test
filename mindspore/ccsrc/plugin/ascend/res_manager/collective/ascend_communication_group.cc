@@ -20,9 +20,11 @@
 #include <arpa/inet.h>
 #endif
 #include <map>
+#include <vector>
 #include <variant>
 #include <unordered_map>
 #include <algorithm>
+#include <string>
 #include "include/runtime/hardware_abstract/collective/collective_manager.h"
 #include "plugin/ascend/res_manager/hccl_adapter/hccl_adapter.h"
 #include "plugin/ascend/res_manager/collective/ascend_collective_comm_lib.h"
@@ -267,7 +269,7 @@ bool AscendCommunicationGroup::InitByRankTable(std::string rank_table, uint32_t 
   if (name_ == kHCCLGlobalGroupName) {
     // Initialize global communicator by 'HcclCommInitClusterInfoConfig'.
     MS_LOG(WARNING) << "Start to initialize communicator by HcclCommInitClusterInfoConfig for " << name_
-                    << ", hcclBufferSize is " << config->hcclBufferSize << " MB. hcclDeterministic is "
+                    << ", hcclBufferSize is " << config->hcclBufferSize << " MB, hcclDeterministic is "
                     << config->hcclDeterministic;
     if (hccl::HcclAdapter::GetInstance().HcclCommInitClusterInfoConfig(static_cast<const char *>(rank_table.c_str()),
                                                                        static_cast<uint32_t>(global_rank_), config,
@@ -280,7 +282,7 @@ bool AscendCommunicationGroup::InitByRankTable(std::string rank_table, uint32_t 
   } else {
     // split sub communicator from global communicator by 'HcclCreateSubCommConfig'.
     MS_LOG(WARNING) << "Start to initialize communicator by HcclCreateSubCommConfig for " << name_
-                    << ", hcclBufferSize is " << config->hcclBufferSize << " MB. hcclDeterministic is "
+                    << ", hcclBufferSize is " << config->hcclBufferSize << " MB, hcclDeterministic is "
                     << config->hcclDeterministic;
     // The HCCL global communicator. This is used as a parameter to segment sub communicator if initializing with
     // 'HcclCreateSubCommConfig'.

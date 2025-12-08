@@ -26,6 +26,7 @@
 #include <csignal>
 #include <future>
 #include <memory>
+#include <utility>
 #include <cstdint>
 #include "utils/anf_utils.h"
 #include "utils/ms_context.h"
@@ -306,8 +307,8 @@ bool CollectiveManager::GetLocalGroupRankAndSize(const std::vector<uint32_t> &gr
 bool CollectiveManager::CreateCommunicationGroup(const std::string &group_name,
                                                  const std::vector<uint32_t> &group_ranks, const GroupOptions &config) {
   PROF_START(distributed_create_group);
-  MS_LOG(INFO) << "Start to create communication group: " << group_name << " " << group_ranks
-               << ", async: " << config.async;
+  MS_LOG(WARNING) << "Create collective communication group: " << group_name << " " << group_ranks
+                  << ", async: " << config.async;
   if (std::find(group_ranks.begin(), group_ranks.end(), global_rank_id_) == group_ranks.end()) {
     MS_LOG(WARNING) << "This rank: " << global_rank_id_ << " is not in the group ranks: " << group_ranks
                     << ". This may cause some exception when initializing the group.";
@@ -550,18 +551,6 @@ bool CollectiveManager::Finalize() {
   MS_LOG(INFO) << "End finalizing collective manager.";
   return ret;
 }
-
-void CollectiveManager::set_global_rank_id(uint32_t global_rank_id) { global_rank_id_ = global_rank_id; }
-
-void CollectiveManager::set_global_rank_size(uint32_t global_rank_size) { global_rank_size_ = global_rank_size; }
-
-uint32_t CollectiveManager::global_rank_id() const { return global_rank_id_; }
-
-uint32_t CollectiveManager::global_rank_size() const { return global_rank_size_; }
-
-uint32_t CollectiveManager::local_rank_id() const { return local_rank_id_; }
-
-uint32_t CollectiveManager::local_rank_size() const { return local_rank_size_; }
 
 bool CollectiveManager::InitHostCommlib() {
   device::DeviceContextKey host_key = {device::DeviceType::kCPU, 0};
@@ -938,12 +927,13 @@ bool CollectiveManager::CreateDeviceCommunicator(const std::string &group_name, 
     // group's rootinfo within func 'GenerateRootInfo', do not need to broadcast outer comm group's rootinfo.
     if (!use_cross_cluster) {
       PROF_START(BroadcastUniqueID);
+      MS_LOG(WARNING) << "Start to send/fetch unqiueid for communication group " << group_name;
       while (!ret) {
         RETURN_IF_FALSE_WITH_LOG(host_comm_lib_instance_->BroadcastUniqueID(group_name, root_info_size, root_info),
                                  "Broadcast for device root info failed on the host side.");
         ret = true;
-        MS_LOG(INFO) << "Successfully send/fetch unqiueid for communication group " << group_name;
       }
+      MS_LOG(WARNING) << "End to send/fetch unqiueid for communication group " << group_name;
       PROF_END(BroadcastUniqueID);
     }
   }
@@ -954,7 +944,7 @@ bool CollectiveManager::CreateDeviceCommunicator(const std::string &group_name, 
     device_ctx_->Initialize();
     return group->Initialize(root_info);
   };
-  MS_LOG(WARNING) << "Begin initialize communication group on the device side: " << group_name;
+  MS_LOG(INFO) << "Begin initialize communication group on the device side: " << group_name;
   // Timeout limit in seconds to wait finish initializing device communication group.
   int64_t comm_init_timout = GetCommunicatorInitTimeout();
   PROF_START(InitDeviceCommunicator);
@@ -965,7 +955,7 @@ bool CollectiveManager::CreateDeviceCommunicator(const std::string &group_name, 
   if (!ret) {
     MS_LOG(ERROR) << "Failed to create comm group on device side for " << group_name;
   }
-  MS_LOG(WARNING) << "End initialize communication group on the device side: " << group_name;
+  MS_LOG(INFO) << "End initialize communication group on the device side: " << group_name;
   return ret;
 }
 

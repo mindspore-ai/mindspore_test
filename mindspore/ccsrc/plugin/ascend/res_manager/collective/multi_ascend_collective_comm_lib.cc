@@ -13,6 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include <unordered_set>
+#include <vector>
+#include <memory>
+#include <string>
 
 #include "plugin/ascend/res_manager/collective/multi_ascend_collective_comm_lib.h"
 #include "include/runtime/hardware_abstract/collective/collective_manager.h"
@@ -111,26 +115,32 @@ bool MultiAscendCollectiveCommLib::Finalize() {
     return true;
   }
 
+  auto finalize_collective_comm_lib = [](std::string_view comm_lib_name,
+                                         CollectiveCommunicationLib *comm_lib_instance) {
+    if (comm_lib_instance == nullptr) {
+      MS_LOG(WARNING) << "The instance of " << comm_lib_name << " is nullptr!";
+      return;
+    }
+    if (!comm_lib_instance->Finalize()) {
+      MS_LOG(WARNING) << "Failed to finalize " << comm_lib_name << ".";
+    }
+  };
+
 #ifdef ENABLE_INTERNAL_KERNELS
   if (device::ascend::AscendHalManager::GetInstance().EnableLccl()) {
-    MS_EXCEPTION_IF_NULL(lowlatency_collective_comm_lib_);
-    RETURN_IF_FALSE_WITH_LOG(lowlatency_collective_comm_lib_->Finalize(), "Failed to finalize LCCL.");
+    finalize_collective_comm_lib("LCCL", lowlatency_collective_comm_lib_);
   }
 #endif
 
   if (graphkernel::EnableDvmComm()) {
-    MS_EXCEPTION_IF_NULL(dvm_collective_comm_lib_);
-    dvm_collective_comm_lib_->Finalize();
+    finalize_collective_comm_lib("DVMCCL", dvm_collective_comm_lib_);
   }
 
-  MS_EXCEPTION_IF_NULL(ascend_collective_comm_lib_);
-  RETURN_IF_FALSE_WITH_LOG(ascend_collective_comm_lib_->Finalize(), "Failed to finalize HCCL.");
+  finalize_collective_comm_lib("HCCL", ascend_collective_comm_lib_);
 
   for (const auto &group : groups_) {
     CHECK_IF_NULL(group.second);
-    if (!group.second->Finalize()) {
-      return false;
-    }
+    (void)group.second->Finalize();
   }
 
   groups_.clear();
