@@ -25,8 +25,8 @@
 #include "mindspore/ccsrc/pynative/utils/pyboost/pyboost_utils.h"
 #include "include/runtime/memory/mem_pool/mem_tracker.h"
 #include "runtime/pipeline/task/task.h"
-#include "pynative/utils/pynative_utils.h"
-#include "mindspore/ccsrc/pynative/utils/pyboost/functions/auto_generate/functions.h"
+#include "include/pynative/utils/pynative_utils.h"
+#include "mindspore/ccsrc/include/pynative/utils/pyboost/functions/auto_generate/functions.h"
 #include "mindspore/ccsrc/pynative/utils/pyboost/functions/auto_grad_guard.h"
 #include "mindspore/core/include/utils/stream_guard.h"
 

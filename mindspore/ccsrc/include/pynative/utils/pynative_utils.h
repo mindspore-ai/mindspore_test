@@ -25,10 +25,10 @@
 #include <tuple>
 #include <Python.h>
 #include "pynative/utils/base.h"
-#include "pynative/utils/pynative_execute.h"
+#include "include/pynative/utils/pynative_execute.h"
 #include "mindspore/ccsrc/pynative/utils/pyboost/op_runner.h"
 #include "mindspore/ccsrc/pynative/utils/pyboost/op_register.h"
-#include "pynative/forward/pyboost/forward_task.h"
+#include "include/pynative/forward/pyboost/forward_task.h"
 #include "include/utils/tensor_py.h"
 #include "include/utils/visible.h"
 

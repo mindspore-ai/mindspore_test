@@ -20,7 +20,7 @@
 #include "ir/dtype.h"
 #include "ir/tensor_new.h"
 #include "include/utils/visible.h"
-#include "mindspore/ccsrc/pynative/utils/pyboost/functions/auto_generate/functions.h"
+#include "mindspore/ccsrc/include/pynative/utils/pyboost/functions/auto_generate/functions.h"
 
 namespace ms {
 namespace {

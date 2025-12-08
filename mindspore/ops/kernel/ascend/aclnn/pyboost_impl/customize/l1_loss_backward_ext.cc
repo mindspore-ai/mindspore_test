@@ -23,7 +23,7 @@
 #include "kernel/ascend/aclnn/pyboost_impl/aclnn_utils.h"
 #include "mindapi/base/types.h"
 #include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
-#include "mindspore/ccsrc/pynative/utils/pyboost/functions/auto_generate/functions.h"
+#include "mindspore/ccsrc/include/pynative/utils/pyboost/functions/auto_generate/functions.h"
 #include "mindspore/ccsrc/pynative/utils/pyboost/functions/auto_grad_guard.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
 

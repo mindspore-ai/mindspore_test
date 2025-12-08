@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef MINDSPORE_CCSRC_PIPELINE_PYNATIVE_OP_FUNCTION_CONVERTER_H
-#define MINDSPORE_CCSRC_PIPELINE_PYNATIVE_OP_FUNCTION_CONVERTER_H
+#ifndef MINDSPORE_CCSRC_INCLUDE_PYNATIVE_FORWARD_PYBOOST_CONVERTER_H
+#define MINDSPORE_CCSRC_INCLUDE_PYNATIVE_FORWARD_PYBOOST_CONVERTER_H
 #include <memory>
 #include <optional>
 #include <string>
@@ -23,7 +23,7 @@
 #include <unordered_map>
 #include <Python.h>
 #include "pynative/utils/base.h"
-#include "pynative/utils/pynative_execute.h"
+#include "include/pynative/utils/pynative_execute.h"
 #include "include/utils/tensor_py.h"
 #include "include/utils/primfunc_utils.h"
 #include "ops/op_def.h"
@@ -301,4 +301,4 @@ class PYNATIVE_EXPORT Converter {
 };
 }  // namespace pynative
 }  // namespace mindspore
-#endif  // MINDSPORE_CCSRC_PIPELINE_PYNATIVE_OP_FUNCTION_CONVERTER_H
+#endif  // MINDSPORE_CCSRC_INCLUDE_PYNATIVE_FORWARD_PYBOOST_CONVERTER_H

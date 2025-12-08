@@ -22,7 +22,7 @@
 #include "kernel/ascend/aclnn/pyboost_impl/aclnn_utils.h"
 #include "mindspore/ops/ops_utils/op_constants.h"
 #include "mindspore/ccsrc/pynative/utils/pyboost/pyboost_utils.h"
-#include "mindspore/ccsrc/pynative/utils/pyboost/functions/auto_generate/functions.h"
+#include "mindspore/ccsrc/include/pynative/utils/pyboost/functions/auto_generate/functions.h"
 
 namespace mindspore {
 namespace kernel {

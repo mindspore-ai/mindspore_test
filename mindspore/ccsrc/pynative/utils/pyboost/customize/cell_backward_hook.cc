@@ -19,7 +19,7 @@
 #include "ir/tensor.h"
 #include "pynative/utils/pyboost/pyboost_utils.h"
 #include "pynative/utils/pyboost/functions/auto_grad_guard.h"
-#include "pynative/utils/pyboost/functions/auto_generate/functions.h"
+#include "include/pynative/utils/pyboost/functions/auto_generate/functions.h"
 #include "include/utils/pynative/variable.h"
 
 namespace mindspore::kernel::pyboost {

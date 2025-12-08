@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "pynative/forward/pyboost/converter.h"
+#include "include/pynative/forward/pyboost/converter.h"
 #include <vector>
 #include <utility>
 #include <string>
@@ -24,8 +24,8 @@
 #include <unordered_set>
 #include <algorithm>
 #include "include/utils/convert_utils_py.h"
-#include "pynative/forward/pyboost/fallback.h"
-#include "pynative/utils/pynative_utils.h"
+#include "include/pynative/forward/pyboost/fallback.h"
+#include "include/pynative/utils/pynative_utils.h"
 #include "include/utils/tensor_py.h"
 #include "include/utils/tensor_utils.h"
 #include "include/utils/python_attr.h"

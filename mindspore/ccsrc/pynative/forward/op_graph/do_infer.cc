@@ -15,7 +15,7 @@
  */
 
 #include "pynative/forward/op_graph/do_infer.h"
-#include "pynative/utils/pynative_utils.h"
+#include "include/pynative/utils/pynative_utils.h"
 #include "pybind_api/gil_scoped_long_running.h"
 #include "tools/profiler/profiler.h"
 #include "include/utils/pynative/common_utils.h"

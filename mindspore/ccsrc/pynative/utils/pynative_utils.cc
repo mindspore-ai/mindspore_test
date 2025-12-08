@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "pynative/utils/pynative_utils.h"
+#include "include/pynative/utils/pynative_utils.h"
 
 #include <string>
 #include <utility>
@@ -52,7 +52,7 @@
 #include "pynative/backward/grad_utils.h"
 #include "include/utils/tensor_py.h"
 #include "mindspore/ccsrc/include/utils/pynative/py_parse.h"
-#include "mindspore/ccsrc/pynative/utils/pyboost/functions/auto_generate/functions.h"
+#include "mindspore/ccsrc/include/pynative/utils/pyboost/functions/auto_generate/functions.h"
 #include "mindspore/ccsrc/pynative/utils/pyboost/functions/auto_grad_guard.h"
 #include "primitive/auto_generate/gen_ops_primitive_c.h"
 #include "primitive/auto_generate/gen_ops_primitive_m.h"

@@ -46,6 +46,7 @@ MS_MINT_FUNC_OVERLOAD_PATH = "mindspore/python/mindspore/ops"
 PYBOOST_NATIVE_GRAD_FUNC_GEN_PATH = "mindspore/ccsrc/pynative/backward/op_grad/auto_generate"
 PYBOOST_AUTO_GRAD_FUNC_GEN_PATH = "mindspore/ccsrc/pynative/forward/pyboost/auto_generate"
 PIPELINE_PYBOOST_FUNC_GEN_PATH = "mindspore/ccsrc/pynative/forward/pyboost/auto_generate"
+PIPELINE_PYBOOST_HEADER_FUNC_GEN_PATH = "mindspore/ccsrc/include/pynative/forward/pyboost/auto_generate"
 FUNCTIONAL_OVERLOAD_GEN_PATH = "mindspore/ccsrc/frontend/operator/composite/auto_generate"
 FUNCTIONAL_OVERLOAD_SIGNATURE_GEN_PATH = "mindspore/ccsrc/utils/frontend/auto_generate"
 PYBOOST_GRAD_FUNC_GEN_PATH = "mindspore/ccsrc/pynative/utils/pyboost/grad_functions/auto_generate"
@@ -93,6 +94,7 @@ MS_OPS_VIEW_PATH = "mindspore/ops/include/view"
 
 # kernel
 MS_OPS_KERNEL_PATH = "mindspore/ops/kernel"
+MS_PYBOOST_FUNCTIONS_HEADER_AUTO_GEN_PATH = "mindspore/ccsrc/include/pynative/utils/pyboost/functions/auto_generate"
 MS_PYBOOST_FUNCTIONS_AUTO_GEN_PATH = "mindspore/ccsrc/pynative/utils/pyboost/functions/auto_generate"
 MS_COMMON_PYBOOST_KERNEL_PATH = os.path.join(MS_OPS_KERNEL_PATH, "common/pyboost")
 MS_PYBOOST_BASE_PATH = "mindspore/ccsrc/pynative/utils/pyboost"

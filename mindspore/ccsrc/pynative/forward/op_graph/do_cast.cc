@@ -19,12 +19,12 @@
 #include <utility>
 #include <algorithm>
 #include "primitive/array_ops.h"
-#include "pynative/utils/pynative_utils.h"
+#include "include/pynative/utils/pynative_utils.h"
 #include "tools/profiler/profiler.h"
 #include "include/utils/pynative/common_utils.h"
 #include "primitive/auto_generate/gen_ops_primitive_c.h"
 #include "include/runtime/utils/dispatch/dispatch_env.h"
-#include "pynative/utils/pyboost/functions/auto_generate/functions.h"
+#include "include/pynative/utils/pyboost/functions/auto_generate/functions.h"
 
 namespace mindspore {
 namespace pynative {

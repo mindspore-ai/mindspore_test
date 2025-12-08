@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 #include "pynative/forward/pyboost/auto_generate/pyboost_api.h"
-#include "pynative/forward/pyboost/auto_generate/pyboost_core.h"
+#include "include/pynative/forward/pyboost/auto_generate/pyboost_core.h"
 #include "pybind_api/pynative/pynative_api.h"
-#include "pynative/forward/pyboost/converter.h"
-#include "pynative/forward/pyboost/fallback.h"
+#include "include/pynative/forward/pyboost/converter.h"
+#include "include/pynative/forward/pyboost/fallback.h"
 #include "primitive/auto_generate/gen_ops_def.h"
 #include "mindspore/ccsrc/pynative/utils/pyboost/functions/auto_grad_guard.h"
 

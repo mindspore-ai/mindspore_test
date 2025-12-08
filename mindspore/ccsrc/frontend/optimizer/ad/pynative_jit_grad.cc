@@ -24,7 +24,7 @@
 #include <set>
 #include <map>
 
-#include "pynative/utils/pynative_utils.h"
+#include "include/pynative/utils/pynative_utils.h"
 #include "include/utils/frontend/primitive_utils.h"
 #include "include/utils/pynative/common_utils.h"
 #include "frontend/jit/ps/pass.h"

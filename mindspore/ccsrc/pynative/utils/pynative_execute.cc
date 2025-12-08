@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#include "pynative/utils/pynative_execute.h"
-#include "pynative/utils/pynative_utils.h"
+#include "include/pynative/utils/pynative_execute.h"
+#include "include/pynative/utils/pynative_utils.h"
 #include "pynative/backward/hook/function_py.h"
 #include "pynative/utils/predict_out_type_map.h"
 #include "pynative/forward/pyboost/auto_grad_register.h"
@@ -40,8 +40,8 @@
 #include "include/utils/convert_utils_py.h"
 #include "include/utils/pynative/adapter.h"
 #include "include/utils/pynative/variable.h"
-#include "pynative/forward/pyboost/converter.h"
-#include "pynative/forward/pyboost/fallback.h"
+#include "include/pynative/forward/pyboost/converter.h"
+#include "include/pynative/forward/pyboost/fallback.h"
 #include "pybind_api/pynative/pynative_api.h"
 
 namespace mindspore::pynative {

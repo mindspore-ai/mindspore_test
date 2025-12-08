@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "pynative/forward/pyboost/fallback.h"
+#include "include/pynative/forward/pyboost/fallback.h"
 #include "utils/log_adapter.h"
 #include "include/utils/python_attr.h"
 #include "include/utils/tensor_utils.h"

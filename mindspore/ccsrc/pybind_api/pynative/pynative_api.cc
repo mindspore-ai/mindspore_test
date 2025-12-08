@@ -19,8 +19,8 @@
 #include "include/frontend/jit/ps/pipeline_interface.h"
 #include "pybind_api/pynative/frombuffer.h"
 #include "include/runtime/pipeline/pipeline.h"
-#include "pynative/utils/pynative_utils.h"
-#include "pynative/forward/pyboost/fallback.h"
+#include "include/pynative/utils/pynative_utils.h"
+#include "include/pynative/forward/pyboost/fallback.h"
 
 namespace mindspore {
 namespace py = pybind11;

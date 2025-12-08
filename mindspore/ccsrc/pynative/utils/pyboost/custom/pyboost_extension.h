@@ -27,7 +27,7 @@
 #include "pynative/utils/pyboost/custom/tensor.h"
 #include "mindspore/ccsrc/tools/profiler/profiler.h"
 #include "include/utils/tensor_utils.h"
-#include "mindspore/ccsrc/pynative/utils/pynative_utils.h"
+#include "include/pynative/utils/pynative_utils.h"
 
 namespace mindspore {
 namespace stub {

@@ -37,13 +37,13 @@ class FunctionsHeaderGenerator(BaseGenerator):
         Initialize the functions header generator with templates for code generation.
         """
         self.FUNCTIONS_H_TEMPLATE = template.FUNCTIONS_H_TEMPLATE
-        self.function_interface_template = Template("${return_type} BACKEND_EXPORT ${op_name}(${input_args});")
+        self.function_interface_template = Template("${return_type} PYBOOST_API ${op_name}(${input_args});")
         self.function_interface_template_comm = Template(
-            "${return_type} BACKEND_EXPORT ${op_name}_inner(${input_args}," \
+            "${return_type} PYBOOST_API ${op_name}_inner(${input_args}," \
             "CommHandlePtr comm_handle, device::DeviceType target);"
         )
         self.function_interface_template_comm_return_handle = Template(
-            "${return_type_with_handle} BACKEND_EXPORT ${op_name}(${input_args});"
+            "${return_type_with_handle} PYBOOST_API ${op_name}(${input_args});"
         )
 
     def generate(self, work_path, op_protos):
@@ -81,7 +81,7 @@ class FunctionsHeaderGenerator(BaseGenerator):
                 )
                 functions_list.append(functions_with_handle)
         pyboost_func_h_str = self.FUNCTIONS_H_TEMPLATE.replace(op_call_with_grad=functions_list)
-        save_path = os.path.join(work_path, K.MS_PYBOOST_FUNCTIONS_AUTO_GEN_PATH)
+        save_path = os.path.join(work_path, K.MS_PYBOOST_FUNCTIONS_HEADER_AUTO_GEN_PATH)
         file_name = "functions.h"
         save_file(save_path, file_name, pyboost_func_h_str)
 

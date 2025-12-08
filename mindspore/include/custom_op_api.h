@@ -25,7 +25,7 @@
 #include "include/backend/common/device_address_utils.h"
 #include "mindspore/ccsrc/pynative/utils/runtime/op_runner.h"
 #include "mindspore/ccsrc/pynative/utils/pyboost/op_runner.h"
-#include "mindspore/ccsrc/pynative/utils/pyboost/functions/auto_generate/functions.h"
+#include "mindspore/ccsrc/include/pynative/utils/pyboost/functions/auto_generate/functions.h"
 #include "mindspore/ccsrc/tools/profiler/profiler.h"
 
 // ascend files

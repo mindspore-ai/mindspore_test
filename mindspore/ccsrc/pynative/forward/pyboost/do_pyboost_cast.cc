@@ -16,7 +16,7 @@
 
 #include "pynative/forward/pyboost/do_pyboost_cast.h"
 #include "pynative/backward/grad_utils.h"
-#include "pynative/utils/pyboost/functions/auto_generate/functions.h"
+#include "include/pynative/utils/pyboost/functions/auto_generate/functions.h"
 #include "pynative/utils/pyboost/functions/auto_grad_guard.h"
 #include "mindspore/ccsrc/pynative/utils/pyboost/auto_generate/cast.h"
 #include "include/utils/pynative/common_utils.h"

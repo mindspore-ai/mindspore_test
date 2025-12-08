@@ -42,7 +42,7 @@ class ForwardExecutor;
 using ForwardExecutorPtr = std::shared_ptr<ForwardExecutor>;
 using ForwardExecutorWeakPtr = std::weak_ptr<ForwardExecutor>;
 
-class PYNATIVE_EXPORT GradExecutor {
+class GradExecutor {
   // key: ready run cell id, value: all ready run top cell
   using TopCellIdWithTopCell = std::unordered_multimap<std::string, TopCellInfoPtr>;
 

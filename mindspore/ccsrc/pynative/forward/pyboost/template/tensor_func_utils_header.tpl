@@ -29,7 +29,7 @@ enum TensorPyboostMethod : int {
   ${tensor_methods}
 };
 
-class PYNATIVE_EXPORT TensorPyboostMethodRegister {
+class TensorPyboostMethodRegister {
  public:
   using PyBoostOp = std::function<py::object(const py::list &args)>;
   static void Register(const TensorPyboostMethod methodName, const PyBoostOp &op) { methods_[methodName] = op; }

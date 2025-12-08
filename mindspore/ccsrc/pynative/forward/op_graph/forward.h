@@ -39,7 +39,7 @@ class GradExecutor;
 using GradExecutorPtr = std::shared_ptr<GradExecutor>;
 using GradExecutorWeakPtr = std::weak_ptr<GradExecutor>;
 
-class PYNATIVE_EXPORT ForwardExecutor {
+class ForwardExecutor {
  public:
   ForwardExecutor()
       : cast_operation_(std::make_shared<CastOperation>()),

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "mindspore/ccsrc/pynative/utils/pyboost/functions/auto_generate/functions.h"
+#include "mindspore/ccsrc/include/pynative/utils/pyboost/functions/auto_generate/functions.h"
 #include <string>
 #include "utils/ms_utils.h"
 #include "include/runtime/utils/dispatch/dispatch_env.h"
@@ -26,7 +26,7 @@
 #include "primitive/auto_generate/gen_ops_def.h"
 #include "mindspore/ccsrc/pynative/utils/base.h"
 #include "mindspore/ccsrc/pynative/backward/grad_utils.h"
-#include "mindspore/ccsrc/pynative/utils/pynative_utils.h"
+#include "include/pynative/utils/pynative_utils.h"
 #include "mindspore/core/include/utils/stream_guard.h"
 #include "mindspore/ccsrc/pynative/utils/pyboost/functions/customize/view_impl.h"
 
