@@ -16,12 +16,12 @@
 
 #include "mindspore/ops/kernel/cpu/pyboost/customize/dense.h"
 #include "kernel/cpu/cpu_kernel.h"
-#include "mindspore/ccsrc/pynative/utils/pyboost/pyboost_utils.h"
+#include "include/pynative/utils/pyboost/pyboost_utils.h"
 #include "mindspore/ccsrc/include/pynative/utils/pyboost/functions/auto_generate/functions.h"
 #include "mindspore/ops/kernel/cpu/pyboost/auto_generate/contiguous.h"
 #include "mindspore/ops/kernel/cpu/pyboost/auto_generate/matmul_ext.h"
 #include "mindspore/ops/kernel/cpu/pyboost/auto_generate/add.h"
-#include "mindspore/ccsrc/pynative/utils/pyboost/functions/auto_grad_guard.h"
+#include "include/pynative/utils/pyboost/functions/auto_grad_guard.h"
 
 namespace mindspore {
 namespace kernel {

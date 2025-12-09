@@ -22,9 +22,9 @@
 #include "include/pynative/forward/pyboost/forward_task.h"
 #include "include/pynative/forward/pyboost/fallback.h"
 #include "primitive/auto_generate/gen_ops_def.h"
-#include "mindspore/ccsrc/pynative/utils/pyboost/functions/auto_grad_guard.h"
-#include "mindspore/ccsrc/pynative/utils/pyboost/functions/base.h"
-#include "mindspore/ccsrc/pynative/utils/pyboost/auto_generate/cell_backward_hook.h"
+#include "include/pynative/utils/pyboost/functions/auto_grad_guard.h"
+#include "include/pynative/utils/pyboost/functions/base.h"
+#include "include/pynative/utils/pyboost/auto_generate/cell_backward_hook.h"
 #include "primitive/auto_generate/gen_ops_primitive_c.h"
 #include "pybind_api/pynative/pynative_api.h"
 

@@ -19,7 +19,7 @@
 #include "mindspore/ops/kernel/cpu/pyboost/auto_generate/min.h"
 #include "mindspore/ops/kernel/cpu/pyboost/auto_generate/max.h"
 #include "mindspore/ops/kernel/cpu/pyboost/auto_generate/cast.h"
-#include "mindspore/ccsrc/pynative/utils/pyboost/pyboost_utils.h"
+#include "include/pynative/utils/pyboost/pyboost_utils.h"
 #include "primitive/auto_generate/gen_ops_primitive_r.h"
 
 namespace mindspore {

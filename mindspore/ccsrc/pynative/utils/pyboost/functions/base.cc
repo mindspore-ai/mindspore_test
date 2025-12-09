@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "mindspore/ccsrc/pynative/utils/pyboost/functions/base.h"
+#include "include/pynative/utils/pyboost/functions/base.h"
 #include "include/utils/utils.h"
 
 namespace mindspore {

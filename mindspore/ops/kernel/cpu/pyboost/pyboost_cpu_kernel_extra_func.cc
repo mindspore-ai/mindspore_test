@@ -17,7 +17,7 @@
 #include "mindspore/ops/kernel/cpu/pyboost/pyboost_cpu_kernel_extra_func.h"
 #include "kernel/cpu/cpu_kernel.h"
 #include "plugin/cpu/profiler/cpu_profiling.h"
-#include "mindspore/ccsrc/pynative/utils/pyboost/pyboost_utils.h"
+#include "include/pynative/utils/pyboost/pyboost_utils.h"
 #include "mindspore/ops/kernel/cpu/pyboost/pyboost_cpu_custom_kernel_register.h"
 
 namespace mindspore {

@@ -22,7 +22,7 @@ that can be used to call the Pyboost primitive implementations.
 """
 
 import os
-import common.template as template
+from common import template
 import common.gen_constants as K
 from common.gen_utils import save_file
 

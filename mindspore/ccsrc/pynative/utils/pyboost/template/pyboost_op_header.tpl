@@ -17,8 +17,8 @@
 #ifndef MINDSPORE_MINDSPORE_CCSRC_PIPELINE_PYNATIVE_FORWARD_PYBOOST_OP_${op_name_upper}_H_
 #define MINDSPORE_MINDSPORE_CCSRC_PIPELINE_PYNATIVE_FORWARD_PYBOOST_OP_${op_name_upper}_H_
 
-#include "mindspore/ccsrc/pynative/utils/pyboost/op_runner.h"
-#include "mindspore/ccsrc/pynative/utils/pyboost/op_register.h"
+#include "include/pynative/utils/pyboost/op_runner.h"
+#include "include/pynative/utils/pyboost/op_register.h"
 
 namespace mindspore {
 namespace kernel {

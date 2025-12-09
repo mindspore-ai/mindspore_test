@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "mindspore/ccsrc/pynative/utils/pyboost/op_register.h"
+#include "include/pynative/utils/pyboost/op_register.h"
 ${op_includes}
 
 namespace mindspore {

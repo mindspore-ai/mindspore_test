@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#include "pynative/utils/pyboost/functions/composite/randint.h"
-#include "pynative/utils/pyboost/functions/composite/empty.h"
+#include "include/pynative/utils/pyboost/functions/composite/randint.h"
+#include "include/pynative/utils/pyboost/functions/composite/empty.h"
 #include "include/pynative/utils/pyboost/functions/auto_generate/functions.h"
 
 namespace mindspore {

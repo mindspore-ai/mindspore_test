@@ -15,7 +15,7 @@
  */
 
 #include "pynative/forward/pyboost/comm_handle_py.h"
-#include "pynative/utils/runtime/task/device_task.h"
+#include "include/pynative/utils/runtime/task/device_task.h"
 #include "include/runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "utils/ms_context.h"
 #include "include/pynative/forward/pyboost/forward_task.h"

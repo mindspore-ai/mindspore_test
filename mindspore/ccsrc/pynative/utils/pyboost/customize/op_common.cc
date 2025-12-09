@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-#include "mindspore/ccsrc/pynative/utils/pyboost/customize/op_common.h"
+#include "include/pynative/utils/pyboost/customize/op_common.h"
 #include <vector>
 #include <memory>
-#include "mindspore/ccsrc/pynative/utils/pyboost/pyboost_utils.h"
+#include "include/pynative/utils/pyboost/pyboost_utils.h"
 #include "primitive/framework_ops.h"
-#include "mindspore/ccsrc/pynative/utils/pyboost/auto_generate/maximum.h"
-#include "mindspore/ccsrc/pynative/utils/pyboost/auto_generate/minimum.h"
+#include "include/pynative/utils/pyboost/auto_generate/maximum.h"
+#include "include/pynative/utils/pyboost/auto_generate/minimum.h"
 #include "include/runtime/pipeline/pipeline.h"
 #include "primitive/auto_generate/gen_ops_primitive_t.h"
 

@@ -14,17 +14,17 @@
  * limitations under the License.
  */
 
-#include "pynative/utils/pyboost/custom/pyboost_extension.h"
+#include "include/pynative/utils/pyboost/custom/pyboost_extension.h"
 
 #ifndef _MSC_VER
 #include <cxxabi.h>
 #endif
 
 #include "utils/stream_guard.h"
-#include "pynative/utils/pyboost/custom/tensor.h"
+#include "include/pynative/utils/pyboost/custom/tensor.h"
 #include "include/utils/tensor_utils.h"
 #include "include/runtime/hardware_abstract/device_context/device_context.h"
-#include "mindspore/ccsrc/pynative/utils/runtime/op_runner.h"
+#include "include/pynative/utils/runtime/op_runner.h"
 #include "mindspore/core/include/utils/ms_utils.h"
 #include "include/backend/common/device_address_utils.h"
 #include "mindspore/ccsrc/include/runtime/utils/runtime_conf/runtime_conf.h"

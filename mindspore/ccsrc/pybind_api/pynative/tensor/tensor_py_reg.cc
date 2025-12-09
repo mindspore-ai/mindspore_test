@@ -40,15 +40,15 @@
 #include "include/utils/pyobj_manager.h"
 #include "include/utils/python_attr.h"
 #include "include/runtime/pipeline/pipeline.h"
-#include "pynative/utils/runtime/op_executor.h"
+#include "include/pynative/utils/runtime/op_executor.h"
 #include "include/frontend/jit/trace/trace_recorder_interface.h"
 #include "pybind_api/pynative/tensor/storage/storage_py.h"
 #include "mindspore/ccsrc/pynative/backward/backward_node_py.h"
 #include "include/pynative/forward/pyboost/converter.h"
 #include "include/pynative/forward/pyboost/fallback.h"
 #include "mindspore/ops/include/view/view_strides_calculator.h"
-#include "pynative/utils/pyboost/pyboost_utils.h"
-#include "pynative/utils/runtime/op_runner.h"
+#include "include/pynative/utils/pyboost/pyboost_utils.h"
+#include "include/pynative/utils/runtime/op_runner.h"
 
 namespace mindspore {
 namespace tensor {

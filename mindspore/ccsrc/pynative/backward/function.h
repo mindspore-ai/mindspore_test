@@ -27,7 +27,7 @@
 #include <unordered_map>
 #include <unordered_set>
 #include "abstract/abstract_value.h"
-#include "mindspore/ccsrc/pynative/utils/pyboost/functions/auto_grad_guard.h"
+#include "include/pynative/utils/pyboost/functions/auto_grad_guard.h"
 #include "include/utils/pynative/variable.h"
 
 namespace mindspore::pynative::autograd {

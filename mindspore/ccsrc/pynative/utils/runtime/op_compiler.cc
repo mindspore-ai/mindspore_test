@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "pynative/utils/runtime/op_compiler.h"
+#include "include/pynative/utils/runtime/op_compiler.h"
 
 #include <memory>
 #include <algorithm>
@@ -33,8 +33,8 @@
 #include "tools/profiler/profiler.h"
 #include "primitive/nn_op_name.h"
 #include "primitive/conv_pool_op_name.h"
-#include "pynative/utils/runtime/op_executor.h"
-#include "pynative/utils/runtime/op_runtime_info.h"
+#include "include/pynative/utils/runtime/op_executor.h"
+#include "include/pynative/utils/runtime/op_runtime_info.h"
 #include "include/backend/common/device_address_utils.h"
 #include "include/backend/common/pass_manager/common_backend_optimization.h"
 #include "include/backend/common/kernel_graph/session_factory.h"

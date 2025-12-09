@@ -4,9 +4,9 @@
 #include <map>
 #include <string>
 #include <vector>
-#include "mindspore/ccsrc/pynative/utils/pyboost/op_runner.h"
-#include "pynative/utils/runtime/op_runner.h"
-#include "mindspore/ccsrc/pynative/utils/pyboost/comm_handle.h"
+#include "include/pynative/utils/pyboost/op_runner.h"
+#include "include/pynative/utils/runtime/op_runner.h"
+#include "include/pynative/utils/pyboost/comm_handle.h"
 #include "include/frontend/expander/bprop_interface.h"
 
 namespace mindspore{

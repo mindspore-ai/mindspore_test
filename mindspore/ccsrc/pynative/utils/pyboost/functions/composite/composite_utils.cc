@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-#include "pynative/utils/pyboost/functions/composite/composite_utils.h"
+#include "include/pynative/utils/pyboost/functions/composite/composite_utils.h"
 #include <string>
-#include "pynative/utils/runtime/op_runner.h"
-#include "pynative/utils/pyboost/functions/auto_grad_guard.h"
+#include "include/pynative/utils/runtime/op_runner.h"
+#include "include/pynative/utils/pyboost/functions/auto_grad_guard.h"
 
 namespace mindspore {
 namespace kernel {

@@ -19,7 +19,7 @@
 #include "include/pynative/forward/pyboost/converter.h"
 #include "include/pynative/forward/pyboost/fallback.h"
 #include "primitive/auto_generate/gen_ops_def.h"
-#include "mindspore/ccsrc/pynative/utils/pyboost/functions/auto_grad_guard.h"
+#include "include/pynative/utils/pyboost/functions/auto_grad_guard.h"
 
 namespace mindspore::pynative {
 using mindspore::pynative::CPythonTuple;

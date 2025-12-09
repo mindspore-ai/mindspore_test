@@ -16,10 +16,10 @@
 
 #include "include/utils/tensor_py.h"
 #include "include/utils/tensor_utils.h"
-#include "pynative/utils/pyboost/functions/auto_grad_guard.h"
+#include "include/pynative/utils/pyboost/functions/auto_grad_guard.h"
 #include "include/pynative/utils/pynative_utils.h"
 #include "include/pynative/forward/pyboost/forward_task.h"
-#include "pynative/utils/pyboost/pyboost_utils.h"
+#include "include/pynative/utils/pyboost/pyboost_utils.h"
 #include "pybind_api/pynative/pynative_api.h"
 
 namespace mindspore::pynative {

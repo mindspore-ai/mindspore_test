@@ -324,7 +324,7 @@ PYBOOST_PY_FUNC_IMPORT_HEADEAR = Template(
 )
 
 COMPOSITE_INCLUDE_HEADER_TEMPLATE = Template(
-    """#include "pynative/utils/pyboost/functions/composite/${operator_name}.h"\n"""
+    """#include "include/pynative/utils/pyboost/functions/composite/${operator_name}.h"\n"""
 )
 
 PYBOOST_PY_FUNC_TEMPLATE = Template("""

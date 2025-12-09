@@ -107,7 +107,7 @@ class PyboostCommonOpHeaderGenerator(BaseGenerator):
                                                                                      call_args=call_args_with_type,
                                                                                      return_type=cpp_func_return,
                                                                                      output_is_tuple=output_is_tuple)
-            save_path = os.path.join(work_path, f"{K.MS_PYBOOST_BASE_PATH}/auto_generate/")
+            save_path = os.path.join(work_path, f"{K.MS_PYBOOST_BASE_HEADER_PATH}/auto_generate/")
             file_name = f"{op_proto.op_name}.h"
             save_file(save_path, file_name, pyboost_op_header_str)
 
@@ -1204,7 +1204,7 @@ class PyboostOpRegisterCppCodeGenerator:
         for op_name in internal_op_names:
             factory_str += "template class InternalOpFactory<{0}>;\n".format(op_name)
         for operator_name in all_functional_names:
-            include_str += f'#include "{K.MS_PYBOOST_BASE_PATH}/auto_generate/{operator_name}.h"\n'
+            include_str += f'#include "{K.MS_PYBOOST_BASE_HEADER_PATH}/auto_generate/{operator_name}.h"\n'
         op_register_file_str = self.PYBOOST_OP_REGISTER_TEMPLATE.replace(op_includes=include_str,
                                                                          op_factory_templates=factory_str)
         save_path = os.path.join(work_path, f"{K.MS_PYBOOST_BASE_PATH}/auto_generate/")

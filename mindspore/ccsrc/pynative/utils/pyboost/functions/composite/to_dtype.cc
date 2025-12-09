@@ -13,9 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "pynative/utils/pyboost/functions/composite/to_dtype.h"
+#include "include/pynative/utils/pyboost/functions/composite/to_dtype.h"
 
-#include "pynative/utils/pyboost/functions/composite/to_base.h"
+#include "include/pynative/utils/pyboost/functions/composite/to_base.h"
 #include "include/pynative/utils/pyboost/functions/auto_generate/functions.h"
 
 namespace mindspore {

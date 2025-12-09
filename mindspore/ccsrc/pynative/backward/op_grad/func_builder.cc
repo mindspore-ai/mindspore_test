@@ -24,8 +24,8 @@
 #include <vector>
 #include <set>
 #include "ir/dtype/tensor_type.h"
-#include "mindspore/ccsrc/pynative/utils/pyboost/grad_functions/pyboost_grad_functions.h"
-#include "mindspore/ccsrc/pynative/utils/pyboost/comm_handle.h"
+#include "include/pynative/utils/pyboost/grad_functions/pyboost_grad_functions.h"
+#include "include/pynative/utils/pyboost/comm_handle.h"
 #include "include/backend/common/pass_manager/helper.h"
 #include "include/backend/common/pass_manager/op_adaptation_info_factory.h"
 #include "include/utils/pynative/common_utils.h"
@@ -34,7 +34,7 @@
 #include "utils/check_convert_utils.h"
 #include "pynative/backward/grad_utils.h"
 #include "frontend/operator/cc_implementations.h"
-#include "mindspore/ccsrc/pynative/utils/pyboost/op_register.h"
+#include "include/pynative/utils/pyboost/op_register.h"
 #include "pynative/backward/op_grad/auto_generate/pyboost_native_grad_functions.h"
 #include "primitive/auto_generate/gen_ops_primitive_o.h"
 

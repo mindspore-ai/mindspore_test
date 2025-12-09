@@ -16,7 +16,7 @@
 
 #include "gtest/gtest.h"
 #include "mockcpp/mockcpp.hpp"
-#include "pynative/utils/pyboost/functions/dispatch.h"
+#include "include/pynative/utils/pyboost/functions/dispatch.h"
 #include "ir/tensor_new.h"
 
 class DispatchTest : public testing::Test {

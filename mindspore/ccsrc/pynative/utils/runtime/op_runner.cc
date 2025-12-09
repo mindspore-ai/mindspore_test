@@ -14,39 +14,33 @@
  * limitations under the License.
  */
 
-#include "pynative/utils/runtime/op_runner.h"
+#include "include/pynative/utils/runtime/op_runner.h"
 
 #include <string>
 #include <vector>
 #include <memory>
 #include <map>
-#include <unordered_map>
 #include <algorithm>
 #include <array>
 #include "include/runtime/hardware_abstract/kernel_base/kernel.h"
-#include "primitive/structure_op_name.h"
 #include "utils/log_adapter.h"
 #include "include/backend/common/kernel_graph/anf_runtime_algorithm.h"
 #include "include/backend/common/exec_order/execute_order_tracker.h"
 #include "include/backend/common/pass_manager/helper.h"
 #include "device_address/device_type.h"
 #include "ir/map_tensor.h"
-#include "utils/convert_utils.h"
 #include "include/backend/common/device_address_utils.h"
-#include "pynative/utils/runtime/op_runtime_info.h"
-#include "pynative/utils/runtime/op_executor.h"
-#include "pynative/utils/runtime/op_compiler.h"
+#include "include/pynative/utils/runtime/op_runtime_info.h"
+#include "include/pynative/utils/runtime/op_executor.h"
+#include "include/pynative/utils/runtime/op_compiler.h"
 #include "runtime/core/actors/base/actor_common.h"
 #include "include/backend/common/exec_order/kernel_cache.h"
 #include "include/runtime/memory/mem_pool/mem_tracker.h"
-#include "include/runtime/hardware_abstract/kernel_base/graph_fusion/framework_utils.h"
 #include "tools/profiler/profiling.h"
 #include "include/backend/common/pass_manager/dynamic_shape_helper.h"
 #include "pybind_api/gil_scoped_long_running.h"
 #include "pynative/utils/runtime/ir_converter.h"
-#include "primitive/framework_op_name.h"
 #include "utils/stream_guard.h"
-#include "include/runtime/utils/dispatch/dispatch_env.h"
 using mindspore::profiler::ProfilerManager;
 using EdgePtr = mindspore::pynative::EdgePtr;
 

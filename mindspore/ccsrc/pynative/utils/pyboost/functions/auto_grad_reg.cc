@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "mindspore/ccsrc/pynative/utils/pyboost/functions/auto_grad_reg.h"
+#include "include/pynative/utils/pyboost/functions/auto_grad_reg.h"
 
 namespace mindspore {
 namespace kernel {

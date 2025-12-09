@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-#include "pynative/utils/pyboost/functions/composite/to_device.h"
+#include "include/pynative/utils/pyboost/functions/composite/to_device.h"
 
 #include <utility>
 #include <map>
 #include "mindapi/base/types.h"
-#include "pynative/utils/pyboost/functions/composite/to_base.h"
+#include "include/pynative/utils/pyboost/functions/composite/to_base.h"
 #include "include/pynative/utils/pyboost/functions/auto_generate/functions.h"
 
 namespace mindspore {

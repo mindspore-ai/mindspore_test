@@ -19,8 +19,8 @@
 #include <memory>
 #include <string>
 #include <vector>
-#include "mindspore/ccsrc/pynative/utils/pyboost/op_register.h"
-#include "mindspore/ccsrc/pynative/utils/pyboost/pyboost_utils.h"
+#include "include/pynative/utils/pyboost/op_register.h"
+#include "include/pynative/utils/pyboost/pyboost_utils.h"
 #include "plugin/ascend/res_manager/stream_manager/ascend_stream_manager.h"
 
 namespace mindspore {

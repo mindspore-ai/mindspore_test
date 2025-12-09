@@ -40,7 +40,7 @@
 #include "pynative/backward/hook/primitive_hook.h"
 #include "pynative/backward/hook/function_py.h"
 #include "primitive/auto_generate/gen_ops_primitive_c.h"
-#include "mindspore/ccsrc/pynative/utils/pyboost/functions/auto_grad_guard.h"
+#include "include/pynative/utils/pyboost/functions/auto_grad_guard.h"
 #include "mindspore/ccsrc/include/pynative/utils/pyboost/functions/auto_generate/functions.h"
 #include "pynative/backward/saved_tensor.h"
 

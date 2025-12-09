@@ -16,8 +16,8 @@
 
 #include "kernel/ascend/aclnn/pyboost_impl/customize/index_add_ext.h"
 #include "plugin/ascend/res_manager/stream_manager/ascend_stream_manager.h"
-#include "mindspore/ccsrc/pynative/utils/pyboost/pyboost_utils.h"
-#include "mindspore/ccsrc/pynative/utils/pyboost/auto_generate/inplace_copy.h"
+#include "include/pynative/utils/pyboost/pyboost_utils.h"
+#include "include/pynative/utils/pyboost/auto_generate/inplace_copy.h"
 #include "kernel/ascend/aclnn/pyboost_impl/aclnn_utils.h"
 
 namespace mindspore {

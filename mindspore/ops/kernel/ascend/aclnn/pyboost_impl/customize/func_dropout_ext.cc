@@ -19,7 +19,7 @@
 #include <algorithm>
 
 #include "mindspore/ops/ops_utils/op_constants.h"
-#include "mindspore/ccsrc/pynative/utils/pyboost/pyboost_utils.h"
+#include "include/pynative/utils/pyboost/pyboost_utils.h"
 #include "mindspore/ccsrc/include/pynative/utils/pyboost/functions/auto_generate/functions.h"
 
 namespace mindspore {

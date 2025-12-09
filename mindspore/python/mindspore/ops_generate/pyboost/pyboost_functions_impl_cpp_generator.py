@@ -46,7 +46,7 @@ class PyboostFunctionsImplGenerator(BaseGenerator):
     def __init__(self):
         """Initializes the PyboostFunctionsGenerator with the necessary templates."""
         self.pyboost_func_include_header_template = Template(
-            f'#include "{K.MS_PYBOOST_BASE_PATH}/auto_generate/${{operator_name}}.h"\n'
+            f'#include "{K.MS_PYBOOST_BASE_HEADER_PATH}/auto_generate/${{operator_name}}.h"\n'
         )
         self.composite_include_header_template = template.COMPOSITE_INCLUDE_HEADER_TEMPLATE
 

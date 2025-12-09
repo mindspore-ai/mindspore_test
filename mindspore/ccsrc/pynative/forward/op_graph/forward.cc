@@ -35,7 +35,7 @@
 #include "include/pynative/forward/pyboost/forward_task.h"
 #include "pynative/utils/predict_out_type_map.h"
 #include "include/utils/stub_tensor.h"
-#include "pynative/utils/runtime/op_executor.h"
+#include "include/pynative/utils/runtime/op_executor.h"
 #include "tools/profiler/profiling.h"
 using mindspore::profiler::ProfilerManager;
 #include "include/frontend/expander/bprop_interface.h"
@@ -46,14 +46,14 @@ using mindspore::profiler::ProfilerManager;
 #include "include/backend/common/kernel_graph/session_basic.h"
 #include "include/runtime/utils/runtime_conf/runtime_conf.h"
 #include "pynative/backward/grad_utils.h"
-#include "mindspore/ccsrc/pynative/utils/pyboost/functions/auto_grad_reg.h"
-#include "mindspore/ccsrc/pynative/utils/pyboost/auto_generate/contiguous.h"
+#include "include/pynative/utils/pyboost/functions/auto_grad_reg.h"
+#include "include/pynative/utils/pyboost/auto_generate/contiguous.h"
 #include "primitive/auto_generate/gen_ops_primitive_c.h"
 #include "include/utils/tensor_py.h"
 #include "utils/stream_guard.h"
-#include "pynative/utils/pyboost/functions/auto_grad_guard.h"
+#include "include/pynative/utils/pyboost/functions/auto_grad_guard.h"
 #include "include/runtime/utils/dispatch/dispatch_env.h"
-#include "pynative/utils/pyboost/functions/dispatch.h"
+#include "include/pynative/utils/pyboost/functions/dispatch.h"
 
 namespace mindspore {
 namespace pynative {

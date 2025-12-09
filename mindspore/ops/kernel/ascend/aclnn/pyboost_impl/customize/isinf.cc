@@ -18,8 +18,8 @@
 
 #include <limits>
 
-#include "mindspore/ccsrc/pynative/utils/pyboost/auto_generate/abs.h"
-#include "mindspore/ccsrc/pynative/utils/pyboost/auto_generate/equal.h"
+#include "include/pynative/utils/pyboost/auto_generate/abs.h"
+#include "include/pynative/utils/pyboost/auto_generate/equal.h"
 
 #include "include/runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "kernel/ascend/aclnn/pyboost_impl/aclnn_utils.h"

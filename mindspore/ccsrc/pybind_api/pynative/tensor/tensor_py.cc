@@ -37,7 +37,7 @@
 #include "utils/value_utils.h"
 #include "device_address/device_address_maker.h"
 #include "ir/tensor_new.h"
-#include "pynative/utils/runtime/op_runner.h"
+#include "include/pynative/utils/runtime/op_runner.h"
 #include "utils/ms_utils_secure.h"
 #include "utils/misc.h"
 #include "utils/stream_guard.h"

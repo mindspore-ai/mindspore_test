@@ -14,16 +14,16 @@
  * limitations under the License.
  */
 
-#include "pynative/utils/pyboost/functions/composite/empty.h"
+#include "include/pynative/utils/pyboost/functions/composite/empty.h"
 #include <memory>
 #include <string>
 #include <vector>
-#include "pynative/utils/pyboost/pyboost_utils.h"
-#include "pynative/utils/pyboost/functions/composite/composite_utils.h"
-#include "pynative/utils/runtime/op_runner.h"
-#include "pynative/utils/pyboost/functions/auto_grad_guard.h"
+#include "include/pynative/utils/pyboost/pyboost_utils.h"
+#include "include/pynative/utils/pyboost/functions/composite/composite_utils.h"
+#include "include/pynative/utils/runtime/op_runner.h"
+#include "include/pynative/utils/pyboost/functions/auto_grad_guard.h"
 #include "include/runtime/utils/dispatch/dispatch_env.h"
-#include "pynative/utils/pyboost/functions/dispatch.h"
+#include "include/pynative/utils/pyboost/functions/dispatch.h"
 #include "mindspore/core/include/utils/stream_guard.h"
 #include "mindspore/ops/include/primitive/auto_generate/gen_ops_primitive_e.h"
 

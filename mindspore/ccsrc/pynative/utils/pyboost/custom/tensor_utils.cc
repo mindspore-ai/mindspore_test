@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "pynative/utils/pyboost/custom/tensor_utils.h"
+#include "include/pynative/utils/pyboost/custom/tensor_utils.h"
 #include <memory>
 #include "ir/tensor.h"
 #include "ir/dtype.h"

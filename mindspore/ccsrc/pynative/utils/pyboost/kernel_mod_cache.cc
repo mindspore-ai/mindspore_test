@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "mindspore/ccsrc/pynative/utils/pyboost/kernel_mod_cache.h"
+#include "include/pynative/utils/pyboost/kernel_mod_cache.h"
 
 #include <vector>
 #include <unordered_set>

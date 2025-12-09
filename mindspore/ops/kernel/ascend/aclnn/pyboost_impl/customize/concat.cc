@@ -21,7 +21,7 @@
 #include "ir/value.h"
 #include "ir/tensor.h"
 #include "kernel/ascend/aclnn/pyboost_impl/aclnn_utils.h"
-#include "mindspore/ccsrc/pynative/utils/pyboost/pyboost_utils.h"
+#include "include/pynative/utils/pyboost/pyboost_utils.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
 #include "plugin/ascend/res_manager/stream_manager/ascend_stream_manager.h"
 

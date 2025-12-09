@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "mindspore/ccsrc/pynative/utils/pyboost/customize/gather_nd_ext.h"
+#include "include/pynative/utils/pyboost/customize/gather_nd_ext.h"
 
 #include <algorithm>
 #include <cstdint>
@@ -23,7 +23,7 @@
 #include <vector>
 
 #include "mindspore/ops/ops_utils/op_constants.h"
-#include "mindspore/ccsrc/pynative/utils/pyboost/pyboost_utils.h"
+#include "include/pynative/utils/pyboost/pyboost_utils.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "mindspore/ops/op_def/math_ops.h"
 #include "mindspore/ccsrc/include/pynative/utils/pyboost/functions/auto_generate/functions.h"

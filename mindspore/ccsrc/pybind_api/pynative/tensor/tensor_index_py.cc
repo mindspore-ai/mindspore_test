@@ -35,7 +35,7 @@
 #include "primitive/auto_generate/gen_ops_primitive_e.h"
 #include "primitive/auto_generate/gen_ops_primitive_s.h"
 #include "mindspore/ccsrc/include/pynative/utils/pyboost/functions/auto_generate/functions.h"
-#include "mindspore/ccsrc/pynative/utils/pyboost/functions/auto_grad_guard.h"
+#include "include/pynative/utils/pyboost/functions/auto_grad_guard.h"
 #include "include/runtime/pipeline/pipeline.h"
 #include "mindspore/ccsrc/runtime/hardware_abstract/utils.h"
 #include "mindspore/ccsrc/pybind_api/pynative/tensor/tensor_api/auto_generate/tensor_api.h"

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "mindspore/ccsrc/pynative/utils/pyboost/customize/identity.h"
+#include "include/pynative/utils/pyboost/customize/identity.h"
 #include <memory>
 #include <utility>
 #include "ir/dtype/tensor_type.h"
