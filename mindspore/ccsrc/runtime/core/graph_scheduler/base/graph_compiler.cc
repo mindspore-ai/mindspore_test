@@ -298,8 +298,7 @@ void RemoveUnusedValueNodes(const KernelGraphPtr &graph) {
 // if the value node is output of forward_graph in PyNative mode.
 void GenerateRefCountForBpropValueNode(const KernelGraphPtr &graph) {
   MS_EXCEPTION_IF_NULL(graph);
-  HashMap<std::string, size_t> tensor_counts;
-  std::vector<size_t> value_node_ref_count_list;
+  std::vector<uint32_t> value_node_ref_count_list;
   std::vector<bool> value_node_forward_output_flags;
   for (auto &value_node : graph->graph_value_nodes()) {
     MS_EXCEPTION_IF_NULL(value_node);
