@@ -316,8 +316,8 @@ def get_assign_vmap_rule(prim, axis_size):
     else:
         prim_name = prim.name
 
-    ASSIGN_ARGS_COUNT = 3
-    INPLACE_ARGS_COUNT = 4
+    assign_args_count = 3
+    inplace_args_count = 4
 
     def vmap_rule(*args):
         var = None
@@ -328,11 +328,11 @@ def get_assign_vmap_rule(prim, axis_size):
         u_monad = None
 
         args_count = len(args)
-        if args_count == ASSIGN_ARGS_COUNT:
+        if args_count == assign_args_count:
             variable_bdim, value_bdim, u_monad = args
             var, var_dim = variable_bdim
             val, val_dim = value_bdim
-        elif args_count == INPLACE_ARGS_COUNT:
+        elif args_count == inplace_args_count:
             variable_bdim, value_bdim, alpha, u_monad = args
             var, var_dim = variable_bdim
             val, val_dim = value_bdim
@@ -351,7 +351,7 @@ def get_assign_vmap_rule(prim, axis_size):
             else:
                 val = mnp.moveaxis(val, val_dim, var_dim)
 
-        if args_count == INPLACE_ARGS_COUNT:
+        if args_count == inplace_args_count:
             out = prim(var, val, alpha_value, u_monad)
         else:
             out = prim(var, val, u_monad)
