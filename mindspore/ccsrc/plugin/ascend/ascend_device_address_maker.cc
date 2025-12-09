@@ -32,8 +32,7 @@ DeviceAddressPtr MakeAscendDeviceAddress(TypeId data_type, const ShapeVector &sh
     DeviceContextManager::GetInstance().GetOrCreateDeviceContext({device::DeviceType::kAscend, device_id});
   device_context->Initialize();
 
-  auto device_address = device_context->device_res_manager_->CreateDeviceAddress(
-    data_ptr, data_size, shape, Format::DEFAULT_FORMAT, data_type, "Ascend", 0);
+  auto device_address = std::make_shared<device::DeviceAddress>(data_ptr, data_size, device::DeviceType::kAscend, 0);
   if (deleter != nullptr) {
     device_address->SetDevicePointerDeleter(std::move(deleter));
   }

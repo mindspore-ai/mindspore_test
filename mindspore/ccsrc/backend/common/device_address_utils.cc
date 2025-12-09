@@ -893,10 +893,9 @@ KernelTensorPtr DeviceAddressUtils::CloneEmptyKernelTensor(const KernelTensorPtr
 
   auto device_address = old_kernel_tensor->device_address();
   MS_EXCEPTION_IF_NULL(device_address);
-  auto new_device_address = device_context->device_res_manager_->CreateDeviceAddress(
-    device_address->device_pointer()->ptr(), device_address->size(), old_kernel_tensor->GetShapeVector(),
-    old_kernel_tensor->format(), old_kernel_tensor->dtype_id(),
-    device::GetDeviceNameByType(device_context->device_context_key().device_type_), device_address->stream_id());
+  auto new_device_address =
+    std::make_shared<device::DeviceAddress>(device_address->device_pointer()->ptr(), device_address->size(),
+                                            device_context->GetDeviceType(), device_address->stream_id());
   auto new_kernel_tensor = old_kernel_tensor->CloneKernelTensor();
   new_kernel_tensor->set_user_data(old_kernel_tensor->user_data());
   new_kernel_tensor->set_need_sync_user_data(old_kernel_tensor->need_sync_user_data());
@@ -991,9 +990,8 @@ void DeviceAddressUtils::CreateInputTensorAddress(const DeviceContext *device_co
 
   auto tensor_size = LongToSize(tensor->DataNBytes());
   const auto &format = GetFormatByTensorShape(device_context, tensor->shape());
-  auto device_address = device_context->device_res_manager_->CreateDeviceAddress(
-    nullptr, tensor_size, tensor->shape(), format, tensor->data_type(),
-    device::GetDeviceNameByType(device_context->device_context_key().device_type_), stream_id);
+  auto device_address =
+    std::make_shared<device::DeviceAddress>(nullptr, tensor_size, device_context->GetDeviceType(), stream_id);
   bool is_remote = IsRemoteParameterTensor(tensor);
   device_address->set_remote(is_remote);
   MS_EXCEPTION_IF_NULL(device_address);
@@ -1185,7 +1183,6 @@ void DeviceAddressUtils::CreateOutputTensorAddress(const DeviceContext *device_c
                                                    const std::vector<tensor::TensorPtr> &outputs) {
   MS_EXCEPTION_IF_NULL(device_context);
   const auto device_type = DeviceManagerConf::GetInstance()->device_type();
-  const auto device_name = device::GetDeviceNameByType(device_context->device_context_key().device_type_);
 
   for (size_t i = 0; i < outputs.size(); ++i) {
     const auto &tensor = outputs[i];
@@ -1200,9 +1197,8 @@ void DeviceAddressUtils::CreateOutputTensorAddress(const DeviceContext *device_c
     auto tensor_size = LongToSize(tensor->DataNBytes());
     const auto &format = GetFormatByTensorShape(device_context, tensor_shape);
     auto data_type = tensor->data_type();
-
-    auto device_address = device_context->device_res_manager_->CreateDeviceAddress(
-      nullptr, tensor_size, tensor_shape, format, data_type, device_name, stream_id);
+    auto device_address =
+      std::make_shared<device::DeviceAddress>(nullptr, tensor_size, device_context->GetDeviceType(), stream_id);
     MS_EXCEPTION_IF_NULL(device_address);
     tensor->set_device_address(device_address);
     tensor->set_format(format);
@@ -1219,9 +1215,8 @@ void DeviceAddressUtils::CreateOutputTensorAddress(const DeviceContext *device_c
   const auto &tensor_shape = output_tensor->shape();
   auto data_type = output_tensor->data_type();
   const auto &format = GetFormatByTensorShape(device_context, tensor_shape);
-  auto device_address = device_context->device_res_manager_->CreateDeviceAddress(
-    nullptr, size, tensor_shape, format, data_type,
-    device::GetDeviceNameByType(device_context->device_context_key().device_type_), stream_id);
+  auto device_address =
+    std::make_shared<device::DeviceAddress>(nullptr, size, device_context->GetDeviceType(), stream_id);
   MS_EXCEPTION_IF_NULL(device_address);
   output_tensor->set_device_address(device_address);
   output_tensor->set_format(format);
@@ -1285,9 +1280,8 @@ void DeviceAddressUtils::MallocForOutputs(const DeviceContext *device_context,
 device::DeviceAddressPtr DeviceAddressUtils::CreateWorkspaceAddressWithoutKernelTensor(
   const DeviceContext *device_context, size_t stream_id, const size_t &workspace_size, bool no_exception) {
   MS_EXCEPTION_IF_NULL(device_context);
-  auto device_address = device_context->device_res_manager_->CreateDeviceAddress(
-    nullptr, workspace_size, ShapeVector(), Format::DEFAULT_FORMAT, kTypeUnknown,
-    device::GetDeviceNameByType(device_context->device_context_key().device_type_), stream_id);
+  auto device_address =
+    std::make_shared<device::DeviceAddress>(nullptr, workspace_size, device_context->GetDeviceType(), stream_id);
   MS_EXCEPTION_IF_NULL(device_address);
   device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, "PyNative", "WorkspaceAddress", "");
   device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, "PyNative", memory::mem_pool::MemType::kWorkSpace,
@@ -1368,9 +1362,8 @@ device::DeviceAddressPtr DeviceAddressUtils::ConvertContiguousDeviceAddress(cons
   }
 
   auto address_size = GetTypeByte(TypeIdToType(input_tensor->data_type())) * SizeOf(old_storage_info->shape);
-  auto new_device_address = device_context->device_res_manager_->CreateDeviceAddress(
-    nullptr, address_size, old_storage_info->shape, DEFAULT_FORMAT, input_tensor->data_type(),
-    device::GetDeviceNameByType(device_context->device_context_key().device_type_), stream_id);
+  auto new_device_address =
+    std::make_shared<device::DeviceAddress>(nullptr, address_size, device_context->GetDeviceType(), stream_id);
 
   auto output_tensor =
     std::make_shared<tensor::Tensor>(input_tensor->data_type(), old_storage_info->shape, new_device_address);

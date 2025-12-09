@@ -216,7 +216,7 @@ T GetDimValue(const std::vector<KernelTensor *> &inputs, const int index, const 
               const TypeId &dim_type) {
   size_t size = abstract::TypeIdSize(dim_type);
   auto dim_gpu_addr =
-    std::make_shared<device::DeviceAddress>(inputs[index]->device_ptr(), size, kOpFormat_DEFAULT, dim_type, kGPUDevice);
+    std::make_shared<device::DeviceAddress>(inputs[index]->device_ptr(), size, device::DeviceType::kGPU);
   int res = 0;
   device::DeviceContextKey host_key = {device::DeviceType::kGPU, dim_gpu_addr->device_id()};
   device::DeviceContext *host_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);

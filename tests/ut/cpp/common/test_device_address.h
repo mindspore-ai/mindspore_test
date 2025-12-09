@@ -57,10 +57,8 @@ using session::KernelGraph;
 class TestDeviceAddress : public DeviceAddress {
  public:
   TestDeviceAddress() : DeviceAddress() {}
-  TestDeviceAddress(void *ptr, size_t size, const std::string &device_name = "CPU")
-      : DeviceAddress(ptr, size, device_name) {}
-  TestDeviceAddress(void *ptr, size_t size, const std::string &format, TypeId type_id, const std::string &device_name)
-      : DeviceAddress(ptr, size, format, type_id, device_name) {}
+  TestDeviceAddress(void *ptr, size_t size, device::DeviceType device_type = device::DeviceType::kCPU)
+      : DeviceAddress(ptr, size, device_type) {}
   ~TestDeviceAddress() {}
 
   void ClearDeviceMemory() {}
@@ -124,21 +122,6 @@ class TestResManager : public device::DeviceResManager {
                  bool, const DeviceAddressExtPtr &src_ext = nullptr,
                  const DeviceAddressExtPtr &dst_ext = nullptr) const override;
 
-  DeviceAddressPtr CreateDeviceAddress(void *const device_ptr, size_t device_size, const string &format, TypeId type_id,
-                                       const ShapeVector &shape) const {
-    return std::make_shared<TestDeviceAddress>(device_ptr, device_size, format, type_id, "CPU");
-  }
-
-  DeviceAddressPtr CreateDeviceAddress(void *ptr, size_t size, const ShapeVector &shape_vector, const Format &format,
-                                       TypeId type_id, const std::string &device_name, uint32_t stream_id) const {
-    return std::make_shared<TestDeviceAddress>(ptr, size, "falut", type_id, device_name);
-  }
-
-  DeviceAddressPtr CreateDeviceAddress() const {
-    auto device_address = std::make_shared<TestDeviceAddress>();
-    device_address->SetDeviceType(device_context_->device_context_key().device_type_);
-    return device_address;
-  }
   bool LoadCollectiveCommLib() { return false; }
   device::CollectiveCommunicationLib *collective_comm_lib() const { return nullptr; }
 

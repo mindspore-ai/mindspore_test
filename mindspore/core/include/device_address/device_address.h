@@ -179,15 +179,8 @@ constexpr size_t kDeviceAddressFlagNullptr = 8;
 class MS_CORE_API DeviceAddress {
  public:
   using DeviceAddressPtr = std::shared_ptr<DeviceAddress>;
-  DeviceAddress();
-  DeviceAddress(void *device_ptr, size_t size);
-
-  explicit DeviceAddress(void *ptr, size_t size, const std::string &device_name);
-  explicit DeviceAddress(void *ptr, size_t size, const string &format, TypeId type_id, const std::string &device_name);
-  explicit DeviceAddress(void *ptr, size_t size, const ShapeVector &shape_vector, const Format &format, TypeId type_id,
-                         const std::string &device_name, uint32_t stream_id);
-  explicit DeviceAddress(void *ptr, size_t size, const std::string &format, TypeId type_id,
-                         const KernelWithIndex &node_index, const std::string &device_name);
+  explicit DeviceAddress(device::DeviceType device_type = device::DeviceType::kUnknown);
+  explicit DeviceAddress(void *ptr, size_t size, device::DeviceType device_type, uint32_t stream_id = 0);
   explicit DeviceAddress(const DeviceAddress &other);
   DeviceAddress &operator=(const DeviceAddress &) = delete;
   virtual ~DeviceAddress();
@@ -289,20 +282,8 @@ class MS_CORE_API DeviceAddress {
   TensorStorageInfoPtr tensor_storage_info_{nullptr};
   uint32_t stream_id_{0};
   size_t size_{0};
-  Format format_{Format::DEFAULT_FORMAT};
-  // The data enum type id of the KernelTensor.
-  TypeId dtype_id_{kTypeUnknown};
   // The device target name, such as "GPU","Ascend".
   device::DeviceType device_type_{device::DeviceType::kUnknown};
-  // The origin flatten shape vector for Tensor/Scalar/Tuple/List.
-  // 1. For Tensor type, means its shape. For example, a Tensor with shape (8, 16), shape_vector_ is {8, 16}.
-  // 2. For Scalar type, shape_vector_ is an empty ShapeVector, i.e. {}.
-  // 3. For Tuple/List (all elements must be Tensor with same shape or Scalar) type, the shape_vector_
-  // consists of the element number and the shape of element in Tuple/List. For example, if a Tuple of the structure
-  // ((8,16), (8,16)) contains two Tensors of shape (8, 16), then shape_vector_ is {2, 8, 16}, 2 means elements
-  // number in Tuple/List. A Tuple with a structure such as ((), ()) that contains two Scalar, the shape_vector_ of
-  // this Tuple is {2}.
-  ShapeVector shape_vector_{};
 
   bool remote_{false};
 };

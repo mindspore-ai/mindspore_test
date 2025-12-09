@@ -534,7 +534,7 @@ TEST_F(AnfRuntimeAlgorithmTest, GetOutputAddr) {
   auto d_kernel_info = dynamic_cast<KernelInfo *>(add->kernel_info());
   MS_EXCEPTION_IF_NULL(d_kernel_info);
   int *addr = nullptr;
-  auto device_address = std::make_shared<DeviceAddress>(addr, 1, kAscendDevice);
+  auto device_address = std::make_shared<DeviceAddress>(addr, 1, device::DeviceType::kAscend);
   d_kernel_info->SetOutputAddr(device_address, 0);
   EXPECT_EQ(AnfAlgo::GetOutputAddr(add, 0), device_address.get());
 }
@@ -549,7 +549,7 @@ TEST_F(AnfRuntimeAlgorithmTest, GetPrevNodeOutputAddr) {
   auto d_kernel_info = dynamic_cast<KernelInfo *>(pre_add->kernel_info());
   MS_EXCEPTION_IF_NULL(d_kernel_info);
   int *addr = nullptr;
-  auto device_address = std::make_shared<DeviceAddress>(addr, 1, kAscendDevice);
+  auto device_address = std::make_shared<DeviceAddress>(addr, 1, device::DeviceType::kAscend);
   d_kernel_info->SetOutputAddr(device_address, 0);
   std::vector<AnfNodePtr> inputs{NewValueNode(prim::kPrimAdd), pre_add};
   auto add = kernel_graph->NewCNode(inputs);
@@ -566,7 +566,7 @@ TEST_F(AnfRuntimeAlgorithmTest, SetOutputAddr) {
   inputs.push_back(NewValueNode(prim::kPrimAdd));
   auto add = kernel_graph->NewCNode(inputs);
   int *addr = nullptr;
-  auto device_address = std::make_shared<DeviceAddress>(addr, 1, kAscendDevice);
+  auto device_address = std::make_shared<DeviceAddress>(addr, 1, device::DeviceType::kAscend);
   EXPECT_THROW(AnfAlgo::SetOutputAddr(device_address, 0, nullptr), std::runtime_error);
   AnfAlgo::SetOutputAddr(device_address, 0, add);
   EXPECT_EQ(AnfAlgo::GetOutputAddr(add, 0), device_address.get());
@@ -582,7 +582,7 @@ TEST_F(AnfRuntimeAlgorithmTest, GetWorkspaceAddr) {
   auto d_kernel_info = dynamic_cast<KernelInfo *>(add->kernel_info());
   MS_EXCEPTION_IF_NULL(d_kernel_info);
   int *addr = nullptr;
-  auto device_address = std::make_shared<DeviceAddress>(addr, 1, kAscendDevice);
+  auto device_address = std::make_shared<DeviceAddress>(addr, 1, device::DeviceType::kAscend);
   d_kernel_info->SetWorkspaceAddr(device_address, 0);
   EXPECT_EQ(AnfAlgo::GetWorkspaceAddr(add, 0), device_address.get());
 }
@@ -593,7 +593,7 @@ TEST_F(AnfRuntimeAlgorithmTest, SetWorkspaceAddr) {
   inputs.push_back(NewValueNode(prim::kPrimAdd));
   auto add = kernel_graph->NewCNode(inputs);
   int *addr = nullptr;
-  auto device_address = std::make_shared<DeviceAddress>(addr, 1, kAscendDevice);
+  auto device_address = std::make_shared<DeviceAddress>(addr, 1, device::DeviceType::kAscend);
   EXPECT_THROW(AnfAlgo::SetWorkspaceAddr(device_address, 0, nullptr), std::runtime_error);
   AnfAlgo::SetWorkspaceAddr(device_address, 0, add);
   EXPECT_EQ(AnfAlgo::GetWorkspaceAddr(add, 0), device_address.get());

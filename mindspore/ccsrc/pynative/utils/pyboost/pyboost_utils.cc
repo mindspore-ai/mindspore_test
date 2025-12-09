@@ -231,9 +231,8 @@ DeviceAddressPtr PyBoostUtils::MakeContiguousDeviceAddress(const tensor::TensorP
 
   auto stream_id = device_context->device_res_manager_->GetCurrentStreamId();
   auto address_size = GetTypeByte(TypeIdToType(input_tensor->data_type())) * SizeOf(storage_info->shape);
-  auto new_device_address = device_context->device_res_manager_->CreateDeviceAddress(
-    nullptr, address_size, storage_info->shape, DEFAULT_FORMAT, input_tensor->data_type(),
-    device::GetDeviceNameByType(device_context->device_context_key().device_type_), stream_id);
+  auto new_device_address =
+    std::make_shared<device::DeviceAddress>(nullptr, address_size, device_context->GetDeviceType(), stream_id);
 
   auto output_tensor =
     std::make_shared<tensor::Tensor>(input_tensor->data_type(), storage_info->shape, new_device_address);
@@ -265,9 +264,8 @@ tensor::TensorPtr PyBoostUtils::CreateOutputTensor(const DeviceContext *device_c
   MS_EXCEPTION_IF_NULL(input_device_address);
 
   // Create view output address
-  auto output_device_address = device_context->device_res_manager_->CreateDeviceAddress(
-    nullptr, input_device_address->GetSize(), output_tensor->shape(), DEFAULT_FORMAT, output_tensor->data_type(),
-    device::GetDeviceNameByType(device_context->device_context_key().device_type_), input_device_address->stream_id());
+  auto output_device_address = std::make_shared<device::DeviceAddress>(
+    nullptr, input_device_address->GetSize(), device_context->GetDeviceType(), input_device_address->stream_id());
   MS_EXCEPTION_IF_NULL(output_device_address);
   output_device_address->set_tensor_storage_info(storage_info);
   output_device_address->set_device_pointer(input_device_address->device_pointer());

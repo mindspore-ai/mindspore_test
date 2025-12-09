@@ -113,14 +113,13 @@ std::pair<DeviceAddressPtr, TensorStorageInfoPtr> CreateSourceStorageDeviceAddr(
     ops::ComputeStorageNelements(storage_offset, shape, stride) * GetTypeByte(TypeIdToType(base_tensor->data_type()));
   device::DeviceAddressPtr source_device_address;
   if (new_bytes_size <= bytes_size) {
-    source_device_address = device_context->device_res_manager_->CreateDeviceAddress(
-      nullptr, bytes_size, shape, DEFAULT_FORMAT, base_tensor->data_type(), device_name, source_storage.GetStreamId());
+    source_device_address = std::make_shared<device::DeviceAddress>(
+      nullptr, bytes_size, device_context->GetDeviceType(), source_storage.GetStreamId());
     MS_EXCEPTION_IF_NULL(source_device_address);
     source_device_address->set_device_pointer(source_storage.GetDevicePointer());
   } else {
-    source_device_address = device_context->device_res_manager_->CreateDeviceAddress(
-      nullptr, new_bytes_size, shape, DEFAULT_FORMAT, base_tensor->data_type(), device_name,
-      source_storage.GetStreamId());
+    source_device_address = std::make_shared<device::DeviceAddress>(
+      nullptr, new_bytes_size, device_context->GetDeviceType(), source_storage.GetStreamId());
     if (!device_context->device_res_manager_->AllocateMemory(source_device_address.get())) {
       MS_LOG(EXCEPTION) << "Allocate dynamic workspace memory failed";
     }
@@ -152,14 +151,13 @@ std::pair<DeviceAddressPtr, TensorStorageInfoPtr> CreateSourceTensorDeviceAddr(
     ops::ComputeStorageNelements(storage_offset, shape, stride) * GetTypeByte(TypeIdToType(base_tensor->data_type()));
   device::DeviceAddressPtr source_device_address;
   if (new_bytes_size <= bytes_size) {
-    source_device_address = device_context->device_res_manager_->CreateDeviceAddress(
-      nullptr, bytes_size, shape, DEFAULT_FORMAT, base_tensor->data_type(), device_name, device_address->stream_id());
+    source_device_address = std::make_shared<device::DeviceAddress>(
+      nullptr, bytes_size, device_context->GetDeviceType(), device_address->stream_id());
     MS_EXCEPTION_IF_NULL(source_device_address);
     source_device_address->set_device_pointer(device_address->device_pointer());
   } else {
-    source_device_address = device_context->device_res_manager_->CreateDeviceAddress(
-      nullptr, new_bytes_size, shape, DEFAULT_FORMAT, base_tensor->data_type(), device_name,
-      device_address->stream_id());
+    source_device_address = std::make_shared<device::DeviceAddress>(
+      nullptr, new_bytes_size, device_context->GetDeviceType(), device_address->stream_id());
     if (!device_context->device_res_manager_->AllocateMemory(source_device_address.get())) {
       MS_LOG(EXCEPTION) << "Allocate dynamic workspace memory failed";
     }
@@ -176,10 +174,8 @@ std::pair<DeviceAddressPtr, TensorStorageInfoPtr> CreateSourceTensorDeviceAddr(
 }
 
 void SetEmpty(TensorPtr &base_tensor, const DeviceContext *device_context) {
-  auto source_device_address = device_context->device_res_manager_->CreateDeviceAddress(
-    nullptr, 0, {0}, DEFAULT_FORMAT, base_tensor->data_type(),
-    device::GetDeviceNameByType(base_tensor->device_address()->GetDeviceType()),
-    base_tensor->device_address()->stream_id());
+  auto source_device_address = std::make_shared<device::DeviceAddress>(nullptr, 0, device_context->GetDeviceType(),
+                                                                       base_tensor->device_address()->stream_id());
   MS_EXCEPTION_IF_NULL(source_device_address);
   base_tensor->set_(std::move(source_device_address), nullptr, {0});
 }

@@ -119,16 +119,7 @@ void MoveTo(const tensor::TensorPtr &src_tensor, const tensor::TensorPtr &dst_te
 
   if (dst_addr == nullptr) {
     auto size = src_device_ptr != nullptr ? src_device_ptr->GetSize() : src_tensor->Size();
-    auto type_id = src_tensor->data_type();
-    auto host_shape = src_tensor->shape();
-
-    device::DeviceContextKey host_key = {GetDeviceTypeByName(to), device_id};
-    device::DeviceContext *host_context =
-      device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
-    MS_EXCEPTION_IF_NULL(host_context);
-    MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
-    dst_addr = host_context->device_res_manager_->CreateDeviceAddress(
-      nullptr, size, host_shape, kernel::GetFormatFromStrToEnum(kOpFormat_DEFAULT), type_id, to, 0);
+    dst_addr = std::make_shared<device::DeviceAddress>(nullptr, size, GetDeviceTypeByName(to), 0);
     MS_EXCEPTION_IF_NULL(dst_addr);
     device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, "PyNative", memory::mem_pool::MemType::kPyNativeOutput,
                                                    dst_addr->GetSize(), dst_addr.get());

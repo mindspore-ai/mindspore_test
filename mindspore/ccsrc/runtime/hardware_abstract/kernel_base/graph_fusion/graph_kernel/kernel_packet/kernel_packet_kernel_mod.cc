@@ -183,14 +183,7 @@ int KernelPacketKernelMod::Resize(const std::vector<KernelTensor *> &inputs,
       MS_LOG(DEBUG) << "Inner input " << i << " is host value: " << host_value_cache_[i]->ToString()
                     << ". Its shape is " << shape->ToString() << ", the type is " << ori->GetType();
       std::string device_name = MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET);
-      uint32_t device_id = MsContext::GetInstance()->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-
-      device::DeviceContextKey host_key = {device::GetDeviceTypeByName(device_name), device_id};
-      device::DeviceContext *host_context =
-        device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
-      MS_EXCEPTION_IF_NULL(host_context);
-      MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
-      auto device_address = host_context->device_res_manager_->CreateDeviceAddress();
+      auto device_address = std::make_shared<device::DeviceAddress>(device::GetDeviceTypeByName(device_name));
       inputs_cache_[i] = std::make_shared<KernelTensor>(device_address, shape, ori->GetType(), kValueAny);
       if (inputs_cache_[i]->user_data() == nullptr) {
         inputs_cache_[i]->set_user_data(std::make_shared<UserData>());

@@ -26,7 +26,7 @@ namespace device {
 class MbufDeviceAddress : public device::DeviceAddress {
  public:
   MbufDeviceAddress(void *ptr, size_t size, const ShapeVector &shape, TypeId type, const std::string &device_name)
-      : DeviceAddress(ptr, size, shape, kernel::GetFormatFromStrToEnum("DefaultFormat"), type, device_name, 0) {
+      : DeviceAddress(ptr, size, device::GetDeviceTypeByName(device_name), 0) {
     auto tensor_shape = std::make_shared<abstract::TensorShape>();
     tensor_shape->SetShapeVector(shape);
     auto tensor_type = std::make_shared<TensorType>(TypeIdToType(type));

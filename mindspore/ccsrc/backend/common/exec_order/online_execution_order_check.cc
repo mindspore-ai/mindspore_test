@@ -269,9 +269,8 @@ void Process::AllGatherExecuteOrderHash(std::unique_ptr<char[]> *output_host_buf
     offset += combined.size();
   }
 
-  auto input_device_tensor = device_context->device_res_manager_->CreateDeviceAddress(
-    nullptr, kMaxAllGatherBuffSize, {static_cast<int64_t>(kMaxAllGatherBuffSize)}, Format::DEFAULT_FORMAT,
-    TypeId::kNumberTypeUInt8, device_target, comm_stream_id);
+  auto input_device_tensor = std::make_shared<device::DeviceAddress>(
+    nullptr, kMaxAllGatherBuffSize, device::GetDeviceTypeByName(device_target), comm_stream_id);
 
   device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, "AllocMemoryForCheckCommExecutionOrder",
                                                  "AllocMemoryForCheckCommExecutionOrder", "", false);
@@ -292,9 +291,8 @@ void Process::AllGatherExecuteOrderHash(std::unique_ptr<char[]> *output_host_buf
     return;
   }
 
-  auto output_device_tensor = device_context->device_res_manager_->CreateDeviceAddress(
-    nullptr, kMaxAllGatherBuffSize * GetRankSize(), {static_cast<int64_t>(kMaxAllGatherBuffSize * GetRankSize())},
-    Format::DEFAULT_FORMAT, TypeId::kNumberTypeUInt8, device_target, comm_stream_id);
+  auto output_device_tensor = std::make_shared<device::DeviceAddress>(
+    nullptr, kMaxAllGatherBuffSize * GetRankSize(), device::GetDeviceTypeByName(device_target), comm_stream_id);
 
   device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, "AllocMemoryForCheckCommExecutionOrder",
                                                  device::tracker::MemType::kOther, output_device_tensor->GetSize(),

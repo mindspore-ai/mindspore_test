@@ -496,7 +496,8 @@ TensorPtr OutputActor::CreateOutputTensor(const AnfNodePtr &output_node, size_t 
         device_contexts_[output_position] != nullptr) {
       auto shape = std::make_shared<abstract::TupleShape>();
       auto type = std::make_shared<Tuple>();
-      auto temp_device_address = device_contexts_[output_position]->device_res_manager_->CreateDeviceAddress();
+      auto temp_device_address =
+        std::make_shared<device::DeviceAddress>(device_contexts_[output_position]->GetDeviceType());
       auto kernel_tensor = std::make_shared<kernel::KernelTensor>(temp_device_address, shape, type, nullptr);
       MS_EXCEPTION_IF_NULL(kernel_tensor);
       MS_LOG(DEBUG) << "Create kernel tensor:" << kernel_tensor->ToString();

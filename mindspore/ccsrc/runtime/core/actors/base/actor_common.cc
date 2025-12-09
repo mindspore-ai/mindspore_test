@@ -1130,9 +1130,7 @@ void PrepareParameterWithCopy(const std::pair<KernelWithIndex, size_t> &paramete
     TypePtr type = old_addr_info.first;
     MS_EXCEPTION_IF_NULL(type);
     auto device_type = graph_parameter_store->GetParameterDeviceType(outer_index, inner_index);
-    auto device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
-      {device_type, MsContext::GetInstance()->get_param<uint32_t>(MS_CTX_DEVICE_ID)});
-    auto new_device_tensor = device_context->device_res_manager_->CreateDeviceAddress();
+    auto new_device_tensor = std::make_shared<device::DeviceAddress>(device_type);
     auto new_kernel_tensor = std::make_shared<kernel::KernelTensor>(new_device_tensor, shape, type, nullptr);
     new_kernel_tensor->set_size(LongToSize(tensor->DataNBytes()));
     MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)

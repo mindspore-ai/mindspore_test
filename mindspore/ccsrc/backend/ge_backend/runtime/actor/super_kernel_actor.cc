@@ -401,9 +401,9 @@ bool SuperKernelActor::CopyInputDataPersistedHandle(const KernelTensorPtr &input
     MS_EXCEPTION_IF_NULL(node_device_address);
     auto new_kernel_tensor = node_kernel_tensor->CloneKernelTensor();
     // create device address with correct context.
-    auto new_device_address = host_context->device_res_manager_->CreateDeviceAddress(
-      node_device_address->device_pointer()->ptr(), node_device_address->size(), node_kernel_tensor->GetShapeVector(),
-      node_kernel_tensor->format(), node_kernel_tensor->dtype_id(), device_name, node_device_address->stream_id());
+    auto new_device_address = std::make_shared<device::DeviceAddress>(
+      node_device_address->device_pointer()->ptr(), node_device_address->size(),
+      device::GetDeviceTypeByName(device_name), node_device_address->stream_id());
     new_kernel_tensor->set_device_address(new_device_address);
     MS_EXCEPTION_IF_NULL(new_kernel_tensor);
     new_kernel_tensor->SetShapeVector(node_kernel_tensor->GetShapeVector());

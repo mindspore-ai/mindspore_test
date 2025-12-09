@@ -37,10 +37,8 @@ device::DeviceAddressPtr CreateTempDeviceAddress(const device::DeviceAddressPtr 
     {device_address->GetDeviceType(), device_address->device_id()});
   MS_EXCEPTION_IF_NULL(device_context);
   device_context->Initialize();
-  ShapeVector shape = {static_cast<int64_t>(device_address->size())};
-  auto new_device_address = device_context->device_res_manager_->CreateDeviceAddress(
-    device_address->GetMutablePtr(), device_address->size(), shape, Format::DEFAULT_FORMAT, kNumberTypeUInt8,
-    device::GetDeviceNameByType(device_address->GetDeviceType()), CurrentStream::id());
+  auto new_device_address = std::make_shared<device::DeviceAddress>(
+    device_address->GetMutablePtr(), device_address->size(), device_address->GetDeviceType(), CurrentStream::id());
   new_device_address->set_from_mem_pool(false);
   return new_device_address;
 }
