@@ -43,6 +43,8 @@ class RUNTIME_PIPELINE_EXPORT Pipeline {
 
   void WaitFrontend();
 
+  void WaitBackend();
+
   void WaitBpropStage();
 
   void WaitFrontendAndBprop();

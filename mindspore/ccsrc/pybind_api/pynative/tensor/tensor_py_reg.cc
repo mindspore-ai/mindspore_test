@@ -960,7 +960,7 @@ extern PyObject *TensorPython_numpy_non_blocking(PyObject *self, PyObject *args)
   }
   TensorPy &tensorPy = py_tensor->value;
   auto tensor = tensorPy.GetTensor();
-  runtime::Pipeline::Get().WaitForward();
+  runtime::Pipeline::Get().WaitBackend();
   np_array = tensor::NumpyNonBlocking(*tensor);
   return np_array.release().ptr();
   HANDLE_MS_EXCEPTION_END
@@ -1694,17 +1694,28 @@ static PyMethodDef Tensor_methods[] = {
                                            [1., 1., 1.]])
                                 )mydelimiter"},
   {"_numpy_non_blocking", (PyCFunction)TensorPython_numpy_non_blocking, METH_VARARGS, R"mydelimiter(
-                                Convert tensor to numpy.ndarray.
+                                Convert the Tensor to a NumPy array using a non-blocking device-to-host copy.
+
+                                WARNING
+                                -------
+                                This API is unsafe. The returned NumPy array may contain uninitialized
+                                or partially-copied data if the caller reads it before the device transfer
+                                actually finishes.
+
+                                Users must explicitly synchronize the device/stream before reading or
+                                using the resulting NumPy array.
 
                                 Returns:
                                     numpy.ndarray.
 
                                 Examples:
-                                    >>> data = mindspore.Tensor(np.ones((2, 3)))
-                                    >>> array = data.asnumpy()
+                                    >>> data = mindspore.Tensor(np.ones((2, 3))).to("Ascend")
+                                    >>> data = data + 1
+                                    >>> array = data.to("CPU", non_blocking=True)._numpy_non_blocking()
+                                    >>> mindspore.runtime.synchronize()
                                     >>> array
-                                    array([[1., 1., 1.],
-                                           [1., 1., 1.]])
+                                    array([[2., 2., 2.],
+                                          [2., 2., 2.]])
                                 )mydelimiter"},
   {"data_sync", (PyCFunction)TensorPython_data_sync, METH_VARARGS, "Synchronize data with optional wait"},
   {"__repr__", (PyCFunction)TensorPython_repr, METH_NOARGS, "Return the string representation of the tensor."},
