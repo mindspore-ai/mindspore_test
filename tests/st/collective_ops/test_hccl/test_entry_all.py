@@ -363,10 +363,33 @@ def test_hccl_multi_stream():
     Expectation: expect correct result.
     """
     os.environ['MS_DEV_RUNTIME_CONF'] = 'multi_stream:group'
-    return_code = os.system("mpirun --allow-run-as-root -n 8 pytest -s test_multi_stream.py")
+    return_code = os.system("mpirun --allow-run-as-root -n 8 "
+                            "pytest -s ""test_multi_stream.py::test_hccl_multi_stream")
     assert return_code == 0
     del os.environ['MS_DEV_RUNTIME_CONF']
 
+
+@arg_mark(plat_marks=["platform_ascend"], level_mark="level1", card_mark="allcards", essential_mark="unessential")
+def test_comm_multi_stream():
+    """
+    Feature: multiple stream of hccl.
+    Description: test assign stream based on communication domain.
+    Expectation: expect correct result.
+    """
+    return_code = os.system("msrun --worker_num=8 --local_worker_num=8 --join=True "
+                            "pytest -s test_multi_stream.py::test_comm_multi_stream")
+    assert return_code == 0
+
+@arg_mark(plat_marks=["platform_ascend"], level_mark="level1", card_mark="allcards", essential_mark="unessential")
+def test_comm_multi_stream_raise_error():
+    """
+    Feature: multiple stream of hccl.
+    Description: test assign stream based on communication domain.
+    Expectation: expect correct result.
+    """
+    return_code = os.system("msrun --worker_num=8 --local_worker_num=8 --join=True "
+                            "pytest -s test_multi_stream.py::test_comm_multi_stream_raise_error")
+    assert return_code == 0
 
 @arg_mark(plat_marks=["platform_ascend910b"], level_mark="level0", card_mark="allcards", essential_mark="essential")
 @test_utils.run_test_with_On

@@ -211,6 +211,11 @@ void AscendEvent::SyncEvent() {
 
 bool AscendEvent::QueryEvent() {
   MS_EXCEPTION_IF_NULL(event_);
+  if (event_destroyed_) {
+    MS_LOG(EXCEPTION) << "The event " << this
+                      << " has been destroyed, cannot query it, please check the wait() function is called when you "
+                         "use the async communication ops.";
+  }
   aclrtEventRecordedStatus status;
   auto ret = CALL_ASCEND_API(aclrtQueryEventStatus, event_, &status);
   if (ret != ACL_SUCCESS) {

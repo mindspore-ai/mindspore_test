@@ -197,6 +197,18 @@ struct BACKEND_EXPORT MemBuf : EventBase {
     return builder.ToString();
   }
 
+  std::string Events() {
+    std::stringstream ss;
+    for (const auto &event : *events_) {
+      ss << "usr_stream_id: " << event.first << " {";
+      for (const auto &task_id_on_stream : *event.second) {
+        ss << "task_id: " << task_id_on_stream.first << ", event: " << task_id_on_stream.second << ", ";
+      }
+      ss << "}, ";
+    }
+    return ss.str();
+  }
+
   MemBuf *prev_;
   MemBuf *next_;
 

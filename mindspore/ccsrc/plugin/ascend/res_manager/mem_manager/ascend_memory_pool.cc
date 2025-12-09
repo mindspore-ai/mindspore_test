@@ -469,8 +469,38 @@ const std::pair<size_t, size_t> DefaultEnhancedAscendMemoryPool::FreeIdleMemsByE
   return {eager_free_size, real_free_size};
 }
 
+// Element in vector : <memory_stream_id, addr>
+bool DefaultEnhancedAscendMemoryPool::RecordEvent(
+  int64_t task_id_on_stream, uint32_t user_stream_id,
+  const std::vector<std::pair<uint32_t, DeviceMemPtr>> &memory_stream_addresses, const DeviceEventPtr &event) {
+  MS_VLOG(VL_RUNTIME_FRAMEWORK_MEMORY) << "Record event for task id on stream : " << task_id_on_stream
+                                       << ", user stream id : " << user_stream_id << " event : " << event << ".";
+  LockGuard lock(instance_->lock());
+  for (auto &[memory_stream_id, addr] : memory_stream_addresses) {
+    auto &&it = instance_->addr_mem_buf_allocators().find(addr);
+    if (it != instance_->addr_mem_buf_allocators().end()) {
+      auto mem_buf = it->second.first;
+      if (mem_buf->IsEventNotUsed()) {
+        instance_->mem_stat_ptr()->used_by_event_size_ += mem_buf->size_;
+      }
+      (void)mem_buf->RecordEvent(task_id_on_stream, user_stream_id, event);
+      (void)instance_->stream_pair_mem_bufs()[std::make_pair(user_stream_id, memory_stream_id)].emplace(mem_buf);
+      MS_VLOG(VL_RUNTIME_FRAMEWORK_MEMORY)
+        << "Record event for : " << mem_buf->ToJson() << ", memory_stream_id : " << memory_stream_id
+        << ", events : " << mem_buf->Events() << ".";
+    } else {
+      // Output of somas sub graph may be used by somas sub graph inner node, address may not be kept in mem pool.
+      MS_VLOG(VL_RUNTIME_FRAMEWORK_MEMORY) << "Unknown address : " << addr << ".";
+    }
+  }
+  return true;
+}
+
 bool DefaultEnhancedAscendMemoryPool::WaitEvent(int64_t task_id_on_stream, uint32_t user_stream_id,
                                                 uint32_t memory_stream_id) {
+  MS_VLOG(VL_RUNTIME_FRAMEWORK_MEMORY) << "Wait event for task id on stream : " << task_id_on_stream
+                                       << ", user stream id : " << user_stream_id
+                                       << ", memory stream id : " << memory_stream_id << ".";
   LockGuard lock(instance_->lock());
   auto key = std::make_pair(user_stream_id, memory_stream_id);
   auto iter = instance_->stream_pair_mem_bufs().find(key);
@@ -480,8 +510,9 @@ bool DefaultEnhancedAscendMemoryPool::WaitEvent(int64_t task_id_on_stream, uint3
 
   auto mem_bufs_ = iter->second;
   for (const auto &mem_buf : mem_bufs_) {
-    MS_VLOG(VL_RUNTIME_FRAMEWORK_MEMORY) << "Wait event for : " << mem_buf->ToJson() << ".";
     mem_buf->WaitEvent(task_id_on_stream, user_stream_id);
+    MS_VLOG(VL_RUNTIME_FRAMEWORK_MEMORY) << "Wait event for : " << mem_buf->ToJson()
+                                         << ", events : " << mem_buf->Events() << ".";
     // Remove event and try to free memory.
     if (mem_buf->IsEventNotUsed()) {
       instance_->mem_stat_ptr()->used_by_event_size_ -= mem_buf->size_;
@@ -498,6 +529,8 @@ bool DefaultEnhancedAscendMemoryPool::WaitEvent(int64_t task_id_on_stream, uint3
 }
 
 bool DefaultEnhancedAscendMemoryPool::WaitEvent(int64_t task_id_on_stream, uint32_t memory_stream_id) {
+  MS_VLOG(VL_RUNTIME_FRAMEWORK_MEMORY) << "Wait event for task id on stream : " << task_id_on_stream
+                                       << ", memory stream id : " << memory_stream_id << ".";
   LockGuard lock(instance_->lock());
   for (auto &stream_pair_mem_bufs : instance_->stream_pair_mem_bufs()) {
     const auto &[user_stream, memory_stream] = stream_pair_mem_bufs.first;
@@ -506,8 +539,9 @@ bool DefaultEnhancedAscendMemoryPool::WaitEvent(int64_t task_id_on_stream, uint3
     }
     auto mem_bufs = stream_pair_mem_bufs.second;
     for (const auto &mem_buf : mem_bufs) {
-      MS_VLOG(VL_RUNTIME_FRAMEWORK_MEMORY) << "Wait event for : " << mem_buf->ToJson() << ".";
       mem_buf->WaitEvent(task_id_on_stream, user_stream);
+      MS_VLOG(VL_RUNTIME_FRAMEWORK_MEMORY)
+        << "Wait event for : " << mem_buf->ToJson() << ", events : " << mem_buf->Events() << ".";
       // Remove event and try to free memory.
       if (mem_buf->IsEventNotUsed()) {
         instance_->mem_stat_ptr()->used_by_event_size_ -= mem_buf->size_;
@@ -525,25 +559,9 @@ bool DefaultEnhancedAscendMemoryPool::WaitEvent(int64_t task_id_on_stream, uint3
 }
 
 bool DefaultEnhancedAscendMemoryPool::SyncAllEvents() {
-  LockGuard lock(instance_->lock());
-  if (stream_pair_mem_bufs().empty()) {
-    return false;
-  }
-
-  std::set<MemBuf *> carry_event_mem_bufs;
-  for (const auto &stream_pair_mem_buf : instance_->stream_pair_mem_bufs()) {
-    for (const auto &mem_buf : stream_pair_mem_buf.second) {
-      (void)carry_event_mem_bufs.emplace(mem_buf);
-    }
-  }
-  for (auto &mem_buf : carry_event_mem_bufs) {
-    if (mem_buf->SyncAllEvents() && mem_buf->status_ == DynamicMemBufStatus::kMemBufUsedByEvent) {
-      (void)DoFreeTensorMem(mem_buf->addr_);
-    }
-  }
-
-  instance_->stream_pair_mem_bufs().clear();
-  return true;
+  MS_VLOG(VL_RUNTIME_FRAMEWORK_MEMORY) << "Sync all events, stream_pair_addresses_ size : "
+                                       << instance_->stream_pair_mem_bufs().size() << ".";
+  return instance_->SyncAllEvents();
 }
 
 void DefaultEnhancedAscendMemoryPool::SetRankIdGetter(const std::function<size_t()> &rank_id_getter) {
