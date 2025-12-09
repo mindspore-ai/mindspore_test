@@ -26,6 +26,9 @@
 #include "ops_utils/op_constants.h"
 
 namespace mindspore::ops {
+namespace {
+constexpr int64_t kInputSize4 = 4;
+}  // namespace
 #define IsNoneOrAnyValue(value_ptr) ((value_ptr->isa<None>()) || (value_ptr->ContainsValueAny()))
 
 template <typename T>
@@ -72,6 +75,7 @@ BaseShapePtr CalculateShapeSize(const ValuePtr start_ptr, const ValuePtr limit_p
 
 int32_t RangeFuncImpl::CheckValidation(const PrimitivePtr &primitive,
                                        const std::vector<AbstractBasePtr> &input_args) const {
+  CheckAndConvertUtils::CheckInputArgs(input_args, kEqual, kInputSize4, primitive->name());
   auto maxlen_opt = GetScalarValue<int64_t>(input_args[kIndex3]->GetValue());
   if (MS_UNLIKELY(!maxlen_opt.has_value())) {
     return OP_CHECK_RETRY;
