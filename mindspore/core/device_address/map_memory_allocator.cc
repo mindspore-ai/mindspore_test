@@ -39,7 +39,10 @@ std::string NewShareMemoryHandle() {
 }
 
 MapAllocator::MapAllocator(const std::string &name, bool create, int fd, size_t size)
-    : filename_(name), create_(create), fd_(fd), size_(size) {
+    : filename_(name), create_(create), fd_(fd), size_(size) {}
+
+void *MapAllocator::Alloc(size_t size) {
+  void *base_ptr_ = nullptr;
 #if defined(_WIN32) || defined(_WIN64)
   MS_EXCEPTION(RuntimeError) << "MapAllocator don't support Win32 or Win64 platform.";
 #else
@@ -51,8 +54,8 @@ MapAllocator::MapAllocator(const std::string &name, bool create, int fd, size_t 
     MS_EXCEPTION(RuntimeError) << "MapAllocator: fd must be non-negative when create is false, but got: " << fd_;
   }
 
-  if (size_ == 0) {
-    MS_EXCEPTION(RuntimeError) << "MapAllocator: size must be a positive integer, but got: " << size_;
+  if (size == 0) {
+    MS_EXCEPTION(RuntimeError) << "MapAllocator: size must be a positive integer, but got: " << size;
   }
 
   if (create_) {
@@ -65,20 +68,20 @@ MapAllocator::MapAllocator(const std::string &name, bool create, int fd, size_t 
   struct stat file_stat {};
   if (fstat(fd_, &file_stat) == -1) {
     errno_t fstat_errno = errno;
-    if (create) {
+    if (create_) {
       ::close(fd_);
     }
     MS_EXCEPTION(RuntimeError) << "MapAllocator: fstat failed with errno: " << fstat_errno;
   }
 
-  if (size_ > static_cast<size_t>(file_stat.st_size)) {
-    MS_LOG(INFO) << "MapAllocator: size_:" << size_ << ", file_stat.st_size:" << static_cast<size_t>(file_stat.st_size);
-    if (ftruncate(fd_, static_cast<off_t>(size_)) == -1) {
+  if (size > static_cast<size_t>(file_stat.st_size)) {
+    MS_LOG(INFO) << "MapAllocator: size:" << size << ", file_stat.st_size:" << static_cast<size_t>(file_stat.st_size);
+    if (ftruncate(fd_, static_cast<off_t>(size)) == -1) {
       MS_EXCEPTION(RuntimeError) << "MapAllocator: ftruncate failed with errno: " << errno;
     }
   }
 
-  if ((base_ptr_ = mmap(nullptr, size_, PROT_READ | PROT_WRITE, MAP_SHARED, fd_, 0)) == MAP_FAILED) {
+  if ((base_ptr_ = mmap(nullptr, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd_, 0)) == MAP_FAILED) {
     base_ptr_ = nullptr;
     MS_EXCEPTION(RuntimeError) << "MapAllocator: mmap failed with errno: " << errno;
   }
@@ -87,26 +90,23 @@ MapAllocator::MapAllocator(const std::string &name, bool create, int fd, size_t 
     if (shm_unlink(filename_.c_str()) == -1) {
       MS_EXCEPTION(RuntimeError) << "MapAllocator: shm_unlink failed with errno: " + std::to_string(errno);
     }
-    MS_LOG(INFO) << "MapAllocator: " << filename_ << " has been created, fd: " << fd_ << ", size: " << size_;
+    MS_LOG(INFO) << "MapAllocator filename:" << filename_ << " has been created, fd: " << fd_ << ", size: " << size;
   } else {
-    MS_LOG(INFO) << "Attach to shared memory " << filename_ << ", fd: " << fd_ << ", size: " << size_;
+    MS_LOG(INFO) << "MapAllocator attach to shared memory " << filename_ << ", fd: " << fd_ << ", size: " << size;
   }
 #endif
+  return base_ptr_;
 }
 
-MapAllocator::~MapAllocator() {
-  MS_LOG(INFO) << "MapAllocator deconstructor enter.filename:" << filename_;
-  close();
-}
-
-void MapAllocator::close() {
+bool MapAllocator::Free(void *base_ptr_) {
+  MS_LOG(INFO) << "MapAllocator free enter.base_ptr_ is not null:" << (base_ptr_ != nullptr) << ", fd:" << fd_;
   if (closed_) {
     MS_LOG(INFO) << "MapAllocator has been closed.filename:" << filename_;
-    return;
+    return true;
   }
   closed_ = true;
 #if defined(_WIN32) || defined(_WIN64)
-  MS_EXCEPTION(RuntimeError) << "MapAllocator.close() don't support Win32 or Win64 platform.";
+  MS_EXCEPTION(RuntimeError) << "MapAllocator.Free() don't support Win32 or Win64 platform.";
 #else
   if (base_ptr_ != nullptr) {
     if (munmap(base_ptr_, size_) != 0) {
@@ -123,6 +123,7 @@ void MapAllocator::close() {
   }
 #endif
   MS_LOG(INFO) << "MapAllocator filename:" << filename_ << " closed successfully.";
+  return true;
 }
 
 }  // namespace mindspore

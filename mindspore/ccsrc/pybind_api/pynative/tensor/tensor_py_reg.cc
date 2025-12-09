@@ -130,10 +130,6 @@ std::pair<DeviceAddressPtr, TensorStorageInfoPtr> CreateSourceStorageDeviceAddr(
     const auto &source_storage_device_pointer = source_storage.GetDevicePointer();
     SwapDevicePointer(source_storage_device_pointer, source_device_address);
   }
-  auto map_allocator = source_storage.GetMapAllocator();
-  if (map_allocator) {
-    source_device_address->set_map_allocator(map_allocator);
-  }
   auto new_storage_info =
     ops::CheckSetStorageInfo(base_tensor, storage_offset, shape, stride, device_name, bytes_size, source_dtype);
 

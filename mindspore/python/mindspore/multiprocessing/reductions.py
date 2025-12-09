@@ -79,7 +79,7 @@ def restore_storage_fd(cls, df, size, type_id):
 
 def init_reductions():
     """ register serialize and deserialize method """
-    if platform.system().lower() == "windows":
+    if platform.system().lower() in {"windows", "darwin"}:
         return
     reduction.register(StoragePy, reduce_storage)
     reduction.register(UntypedStorage, reduce_storage)
