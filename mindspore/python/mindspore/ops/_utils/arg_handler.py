@@ -165,20 +165,10 @@ def _scalar_tensor_to_float(op_name, arg_name, x):
 
 def _normalize_int_sequence(op_name, arg_name, data):
     """Normalize mixed int sequence."""
-    if data is None or isinstance(data, Tensor):
-        return data
-    if not isinstance(data, (tuple, list)):
-        data = (data,)
-    if not data:
+    if not isinstance(data, (list, tuple)):
         return data
     is_tuple = isinstance(data, tuple)
-    for item in data:
-        if isinstance(item, Tensor):
-            if not arg_dtype_cast.is_integral_mstype(item.dtype):
-                raise ValueError(arg_invalid_info(op_name, arg_name, data))
-        elif not isinstance(item, int):
-            raise TypeError(arg_invalid_info(op_name, arg_name, data))
-    return arg_dtype_cast.normalize_int_sequence(data, is_tuple)
+    return arg_dtype_cast.normalize_int_sequence(op_name, arg_name, data, is_tuple)
 
 dtype_to_type_id = DtypeToEnum()
 

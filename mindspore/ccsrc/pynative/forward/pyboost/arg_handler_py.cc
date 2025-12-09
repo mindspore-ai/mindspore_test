@@ -231,16 +231,7 @@ PyObject *ToRates(const std::string &op_name, const std::string &arg_name, PyObj
 PyObject *NormalizeIntSequence(const std::string &op_name, const std::string &arg_name, PyObject *arg) {
   py::handle arg_handle(arg);
   if (!py::isinstance<py::list>(arg_handle) && !py::isinstance<py::tuple>(arg_handle)) {
-    if (py_parse::IsGeneralizedInt(arg)) {
-      py::tuple int_tuple(1);
-      int_tuple[0] = py::cast(py_parse::ConvertGeneralizedIntToBasicInt(arg).value());
-      Py_INCREF(int_tuple.ptr());
-      return int_tuple.ptr();
-    } else if (tensor::IsTensorPy(arg_handle)) {
-      return arg;
-    }
-    MS_EXCEPTION(TypeError) << "For '" << op_name << "', the value of '" << arg_name << "' is invalid: '"
-                            << py::str(arg_handle).cast<std::string>() << ". It should be a list or tuple.";
+    return arg;
   }
   auto items = py::cast<std::vector<py::object>>(arg_handle);
   py::tuple int_tuple(items.size());

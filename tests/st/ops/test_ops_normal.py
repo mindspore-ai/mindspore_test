@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+"""test ops normal"""
 import pytest
 import numpy as np
 import mindspore as ms
@@ -299,6 +300,11 @@ def test_mint_normal_func4(mode):
             _ = normal_test_func(mean, std, (2, 3))
             if mode == 'pynative':
                 _pynative_executor.sync()
+
+    with pytest.raises(TypeError):
+        _ = normal_test_func(0, 0, 5) # size should be tuple or list
+        if mode == 'pynative':
+            _pynative_executor.sync()
 
     # mean is python number or std is python number
     python_numbers = [3, True, False, 0.3]
