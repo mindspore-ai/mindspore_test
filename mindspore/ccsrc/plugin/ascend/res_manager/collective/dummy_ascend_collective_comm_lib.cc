@@ -71,15 +71,7 @@ std::string DummyAscendCollectiveCommLib::CommName(const std::string &group_name
   return group->inner_comm_name();
 }
 
-bool DummyAscendCollectiveCommLib::DestroyDeviceCommunicationGroup(const std::string &) {
-  std::string group_name = "dummy_group_name";
-  bool res = hccl::HcclAdapter::GetInstance().HcclDestroyGroup(group_name);
-  if (!res) {
-    MS_LOG(ERROR) << "destroy communicate group";
-    return false;
-  }
-  return true;
-}
+bool DummyAscendCollectiveCommLib::DestroyDeviceCommunicationGroup(const std::string &) { return true; }
 
 bool DummyAscendCollectiveCommLib::DestroyHcclComm() {
   CHECK_RET((groups_.size() != 0), true, "The HCCL group does not existed.");
