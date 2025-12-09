@@ -2,6 +2,38 @@
 
 [查看中文](./RELEASE_CN.md)
 
+## MindSpore 2.7.2 Release Notes
+
+### Major Features and Improvements
+
+#### Ascend
+
+- [BETA] The GroupedMatMul + Reshape + AssignAdd fuse pattern is supported in static graph mode when jit_level is O1, it can be enabled by setting the environment variable `export MS_DEV_GRAPH_KERNEL_FLAGS="--enable_cluster_ops=GroupedMatmul,Reshape"`.
+- [STABLE] Support subhealthy device hot-switch in static graph mode when jit_level is O1 or O1, allowing replacement of subhealthy nodes without restarting the training cluster to achieve minute-level training resumption from breakpoints. Users can enable this feature by setting the environment variable `export MS_ENABLE_TFT="{ARF:1}"`.
+
+### Parallel
+
+- [STABLE] `msrun` supports setting CPU affinity to the scheduler process and worker process via the `taskset` command when launching distributed tasks. Users can set CPU affinity for the launched processes through the input parameter `--bind_core`.
+
+#### PyNative
+
+- [STABLE] Support the `frombuffer` feature on PyNative mode, enabling direct creation of MindSpore tensors from Python buffer protocol objects (such as bytes) without data copying.
+- [STABLE] Support the `saved_tensors_hooks` feature in PyNative mode, allowing users to configure custom save and load logic for saved tensors that are retained during the forward pass and consumed during the backward pass.
+
+#### Python
+
+- [STABLE] Supports Python 3.12.
+
+### API Change
+
+#### Backwards Incompatible Change
+
+- The ops.ring_attention_update operator is not supported in 8.1.RC1 and earlier versions of the CANN package.
+
+### Contributors
+
+Bellatan,caifubi,chaijinwei,changzherui,chengbin,fuchao,guangpengz,guozhijian,hhz886,huangbingjian,huda,jiangna,jiaorui,kingxian,liangchenghui,lichen,liubuyu,liuluobin,liuyanwei,looop5,maoyuanpeng1,Margaret_wangrui,mengxian,NaCN,panzhihui,r1chardf1d0,rogeryu11,shaoshengqi,shen_haochen,shenwei41,tanghuikang,wang_ziqi,wangshaocong,wangyin,xiaotianci,xuzhen,yanghaoran,yide12,yuchaojie,yuliangbin,zhangyinxia,zhaochenjie,zhengzuohe,ZPaC,zyli2020,曹彤,范吉斌,胡彬,宦晓玲,李良灿,熊攀
+
 ## MindSpore 2.7.1 Release Notes
 
 ### Major Features and Improvements
