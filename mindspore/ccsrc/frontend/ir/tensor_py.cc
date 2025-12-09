@@ -731,7 +731,6 @@ py::array TensorPybind::SyncAsNumpy(const Tensor &tensor) {
 }
 
 py::array TensorPybind::NumpyNonBlocking(const Tensor &tensor) {
-  runtime::Pipeline::Get().WaitForward();
   const auto &device_address = tensor.device_address();
   if (device_address == nullptr) {
     MS_LOG(EXCEPTION) << "Tensor " << tensor.ToString() << " is uninitialized. "
@@ -987,7 +986,7 @@ uintptr_t TensorPybind::DataPtr(const TensorPtr &tensor) {
 }
 
 std::string TensorPybind::GetDevice(const TensorPtr &tensor) {
-  runtime::Pipeline::Get().WaitForward();
+  runtime::Pipeline::Get().WaitBackend();
   const auto &device_address = std::dynamic_pointer_cast<device::DeviceAddress>(tensor->device_address());
   if (device_address == nullptr) {
     return "CPU";
