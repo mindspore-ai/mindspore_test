@@ -20,7 +20,9 @@
 #include "primitive/math_ops.h"
 #include "primitive/array_ops.h"
 #include "primitive/framework_ops.h"
+#include "ir/func_graph_flag.h"
 #include "ir/func_graph_cloner.h"
+#include "frontend/operator/primitive_py_utils.h"
 #include "primitive/auto_generate/gen_ops_primitive_a.h"
 #include "primitive/auto_generate/gen_ops_primitive_c.h"
 #include "primitive/auto_generate/gen_ops_primitive_d.h"
@@ -30,7 +32,6 @@
 #include "primitive/auto_generate/gen_ops_primitive_r.h"
 #include "primitive/auto_generate/gen_ops_primitive_s.h"
 #include "primitive/auto_generate/gen_ops_primitive_t.h"
-#include "ir/func_graph_flag.h"
 
 namespace mindspore {
 namespace opt {
@@ -63,11 +64,11 @@ FuncGraphPtr GetTaylorRule(const PrimitivePtr &prim, const pipeline::ResourceBas
   FuncGraphPtr func_graph = nullptr;
   py::function taylor_fn;
   if (prim->is_base() || mindspore::ops::IsPrimitiveFunction(prim->name())) {
-    taylor_fn = GetTaylorRuleFunction(prim->name());
+    taylor_fn = prim::GetTaylorRuleFunction(prim->name());
   } else if (prim->isa<PrimitivePy>()) {
     taylor_fn = prim->cast<PrimitivePyPtr>()->GetTaylorRuleFunction();
     if (py::isinstance<py::none>(taylor_fn)) {
-      taylor_fn = GetTaylorRuleFunction(prim->name());
+      taylor_fn = prim::GetTaylorRuleFunction(prim->name());
     }
   } else {
     MS_LOG_WITH_NODE(EXCEPTION, node) << "Unknown Primitive SubClass: " << prim->ToString();

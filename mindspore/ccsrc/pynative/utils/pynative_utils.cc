@@ -36,7 +36,6 @@
 #include "ir/cell.h"
 #include "include/utils/utils.h"
 #include "include/utils/convert_utils_py.h"
-#include "include/utils/primfunc_utils.h"
 #include "mindspore/ccsrc/utils/ir_dump/anf_ir_dump.h"
 #include "include/utils/pynative/common_utils.h"
 #include "include/utils/stub_tensor.h"
@@ -48,6 +47,7 @@
 #include "mindspore/ccsrc/pynative/utils/pyboost/auto_generate/contiguous.h"
 #include "include/runtime/pipeline/pipeline.h"
 #include "include/utils/pynative/abstract_converter.h"
+#include "include/utils/operator/primitive_utils.h"
 #include "mindspore/ccsrc/pynative/utils/pyboost/pyboost_utils.h"
 #include "pynative/backward/grad_utils.h"
 #include "include/utils/tensor_py.h"
@@ -766,7 +766,7 @@ void PyParser::PrintTypeCastError(const ops::OpDefPtr &op_def, const py::list &o
       MS_EXCEPTION(TypeError) << "For " << op_def->name_ << ", the " << idx << "'th input is a Tensor whose shape is "
                               << PrintVectorFunc(tensor->shape()) << " and dtype is ["
                               << TypeIdToString(tensor->data_type()) << "], which can not be converted to "
-                              << ops::EnumToString(op_arg.arg_dtype_) << ".";
+                              << prim::OpDTypeToString(op_arg.arg_dtype_) << ".";
     }
   }
   std::vector<std::string> op_type_list;
@@ -774,7 +774,7 @@ void PyParser::PrintTypeCastError(const ops::OpDefPtr &op_def, const py::list &o
     (void)op_type_list.emplace_back(BuilidPyInputTypeString(op_inputs[index]));
   }
   PyNativeExecutor::GetInstance()->ClearRes();
-  MS_EXCEPTION(TypeError) << ops::BuildOpErrorMsg(op_def, op_type_list);
+  MS_EXCEPTION(TypeError) << prim::BuildOpErrorMsg(op_def, op_type_list);
 }
 
 void PyParser::PrintTypeCastErrorForPyObject(const ops::OpDefPtr &op_def, PyObject *op_inputs, size_t idx) {
@@ -802,7 +802,7 @@ void PyParser::PrintTypeCastErrorForPyObject(const ops::OpDefPtr &op_def, PyObje
       MS_EXCEPTION(TypeError) << "For " << op_def->name_ << ", the " << idx << "'th input is a Tensor whose shape is "
                               << PrintVectorFunc(tensor->shape()) << " and dtype is ["
                               << TypeIdToString(tensor->data_type()) << "], which can not be converted to "
-                              << ops::EnumToString(op_arg.arg_dtype_) << ".";
+                              << prim::OpDTypeToString(op_arg.arg_dtype_) << ".";
     }
   }
   std::vector<std::string> op_type_list;
@@ -812,7 +812,7 @@ void PyParser::PrintTypeCastErrorForPyObject(const ops::OpDefPtr &op_def, PyObje
     (void)op_type_list.emplace_back(BuildPyObjectInputTypeString(item));
   }
   PyNativeExecutor::GetInstance()->ClearRes();
-  MS_EXCEPTION(TypeError) << ops::BuildOpErrorMsg(op_def, op_type_list);
+  MS_EXCEPTION(TypeError) << prim::BuildOpErrorMsg(op_def, op_type_list);
 }
 
 inline ValuePtr ConvertScalarToTensor(const ValuePtr &value) {

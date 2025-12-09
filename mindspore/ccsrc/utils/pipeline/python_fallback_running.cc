@@ -1,5 +1,5 @@
 /**
- * Copyright 2025 Huawei Technologies Co., Ltd
+ * Copyright 2023 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,19 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-#ifndef MINDSPORE_CCSRC_INCLUDE_UTILS_FRONTEND_PIPELINE_UTILS_H_
-#define MINDSPORE_CCSRC_INCLUDE_UTILS_FRONTEND_PIPELINE_UTILS_H_
-
-#include "pybind11/pybind11.h"
-#include "include/utils/visible.h"
-
-namespace py = pybind11;
+#include "include/utils/pipeline/python_fallback_running.h"
 
 namespace mindspore {
-namespace pipeline {
-COMMON_EXPORT void CheckArgsValid(const py::object &source, const py::tuple &args);
-}  // namespace pipeline
-}  // namespace mindspore
+ScopedFallbackRunning::ScopedFallbackRunning() { on_ = true; }
 
-#endif  // MINDSPORE_CCSRC_INCLUDE_UTILS_FRONTEND_PIPELINE_UTILS_H_
+ScopedFallbackRunning::~ScopedFallbackRunning() { on_ = false; }
+}  // namespace mindspore

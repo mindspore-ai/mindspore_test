@@ -39,7 +39,7 @@
 #include "frontend/optimizer/graph_transform.h"
 #include "frontend/optimizer/auto_monad_eliminate.h"
 #include "frontend/optimizer/utils.h"
-#include "include/utils/fallback.h"
+#include "include/utils/pipeline/fallback.h"
 #include "include/utils/parallel_context.h"
 #include "include/utils/pynative/grad_state.h"
 #include "frontend/parallel/dynamic_shape/dynamic_shape.h"

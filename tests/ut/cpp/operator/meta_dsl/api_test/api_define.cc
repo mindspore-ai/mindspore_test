@@ -15,7 +15,7 @@
  */
 
 #include "tests/ut/cpp/operator/meta_dsl/api_test/api_define.h"
-#include "utils/core_op_utils.h"
+#include "ops/op_def_utils.h"
 #include "utils/check_convert_utils.h"
 #include "primitive/array_ops.h"
 #include "primitive/sequence_ops.h"

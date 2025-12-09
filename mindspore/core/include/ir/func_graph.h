@@ -167,16 +167,16 @@ class FuncGraphChecker {
  public:
   FuncGraphChecker() = default;
   template <typename... Ts>
-  void AddCheckFunc(const std::shared_ptr<std::function<bool(const Ts &... args)>> &func) {
+  void AddCheckFunc(const std::shared_ptr<std::function<bool(const Ts &...args)>> &func) {
     func_ = func;
   }
 
   template <typename... Ts>
-  bool Execute(const Ts &... args) const {
+  bool Execute(const Ts &...args) const {
     if (func_ == nullptr) {
       return true;
     }
-    auto func = reinterpret_cast<std::function<bool(const Ts &... args)> *>(func_.get());
+    auto func = reinterpret_cast<std::function<bool(const Ts &...args)> *>(func_.get());
     return (*func)(args...);
   }
 
@@ -689,10 +689,6 @@ inline CNodePtr NewCNode(AnfNodePtrList &&inputs, const FuncGraphPtr &fg) {
 
 MS_CORE_API SeenNum NewFgSeenGeneration();
 
-// Find the root cnodes of a segment of cnodes.
-std::shared_ptr<OrderedSet<CNodePtr>> FindRoots(const std::vector<CNodePtr> &segment);
-// Find the leaf cnodes of a segment of cnodes.
-std::shared_ptr<OrderedSet<CNodePtr>> FindLeaves(const std::vector<CNodePtr> &segment);
 }  // namespace mindspore
 
 #endif  // MINDSPORE_CORE_IR_FUNC_GRAPH_H_

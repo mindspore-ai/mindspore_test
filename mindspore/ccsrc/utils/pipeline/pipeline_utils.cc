@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "include/utils/frontend/pipeline_utils.h"
+#include "include/utils/pipeline/pipeline_utils.h"
 
 #include "ir/tensor.h"
 #include "ir/dtype/number.h"

@@ -24,7 +24,7 @@
 #include "include/utils/utils.h"
 #include "utils/shape_utils.h"
 #include "plugin/ascend/res_manager/op_adapter/op_adapter_util.h"
-#include "ir/device_address_maker.h"
+#include "device_address/device_address_maker.h"
 #include "ir/tensor_new.h"
 #include "utils/misc.h"
 

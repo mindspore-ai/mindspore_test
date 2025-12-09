@@ -29,7 +29,7 @@
 #include "include/backend/common/kernel_graph/anf_runtime_algorithm.h"
 #include "include/backend/common/exec_order/execute_order_tracker.h"
 #include "include/backend/common/pass_manager/helper.h"
-#include "ir/device_type.h"
+#include "device_address/device_type.h"
 #include "ir/map_tensor.h"
 #include "utils/convert_utils.h"
 #include "include/backend/common/device_address_utils.h"

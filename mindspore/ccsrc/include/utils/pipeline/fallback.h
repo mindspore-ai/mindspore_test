@@ -1,5 +1,5 @@
 /**
- * Copyright 2023 Huawei Technologies Co., Ltd
+ * Copyright 2023-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CCSRC_INCLUDE_COMMON_FALLBACK_H_
-#define MINDSPORE_CCSRC_INCLUDE_COMMON_FALLBACK_H_
+#ifndef MINDSPORE_CCSRC_INCLUDE_UTILS_PIPELINE_FALLBACK_H_
+#define MINDSPORE_CCSRC_INCLUDE_UTILS_PIPELINE_FALLBACK_H_
 
 #include <memory>
 
@@ -33,14 +33,12 @@ struct PyExecuteOutputUserData {
 };
 using PyExecuteOutputUserDataPtr = std::shared_ptr<PyExecuteOutputUserData>;
 }  // namespace kernel
+
 namespace fallback {
-COMMON_EXPORT bool HasPyExecuteOutput();
-COMMON_EXPORT py::object PopPyExecuteOutput();
-COMMON_EXPORT void PushPyExecuteOutput(const py::object &output);
 COMMON_EXPORT int GetJitSyntaxLevel();
 COMMON_EXPORT abstract::AbstractSequencePtr GenerateAbstractSequence(const BaseShapePtr &base_shape,
                                                                      const TypePtr &type, bool is_dyn_shape);
 }  // namespace fallback
 }  // namespace mindspore
 
-#endif  // MINDSPORE_CCSRC_INCLUDE_COMMON_FALLBACK_H_
+#endif  // MINDSPORE_CCSRC_INCLUDE_UTILS_PIPELINE_FALLBACK_H_

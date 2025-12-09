@@ -23,13 +23,12 @@
 #include <memory>
 #include <utility>
 #include <algorithm>
-#include "include/utils/frontend/primitive_utils.h"
+#include "include/utils/operator/primitive_utils.h"
 #include "primitive/structure_ops.h"
 #include "ir/core_ops_primitive.h"
 #include "ir/dtype/tensor_type.h"
 #include "frontend/operator/ops.h"
 #include "abstract/abstract_value.h"
-#include "include/utils/primfunc_utils.h"
 #include "frontend/jit/ps/resource.h"
 #include "frontend/jit/ps/fallback.h"
 #include "frontend/jit/ps/parse/parse_base.h"
@@ -41,6 +40,31 @@
 namespace mindspore {
 namespace prim {
 namespace {
+using OP_DTYPE = mindspore::ops::OP_DTYPE;
+
+std::vector<OP_DTYPE> GetSourceDtypeByArgHandler(const std::string &arg_handler_func) {
+  static std::map<std::string, std::vector<OP_DTYPE>> arg_handler_map = {
+    {"to_pair", {OP_DTYPE::DT_INT, OP_DTYPE::DT_FLOAT, OP_DTYPE::DT_TUPLE_ANY, OP_DTYPE::DT_LIST_ANY}},
+    {"to_kernel_size", {OP_DTYPE::DT_INT, OP_DTYPE::DT_TUPLE_ANY, OP_DTYPE::DT_LIST_ANY}},
+    {"to_strides", {OP_DTYPE::DT_INT, OP_DTYPE::DT_TUPLE_ANY, OP_DTYPE::DT_LIST_ANY}},
+    {"to_rates", {OP_DTYPE::DT_INT, OP_DTYPE::DT_TUPLE_ANY, OP_DTYPE::DT_LIST_ANY}},
+    {"to_dilations", {OP_DTYPE::DT_INT, OP_DTYPE::DT_TUPLE_ANY, OP_DTYPE::DT_LIST_ANY}},
+    {"to_output_padding", {OP_DTYPE::DT_INT, OP_DTYPE::DT_TUPLE_ANY, OP_DTYPE::DT_LIST_ANY}},
+    {"to_2d_paddings", {OP_DTYPE::DT_INT, OP_DTYPE::DT_TUPLE_ANY, OP_DTYPE::DT_LIST_ANY}},
+    {"dtype_to_type_id", {OP_DTYPE::DT_TYPE}},
+    {"str_to_enum", {OP_DTYPE::DT_STR}},
+    {"_scalar_tensor_to_scalar", {OP_DTYPE::DT_NUMBER, OP_DTYPE::DT_TENSOR}},
+    {"_scalar_tensor_to_int", {OP_DTYPE::DT_INT, OP_DTYPE::DT_TENSOR}},
+    {"_scalar_tensor_to_float", {OP_DTYPE::DT_FLOAT, OP_DTYPE::DT_TENSOR}},
+    {"_normalize_int_sequence", {OP_DTYPE::DT_INT, OP_DTYPE::DT_TUPLE_ANY, OP_DTYPE::DT_LIST_ANY, OP_DTYPE::DT_TENSOR}},
+  };
+  auto iter = arg_handler_map.find(arg_handler_func);
+  if (iter == arg_handler_map.end()) {
+    MS_LOG(INTERNAL_EXCEPTION) << "Miss definition of arg_handler '" << arg_handler_func << "' here.";
+  }
+  return iter->second;
+}
+
 size_t GetHashIdForFunctionalCache(const std::string &functional_name, const AbstractBasePtrList &args_abs_list,
                                    bool is_method) {
   return hash_combine(
@@ -48,8 +72,8 @@ size_t GetHashIdForFunctionalCache(const std::string &functional_name, const Abs
 }
 
 bool MatchExpectedDtype(const ops::OP_DTYPE &input_dtype, const ops::OP_DTYPE &expected_dtype) {
-  MS_LOG(DEBUG) << "Input dtype is: '" << ops::EnumToString(input_dtype) << "' and expected dtype is '"
-                << ops::EnumToString(expected_dtype) << "'.";
+  MS_LOG(DEBUG) << "Input dtype is: '" << prim::OpDTypeToString(input_dtype) << "' and expected dtype is '"
+                << prim::OpDTypeToString(expected_dtype) << "'.";
   // Check if the types match.
   if (input_dtype == expected_dtype || expected_dtype == ops::OP_DTYPE::DT_ANY) {
     return true;
@@ -82,7 +106,7 @@ bool MatchExpectedDtype(const ops::OP_DTYPE &input_dtype, const ops::OP_DTYPE &e
 bool MatchPrimitiveArgDtype(const std::string &prim_name, const ops::OpInputArg &op_arg,
                             const ops::OP_DTYPE &input_dtype) {
   MS_LOG(DEBUG) << "Matching arg '" << op_arg.arg_name_ << "' for Primitive[" << prim_name << "] with dtype "
-                << ops::EnumToString(input_dtype) << ".";
+                << prim::OpDTypeToString(input_dtype) << ".";
   if (MatchExpectedDtype(input_dtype, op_arg.arg_dtype_) ||
       (op_arg.is_optional_ && input_dtype == ops::OP_DTYPE::DT_NONE)) {
     return true;
@@ -92,7 +116,7 @@ bool MatchPrimitiveArgDtype(const std::string &prim_name, const ops::OpInputArg 
                        [&input_dtype](const ops::OP_DTYPE &dtype) { return MatchExpectedDtype(input_dtype, dtype); });
   }
   if (!op_arg.arg_handler_.empty()) {
-    auto src_dtypes = ops::GetSourceDtypeByArgHandler(op_arg.arg_handler_);
+    auto src_dtypes = GetSourceDtypeByArgHandler(op_arg.arg_handler_);
     return std::any_of(src_dtypes.cbegin(), src_dtypes.cend(),
                        [&input_dtype](const ops::OP_DTYPE &dtype) { return MatchExpectedDtype(input_dtype, dtype); });
   }
@@ -264,7 +288,7 @@ bool PrimitiveConverter::CheckKwargs(PrimitiveAttr *cur_prim) {
     auto op_arg = expect_op_args[index_key];
     if (!MatchPrimitiveArgDtype(cur_prim->prim_name, op_arg, value)) {
       error_msgs_.push_back(functional_name_ + "(): argument '" + key + "' must be " +
-                            ops::EnumToString(op_arg.arg_dtype_) + " but got " + ops::EnumToString(value));
+                            prim::OpDTypeToString(op_arg.arg_dtype_) + " but got " + prim::OpDTypeToString(value));
       return false;
     }
   }
@@ -302,8 +326,8 @@ bool PrimitiveConverter::CheckImplicitTuple(PrimitiveAttr *cur_prim,
     // Variable parameters support only the integer type.
     if (!MatchExpectedDtype(ops::OP_DTYPE::DT_INT, input_position_args_dtype_[i])) {
       error_msgs_.push_back(functional_name_ + "(): argument '" + arg_name + "' (position " + std::to_string(i) +
-                            ") must be " + ops::EnumToString(expect_op_args[cur_prim->varargs_index].arg_dtype_) +
-                            ", not " + ops::EnumToString(input_position_args_dtype_[i]) + ".");
+                            ") must be " + prim::OpDTypeToString(expect_op_args[cur_prim->varargs_index].arg_dtype_) +
+                            ", not " + prim::OpDTypeToString(input_position_args_dtype_[i]) + ".");
       return false;
     }
   }
@@ -341,8 +365,8 @@ bool PrimitiveConverter::CheckPositionArgs(PrimitiveAttr *cur_prim) {
     }
     if (!MatchPrimitiveArgDtype(cur_prim->prim_name, expect_op_args[i], input_position_args_dtype_[i])) {
       error_msgs_.push_back(functional_name_ + "(): argument '" + arg_name + "' (position " + std::to_string(i) +
-                            ") must be " + ops::EnumToString(expect_op_args[i].arg_dtype_) + ", not " +
-                            ops::EnumToString(input_position_args_dtype_[i]) + ".");
+                            ") must be " + prim::OpDTypeToString(expect_op_args[i].arg_dtype_) + ", not " +
+                            prim::OpDTypeToString(input_position_args_dtype_[i]) + ".");
       first_failed_position_ = i;
       return false;
     }

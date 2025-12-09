@@ -39,7 +39,6 @@
 #include "include/runtime/hardware_abstract/kernel_base/graph_fusion/framework_utils.h"
 #include "tools/profiler/profiling.h"
 #include "include/backend/common/pass_manager/helper.h"
-#include "base/base_ref_utils.h"
 #include "mindspore/ccsrc/utils/ir_dump/dump_proto.h"
 #include "include/utils/parallel_context.h"
 #include "include/utils/callback.h"

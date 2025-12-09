@@ -20,6 +20,7 @@
 #include "abstract/symbolic_shape/int_symbol.h"
 #include "ir/tensor_new.h"
 #include "ir/dtype/tensor_type.h"
+#include "mindspore/core/abstract/symbolic_shape/symbol_utils.h"
 
 namespace mindspore {
 namespace symshape {

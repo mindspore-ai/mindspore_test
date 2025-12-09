@@ -28,7 +28,7 @@
 namespace mindspore::ops {
 class ValueInferInfoAdapter;
 using ValueInferInfoAdapterPtr = std::shared_ptr<ValueInferInfoAdapter>;
-class MS_CORE_API ValueInferInfoAdapter : public InferInfo {
+class ValueInferInfoAdapter : public InferInfo {
  public:
   ValueInferInfoAdapter() = delete;
   ValueInferInfoAdapter(const ValuePtr &value, const std::string &op_type, const std::string &arg_name)

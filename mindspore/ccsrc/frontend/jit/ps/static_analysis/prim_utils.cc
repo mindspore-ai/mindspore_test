@@ -29,7 +29,7 @@
 #include "frontend/operator/composite/do_signature.h"
 #include "frontend/operator/ops.h"
 #include "frontend/operator/composite/functional_overload.h"
-#include "include/utils/primfunc_utils.h"
+#include "include/utils/operator/primitive_utils.h"
 #include "ir/core_ops_primitive.h"
 #include "frontend/jit/ps/fallback.h"
 #include "frontend/jit/ps/parse/data_converter.h"
@@ -40,6 +40,116 @@
 
 namespace mindspore {
 namespace abstract {
+using OP_DTYPE = mindspore::ops::OP_DTYPE;
+
+namespace {
+template <typename T>
+bool ValidateSequenceType(const AbstractBasePtr &abs_seq, OP_DTYPE type_elem) {
+  if (!abs_seq->isa<T>()) {
+    return false;
+  }
+  if (type_elem == OP_DTYPE::DT_ANY) {
+    return true;
+  }
+  auto abs = abs_seq->cast<abstract::AbstractSequencePtr>();
+  MS_EXCEPTION_IF_NULL(abs);
+  if (abs->dynamic_len()) {
+    return true;
+  }
+  for (const auto &abs_elem : abs->elements()) {
+    if (!ValidateArgsType(abs_elem, type_elem)) {
+      return false;
+    }
+  }
+  return true;
+}
+
+bool ValidateArgsSequenceType(const AbstractBasePtr &abs_arg, OP_DTYPE type_arg) {
+  switch (static_cast<int>(type_arg)) {
+    case OP_DTYPE::DT_TUPLE_BOOL: {
+      return ValidateSequenceType<abstract::AbstractTuple>(abs_arg, OP_DTYPE::DT_BOOL);
+    }
+    case OP_DTYPE::DT_TUPLE_INT: {
+      return ValidateSequenceType<abstract::AbstractTuple>(abs_arg, OP_DTYPE::DT_INT);
+    }
+    case OP_DTYPE::DT_TUPLE_FLOAT: {
+      return ValidateSequenceType<abstract::AbstractTuple>(abs_arg, OP_DTYPE::DT_FLOAT);
+    }
+    case OP_DTYPE::DT_TUPLE_NUMBER: {
+      return ValidateSequenceType<abstract::AbstractTuple>(abs_arg, OP_DTYPE::DT_NUMBER);
+    }
+    case OP_DTYPE::DT_TUPLE_TENSOR: {
+      return ValidateSequenceType<abstract::AbstractTuple>(abs_arg, OP_DTYPE::DT_TENSOR);
+    }
+    case OP_DTYPE::DT_TUPLE_STR: {
+      return ValidateSequenceType<abstract::AbstractTuple>(abs_arg, OP_DTYPE::DT_STR);
+    }
+    case OP_DTYPE::DT_TUPLE_ANY: {
+      return ValidateSequenceType<abstract::AbstractTuple>(abs_arg, OP_DTYPE::DT_ANY);
+    }
+    case OP_DTYPE::DT_LIST_BOOL: {
+      return ValidateSequenceType<abstract::AbstractList>(abs_arg, OP_DTYPE::DT_BOOL);
+    }
+    case OP_DTYPE::DT_LIST_INT: {
+      return ValidateSequenceType<abstract::AbstractList>(abs_arg, OP_DTYPE::DT_INT);
+    }
+    case OP_DTYPE::DT_LIST_FLOAT: {
+      return ValidateSequenceType<abstract::AbstractList>(abs_arg, OP_DTYPE::DT_FLOAT);
+    }
+    case OP_DTYPE::DT_LIST_NUMBER: {
+      return ValidateSequenceType<abstract::AbstractList>(abs_arg, OP_DTYPE::DT_NUMBER);
+    }
+    case OP_DTYPE::DT_LIST_TENSOR: {
+      return ValidateSequenceType<abstract::AbstractList>(abs_arg, OP_DTYPE::DT_TENSOR);
+    }
+    case OP_DTYPE::DT_LIST_STR: {
+      return ValidateSequenceType<abstract::AbstractList>(abs_arg, OP_DTYPE::DT_STR);
+    }
+    case OP_DTYPE::DT_LIST_ANY: {
+      return ValidateSequenceType<abstract::AbstractList>(abs_arg, OP_DTYPE::DT_ANY);
+    }
+    default: {
+      MS_EXCEPTION(ValueError) << "Unknown op dtype " << prim::OpDTypeToString(type_arg);
+    }
+  }
+}
+}  // namespace
+
+bool ValidateArgsType(const AbstractBasePtr &abs_arg, OP_DTYPE type_arg) {
+  auto abs_type = abs_arg->BuildType();
+  MS_EXCEPTION_IF_NULL(abs_type);
+  switch (static_cast<int>(type_arg)) {
+    case OP_DTYPE::DT_ANY: {
+      return true;
+    }
+    case OP_DTYPE::DT_BOOL: {
+      return abs_arg->isa<abstract::AbstractScalar>() && abs_type->isa<Bool>();
+    }
+    case OP_DTYPE::DT_INT: {
+      return abs_arg->isa<abstract::AbstractScalar>() && (abs_type->isa<Int>() || abs_type->isa<UInt>());
+    }
+    case OP_DTYPE::DT_FLOAT: {
+      return abs_arg->isa<abstract::AbstractScalar>() && (abs_type->isa<Float>() || abs_type->isa<BFloat>());
+    }
+    case OP_DTYPE::DT_NUMBER: {
+      return abs_arg->isa<abstract::AbstractScalar>() && abs_type->isa<Number>();
+    }
+    case OP_DTYPE::DT_STR: {
+      return abs_arg->isa<abstract::AbstractScalar>() && abs_type->isa<String>();
+    }
+    case OP_DTYPE::DT_TENSOR: {
+      return abs_arg->isa<abstract::AbstractTensor>();
+    }
+    case OP_DTYPE::DT_TYPE: {
+      return abs_arg->isa<abstract::AbstractType>() && abs_type->isa<Type>();
+    }
+    default: {
+      return ValidateArgsSequenceType(abs_arg, type_arg);
+    }
+  }
+  return false;
+}
+
 AnfNodePtrList GetPrimitiveInitArgs(const PrimitivePyPtr &prim_py, const ops::OpDef *op_def) {
   MS_EXCEPTION_IF_NULL(prim_py);
   MS_EXCEPTION_IF_NULL(op_def);
@@ -80,7 +190,7 @@ bool ValidateArgSpecialType(const std::string &op_name, const AbstractBasePtr &a
                             << "], only positional arguments as inputs are supported, but got " << abs->ToString();
   }
   return fallback::ContainsSequenceAnyType(abs) || ValidateArgOptional(abs, op_arg) ||
-         ops::ValidateArgsType(abs, op_arg.arg_dtype_);
+         abstract::ValidateArgsType(abs, op_arg.arg_dtype_);
 }
 
 void GetKeywordArgsMap(const AbstractBasePtr &input_abs, const std::vector<ops::OpInputArg> &op_args,
@@ -186,7 +296,7 @@ bool ValidateAndConvertArgsType(const std::string &op_name, const std::vector<op
     bool match = false;
     auto cast_dtypes = op_arg.cast_dtype_;
     for (size_t j = 0; j < cast_dtypes.size(); ++j) {
-      if (ops::ValidateArgsType(abs_arg, cast_dtypes[j])) {
+      if (abstract::ValidateArgsType(abs_arg, cast_dtypes[j])) {
         (*nodes)[i] = GetNodeAfterTypeConversion((*nodes)[i], op_arg, fg, op_name);
         match = true;
         break;
@@ -294,7 +404,7 @@ CNodePtr CheckAndConvertPrimitiveArgs(const PrimitivePtr &prim, const FuncGraphP
                          [](const AbstractBasePtr &op_abs) { return prim::BuildArgsTypeString(op_abs->BuildType()); });
     (void)std::transform(init_abs_list.cbegin(), init_abs_list.cend(), std::back_inserter(op_type_list),
                          [](const AbstractBasePtr &op_abs) { return prim::BuildArgsTypeString(op_abs->BuildType()); });
-    MS_EXCEPTION(TypeError) << ops::BuildOpErrorMsg(op_def, op_type_list);
+    MS_EXCEPTION(TypeError) << prim::BuildOpErrorMsg(op_def, op_type_list);
   }
 
   // Create New node.

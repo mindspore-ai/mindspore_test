@@ -25,7 +25,7 @@
 #include "include/utils/exception.h"
 #include "pybind_api/pynative/pynative_api.h"
 #include "include/utils/pynative/storage_py.h"
-#include "ir/device_address_maker.h"
+#include "device_address/device_address_maker.h"
 #include "utils/ms_utils_secure.h"
 #include "include/utils/pyobj_manager.h"
 #include "include/runtime/pipeline/pipeline.h"

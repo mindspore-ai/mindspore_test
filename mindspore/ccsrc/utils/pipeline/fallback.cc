@@ -1,5 +1,5 @@
 /**
- * Copyright 2023 Huawei Technologies Co., Ltd
+ * Copyright 2023-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "include/utils/fallback.h"
+#include "include/utils/pipeline/fallback.h"
 
 #include <queue>
 
@@ -26,22 +26,6 @@
 
 namespace mindspore {
 namespace fallback {
-static std::queue<py::object> py_execute_output_queue = std::queue<py::object>();
-
-bool HasPyExecuteOutput() { return !py_execute_output_queue.empty(); }
-
-py::object PopPyExecuteOutput() {
-  auto output = py_execute_output_queue.front();
-  MS_LOG(DEBUG) << "output: " << output;
-  py_execute_output_queue.pop();
-  return output;
-}
-
-void PushPyExecuteOutput(const py::object &output) {
-  MS_LOG(DEBUG) << "output: " << output;
-  py_execute_output_queue.push(output);
-}
-
 int GetJitSyntaxLevel() {
   // Get jit_syntax_level from environment variable 'MS_DEV_JIT_SYNTAX_LEVEL'.
   std::string env_level_str = common::GetEnv("MS_DEV_JIT_SYNTAX_LEVEL");

@@ -311,6 +311,20 @@ LocationPtr GraphDebugInfo::location() const {
 
 void GraphDebugInfo::set_deco_location(const LocationPtr &deco_list_loc) { deco_loc_ = deco_list_loc; }
 
+TraceContext::TraceContext(const LocationPtr &loc) : location_(loc) {
+  auto top = TraceManager::CurrentContextInfo();
+  if (top != nullptr) {
+    trace_info_ = top->trace_info();
+  }
+  if (location_ != nullptr) {
+    MS_LOG(DEBUG) << "location_: " << location_->DebugString();
+  } else {
+    MS_LOG(DEBUG) << "location_ is null";
+  }
+}
+
+TraceContext::TraceContext(const TraceInfoPtr &trace_info) : trace_info_(trace_info) {}
+
 TraceContextPtr TraceManager::CurrentContextInfo() {
   if (!trace_context_stack_.empty()) {
     return &trace_context_stack_.back();
@@ -403,6 +417,19 @@ bool DebugInfoCompare::operator()(const DebugInfoPtr &left, const DebugInfoPtr &
 }
 
 namespace {
+std::vector<DebugInfoPtr> GetDebugInfoList(const DebugInfoPtr &debug_info) {
+  std::vector<DebugInfoPtr> debug_infos;
+  auto cur_debug_info = debug_info;
+  while (cur_debug_info != nullptr) {
+    (void)debug_infos.emplace_back(cur_debug_info);
+    if (cur_debug_info->trace_info() == nullptr) {
+      break;
+    }
+    cur_debug_info = cur_debug_info->trace_info()->debug_info();
+  }
+  return debug_infos;
+}
+
 void DumpNodesDebugInfos(const AnfNodePtr &caller, const AnfNodePtr &callee) {
   const DebugInfoPtr &caller_debug_info = caller->debug_info();
   const DebugInfoPtr &callee_debug_info = callee->debug_info();
@@ -560,18 +587,5 @@ void UpdateInlineCNodeDebugInfo(const AnfNodePtr &caller, const AnfNodePtr &call
   (void)callee_debug_info->shadow_debug_infos_map().emplace(parse_def_debug_info, first_diff_caller_debug_info);
   // Synchronize callers' shadow debug infos.
   SyncShadowDebugInfo(caller_debug_info, callee_debug_info);
-}
-
-std::vector<DebugInfoPtr> GetDebugInfoList(const DebugInfoPtr &debug_info) {
-  std::vector<DebugInfoPtr> debug_infos;
-  auto cur_debug_info = debug_info;
-  while (cur_debug_info != nullptr) {
-    (void)debug_infos.emplace_back(cur_debug_info);
-    if (cur_debug_info->trace_info() == nullptr) {
-      break;
-    }
-    cur_debug_info = cur_debug_info->trace_info()->debug_info();
-  }
-  return debug_infos;
 }
 }  // namespace mindspore

@@ -23,7 +23,7 @@
 #include <vector>
 #include "mindapi/base/type_id.h"
 #include "mindapi/base/shape_vector.h"
-#include "ir/device_type.h"
+#include "device_address/device_type.h"
 #include "ir/tensor_data.h"
 #include "device_address/device_address.h"
 

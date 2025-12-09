@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-#include "include/utils/cse.h"
+#include "include/utils/pipeline/cse.h"
 
 #include <vector>
 #include <set>

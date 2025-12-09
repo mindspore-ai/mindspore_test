@@ -23,15 +23,16 @@
 #include "abstract/param_validator.h"
 #include "frontend/operator/cc_implementations.h"
 #include "frontend/operator/ops.h"
-#include "include/utils/primfunc_utils.h"
 #include "include/utils/amp.h"
 #include "utils/convert_utils.h"
-#include "include/utils/frontend/primitive_utils.h"
+#include "include/utils/operator/primitive_utils.h"
 #include "frontend/jit/ps/static_analysis/prim.h"
 #include "frontend/jit/ps/static_analysis/prim_utils.h"
+#include "frontend/jit/ps/static_analysis/auto_monad.h"
 #include "ir/anf.h"
 #include "ir/dtype.h"
 #include "ir/dtype/ref.h"
+#include "ir/func_graph_flag.h"
 #include "ir/core_ops_primitive.h"
 #include "ops/op_def.h"
 #include "utils/flags.h"
@@ -42,7 +43,6 @@
 #include "primitive/auto_generate/gen_ops_primitive_m.h"
 #include "primitive/auto_generate/gen_ops_primitive_s.h"
 #include "primitive/auto_generate/gen_ops_primitive_t.h"
-#include "ir/func_graph_flag.h"
 
 namespace mindspore {
 // namespace to support composite operators definition
@@ -191,9 +191,9 @@ void CheckPrimInputType(const ValuePtr &function, const AbstractBasePtrList &arg
     }
     auto cast_dtypes = op_arg.cast_dtype_;
     bool match = std::any_of(cast_dtypes.cbegin(), cast_dtypes.cend(),
-                             [&abs](const ops::OP_DTYPE &dtype) { return ops::ValidateArgsType(abs, dtype); });
+                             [&abs](const ops::OP_DTYPE &dtype) { return abstract::ValidateArgsType(abs, dtype); });
     if (!match) {
-      MS_EXCEPTION(TypeError) << ops::BuildOpInputsErrorMsg(op_def, op_arg.arg_name_, abs->BuildType());
+      MS_EXCEPTION(TypeError) << prim::BuildOpInputsErrorMsg(op_def, op_arg.arg_name_, abs->BuildType());
     }
   }
 }

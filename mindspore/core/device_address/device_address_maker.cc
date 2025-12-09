@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "ir/device_address_maker.h"
+#include "device_address/device_address_maker.h"
 #include "device_address/device_address.h"
 #include "ir/tensor_data.h"
 

@@ -29,7 +29,7 @@
 #include <iomanip>
 #include "device_address/device_address.h"
 #include "ir/meta_tensor.h"
-#include "ir/device_type.h"
+#include "device_address/device_type.h"
 #include "utils/log_adapter.h"
 #include "base/bfloat16.h"
 #include "utils/os.h"

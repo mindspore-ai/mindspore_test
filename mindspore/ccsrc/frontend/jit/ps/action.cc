@@ -44,7 +44,7 @@
 #include "include/utils/utils.h"
 #include "include/utils/tensor_py_wrapper.h"
 #include "include/utils/parallel_context.h"
-#include "include/utils/fallback.h"
+#include "include/utils/pipeline/fallback.h"
 #include "include/runtime/utils/runtime_conf/runtime_env.h"
 #include "abstract/abstract_value.h"
 #include "frontend/operator/composite/composite.h"

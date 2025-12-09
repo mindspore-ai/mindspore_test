@@ -18,7 +18,6 @@
 
 #include "abstract/abstract_value.h"
 
-#include <regex>
 #include <algorithm>
 #include <utility>
 
@@ -33,6 +32,7 @@
 #include "utils/ms_context.h"
 #include "utils/trace_base.h"
 #include "utils/compile_config.h"
+#include "mindspore/core/abstract/abstract_join.h"
 
 namespace mindspore {
 namespace abstract {
@@ -105,17 +105,6 @@ inline void ShapeJoinLogging(const BaseShapePtr &shape1, const BaseShapePtr &sha
       << ".\nFor more details, please refer to https://www.mindspore.cn/search?inputValue=Shape%20Join%20Failed\n";
   oss << JoinSupplementaryInfo(abstract1, abstract2);
   MS_EXCEPTION(ValueError) << oss.str();
-}
-
-std::string ExtractLoggingInfo(const std::string &info) {
-  // Extract log information based on the keyword "Type Join Failed" or "Shape Join Failed"
-  std::regex e("(Type Join Failed|Shape Join Failed).*?\n.*?(Type%20Join%20Failed|Shape%20Join%20Failed)");
-  std::smatch result;
-  bool found = std::regex_search(info, result, e);
-  if (found) {
-    return result.str();
-  }
-  return "";
 }
 
 static inline bool IsUndeterminedType(const TypePtr &type) {
@@ -2988,38 +2977,6 @@ AbstractBasePtr AbstractEvent::Join(const AbstractBasePtr &other) {
     TypeJoinLogging(this_type, other_type, shared_from_base<AbstractBase>(), other);
   }
   return Clone();
-}
-
-ValuePtr GetRefKeyValue(const AbstractBasePtr &abs) {
-  auto abs_ref = abs->cast_ptr<AbstractRefTensor>();
-  if (abs_ref != nullptr) {
-    return abs_ref->ref_key_value();
-  }
-  auto abs_map_tensor = abs->cast_ptr<AbstractMapTensor>();
-  if (abs_map_tensor != nullptr) {
-    return abs_map_tensor->ref_key_value();
-  }
-  return nullptr;
-}
-
-void SynchronizeSuccessiveInputs(const AbstractBasePtr &old_arg, const AbstractBasePtr &new_arg) {
-  // Update inputs inplace abstract.
-  if (old_arg != nullptr && old_arg->inplace_abstract() != nullptr && new_arg != nullptr) {
-    new_arg->set_inplace_abstract(old_arg->inplace_abstract());
-  }
-  // Update sequence nodes info, if matched.
-  static const auto enable_eliminate_unused_element = (common::GetCompileConfig("ENABLE_DDE") != "0");
-  if (enable_eliminate_unused_element) {
-    auto new_sequence = dyn_cast<AbstractSequence>(new_arg);
-    auto old_sequence = dyn_cast<AbstractSequence>(old_arg);
-    if (old_sequence != nullptr && new_sequence != nullptr) {
-      MS_LOG(DEBUG) << "Before synchronize sequence nodes use flags, old_sequence: " << old_sequence->ToString()
-                    << ", new_sequence: " << new_sequence->ToString();
-      SynchronizeSequenceElementsUseFlagsRecursively(old_sequence, new_sequence);
-      MS_LOG(DEBUG) << "After synchronize sequence nodes use flags, old_sequence: " << old_sequence->ToString()
-                    << ", new_sequence: " << new_sequence->ToString();
-    }
-  }
 }
 }  // namespace abstract
 }  // namespace mindspore

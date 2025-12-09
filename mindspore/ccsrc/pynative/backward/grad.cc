@@ -32,7 +32,7 @@
 #include "include/utils/convert_utils_py.h"
 #include "include/utils/tensor_py.h"
 #include "include/utils/pynative/common_utils.h"
-#include "include/utils/frontend/pipeline_utils.h"
+#include "include/utils/pipeline/pipeline_utils.h"
 #include "include/frontend/jit/ps/parse/py_data_convert.h"
 #include "pybind_api/gil_scoped_long_running.h"
 #include "pynative/backward/hook/custom_function.h"

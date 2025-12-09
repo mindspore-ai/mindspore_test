@@ -27,12 +27,11 @@
 #include "pynative/utils/runtime/op_executor.h"
 #include "view/view_strides_calculator.h"
 #include "include/backend/common/device_address_utils.h"
-#include "include/utils/frontend/primitive_utils.h"
+#include "include/utils/operator/primitive_utils.h"
 #include "mindspore/ccsrc/pynative/utils/pyboost/pyboost_kernel_extra_func.h"
 #include "utils/simple_info.h"
 #include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
 #include "include/utils/pynative/abstract_converter.h"
-#include "ops/infer_info/value_infer_info_adapter.h"
 #include "ops/ops_func_impl/simple_infer.h"
 #include "tools/profiler/profiler.h"
 

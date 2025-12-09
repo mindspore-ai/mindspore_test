@@ -27,7 +27,7 @@
 #include "utils/log_adapter.h"
 #include "include/utils/convert_utils_py.h"
 #include "frontend/jit/ps/parse/resolve.h"
-#include "include/utils/fallback.h"
+#include "include/utils/pipeline/fallback.h"
 #include "include/utils/anfalgo.h"
 
 namespace mindspore {

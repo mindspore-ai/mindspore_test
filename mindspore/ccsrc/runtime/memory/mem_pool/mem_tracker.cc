@@ -32,7 +32,7 @@
 #include "utils/log_adapter.h"
 #include "utils/ms_context.h"
 #include "utils/distributed_meta.h"
-#include "ir/device_type.h"
+#include "device_address/device_type.h"
 #include "include/utils/utils.h"
 
 namespace mindspore {

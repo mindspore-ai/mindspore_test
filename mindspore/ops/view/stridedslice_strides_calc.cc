@@ -18,7 +18,7 @@
 #include <memory>
 #include "ops_utils/op_constants.h"
 #include "utils/check_convert_utils.h"
-#include "utils/core_op_utils.h"
+#include "ops/op_def_utils.h"
 
 namespace mindspore::ops {
 constexpr size_t kStridedSliceCalcInputsNumWithoutMask = 4;

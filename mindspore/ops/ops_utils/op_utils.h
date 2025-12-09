@@ -27,7 +27,7 @@
 #include <unordered_map>
 #include "ir/dtype/tensor_type.h"
 #include "utils/value_utils.h"
-#include "utils/core_op_utils.h"
+#include "ops/op_def_utils.h"
 #include "mindapi/base/shape_vector.h"
 #include "primitive/math_ops.h"
 #include "primitive/op_name.h"

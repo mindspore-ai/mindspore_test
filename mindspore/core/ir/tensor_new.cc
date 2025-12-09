@@ -17,7 +17,7 @@
 #include "ir/tensor_new.h"
 
 #include "ir/tensor.h"
-#include "ir/device_address_maker.h"
+#include "device_address/device_address_maker.h"
 
 namespace mindspore {
 namespace tensor {

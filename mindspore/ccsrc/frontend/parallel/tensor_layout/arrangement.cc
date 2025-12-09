@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "frontend/parallel/tensor_layout/arrangement.h"
+#include "include/frontend/parallel/tensor_layout/arrangement.h"
 
 #include <algorithm>
 #include <utility>

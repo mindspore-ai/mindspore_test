@@ -25,7 +25,6 @@
 #include "pynative/utils/base.h"
 #include "include/pynative/utils/pynative_execute.h"
 #include "include/utils/tensor_py.h"
-#include "include/utils/primfunc_utils.h"
 #include "ops/op_def.h"
 #include "include/utils/visible.h"
 

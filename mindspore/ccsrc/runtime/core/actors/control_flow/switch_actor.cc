@@ -18,7 +18,7 @@
 #include "runtime/core/actors/control_flow/entrance_actor.h"
 #include "runtime/core/actors/base/output_actor.h"
 #include "runtime/hardware_abstract/utils.h"
-#include "include/utils/fallback.h"
+#include "include/utils/pipeline/fallback.h"
 #include "utils/log_adapter.h"
 #include "include/utils/python_adapter.h"
 #include "mindspore/core/include/ir/tensor_new.h"

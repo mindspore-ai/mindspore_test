@@ -38,8 +38,6 @@ MS_CORE_API SymbolPtr BuildSymbolicValue(const AbstractBasePtr &abstract);
 MS_CORE_API ShapeVector ToShape(const Symbol *symbol);
 inline ShapeVector ToShape(const SymbolPtr &symbol) { return ToShape(symbol.get()); }
 
-MS_CORE_API SymbolPtr ShapeVector2Symbol(const ShapeVector &shape, const OpPtr &op = nullptr);
-
 MS_CORE_API SymbolPtr IntValues2Symbol(const std::vector<int64_t> &shape, const OpPtr &op = nullptr);
 
 // get int value from symbol
@@ -53,9 +51,6 @@ inline int64_t NormAxis(int64_t axis, size_t rank) {
   return axis >= 0 ? axis : axis + static_cast<int64_t>(rank);
 }
 MS_CORE_API std::set<int64_t> NormAxis(const ListSymbol *axis, size_t rank);
-
-MS_CORE_API std::string SymbolListToStr(const SymbolPtrList &slist, const std::string &pre, const std::string &post,
-                                        bool raw_str = false);
 
 MS_CORE_API BaseShapePtr QueryShape(const AbstractBasePtr &abs);
 MS_CORE_API ValuePtr QueryValue(const AbstractBasePtr &abs);

@@ -33,7 +33,7 @@
 #include "ir/tensor.h"
 #include "include/backend/visible.h"
 #include "include/runtime/hardware_abstract/kernel_base/graph_fusion/framework_utils.h"
-#include "ir/device_type.h"
+#include "device_address/device_type.h"
 
 namespace mindspore {
 using device::DeviceContext;

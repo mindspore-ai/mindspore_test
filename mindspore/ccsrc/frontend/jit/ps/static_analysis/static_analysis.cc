@@ -19,6 +19,7 @@
 #include "frontend/jit/ps/static_analysis/static_analysis.h"
 
 #include <algorithm>
+#include <regex>
 #include <memory>
 #include <mutex>
 #include <set>
@@ -42,7 +43,7 @@
 #include "ir/dtype/tensor_type.h"
 #include "frontend/jit/ps/static_analysis/evaluator.h"
 #include "frontend/jit/ps/debug/trace.h"
-#include "include/utils/fallback.h"
+#include "include/utils/pipeline/fallback.h"
 #include "mindspore/ccsrc/utils/ir_dump/anf_ir_dump.h"
 #include "include/utils/convert_utils_py.h"
 #include "include/utils/python_adapter.h"
@@ -596,6 +597,17 @@ EvalResultPtr InsertRealOp(const CNodePtr &cnode, const AnfNodeConfigPtr &conf) 
   MS_EXCEPTION_IF_NULL(eng);
   auto new_conf = eng->MakeConfig(real_op, conf->context(), conf->func_graph());
   return eng->ForwardConfig(conf, new_conf);
+}
+
+std::string ExtractLoggingInfo(const std::string &info) {
+  // Extract log information based on the keyword "Type Join Failed" or "Shape Join Failed"
+  std::regex e("(Type Join Failed|Shape Join Failed).*?\n.*?(Type%20Join%20Failed|Shape%20Join%20Failed)");
+  std::smatch result;
+  bool found = std::regex_search(info, result, e);
+  if (found) {
+    return result.str();
+  }
+  return "";
 }
 }  // namespace
 
@@ -2134,6 +2146,26 @@ AnalysisContextPtr NewContext(const AnalysisContextPtr &current_context, const F
                                << trace::GetDebugInfoStr(fg->debug_info());
   }
   return new_context;
+}
+
+void SynchronizeSuccessiveInputs(const AbstractBasePtr &old_arg, const AbstractBasePtr &new_arg) {
+  // Update inputs inplace abstract.
+  if (old_arg != nullptr && old_arg->inplace_abstract() != nullptr && new_arg != nullptr) {
+    new_arg->set_inplace_abstract(old_arg->inplace_abstract());
+  }
+  // Update sequence nodes info, if matched.
+  static const auto enable_eliminate_unused_element = (common::GetCompileConfig("ENABLE_DDE") != "0");
+  if (enable_eliminate_unused_element) {
+    auto new_sequence = dyn_cast<AbstractSequence>(new_arg);
+    auto old_sequence = dyn_cast<AbstractSequence>(old_arg);
+    if (old_sequence != nullptr && new_sequence != nullptr) {
+      MS_LOG(DEBUG) << "Before synchronize sequence nodes use flags, old_sequence: " << old_sequence->ToString()
+                    << ", new_sequence: " << new_sequence->ToString();
+      SynchronizeSequenceElementsUseFlagsRecursively(old_sequence, new_sequence);
+      MS_LOG(DEBUG) << "After synchronize sequence nodes use flags, old_sequence: " << old_sequence->ToString()
+                    << ", new_sequence: " << new_sequence->ToString();
+    }
+  }
 }
 }  // namespace abstract
 }  // namespace mindspore

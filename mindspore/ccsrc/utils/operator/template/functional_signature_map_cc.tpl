@@ -1,5 +1,5 @@
 /**
- * Copyright 2023 Huawei Technologies Co., Ltd
+ * Copyright 2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,10 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "include/utils/python_fallback_running.h"
 
-namespace mindspore {
-ScopedFallbackRunning::ScopedFallbackRunning() { on_ = true; }
+#include "utils/operator/auto_generate/functional_signature_map.h"
 
-ScopedFallbackRunning::~ScopedFallbackRunning() { on_ = false; }
-}  // namespace mindspore
+#include <map>
+#include <vector>
+#include <string>
+
+namespace mindspore::ops {
+std::map<std::string, std::vector<std::string>> tensor_method_overload_signature_map = {
+  ${tensor_method_sigs_map}
+};
+
+std::map<std::string, std::vector<std::string>> function_overload_signature_map = {
+  ${mint_sigs_map}
+};
+}  // namespace mindspore::ops

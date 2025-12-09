@@ -25,8 +25,8 @@ SyncCopyFunc g_sync_copy_func[static_cast<int>(device::DeviceType::kDeviceEnd)];
 AsyncCopyFunc g_async_copy_func[static_cast<int>(device::DeviceType::kDeviceEnd)];
 SyncPtrFunc g_sync_ptr_func[static_cast<int>(device::DeviceType::kDeviceEnd)];
 
-MS_CORE_API void SetCopyFunc(device::DeviceType device_type, SyncCopyFunc &&sync_func, AsyncCopyFunc &&async_func,
-                             SyncPtrFunc &&sync_ptr_func) {
+void SetCopyFunc(device::DeviceType device_type, SyncCopyFunc &&sync_func, AsyncCopyFunc &&async_func,
+                 SyncPtrFunc &&sync_ptr_func) {
   MS_LOG(INFO) << "Resigter copy function for device type:" << device_type;
   g_sync_copy_func[static_cast<int>(device_type)] = sync_func;
   g_async_copy_func[static_cast<int>(device_type)] = async_func;

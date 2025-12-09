@@ -39,7 +39,7 @@
 #include "include/runtime/pipeline/pipeline.h"
 #include "mindspore/ccsrc/runtime/hardware_abstract/utils.h"
 #include "mindspore/ccsrc/pybind_api/pynative/tensor/tensor_api/auto_generate/tensor_api.h"
-#include "mindspore/core/include/ir/device_address_maker.h"
+#include "mindspore/core/include/device_address/device_address_maker.h"
 
 namespace mindspore::tensor {
 using tensor::TensorPybind;

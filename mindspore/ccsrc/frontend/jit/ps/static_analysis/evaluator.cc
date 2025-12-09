@@ -26,7 +26,7 @@
 #include "utils/tensor_hook_map.h"
 #include "ir/func_graph_cloner.h"
 #include "abstract/utils.h"
-#include "include/utils/fallback.h"
+#include "include/utils/pipeline/fallback.h"
 #include "frontend/jit/ps/debug/trace.h"
 #include "utils/ms_context.h"
 #include "utils/compile_config.h"

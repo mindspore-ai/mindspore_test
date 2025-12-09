@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2023 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,13 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef MINDSPORE_CORE_BASE_BASE_REF_UTILS_H
-#define MINDSPORE_CORE_BASE_BASE_REF_UTILS_H
-#include <vector>
-#include "ir/tensor.h"
-#include "base/base_ref.h"
+
+#ifndef MINDSPORE_CCSRC_INCLUDE_UTILS_PIPELINE_PYTHON_FALLBACK_RUNNING_H_
+#define MINDSPORE_CCSRC_INCLUDE_UTILS_PIPELINE_PYTHON_FALLBACK_RUNNING_H_
+
+#include "include/utils/visible.h"
 
 namespace mindspore {
-MS_CORE_API std::vector<tensor::TensorPtr> TransformVectorRefToMultiTensor(const VectorRef &base_ref);
+class COMMON_EXPORT ScopedFallbackRunning final {
+ public:
+  ScopedFallbackRunning();
+  ~ScopedFallbackRunning();
+
+  inline static bool on() { return on_; }
+
+ private:
+  inline static bool on_{false};
+};
 }  // namespace mindspore
-#endif  // MINDSPORE_CORE_BASE_BASE_REF_UTILS_H
+#endif  // MINDSPORE_CCSRC_INCLUDE_UTILS_PIPELINE_PYTHON_FALLBACK_RUNNING_H_

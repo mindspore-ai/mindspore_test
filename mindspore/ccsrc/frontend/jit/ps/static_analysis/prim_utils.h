@@ -36,6 +36,8 @@ namespace abstract {
 // Get the __init__() arguments of the PrimitivePy object.
 AnfNodePtrList GetPrimitiveInitArgs(const PrimitivePyPtr &prim_py, const ops::OpDef *op_def);
 
+bool ValidateArgsType(const AbstractBasePtr &abs_arg, ops::OP_DTYPE type_arg);
+
 bool ValidateArgSpecialType(const std::string &op_name, const AbstractBasePtr &abs, const ops::OpInputArg &op_arg);
 
 AnfNodePtrList GeneratePrimitiveDefaultArgs(const std::string &op_name, const std::vector<AnfNodePtr> &args_list,

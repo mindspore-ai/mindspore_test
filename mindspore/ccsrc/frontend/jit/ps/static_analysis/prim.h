@@ -339,6 +339,13 @@ bool IsInWhiteList(const PrimitivePtr &primitive);
 PrimEvaluatorMap &GetPrimEvaluatorConstructors();
 
 void ClearPrimEvaluatorMap();
+
+// Return an abstract value for the sensitivity of x.
+// The sensitivity of a function is an Env
+// The sensitivity of J(x) is x
+// else self.Clone;
+AbstractBasePtr SensitivityTransform(const AbstractBasePtr &spec);
+
 }  // namespace abstract
 }  // namespace mindspore
 

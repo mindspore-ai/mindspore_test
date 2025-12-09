@@ -17,7 +17,7 @@
 #include "common/test_device_address.h"
 #include <utility>
 #include <unordered_map>
-#include "ir/device_address_maker.h"
+#include "device_address/device_address_maker.h"
 #include "mindspore/core/include/device_address/convert_tensor_utils.h"
 
 namespace mindspore {

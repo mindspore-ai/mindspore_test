@@ -22,33 +22,10 @@
 #include <algorithm>
 #include "include/utils/anfalgo.h"
 #include "ops_utils/op_constants.h"
+#include "device_address/convert_tensor_utils.h"
 
 namespace mindspore {
 namespace trans {
-namespace {
-void HalfToFloat(void *dst, const void *src, size_t elem_num) {
-  if (dst == nullptr || src == nullptr) {
-    return;
-  }
-  auto half_data = static_cast<const float16 *>(src);
-  auto float_data = static_cast<float *>(dst);
-  for (size_t i = 0; i < elem_num; ++i) {
-    float tmp = half_to_float(half_data[i]);
-    float_data[i] = tmp;
-  }
-}
-
-void FloatToHalf(void *dst, const void *src, size_t elem_num) {
-  if (dst == nullptr || src == nullptr) {
-    return;
-  }
-  auto float_data = static_cast<const float *>(src);
-  auto half_data = static_cast<float16 *>(dst);
-  for (size_t i = 0; i < elem_num; ++i) {
-    half_data[i] = float16(float_data[i]);
-  }
-}
-}  // namespace
 static const ShapeValueDType kShapeDimAny = abstract::Shape::kShapeDimAny;
 
 const int b1 = 1;
@@ -286,10 +263,10 @@ bool DataTypeTransfer::CastKernel(const TypeIdArgs &args, void *dst, int64_t dat
     {DataTypeTransMode::FROM_FLOAT64_TO_FLOAT32, TransDataSrc2Dst<double, float>}};
 
   if (mode == DataTypeTransMode::FROM_FLOAT_TO_FLOAT16) {
-    FloatToHalf(dst, args.data, LongToSize(data_size));
+    device::FloatToHalf(dst, args.data, LongToSize(data_size));
     return true;
   } else if (mode == DataTypeTransMode::FROM_FLOAT16_TO_FLOAT) {
-    HalfToFloat(dst, args.data, LongToSize(data_size));
+    device::HalfToFloat(dst, args.data, LongToSize(data_size));
     return true;
   }
   auto iter = cast_kernel_map.find(mode);

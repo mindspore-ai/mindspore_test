@@ -31,6 +31,7 @@
 #include "primitive/array_ops.h"
 #include "primitive/framework_ops.h"
 #include "ir/anf.h"
+#include "ir/core_ops_primitive.h"
 #include "frontend/jit/ps/parse/resolve.h"
 #include "frontend/operator/ops.h"
 #include "frontend/operator/composite/multitype_funcgraph.h"
@@ -2053,4 +2054,51 @@ bool ReAutoMonad(const FuncGraphPtr &func_graph) {
   return changed;
 }
 }  // namespace pipeline
+
+namespace {
+std::set<CNodePtr> GetLoadInputs(const AnfNodePtr &node) {
+  std::set<CNodePtr> loads;
+  auto cnode = dyn_cast_ptr<CNode>(node);
+  if (cnode == nullptr) {
+    return loads;
+  }
+  auto &inputs = cnode->weak_inputs();
+  for (size_t i = 1; i < inputs.size(); ++i) {
+    const auto &input = inputs.at(i).lock();
+    if (IsPrimitiveCNode(input, prim::kPrimLoad)) {
+      loads.insert(input->cast<CNodePtr>());
+    } else if (IsPrimitiveCNode(input, prim::kPrimMakeTuple)) {
+      loads.merge(GetLoadInputs(input));
+    }
+  }
+  return loads;
+}
+}  // namespace
+
+bool IsStateEquivalent(const AnfNodePtr &outer, const AnfNodePtr &inner) {
+  constexpr size_t kMonadInput = 2;
+  auto outer_loads = GetLoadInputs(outer);
+  if (outer_loads.empty()) {
+    return true;
+  }
+  auto inner_loads = GetLoadInputs(inner);
+  if (inner_loads.empty()) {
+    return true;
+  }
+  outer_loads.merge(inner_loads);
+  const auto &monad = (*outer_loads.begin())->weak_inputs().at(kMonadInput).lock();
+  return std::all_of(++outer_loads.begin(), outer_loads.end(), [&monad, kMonadInput](const CNodePtr &load) {
+    return load->weak_inputs().at(kMonadInput).lock() == monad;
+  });
+}
+
+size_t GetAbstractMonadNum(const AbstractBasePtrList &args) {
+  size_t num = 0;
+  for (auto &arg : args) {
+    if (arg->isa<abstract::AbstractMonad>()) {
+      ++num;
+    }
+  }
+  return num;
+}
 }  // namespace mindspore

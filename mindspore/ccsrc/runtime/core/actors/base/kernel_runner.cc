@@ -27,7 +27,7 @@
 #include <string>
 
 #include "include/runtime/hardware_abstract/device_context/device_context.h"
-#include "ir/device_type.h"
+#include "device_address/device_type.h"
 #include "ir/dtype/tensor_type.h"
 #include "runtime/core/graph_executor/pipeline/runtime_pipeline.h"
 #include "runtime/core/actors/base/memory_manager_actor.h"

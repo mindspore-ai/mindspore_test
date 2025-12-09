@@ -41,7 +41,7 @@
 #include "frontend/operator/ops.h"
 #include "frontend/optimizer/irpass.h"
 #include "frontend/optimizer/irpass/symbol_resolver.h"
-#include "include/utils/fallback.h"
+#include "include/utils/pipeline/fallback.h"
 #include "mindspore/ccsrc/utils/ir_dump/anf_dump_utils.h"
 #include "utils/log_adapter.h"
 #include "utils/trace_info.h"

@@ -194,21 +194,6 @@ ShapeVector ToShape(const Symbol *symbol) {
   return shape;
 }
 
-SymbolPtr ShapeVector2Symbol(const ShapeVector &shape, const OpPtr &op) {
-  if (IsDynamicRank(shape)) {
-    return ListSymbol::Make(op);
-  }
-  SymbolPtrList result(shape.size());
-  (void)std::transform(shape.begin(), shape.end(), result.begin(), [op](int64_t s) {
-    if (s == abstract::Shape::kShapeDimAny) {
-      return IntSymbol::Make(op);
-    } else {
-      return IntSymbol::Make(s, op);
-    }
-  });
-  return ListSymbol::Make(std::move(result), op);
-}
-
 SymbolPtr IntValues2Symbol(const std::vector<int64_t> &shape, const OpPtr &op) {
   SymbolPtrList result(shape.size());
   (void)std::transform(shape.begin(), shape.end(), result.begin(), [op](int64_t s) { return IntSymbol::Make(s, op); });
@@ -227,23 +212,6 @@ std::set<int64_t> NormAxis(const ListSymbol *axis, size_t rank) {
     result.insert(NormAxis(AsInt(item), rank));
   }
   return result;
-}
-
-std::string SymbolListToStr(const SymbolPtrList &slist, const std::string &pre, const std::string &post, bool raw_str) {
-  std::ostringstream oss;
-  oss << pre;
-  bool first = true;
-  for (auto &s : slist) {
-    if (first) {
-      first = false;
-    } else {
-      oss << ", ";
-    }
-    MS_EXCEPTION_IF_NULL(s);
-    oss << (raw_str ? s->ToRawString() : s->ToString());
-  }
-  oss << post;
-  return oss.str();
 }
 
 BaseShapePtr QueryShape(const AbstractBasePtr &abs) {

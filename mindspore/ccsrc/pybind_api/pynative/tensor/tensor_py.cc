@@ -35,7 +35,7 @@
 #include "pybind_api/pynative/tensor/mbuf_device_address.h"
 #include "include/runtime/core/graph_scheduler/base/move_to.h"
 #include "utils/value_utils.h"
-#include "ir/device_address_maker.h"
+#include "device_address/device_address_maker.h"
 #include "ir/tensor_new.h"
 #include "pynative/utils/runtime/op_runner.h"
 #include "utils/ms_utils_secure.h"

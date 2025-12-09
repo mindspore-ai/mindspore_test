@@ -40,7 +40,7 @@
 #include "frontend/parallel/allreduce_fusion/step_allreduce_fusion.h"
 #include "frontend/parallel/pass/handle_group_info.h"
 #include "frontend/parallel/step_assigned_parallel.h"
-#include "include/utils/fallback.h"
+#include "include/utils/pipeline/fallback.h"
 #include "include/utils/tensor_py.h"
 #include "include/utils/parallel_context.h"
 #include "utils/config_manager.h"

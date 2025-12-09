@@ -23,7 +23,7 @@
 #include "mindspore/ccsrc/pynative/utils/pyboost/op_register.h"
 #include "mindspore/ccsrc/pynative/utils/pyboost/pyboost_utils.h"
 #include "kernel/ascend/aclnn/pyboost_impl/aclnn_utils.h"
-#include "ir/device_address_maker.h"
+#include "device_address/device_address_maker.h"
 #include "ir/tensor_new.h"
 
 namespace mindspore {

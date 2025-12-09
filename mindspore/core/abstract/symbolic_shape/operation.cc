@@ -15,6 +15,7 @@
  */
 #include "abstract/symbolic_shape/operation.h"
 #include "abstract/symbolic_shape/utils.h"
+#include "mindspore/core/abstract/symbolic_shape/symbol_utils.h"
 
 namespace mindspore {
 namespace symshape {

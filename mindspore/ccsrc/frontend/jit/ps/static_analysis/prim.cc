@@ -38,8 +38,8 @@
 #include "frontend/parallel/ops_info/ops_utils.h"
 #include "mindspore/ccsrc/frontend/operator/meta_dsl/common/meta_impl.h"
 #include "include/backend/common/kernel_graph/anf_runtime_algorithm.h"
-#include "include/utils/fallback.h"
-#include "include/utils/primfunc_utils.h"
+#include "include/utils/pipeline/fallback.h"
+#include "include/utils/operator/primitive_utils.h"
 #include "ir/anf.h"
 #include "ir/cell.h"
 #include "ir/dtype/tensor_type.h"
@@ -879,7 +879,7 @@ void PrimitiveFunctionEvaluator::CheckArgsSizeAndType(const AbstractBasePtrList 
       continue;
     }
     if (!ValidateArgOptional(real_abs_args[i], op_args[i]) &&
-        !ops::ValidateArgsType(real_abs_args[i], op_args[i].arg_dtype_)) {
+        !abstract::ValidateArgsType(real_abs_args[i], op_args[i].arg_dtype_)) {
       std::vector<std::string> op_type_list;
       for (const auto &op_abs : real_abs_args) {
         (void)op_type_list.emplace_back(op_abs->BuildType()->ToString());
@@ -887,7 +887,7 @@ void PrimitiveFunctionEvaluator::CheckArgsSizeAndType(const AbstractBasePtrList 
       MS_INTERNAL_EXCEPTION(TypeError)
         << "For Operator[" << op_def_->name_ << "], " << op_args[i].arg_name_ << "'s type '"
         << real_abs_args[i]->BuildType()->ToString() << "' does not match expected type '"
-        << ops::EnumToString(op_args[i].arg_dtype_)
+        << prim::OpDTypeToString(op_args[i].arg_dtype_)
         << "'.\nThe reason may be: lack of definition of type cast, or incorrect type when creating the node.";
     }
   }
@@ -2303,9 +2303,6 @@ void AddLabelsToPrimitiveFunction(const PrimitivePtr &prim_func) {
     (void)prim_func->AddAttr(attr_name, converted_ret);
   }
 }
-}  // namespace
-
-namespace {
 
 AnfNodePtr ConvertArgsToInputs(const PrimitivePtr &prim, const AnfNodeWeakPtrList &inputs, const FuncGraphPtr &fg,
                                const AnalysisEnginePtr &engine, const AnfNodeConfigPtr &out_conf) {
@@ -2360,6 +2357,18 @@ bool IsPrimitiveAbstract(const AnfNodePtr &op_node, const AnalysisEnginePtr &eng
   auto op_abs = eval_func(op_node);
   MS_EXCEPTION_IF_NULL(op_abs);
   return op_abs->isa<PrimitiveAbstractClosure>();
+}
+
+ValuePtr GetRefKeyValue(const AbstractBasePtr &abs) {
+  auto abs_ref = abs->cast_ptr<AbstractRefTensor>();
+  if (abs_ref != nullptr) {
+    return abs_ref->ref_key_value();
+  }
+  auto abs_map_tensor = abs->cast_ptr<AbstractMapTensor>();
+  if (abs_map_tensor != nullptr) {
+    return abs_map_tensor->ref_key_value();
+  }
+  return nullptr;
 }
 }  // namespace
 
@@ -5260,6 +5269,14 @@ PrimEvaluatorMap &GetPrimEvaluatorConstructors() {
   }
 
   return constructor;
+}
+
+AbstractBasePtr SensitivityTransform(const AbstractBasePtr &spec) {
+  auto f_spec = dyn_cast_ptr<AbstractFunction>(spec);
+  if (f_spec != nullptr) {
+    return std::make_shared<AbstractScalar>(kValueAny, std::make_shared<EnvType>());
+  }
+  return spec->Clone();
 }
 }  // namespace abstract
 }  // namespace mindspore

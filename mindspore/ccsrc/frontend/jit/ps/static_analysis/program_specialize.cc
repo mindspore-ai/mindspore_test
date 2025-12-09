@@ -34,7 +34,7 @@
 #include "utils/trace_info.h"
 #include "frontend/jit/ps/debug/trace.h"
 #include "frontend/jit/ps/fallback.h"
-#include "include/utils/fallback.h"
+#include "include/utils/pipeline/fallback.h"
 #include "include/utils/convert_utils_py.h"
 #include "primitive/auto_generate/gen_ops_primitive_d.h"
 #include "primitive/auto_generate/gen_ops_primitive_l.h"

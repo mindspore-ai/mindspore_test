@@ -16,7 +16,7 @@
 
 #include "mindspore/ccsrc/frontend/operator/meta_dsl/func_op/func_dropout_ext.h"
 #include "ir/dtype/type.h"
-#include "utils/core_op_utils.h"
+#include "ops/op_def_utils.h"
 #include "utils/check_convert_utils.h"
 #include "primitive/array_ops.h"
 #include "primitive/comparison_ops.h"

@@ -18,12 +18,12 @@
 #define MINDSPORE_MINDSPORE_CORE_INCLUDE_IR_TENSOR_NEW_H_
 #include <memory>
 #include <vector>
-#include "ir/device_type.h"
+#include "device_address/device_type.h"
 #include "mindapi/base/shape_vector.h"
 #include "mindapi/base/type_id.h"
 #include "mindapi/base/macros.h"
 #include "ir/tensor.h"
-#include "ir/device_address_maker.h"
+#include "device_address/device_address_maker.h"
 
 namespace mindspore {
 namespace tensor {

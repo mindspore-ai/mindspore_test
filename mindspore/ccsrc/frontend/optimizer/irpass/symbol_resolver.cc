@@ -19,7 +19,7 @@
 #include <string>
 #include <memory>
 
-#include "include/utils/fallback.h"
+#include "include/utils/pipeline/fallback.h"
 #include "ir/cell.h"
 #include "primitive/structure_ops.h"
 #include "primitive/framework_ops.h"

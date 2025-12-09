@@ -19,7 +19,7 @@
 
 #include <string>
 #include "pybind_api/pynative/tensor/dlpack.h"
-#include "ir/device_type.h"
+#include "device_address/device_type.h"
 
 namespace mindspore {
 class DeviceTypeUtils {

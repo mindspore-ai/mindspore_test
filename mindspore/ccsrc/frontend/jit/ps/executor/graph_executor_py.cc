@@ -49,8 +49,7 @@
 #include "include/utils/tensor_py_wrapper.h"
 #include "include/utils/parallel_context.h"
 #include "utils/config_manager.h"
-#include "include/utils/frontend/pipeline_utils.h"
-
+#include "include/utils/pipeline/pipeline_utils.h"
 #include "frontend/jit/ps/event_message_print.h"
 #include "frontend/jit/ps/pass_config.h"
 #include "frontend/jit/ps/pipeline.h"

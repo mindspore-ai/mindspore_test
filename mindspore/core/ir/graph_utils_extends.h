@@ -1,5 +1,7 @@
 /**
- * Copyright 2025 Huawei Technologies Co., Ltd
+ * This is the C++ adaptation and derivative work of Myia (https://github.com/mila-iqia/myia/).
+ *
+ * Copyright 2019-2022 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,18 +16,19 @@
  * limitations under the License.
  */
 
-#include "utils/frontend/auto_generate/functional_signature_map.h"
+#ifndef MINDSPORE_CORE_IR_GRAPH_UTILS_EXTENDS_H_
+#define MINDSPORE_CORE_IR_GRAPH_UTILS_EXTENDS_H_
 
-#include <map>
-#include <vector>
+#include <functional>
 #include <string>
+#include <vector>
 
-namespace mindspore::ops {
-std::map<std::string, std::vector<std::string>> tensor_method_overload_signature_map = {
-  ${tensor_method_sigs_map}
-};
+#include "ir/anf.h"
+#include "ir/scalar.h"
+#include "ir/tensor.h"
 
-std::map<std::string, std::vector<std::string>> function_overload_signature_map = {
-  ${mint_sigs_map}
-};
-}  // namespace mindspore::ops
+namespace mindspore {
+IncludeType IncludeBelongGraph(const FuncGraphPtr &fg, const AnfNodePtr &node);
+}  // namespace mindspore
+
+#endif  // MINDSPORE_CORE_IR_GRAPH_UTILS_EXTENDS_H_
