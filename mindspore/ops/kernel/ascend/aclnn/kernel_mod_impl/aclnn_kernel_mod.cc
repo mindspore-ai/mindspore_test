@@ -39,7 +39,7 @@ int AclnnKernelMod::Resize(const std::vector<KernelTensor *> &inputs, const std:
       stream_id_ = GetValue<uint32_t>(primitive_->GetAttr(kAttrStreamId));
       device_context_->device_res_manager_->UseStreamResInCurrentThread(stream_id_);
     } else {
-      MS_LOG(WARNING) << "AclnnKernelMod Get StreamId failed.";
+      MS_LOG(INFO) << "AclnnKernelMod Get StreamId failed.";
     }
   } else {
     device_context_->device_res_manager_->UseStreamResInCurrentThread(stream_id_);
