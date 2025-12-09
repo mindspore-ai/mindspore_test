@@ -27,11 +27,13 @@ class IpcConnectionWrapper:
         self.connection = connection
 
     def send(self, obj):
+        """Serialize and send obj."""
         bytes_buffer = io.BytesIO()
         ForkingPickler(bytes_buffer, pickle.HIGHEST_PROTOCOL).dump(obj)
         self.send_bytes(bytes_buffer.getvalue())
 
     def recv(self):
+        """Receive and deserialize obj."""
         bytes_buffer = self.recv_bytes()
         return pickle.loads(bytes_buffer)
 

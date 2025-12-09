@@ -29,7 +29,7 @@ from mindspore._c_expression import StoragePy
 
 
 def reduce_tensor(tensor):
-    """ serialize tensor """
+    """Serialize tensor."""
     if tensor._requires_grad and not tensor.is_leaf:  # pylint:disable=protected-access
         raise RuntimeError(
             "Tensor with requires grad or is leaf can not be reduced across process."
@@ -41,35 +41,41 @@ def reduce_tensor(tensor):
     metadata = (tensor.storage_offset(), tensor.shape, tensor.stride(), tensor._requires_grad,)  # pylint:disable=protected-access
     return (restore_tensor, (type(tensor), storage, metadata))
 
+
 def restore_tensor(cls, storage, metadata):
-    """ deserialize tensor """
+    """Deserialize tensor."""
     storage_offset, shape, stride, requires_grad = metadata
     t = _restore_tensor(storage, storage_offset, shape, stride)
     t._requires_grad = requires_grad # pylint:disable=protected-access
     return t
 
+
 def _restore_tensor(storage, storage_offset, shape, stride):
-    """ deserialize tensor """
+    """Deserialize tensor."""
     # create a tensor with the correct dtype/device
     t = mint.empty((0,), dtype=storage.dtype, device=storage.device)
     return t.set_(storage, storage_offset, shape, stride)
 
+
 def restore_tensor_empty(cls, metadata):
+    """Create empty tensor."""
     dtype, device, requires_grad = metadata
     t = mint.empty((0,), dtype=dtype, device=device)
     t._requires_grad = requires_grad  # pylint:disable=protected-access
     return t
 
+
 def reduce_storage(storage):
-    """ serialize storage """
+    """Serialize storage."""
     fd, size, type_id = storage._share_fd_cpu_()  # pylint:disable=protected-access
     df = multiprocessing.reduction.DupFd(fd)
     metadata = (df, size, type_id)
     rebuild = restore_storage_fd
     return (rebuild, (type(storage),) + metadata)
 
+
 def restore_storage_fd(cls, df, size, type_id):
-    """ deserialize storage """
+    """Deserialize storage."""
     fd = df.detach()
     try:
         storage = cls._new_shared_fd_cpu(fd, size, type_id)  # pylint:disable=protected-access
@@ -77,8 +83,9 @@ def restore_storage_fd(cls, df, size, type_id):
     finally:
         os.close(fd)
 
+
 def init_reductions():
-    """ register serialize and deserialize method """
+    """Register serialize and deserialize method."""
     if platform.system().lower() in {"windows", "darwin"}:
         return
     reduction.register(StoragePy, reduce_storage)
