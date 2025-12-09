@@ -116,8 +116,8 @@ void CPUE2eDump::DumpInputImpl(const CNodePtr &node, const std::string &dump_pat
       continue;
     }
     auto kt = AnfAlgo::GetOutputKernelTensor(input, index);
-    ShapeVector int_shapes;
-    GetDumpIntShape(input, index, NOT_NULL(&int_shapes));
+    MS_EXCEPTION_IF_NULL(kt);
+    ShapeVector int_shapes = kt->GetShapeVector();
     auto type = common::AnfAlgo::GetOutputInferDataType(input, index);
     std::string op_type = common::AnfAlgo::GetCNodeName(node);
     std::string op_name = *kernel_name;
@@ -126,7 +126,6 @@ void CPUE2eDump::DumpInputImpl(const CNodePtr &node, const std::string &dump_pat
     const uint32_t kStreamId = 0;
     std::string file_path = dump_path + '/' + op_type + '.' + op_name + '.' + std::to_string(kTaskId) + '.' +
                             std::to_string(kStreamId) + '.' + std::to_string(timestamp) + ".input." + std::to_string(j);
-    MS_EXCEPTION_IF_NULL(kt);
     DumpMemToFile(file_path, kt, int_shapes, type);
   }
 }
@@ -141,8 +140,7 @@ void CPUE2eDump::DumpOutputImpl(const CNodePtr &node, const std::string &dump_pa
     }
     auto kt = AnfAlgo::GetOutputKernelTensor(node, j);
     MS_EXCEPTION_IF_NULL(kt);
-    ShapeVector int_shapes;
-    GetDumpIntShape(node, j, NOT_NULL(&int_shapes));
+    ShapeVector int_shapes = kt->GetShapeVector();
     auto type = common::AnfAlgo::GetOutputInferDataType(node, j);
     std::string op_type = common::AnfAlgo::GetCNodeName(node);
     std::string op_name = *kernel_name;
@@ -188,8 +186,7 @@ void CPUE2eDump::DumpSingleAnfNode(const AnfNodePtr &anf_node, const size_t outp
   if (kt->device_ptr() == nullptr) {
     return;
   }
-  ShapeVector int_shapes;
-  GetDumpIntShape(anf_node, output_index, NOT_NULL(&int_shapes));
+  ShapeVector int_shapes = kt->GetShapeVector();
   auto type = common::AnfAlgo::GetOutputInferDataType(anf_node, output_index);
 
   uint64_t timestamp = Common::GetTimeStamp();
