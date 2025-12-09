@@ -26,18 +26,8 @@ bool HcclAdapter::InitHccl(uint32_t, std::string_view) { return true; }
 bool HcclAdapter::InitHccl(uint32_t, std::string_view, std::string_view, HcclMode) { return true; }
 bool HcclAdapter::FinalizeHccl() { return true; }
 bool HcclAdapter::HcclWatchdogThread(HcclComm comm, std::string *error_info, bool *disable) { return true; }
-HcclResult HcclAdapter::HcclCreateGroup(const std::string &, uint32_t, uint32_t *) const { return HCCL_SUCCESS; }
-HcclResult HcclAdapter::HcclDestroyGroup(const std::string &) const { return HCCL_SUCCESS; }
 HcclResult HcclAdapter::HcclGetRankId(const std::string &, uint32_t *) const { return HCCL_SUCCESS; }
 HcclResult HcclAdapter::HcclGetRankSize(const std::string &, uint32_t *) const { return HCCL_SUCCESS; }
-HcclResult HcclAdapter::HcclGetLocalRankId(const std::string &, uint32_t *) const { return HCCL_SUCCESS; }
-HcclResult HcclAdapter::HcclGetLocalRankSize(const std::string &, uint32_t *) const { return HCCL_SUCCESS; }
-HcclResult HcclAdapter::HcclGetWorldRankFromGroupRank(const std::string &, uint32_t, uint32_t *) const {
-  return HCCL_SUCCESS;
-}
-HcclResult HcclAdapter::HcclGetGroupRankFromWorldRank(uint32_t, const std::string &, uint32_t *) const {
-  return HCCL_SUCCESS;
-}
 HcclResult HcclAdapter::HcclBroadcast(void *, uint64_t, HcclDataType, uint32_t, aclrtStream, HcclComm) const {
   return HCCL_SUCCESS;
 }
