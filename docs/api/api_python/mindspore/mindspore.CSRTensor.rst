@@ -34,7 +34,7 @@ mindspore.CSRTensor
         - **shape** (tuple(int), 可选) - shape为 :math:`(ndims)` 的整数元组，用来指定稀疏矩阵的稠密shape。`shape[0]` 表示行数，因此必须和 :math:`M - 1` 值相等。默认值： ``None`` 。
         - **csr_tensor** (CSRTensor, 可选) - CSRTensor对象，用来初始化新的CSRTensor。 `values` 的特征维度需要和 `csr_tensor` 的特征维度匹配 :math:`(values.shape[1:] == csr\_tensor.shape[2:])` 。默认值： ``None`` 。
 
-    返回：
+    输出：
         CSRTensor，稠密shape取决于传入的 `shape` ，数据类型由 `values` 决定。
 
     .. py:method:: abs()

@@ -133,7 +133,7 @@ Boost能够自动优化网络性能，例如通过减少BN、梯度冻结、累�
             - n_components (int)：PCA后的维度，默认值： ``32`` 。
             - pca_mat_path (str)：PCA矩阵的加载路径，使用绝对路径，默认值： ``None`` 。
             - weight_load_dir (str)：以checkpoint形式保存的权重加载路径，用于计算PCA矩阵，默认值： ``None`` 。
-            - timeout (int)：加载PCA矩阵的最长等待时间，默认值： ``1800(s)`` 。
+            - timeout (int)：加载PCA矩阵的最长等待时间，默认值： ``1800`` (s)。
 
           用户可以通过加载JSON文件或者直接使用字典来配置 *boost_config_dict*。
           未配置的参数会使用默认值。
@@ -224,7 +224,7 @@ Boost能够自动优化网络性能，例如通过减少BN、梯度冻结、累�
         - **sens** (numbers.Number, 可选) - 作为反向传播输入要填充的缩放数。默认值： ``None`` ，取 ``1.0`` 。
 
     输入：
-        - **\*inputs** (Tuple(Tensor)) - 网络的所有输入组成的元组，其shape为 :math:`(N, \ldots)`。
+        - **\*inputs** (tuple(Tensor)) - 网络的所有输入组成的元组，其shape为 :math:`(N, \ldots)`。
 
     输出：
         Tuple，包含三个Tensor，分别为损失函数值、溢出状态和当前损失缩放系数。shape为 :math:`()`。
@@ -297,7 +297,7 @@ Boost能够自动优化网络性能，例如通过减少BN、梯度冻结、累�
         - **scale_sense** (Union[Tensor, Cell]) - 如果此值为Cell类型，`BoostTrainOneStepWithLossScaleCell` 会调用它来更新损失缩放系数。如果此值为Tensor类型，可调用 :func:`mindspore.nn.TrainOneStepWithLossScaleCell.set_sense_scale` 来更新损失缩放系数，shape为 :math:`()` 或 :math:`(1,)` 。
 
     输入：
-        - **\*inputs** (Tuple(Tensor)) - 网络的所有输入组成的元组。shape为 :math:`(N, \ldots)`。
+        - **\*inputs** (tuple(Tensor)) - 网络的所有输入组成的元组。shape为 :math:`(N, \ldots)`。
 
     输出：
         Tuple，包含三个Tensor，分别为损失函数值、溢出状态和当前损失缩放系数。
@@ -395,15 +395,15 @@ Boost能够自动优化网络性能，例如通过减少BN、梯度冻结、累�
         - **rank** (int) - 总的训练卡数。
         - **device_number** (int) - 单机的卡数。
         - **group_number** (int) - 分组的数量。
-        - **parameter_tuple** (Tuple(Parameter)) - 网络训练权重组成的元组。
+        - **parameter_tuple** (tuple(Parameter)) - 网络训练权重组成的元组。
 
     输入：
-        - **delta_weights** (Tuple(Tensor)) - 梯度tuple。
-        - **parameters** (Tuple(Parameter)) - 当前权重组成的元组。
-        - **old_parameters** (Tuple(Parameter)) - 旧的权重组成的元组。
+        - **delta_weights** (tuple(Tensor)) - 梯度tuple。
+        - **parameters** (tuple(Parameter)) - 当前权重组成的元组。
+        - **old_parameters** (tuple(Parameter)) - 旧的权重组成的元组。
 
     输出：
-        - **adasum_parameters** (Tuple(Tensor)) - adasum处理后更新的权重。
+        - **adasum_parameters** (tuple(Tensor)) - adasum处理后更新的权重。
 
 .. py:class:: mindspore.boost.DimReduce(network, optimizer, weight, pca_mat_local, n_components, rho, gamma, alpha, sigma, rank, rank_size)
 
@@ -443,7 +443,7 @@ Boost能够自动优化网络性能，例如通过减少BN、梯度冻结、累�
     参数：
         - **network** (Cell) - 训练网络，只支持单输出。
         - **optimizer** (Union[Cell]) - 更新权重的优化器。
-        - **weight** (Tuple(Parameter)) - 网络权重组成的元组。
+        - **weight** (tuple(Parameter)) - 网络权重组成的元组。
         - **pca_mat_local** (numpy.ndarray) - 用于PCA操作的，经过切分的PCA转换矩阵，维度为k*n，k是切分的 `n_components` 的大小，n是权重的大小。
         - **n_components** (int) - PCA的主成分维度(components)。
         - **rho** (float) - 超参。
@@ -455,10 +455,10 @@ Boost能够自动优化网络性能，例如通过减少BN、梯度冻结、累�
 
     输入：
         - **loss** (Tensor) - 网络loss，shape为 :math:`()` 的标量Tensor。
-        - **old_grad** (Tuple(Tensor)) - 网络权重提取组成的元组。
-        - **weight** (Tuple(Tensor)) - 网络权重组成的元组。
-        - **weight_clone** (Tuple(Tensor)) - 网络权重的副本。
-        - **\*inputs** (Tuple(Tensor)) - 网络的所有输入组成的元组，shape为 :math:`(N, \ldots)`。
+        - **old_grad** (tuple(Tensor)) - 网络权重提取组成的元组。
+        - **weight** (tuple(Tensor)) - 网络权重组成的元组。
+        - **weight_clone** (tuple(Tensor)) - 网络权重的副本。
+        - **\*inputs** (tuple(Tensor)) - 网络的所有输入组成的元组，shape为 :math:`(N, \ldots)`。
 
     输出：
         - **loss** (Tensor) - 网络loss，shape为 :math:`()` 的标量Tensor。

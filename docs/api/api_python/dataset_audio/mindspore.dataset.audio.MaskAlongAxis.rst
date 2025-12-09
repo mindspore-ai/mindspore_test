@@ -14,7 +14,6 @@ mindspore.dataset.audio.MaskAlongAxis
     异常：
         - **ValueError** - 如果 `mask_start` 小于0。
         - **ValueError** - 如果 `mask_width` 小于1。
-        - **TypeError** - 如果 `axis` 的类型不为int。
         - **ValueError** - 如果 `axis` 的值不在[1, 2]范围内。
 
     教程样例：

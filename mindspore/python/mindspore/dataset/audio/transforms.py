@@ -1443,7 +1443,7 @@ class Gain(AudioTensorOperation):
     Apply amplification or attenuation to the whole waveform.
 
     Args:
-        gain_db (float): Gain adjustment in decibels (dB). Default: ``1.0``.
+        gain_db (float, optional): Gain adjustment in decibels (dB). Default: ``1.0``.
 
     Raises:
         TypeError: If `gain_db` is not of type float.
@@ -2068,7 +2068,7 @@ class Magphase(AudioTensorOperation):
     Separate a complex-valued spectrogram with shape :math:`(..., 2)` into its magnitude and phase.
 
     Args:
-        power (float): Power of the norm, which must be non-negative. Default: ``1.0``.
+        power (float, optional): Power of the norm, which must be non-negative. Default: ``1.0``.
 
     Raises:
         RuntimeError: If the shape of input audio waveform does not match :math:`(..., 2)`.
@@ -2117,7 +2117,7 @@ class MaskAlongAxis(AudioTensorOperation):
     Apply a mask along `axis` . Mask will be applied from indices `[mask_start, mask_start + mask_width)` .
 
     Args:
-        mask_start (int): Starting position of the mask, which must be non negative.
+        mask_start (int): Starting position of the mask, which must be non-negative.
         mask_width (int): The width of the mask, which must be larger than 0.
         mask_value (float): Value to assign to the masked columns.
         axis (int): Axis to apply mask on (1 for frequency and 2 for time).
@@ -2125,7 +2125,7 @@ class MaskAlongAxis(AudioTensorOperation):
     Raises:
         ValueError: If `mask_start` is invalid (< 0).
         ValueError: If `mask_width` is invalid (< 1).
-        ValueError: If `axis` is not type of int or not within [1, 2].
+        ValueError: If `axis` is not within [1, 2].
 
     Supported Platforms:
         ``CPU``
@@ -2469,10 +2469,11 @@ class MFCC(AudioTensorOperation):
             - 'mel_scale': MelType.HTK
 
     Raises:
-        TypeError: If `sample_rate` is not of type int.
-        TypeError: If `log_mels` is not of type bool.
-        TypeError: If `norm` is not of type :class:`mindspore.dataset.audio.NormMode` .
+        TypeError: If `sample_rate` is not of type int.      
         TypeError: If `n_mfcc` is not of type int.
+        TypeError: If `dct_type` is not of type int.
+        TypeError: If `norm` is not of type :class:`mindspore.dataset.audio.NormMode` .
+        TypeError: If `log_mels` is not of type bool.         
         TypeError: If `melkwargs` is not of type dict.
         ValueError: If `sample_rate` is a negative number.
         ValueError: If `n_mfcc` is a negative number.
