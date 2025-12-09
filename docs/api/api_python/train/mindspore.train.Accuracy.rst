@@ -12,7 +12,7 @@ mindspore.train.Accuracy
         {\text{true_positive} + \text{true_negative} + \text{false_positive} + \text{false_negative}}
 
     参数：
-        - **eval_type** (str) - 评估的数据集的类型，支持 ``'classification'`` 和 ``'multilabel'`` 。 ``'classification'`` 为单标签分类场景， ``'multilabel'`` 为多标签分类场景。默认值： ``'classification'`` 。
+        - **eval_type** (str，可选) - 评估的数据集的类型，支持 ``'classification'`` 和 ``'multilabel'`` 。 ``'classification'`` 为单标签分类场景， ``'multilabel'`` 为多标签分类场景。默认值： ``'classification'`` 。
 
     .. py:method:: clear()
 

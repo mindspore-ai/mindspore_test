@@ -941,7 +941,8 @@ def vjp(fn, *inputs, weights=None, has_aux=False):
           ``True``, `net_output` is the first output of `fn(inputs)`.
         - **vjp_fn** (Function) - To calculate vector-jacobian-product. Its inputs are the vectors whose shape and
           type should be the same as `net_output` .
-        - **aux_value** (Union[Tensor, tuple[Tensor]], optional) - When `has_aux` is True, `aux_value` will be returned.
+        - **aux_value** (Union[Tensor, tuple[Tensor]], optional) - When `has_aux` is ``True``,
+          `aux_value` will be returned.
           It means the second to last outputs of `fn(inputs)`. Specially, `aux_value` does not contribute to gradient.
 
     Raises:

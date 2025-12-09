@@ -494,22 +494,26 @@ class Model:
 
     Args:
         network (Cell): A training or testing network.
-        loss_fn (Cell): Objective function. If `loss_fn` is None, the `network` should contain the calculation of loss.
+        loss_fn (Cell, optional): Objective function. If `loss_fn` is None,
+                        the `network` should contain the calculation of loss.
                         Default: ``None`` .
-        optimizer (Cell): Optimizer for updating the weights. If `optimizer` is None, the `network` needs to
+        optimizer (Cell, optional): Optimizer for updating the weights. If `optimizer` is None, the `network` needs to
                           do backpropagation and update weights. Default: ``None`` .
-        metrics (Union[dict, set]): A Dictionary or a set of metrics for model evaluation.
+        metrics (Union[dict, set], optional): A Dictionary or a set of metrics for model evaluation.
                                     eg: {'accuracy', 'recall'}. Default: ``None`` .
-        eval_network (Cell): Network for evaluation. If not defined, `network` and `loss_fn` would be wrapped as
+        eval_network (Cell, optional): Network for evaluation. If not defined,
+                             `network` and `loss_fn` would be wrapped as
                              `eval_network` . Default: ``None`` .
-        eval_indexes (list): It is used when eval_network is defined. If `eval_indexes` is None by default, all outputs
+        eval_indexes (list, optional): It is used when eval_network is defined.
+                             If `eval_indexes` is None by default, all outputs
                              of the `eval_network` would be passed to metrics. If `eval_indexes` is set, it must contain
                              three elements: the positions of loss value, predicted value and label in outputs of the
                              `eval_network`. In this case, the loss value will be passed to the `Loss` metric, the
                              predicted value and label will be passed to other metrics.
                              :func:`mindspore.train.Metric.set_indexes` is recommended instead of `eval_indexes`.
                              Default: ``None`` .
-        amp_level (str): Option for argument `level` in :func:`mindspore.amp.build_train_network`, level for mixed
+        amp_level (str, optional): Option for argument `level` in
+            :func:`mindspore.amp.build_train_network`, level for mixed
             precision training. Supports ["O0", "O1", "O2", "O3", "auto"]. Default: ``"O0"`` .
 
             For details on `amp_level` , refer to :func:`mindspore.amp.auto_mixed_precision`.
@@ -518,7 +522,7 @@ class Model:
             must be a bool. The loss scale strategy can be changed by `loss_scale_manager` setting in `kwargs`.
             `loss_scale_manager` should be a subclass of :class:`mindspore.amp.LossScaleManager`.
 
-        boost_level (str): Option for argument `level` in `mindspore.boost`, level for boost mode
+        boost_level (str, optional): Option for argument `level` in `mindspore.boost`, level for boost mode
             training. Supports ["O0", "O1", "O2"]. Default: ``"O0"`` .
 
             - "O0": Do not change.
@@ -1291,19 +1295,19 @@ class Model:
                                      to None and implement calculation of loss in `network`,
                                      then a tuple (data1, data2, data3, ...) with all data returned from dataset will be
                                      passed to the `network`.
-            callbacks (Optional[list[Callback], Callback]): List of callback objects or callback object,
+            callbacks (Optional[list[Callback], Callback], optional): List of callback objects or callback object,
                                                             which should be executed while training.
                                                             Default: ``None``.
-            dataset_sink_mode (bool): Determines whether to pass the data through dataset channel.
+            dataset_sink_mode (bool, optional): Determines whether to pass the data through dataset channel.
                                       Configure pynative mode or CPU, the training process will be performed with
                                       dataset not sink. Default: ``False``.
-            sink_size (int): Control the number of steps for each sinking.
+            sink_size (int, optional): Control the number of steps for each sinking.
                              `sink_size` is invalid if `dataset_sink_mode` is False.
                              If sink_size = -1, sink the complete dataset for each epoch.
                              If sink_size > 0, sink sink_size data for each epoch.
-                             Default: -1.
-            initial_epoch (int): Epoch at which to start train, it used for resuming a previous training run.
-                                 Default: 0.
+                             Default: ``-1``.
+            initial_epoch (int, optional): Epoch at which to start train, it used for resuming a previous training run.
+                                 Default: ``0``.
 
         Examples:
             >>> import mindspore as ms
@@ -1422,28 +1426,32 @@ class Model:
                                      to None and implement calculation of loss in `network`,
                                      then a tuple (data1, data2, data3, ...) with all data returned from dataset
                                      will be passed to the `network`.
-            valid_dataset (Dataset): Dataset to evaluate the model. If `valid_dataset` is provided, evaluation process
+            valid_dataset (Dataset, optional): Dataset to evaluate the model.
+                                     If `valid_dataset` is provided, evaluation process
                                      will be performed on the end of training process. Default: ``None`` .
-            valid_frequency (int, list): Only relevant if `valid_dataset` is provided.  If an integer, specifies
+            valid_frequency (int, list, optional): Only relevant if `valid_dataset` is provided.
+                         If an integer, specifies
                          how many training epochs to run before a new validation run is performed,
                          e.g. `valid_frequency=2` runs validation every 2 epochs.
                          If a list, specifies the epochs on which to run validation,
                          e.g. `valid_frequency=[1, 5]` runs validation at the end of the 1st, 5th epochs.
                          Default: ``1`` .
-            callbacks (Optional[list[Callback], Callback]): List of callback objects or callback object,
+            callbacks ([list[Callback], Callback], optional): List of callback objects or callback object,
                                                             which should be executed while training.
                                                             Default: ``None`` .
-            dataset_sink_mode (bool): Determines whether to pass the train data through dataset channel.
+            dataset_sink_mode (bool, optional): Determines whether to pass the train data through dataset channel.
                                       Configure pynative mode or CPU, the training process will be performed with
                                       dataset not sink. Default: ``False`` .
-            valid_dataset_sink_mode (bool): Determines whether to pass the validation data through dataset channel.
+            valid_dataset_sink_mode (bool, optional):
+                                      Determines whether to pass the validation data through dataset channel.
                                       Default: ``False`` .
-            sink_size (int): Control the number of steps for each sinking.
+            sink_size (int, optional): Control the number of steps for each sinking.
                              `sink_size` is invalid if `dataset_sink_mode` is False.
                              If sink_size = -1, sink the complete dataset for each epoch.
                              If sink_size > 0, sink sink_size data for each epoch.
                              Default: ``-1`` .
-            initial_epoch (int): Epoch at which to start train, it useful for resuming a previous training run.
+            initial_epoch (int, optional): Epoch at which to start train,
+                                 it useful for resuming a previous training run.
                                  Default: ``0`` .
 
         Examples:
@@ -1526,13 +1534,15 @@ class Model:
             It only supports dataset sink mode.
 
         Args:
-            train_dataset (Dataset): A training dataset iterator. If `train_dataset` is defined, training graphs will be
+            train_dataset (Dataset, optional): A training dataset iterator.
+                                     If `train_dataset` is defined, training graphs will be
                                      built. Default: ``None`` .
-            valid_dataset (Dataset): An evaluating dataset iterator. If `valid_dataset` is defined, evaluation graphs
+            valid_dataset (Dataset, optional): An evaluating dataset iterator.
+                                     If `valid_dataset` is defined, evaluation graphs
                                      will be built, and `metrics` in `Model` can not be None. Default: ``None`` .
-            sink_size (int): Control the number of steps for each sinking. Default: ``-1`` .
-            epoch (int): Control the training epochs. Default: ``1`` .
-            sink_mode (bool): Determines whether to pass the data through dataset channel. Default: ``True`` .
+            sink_size (int, optional): Control the number of steps for each sinking. Default: ``-1`` .
+            epoch (int, optional): Control the training epochs. Default: ``1`` .
+            sink_mode (bool, optional): Determines whether to pass the data through dataset channel. Default: ``True`` .
 
         Examples:
             >>> from mindspore import nn
@@ -1711,10 +1721,10 @@ class Model:
 
         Args:
             valid_dataset (Dataset): Dataset to evaluate the model.
-            callbacks (Optional[list(Callback), Callback]): List of callback objects or callback object,
+            callbacks (Optional[list(Callback), Callback], optional): List of callback objects or callback object,
                                                             which should be executed while evaluation.
                                                             Default: ``None`` .
-            dataset_sink_mode (bool): Determines whether to pass the data through dataset channel.
+            dataset_sink_mode (bool, optional): Determines whether to pass the data through dataset channel.
                 Default: ``False`` .
 
         Returns:
@@ -2067,10 +2077,10 @@ class Model:
                          returned and passed to the network. Otherwise, a tuple (data, label) should
                          be returned. The data and label would be passed to the network and loss
                          function respectively.
-            dataset_sink_mode (bool): Determines whether to pass the data through dataset channel.
+            dataset_sink_mode (bool, optional): Determines whether to pass the data through dataset channel.
                                       Configure pynative mode or CPU, the training process will be performed with
                                       dataset not sink. Default: ``True`` .
-            sink_size (int): Control the number of steps for each sinking.
+            sink_size (int, optional): Control the number of steps for each sinking.
                              If dataset_sink_mode is False, set sink_size as invalid.
                              If sink_size = -1, sink the complete dataset for each epoch.
                              If sink_size > 0, sink sink_size data for each epoch.

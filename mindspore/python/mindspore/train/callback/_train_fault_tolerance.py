@@ -190,19 +190,19 @@ class TrainFaultTolerance(Callback):
     """
     This callback is used to enable the TFT feature
     `MindIO TFT <https://www.hiascend.com/document/detail/zh/mindx-dl/600/clusterscheduling/ref/mindiottp/mindiotft001.html>`_
-    and will execute TFT operations during training process, such as TFT init, report and exception handle.
+    and will execute TFT operations during training process, such as TFT init, report and exception handling.
 
     Note:
         Required for Ascend graph mode only. And sink size must be less than or equal to 1.
 
     Args:
-        ckpt_save_path (str): Checkpoint save directory when failure occurs. When saved,
+        ckpt_save_path (str, optional): Checkpoint save directory when failure occurs. When saved,
             a new directory named 'ttp_saved_checkpoints-step_{cur_step_num}'
             is created in that directory. Default: ``None``.
         kwargs (dict): Other dictionary type parameters. When argument `ckpt_save_path` is ``None``, `kwargs` must
             provide a parameter named `ckpt_save_fn`, which points to a function used to save checkpoint. The
             prototype of `ckpt_save_fn` is ``def save_ckpt(cb_params, append_dict)``. When both `ckpt_save_path`
-            and `ckpt_save_fn` are provided, `ckpt_save_fn` is used in priority.
+            and `ckpt_save_fn` are provided, `ckpt_save_fn` is used preferentially.
 
     Raises:
         Exception: TFT init failed.
@@ -507,7 +507,7 @@ class TrainFaultTolerance(Callback):
 
         Args:
             run_context (RunContext): Context of the train running. Refer to
-                                      :class:`mindspore.train.RunContext` for detail.
+                                      :class:`mindspore.train.RunContext` for details.
         """
         if self._enable_snapshot():
             _clear_snapshot_saving_flag()
@@ -518,7 +518,7 @@ class TrainFaultTolerance(Callback):
 
         Args:
             run_context (RunContext): Context of the train running. Refer to
-                                      :class:`mindspore.train.RunContext` for detail.
+                                      :class:`mindspore.train.RunContext` for details.
         """
         if self._only_enable_tre() or self._only_enable_ckpt_d2h_async():
             return

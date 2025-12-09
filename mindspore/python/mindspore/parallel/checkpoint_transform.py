@@ -1000,7 +1000,7 @@ def load_distributed_checkpoint(network, checkpoint_filenames=None, predict_stra
                         This parameter is valid only when dec_key is not set to ``None`` .
                         Default: ``'AES-GCM'`` .
         format (str): Input weight format to be loaded into the network.
-                      It can be set to either "ckpt" or "safetensors". Default: "ckpt".
+                      It can be set to either "ckpt" or "safetensors". Default: ``"ckpt"``.
         unified_safetensors_dir (str): Directory of input weight files to be loaded into the network.
                                        Default: ``None`` .
         dst_safetensors_dir (str): In the save mode scenario, the save directory for weights.
@@ -1008,10 +1008,10 @@ def load_distributed_checkpoint(network, checkpoint_filenames=None, predict_stra
                        globally by initializing the network; In save mode, save the file according to the input
                        sequence number. If it is not input, save the entire file.
         output_format (str, optional): Control the format of the output checkpoint after conversion.
-            It can be set to either "ckpt" or "safetensors". Default: "safetensors".
+            It can be set to either "ckpt" or "safetensors". Default: ``"safetensors"``.
         name_map (dict): The weight mapping dictionary will modify the weight names according to the mapping
-            dictionary before loading or saving the segmented weights into the network. Default: None.
-        max_process_num (int): Maximum number of processes. Default: 64.
+            dictionary before loading or saving the segmented weights into the network. Default: ``None``.
+        max_process_num (int): Maximum number of processes. Default: ``64``.
         return_param_dict (bool): Whether to return the param_dict. Default: ``False``.
 
     Raises:

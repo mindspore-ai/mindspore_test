@@ -39,7 +39,7 @@ class Stream(Stream_):
 
     Args:
         priority (int, optional): priority of the stream, lower numbers represent higher priorities.
-            By default, streams have priority ``0``.
+            Default ``0``.
         kwargs (dict): keyword arguments.
 
     Supported Platforms:

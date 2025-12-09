@@ -32,7 +32,7 @@ class LossMonitor(Callback):
         If per_print_times is 0, do not print loss.
 
     Args:
-        per_print_times (int): How many steps to print once loss. During sink mode, it will print loss in the
+        per_print_times (int, optional): How many steps to print once loss. During sink mode, it will print loss in the
                                nearest step. Default: ``1`` .
 
     Raises:

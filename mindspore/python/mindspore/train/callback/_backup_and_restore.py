@@ -30,14 +30,15 @@ class BackupAndRestore(Callback):
     Callback to back up and restore the parameters during training.
 
     Note:
-        This function can only use in training.
+        This function can only be used in training.
 
     Args:
         backup_dir (str): Path to store and load the checkpoint file.
-        save_freq (Union["epoch", int]): When set to ``"epoch"`` the callback saves the checkpoint at the end of
+        save_freq (Union["epoch", int], optional): When set to ``"epoch"``,
+                                        the callback saves the checkpoint at the end of
                                         each epoch. When set to an integer, the callback saves the checkpoint
                                         every `save_freq` epoch. Default: ``"epoch"`` .
-        delete_checkpoint (bool): If `delete_checkpoint=True`, the checkpoint will be deleted after
+        delete_checkpoint (bool, optional): If `delete_checkpoint=True`, the checkpoint will be deleted after
                                         training is finished. Default: ``True`` .
 
     Raises:
