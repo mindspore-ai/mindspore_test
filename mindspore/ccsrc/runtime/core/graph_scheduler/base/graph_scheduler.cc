@@ -784,20 +784,20 @@ void GraphScheduler::BuildAndScheduleGlobalActor() {
   constexpr char kDebuggerBackendEnabled[] = "DebuggerBackendEnabled";
   static auto debugger_backend_enabled_callback =
     callback::CommonCallback::GetInstance().GetCallback<bool>(kDebuggerBackendEnabled);
-  if (debugger_backend_enabled_callback && debugger_backend_enabled_callback()) {
-    debugger_actor_need = true;
+  if (debugger_backend_enabled_callback) {
+    debugger_actor_need = debugger_backend_enabled_callback() ? true : debugger_actor_need;
   } else {
-    MS_LOG(WARNING) << "Failed to get DebuggerBackendEnabled, data dump function may not work.";
+    MS_LOG(WARNING) << "Failed to get DebuggerBackendEnabled callback, data dump function may not work.";
   }
 #endif
   // if silent check is enabled, create debugger actor for CheckSum
   constexpr char kNeedEnableCheckSum[] = "NeedEnableCheckSum";
   static const auto need_enable_checksum =
     callback::CommonCallback::GetInstance().GetCallback<bool>(kNeedEnableCheckSum);
-  MS_EXCEPTION_IF_CHECK_FAIL(need_enable_checksum,
-                             "Failed to get NeedEnableCheckSum, silent detect function may not work.");
-  if (need_enable_checksum()) {
-    debugger_actor_need = true;
+  if (need_enable_checksum) {
+    debugger_actor_need = need_enable_checksum() ? true : debugger_actor_need;
+  } else {
+    MS_LOG(WARNING) << "Failed to get NeedEnableCheckSum callback, silent detect function may not work.";
   }
   if (debugger_actor_need) {
     auto debug_actor = std::make_shared<DebugActor>();
