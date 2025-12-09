@@ -21,7 +21,6 @@ from mindspore import jit, ops
 from mindspore import Tensor
 from tests.mark_utils import arg_mark
 
-
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_ops_get_data():
     """
@@ -29,7 +28,7 @@ def test_ops_get_data():
     Description: Base scene.
     Expectation: No Exception.
     """
-
+    os.environ["MS_DEV_HIERARCHICAL_MEMORY"] = "1"
     @jit
     def foo(x):
         y = ops.auto_generate.GetData()(x)
@@ -59,9 +58,9 @@ def test_ops_get_data():
     x = Tensor([1, 2, 3, 4])
     ret = foo2(x)
     assert np.all(ret.asnumpy() == np.array((3, 4, 5, 6)))
+    os.environ["MS_DEV_HIERARCHICAL_MEMORY"] = "0"
 
 
-@pytest.mark.skip(reason="RuntimeError occurred when enable MS_DEV_HIERARCHICAL_MEMORY")
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_remote_ops_copy_to_host():
     """
@@ -83,7 +82,6 @@ def test_remote_ops_copy_to_host():
     os.environ["MS_DEV_HIERARCHICAL_MEMORY"] = "0"
 
 
-@pytest.mark.skip(reason="RuntimeError occurred when enable MS_DEV_HIERARCHICAL_MEMORY")
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_copy_to_host():
     """
@@ -167,7 +165,6 @@ def test_memory_ops_set_data():
     os.environ["MS_DEV_HIERARCHICAL_MEMORY"] = "0"
 
 
-@pytest.mark.skip(reason="RuntimeError occurred when enable MS_DEV_HIERARCHICAL_MEMORY")
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_remote_ops_copy_to():
     """
@@ -191,7 +188,6 @@ def test_remote_ops_copy_to():
     os.environ["MS_DEV_HIERARCHICAL_MEMORY"] = "0"
 
 
-@pytest.mark.skip(reason="RuntimeError occurred when enable MS_DEV_HIERARCHICAL_MEMORY")
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_ops_to_host_free_set_data():
     """
@@ -215,7 +211,6 @@ def test_ops_to_host_free_set_data():
     os.environ["MS_DEV_HIERARCHICAL_MEMORY"] = "0"
 
 
-@pytest.mark.skip(reason="RuntimeError occurred when enable MS_DEV_HIERARCHICAL_MEMORY")
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_remote_ops_copy_to_and_free():
     """
