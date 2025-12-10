@@ -12,14 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+""" test_tensor_inplace_view_control_flow """
 
 import pytest
 import numpy as np
 import mindspore as ms
-from mindspore import Tensor, nn, ops, mint
+from mindspore import Tensor, nn, ops, mint, lazy_inline
 from mindspore.ops.auto_generate.gen_ops_def import select_ext_view_op, expand_dims_view_op, slice_ext_view_op
-from mindspore.ops.auto_generate.gen_ops_prim import inplace_copy_op
+from mindspore.ops.auto_generate.gen_ops_prim import inplace_copy_op, ExpandDimsView, NarrowView, \
+    SelectExtView, SplitTensorView, TransposeView
 from mindspore.ops.functional import grad
+import mindspore.ops.operations as P
 from tests.mark_utils import arg_mark
 
 ms.context.set_context(jit_config={"jit_level": "O0"})
@@ -599,7 +602,7 @@ def test_tensor_view_inplace_grad_check4():
             x = select_ext_view_op(input_tensor1_1, 0, 0)
             y = select_ext_view_op(input_tensor2_1, 0, 0)
             if x < y:
-                return self.inner_func(y, x)
+                return self.inner_func(y, x)  # pylint: disable=W1114
             return self.inner_func(x, y)
 
         def construct(self, input_tensor1, input_tensor2):
@@ -960,3 +963,112 @@ def test_virtual_view_case8():
     out_jit = grad(net, grad_position=(0, 1))(Tensor(2), Tensor([1, 2]))
     assert (out_expect[0].asnumpy() == out_jit[0].asnumpy()).all()
     assert (out_expect[1].asnumpy() == out_jit[1].asnumpy()).all()
+
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+def test_view_and_inplace_nested_ctrl_flow_and_lazy_inline():
+    """
+    Feature: Support tensor inplace view gradient.
+    Description: Test control flow, lazy_inline, and the gradients of SplitTensorView, TransposeView, and NarrowView.
+    Expectation: Run success.
+    """
+
+    class OuterNet(nn.Cell):
+        def __init__(self, block):
+            super().__init__()
+            self.block = block
+
+        def construct(self, x, y):
+            x = ops.abs(x)
+            y = ops.abs(y)
+            for _ in range(2):
+                x = self.block(x, y)
+            return x
+
+    class Recursive(nn.Cell):
+        @lazy_inline
+        def __init__(self):
+            super().__init__()
+            self.t = 2
+            self.transposeview = TransposeView()
+            self.split = SplitTensorView()
+            self.narrowview = NarrowView()
+
+        def f_ok(self, x, y):
+            if P.ReduceSum()(x) < 200:
+                x = self.transposeview(x, (1, 0))
+                y = self.transposeview(y, (1, 0))
+                x.add_(y)
+                x = self.narrowview(x, 1, 0, 4)
+                x.add_(y)
+                if P.ReduceSum()(y) < 200:
+                    for _ in range(2):
+                        x.add_(y)
+                        y.add_(x)
+            return x
+
+        def construct(self, x, y):
+            out = self.f_ok(x, y)
+            return out * self.t
+
+    x_np = np.ones([4, 8]).astype(np.float32)
+
+    y_np = 2 * np.ones([4, 8]).astype(np.float32)
+
+    inner_net = Recursive()
+    inner_net.construct = ms.jit(inner_net.construct, backend="ms_backend")
+    outer_net = OuterNet(inner_net)
+    outer_net.construct = ms.jit(outer_net.construct, backend="ms_backend")
+    out = outer_net(Tensor(x_np), Tensor(y_np))
+    assert np.allclose(out.asnumpy(), 64 * np.ones([8, 4]).astype(np.float32), 0.0001, 0.0001)
+    back_1 = grad(outer_net)(Tensor(x_np), Tensor(y_np))
+    back_2 = grad(outer_net, 1)(Tensor(x_np), Tensor(y_np))
+    assert np.allclose(back_1.asnumpy(), 8 * np.ones([4, 8]).astype(np.float32), 0.0001, 0.0001)
+    assert np.allclose(back_2.asnumpy(), 28 * np.ones([4, 8]).astype(np.float32), 0.0001, 0.0001)
+
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+def test_tensor_view_inplace_grad_control_flow_3():
+    """
+    Feature: Support tensor inplace view gradient.
+    Description: Test if (ternary operation) and for, x->x(view)->view_obj1->view_obj1.inplace, y->y(view)->y.inplace
+    Expectation: Run success.
+    """
+
+    class Net(nn.Cell):
+        def __init__(self):
+            super().__init__()
+            self.selectview = SelectExtView()
+            self.expanddimsview = ExpandDimsView()
+
+        def construct(self, x, y):
+            x = ops.abs(x)
+            y = ops.abs(y)
+            x = self.selectview(x, 0, 1)
+            y = self.selectview(y, 0, 1)
+            y.add_(2) if P.ReduceSum()(x) < 3 else y.add_(3)  # pylint: disable=W0106
+            view_obj1 = None
+            for _ in range(2):
+                view_obj1 = self.expanddimsview(x, 0)
+            view_obj1.mul_(y)
+            return view_obj1, y
+
+    x_np = np.ones([4, 8]).astype(np.float32)
+    input_x = Tensor(x_np)
+
+    y_np = 2 * np.ones([4, 8]).astype(np.float32)
+    input_y = Tensor(y_np)
+
+    net = Net()
+    out_forword_expect = net(input_x, input_y)
+    out_back_expect = grad(net)(input_x, input_y)
+    out_back_expect_1 = grad(net, 1)(input_x, input_y)
+
+    net.construct = ms.jit(net.construct, backend="ms_backend")
+    out_forword_jit = net(input_x, input_y)
+    out_back_jit = grad(net)(input_x, input_y)
+    out_back_jit_1 = grad(net, 1)(input_x, input_y)
+    assert np.allclose(out_forword_expect[0].asnumpy(), out_forword_jit[0].asnumpy())
+    assert np.allclose(out_forword_expect[1].asnumpy(), out_forword_jit[1].asnumpy())
+    assert np.allclose(out_back_expect.asnumpy(), out_back_jit.asnumpy())
+    assert np.allclose(out_back_expect_1.asnumpy(), out_back_jit_1.asnumpy())

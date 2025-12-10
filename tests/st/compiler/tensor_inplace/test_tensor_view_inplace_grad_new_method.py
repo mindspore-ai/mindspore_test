@@ -595,6 +595,89 @@ def test_tensor_index_grad():
         del os.environ["MS_DEV_TENSOR_INDEX_BOOST"]
 
 
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+def test_tensor_index_grad_2():
+    """
+    Feature: Support tensor index gradient.
+    Description: Support tensor index gradient.
+    Expectation: no exception.
+    """
+
+    def foo(x, y):
+        x = ops.abs(x)
+        y = ops.abs(y)
+        view_obj1 = x[1, 0:2, [0, 1]]
+        view_obj1[...] = Tensor(5)
+        view_obj2 = y[Tensor(1)]
+        view_obj2[None] = 3
+        return view_obj2, y
+
+    @ms.jit(backend="ms_backend")
+    def foo1(x, y):
+        return foo(x, y)
+
+    try:
+        os.environ["MS_DEV_TENSOR_INDEX_BOOST"] = '1'
+
+        x_np = np.ones([2, 4, 8]).astype(np.float32)
+        input_x = Tensor(x_np)
+        y_np = 2 * np.ones([2, 4, 8]).astype(np.float32)
+        input_y = Tensor(y_np)
+
+        out_forword_expect = foo(input_x, input_y)
+        out_back_expect = grad(foo)(input_x, input_y)
+        out_back_expect_1 = grad(foo, grad_position=1)(input_x, input_y)
+        out_forword_jit = foo1(input_x, input_y)
+        out_back_jit = grad(foo1)(input_x, input_y)
+        out_back_jit_1 = grad(foo1, grad_position=1)(input_x, input_y)
+        assert np.allclose(out_forword_expect[0].asnumpy(), out_forword_jit[0].asnumpy())
+        assert np.allclose(out_forword_expect[1].asnumpy(), out_forword_jit[1].asnumpy())
+        assert np.allclose(out_back_expect.asnumpy(), out_back_jit.asnumpy())
+        assert np.allclose(out_back_expect_1.asnumpy(), out_back_jit_1.asnumpy())
+
+    finally:
+        del os.environ["MS_DEV_TENSOR_INDEX_BOOST"]
+
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+def test_tensor_index_grad_3():
+    """
+    Feature: Support tensor index gradient.
+    Description: Support tensor index gradient.
+    Expectation: no exception.
+    """
+
+    def foo(x):
+        view_obj1 = x[True]
+        view_obj2 = view_obj1[None]
+        if P.ReduceSum()(x) > 2:
+            view_obj2[True] = Tensor(5)
+        else:
+            view_obj2[True] = Tensor(6)
+        return view_obj2, x
+
+    @ms.jit(backend="ms_backend")
+    def foo1(x):
+        return foo(x)
+
+    try:
+        os.environ["MS_DEV_TENSOR_INDEX_BOOST"] = '1'
+
+        x_np = np.ones([2, 4]).astype(np.float32)
+        input_x = Tensor(x_np)
+
+        out_forword_expect = foo(input_x)
+        out_back_expect = grad(foo)(input_x)
+        out_forword_jit = foo1(input_x)
+        out_back_jit = grad(foo1)(input_x)
+        assert np.allclose(out_forword_expect[0].asnumpy(), out_forword_jit[0].asnumpy())
+        assert np.allclose(out_forword_expect[1].asnumpy(), out_forword_jit[1].asnumpy())
+        assert np.allclose(out_back_expect.asnumpy(), out_back_jit.asnumpy())
+
+    finally:
+        del os.environ["MS_DEV_TENSOR_INDEX_BOOST"]
+
+
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_tensor_view_inplace_grad_with_tuple_output():
     """
