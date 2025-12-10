@@ -12,16 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-import os
-import pytest
+"""test async d2h copy"""
 
-import mindspore.context as context
+import os
 import mindspore.dataset as ds
 import mindspore.dataset.transforms as C
 import mindspore.dataset.vision as CV
-import mindspore.nn as nn
+from mindspore import context
+from mindspore import nn
 from mindspore.nn import Accuracy
-from mindspore.train import ModelCheckpoint, CheckpointConfig, LossMonitor, TimeMonitor
+from mindspore.train import ModelCheckpoint, CheckpointConfig, LossMonitor, TimeMonitor, TrainFaultTolerance
 from mindspore.common import dtype as mstype
 from mindspore.dataset.vision import Inter
 from mindspore.train import Model
@@ -47,7 +47,7 @@ class LeNet5(nn.Cell):
     """
 
     def __init__(self, num_class=10, num_channel=1, include_top=True):
-        super(LeNet5, self).__init__()
+        super().__init__()
         self.conv1 = nn.Conv2d(num_channel, 6, 5, pad_mode='valid')
         self.conv2 = nn.Conv2d(6, 16, 5, pad_mode='valid')
         self.relu = nn.ReLU()
@@ -120,7 +120,7 @@ def test_ckpt_d2h_async():
     num_class = 10
     lr = 0.01
     momentum = 0.9
-    epoch_size = 10
+    epoch_size = 5
     batch_size = 32
     save_checkpoint_steps = 1
     keep_checkpoint_max = 5
@@ -131,14 +131,17 @@ def test_ckpt_d2h_async():
 
     network = LeNet5(num_class)
     net_loss = nn.SoftmaxCrossEntropyWithLogits(sparse=True, reduction="mean")
-    net_opt = nn.Momentum(network.trainable_params(), lr, momentum)
+
+    OptWrapper = TrainFaultTolerance.get_optimizer_wrapper(nn.Momentum)
+    net_opt = OptWrapper(params=network.trainable_params(), learning_rate=lr, momentum=momentum)
     time_cb = TimeMonitor(data_size=ds_train.get_dataset_size())
     config_ck = CheckpointConfig(save_checkpoint_steps=save_checkpoint_steps,
                                  keep_checkpoint_max=keep_checkpoint_max)
     ckpoint_cb = ModelCheckpoint(prefix="d2h_async_ckpt", directory=ckpt_path, config=config_ck)
+    tft_cb = TrainFaultTolerance(ckpt_save_path=ckpt_path)
 
-    model = Model(network, net_loss, net_opt, metrics={"Accuracy": Accuracy()}, amp_level="O2")
+    model = Model(network, net_loss, net_opt, metrics={"Accuracy": Accuracy()})
 
     print("============== Starting Training ==============")
-    model.train(epoch_size, ds_train, callbacks=[time_cb, ckpoint_cb, LossMonitor()], dataset_sink_mode=True)
+    model.train(epoch_size, ds_train, callbacks=[time_cb, ckpoint_cb, LossMonitor(), tft_cb], dataset_sink_mode=True)
     del os.environ['MS_ENABLE_CKPT_D2H_ASYNC']
