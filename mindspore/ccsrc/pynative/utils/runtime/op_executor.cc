@@ -14,11 +14,10 @@
  * limitations under the License.
  */
 
-#include "pynative/utils/runtime/op_executor.h"
+#include "include/pynative/utils/runtime/op_executor.h"
 #include "pybind_api/gil_scoped_long_running.h"
 #include "include/runtime/pipeline/pipeline.h"
 #include "include/runtime/utils/runtime_conf/runtime_conf.h"
-#include "include/runtime/memory/mem_pool/mem_dynamic_allocator.h"
 
 namespace mindspore::runtime {
 OpExecutor &OpExecutor::GetInstance() {

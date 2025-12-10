@@ -23,7 +23,7 @@
 
 #include "tools/profiler/profiler.h"
 #include "pynative/backward/op_grad/func_grad.h"
-#include "pynative/utils/pyboost/functions/auto_grad_guard.h"
+#include "include/pynative/utils/pyboost/functions/auto_grad_guard.h"
 #include "pynative/backward/grad_utils.h"
 #include "include/runtime/pipeline/pipeline.h"
 

@@ -18,7 +18,7 @@
 #include <string>
 #include <vector>
 #include "kernel/ascend/hccl/pyboost/comm_common.h"
-#include "mindspore/ccsrc/pynative/utils/pyboost/pyboost_utils.h"
+#include "include/pynative/utils/pyboost/pyboost_utils.h"
 #include "primitive/framework_ops.h"
 #include "include/runtime/hardware_abstract/collective/collective_manager.h"
 #include "include/backend/common/exec_order/execute_order_tracker.h"
@@ -27,7 +27,7 @@
 #include "plugin/ascend/res_manager/stream_manager/ascend_stream_manager.h"
 #include "plugin/ascend/res_manager/symbol_interface/acl_rt_symbol.h"
 #include "plugin/ascend/res_manager/symbol_interface/symbol_utils.h"
-#include "mindspore/ccsrc/pynative/utils/pyboost/comm_utils.h"
+#include "include/pynative/utils/pyboost/comm_utils.h"
 #include "include/runtime/pipeline/pipeline.h"
 #include "include/backend/common/exec_order/kernel_cache.h"
 #include "include/runtime/utils/runtime_conf/runtime_conf.h"

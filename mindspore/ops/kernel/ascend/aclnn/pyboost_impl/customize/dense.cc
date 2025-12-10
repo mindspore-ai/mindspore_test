@@ -18,9 +18,9 @@
 #include <algorithm>
 #include "plugin/ascend/res_manager/stream_manager/ascend_stream_manager.h"
 #include "kernel/ascend/aclnn/pyboost_impl/aclnn_utils.h"
-#include "mindspore/ccsrc/pynative/utils/pyboost/pyboost_utils.h"
+#include "include/pynative/utils/pyboost/pyboost_utils.h"
 #include "mindspore/ccsrc/include/pynative/utils/pyboost/functions/auto_generate/functions.h"
-#include "mindspore/ccsrc/pynative/utils/pyboost/functions/auto_grad_guard.h"
+#include "include/pynative/utils/pyboost/functions/auto_grad_guard.h"
 #include "kernel/ascend/aclnn/pyboost_impl/auto_generate/matmul_ext.h"
 #include "kernel/ascend/aclnn/pyboost_impl/auto_generate/matmul.h"
 #include "kernel/ascend/aclnn/pyboost_impl/auto_generate/addmm.h"

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "mindspore/ccsrc/pynative/utils/pyboost/pyboost_utils.h"
+#include "include/pynative/utils/pyboost/pyboost_utils.h"
 #include <string>
 #include <memory>
 #include <vector>
@@ -25,16 +25,16 @@
 #include "abstract/ops/primitive_infer_map.h"
 #include "ir/tensor_new.h"
 #include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
-#include "mindspore/ccsrc/pynative/utils/pyboost/kernel_mod_cache.h"
+#include "include/pynative/utils/pyboost/kernel_mod_cache.h"
 #include "mindapi/base/type_id.h"
 #include "include/backend/common/device_address_utils.h"
 #include "ops/ops_frontend_func_impl.h"
 #include "ops/infer_info/infer_info_utils.h"
 #include "ops/op_def.h"
-#include "pynative/utils/runtime/op_executor.h"
+#include "include/pynative/utils/runtime/op_executor.h"
 #include "include/runtime/pipeline/pipeline.h"
 #include "pybind_api/gil_scoped_long_running.h"
-#include "mindspore/ccsrc/pynative/utils/pyboost/auto_generate/cast.h"
+#include "include/pynative/utils/pyboost/auto_generate/cast.h"
 #include "primitive/array_ops.h"
 #include "include/runtime/utils/runtime_conf/runtime_conf.h"
 #include "primitive/auto_generate/gen_ops_primitive_c.h"

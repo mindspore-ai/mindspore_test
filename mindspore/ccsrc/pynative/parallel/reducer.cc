@@ -24,7 +24,7 @@
 #include "tools/profiler/profiler.h"
 #include "include/runtime/pipeline/pipeline.h"
 #include "include/pynative/utils/pyboost/functions/auto_generate/functions.h"
-#include "pynative/utils/pyboost/functions/auto_grad_guard.h"
+#include "include/pynative/utils/pyboost/functions/auto_grad_guard.h"
 #include "pynative/backward/hook/hook_py.h"
 #include "include/pynative/utils/pynative_utils.h"
 #include "include/pynative/utils/pynative_execute.h"

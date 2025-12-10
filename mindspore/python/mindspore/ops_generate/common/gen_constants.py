@@ -98,6 +98,7 @@ MS_PYBOOST_FUNCTIONS_HEADER_AUTO_GEN_PATH = "mindspore/ccsrc/include/pynative/ut
 MS_PYBOOST_FUNCTIONS_AUTO_GEN_PATH = "mindspore/ccsrc/pynative/utils/pyboost/functions/auto_generate"
 MS_COMMON_PYBOOST_KERNEL_PATH = os.path.join(MS_OPS_KERNEL_PATH, "common/pyboost")
 MS_PYBOOST_BASE_PATH = "mindspore/ccsrc/pynative/utils/pyboost"
+MS_PYBOOST_BASE_HEADER_PATH = "mindspore/ccsrc/include/pynative/utils/pyboost"
 MS_PYBOOST_INTERNAL_FUNCTIONS_AUTO_GEN_PATH = os.path.join(MS_OPS_KERNEL_PATH,
                                                            "ascend/aclnn/pyboost_impl/internal/functions")
 MS_INTERNAL_PYBOOST_GEN_PATH = "mindspore/ops/kernel/ascend/internal/pyboost/auto_gen"

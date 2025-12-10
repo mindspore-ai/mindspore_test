@@ -21,9 +21,9 @@
 #include "pynative/utils/predict_out_type_map.h"
 #include "include/pynative/forward/pyboost/forward_task.h"
 #include "primitive/auto_generate/gen_ops_def.h"
-#include "mindspore/ccsrc/pynative/utils/pyboost/functions/auto_grad_guard.h"
-#include "mindspore/ccsrc/pynative/utils/pyboost/functions/base.h"
-#include "mindspore/ccsrc/pynative/utils/pyboost/auto_generate/custom_ext.h"
+#include "include/pynative/utils/pyboost/functions/auto_grad_guard.h"
+#include "include/pynative/utils/pyboost/functions/base.h"
+#include "include/pynative/utils/pyboost/auto_generate/custom_ext.h"
 #include "primitive/auto_generate/gen_ops_primitive_c.h"
 #include "pybind_api/pynative/pynative_api.h"
 

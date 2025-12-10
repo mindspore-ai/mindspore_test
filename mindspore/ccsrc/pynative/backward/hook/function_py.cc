@@ -30,7 +30,7 @@
 #include "include/utils/tensor_py.h"
 #include "include/utils/convert_utils_py.h"
 #include "include/utils/pynative/grad_state.h"
-#include "pynative/utils/pyboost/functions/auto_grad_guard.h"
+#include "include/pynative/utils/pyboost/functions/auto_grad_guard.h"
 #include "include/pynative/utils/pyboost/functions/auto_generate/functions.h"
 #include "include/utils/exception.h"
 #include "include/utils/pyobj_manager.h"

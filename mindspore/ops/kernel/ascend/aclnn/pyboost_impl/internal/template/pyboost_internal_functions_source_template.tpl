@@ -23,7 +23,7 @@
 #include <unordered_map>
 
 #include "include/runtime/hardware_abstract/device_context/device_context_manager.h"
-#include "mindspore/ccsrc/pynative/utils/pyboost/pyboost_utils.h"
+#include "include/pynative/utils/pyboost/pyboost_utils.h"
 
 namespace mindspore {
 namespace kernel {

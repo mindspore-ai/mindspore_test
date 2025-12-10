@@ -16,7 +16,7 @@
 
 #include "kernel/ascend/custom/pyboost_impl/atb/atb_common.h"
 #include <map>
-#include "pynative/utils/pyboost/custom/tensor.h"
+#include "include/pynative/utils/pyboost/custom/tensor.h"
 #include "ir/tensor.h"
 #include "mindspore/ccsrc/include/pynative/utils/pyboost/functions/auto_generate/functions.h"
 

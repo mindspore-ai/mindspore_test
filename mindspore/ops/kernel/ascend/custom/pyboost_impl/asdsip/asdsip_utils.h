@@ -21,7 +21,7 @@
 #include <string>
 #include <map>
 #include "acl/acl.h"
-#include "pynative/utils/pyboost/custom/pyboost_extension.h"
+#include "include/pynative/utils/pyboost/custom/pyboost_extension.h"
 #include "kernel/ascend/acl_ir/op_api_convert.h"
 #include "plugin/ascend/res_manager/symbol_interface/symbol_utils.h"
 

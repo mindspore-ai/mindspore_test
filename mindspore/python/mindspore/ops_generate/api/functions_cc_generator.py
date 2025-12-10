@@ -118,7 +118,7 @@ class FunctionsGenerator(BaseGenerator):
         self.FUNCTION_VIEW_CUSTOMIZE_BODY_TEMPLATE = template.FUNCTION_VIEW_CUSTOMIZE_BODY_TEMPLATE
         self.FUNCTION_COMM_BODY_TEMPLATE = template.FUNCTION_COMM_BODY_TEMPLATE
         self.pyboost_func_include_header_template = Template(
-            f'#include "{K.MS_PYBOOST_BASE_PATH}/auto_generate/${{operator_name}}.h"\n'
+            f'#include "{K.MS_PYBOOST_BASE_HEADER_PATH}/auto_generate/${{operator_name}}.h"\n'
         )
         self.pyboost_view_func_include_header_template = Template(
             f'#include "{K.MS_OPS_VIEW_PATH}/${{operator_name}}_strides_calc.h"\n'

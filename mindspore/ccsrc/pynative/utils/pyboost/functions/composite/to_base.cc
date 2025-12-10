@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "pynative/utils/pyboost/functions/composite/to_base.h"
+#include "include/pynative/utils/pyboost/functions/composite/to_base.h"
 
 namespace mindspore {
 namespace kernel {

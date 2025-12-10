@@ -42,7 +42,7 @@
 #include "primitive/auto_generate/gen_ops_primitive_r.h"
 #include "primitive/auto_generate/gen_ops_primitive_s.h"
 #include "primitive/auto_generate/gen_ops_primitive_t.h"
-#include "mindspore/ccsrc/pynative/utils/pyboost/auto_generate/copy.h"
+#include "include/pynative/utils/pyboost/auto_generate/copy.h"
 #include "plugin/ascend/res_manager/stream_manager/ascend_stream_manager.h"
 #include "kernel/ascend/aclnn/pyboost_impl/aclnn_utils.h"
 

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "mindspore/ccsrc/pynative/utils/pyboost/functions/auto_grad_guard.h"
+#include "include/pynative/utils/pyboost/functions/auto_grad_guard.h"
 #include "utils/ms_context.h"
 #include "include/runtime/pipeline/pipeline.h"
 #include "utils/device_manager_conf.h"

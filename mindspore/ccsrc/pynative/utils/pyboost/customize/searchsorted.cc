@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "mindspore/ccsrc/pynative/utils/pyboost/customize/searchsorted.h"
+#include "include/pynative/utils/pyboost/customize/searchsorted.h"
 #include <memory>
 #include <utility>
 

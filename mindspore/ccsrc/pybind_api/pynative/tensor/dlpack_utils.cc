@@ -21,7 +21,7 @@
 #include <vector>
 
 #include "pybind_api/pynative/tensor/device_type_utils.h"
-#include "pynative/utils/pyboost/functions/auto_grad_guard.h"
+#include "include/pynative/utils/pyboost/functions/auto_grad_guard.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel.h"
 #include "device_address/device_type.h"
 #include "ir/tensor_storage_info.h"

@@ -23,7 +23,7 @@
 #include <utility>
 #include <functional>
 #include <string>
-#include "pynative/utils/pyboost/custom/pyboost_extension.h"
+#include "include/pynative/utils/pyboost/custom/pyboost_extension.h"
 #include "kernel/ascend/aclnn/pyboost_impl/aclnn_utils.h"
 #include "plugin/ascend/res_manager/stream_manager/ascend_stream_manager.h"
 

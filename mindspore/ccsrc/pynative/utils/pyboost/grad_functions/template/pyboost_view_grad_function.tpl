@@ -1,4 +1,4 @@
-void PYBOOST_API ${func_name}(OpRunnerInfo* op_runner_info, VectorRef *op_outputs) {
+void ${func_name}(OpRunnerInfo* op_runner_info, VectorRef *op_outputs) {
   MS_EXCEPTION_IF_NULL(op_runner_info);
   ${convert_body}
   kernel::pyboost::OpRunStatus::Get().set_run_info(

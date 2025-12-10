@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "mindspore/ccsrc/pynative/utils/pyboost/pyboost_utils.h"
+#include "include/pynative/utils/pyboost/pyboost_utils.h"
 #include "primitive/framework_ops.h"
 #include "primitive/math_ops.h"
-#include "mindspore/ccsrc/pynative/utils/pyboost/customize/divmod.h"
-#include "mindspore/ccsrc/pynative/utils/pyboost/auto_generate/div.h"
+#include "include/pynative/utils/pyboost/customize/divmod.h"
+#include "include/pynative/utils/pyboost/auto_generate/div.h"
 #include "include/op_enum.h"
 #include "primitive/auto_generate/gen_ops_primitive_f.h"
 #include "primitive/auto_generate/gen_ops_primitive_t.h"

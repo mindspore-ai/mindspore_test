@@ -29,7 +29,7 @@
 #include "primitive/auto_generate/gen_ops_def.h"
 #include "pynative/forward/pyboost/comm_handle_py.h"
 #include "pynative/forward/pyboost/auto_generate/tensor_func_utils.h"
-#include "mindspore/ccsrc/pynative/utils/pyboost/functions/auto_grad_guard.h"
+#include "include/pynative/utils/pyboost/functions/auto_grad_guard.h"
 #include "mindspore/ccsrc/include/pynative/utils/pyboost/functions/auto_generate/functions.h"
 ${ops_inc}
 

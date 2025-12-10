@@ -17,7 +17,7 @@
 #include <utility>
 #include <string>
 #include <memory>
-#include "pynative/utils/runtime/op_executor.h"
+#include "include/pynative/utils/runtime/op_executor.h"
 #include "include/runtime/pipeline/pipeline.h"
 #include "include/runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "include/runtime/hardware_abstract/stream/multi_stream_controller.h"

@@ -21,7 +21,7 @@
 #include "include/utils/pynative//variable.h"
 #include "include/utils/pynative/common_utils.h"
 #include "mindspore/ccsrc/include/pynative/utils/pyboost/functions/auto_generate/functions.h"
-#include "mindspore/ccsrc/pynative/utils/pyboost/functions/auto_grad_guard.h"
+#include "include/pynative/utils/pyboost/functions/auto_grad_guard.h"
 #include "mindspore/core/include/utils/ms_context.h"
 
 namespace mindspore::pynative::autograd {

@@ -29,7 +29,7 @@
 #include "frontend/jit/ps/resource.h"
 #include "mindspore/ccsrc/utils/ir_dump/draw.h"
 #include "frontend/operator/ops.h"
-#include "pynative/utils/pyboost/pyboost_utils.h"
+#include "include/pynative/utils/pyboost/pyboost_utils.h"
 #include "ir/tensor.h"
 #include "utils/convert_utils.h"
 #include "include/utils/convert_utils_py.h"

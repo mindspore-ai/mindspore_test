@@ -15,8 +15,8 @@
  */
 
 #include "pybind_api/runtime/event_py.h"
-#include "pynative/utils/runtime/op_executor.h"
-#include "pynative/utils/runtime/task/device_task.h"
+#include "include/pynative/utils/runtime/op_executor.h"
+#include "include/pynative/utils/runtime/task/device_task.h"
 #include "include/runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "utils/ms_context.h"
 

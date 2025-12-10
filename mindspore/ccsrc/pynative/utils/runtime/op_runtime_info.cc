@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "pynative/utils/runtime/op_runtime_info.h"
+#include "include/pynative/utils/runtime/op_runtime_info.h"
 
 #include <utility>
 

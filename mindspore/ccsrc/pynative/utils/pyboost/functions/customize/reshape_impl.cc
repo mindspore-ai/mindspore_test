@@ -18,11 +18,11 @@
 #include "view/reshape_strides_calc.h"
 #include "mindspore/ccsrc/include/pynative/utils/pyboost/functions/auto_generate/functions.h"
 #include "mindspore/core/include/utils/stream_guard.h"
-#include "mindspore/ccsrc/pynative/utils/runtime//op_runner.h"
-#include "mindspore/ccsrc/pynative/utils/pyboost/functions/auto_grad_reg.h"
-#include "mindspore/ccsrc/pynative/utils/pyboost/functions/auto_grad_guard.h"
+#include "include/pynative/utils/runtime/op_runner.h"
+#include "include/pynative/utils/pyboost/functions/auto_grad_reg.h"
+#include "include/pynative/utils/pyboost/functions/auto_grad_guard.h"
 #include "include/runtime/utils/dispatch/dispatch_env.h"
-#include "pynative/utils/pyboost/functions/dispatch.h"
+#include "include/pynative/utils/pyboost/functions/dispatch.h"
 
 namespace mindspore::kernel::pyboost {
 inline device::DeviceType GetDeviceTarget() { return OpRunStatus::Get().device_target(); }

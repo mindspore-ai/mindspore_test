@@ -28,7 +28,7 @@
 #include "device_address/device_type.h"
 #include "utils/simple_info.h"
 #include "ops/op_def.h"
-#include "mindspore/ccsrc/pynative/utils/pyboost/functions/base.h"
+#include "include/pynative/utils/pyboost/functions/base.h"
 #include "include/utils/utils.h"
 
 namespace mindspore {

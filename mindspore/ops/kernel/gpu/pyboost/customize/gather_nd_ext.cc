@@ -16,7 +16,7 @@
 
 #include "mindspore/ops/kernel/gpu/pyboost/customize/gather_nd_ext.h"
 #include <optional>
-#include "mindspore/ccsrc/pynative/utils/pyboost/customize/gather_nd_ext.h"
+#include "include/pynative/utils/pyboost/customize/gather_nd_ext.h"
 
 namespace mindspore {
 namespace kernel {

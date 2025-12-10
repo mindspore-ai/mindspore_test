@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-#include "mindspore/ccsrc/pynative/utils/pyboost/grad_functions/value_converter.h"
+#include "include/pynative/utils/pyboost/grad_functions/value_converter.h"
 
 #include <algorithm>
 #include <iterator>
 #include <vector>
 #include <memory>
-#include "mindspore/ccsrc/pynative/utils/pyboost/auto_generate/contiguous.h"
+#include "include/pynative/utils/pyboost/auto_generate/contiguous.h"
 
 namespace mindspore::runtime {
 namespace {

@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-#include "mindspore/ccsrc/pynative/utils/pyboost/customize/meshgrid.h"
+#include "include/pynative/utils/pyboost/customize/meshgrid.h"
 #include <memory>
 #include <utility>
 #include <string>
 #include "include/backend/common/device_address_utils.h"
 #include "include/pynative/utils/pyboost/functions/auto_generate/functions.h"
-#include "mindspore/ccsrc/pynative/utils/pyboost/functions/auto_grad_guard.h"
+#include "include/pynative/utils/pyboost/functions/auto_grad_guard.h"
 #include "ops/op_def_utils.h"
 
 namespace mindspore {

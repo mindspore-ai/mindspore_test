@@ -14,15 +14,15 @@
  * limitations under the License.
  */
 
-#include "mindspore/ccsrc/pynative/utils/pyboost/grad_functions/pyboost_grad_functions.h"
-#include "pynative/utils/runtime/op_executor.h"
-#include "mindspore/ccsrc/pynative/utils/pyboost/grad_functions/value_converter.h"
-#include "mindspore/ccsrc/pynative/utils/pyboost/pyboost_utils.h"
+#include "include/pynative/utils/pyboost/grad_functions/pyboost_grad_functions.h"
+#include "include/pynative/utils/runtime/op_executor.h"
+#include "include/pynative/utils/pyboost/grad_functions/value_converter.h"
+#include "include/pynative/utils/pyboost/pyboost_utils.h"
 #include "include/pynative/utils/pynative_utils.h"
 #include "include/utils/python_adapter.h"
 #include "pybind_api/gil_scoped_long_running.h"
 #include "mindspore/ccsrc/include/pynative/utils/pyboost/functions/auto_generate/functions.h"
-#include "mindspore/ccsrc/pynative/utils/pyboost/functions/auto_grad_guard.h"
+#include "include/pynative/utils/pyboost/functions/auto_grad_guard.h"
 #include "include/utils/pynative/abstract_converter.h"
 ${composite_headers}
 

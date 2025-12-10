@@ -23,7 +23,7 @@
 #include "utils/log_adapter.h"
 #include "utils/ms_context.h"
 #include "actor/actormgr.h"
-#include "pynative/utils/runtime/op_executor.h"
+#include "include/pynative/utils/runtime/op_executor.h"
 #include "runtime/core/graph_executor/pipeline/runtime_pipeline.h"
 #include "runtime/core/graph_scheduler/base/graph_scheduler.h"
 #include "include/frontend/jit/ps/executor/graph_executor_py.h"

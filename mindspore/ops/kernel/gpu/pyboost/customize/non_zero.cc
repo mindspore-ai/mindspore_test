@@ -16,9 +16,9 @@
 
 #include "kernel/gpu/pyboost/customize/non_zero.h"
 #include "ir/scalar.h"
-#include "mindspore/ccsrc/pynative/utils/pyboost/pyboost_utils.h"
-#include "mindspore/ccsrc/pynative/utils/pyboost/op_runner.h"
-#include "mindspore/ccsrc/pynative/utils/pyboost/customize/op_common.h"
+#include "include/pynative/utils/pyboost/pyboost_utils.h"
+#include "include/pynative/utils/pyboost/op_runner.h"
+#include "include/pynative/utils/pyboost/customize/op_common.h"
 #include "include/runtime/pipeline/pipeline.h"
 #include "include/runtime/utils/runtime_conf/runtime_conf.h"
 

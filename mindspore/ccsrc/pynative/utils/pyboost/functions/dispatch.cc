@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "pynative/utils/pyboost/functions/dispatch.h"
+#include "include/pynative/utils/pyboost/functions/dispatch.h"
 #include <sstream>
 #include "pybind11/pybind11.h"
 

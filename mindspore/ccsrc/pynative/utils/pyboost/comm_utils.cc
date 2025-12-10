@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "mindspore/ccsrc/pynative/utils/pyboost/comm_utils.h"
+#include "include/pynative/utils/pyboost/comm_utils.h"
 
 namespace mindspore {
 namespace kernel {

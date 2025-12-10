@@ -26,7 +26,7 @@
 #include <list>
 
 #include "atb/atb_infer.h"
-#include "pynative/utils/pyboost/custom/pyboost_extension.h"
+#include "include/pynative/utils/pyboost/custom/pyboost_extension.h"
 #include "kernel/ascend/visible.h"
 
 #define CHECK_ATB_RET(op, st, func)                                                                                 \

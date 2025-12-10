@@ -19,7 +19,7 @@
 #include "mindspore/ccsrc/pynative/utils/pyboost/functions/customize/view_impl.h"
 #include "include/op_enum.h"
 #include "mindspore/core/include/ops/op_def_utils.h"
-#include "mindspore/ccsrc/pynative/utils/pyboost/pyboost_utils.h"
+#include "include/pynative/utils/pyboost/pyboost_utils.h"
 #include "mindspore/ccsrc/include/pynative/utils/pyboost/functions/auto_generate/functions.h"
 
 namespace mindspore::kernel::pyboost {

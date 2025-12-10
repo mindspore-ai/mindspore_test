@@ -16,7 +16,7 @@
 
 #include "kernel/gpu/pyboost/customize/min.h"
 #include "kernel/gpu/pyboost/customize/max.h"
-#include "mindspore/ccsrc/pynative/utils/pyboost/pyboost_utils.h"
+#include "include/pynative/utils/pyboost/pyboost_utils.h"
 #include "include/runtime/utils/runtime_conf/runtime_conf.h"
 #include "primitive/auto_generate/gen_ops_primitive_r.h"
 
