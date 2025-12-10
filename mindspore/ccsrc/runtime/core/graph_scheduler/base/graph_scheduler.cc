@@ -1107,10 +1107,11 @@ void GraphScheduler::Run(ActorSet *const actor_set, const std::vector<std::vecto
   }
 
   // Construct OpContext.
-  OpContext<KernelTensor> op_context;
-  std::vector<Promise<int>> result(1);
-  op_context.sequential_num_ = RandInt::Instance().Get();
-  op_context.results_ = &result;
+  actor_set->op_context_and_promises_.first = std::make_unique<OpContext<KernelTensor>>();
+  actor_set->op_context_and_promises_.second = std::make_unique<std::vector<Promise<int>>>(1);
+  actor_set->op_context_and_promises_.first->sequential_num_ = RandInt::Instance().Get();
+  actor_set->op_context_and_promises_.first->results_ = actor_set->op_context_and_promises_.second.get();
+  auto op_context_ptr = actor_set->op_context_and_promises_.first.get();
 
   ResetTraceMemoryStatus();
   // Trigger data prepare actor running.
@@ -1131,10 +1132,10 @@ void GraphScheduler::Run(ActorSet *const actor_set, const std::vector<std::vecto
   ContinuePipelineByCondition();
   double start_time = GetTime();
   ActorDispatcher::SendSync(actor_set->data_prepare_actor_->GetAID(), &DataPrepareActor::PrepareData, input_tensors,
-                            args, &op_context, GraphExecutionStrategy::kPipeline);
+                            args, op_context_ptr, GraphExecutionStrategy::kPipeline);
 
   // Get the run result.
-  auto result_future = result[0].GetFuture();
+  auto result_future = actor_set->op_context_and_promises_.second->at(0).GetFuture();
   result_future.Wait();
   thread_pool->SetSpinCountMinValue();
   if (!result_future.IsOK()) {
@@ -1147,7 +1148,7 @@ void GraphScheduler::Run(ActorSet *const actor_set, const std::vector<std::vecto
     std::condition_variable thread_blocker;
     const int64_t kTimeToWait = 3;
     (void)thread_blocker.wait_for(locker, std::chrono::seconds(kTimeToWait));
-    WaitRuntimePipelineFinish(&op_context, "GraphSchedulerRun");
+    WaitRuntimePipelineFinish(op_context_ptr, "GraphSchedulerRun");
     if (EnableRuntimeNewPipeline()) {
       RuntimePipeline::GetInstance().PauseAll();
     }
@@ -1157,12 +1158,12 @@ void GraphScheduler::Run(ActorSet *const actor_set, const std::vector<std::vecto
     static auto tft_process_error_cb = GET_COMMON_CALLBACK(TftProcessGraphRunError, void, ActorSet *const,
                                                            OpContext<KernelTensor> *const, GraphScheduler *const);
     if (tft_process_error_cb != nullptr) {
-      tft_process_error_cb(actor_set, &op_context, this);
+      tft_process_error_cb(actor_set, op_context_ptr, this);
     }
 
     // May set exception in the wait time, need throw the exception to avoid affecting the next execution.
     MsException::Instance().CheckException();
-    MS_LOG(EXCEPTION) << op_context.error_info_;
+    MS_LOG(EXCEPTION) << actor_set->op_context_and_promises_.first->error_info_;
   }
 
   if (EnableRuntimeNewPipeline()) {
