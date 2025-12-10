@@ -125,7 +125,7 @@ def generate_dynamic_tensor_args(args_list, dynamic_shapes):
 
 
 def enable_dynamic(**kwargs):
-    """
+    r"""
     Use to specify whether the shape of the parameter is dynamic shape or dynamic rank.
 
     Note:
@@ -135,13 +135,15 @@ def enable_dynamic(**kwargs):
           use enabled_dynamic to report an error.
 
     Args:
-        kwargs (dict): The input types are Tensor, tuple[Tensor] and list[Tensor]. If one or
+        \*\*kwargs (dict[str, Union[Tensor, tuple[Tensor], list[Tensor]]]): The input types are Tensor,
+            tuple[Tensor] and list[Tensor]. If one or
             more dimensions in the shape of the parameter need to be specified as dynamic shapes,
             the corresponding dimensions in the shape can be set to None. If the shape that needs
             to generate specified parameters is dynamic rank, the shape can be set to None.
 
     Returns:
-        Function, return a function that specifies the dynamic shape information of the parameter.
+        Function, decorator function which is used to specify the dynamic shape information of the parameters for
+        the decorated function.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``

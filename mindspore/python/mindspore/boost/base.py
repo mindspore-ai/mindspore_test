@@ -39,7 +39,7 @@ class OptimizerProcess:
     and creating new optimizers.
 
     Args:
-       opt (Cell): Optimizer used.
+        opt (Cell): Optimizer used.
 
     Examples:
         >>> import numpy as np
@@ -284,7 +284,7 @@ class ParameterProcess:
 
         Args:
             parameters (list): The network's parameter list.
-            split_point (list): The gradient split point of this network. Default: ``None``.
+            split_point (list, optional): The gradient split point of this network. Default: ``None``.
         """
         if not isinstance(parameters, (list, tuple)) or not parameters:
             return parameters

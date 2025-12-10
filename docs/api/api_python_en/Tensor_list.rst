@@ -45,6 +45,13 @@
     :exclude-members: infer_value, infer_shape, infer_dtype, get_bprop, set_infer_flag, set_inputs_type
     :members:
 
+{% elif fullname=="mindspore.ops.Tile" %}
+{{ fullname | underline }}
+
+.. autoclass:: {{ name }}
+    :exclude-members: check_elim
+    :members:
+
 {% elif fullname=="mindspore.parallel.auto_parallel.AutoParallel" %}
 {{ fullname | underline }}
 

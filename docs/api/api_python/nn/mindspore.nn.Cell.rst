@@ -565,9 +565,6 @@
 
         其作用范围限定在 :func:`mindspore.nn.Cell.construct` 内，更多使用说明请参考 :class:`mindspore.saved_tensors_hooks` 。
 
-        .. note::
-            当前该方法在Graph模式与Jit模式下不支持。
-
         参数：
             - **pack_hook** (Callable) - 定义前向计算保存张量时的处理方法。
             - **unpack_hook** (Callable) - 定义反向计算恢复张量时的处理方法。
