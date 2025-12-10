@@ -656,12 +656,14 @@ void CheckAPI(const py::object &obj) {
     }
     // Check if the API is decoratored by @jit_view_unsupported.
     bool is_jit_view_unsupported_register = data_converter::IsJitViewUnSupportedAPI(obj);
-    if (is_jit_view_unsupported_register) {
+    static std::map<std::string, bool> mint_warning_map;
+    if (is_jit_view_unsupported_register && !mint_warning_map[obj_name]) {
       MS_LOG(WARNING) << "The mint interface " << obj_name
                       << " was called, and the operators under this interface have different view capabilities on "
                          "pynative and graph mode. Use this interface with caution in graph mode, as it may produce "
                          "unexpected results. For more information, please refer to: "
                          "https://www.mindspore.cn/docs/en/master/features/view.html\n";
+      mint_warning_map[obj_name] = true;
     }
   }
 }
