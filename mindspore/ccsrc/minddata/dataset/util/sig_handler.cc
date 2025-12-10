@@ -379,25 +379,32 @@ void SIGBUSHandler(int signal, siginfo_t *info, void *context) {
 /// \param[in] context The context info.
 void SIGSEGVHandler(int signal, siginfo_t *info, void *context) {
   if (signal != SIGSEGV) {
-    MS_LOG(ERROR) << "SIGSEGVHandler expects SIGSEGV signal, but got: " << strsignal(signal);
+    const char err_sigsegv[] = "[SIGSEGVHandler] the signal is not SIGSEGV.\n";
+    OStreamWrite(STDERR_FILENO, err_sigsegv);
     _exit(EXIT_FAILURE);
   }
 
-  const std::string msg = "Unexpected segmentation fault encountered in process: " + std::to_string(getpid());
   if (info->si_code == SEGV_MAPERR) {
-    MS_LOG(ERROR) << msg << ". Address not mapped to object.";
+    const char segv_maperr[] = "Unexpected segmentation fault encountered in process. Address not mapped to object.\n";
+    OStreamWrite(STDERR_FILENO, segv_maperr);
   } else if (info->si_code == SEGV_ACCERR) {
-    MS_LOG(ERROR) << msg << ". Invalid permissions for mapped object.";
+    const char segv_accerr[] =
+      "Unexpected segmentation fault encountered in process. Invalid permissions for mapped object.\n";
+    OStreamWrite(STDERR_FILENO, segv_accerr);
 #ifdef SEGV_BNDERR
   } else if (info->si_code == SEGV_BNDERR) {
-    MS_LOG(ERROR) << msg << ". Failed address bound checks.";
+    const char segv_bnderr[] = "Unexpected segmentation fault encountered in process. Failed address bound checks.\n";
+    OStreamWrite(STDERR_FILENO, segv_bnderr);
 #endif
 #ifdef SEGV_PKUERR
   } else if (info->si_code == SEGV_PKUERR) {
-    MS_LOG(ERROR) << msg << ". Access was denied by memory protection keys.";
+    const char segv_pkuerr[] =
+      "Unexpected segmentation fault encountered in process. Access was denied by memory protection keys.\n";
+    OStreamWrite(STDERR_FILENO, segv_pkuerr);
 #endif
   } else {
-    MS_LOG(ERROR) << msg << ".";
+    const char segv_err_normal[] = "Unexpected segmentation fault encountered in process.\n";
+    OStreamWrite(STDERR_FILENO, segv_err_normal);
   }
 
   // reset the handler to the default
@@ -405,11 +412,13 @@ void SIGSEGVHandler(int signal, siginfo_t *info, void *context) {
   segv_action.sa_handler = SIG_DFL;
   segv_action.sa_flags = 0;
   if (sigemptyset(&segv_action.sa_mask) != 0) {
-    MS_LOG(ERROR) << "Failed to initialise the signal set, " << strerror(errno);
+    const char segv_err_sigemptyset[] = "Failed to initialise the signal set.\n";
+    OStreamWrite(STDERR_FILENO, segv_err_sigemptyset);
     _exit(EXIT_FAILURE);
   }
   if (sigaction(signal, &segv_action, nullptr) != 0) {
-    MS_LOG(ERROR) << "Failed to set handler for " << strsignal(signal) << ", " << strerror(errno);
+    const char segv_err_sigaction[] = "Failed to set handler.\n";
+    OStreamWrite(STDERR_FILENO, segv_err_sigaction);
     _exit(EXIT_FAILURE);
   }
   raise(signal);
@@ -421,29 +430,45 @@ void SIGSEGVHandler(int signal, siginfo_t *info, void *context) {
 /// \param[in] context The context info.
 void SIGFPEHandler(int signal, siginfo_t *info, void *context) {
   if (signal != SIGBUS) {
-    MS_LOG(ERROR) << "SIGFPEHandler expects SIGFPE signal, but got: " << strsignal(signal);
+    const char err_sigfpe[] = "[SIGFPEHandler] the signal is not SIGFPE.\n";
+    OStreamWrite(STDERR_FILENO, err_sigfpe);
     _exit(EXIT_FAILURE);
   }
 
-  const std::string msg = "Unexpected floating-point exception encountered in process: " + std::to_string(getpid());
   if (info->si_code == FPE_INTDIV) {
-    MS_LOG(ERROR) << msg << ". Integer divide by zero.";
+    const char sigfpe_err_intdiv[] =
+      "Unexpected floating-point exception encountered in process. Integer divide by zero.\n";
+    OStreamWrite(STDERR_FILENO, sigfpe_err_intdiv);
   } else if (info->si_code == FPE_INTOVF) {
-    MS_LOG(ERROR) << msg << ". Integer overflow.";
+    const char sigfpe_err_intovf[] = "Unexpected floating-point exception encountered in process. Integer overflow.\n";
+    OStreamWrite(STDERR_FILENO, sigfpe_err_intovf);
   } else if (info->si_code == FPE_FLTDIV) {
-    MS_LOG(ERROR) << msg << ". Floating-point divide by zero.";
+    const char sigfpe_err_fltdiv[] =
+      "Unexpected floating-point exception encountered in process. Floating-point divide by zero.\n";
+    OStreamWrite(STDERR_FILENO, sigfpe_err_fltdiv);
   } else if (info->si_code == FPE_FLTOVF) {
-    MS_LOG(ERROR) << msg << ". Floating-point overflow.";
+    const char sigfpe_err_fltovf[] =
+      "Unexpected floating-point exception encountered in process. Floating-point overflow.\n";
+    OStreamWrite(STDERR_FILENO, sigfpe_err_fltovf);
   } else if (info->si_code == FPE_FLTUND) {
-    MS_LOG(ERROR) << msg << ". Floating-point underflow.";
+    const char sigfpe_err_fltund[] =
+      "Unexpected floating-point exception encountered in process. Floating-point underflow.\n";
+    OStreamWrite(STDERR_FILENO, sigfpe_err_fltund);
   } else if (info->si_code == FPE_FLTRES) {
-    MS_LOG(ERROR) << msg << ". Floating-point inexact result.";
+    const char sigfpe_err_fltres[] =
+      "Unexpected floating-point exception encountered in process. Floating-point inexact result.\n";
+    OStreamWrite(STDERR_FILENO, sigfpe_err_fltres);
   } else if (info->si_code == FPE_FLTINV) {
-    MS_LOG(ERROR) << msg << ". Floating-point invalid operation.";
+    const char sigfpe_err_fltinv[] =
+      "Unexpected floating-point exception encountered in process. Floating-point invalid operation.\n";
+    OStreamWrite(STDERR_FILENO, sigfpe_err_fltinv);
   } else if (info->si_code == FPE_FLTSUB) {
-    MS_LOG(ERROR) << msg << ". Subscript out of range.";
+    const char sigfpe_err_fltsub[] =
+      "Unexpected floating-point exception encountered in process. Subscript out of range.\n";
+    OStreamWrite(STDERR_FILENO, sigfpe_err_fltsub);
   } else {
-    MS_LOG(ERROR) << msg << ".";
+    const char sigfpe_err_normal[] = "Unexpected floating-point exception encountered in process.\n";
+    OStreamWrite(STDERR_FILENO, sigfpe_err_normal);
   }
 
   // reset the handler to the default
@@ -451,11 +476,13 @@ void SIGFPEHandler(int signal, siginfo_t *info, void *context) {
   fpe_action.sa_handler = SIG_DFL;
   fpe_action.sa_flags = 0;
   if (sigemptyset(&fpe_action.sa_mask) != 0) {
-    MS_LOG(ERROR) << "Failed to initialise the signal set, " << strerror(errno);
+    const char sigfpe_err_sigemptyset[] = "Failed to initialise the signal set.\n";
+    OStreamWrite(STDERR_FILENO, sigfpe_err_sigemptyset);
     _exit(EXIT_FAILURE);
   }
   if (sigaction(signal, &fpe_action, nullptr) != 0) {
-    MS_LOG(ERROR) << "Failed to set handler for " << strsignal(signal) << ", " << strerror(errno);
+    const char sigfpe_err_sigaction[] = "Failed to set handler.\n";
+    OStreamWrite(STDERR_FILENO, sigfpe_err_sigaction);
     _exit(EXIT_FAILURE);
   }
   raise(signal);
