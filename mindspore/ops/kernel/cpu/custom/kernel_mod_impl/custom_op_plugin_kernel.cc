@@ -30,6 +30,7 @@
 #include "utils/file_utils.h"
 #include "utils/ms_utils.h"
 #include "kernel/cpu/custom/kernel_mod_impl/op_plugin_utils.h"
+#include "ops_utils/op_utils.h"
 
 namespace mindspore {
 namespace kernel {
@@ -52,7 +53,7 @@ bool CustomOpPluginCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
   SetKernelPath();
 
   try {
-    bool ret = IsOpPluginKernel(primitive_->name());
+    bool ret = ops::IsOpPluginKernel(primitive_->name());
     if (!ret) {
       MS_LOG(INFO) << "Can't find '" << kernel_name_ << " on CPU in op plugin";
       return false;

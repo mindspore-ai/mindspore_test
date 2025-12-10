@@ -25,6 +25,7 @@
 #include <vector>
 #include <limits>
 #include <functional>
+#include <unordered_set>
 
 #include "abstract/dshape.h"
 #include "abstract/ops/primitive_infer_map.h"
@@ -48,6 +49,9 @@
 #include "ir/func_graph.h"
 #include "ops/ops_func_impl/simple_infer.h"
 #include "utils/ms_context.h"
+#include "ops_utils/dl_utils.h"
+#include "utils/file_utils.h"
+#include "utils/ms_utils.h"
 
 namespace mindspore {
 namespace ops {
@@ -1164,6 +1168,83 @@ bool IsEnableHostNode(const AnfNodePtr &node) {
   OpDefPtr op_def = GetOpDef(AnfUtils::GetCNodeName(node));
   bool is_view = op_def != nullptr ? op_def->is_graph_view_ : false;
   return is_view;
+}
+
+void *GetOpPluginHandle() {
+  static bool is_initialized = false;
+  static void *handle = nullptr;
+  if (is_initialized) {
+    return handle;
+  }
+
+  is_initialized = true;
+  const char *op_plugin_path = common::EnvHelper::GetInstance()->GetEnv("MS_OP_PLUGIN_PATH");
+
+  if (op_plugin_path == nullptr) {
+    MS_LOG(INFO) << "MS_OP_PLUGIN_PATH is not set. Op plugin will not be loaded.";
+    return nullptr;
+  }
+
+  auto real_path = FileUtils::GetRealPath(op_plugin_path).value_or("");
+  if (real_path.empty()) {
+    MS_LOG(ERROR) << "Failed to resolve the real path for MS_OP_PLUGIN_PATH: " << op_plugin_path;
+    return nullptr;
+  }
+  handle = DL_OPEN(real_path);
+  if (handle == nullptr) {
+    MS_LOG(WARNING) << "Failed to open op plugin file: " << real_path << " Error code: " << DL_ERROR();
+  }
+
+  return handle;
+}
+
+bool IsOpPluginKernel(const std::string &op_name) {
+  static bool initialized = false;
+  static bool (*reg_func)(const char *) = nullptr;
+  if (!initialized) {
+    initialized = true;
+    void *handle = GetOpPluginHandle();
+    if (handle == nullptr) {
+      return false;
+    }
+    constexpr auto reg_func_name = "IsKernelRegistered";
+    reg_func = reinterpret_cast<std::add_pointer<bool(const char *)>::type>(DL_SYM(handle, reg_func_name));
+    if (reg_func == nullptr) {
+      MS_LOG(WARNING) << "Error occurs when fetching function '" << reg_func_name
+                      << "' from op plugin library. Error code: " << DL_ERROR();
+      return false;
+    }
+  }
+  return reg_func != nullptr && reg_func(op_name.c_str());
+}
+
+const std::unordered_set<std::string> &GetAllOpPluginKernelNames() {
+  static bool initialized = false;
+  static int (*get_op_count)() = nullptr;
+  static char **(*get_all_ops)() = nullptr;
+  static std::unordered_set<std::string> op_names;
+  if (!initialized) {
+    initialized = true;
+    void *handle = GetOpPluginHandle();
+    if (handle == nullptr) {
+      return op_names;
+    }
+    constexpr auto get_op_count_func_name = "GetRegisteredOpCount";
+    constexpr auto get_all_ops_func_name = "GetAllRegisteredOps";
+    get_op_count = reinterpret_cast<std::add_pointer<int()>::type>(DL_SYM(handle, get_op_count_func_name));
+    get_all_ops = reinterpret_cast<std::add_pointer<char **()>::type>(DL_SYM(handle, get_all_ops_func_name));
+    if (get_op_count == nullptr || get_all_ops == nullptr) {
+      MS_LOG(WARNING) << "Error occurs when fetching function '" << get_op_count_func_name << "' or '"
+                      << get_all_ops_func_name << "' from op plugin library. Error code: " << DL_ERROR();
+      return op_names;
+    }
+    int op_count = get_op_count();
+    char **op_names_ptr = get_all_ops();
+    for (int i = 0; i < op_count; ++i) {
+      op_names.insert(std::string(op_names_ptr[i]));
+    }
+  }
+  return op_names;
 }
 }  // namespace ops
 }  // namespace mindspore
