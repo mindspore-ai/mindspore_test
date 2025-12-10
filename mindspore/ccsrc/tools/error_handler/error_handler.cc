@@ -430,9 +430,11 @@ class TftCallback {
 };
 
 bool IsEnableTftCallback() {
+  static bool enable_d2h_async = common::GetEnv("MS_ENABLE_CKPT_D2H_ASYNC") == "1";
   static bool enabled = TftConfig::GetInstance()->IsEnableUCE() || TftConfig::GetInstance()->IsEnableARF() ||
                         TftConfig::GetInstance()->IsEnableHCCE() || TftConfig::GetInstance()->IsEnableRsc() ||
-                        TftConfig::GetInstance()->IsEnableTRE() || TftConfig::GetInstance()->IsEnableStepTRE();
+                        TftConfig::GetInstance()->IsEnableTRE() || TftConfig::GetInstance()->IsEnableStepTRE() ||
+                        enable_d2h_async;
   return enabled;
 }
 
