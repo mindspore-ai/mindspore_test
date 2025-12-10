@@ -160,7 +160,7 @@ class AutoParallel(Cell):
     """
 
     def __init__(self, network, parallel_mode="semi_auto"):
-        super(AutoParallel, self).__init__(auto_prefix=False)
+        super().__init__(auto_prefix=False)
         self.network = network
 
         if parallel_mode not in ["semi_auto", "sharding_propagation", "recursive_programming"]:
@@ -194,7 +194,7 @@ class AutoParallel(Cell):
         self._pipeline_interleave = False
         self._pipeline_scheduler = "1f1b"
 
-        self._comm_fusion_config = dict()
+        self._comm_fusion_config = {}
 
         self._force_fp32_communication = False
         self._enable_alltoall = True
@@ -209,7 +209,7 @@ class AutoParallel(Cell):
         self._gradient_fp32_sync = True
         self._loss_repeated_mean = True
 
-        self._memory_offload_config = dict()
+        self._memory_offload_config = {}
         self._transformer_opt_config = None
 
     def no_init_parameters_in_compile(self):
@@ -679,12 +679,9 @@ class AutoParallel(Cell):
                   Default: False.
                 - grad_computation_allreduce_overlap (bool): Enable overlap between dx ops and data parallel
                   communication ops if True.
-                  Currently, do not support
-                  `O2 <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.JitConfig.html>`_
                   Default: False.
                 - computation_allgather_overlap (bool): Enable overlap between forward ops
-                  and optimizer parallel allgather communication if True. Currently, do not support
-                  `O2 <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.JitConfig.html>`_
+                  and optimizer parallel allgather communication if True.
                   Default: False.
                 - computation_communication_fusion_level (int): Enable the fusion between compute and communicate,
                   which fuses communication tasks and computing tasks, allows for partial pipelining and parallel
@@ -705,8 +702,8 @@ class AutoParallel(Cell):
                       used. Please note that this operator is still in an experimental stage and may be changed or
                       removed in the future.
 
-                - dataset_broadcast_opt_level (int): Optimize the scenario that the dataset repeated reading. Only
-                  support O0/O1 jit level. It doesn't work in O2 mode. Default: ``0``.
+                - dataset_broadcast_opt_level (int): Optimize the scenario that the dataset repeated reading. Default:
+                  ``0``.
 
                   - 0: Disable this optimize.
 
