@@ -20,64 +20,56 @@ from mindspore import nn
 from mindspore import Tensor, jit, context
 from mindspore.common import dtype
 from mindspore.ops.functional import vmap
-from mindspore._extends.parse import compile_config
 import numpy as np
 from tests.mark_utils import arg_mark
 
 
-@pytest.fixture(scope="module", autouse=True)
-def setup_teardown():
-    compile_config.JIT_ENABLE_AUGASSIGN_INPLACE = '1'
-    yield
-    compile_config.JIT_ENABLE_AUGASSIGN_INPLACE = '0'
+@jit(backend="ms_backend")
+def add_func(x, y):
+    out = y
+    out += y
+    x += 2
+    return out, x
 
 
-class AddNet(nn.Cell):
-    def construct(self, x, y):
-        out = y
-        out += y
-        x += 2
-        return out, x
+@jit(backend="ms_backend")
+def sub_func(x, y):
+    out = y
+    out -= y
+    x -= 2
+    return out, x
 
 
-class SubNet(nn.Cell):
-    def construct(self, x, y):
-        out = y
-        out -= y
-        x -= 2
-        return out, x
+@jit(backend="ms_backend")
+def mul_func(x, y):
+    out = y
+    out *= y
+    x *= 2
+    return out, x
 
 
-class MulNet(nn.Cell):
-    def construct(self, x, y):
-        out = y
-        out *= y
-        x *= 2
-        return out, x
+@jit(backend="ms_backend")
+def div_func(x, y):
+    out = y
+    out /= y
+    x /= 2
+    return out, x
 
 
-class DivNet(nn.Cell):
-    def construct(self, x, y):
-        out = y
-        out /= y
-        x /= 2
-        return out, x
+@jit(backend="ms_backend")
+def floordiv_func(x, y):
+    out = y
+    out //= y
+    x //= 2
+    return out, x
 
 
-class FloorDivideNet(nn.Cell):
-    def construct(self, x, y):
-        out = y
-        out //= y
-        x //= 2
-        return out, x
-
-
-class ModNet(nn.Cell):
-    def construct(self, x, y):
-        out = y
-        out %= y
-        x %= 2
-        return out, x
+@jit(backend="ms_backend")
+def mod_func(x, y):
+    out = y
+    out %= y
+    x %= 2
+    return out, x
 
 
 class ControlFlowNet(nn.Cell):
@@ -101,19 +93,16 @@ class VmapControlFlowNet(nn.Cell):
 
 @arg_mark(plat_marks=['cpu_linux', 'platform_ascend910b'], level_mark='level1', card_mark='onecard',
           essential_mark='unessential')
-@pytest.mark.parametrize("network", [AddNet, SubNet, MulNet, DivNet, FloorDivideNet, ModNet])
-def test_augassign_add_vmap(network):
+@pytest.mark.parametrize("func", [add_func, sub_func, mul_func, div_func, floordiv_func, mod_func])
+def test_augassign_add_vmap(func):
     """
     Feature: Support augassign inplace vmap.
     Description: Support augassign inplace vmap.
     Expectation: Run success.
     """
-    net = network()
-    net.construct = jit(net.construct, backend='ms_backend')
-
     x = Tensor([1], dtype.float32)
     y = Tensor(np.ones([3, 4]), dtype.float32)
-    vmap(net, in_axes=(None, 1), out_axes=0)(x, y)
+    vmap(func, in_axes=(None, 1), out_axes=0)(x, y)
 
 
 @arg_mark(plat_marks=['cpu_linux', 'platform_ascend910b'], level_mark='level1', card_mark='onecard',

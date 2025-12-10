@@ -20,11 +20,9 @@ import re
 import subprocess
 import numpy as np
 import mindspore as ms
-from mindspore import context, nn
+from mindspore import jit
 from mindspore._extends.parse import compile_config
 from tests.mark_utils import arg_mark
-
-context.set_context(mode=context.GRAPH_MODE)
 
 match_dyn_mem = re.compile(r'Used peak memory usage \(without fragments\)\: (.*?)M', re.S)
 
@@ -56,10 +54,10 @@ def run_testcase(testcase_name):
     return max_mem
 
 
-class AddNet(nn.Cell):
-    def construct(self, x, y):
-        x += y
-        return x
+@jit(backend="ms_backend")
+def add_func(x, y):
+    x += y
+    return x
 
 
 def test_add_memory():
@@ -74,8 +72,7 @@ def test_add_memory():
         shape = (1000, 1000)
         x = ms.Tensor(np.random.randn(*shape).astype(np.float32))
         y = ms.Tensor(np.random.randn(*shape).astype(np.float32))
-        add_net = AddNet()
-        add_net(x, y)
+        add_func(x, y)
     finally:
         compile_config.JIT_ENABLE_AUGASSIGN_INPLACE = '1'
 
@@ -90,14 +87,13 @@ def test_inplace_add_memory():
     shape = (1000, 1000)
     x = ms.Tensor(np.random.randn(*shape).astype(np.float32))
     y = ms.Tensor(np.random.randn(*shape).astype(np.float32))
-    inplace_add_net = AddNet()
-    inplace_add_net(x, y)
+    add_func(x, y)
 
 
-class MulNet(nn.Cell):
-    def construct(self, x, y):
-        x *= y
-        return x
+@jit(backend="ms_backend")
+def mul_func(x, y):
+    x *= y
+    return x
 
 
 def test_mul_memory():
@@ -112,8 +108,7 @@ def test_mul_memory():
         shape = (1000, 1000)
         x = ms.Tensor(np.random.randn(*shape).astype(np.float32))
         y = ms.Tensor(np.random.randn(*shape).astype(np.float32))
-        mul_net = MulNet()
-        mul_net(x, y)
+        mul_func(x, y)
     finally:
         compile_config.JIT_ENABLE_AUGASSIGN_INPLACE = '1'
 
@@ -128,8 +123,7 @@ def test_inplace_mul_memory():
     shape = (1000, 1000)
     x = ms.Tensor(np.random.randn(*shape).astype(np.float32))
     y = ms.Tensor(np.random.randn(*shape).astype(np.float32))
-    inplace_mul_net = MulNet()
-    inplace_mul_net(x, y)
+    mul_func(x, y)
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')

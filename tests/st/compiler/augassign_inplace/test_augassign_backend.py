@@ -78,7 +78,7 @@ def test_initial_scalar_body_tensor1():
             a += 1
         return x + y
 
-    @jit(backend='ms_backend')
+    @jit(backend="ms_backend")
     def test_net(x, a, b):
         out = x
         while a < b:
@@ -193,17 +193,15 @@ def test_grad_validation():
     Expectation: Run success.
     """
 
-    class Net(nn.Cell):
-        def construct(self, x, y):
-            y -= x
-            x *= y
-            return x, y
+    @jit(backend="GE")
+    def foo(x, y):
+        y -= x
+        x *= y
+        return x, y
 
     x = Tensor(1)
     y = -2.5
-    net = Net()
-    net.construct = jit(net.construct, backend='GE')
-    grad(net)(x, y)
+    grad(foo)(x, y)
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
