@@ -679,12 +679,9 @@ class AutoParallel(Cell):
                   Default: False.
                 - grad_computation_allreduce_overlap (bool): Enable overlap between dx ops and data parallel
                   communication ops if True.
-                  Currently, do not support
-                  `O2 <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.JitConfig.html>`_
                   Default: False.
                 - computation_allgather_overlap (bool): Enable overlap between forward ops
-                  and optimizer parallel allgather communication if True. Currently, do not support
-                  `O2 <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.JitConfig.html>`_
+                  and optimizer parallel allgather communication if True.
                   Default: False.
                 - computation_communication_fusion_level (int): Enable the fusion between compute and communicate,
                   which fuses communication tasks and computing tasks, allows for partial pipelining and parallel
@@ -700,8 +697,8 @@ class AutoParallel(Cell):
 
                   - 3: Apply fusion to all nodes.
 
-                - dataset_broadcast_opt_level (int): Optimize the scenario that the dataset repeated reading. Only
-                  support O0/O1 jit level. It doesn't work in O2 mode. Default: ``0``.
+                - dataset_broadcast_opt_level (int): Optimize the scenario that the dataset repeated reading. Default:
+                  ``0``.
 
                   - 0: Disable this optimize.
 

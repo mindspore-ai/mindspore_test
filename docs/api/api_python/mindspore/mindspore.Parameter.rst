@@ -48,7 +48,7 @@
         - **layerwise_parallel** (bool) - 在数据/混合并行模式下， `layerwise_parallel` 配置为 ``True`` 时，参数广播和梯度聚合时会过滤掉该 `Parameter` 。默认值： ``False`` 。
         - **parallel_optimizer** (bool) - 用于在并行模式下，区分该参数是否进行优化器切分。仅在 :func:`mindspore.parallel.auto_parallel.AutoParallel.hsdp` 启用优化器并行时有效。默认值： ``True`` 。
         - **storage_format** (str) - 仅限Ascend，用于指定权重加载到设备的格式。默认不改变格式，可选值为： ``"FRACTAL_NZ"`` 、 ``"NC1HWC0"`` 、 ``"FRACTAL_Z"`` 等。默认值： ``""`` 。
-        - **device** (str) - 仅限Ascend，用于指定存储Parameter的设备。可选值为： ``"CPU"`` 、 ``"Remote"`` 。默认情况下，Parameter将在计算时存储在设备上。当device被指定为 ``"CPU"`` 时，Parameter将在需要使用时加载到设备上，并在使用后卸载至CPU。仅当 :func:`mindspore.set_context` 中的 `jit_level` 配置为非 ``"O2"`` ， `memory_optimize_level` 配置为 ``"O0"`` 时生效。可以通过指定device为 ``"CPU"`` 节省显存。当device被指定为 ``"Remote"`` 时，权重会被存储在远端并且在设备侧需要使用的时候自动加载回来， ``"Remote"`` 类型为实验性质接口。
+        - **device** (str) - 仅限Ascend，用于指定存储Parameter的设备。可选值为： ``"CPU"`` 、 ``"Remote"`` 。默认情况下，Parameter将在计算时存储在设备上。当device被指定为 ``"CPU"`` 时，Parameter将在需要使用时加载到设备上，并在使用后卸载至CPU。在 :func:`mindspore.runtime.set_memory()` 设置 ``'optimize_level'``为 ``'O1'`` 时不生效。可以通过指定device为 ``"CPU"`` 节省显存。当device被指定为 ``"Remote"`` 时，权重会被存储在远端并且在设备侧需要使用的时候自动加载回来， ``"Remote"`` 类型为实验性质接口。
 
     .. py:method:: add_pipeline_stage(stage)
 

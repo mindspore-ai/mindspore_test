@@ -222,10 +222,10 @@ class Parameter(Tensor_):
         device (str): Only Ascend device target is supported. It is used to specify the device which the parameter
             is stored. The optional values are ``"CPU"`` and ``"Remote"``. By default, the parameter will be stored
             on NPU while computing. When the device is specified as ``"CPU"``, the parameter will be loaded into the
-            device when it needs to be used, and unloaded to the CPU after use. It takes effext only when `jit_level`
-            is not ``"O2"`` and `memory_optimize_level` is ``O0`` in :func:`mindspore.set_context`. Less device memory
-            is needed when device is specified as ``"CPU"``. The parameter with ``"Remote"`` device type will be stored
-            in remote and loaded to device when needed. The ``"Remote"`` device type is an experimental option.
+            device when it needs to be used, and unloaded to the CPU after use. It will not take effect when 
+            :func:`mindspore.runtime.set_memory()` set ``'optimize_level'`` to ``'O1'``. Less device memory is needed
+            when device is specified as ``"CPU"``. The parameter with ``"Remote"`` device type will be stored in remote 
+            and loaded to device when needed. The ``"Remote"`` device type is an experimental option.
 
     Examples:
         >>> import numpy as np
