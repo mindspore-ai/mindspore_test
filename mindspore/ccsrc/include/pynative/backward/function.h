@@ -58,7 +58,7 @@ inline std::string GetFunctionTypeName(const char *name) {
 #endif
 }
 
-void PrepareForForward();
+PYNATIVE_EXPORT void PrepareForForward();
 
 template <typename X, typename... Args>
 using forward_t = decltype(X::Forward(nullptr, std::declval<Args>()...));
@@ -73,7 +73,7 @@ class SavedTensor;
 using SavedTensorPtr = std::shared_ptr<SavedTensor>;
 using SavedTensorPtrList = std::vector<SavedTensorPtr>;
 
-struct AutogradContext {
+struct PYNATIVE_EXPORT AutogradContext {
   AutogradContext() = default;
 
   /// \brief Save tensors for backward computation.
@@ -150,7 +150,8 @@ struct AutogradContext {
 
   void GenerateSavedNodes();
 
-  friend void CppFunctionDoGrad(AutogradContext *context, const TensorPtrList &inputs, TensorPtrList *outputs);
+  friend PYNATIVE_EXPORT void CppFunctionDoGrad(AutogradContext *context, const TensorPtrList &inputs,
+                                                TensorPtrList *outputs);
 
  private:
   TensorPtrList to_save_;
@@ -230,11 +231,11 @@ auto Function<T>::Apply(Args &&...args) -> std::enable_if_t<std::is_same_v<X, T>
   return ToOutputType<forward_return_t>(output_list);
 }
 
-TensorPtrList GradPreProcess(const ValuePtrList &grads, const AbstractBasePtrList &outputs_abstract,
-                             bool materialize_grads, const std::string &function_name);
+PYNATIVE_EXPORT TensorPtrList GradPreProcess(const ValuePtrList &grads, const AbstractBasePtrList &outputs_abstract,
+                                             bool materialize_grads, const std::string &function_name);
 
-ValuePtrList GradPostProcess(const TensorPtrList &outputs, std::vector<bool> is_tensor_input,
-                             const std::string &function_name);
+PYNATIVE_EXPORT ValuePtrList GradPostProcess(const TensorPtrList &outputs, std::vector<bool> is_tensor_input,
+                                             const std::string &function_name);
 
 template <class T>
 ValuePtrList CppFunctionNode<T>::CallBackward(const ValuePtrList &grads) {
