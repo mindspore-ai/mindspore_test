@@ -1,5 +1,5 @@
 /**
- * Copyright 2023-2024 Huawei Technologies Co., Ltd
+ * Copyright 2023-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -59,6 +59,7 @@ namespace ge_backend {
 namespace {
 const std::set<std::string> kIgnoreGEShapeOps = {kSoftMarginLossOpName};
 using mindspore::session::KernelWithIndex;
+static int64_t param_null_idx = 0;
 
 void GetMeRetDataType(const AbstractBasePtr &cnode_data, std::vector<TypeId> *me_types) {
   MS_EXCEPTION_IF_NULL(cnode_data);
@@ -96,6 +97,11 @@ backend::ge_backend::TensorOrderMap GetDefaultParams(const FuncGraphPtr &anf_gra
     MS_EXCEPTION_IF_NULL(anf_node);
     auto para = anf_node->cast<ParameterPtr>();
     MS_EXCEPTION_IF_NULL(para);
+    // if param name is empty, set name with "null_idx" to avoid duplicate names when process params in
+    // DfGraphConvertor::params_
+    if (para->name().empty()) {
+      para->set_name("null_" + std::to_string(param_null_idx++));
+    }
     if (para->has_default()) {
       auto value = para->default_param();
       MS_EXCEPTION_IF_NULL(value);

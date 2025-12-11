@@ -511,6 +511,18 @@ void GetBranchToParentMapFromFuncGraph(const AnfNodePtr &branch_node, ParamIndex
   }
 }
 
+bool IsMonadOrTupleParameter(const AnfNodePtr &node) {
+  MS_EXCEPTION_IF_NULL(node);
+  if (!node->isa<Parameter>()) {
+    return false;
+  }
+  auto abs = node->abstract();
+  MS_EXCEPTION_IF_NULL(abs);
+  if (HasAbstractMonad(node) || abs->isa<abstract::AbstractSequence>()) {
+    return true;
+  }
+  return false;
+}
 }  // namespace
 
 DfGraphPtr GenExampleGraph(const std::string &name) {
@@ -887,6 +899,10 @@ void DfGraphConvertor::InitParamWithData(const TensorOrderMap &tensors) {
       continue;
     }
     if (as_ref_data) {
+      if (IsMonadOrTupleParameter(node)) {
+        MS_LOG(INFO) << "Tensor input is a monad or tuple/list parameter " << node->ToString();
+        continue;
+      }
 #ifdef ENABLE_D
       StorageFormatConvertor::SetupStorageFormat(anf_graph_, node, desc);
 #endif
@@ -2185,9 +2201,7 @@ void DfGraphConvertor::SetGraphInputs(std::vector<Operator> *inputs, AnfNodeWeak
     OperatorPtr op;
     //  the parameters which has not been converted to var
     if (vars_.find(name) == vars_.end()) {
-      auto abs = it->abstract();
-      MS_EXCEPTION_IF_NULL(abs);
-      if (HasAbstractMonad(it) || abs->isa<abstract::AbstractSequence>()) {
+      if (IsMonadOrTupleParameter(it)) {
         MS_LOG(INFO) << it->DebugString() << " is a monad or tuple/list parameter, skip.";
         continue;
       }
@@ -2373,10 +2387,7 @@ void DfGraphConvertor::GenFakeGraphInRefMode() {
   MS_EXCEPTION_IF_NULL(anf_graph_);
   const auto &params = anf_graph_->parameters();
   for (auto &node : params) {
-    MS_EXCEPTION_IF_NULL(node);
-    auto abs = node->abstract();
-    MS_EXCEPTION_IF_NULL(abs);
-    if (HasAbstractMonad(node) || abs->isa<abstract::AbstractSequence>()) {
+    if (IsMonadOrTupleParameter(node)) {
       continue;
     }
     SetupInputFormat(manager, node);
@@ -2995,9 +3006,9 @@ void DfGraphConvertor::SetNodeControlInput(const AnfNodePtr &node, const AnfNode
   if (IsPrimitiveCNode(node, prim::kPrimTupleGetItem) && input->isa<ValueNode>()) {
     return;
   }
-  if (input->isa<Parameter>() && HasAbstractMonad(input)) {
-    MS_LOG(DEBUG) << "Node input is monad node, do not add control edge. node:" << node->fullname_with_scope()
-                  << ", input: " << input->ToString();
+  if (IsMonadOrTupleParameter(input)) {
+    MS_LOG(DEBUG) << "Node input is monad or tuple/list parameter, do not add control edge. node:"
+                  << node->fullname_with_scope() << ", input: " << input->ToString();
     return;
   }
   auto dst = Convert(node);
