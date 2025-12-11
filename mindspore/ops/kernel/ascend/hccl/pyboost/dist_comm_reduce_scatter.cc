@@ -53,8 +53,8 @@ void DistCommReduceScatterAscendCustomize(const std::shared_ptr<OpRunner> &op, c
 
   auto run_func = [op, other_tensor, input_tensor, rank_size_imm, op_type, group, scatter_tensors]() {
     auto device_context = op->device_context();
-    PyBoostUtils::MallocOpInputs(device_context, scatter_tensors);
-    PyBoostUtils::MallocOpOutputs(device_context, {other_tensor, input_tensor});
+    PyBoostUtils::MallocOpInputsWithStream(device_context, kDefaultStreamIndex, scatter_tensors);
+    PyBoostUtils::MallocOpOutputsWithStream(device_context, kDefaultStreamIndex, {other_tensor, input_tensor});
     auto hccl_data_type = HcomUtil::ConvertHcclType(other_tensor->data_type());
     auto hccl_count = 1;
     auto out_shape = other_tensor->shape();

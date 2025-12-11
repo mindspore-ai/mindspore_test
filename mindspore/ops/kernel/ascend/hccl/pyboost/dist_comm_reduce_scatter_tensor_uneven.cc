@@ -68,8 +68,8 @@ void DistCommReduceScatterTensorUnevenAscendCustomize(const std::shared_ptr<OpRu
   op->set_outputs({other_tensor});
 
   auto run_func = [op, other_tensor, input_tensor, input_split_sizes, rank_size, op_type, group]() {
-    PyBoostUtils::MallocOpInputs(op->device_context(), input_tensor);
-    PyBoostUtils::MallocOpOutputs(op->device_context(), {other_tensor});
+    PyBoostUtils::MallocOpInputsWithStream(op->device_context(), kDefaultStreamIndex, input_tensor);
+    PyBoostUtils::MallocOpOutputsWithStream(op->device_context(), kDefaultStreamIndex, {other_tensor});
     auto [hccl_count, hccl_data_type] = HcomUtil::GetHcclCountAndTypeFromTensor(op->primitive(), input_tensor);
     auto op_type_enum = HcomUtil::GetHcomReduceOpType(GetValue<std::string>(op_type));
 

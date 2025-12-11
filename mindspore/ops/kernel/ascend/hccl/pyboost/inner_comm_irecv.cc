@@ -35,7 +35,7 @@ void InnerCommIrecvAscendCustomize(const std::shared_ptr<OpRunner> &op, const In
 
   auto run_func = [op, src, group]() {
     // Malloc for output tensors
-    PyBoostUtils::MallocOpOutputs(op->device_context(), op->outputs());
+    PyBoostUtils::MallocOpOutputsWithStream(op->device_context(), kDefaultStreamIndex, op->outputs());
 
     const auto &output_tensor = op->output(0);
     auto hccl_count = HcomUtil::GetHcclCountAndTypeFromTensor(op->primitive(), output_tensor).first;
