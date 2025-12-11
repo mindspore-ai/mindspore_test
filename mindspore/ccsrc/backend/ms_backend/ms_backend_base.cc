@@ -1308,7 +1308,7 @@ void MSBackendBase::BindCoreForMainThread() {
 
   const auto &core_list = bind_core_manager.get_thread_bind_core_list(runtime::kBindCoreModule::kMAIN);
   if (core_list.empty()) {
-    MS_LOG(WARNING) << "Failed to bind thread core as no available core assigned to Main thread.";
+    MS_LOG(WARNING) << "Skip to bind thread core for 'main' as no available core assigned.";
   } else {
     bind_core_manager.bind_thread_core(core_list);
   }

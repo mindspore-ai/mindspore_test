@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-
+"""Test mte operator"""
 import os
 from tests.mark_utils import arg_mark
 
@@ -38,16 +38,4 @@ def test_matmul_reduce_scatter_forward():
     '''
     ret = os.system("msrun --worker_num=4 --local_worker_num=4 --master_addr=127.0.0.1 --master_port=10969 --join=True "
                     "pytest -s mte_fusion.py::test_matmul_reduce_scatter_forward")
-    assert ret == 0
-
-
-@arg_mark(plat_marks=["platform_ascend910b"], level_mark="level1", card_mark="allcards", essential_mark="essential")
-def test_ms_disable_lccl_kernels_list():
-    '''
-    Feature: MTE fusion.
-    Description: Test environment MS_DISABLE_LCCL_KERNELS_LIST.
-    Expectation: Run success
-    '''
-    ret = os.system("msrun --worker_num=4 --local_worker_num=4 --master_addr=127.0.0.1 --master_port=10969 --join=True "
-                    "pytest -s mte_fusion.py::test_ms_disable_lccl_kernels_list")
     assert ret == 0

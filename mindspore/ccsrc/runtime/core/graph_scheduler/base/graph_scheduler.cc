@@ -1287,7 +1287,7 @@ void GraphScheduler::BindCoreForRuntimeThread(ActorThreadPool *thread_pool) cons
 
   const auto &cpu_list = bind_core_manager.get_thread_bind_core_list(runtime::kBindCoreModule::kRUNTIME);
   if (cpu_list.empty()) {
-    MS_LOG(WARNING) << "Failed to bind thread core as no available core assigned to Runtime actor thread.";
+    MS_LOG(WARNING) << "Skip to bind thread core for 'runtime actor' as no available core assigned.";
   } else {
     std::vector<pthread_t> threads;
     GetRuntimeThreadIds(thread_pool, &threads);
