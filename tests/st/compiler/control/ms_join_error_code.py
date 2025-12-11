@@ -22,9 +22,10 @@ from mindspore import Tensor
 def ms_join_error_0003(input_x):
     if input_x < 10:
         if input_x > 0:
-            if input_x > 1:
+            if input_x > 1:  # pylint: disable=no-else-return
                 return '2'
-            return 1
+            else:
+                return 1
         return [1]
     return (1,)
 
@@ -34,9 +35,10 @@ def ms_join_error_0004(input_x):
     for _ in range(3):
         while input_x < 10:
             input_x += 2
-            if input_x >= 0:
+            if input_x >= 0:  # pylint: disable=no-else-return
                 return input_x
-            return 2
+            else:
+                return 2
         return 2
     return 2
 
@@ -47,11 +49,12 @@ def ms_join_error_0005(input_x):
         x = 1
         while x < 10:
             input_x += 2
-            if input_x < 5:
-                x = (x * input_x,)
+            if input_x < 5:  # pylint: disable=no-else-return
+                x = x * input_x
                 return x % 2
-            x = [x + input_x]
-            return x * 2
+            else:
+                x = [x + input_x]
+                return x * 2
         return x * 2
     return  input_x
 
