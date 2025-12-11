@@ -135,7 +135,7 @@ class GroupLossScaleManager(Cell):
             layer (int): Current layer.
             update_ratio (float): The ratio of loss scale update.
 
-        Outputs:
+        Returns:
             float, new loss scale.
         """
         layer = layer + 1
@@ -152,7 +152,7 @@ class GroupLossScaleManager(Cell):
         Get loss scale value.
 
         Returns:
-            bool, `loss_scale` value.
+            Number, `loss_scale` value.
         """
         return self._loss_scale
 
@@ -161,6 +161,6 @@ class GroupLossScaleManager(Cell):
         Returns the instance of :class:`mindspore.boost.GroupLossScaleManager`.
 
         Returns:
-            :class:`mindspore.boost.GroupLossScaleManager`.
+            The instance of :class:`mindspore.boost.GroupLossScaleManager`.
         """
         return self

@@ -554,7 +554,7 @@ def batch_isend_irecv(p2p_op_list):
         - Only support PyNative mode, Graph mode is not currently supported.
 
     Args:
-        p2p_op_list (List[P2POp]): list contains `P2POp`. `P2POp` is type of
+        p2p_op_list (list[P2POp]): list contains `P2POp`. `P2POp` is type of
             :class:`mindspore.communication.comm_func.P2POp`.
 
     Returns:
