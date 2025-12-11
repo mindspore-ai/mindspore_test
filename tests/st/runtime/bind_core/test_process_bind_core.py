@@ -30,6 +30,7 @@ def test_msrun_bind_true():
     Expectation: Expected log in stdout.
     """
     env = "export DISTRIBUTED=1;"
+    env += "export GLOG_v=2;"
 
     real_path = os.path.realpath(os.getcwd())
     script = real_path + "/run_bind_core.py"
@@ -59,6 +60,7 @@ def test_msrun_bind_false():
     Expectation: Disable bind core and no expected log in stdout.
     """
     env = "export DISTRIBUTED=1;"
+    env += "export GLOG_v=2;"
 
     real_path = os.path.realpath(os.getcwd())
     script = real_path + "/run_bind_core.py"
@@ -89,6 +91,7 @@ def test_msrun_bind_manual_only_worker():
     """
     bind_core_arg = '{"device0":["10-19"], "device1":["20-29"]}'
     env = "export DISTRIBUTED=1;"
+    env += "export GLOG_v=2;"
 
     real_path = os.path.realpath(os.getcwd())
     script = real_path + "/run_bind_core.py"
@@ -119,6 +122,7 @@ def test_msrun_bind_manual_single_worker():
     """
     bind_core_arg = '{"device0":["10-19"]}'
     env = "export DISTRIBUTED=1;"
+    env += "export GLOG_v=2;"
 
     real_path = os.path.realpath(os.getcwd())
     script = real_path + "/run_bind_core.py"
@@ -150,6 +154,7 @@ def test_msrun_bind_manual_only_worker_wrong_sequence():
     """
     bind_core_arg = '{"device1":["10-19"], "device0":["20-29"]}'
     env = "export DISTRIBUTED=1;"
+    env += "export GLOG_v=2;"
 
     real_path = os.path.realpath(os.getcwd())
     script = real_path + "/run_bind_core.py"
@@ -182,6 +187,7 @@ def test_msrun_bind_manual_only_scheduler():
     """
     bind_core_arg = '{"scheduler":["0-9"]}'
     env = "export DISTRIBUTED=1;"
+    env += "export GLOG_v=2;"
 
     real_path = os.path.realpath(os.getcwd())
     script = real_path + "/run_bind_core.py"
@@ -214,6 +220,7 @@ def test_msrun_bind_manual_scheduler_and_worker():
     """
     bind_core_arg = '{"device0":["10-19"], "scheduler":["0-9"], "device1":["20-29"]}'
     env = "export DISTRIBUTED=1;"
+    env += "export GLOG_v=2;"
 
     real_path = os.path.realpath(os.getcwd())
     script = real_path + "/run_bind_core.py"
@@ -244,6 +251,7 @@ def test_msrun_bind_manual_empty_list_and_single_core():
     """
     bind_core_arg = '{"device0":[], "scheduler":["10"], "device1":["20-29", "31"]}'
     env = "export DISTRIBUTED=1;"
+    env += "export GLOG_v=2;"
 
     real_path = os.path.realpath(os.getcwd())
     script = real_path + "/run_bind_core.py"
@@ -272,6 +280,7 @@ def test_msrun_bind_manual_wrong_key_value():
     Expectation: Wrong parameters make msrun failed.
     """
     env = "export DISTRIBUTED=1;"
+    env += "export GLOG_v=2;"
 
     real_path = os.path.realpath(os.getcwd())
     script = real_path + "/run_bind_core.py"
