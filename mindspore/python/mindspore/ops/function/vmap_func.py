@@ -47,7 +47,7 @@ def vmap(fn, in_axes=0, out_axes=0):
             argument and returns one or more Tensors or the type of data supported by the MindSpore Tensor. When it is
             a CellList, the model ensembling scenario, please make sure that the structure of each cell is the same
             and the number of cells is consistent with the sizes of the mapped axes (`axis_size`).
-        in_axes (Union[int, list, tuple]): Specifies which dimensions (axes)
+        in_axes (Union[int, list, tuple], optional): Specifies which dimensions (axes)
             of the inputs should be mapped over. Default: ``0`` .
 
             - If `in_axes` is an integer, all arguments of `fn` are mapped over according to this axis index.
@@ -60,7 +60,7 @@ def vmap(fn, in_axes=0, out_axes=0):
               mapping axis index of the `in_axes` must have at least one positional parameter not None. The sizes of
               the mapped axes (`axis_size`) for all arguments must be equal.
 
-        out_axes (Union[int, list, tuple]): Specifies where the mapped dimensions (axes) should appear in the
+        out_axes (Union[int, list, tuple], optional): Specifies where the mapped dimensions (axes) should appear in the
             outputs. Default: ``0`` .
 
             - If `out_axes` is an integer, all outputs of `fn` are specified according to this axis.

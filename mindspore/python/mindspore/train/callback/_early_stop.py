@@ -47,32 +47,32 @@ class EarlyStopping(Callback):
     will be called and the training terminates.
 
     Args:
-        monitor (str): quantity to be monitored. If evaluation is performed on
+        monitor (str, optional): quantity to be monitored. If evaluation is performed on
             the end of train epochs, the valid monitors can be "loss",
             "eval_loss" or metric names passed when instantiate the `Model`;
             otherwise the valid monitor is "loss".
             When monitor is "loss", if train network has multiple outputs,
             the first element will be returned as training loss.
             Default: ``'eval_loss'`` .
-        patience (int): `monitor` value is better than history best value over
+        patience (int, optional): `monitor` value is better than history best value over
             `min_delta` is seen as improvement, `patience` is number of epochs
             with no improvement that would be waited. When the waiting
             counter `self.wait` is larger than or equal to `patience`,  the
             training process will be stopped. Default: ``0`` .
-        verbose (bool): If False: quiet, if True: print related information.
+        verbose (bool, optional): If False: quiet, if True: print related information.
             Default: ``False`` .
-        mode (str): one of `{'auto', 'min', 'max'}`. In "min" mode,
+        mode (str, optional): one of `{'auto', 'min', 'max'}`. In "min" mode,
             the learning rate will be reduced when the
             quantity monitored has stopped decreasing; in "max" mode it will be
             reduced when the quantity monitored has stopped increasing; in "auto"
             mode, the direction is automatically inferred from the name of the
             monitored quantity. Default: ``'auto'`` .
-        min_delta (float): threshold for measuring the new optimum, to only focus on
+        min_delta (float, optional): threshold for measuring the new optimum, to only focus on
             significant changes. Default: ``0`` .
-        baseline (float): Baseline value for the monitor. When the monitor value shows
+        baseline (float, optional): Baseline value for the monitor. When the monitor value shows
             improvement over the history best value and the baseline, the internal
             wait counter will be set to zero. Default: ``None`` .
-        restore_best_weights (bool): Whether to restore model weights from
+        restore_best_weights (bool, optional): Whether to restore model weights from
             the epoch with the best value of the monitored quantity.
             If False, the model weights obtained at the last step of
             training are used. Default: ``False`` .

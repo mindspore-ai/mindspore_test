@@ -62,7 +62,7 @@ class MAE(Metric):
     @rearrange_inputs
     def update(self, *inputs):
         """
-        Updates the internal evaluation result :math:`y_{pred}` and :math:`y`.
+        Updates the internal evaluation result :math:`y\_pred` and :math:`y`.
 
         Args:
             inputs: Input `y_pred` and `y` for calculating MAE where the shape of

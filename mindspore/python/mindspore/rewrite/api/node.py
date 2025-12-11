@@ -84,7 +84,7 @@ class Node:
             TypeError: If `cell` is not a `Cell`.
             TypeError: If `targets` is not `list`.
             TypeError: If the type of `targets` is not in `[ScopedValue, str]`.
-            TypeError: If arg in `args` is not a `ScopedValue`.
+            TypeError: If arg in `args` is neither a `ScopedValue` nor a `str`.
             TypeError: If key of `kwargs` is not a str or value of kwarg in `kwargs` is not a `ScopedValue`.
 
         Examples:
@@ -259,10 +259,10 @@ class Node:
                 which means use first output of `src_node` as new input.
 
         Raises:
-            TypeError: If `arg_idx` is not a `int` number.
+            TypeError: If `arg_idx` is not an `int` number.
             ValueError: If `arg_idx` is out of range.
             TypeError: If `src_node` is not a `Node` instance.
-            TypeError: If `out_idx` is not a `int` number.
+            TypeError: If `out_idx` is not an `int` number.
             ValueError: If `out_idx` is out of range.
             ValueError: If `src_node` has multi-outputs while `out_idx` is None or `out_idx` is not offered.
 

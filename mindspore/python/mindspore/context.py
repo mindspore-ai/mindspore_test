@@ -1053,7 +1053,7 @@ def set_auto_parallel_context(**kwargs):
         all_reduce_fusion_config (list): Set allreduce fusion strategy by parameters indices. Only support ReduceOp.SUM
                        and HCCL_WORLD_GROUP/NCCL_WORLD_GROUP. No Default, if it is not set, the fusion is closed.
         pipeline_stages (int): Set the stage information for pipeline parallel. This indicates how the devices are
-                        distributed alone in the pipeline. The total devices will be divided into 'pipeline_stags'
+                        distributed alone in the pipeline. The total devices will be divided into 'pipeline_stages'
                         stages.
                         Default: ``1`` .
         pipeline_result_broadcast (bool): A switch that broadcast the last stage result to all other stage in pipeline
@@ -1699,9 +1699,10 @@ def set_ps_context(**kwargs):
 
     Args:
         enable_ps (bool): Whether to enable parameter server training mode.
-                          Only after enable_ps is set True, the environment variables will be effective.
+                          Only after `enable_ps` is set ``True``, the environment variables will be effective.
                           Default: ``False`` .
-        config_file_path (str): Configuration file path used by recovery, parameter server training mode only
+        config_file_path (str): Configuration file path used by recovery,
+                                   parameter server training mode only
                                    supports Server disaster recovery currently. Default: ``''`` .
         enable_ssl (bool): Set PS SSL mode enabled or disabled. Default: ``False``.
                            When set to False, users need to review and confirm the security of network environment

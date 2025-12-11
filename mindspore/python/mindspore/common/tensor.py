@@ -752,7 +752,7 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
         Specify whether the tensor is a constant when it is used for the argument of a network.
 
         Args:
-            const_arg (bool): Whether the tensor is a constant when it is used for the argument of a network.
+            const_arg (bool, optional): Whether the tensor is a constant when it is used for the argument of a network.
                 Default: ``True`` .
 
         Returns:
@@ -787,9 +787,9 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
 
         Args:
             median (float, optional): the location parameter, specifying the location
-                of the peak of the distribution. Default: 0.0.
+                of the peak of the distribution. Default: ``0.0``.
             sigma (float, optional): the scale parameter which specifies the half-width
-                at half-maximum. Default: 1.0.
+                at half-maximum. Default: ``1.0``.
 
         Returns:
             Tensor. A Tensor with the same type and shape of input.
@@ -824,9 +824,9 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
 
         Args:
             mean (float, optional): the mean of normal distribution. With float data type.
-                Default: 1.0.
+                Default: ``1.0``.
             std (float, optional): the std of normal distribution. With float data type.
-                Default: 2.0.
+                Default: ``2.0``.
 
         Returns:
             Tensor. A Tensor with the same type and shape of input.
@@ -1248,7 +1248,7 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
             :align: center
 
         .. warning::
-            - This is an experimental API that is subject ot change or deletion.
+            This is an experimental API that is subject ot change or deletion.
 
         Returns:
             Tensor, with the same type and shape as the `self`.
@@ -1905,9 +1905,10 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
             Numpy argument `out` is not supported.
 
         Args:
-            axis (Union[None, int, tuple(int)]): Axis or axes along which the range is computed.
-                The default is to compute the variance of the flattened tensor. Default: ``None`` .
-            keepdims (bool): If this is set to ``True`` , the axes which are reduced are left in the result as
+            axis (Union[None, int, tuple(int)], optional): Axis or axes along which the range is computed.
+                The default is to compute the difference between
+                the maximum value and the minimum value of the flattened tensor. Default: ``None`` .
+            keepdims (bool, optional): If this is set to ``True`` , the axes which are reduced are left in the result as
                 dimensions with size one. With this option, the result will broadcast correctly against the tensor.
                 Default is ``False`` .
 
@@ -2058,7 +2059,7 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
             Numpy argument `refcheck` is not supported.
 
         Args:
-            new_shape (Union[ints, tuple of ints]): Shape of resized tensor.
+            new_shape (Union[ints, tuple(int)]): Shape of resized tensor.
 
         Returns:
             Tensor.
@@ -2162,15 +2163,15 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
 
         Args:
             offset (int, optional): Offset of the diagonal from the main diagonal.
-                Can be positive or negative. Defaults to main diagonal.
+                Can be positive or negative. Defaults to main diagonal. Default: ``0`` .
             axis1 (int, optional): Axis to be used as the first axis of the 2-D
                 sub-arrays from which the diagonals should be taken. Defaults to
-                first axis (0).
+                first axis (0). Default: ``0`` .
             axis2 (int, optional): Axis to be used as the second axis of the 2-D
                 sub-arrays from which the diagonals should be taken. Defaults to
-                second axis.
+                second axis. Default: ``1`` .
             dtype (:class:`mindspore.dtype`, optional): defaults to None. Overrides the dtype of the
-                output Tensor.
+                output Tensor. Default: ``None`` .
 
         Returns:
             Tensor, the sum along diagonals.
@@ -2306,12 +2307,12 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
         Generates random numbers that follows a uniform distribution within the half-open interval :math:`[from\_, to)`.
 
         .. math::
-            P(x)= \frac{1}{to - from\_}
+            P(x) = \frac{1}{to - from\_}
 
         Args:
-            from\_ (number): The lower bound of the interval.
-            to (number): The upper bound of the interval.
-            generator (Generator, optional): The random seed. Default: None.
+            from\_ (number, optional): The lower bound of the interval. Default: ``0.`` .
+            to (number, optional): The upper bound of the interval. Default: ``1.`` .
+            generator (Generator, optional): The random seed. Default: ``None`` .
 
         Returns:
             Tensor, with the same shape as tensor.
@@ -2339,7 +2340,7 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
         half-open interval :math:`[from\_, to)`.
 
         .. math::
-            P(x)= \frac{1}{to - from\_}
+            P(x) = \frac{1}{to - from\_}
 
         .. warning::
             This is an experimental API that is subject to change or deletion.
@@ -2512,9 +2513,9 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
             This is an experimental API that is subject to change or deletion.
 
         Args:
-            from\_ (Union[number.Number, Tensor], optional): the lower bound of the generated random number.
+            from\_ (Union[numbers.Number, Tensor], optional): the lower bound of the generated random number.
                 It can be a scalar value or a Tensor of any dimension with only a single element. Default: 0.
-            to (Union[number.Number, Tensor], optional): the upper bound of the generated random number.
+            to (Union[numbers.Number, Tensor], optional): the upper bound of the generated random number.
                 By default it's the upper limit of the input data type.
                 It can be a scalar value or a Tensor of any dimension with only a single element.
                 Default: ``None``.
@@ -3552,7 +3553,7 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
                 The rank of tensors in indices should be 1-D, size of indices should <= `self.rank`
                 and the tensors in indices should be broadcastable.
             values (Tensor): 1-D Tensor with the same type as `self`. `values` should be broadcastable with size 1.
-            accumulate (bool, optional): If `accumulate` is `True`, the elements in `values` will be added to `self`,
+            accumulate (bool, optional): If `accumulate` is ``True``, the elements in `values` will be added to `self`,
                 otherwise the elements in `values` will replace the corresponding elements in the `self`.
                 Default: ``False``.
 
@@ -3653,7 +3654,7 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
 
         Args:
             to (str): a string type value, one of ``"Ascend"``, ``"GPU"``, ``"CPU"``.
-            blocking (bool): a bool type value, using synchronous copy or asynchronous copy.
+            blocking (bool, optional): a bool type value, using synchronous copy or asynchronous copy.
                 Default: ``True`` , synchronous copy.
 
         Returns:
