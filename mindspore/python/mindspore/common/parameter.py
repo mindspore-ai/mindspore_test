@@ -222,8 +222,8 @@ class Parameter(Tensor_):
         device(str): Only Ascend device target is supported. It is used to specify the device which the parameter is
             stored. By default, the parameter will be stored on NPU while computing. When the device is specified as
             ``"CPU"``, the parameter will be loaded into the device when it needs to be used, and unloaded to the CPU
-            after use. It takes effext only when `jit_level` is not ``"O2"`` and `memory_optimize_level` is ``O0``
-            in :func:`mindspore.set_context`. Less device memory is needed when device is specified as ``"CPU"``.
+            after use. It will not take effect when :func:`mindspore.runtime.set_memory()` set ``'optimize_level'`` to
+             ``'O1'``. Less device memory is needed when device is specified as ``"CPU"``.
 
     Examples:
         >>> import numpy as np
@@ -293,7 +293,7 @@ class Parameter(Tensor_):
         self.is_in_parallel = _is_in_auto_parallel_mode()
         self._pipeline_stage_list = []
         if -1 in self.shape:
-            raise ValueError(f"All shape elements of the Parameter must be positive. But got None.")
+            raise ValueError("All shape elements of the Parameter must be positive. But got None.")
         if isinstance(default_input, (Tensor_, Tensor)):
             Tensor_.__init__(self, dtype=default_input.dtype, shape=default_input.shape)
         elif isinstance(default_input, int):
@@ -312,7 +312,7 @@ class Parameter(Tensor_):
                 raise ValueError(f"Only 'CPU' is supported for device, but got ${device}.")
             self._set_user_data("parameter_device", device)
 
-        import mindspore.ops.operations.other_ops as other_ops
+        from mindspore.ops.operations import other_ops
         self.load = other_ops.Load()
 
     def __deepcopy__(self, memodict):
@@ -779,7 +779,7 @@ class Parameter(Tensor_):
         Raise:
             TypeError: If `stage` is not a positive number or not int type.
         """
-        logger.warning(f"This interface may be deleted in the future.")
+        logger.warning("This interface may be deleted in the future.")
         if not isinstance(stage, int) or stage < 0:
             raise TypeError("`stage` must be a positive number of int type")
         self._pipeline_stage_list.append(stage)
