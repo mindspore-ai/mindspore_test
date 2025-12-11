@@ -127,6 +127,9 @@ class BACKEND_COMMON_EXPORT DeviceAddressUtils {
 
   static void MallocForOutputs(const DeviceContext *device_context, const std::vector<tensor::TensorPtr> &outputs);
 
+  static void MallocForOutputs(const DeviceContext *device_context, size_t stream_id,
+                               const std::vector<tensor::TensorPtr> &outputs);
+
   static device::DeviceAddressPtr CreateWorkspaceAddressWithoutKernelTensor(const DeviceContext *device_context,
                                                                             size_t stream_id,
                                                                             const size_t &workspace_size,
@@ -154,7 +157,7 @@ class BACKEND_COMMON_EXPORT DeviceAddressUtils {
 
   template <typename... T>
   static void ProcessCrossStreamAddress(const std::string &op_name, const DeviceContext *device_context,
-                                        size_t op_stream_id, const T &... args) {
+                                        size_t op_stream_id, const T &...args) {
     // memory_stream_addresses pair : memory_stream_id, address.
     std::vector<std::pair<uint32_t, void *>> cross_stream_addresses;
     (GetCrossStreamAddressInfo(op_stream_id, &cross_stream_addresses, args), ...);
@@ -173,7 +176,7 @@ class BACKEND_COMMON_EXPORT DeviceAddressUtils {
 
   template <typename... T>
   static void ProcessCrossStreamAddressWithEvent(const std::string &op_name, const DeviceContext *device_context,
-                                                 size_t op_stream_id, const DeviceEventPtr &event, const T &... args) {
+                                                 size_t op_stream_id, const DeviceEventPtr &event, const T &...args) {
     // memory_stream_addresses pair : memory_stream_id, address.
     std::vector<std::pair<uint32_t, void *>> cross_stream_addresses;
     (GetCrossStreamAddressInfo(op_stream_id, &cross_stream_addresses, args), ...);

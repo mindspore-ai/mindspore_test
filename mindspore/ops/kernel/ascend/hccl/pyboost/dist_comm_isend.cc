@@ -37,7 +37,7 @@ void DistCommIsendAscendCustomize(const std::shared_ptr<OpRunner> &op, const Ten
     auto device_context = op->device_context();
 
     // Malloc for input tensors
-    PyBoostUtils::MallocOpInputs(device_context, input_tensor);
+    PyBoostUtils::MallocOpInputsWithStream(device_context, kDefaultStreamIndex, input_tensor);
 
     auto dst_imm = GetValue<int64_t>(dst);
 

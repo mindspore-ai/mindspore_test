@@ -38,8 +38,8 @@ void InnerCommReduceScatterAscendCustomize(const std::shared_ptr<OpRunner> &op, 
   auto run_func = [op, input_tensor, rank_size, op_type, group]() {
     auto device_context = op->device_context();
 
-    PyBoostUtils::MallocOpInputs(device_context, input_tensor);
-    PyBoostUtils::MallocOpOutputs(device_context, op->outputs());
+    PyBoostUtils::MallocOpInputsWithStream(device_context, kDefaultStreamIndex, input_tensor);
+    PyBoostUtils::MallocOpOutputsWithStream(device_context, kDefaultStreamIndex, op->outputs());
 
     auto rank_size_imm = GetValue<int64_t>(rank_size);
     auto hccl_count = HcomUtil::GetHcclCountAndTypeFromTensor(op->primitive(), input_tensor, rank_size_imm).first;
