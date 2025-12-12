@@ -12,11 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-
+"""
+This test is for msrun launch.
+"""
 import time
 import argparse
 
-import mindspore.context as context
+import mindspore
+from mindspore import context
 from mindspore.communication import init
 
 parser = argparse.ArgumentParser(description='test_ps_lenet')
@@ -24,6 +27,7 @@ parser.add_argument("--device_target", type=str, default="GPU")
 parser.add_argument("--dataset_path", type=str, default="/home/workspace/mindspore_dataset/mnist")
 args, _ = parser.parse_known_args()
 device_target = args.device_target
+mindspore.set_context(jit_level='O0')
 context.set_context(mode=context.GRAPH_MODE, device_target=device_target)
 
 
