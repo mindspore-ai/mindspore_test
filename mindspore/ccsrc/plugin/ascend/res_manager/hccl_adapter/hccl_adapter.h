@@ -134,6 +134,9 @@ class ASCEND_RES_MANAGER_EXPORT HcclAdapter {
   bool InitHcclComm(std::string_view rank_id, std::string_view rank_file);
   bool FinalizeHcclComm();
 
+  bool InitHcclExec();
+  bool FinalizeHcclExec();
+
   static std::string GetHcclModeString(HcclMode hccl_mode);
   string DoGetHcomGroup(const string &original_group, const std::vector<uint32_t> &rank_ids) const;
 
@@ -166,6 +169,10 @@ class ASCEND_RES_MANAGER_EXPORT HcclAdapter {
   HcclGetCommAsyncErrorFunObj hccl_get_comm_async_error_ = nullptr;
   HcclGetErrorStringFunObj hccl_get_error_string_ = nullptr;
   HcclCommWorkingDevNicSetFunObj hccl_comm_working_dev_nic_set_ = nullptr;
+  // will be delete in future
+  HcomExecInitializeFunObj hccl_exec_initialize_ = nullptr;
+  HcomExecFinalizeFunObj hccl_exec_finalize_ = nullptr;
+
   HcclComm hccl_comm_ = nullptr;
 
   bool init_flag_ = false;
