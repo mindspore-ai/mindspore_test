@@ -102,7 +102,7 @@ void EntranceActor::FetchInput(OpContext<KernelTensor> *const context) {
     // Fetch parameter input from graph parameter store if input optimization.
     if (enable_input_optimize_) {
       output_branch_id_ = 0;
-      ControlActor::FetchParameterInput(context);
+      FetchParameterInput(context);
     } else {
       // If the data comes from the data source actor, use the default branch id.
       output_branch_id_ = 0;
@@ -242,6 +242,34 @@ void EntranceActor::EraseInput(const OpContext<KernelTensor> *const context) {
     if (iter->second.empty()) {
       (void)real_parameters_with_branch_id_.erase(sequential_num);
     }
+  }
+}
+
+void EntranceActor::FetchParameterInput(OpContext<KernelTensor> *const context) {
+  if (!enable_input_optimize_) {
+    return;
+  }
+  // Fetch parameter device tensor from device tensor store.
+  for (auto &parameter_index : parameter_indexs_) {
+    if (parameter_index.first >= device_contexts_.size()) {
+      std::string error_info = "The input index is out of range, need:" + std::to_string(parameter_index.first) +
+                               " current:" + std::to_string(device_contexts_.size()) + " for actor:" + GetAID().Name();
+      SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), error_info);
+    }
+    auto kernel_tensor = FetchParameter(parameter_index.second, GetAID());
+    MS_EXCEPTION_IF_NULL(kernel_tensor);
+    if (parameter_index.first >= input_kernel_tensors_.size()) {
+      std::string error_info = "The input index is out of range, need:" + std::to_string(parameter_index.first) +
+                               " current:" + std::to_string(input_kernel_tensors_.size()) +
+                               " for actor:" + GetAID().Name();
+      SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), error_info);
+    }
+    input_kernel_tensors_[parameter_index.first] = kernel_tensor;
+    input_parameter_store_kernel_tensors_.emplace_back(kernel_tensor);
+    MS_LOG(DEBUG) << "Actor:" << GetAID() << " fetch parameter output index:" << parameter_index.second.second
+                  << " inner index:" << parameter_index.second.first.second
+                  << " kernel tensor:" << kernel_tensor->ToString()
+                  << " vector size:" << input_parameter_store_kernel_tensors_.size();
   }
 }
 

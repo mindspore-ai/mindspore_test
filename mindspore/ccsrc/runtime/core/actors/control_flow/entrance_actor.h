@@ -62,6 +62,7 @@ class EntranceActor : public ControlActor {
  protected:
   void Run(OpContext<KernelTensor> *const context) override;
   void FetchInput(OpContext<KernelTensor> *const context) override;
+  void FetchParameterInput(OpContext<KernelTensor> *const context) override;
   bool CheckRunningCondition(const OpContext<KernelTensor> *context) const override;
   void EraseInput(const OpContext<KernelTensor> *const context) override;
 
@@ -84,6 +85,7 @@ class EntranceActor : public ControlActor {
   // Call nodes are used to record the caller of the subgraph, and are used to connect the data arrow
   // and branch id arrow in the link process.
   std::set<KernelWithIndex> call_nodes_;
+  std::vector<KernelTensorPtr> input_parameter_store_kernel_tensors_;
 };
 
 using EntranceActorPtr = std::shared_ptr<EntranceActor>;
