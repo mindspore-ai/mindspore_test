@@ -131,7 +131,7 @@ def split_with_size_view_kbk():
             output = self.split(x, split_size, 0)
             return output
 
-    x = P.arange(10).astype("float32")
+    x = Tensor(np.arange(10, dtype=np.float32))
     net = NetSplitWithSize()
     output = net(x, [3, 3, 4])
     expect_output = [[0, 1, 2], [3, 4, 5], [6, 7, 8, 9]]
@@ -184,7 +184,7 @@ def broadcast_to_view_kbk():
     output = BroadcastToView()(x, (2, 3))
     assert (graph_output.asnumpy() == output.asnumpy()).all()
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def transpose_ext_view_kbk():
     class TransposeExtViewNet(nn.Cell):
         def __init__(self):
@@ -202,7 +202,7 @@ def transpose_ext_view_kbk():
     assert output.shape == (4, 3, 2)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_chunk_view_ascend():
     """
     Feature: Chunk view operation
@@ -211,7 +211,7 @@ def test_chunk_view_ascend():
     """
     chunk_view_kbk()
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_chunk_view_cpu():
     """
     Feature: Chunk view operation with MS_OP_PLUGIN_PATH
@@ -221,7 +221,7 @@ def test_chunk_view_cpu():
     os.environ['MS_OP_PLUGIN_PATH'] = 'test'
     chunk_view_kbk()
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_diagonal_view_ascend():
     """
     Feature: Diagonal view operation
@@ -230,7 +230,7 @@ def test_diagonal_view_ascend():
     """
     diagonal_view_kbk()
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_diagonal_view_cpu():
     """
     Feature: Diagonal view operation with MS_OP_PLUGIN_PATH
@@ -240,7 +240,7 @@ def test_diagonal_view_cpu():
     os.environ['MS_OP_PLUGIN_PATH'] = 'test'
     diagonal_view_kbk()
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_slice_ext_view_ascend():
     """
     Feature: Slice view operation
@@ -249,7 +249,7 @@ def test_slice_ext_view_ascend():
     """
     slice_ext_view_kbk()
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_slice_ext_view_cpu():
     """
     Feature: Slice view operation with MS_OP_PLUGIN_PATH
@@ -259,7 +259,7 @@ def test_slice_ext_view_cpu():
     os.environ['MS_OP_PLUGIN_PATH'] = 'test'
     slice_ext_view_kbk()
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_split_with_size_view_ascend():
     """
     Feature: SplitWithSize view operation
@@ -268,7 +268,7 @@ def test_split_with_size_view_ascend():
     """
     split_with_size_view_kbk()
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_split_with_size_view_cpu():
     """
     Feature: SplitWithSize view operation with MS_OP_PLUGIN_PATH
@@ -278,7 +278,7 @@ def test_split_with_size_view_cpu():
     os.environ['MS_OP_PLUGIN_PATH'] = 'test'
     split_with_size_view_kbk()
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_unstack_view_ascend():
     """
     Feature: UnstackExtView view operation
@@ -287,7 +287,7 @@ def test_unstack_view_ascend():
     """
     unstack_ext_view_kbk()
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_unstack_ext_view_cpu():
     """
     Feature: UnstackExtView view operation with MS_OP_PLUGIN_PATH
@@ -297,7 +297,7 @@ def test_unstack_ext_view_cpu():
     os.environ['MS_OP_PLUGIN_PATH'] = 'test'
     unstack_ext_view_kbk()
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_transpose_view_ascend():
     """
     Feature: Transpose view operation
@@ -306,7 +306,7 @@ def test_transpose_view_ascend():
     """
     transpose_view_matmul_kbk()
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_transpose_view_cpu():
     """
     Feature: Transpose view operation with MS_OP_PLUGIN_PATH
@@ -316,7 +316,7 @@ def test_transpose_view_cpu():
     os.environ['MS_OP_PLUGIN_PATH'] = 'test'
     transpose_view_matmul_kbk()
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_broadcast_to_view_ascend():
     """
     Feature: BroadcastTo view operation
@@ -325,7 +325,7 @@ def test_broadcast_to_view_ascend():
     """
     broadcast_to_view_kbk()
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_broadcast_to_view_cpu():
     """
     Feature: BroadcastTo view operation with MS_OP_PLUGIN_PATH
@@ -335,7 +335,7 @@ def test_broadcast_to_view_cpu():
     os.environ['MS_OP_PLUGIN_PATH'] = 'test'
     broadcast_to_view_kbk()
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_transpose_ext_view_ascend():
     """
     Feature: TransposeExt view operation
@@ -344,7 +344,7 @@ def test_transpose_ext_view_ascend():
     """
     transpose_ext_view_kbk()
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_transpose_ext_view_cpu():
     """
     Feature: TransposeExt view operation with MS_OP_PLUGIN_PATH
@@ -367,7 +367,7 @@ class ViewOut(nn.Cell):
         return res
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_graph_view_out():
     """
     Feature: Runtime view graph mode.
@@ -383,7 +383,7 @@ def test_graph_view_out():
     assert np.allclose(out_graph.asnumpy(), out_pynative.asnumpy(), rtol=10e-4, atol=10e-4)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_pynative_view_to_graph():
     """
     Feature: Runtime view graph mode.
@@ -414,7 +414,7 @@ class MakeContiguous(nn.Cell):
         return res
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_graph_view_to_aclop():
     """
     Feature: Runtime view graph mode.
@@ -432,7 +432,7 @@ def test_graph_view_to_aclop():
     assert np.allclose(out_graph.asnumpy(), out_pynative.asnumpy(), rtol=10e-4, atol=10e-4)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_expand_dims_view():
     """
     Feature: Runtime view graph mode.
@@ -456,7 +456,7 @@ def test_expand_dims_view():
     assert (graph_output.asnumpy() == pynative_output.asnumpy()).all()
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_narrow_view():
     """
     Feature: Runtime view graph mode.
