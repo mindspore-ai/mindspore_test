@@ -1,7 +1,7 @@
 mindspore.Tensor.data
 =====================
 
-.. py:method:: mindspore.Tensor.data
+.. py:attribute:: mindspore.Tensor.data
 
     提供对原始数据的访问，其自动微分历史信息不会被追踪。
 
