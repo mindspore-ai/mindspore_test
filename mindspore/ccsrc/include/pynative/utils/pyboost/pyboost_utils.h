@@ -99,6 +99,13 @@ class PYBOOST_API PyBoostUtils {
     (PyBoostUtils::MallocForInput(device_context, args, false), ...);
   }
 
+  template <typename... T>
+  static void MallocOpInputsWithStream(const DeviceContext *device_context, size_t stream_id, const T &...args) {
+    runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kPynative, runtime::ProfilerEvent::kPyBoostMallocInput,
+                                       runtime::ProfilerRecorder::kNoName, false);
+    (PyBoostUtils::MallocForInput(device_context, stream_id, args, false), ...);
+  }
+
   static void MallocInternalOpInputs(const DeviceContext *device_context,
                                      const std::vector<tensor::TensorPtr> &tensors) {
     runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kPynative, runtime::ProfilerEvent::kPyBoostMallocInput,
@@ -146,10 +153,14 @@ class PYBOOST_API PyBoostUtils {
   }
 
   static void MallocForInput(const DeviceContext *device_context, const tensor::TensorPtr &tensor, bool is_view);
+  static void MallocForInput(const DeviceContext *device_context, size_t stream_id, const tensor::TensorPtr &tensor,
+                             bool is_view);
   static void MallocForInput(const DeviceContext *device_context, const std::optional<tensor::TensorPtr> &val,
                              bool is_view);
   static void MallocForInput(const DeviceContext *device_context, const std::vector<tensor::TensorPtr> &tensors,
                              bool is_view);
+  static void MallocForInput(const DeviceContext *device_context, size_t stream_id,
+                             const std::vector<tensor::TensorPtr> &tensors, bool is_view);
   static void MallocForInput(const DeviceContext *device_context, const ValueTuplePtr &value_tuple, bool is_view);
 
   static void LaunchKernel(const PrimitivePtr &primitive, const device::DeviceContext *device_context,
@@ -230,6 +241,14 @@ class PYBOOST_API PyBoostUtils {
     runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kPynative, runtime::ProfilerEvent::kPyBoostMallocOutput,
                                        runtime::ProfilerRecorder::kNoName, false);
     runtime::DeviceAddressUtils::MallocForOutputs(device_context, outputs);
+  }
+
+  // Create output tensor device address without kernel tensor
+  static void MallocOpOutputsWithStream(const DeviceContext *device_context, size_t stream_id,
+                                        const std::vector<tensor::TensorPtr> &outputs) {
+    runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kPynative, runtime::ProfilerEvent::kPyBoostMallocOutput,
+                                       runtime::ProfilerRecorder::kNoName, false);
+    runtime::DeviceAddressUtils::MallocForOutputs(device_context, stream_id, outputs);
   }
 
   static std::vector<kernel::KernelTensor *> GetRawKernelTensor(

@@ -323,6 +323,11 @@ void PyBoostUtils::CreateOutputTensor(
 }
 
 void PyBoostUtils::MallocForInput(const DeviceContext *device_context, const tensor::TensorPtr &tensor, bool is_view) {
+  MallocForInput(device_context, CurrentStream::id(), tensor, is_view);
+}
+
+void PyBoostUtils::MallocForInput(const DeviceContext *device_context, size_t stream_id,
+                                  const tensor::TensorPtr &tensor, bool is_view) {
   if (tensor == nullptr) {
     return;
   }
@@ -346,7 +351,7 @@ void PyBoostUtils::MallocForInput(const DeviceContext *device_context, const ten
     }
   }
 
-  if (!device_context->device_res_manager_->AllocateMemory(device_address.get(), CurrentStream::id())) {
+  if (!device_context->device_res_manager_->AllocateMemory(device_address.get(), stream_id)) {
     MS_LOG(EXCEPTION) << "Allocate memory failed";
   }
 
@@ -365,6 +370,13 @@ void PyBoostUtils::MallocForInput(const DeviceContext *device_context, const std
                                   bool is_view) {
   for (const auto &tensor : tensors) {
     MallocForInput(device_context, tensor, is_view);
+  }
+}
+
+void PyBoostUtils::MallocForInput(const DeviceContext *device_context, size_t stream_id,
+                                  const std::vector<tensor::TensorPtr> &tensors, bool is_view) {
+  for (const auto &tensor : tensors) {
+    MallocForInput(device_context, stream_id, tensor, is_view);
   }
 }
 
