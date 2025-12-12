@@ -111,8 +111,8 @@ void DistCommAllToAllVSingleAscendCustomize(const std::shared_ptr<OpRunner> &op,
                    split_sizes_empty]() {
     auto device_context = op->device_context();
 
-    PyBoostUtils::MallocOpInputs(device_context, input_tensor);
-    PyBoostUtils::MallocOpOutputs(device_context, {other_tensor});
+    PyBoostUtils::MallocOpInputsWithStream(device_context, kDefaultStreamIndex, input_tensor);
+    PyBoostUtils::MallocOpOutputsWithStream(device_context, kDefaultStreamIndex, {other_tensor});
 
     auto is_split_sizes_empty = GetValue<bool>(split_sizes_empty);
     // Call AlltoAll for better performance when split_sizes is empty.

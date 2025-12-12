@@ -15,9 +15,11 @@
 
 """Test PyNative mutli-stream"""
 
+import os
 import numpy as np
 import mindspore as ms
 from mindspore import context
+from tests.mark_utils import arg_mark
 
 
 def test_pynative_aclop_multi_stream():
@@ -46,3 +48,20 @@ def test_pynative_aclop_multi_stream():
     ms.ops.Identity()(c)
 
     ms.runtime.synchronize()
+
+
+@arg_mark(plat_marks=['platform_ascend910b'],
+          level_mark='level0',
+          card_mark='allcards',
+          essential_mark='essential')
+def test_pynative_communication_multi_stream_memory():
+    '''
+    Feature: Memory with multi-stream.
+    Description: Test PyNative communication memory with multi-stream.
+    Expectation: Run success.
+    '''
+    return_code = os.system(
+        "msrun --worker_num=8 --local_worker_num=8 --master_addr=127.0.0.1 --master_port=10969 --join=True " \
+        "pytest -s test_comm_op_memory.py::test_communication_op_with_stream"
+    )
+    assert return_code == 0

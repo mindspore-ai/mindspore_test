@@ -1203,6 +1203,11 @@ KernelTensorPtr DeviceAddressUtils::CreateKernelTensor(const DeviceContext *devi
 
 void DeviceAddressUtils::MallocForOutputs(const DeviceContext *device_context,
                                           const std::vector<tensor::TensorPtr> &outputs) {
+  MallocForOutputs(device_context, CurrentStream::id(), outputs);
+}
+
+void DeviceAddressUtils::MallocForOutputs(const DeviceContext *device_context, size_t stream_id,
+                                          const std::vector<tensor::TensorPtr> &outputs) {
   for (const auto &output : outputs) {
     auto device_address = std::static_pointer_cast<device::DeviceAddress>(output->device_address());
     if (device_address->GetPtr() != nullptr) {
@@ -1211,7 +1216,7 @@ void DeviceAddressUtils::MallocForOutputs(const DeviceContext *device_context,
     }
     device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, "PyNative", memory::mem_pool::MemType::kPyNativeOutput,
                                                    device_address->GetSize(), device_address.get());
-    if (!device_context->device_res_manager_->AllocateMemory(device_address.get())) {
+    if (!device_context->device_res_manager_->AllocateMemory(device_address.get(), stream_id)) {
       MS_LOG(EXCEPTION) << "Allocate memory failed";
     }
   }

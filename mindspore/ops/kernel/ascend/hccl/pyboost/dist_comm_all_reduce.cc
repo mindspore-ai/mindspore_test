@@ -34,7 +34,7 @@ void DistCommAllReduceAscendCustomize(const std::shared_ptr<OpRunner> &op, const
   op->set_outputs({input_tensor});
 
   auto run_func = [op, input_tensor, op_type, group]() {
-    PyBoostUtils::MallocOpInputs(op->device_context(), input_tensor);
+    PyBoostUtils::MallocOpInputsWithStream(op->device_context(), kDefaultStreamIndex, input_tensor);
     auto [hccl_count, hccl_data_type] = HcomUtil::GetHcclCountAndTypeFromTensor(op->primitive(), input_tensor);
     auto op_type_enum = HcomUtil::GetHcomReduceOpType(GetValue<std::string>(op_type));
 

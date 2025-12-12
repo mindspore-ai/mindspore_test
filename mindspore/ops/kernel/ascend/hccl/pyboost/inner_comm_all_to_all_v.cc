@@ -108,8 +108,8 @@ void InnerCommAllToAllVAscendCustomize(const std::shared_ptr<OpRunner> &op, cons
   auto run_func = [op, input_tensor, group, send_numel_list, recv_numel_list, rank_size, split_sizes_empty]() {
     auto device_context = op->device_context();
 
-    PyBoostUtils::MallocOpInputs(device_context, input_tensor);
-    PyBoostUtils::MallocOpOutputs(device_context, op->outputs());
+    PyBoostUtils::MallocOpInputsWithStream(device_context, kDefaultStreamIndex, input_tensor);
+    PyBoostUtils::MallocOpOutputsWithStream(device_context, kDefaultStreamIndex, op->outputs());
 
     auto is_split_sizes_empty = GetValue<bool>(split_sizes_empty);
     // Call AlltoAll for better performance when split_sizes is empty.
