@@ -2,6 +2,38 @@
 
 [View English](./RELEASE.md)
 
+## MindSpore 2.7.2 Release Notes
+
+### 主要特性及增强
+
+#### Ascend
+
+- [BETA] 静态图jit_level为O1模式下支持GroupedMatMul + Reshape + AssignAdd融合模式，用户可通过设置环境变量 `export MS_DEV_GRAPH_KERNEL_FLAGS="--enable_cluster_ops=GroupedMatmul,Reshape"` 开启。
+- [STABLE] 静态图jit_level为O0/O1模式下，支持亚健康设备热切换功能，无需重启训练集群即可替换亚健康节点，实现分钟级断点续训。用户可以通过设置环境变量 `export MS_ENABLE_TFT="{ARF:1}"` 开启该功能。
+
+#### Parallel
+
+- [STABLE] `msrun` 支持在启动分布式任务时，通过 `taskset` 命令对scheduler进程和worker进程进行绑核，用户可通过入参 `--bind_core` 对启动进程设置绑核。
+
+#### PyNative
+
+- [STABLE] 动态图下支持 `frombuffer`功能，允许从 Python 缓冲区协议对象（如 bytes 等）直接创建 MindSpore Tensor，无需数据拷贝。
+- [STABLE] 动态图下支持 `saved_tensors_hooks` 功能，允许用户为在前向计算中被保留并在反向阶段使用的 saved tensor 配置自定义的保存和加载逻辑。
+
+#### Python
+
+- [STABLE] 支持Python 3.12版本。
+
+### API 变更
+
+#### 非兼容性接口变更
+
+- ops.ring_attention_update算子不支持8.1.RC1及之前版本的CANN包。
+
+### 贡献者
+
+Bellatan,caifubi,chaijinwei,changzherui,chengbin,fuchao,guangpengz,guozhijian,hhz886,huangbingjian,huda,jiangna,jiaorui,kingxian,liangchenghui,lichen,liubuyu,liuluobin,liuyanwei,looop5,maoyuanpeng1,Margaret_wangrui,mengxian,NaCN,panzhihui,r1chardf1d0,rogeryu11,shaoshengqi,shen_haochen,shenwei41,tanghuikang,wang_ziqi,wangshaocong,wangyin,xiaotianci,xuzhen,yanghaoran,yide12,yuchaojie,yuliangbin,zhangyinxia,zhaochenjie,zhengzuohe,ZPaC,zyli2020,曹彤,范吉斌,胡彬,宦晓玲,李良灿,熊攀
+
 ## MindSpore 2.7.1 Release Notes
 
 ### 主要特性及增强
