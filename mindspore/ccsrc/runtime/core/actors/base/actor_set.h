@@ -109,6 +109,11 @@ struct ActorSet {
   // the second bool of pair expresses the outputs of node need continuous memory.
   std::map<std::pair<CNodePtr, const DeviceContext *>, std::pair<bool, bool>> continuous_memory_nodes_;
 
+  // Using unique_ptr to manage op_context, resolving core dump issues caused by multi-thread access to local variables
+  // Using pair to make sure OpContext and Promise have same life cycle
+  std::pair<std::unique_ptr<OpContext<KernelTensor>>, std::unique_ptr<std::vector<Promise<int>>>>
+    op_context_and_promises_;
+
   // Whether this graph could be executed as kbk graph mode which disable kernel actor message mechanism.
   bool enable_kbk_sub_graph_execute_{true};
 
