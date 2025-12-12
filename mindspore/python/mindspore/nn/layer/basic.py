@@ -1351,7 +1351,7 @@ class UnfoldExt(Cell):
 
 class Fold(Cell):
     r"""
-    Combines an array of sliding local blocks into a large containing tensor.
+    Combines an array of sliding local blocks into a large containing tensor. 
 
     For details, please refer to :func:`mindspore.mint.nn.functional.fold`.
 
@@ -1359,11 +1359,10 @@ class Fold(Cell):
         ``Ascend``
 
     Examples:
+        >>> import mindspore
         >>> import numpy as np
-        >>> from mindspore import Tensor, nn
-        >>> from mindspore import dtype as mstype
-        >>> fold = nn.Fold([8, 8], [2, 2], [2, 2], [2, 2], [2, 2])
-        >>> input = Tensor(input_data=np.random.rand(16, 64, 25), dtype=mstype.float32)
+        >>> fold = mindspore.nn.Fold([8, 8], [2, 2], [2, 2], [2, 2], [2, 2])
+        >>> input = mindspore.tensor(input_data=np.random.rand(16, 64, 25), dtype=mindspore.float32)
         >>> output = fold(input)
         >>> print(output.shape)
         (16, 16, 8, 8)
