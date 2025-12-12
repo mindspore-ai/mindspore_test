@@ -12,15 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-
+"""
+This test is for msrun launch with exception.
+"""
 import os
 import argparse
 
-import mindspore.context as context
+import minsdpore as ms
 import mindspore.dataset as ds
 import mindspore.dataset.transforms as C
 import mindspore.dataset.vision as CV
-import mindspore.nn as nn
+from mindspore import context, nn
 from mindspore.common import dtype as mstype
 from mindspore.dataset.vision import Inter
 from mindspore.train import Model, LossMonitor, Accuracy
@@ -35,7 +37,7 @@ args, _ = parser.parse_known_args()
 device_target = args.device_target
 dataset_path = args.dataset_path
 exception_type = args.exception_type
-context.set_context(mode=context.GRAPH_MODE, device_target=device_target)
+ms.set_context(mode=ms.GRAPH_MODE, device_target="Ascend", jit_config={"jit_level": "O0"})
 
 def conv(in_channels, out_channels, kernel_size, stride=1, padding=0):
     """weight initial for conv layer"""
@@ -59,7 +61,7 @@ def weight_variable():
 
 class LeNet5(nn.Cell):
     def __init__(self, num_class=10, channel=1):
-        super(LeNet5, self).__init__()
+        super().__init__()
         self.num_class = num_class
         self.conv1 = conv(channel, 6, 5)
         self.conv2 = conv(6, 16, 5)
