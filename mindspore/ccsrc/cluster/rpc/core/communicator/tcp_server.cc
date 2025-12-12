@@ -186,8 +186,8 @@ void TcpServer::Init() {
                                         LEV_OPT_REUSEABLE | LEV_OPT_CLOSE_ON_FREE, -1,
                                         reinterpret_cast<struct sockaddr *>(&sin), sizeof(sin));
     if (listener_ == nullptr) {
+      MS_LOG(INFO) << "The port " << current_port << " is already in use. So increase port to: " << (current_port + 1);
       current_port++;
-      MS_LOG(WARNING) << "The port " << current_port << " is already in use. So increase port to: " << current_port;
       if (current_port > port_range_.second) {
         MS_LOG(EXCEPTION) << "Port range " << port_range_.first << " to " << port_range_.second
                           << " are all in use already. You can run 'netstat -anp|grep <port number>' command to check "

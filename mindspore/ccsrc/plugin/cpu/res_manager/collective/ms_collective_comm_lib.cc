@@ -16,7 +16,10 @@
 
 #include "plugin/cpu/res_manager/collective/ms_collective_comm_lib.h"
 #include <complex>
+#include <memory>
 #include <set>
+#include <string>
+#include <vector>
 #include "utils/ms_context.h"
 #include "include/cluster/topology/constants.h"
 #include "include/runtime/hardware_abstract/collective/collective_communication_lib.h"
@@ -217,8 +220,8 @@ bool MsCollectiveCommLib::SendUniqueID(const std::string &group_name, size_t roo
   while (!success && --retry > 0) {
     success = client_node_->PutMetadata(group_info_key, root_info, root_info_size);
     if (!success) {
-      MS_LOG(WARNING) << "Failed to send unique id for group " << group_name << ". Retry time: " << retry << "/"
-                      << retry_count_;
+      MS_LOG(INFO) << "Failed to send unique id for group " << group_name << ". Retry time: " << retry << "/"
+                   << retry_count_;
       SleepBasedOnScale(interval);
     }
   }
@@ -251,9 +254,9 @@ bool MsCollectiveCommLib::QueryUniqueID(const std::string &group_name, size_t ro
       success = true;
     } else {
       auto sleep_time = rand_distrib_(gen);
-      MS_LOG(WARNING) << "Retry to lookup the unique id for group " << group_name
-                      << " from the meta server node...Retry time: " << retry << "/" << retry_count_ << ", sleep "
-                      << sleep_time;
+      MS_LOG(INFO) << "Retry to lookup the unique id for group " << group_name
+                   << " from the meta server node...Retry time: " << retry << "/" << retry_count_ << ", sleep "
+                   << sleep_time;
       SleepBasedOnScale(sleep_time);
     }
   }

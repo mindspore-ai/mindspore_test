@@ -101,6 +101,7 @@ def test_hccl_config():
     Description: control buffer size by MS_DEV_HCCL_CONF using msrun.
     Expectation: run success.
     '''
+    os.environ['GLOG_v'] = str(1)
     os.environ['MS_DEV_HCCL_CONF'] = (
         "enable_hccl_config:True,"
         "hccl_customized_default:100MB,"
@@ -137,7 +138,7 @@ def test_union_hccl_create():
     Description: union hccl groups creation by python and C++ using msrun.
     Expectation: run success.
     '''
-    os.environ['GLOG_v'] = str(2)
+    os.environ['GLOG_v'] = str(1)
     dir_to_remove = "./test_union_hccl_groups"
     if os.path.exists(dir_to_remove):
         shutil.rmtree(dir_to_remove)
