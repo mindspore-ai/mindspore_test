@@ -12,7 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-
+"""
+This test is for deterministic.
+"""
 import numpy as np
 import os
 import pytest
@@ -24,7 +26,7 @@ from mindspore.communication import init
 
 class ReduceMatmulNet(nn.Cell):
     def __init__(self, shape):
-        super(ReduceMatmulNet, self).__init__()
+        super().__init__()
         self.weight = ms.Parameter(ms.Tensor(np.full(shape, 1), dtype=ms.float32), name="weight")
         self.reducemean = ops.ReduceMean()
         self.matmul = ops.MatMul()
@@ -49,6 +51,7 @@ def test_deterministic_reduce_matmul(mode):
     context.set_context(deterministic="ON")
     x = ms.Tensor(np.random.randn(8090, 4, 8), ms.float32)
     net = ReduceMatmulNet(shape=(8, 4096))
+    output1, output2 = 0, -1
     if mode == 'pynative':
         output1 = net(x)
         output2 = net(x)
@@ -60,7 +63,7 @@ def test_deterministic_reduce_matmul(mode):
 
 class USSNet(nn.Cell):
     def __init__(self):
-        super(USSNet, self).__init__()
+        super().__init__()
         self.uss = ops.UnsortedSegmentSum()
 
     def construct(self, input_x, segment_ids, num_segments):
@@ -82,6 +85,7 @@ def test_deterministic_uss(mode):
     segment_ids = ms.Tensor(np.ones([16, 1024]).astype(np.int32))
     num_segments = 4
     uss_net = USSNet()
+    output1, output2 = 0, -1
     if mode == 'pynative':
         output1 = uss_net(input_x, segment_ids, num_segments)
         output2 = uss_net(input_x, segment_ids, num_segments)
@@ -93,7 +97,7 @@ def test_deterministic_uss(mode):
 
 class AllReduceNet(nn.Cell):
     def __init__(self):
-        super(AllReduceNet, self).__init__()
+        super().__init__()
         self.allreduce = ops.AllReduce(ops.ReduceOp.SUM)
 
     def construct(self, x):
@@ -126,4 +130,32 @@ def test_deterministic_allreduce():
     """
     return_code = os.system("msrun --worker_num=8 --local_worker_num=8 --master_addr=127.0.0.1 --master_port=10808 " \
                             "--join=True pytest -s test_deterministic.py::test_allreduce_deterministic")
+    assert return_code == 0
+
+
+def test_allreduce_deterministic_after_init():
+    """
+    Feature: ascend op deterministic test case
+    Description: test deterministic for allreduce
+    Expectation: the result of multiple run should be same
+    """
+    init()
+    context.set_context(deterministic="ON")
+    x = ms.Tensor(np.random.randn(16, 1024), ms.float32)
+    allreduce_net = AllReduceNet()
+    output1 = (jit(allreduce_net))(x)
+    output2 = (jit(allreduce_net))(x)
+    assert np.allclose(output1.asnumpy(), output2.asnumpy(), rtol=0, atol=0)
+
+
+@arg_mark(plat_marks=["platform_ascend", "platform_ascend910b"], level_mark="level0", card_mark="allcards",
+          essential_mark="essential")
+def test_deterministic_after_init_allreduce():
+    """
+    Feature: mpirun ascend op deterministic test case
+    Description: test deterministic for allreduce
+    Expectation: the result of multiple run should be same
+    """
+    return_code = os.system("msrun --worker_num=8 --local_worker_num=8 --master_addr=127.0.0.1 --master_port=10909 " \
+                            "--join=True pytest -s test_deterministic.py::test_allreduce_deterministic_after_init")
     assert return_code == 0
