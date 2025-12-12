@@ -1270,6 +1270,7 @@ void AscendKernelExecutor::PreprocessBeforeRun(const FuncGraphPtr &graph) const 
     }
   }
   ResetNodeIds({kernel_graph});
+  hierarchical_memory::ReorderControlFlowNodes(kernel_graph);
   hierarchical_memory::AdjustExecutionOrderForHierarchicalMemoryOps(kernel_graph);
   hierarchical_memory::ExecutionOrderOptimizeWithHierarchicalMemory(kernel_graph);
   DoStreamAssign(kernel_graph);

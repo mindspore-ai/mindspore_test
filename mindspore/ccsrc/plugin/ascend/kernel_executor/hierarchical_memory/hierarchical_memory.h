@@ -21,9 +21,27 @@ namespace mindspore {
 namespace device {
 namespace ascend {
 namespace hierarchical_memory {
+
+struct ConditionSwitchInfo {
+  CNodePtr switch_cnode;
+  std::string true_subgraph;
+  std::string false_subgraph;
+  size_t true_branch_node_num;
+  size_t false_branch_node_num;
+
+  ConditionSwitchInfo(const CNodePtr &switch_cnode, const std::string &true_subgraph_name,
+                      const std::string &false_subgraph_name)
+      : switch_cnode(switch_cnode),
+        true_subgraph(true_subgraph_name),
+        false_subgraph(false_subgraph_name),
+        true_branch_node_num(0),
+        false_branch_node_num(0) {}
+};
+
 void AdjustExecutionOrderForHierarchicalMemoryOps(const KernelGraphPtr &kernel_graph);
 void AddEventToHierarchicalMemoryOps(const KernelGraphPtr &kernel_graph);
 void ExecutionOrderOptimizeWithHierarchicalMemory(const KernelGraphPtr &kernel_graph);
+void ReorderControlFlowNodes(const KernelGraphPtr &kernel_graph);
 }  // namespace hierarchical_memory
 }  // namespace ascend
 }  // namespace device

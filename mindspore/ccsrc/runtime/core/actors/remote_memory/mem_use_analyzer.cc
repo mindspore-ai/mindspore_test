@@ -18,73 +18,10 @@
 
 #include "runtime/core/actors/remote_memory/mem_counted_cache.h"
 #include "runtime/core/actors/remote_memory/mem_action_mgr.h"
-#include "runtime/core/actors/control_flow/condition_switch_runner.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 
 namespace mindspore {
 namespace runtime {
-
-namespace {
-void ProcessConditionGatherNode(std::vector<ConditionSwitchInfoPtr> *switch_index,
-                                std::vector<KernelRunnerPtr> *true_branch_kernels,
-                                std::vector<KernelRunnerPtr> *false_branch_kernels,
-                                std::vector<KernelRunnerPtr> *kernel_actors_, const KernelRunnerPtr &kernel_actor) {
-  MS_EXCEPTION_IF_NULL(switch_index);
-  MS_EXCEPTION_IF_NULL(true_branch_kernels);
-  MS_EXCEPTION_IF_NULL(false_branch_kernels);
-  MS_EXCEPTION_IF_NULL(kernel_actors_);
-  MS_EXCEPTION_IF_NULL(kernel_actor);
-  std::vector<KernelRunnerPtr> switch_kernel_actors;
-  auto lastest_switch_info = switch_index->back();
-  MS_EXCEPTION_IF_NULL(lastest_switch_info);
-  auto cur_condition_switch_kernel = lastest_switch_info->kernel_actor_ptr;
-  MS_EXCEPTION_IF_NULL(cur_condition_switch_kernel);
-  // Mark true branch range
-  auto true_branch_expect_node_size = lastest_switch_info->true_branch_node_nums;
-  auto true_branch_stored_node_size = true_branch_kernels->size();
-  if (true_branch_expect_node_size > true_branch_stored_node_size) {
-    MS_LOG(EXCEPTION) << "Invalid true branch node num, expect: " << true_branch_expect_node_size
-                      << ", stored: " << true_branch_stored_node_size;
-  }
-  switch_kernel_actors.insert(switch_kernel_actors.end(), true_branch_kernels->end() - true_branch_expect_node_size,
-                              true_branch_kernels->end());
-  true_branch_kernels->resize(true_branch_stored_node_size - true_branch_expect_node_size);
-  // Mark false branch range
-  auto false_branch_expect_node_size = lastest_switch_info->false_branch_node_nums;
-  auto false_branch_stored_node_size = false_branch_kernels->size();
-  if (false_branch_expect_node_size > false_branch_stored_node_size) {
-    MS_LOG(EXCEPTION) << "Invalid false branch node num, expect: " << false_branch_expect_node_size
-                      << ", stored: " << false_branch_stored_node_size;
-  }
-  switch_kernel_actors.insert(switch_kernel_actors.end(), false_branch_kernels->end() - false_branch_expect_node_size,
-                              false_branch_kernels->end());
-  false_branch_kernels->resize(false_branch_stored_node_size - false_branch_expect_node_size);
-  MS_VLOG(VL_REMOTE_MEM_INFO) << "Switch true branch size: " << true_branch_expect_node_size
-                              << ", false branch size: " << false_branch_expect_node_size;
-  switch_kernel_actors.emplace_back(kernel_actor);
-  switch_index->pop_back();
-
-  if (switch_index->empty()) {
-    // Single control flow, just append to the kernel_actors_
-    kernel_actors_->insert(kernel_actors_->end(), switch_kernel_actors.begin(), switch_kernel_actors.end());
-  } else {
-    // Nested control flow, choose branch according to the outer switch
-    auto outter_switch_info = switch_index->back();
-    MS_EXCEPTION_IF_NULL(outter_switch_info);
-    bool is_true_branch = cur_condition_switch_kernel->GetEnablePtr() == outter_switch_info->true_branch_enable_ptr;
-    auto switch_kernel_actors_size = switch_kernel_actors.size();
-    if (is_true_branch) {
-      outter_switch_info->true_branch_node_nums += switch_kernel_actors_size;
-      true_branch_kernels->insert(true_branch_kernels->end(), switch_kernel_actors.begin(), switch_kernel_actors.end());
-    } else {
-      outter_switch_info->false_branch_node_nums += switch_kernel_actors_size;
-      false_branch_kernels->insert(false_branch_kernels->end(), switch_kernel_actors.begin(),
-                                   switch_kernel_actors.end());
-    }
-  }
-}
-}  // namespace
-
 KernelTensorPtr MemUseAnalyzer::FindDeviceKernelTensor(const KernelTensorPtr &kernel_tensor) {
   MS_EXCEPTION_IF_NULL(kernel_tensor);
   auto new_kernel_tensor = kernel_tensor;
@@ -154,8 +91,13 @@ std::vector<std::pair<KernelTensorPtr, size_t>> MemUseAnalyzer::GetKernelTensorU
                                                                                         KernelRunner *kernel_actor,
                                                                                         bool need_output,
                                                                                         bool need_pop_user) {
-  auto kernel_tensors = need_output ? kernel_actor->output_kernel_tensors() : kernel_actor->input_kernel_tensors();
-  return GetDeviceKernelTensorsInfo(idx, kernel_tensors, need_pop_user);
+  if (!need_output) {
+    return GetDeviceKernelTensorsInfo(idx, kernel_actor->input_kernel_tensors(), need_pop_user);
+  }
+  auto out_kernel_tensors = kernel_actor->output_kernel_tensors();
+  auto workspace_kernel_tensors = kernel_actor->workspace_kernel_tensors();
+  out_kernel_tensors.insert(out_kernel_tensors.end(), workspace_kernel_tensors.begin(), workspace_kernel_tensors.end());
+  return GetDeviceKernelTensorsInfo(idx, out_kernel_tensors, need_pop_user);
 }
 
 void MemUseAnalyzer::UpdateCopyKernelTensors(const KernelTensorPtrPairList &kernel_tensors_pair) {
@@ -193,8 +135,7 @@ void MemUseAnalyzer::UpdateCopyKernelTensors(const KernelTensorPtrPairList &kern
 
 void MemUseAnalyzer::RefreshInputKernelTensors(KernelRunner *kernel_actor) {
   const auto &input_kernel_tensors = kernel_actor->input_kernel_tensors();
-  for (size_t index = 0; index < input_kernel_tensors.size(); ++index) {
-    auto &kernel_tensor = input_kernel_tensors[index];
+  for (const auto &kernel_tensor : input_kernel_tensors) {
     auto new_kernel_tensor = FindDeviceKernelTensor(kernel_tensor);
     if (new_kernel_tensor == kernel_tensor) {
       continue;
@@ -215,84 +156,25 @@ void MemUseAnalyzer::ProcessGraphOutputLaunch(const device::DeviceContext *devic
   MS_VLOG(VL_REMOTE_MEM_INFO) << "Finish processing graph output node.";
 }
 
-void MemUseAnalyzer::MarkGraphIndex(const std::vector<KernelRunnerPtr> &kernel_actors) {
-  std::vector<ConditionSwitchInfoPtr> switch_index;
-  std::vector<KernelRunnerPtr> true_branch_kernels;
-  std::vector<KernelRunnerPtr> false_branch_kernels;
-  kernel_actors_.reserve(kernel_actors.size());
-  for (size_t i = 0; i < kernel_actors.size(); ++i) {
-    const auto &kernel_actor = kernel_actors[i];
-    MS_EXCEPTION_IF_NULL(kernel_actor);
-    auto &cnode = kernel_actor->kernel();
-    MS_EXCEPTION_IF_NULL(cnode);
-    MS_VLOG(VL_REMOTE_MEM_DEBUG) << "Current idx: " << i << ", cnode: " << cnode->DebugString();
-    // Not in control flow node
-    if (switch_index.empty()) {
-      if (!IsPrimitiveCNode(cnode, prim::kPrimConditionSwitch)) {
-        kernel_actors_.emplace_back(kernel_actor);
-      } else {
-        // The first control flow entrance
-        auto kernel_actor_ptr = kernel_actor.get();
-        MS_EXCEPTION_IF_NULL(kernel_actor_ptr);
-        const auto &switch_actor = dynamic_cast<ConditionSwitchRunner *>(kernel_actor_ptr);
-        MS_EXCEPTION_IF_NULL(switch_actor);
-        auto cur_switch_info =
-          std::make_shared<ConditionSwitchInfo>(kernel_actor, &(switch_actor->GetBranchFlag().get()[True]));
-        switch_info_map_[kernel_actor_ptr] = cur_switch_info;
-        switch_index.push_back(cur_switch_info);
-        kernel_actors_.emplace_back(kernel_actor);
-      }
-      continue;
-    }
-
-    // ConditionGather, process the whole control flow
-    if (IsPrimitiveCNode(cnode, prim::kPrimConditionGather)) {
-      ProcessConditionGatherNode(&switch_index, &true_branch_kernels, &false_branch_kernels, &kernel_actors_,
-                                 kernel_actor);
-      continue;
-    }
-
-    auto &lastest_switch_info = switch_index.back();
-    MS_EXCEPTION_IF_NULL(lastest_switch_info);
-    if (lastest_switch_info->true_branch_enable_ptr == kernel_actor->GetEnablePtr()) {
-      lastest_switch_info->true_branch_node_nums++;
-      true_branch_kernels.emplace_back(kernel_actor);
-    } else {
-      lastest_switch_info->false_branch_node_nums++;
-      false_branch_kernels.emplace_back(kernel_actor);
-    }
-
-    // Nested control flow scene
-    if (IsPrimitiveCNode(cnode, prim::kPrimConditionSwitch)) {
-      auto kernel_actor_ptr = kernel_actor.get();
-      MS_EXCEPTION_IF_NULL(kernel_actor_ptr);
-      const auto &switch_actor = dynamic_cast<ConditionSwitchRunner *>(kernel_actor_ptr);
-      MS_EXCEPTION_IF_NULL(switch_actor);
-      auto cur_switch_info =
-        std::make_shared<ConditionSwitchInfo>(kernel_actor, &(switch_actor->GetBranchFlag().get()[True]));
-      switch_info_map_[kernel_actor_ptr] = cur_switch_info;
-      switch_index.push_back(cur_switch_info);
-    }
-  }
-}
-
 void MemUseAnalyzer::InitGraphInfo(SuperKernelActor *super_actor, const device::DeviceContext *device_context) {
-  const auto &kernel_actors = super_actor->kernel_actors();
+  MS_EXCEPTION_IF_NULL(super_actor);
+  kernel_actors_ = super_actor->kernel_actors();
+  auto kernel_actor_size = kernel_actors_.size();
   super_kernel_actor_ = super_actor;
-  MarkGraphIndex(kernel_actors);
   std::queue<size_t> conditionswitch_idxs;
   // Init not include param and const value, need consider param later
-  for (size_t i = 0; i < kernel_actors_.size(); ++i) {
+  for (size_t i = 0; i < kernel_actor_size; ++i) {
     const auto &kernel_actor = kernel_actors_[i];
     MS_EXCEPTION_IF_NULL(kernel_actor);
     auto kernel_actor_ptr = kernel_actor.get();
+    MS_EXCEPTION_IF_NULL(kernel_actor_ptr);
     kernel_actor_idx_map_[kernel_actor_ptr] = i;
     auto &cnode = kernel_actor->kernel();
+    MS_EXCEPTION_IF_NULL(cnode);
     MS_VLOG(VL_REMOTE_MEM_INFO) << "Process kernel, idx: " << i << ", " << cnode->DebugString();
     if (IsPrimitiveCNode(cnode, prim::kPrimConditionSwitch)) {
-      auto &cur_switch_info = switch_info_map_[kernel_actor_ptr];
-      cur_switch_info->cur_idx = i;
-      cur_switch_info->RefreshNodeIdx();
+      auto cur_switch_info = std::make_shared<ConditionSwitchBranchInfo>(cnode, i);
+      switch_info_map_[kernel_actor_ptr] = cur_switch_info;
       conditionswitch_idxs.push(i);
       MS_VLOG(VL_REMOTE_MEM_INFO) << "Cur_switch: " << cur_switch_info->ToString();
     }
@@ -326,12 +208,12 @@ void MemUseAnalyzer::InitGraphInfo(SuperKernelActor *super_actor, const device::
   mem_counted_cache_->SetCopyStreamId(copy_out_stream_id_, copy_in_stream_id_);
   mem_counted_cache_->SetConditionSwitchIdxs(conditionswitch_idxs);
   old_horizon_ = mem_counted_cache_->GetHorizon();
-  MS_VLOG(VL_REMOTE_MEM_INFO) << "Finish init graph info: " << kernel_actors.size()
+  MS_VLOG(VL_REMOTE_MEM_INFO) << "Finish init graph info: " << kernel_actor_size
                               << ", copy out stream id: " << copy_out_stream_id_
                               << ", copy in stream id: " << copy_in_stream_id_;
 
   // Process output kernel tensor
-  max_idx_ = kernel_actors.size();
+  max_idx_ = kernel_actor_size;
   const auto &graph_output = kernel_graph->output();
   MS_EXCEPTION_IF_NULL(graph_output);
   MS_VLOG(VL_REMOTE_MEM_INFO) << "Output graph node: " << graph_output->DebugString();
@@ -381,6 +263,7 @@ void MemUseAnalyzer::LaunchTaskBefore(KernelRunner *kernel_actor, const device::
 void MemUseAnalyzer::LaunchTaskAfter(KernelRunner *kernel_actor, const device::DeviceContext *device_context) {
   MS_EXCEPTION_IF_NULL(kernel_actor);
   const auto &cnode = kernel_actor->kernel();
+  MS_EXCEPTION_IF_NULL(cnode);
   auto stream_id = kernel_actor->get_stream();
   auto idx = kernel_actor_idx_map_[kernel_actor];
   MS_VLOG(VL_REMOTE_MEM_INFO) << "Start launch task after, idx: " << idx << ", cnode: " << cnode->DebugString();
@@ -388,13 +271,15 @@ void MemUseAnalyzer::LaunchTaskAfter(KernelRunner *kernel_actor, const device::D
   // Get condition switch cond result, prepare for the next true/false branch
   if (IsPrimitiveCNode(cnode, prim::kPrimConditionSwitch)) {
     auto &cur_switch_info = switch_info_map_[kernel_actor];
-    bool is_true_branch = *kernel_actors_[cur_switch_info->start_true_idx]->GetEnablePtr();
+    auto true_branch_first_kernel_runner = kernel_actors_[cur_switch_info->start_true_idx];
+    MS_EXCEPTION_IF_NULL(true_branch_first_kernel_runner);
+    bool is_true_branch = *(true_branch_first_kernel_runner->GetEnablePtr());
     MS_VLOG(VL_REMOTE_MEM_INFO) << "Kernel cnode: " << cnode->DebugString() << " , " << is_true_branch;
     latest_switch_infos_.emplace_back(cur_switch_info);
     cur_switch_info->is_true_branch = is_true_branch;
     // If execute false branch, set horizon to skip true branch load
     if (!is_true_branch) {
-      mem_counted_cache_->SetHorizon(old_horizon_ + cur_switch_info->true_branch_node_nums);
+      mem_counted_cache_->SetHorizon(old_horizon_ + cur_switch_info->true_branch_node_num);
     }
   } else if (IsPrimitiveCNode(cnode, prim::kPrimConditionGather)) {
     latest_switch_infos_.pop_back();
@@ -406,9 +291,9 @@ void MemUseAnalyzer::LaunchTaskAfter(KernelRunner *kernel_actor, const device::D
     auto horizon_refresh_idx =
       std::max(latest_switch_info->start_true_idx, latest_switch_info->end_true_idx - old_horizon_ + 1);
     if (idx == horizon_refresh_idx) {
-      mem_counted_cache_->SetHorizon(old_horizon_ + latest_switch_info->false_branch_node_nums);
+      mem_counted_cache_->SetHorizon(old_horizon_ + latest_switch_info->false_branch_node_num);
       MS_VLOG(VL_REMOTE_MEM_INFO) << "Refresh idx: " << horizon_refresh_idx
-                                  << " , new: " << old_horizon_ + latest_switch_info->false_branch_node_nums;
+                                  << " , new: " << old_horizon_ + latest_switch_info->false_branch_node_num;
     }
   }
 

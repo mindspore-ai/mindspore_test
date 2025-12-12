@@ -22,6 +22,8 @@
 
 namespace mindspore {
 namespace runtime {
+constexpr auto kSwitchTrueBranchNum = "TrueBranchNodeNum";
+constexpr auto kSwitchFalseBranchNum = "FalseBranchNodeNum";
 enum RemoteMemEventType {
   kDeviceToHost,
   kHostToDevice,
@@ -42,28 +44,21 @@ struct RemoteAction {
       : event_type(type), kernel_tensor(std::move(tensor)), src_stream_id(src), dst_stream_id(dst) {}
 };
 
-struct ConditionSwitchInfo {
-  KernelRunnerPtr kernel_actor_ptr = nullptr;
-  bool *true_branch_enable_ptr = nullptr;
-  bool is_true_branch;
+struct ConditionSwitchBranchInfo {
+  CNodePtr switch_cnode = nullptr;
   size_t cur_idx;
-  size_t true_branch_node_nums;
-  size_t false_branch_node_nums;
+  size_t true_branch_node_num;
+  size_t false_branch_node_num;
   size_t start_true_idx;
   size_t end_true_idx;
   size_t start_false_idx;
   size_t end_false_idx;
+  bool is_true_branch;
 
-  ConditionSwitchInfo(KernelRunnerPtr kernel_actor, bool *true_branch_enable)
-      : kernel_actor_ptr(kernel_actor),
-        true_branch_enable_ptr(true_branch_enable),
-        cur_idx(0),
-        true_branch_node_nums(0),
-        false_branch_node_nums(0),
-        start_true_idx(0),
-        end_true_idx(0),
-        start_false_idx(0),
-        end_false_idx(0) {}
+  ConditionSwitchBranchInfo(const CNodePtr &switch_cnode, size_t cur_idx)
+      : switch_cnode(switch_cnode), cur_idx(cur_idx) {
+    RefreshNodeIdx();
+  }
 
   std::string ToString() const {
     std::ostringstream os;
@@ -73,10 +68,18 @@ struct ConditionSwitchInfo {
   }
 
   void RefreshNodeIdx() {
+    MS_EXCEPTION_IF_NULL(switch_cnode);
+    auto true_branch_node_num_value = switch_cnode->GetAttr(kSwitchTrueBranchNum);
+    auto false_branch_node_num_value = switch_cnode->GetAttr(kSwitchFalseBranchNum);
+    if (true_branch_node_num_value == nullptr || false_branch_node_num_value == nullptr) {
+      MS_LOG(EXCEPTION) << "Invalid switch node, need branch node num info: " << switch_cnode->DebugString();
+    }
+    true_branch_node_num = GetValue<size_t>(true_branch_node_num_value);
+    false_branch_node_num = GetValue<size_t>(false_branch_node_num_value);
     start_true_idx = cur_idx + 1;
-    end_true_idx = start_true_idx + true_branch_node_nums - 1;
+    end_true_idx = start_true_idx + true_branch_node_num - 1;
     start_false_idx = end_true_idx + 1;
-    end_false_idx = start_false_idx + false_branch_node_nums - 1;
+    end_false_idx = start_false_idx + false_branch_node_num - 1;
   }
 };
 
@@ -85,7 +88,7 @@ using RemoteActionPtrList = std::vector<RemoteActionPtr>;
 using KernelTensorPtrList = std::vector<kernel::KernelTensorPtr>;
 using KernelTensorPtrPair = std::pair<kernel::KernelTensorPtr, kernel::KernelTensorPtr>;
 using KernelTensorPtrPairList = std::vector<KernelTensorPtrPair>;
-using ConditionSwitchInfoPtr = std::shared_ptr<ConditionSwitchInfo>;
+using ConditionSwitchBranchInfoPtr = std::shared_ptr<ConditionSwitchBranchInfo>;
 
 }  // namespace runtime
 }  // namespace mindspore
