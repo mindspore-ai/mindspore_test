@@ -19,6 +19,7 @@ mindspore.Tensor.to
 
 
     .. py:method:: mindspore.Tensor.to(device=None, dtype=None, non_blocking=False, copy=False) -> Tensor
+        :noindex:
 
     将Tensor的设备和数据类型转换成指定的 `device` 和 `dtype` 。
 
@@ -35,6 +36,7 @@ mindspore.Tensor.to
         Tensor，其所在的设备为 `device` ，其数据类型为 `dtype` 。
 
     .. py:method:: mindspore.Tensor.to(other, non_blocking=False, copy=False) -> Tensor
+        :noindex:
 
     转换Tensor的设备和数据类型，转换后的Tensor和 `other` 保持相同的设备和数据类型。
 
