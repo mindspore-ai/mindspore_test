@@ -70,7 +70,7 @@ class Symbol:
         (8, 25, 9, 30, 30)
     """
 
-    def __init__(self, max=0, min=1, divisor=1, remainder=0, unique=False, **kawgs):
+    def __init__(self, max=0, min=1, divisor=1, remainder=0, unique=False, **kwargs):
         Symbol._check_args_type(max, min, divisor, remainder, unique)
         if min <= 0:
             raise ValueError("For 'Symbol', the 'min' value should be positive, but got {}".format(min))
@@ -105,8 +105,10 @@ class Symbol:
             raise TypeError(f"For 'Symbol', the argument 'unique' must be bool, but got {type(unique)}")
 
     def to_dict(self):
-        # Convert the symbolic info to dictionary.
-        # This method is not necessary to show in public api document, use comment instead of docstring.
+        """
+        Convert the symbolic info to dictionary.
+        This method is not necessary to show in public api document, use comment instead of docstring.
+        """
         res = {}
         if self.max > self.min:
             res["max"] = self.max
