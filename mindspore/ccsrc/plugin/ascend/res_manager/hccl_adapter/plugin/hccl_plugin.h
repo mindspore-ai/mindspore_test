@@ -75,4 +75,7 @@ ORIGIN_METHOD(HcclGetRankId, HcclResult, void *, uint32_t *);
 ORIGIN_METHOD(HcclGetRankSize, HcclResult, void *, uint32_t *);
 ORIGIN_METHOD(HcclGetCommName, HcclResult, HcclComm, char *)
 ORIGIN_METHOD(HcclCommWorkingDevNicSet, HcclResult, HcclComm, uint32_t *, bool *, uint32_t);
+// will be delete in future
+ORIGIN_METHOD(HcomExecInitialize, HcclResult);
+ORIGIN_METHOD(HcomExecFinalize, HcclResult);
 #endif  // MINDSPORE_RUNTIME_HCCL_ADAPTER_PLUGIN_HCCL_PLUGIN_H
