@@ -35,6 +35,7 @@ class JitConfig:
 
         exc_mode (str, optional): Control the execution mode of the model.
             Supports ["auto", "sink", "no_sink"]. Default: ``"auto"`` .
+            The specific implementation method is as follows:
 
             - ``"auto"``: The framework automatically selects the execution method.
             - ``"sink"``: Support the network to load and load the entire device at once, and then execute it by

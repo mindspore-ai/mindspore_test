@@ -2053,7 +2053,7 @@ class SoftmaxCrossEntropyWithLogits(Primitive):
         \end{array}
 
     where :math:`X` represents `logits`.
-    :math:`Y` represents `label`.
+    :math:`Y` represents `labels`.
     :math:`loss` represents `output`.
 
     Inputs:

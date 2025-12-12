@@ -2028,8 +2028,6 @@ class Mvlgamma(Primitive):
 
 class ScatterUpdate(Primitive):
     r"""
-    Updates tensor values by using input indices and value.
-
     Using given values to update tensor value, along with the input indices.
 
     for each `i, ..., j` in `indices.shape`:
@@ -2121,7 +2119,7 @@ class ScatterNdUpdate(Primitive):
           The shape is :math:`(N, *)` where :math:`*` means any number of additional dimensions.
         - **indices** (Tensor) - The index of input tensor, with int32 or int64 data type.
         - **updates** (Tensor) - N-D(2D or 3D) Tensor The tensor to be updated to the input tensor,
-          has the same type as input. The shape is `indices.shape[:-1] + x.shape[indices.shape[-1]:]`.
+          has the same type as input. The shape is `indices.shape[:-1] + input_x.shape[indices.shape[-1]:]`.
 
     Outputs:
         Tensor, has the same shape and type as `input_x`.
@@ -2199,8 +2197,8 @@ class ScatterMax(_ScatterOpDynamic):
 
     Raises:
         TypeError: If `use_locking` is not a bool.
-        TypeError: If `indices` is not an int32 or an int64.
-        ValueError: If the shape of `updates` is not equal to `indices.shape + x.shape[1:]`.
+        TypeError: If `indices` is not mindspore.int32 or mindspore.int64.
+        ValueError: If the shape of `updates` is not equal to `indices.shape + input_x.shape[1:]`.
         RuntimeError: If the data type of `input_x` and `updates` conversion is required when data type conversion
                       is not supported.
         RuntimeError: On the Ascend platform, the input data dimension of `input_x` , `indices`
@@ -2430,7 +2428,7 @@ class ScatterSub(Primitive):
         use_locking (bool, optional): Whether to protect the assignment by a lock. Default: ``False`` .
 
     Inputs:
-        - **input_x** (Union[Parameter, Tensor]) - The target tensor, with data type of Parameter or Tensor.
+        - **input_x** (Union[Parameter, Tensor]) - The target tensor.
           The shape is :math:`(N, *)` where :math:`*` means any number of additional dimensions.
         - **indices** (Tensor) - The index to do min operation whose data type must be mindspore.int32 or
           mindspore.int64.
@@ -2442,7 +2440,8 @@ class ScatterSub(Primitive):
 
     Raises:
         TypeError: If `use_locking` is not a bool.
-        TypeError: If `indices` is not an int32.
+        TypeError: If `indices` is not mindspore.int32 or
+            mindspore.int64.
         ValueError: If the shape of `updates` is not equal to `indices_shape + x_shape[1:]`.
         RuntimeError: If the data type of `input_x` and `updates` conversion is required when data type conversion
                       is not supported.
@@ -2766,7 +2765,7 @@ class ScatterNdAdd(Primitive):
         - **indices** (Tensor) - The index to do add operation whose data type must be mindspore.int32.
           The rank of indices must be at least 2 and `indices.shape[-1] <= len(shape)`.
         - **updates** (Tensor) - The tensor doing the add operation with `input_x`,
-          the data type is same as `input_x`, the shape is `indices.shape[:-1] + x.shape[indices.shape[-1]:]`.
+          the data type is same as `input_x`, the shape is `indices.shape[:-1] + input_x.shape[indices.shape[-1]:]`.
 
     Outputs:
         Tensor, the updated `input_x`, has the same shape and type as `input_x`.
@@ -2923,7 +2922,7 @@ class ScatterNdMul(_ScatterNdOp):
         - **indices** (Tensor) - The index to do mul operation whose data type must be int32 or int64.
           The rank of indices must be at least 2 and `indices.shape[-1] <= len(shape)`.
         - **updates** (Tensor) - The tensor to do the mul operation with `input_x`.
-          The data type is same as `input_x`, and the shape is `indices.shape[:-1] + x.shape[indices.shape[-1]:]`.
+          The data type is same as `input_x`, and the shape is `indices.shape[:-1] + input_x.shape[indices.shape[-1]:]`.
 
     Outputs:
         Tensor, the updated `input_x`, has the same shape and type as `input_x`.
@@ -2988,7 +2987,7 @@ class ScatterNdDiv(_ScatterNdOp):
         - **indices** (Tensor) - The index to do div operation whose data type must be int32 or int64.
           The rank of indices must be at least 2 and `indices.shape[-1] <= len(shape)`.
         - **updates** (Tensor) - The tensor to do the div operation with `input_x`.
-          The data type is same as `input_x`, and the shape is `indices.shape[:-1] + x.shape[indices.shape[-1]:]`.
+          The data type is same as `input_x`, and the shape is `indices.shape[:-1] + input_x.shape[indices.shape[-1]:]`.
 
     Outputs:
         Tensor, the updated `input_x`, has the same shape and type as `input_x`.
@@ -3053,7 +3052,7 @@ class ScatterNdMax(_ScatterNdOp):
         - **indices** (Tensor) - The index to do maximum operation whose data type must be int32 or int64.
           The rank of indices must be at least 2 and `indices.shape[-1] <= len(shape)`.
         - **updates** (Tensor) - The tensor to do the max operation with `input_x`.
-          The data type is same as `input_x`, and the shape is `indices.shape[:-1] + x.shape[indices.shape[-1]:]`.
+          The data type is same as `input_x`, and the shape is `indices.shape[:-1] + input_x.shape[indices.shape[-1]:]`.
 
     Outputs:
         Tensor, the updated `input_x`, has the same shape and type as `input_x`.
@@ -3178,7 +3177,7 @@ class SpaceToDepth(Primitive):
 
     The output tensor's `height` dimension is :math:`height / block\_size`.
 
-    The output tensor's `weight` dimension is :math:`weight / block\_size`.
+    The output tensor's `width` dimension is :math:`width / block\_size`.
 
     The depth of output tensor is :math:`block\_size * block\_size * input\_depth`.
 
