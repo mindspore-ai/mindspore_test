@@ -84,7 +84,9 @@ class MS_CORE_API DevicePointer {
 
   ~DevicePointer() {
     try {
-      if (ptr_ != nullptr && allocator_ && from_mem_pool_) {
+      if (map_allocator_) {
+        map_allocator_->Free(ptr_);
+      } else if (ptr_ != nullptr && allocator_ && from_mem_pool_) {
         allocator_->Free(ptr_);
       } else if (ptr_ != nullptr && deleter_) {
         deleter_(ptr_, from_mem_pool_);
@@ -123,9 +125,9 @@ class MS_CORE_API DevicePointer {
 
   void set_allocator(std::shared_ptr<AddressAllocator> allocator) { allocator_ = allocator; }
 
-  const std::shared_ptr<MapAllocator> &map_allocator() const { return map_allocator_; }
+  const std::unique_ptr<MapAllocator> &map_allocator() const { return map_allocator_; }
 
-  void set_map_allocator(std::shared_ptr<MapAllocator> map_allocator) { map_allocator_ = map_allocator; }
+  void set_map_allocator(std::unique_ptr<MapAllocator> &&map_allocator) { map_allocator_ = std::move(map_allocator); }
 
  private:
   void *ptr_{nullptr};
@@ -139,7 +141,7 @@ class MS_CORE_API DevicePointer {
   // The device address allocator that contains allocate memory and delete memory functions.
   std::shared_ptr<AddressAllocator> allocator_;
 
-  std::shared_ptr<MapAllocator> map_allocator_;
+  std::unique_ptr<MapAllocator> map_allocator_;
 };
 using DevicePointerPtr = std::shared_ptr<DevicePointer>;
 
@@ -243,11 +245,11 @@ class MS_CORE_API DeviceAddress {
   bool remote() const { return remote_; }
   void set_remote(bool remote) { remote_ = remote; }
 
-  void set_map_allocator(std::shared_ptr<MapAllocator> map_allocator) {
-    device_pointer_->set_map_allocator(map_allocator);
+  void set_map_allocator(std::unique_ptr<MapAllocator> &&map_allocator) {
+    device_pointer_->set_map_allocator(std::move(map_allocator));
   }
 
-  const std::shared_ptr<MapAllocator> &map_allocator() const { return device_pointer_->map_allocator(); }
+  const std::unique_ptr<MapAllocator> &map_allocator() const { return device_pointer_->map_allocator(); }
 
   void set_data(tensor::TensorDataPtr &&data);
   const tensor::TensorDataPtr &data() const;

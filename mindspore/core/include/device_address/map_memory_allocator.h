@@ -41,19 +41,19 @@ class MS_CORE_API MapAllocator {
  public:
   MapAllocator(const std::string &name, bool create, int fd, size_t size);
 
+  void *Alloc(size_t size);
+
+  bool Free(void *base_ptr_);
+
   const char *filename() const { return filename_.c_str(); }
 
   int fd() const { return fd_; }
 
   size_t size() const { return size_; }
 
-  virtual void *data() const { return base_ptr_; }
-
   int flags() const { return flags_; }
 
-  void close();
-
-  ~MapAllocator();
+  ~MapAllocator() = default;
 
  protected:
   std::string filename_;
@@ -62,8 +62,7 @@ class MS_CORE_API MapAllocator {
   size_t size_;
   bool closed_ = false;
   int flags_ = 0;
-  void *base_ptr_ = nullptr;
 };
-using MapAllocatorPtr = std::shared_ptr<MapAllocator>;
+using MapAllocatorPtr = std::unique_ptr<MapAllocator>;
 
 }  // namespace mindspore

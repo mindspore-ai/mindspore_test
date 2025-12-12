@@ -200,24 +200,24 @@ static PyObject *StoragePy_shareFd(PyObject *self, PyObject *noargs) {
     MS_LOG(INFO) << "StoragePy_shareFd map_allocator exist.";
   } else {
     std::string filename = NewShareMemoryHandle();
-    auto map_allocator_new = std::make_shared<MapAllocator>(filename, true, -1, nbytes);
+    auto map_allocator_new = std::make_unique<MapAllocator>(filename, true, -1, nbytes);
+    void *base_ptr_ = map_allocator_new->Alloc(nbytes);
     MS_LOG(INFO) << "StoragePy_shareFd type_id:" << type_id << ", nbytes:" << nbytes << ", filename:" << filename
-                 << ", original DataPtr:" << self_.DataPtr() << ", map_allocator.ptr:" << map_allocator_new->data();
+                 << ", original DataPtr:" << self_.DataPtr() << ", map_allocator ptr:" << base_ptr_;
     {
       // copy data to share memory may take long time, so release gil
       pybind11::gil_scoped_release release_gil;
       // H2H copy
-      auto memcpy_ret =
-        common::huge_memcpy(reinterpret_cast<uint8_t *>(map_allocator_new->data()), static_cast<size_t>(nbytes),
-                            reinterpret_cast<uint8_t *>(self_.DataPtr()), static_cast<size_t>(nbytes));
+      auto memcpy_ret = common::huge_memcpy(reinterpret_cast<uint8_t *>(base_ptr_), static_cast<size_t>(nbytes),
+                                            reinterpret_cast<uint8_t *>(self_.DataPtr()), static_cast<size_t>(nbytes));
       if (memcpy_ret != EOK) {
         MS_LOG(EXCEPTION) << "memcpy failed!";
       }
     }
-    auto device_address = DeviceAddressMaker(map_allocator_new->data(), type_id, shape_vector)
+    auto device_address = DeviceAddressMaker(base_ptr_, type_id, shape_vector)
                             .set_maker(GetDeviceAddressMaker(device::DeviceType::kCPU))
                             .make_device_address();
-    std::dynamic_pointer_cast<device::DeviceAddress>(device_address)->set_map_allocator(map_allocator_new);
+    std::dynamic_pointer_cast<device::DeviceAddress>(device_address)->set_map_allocator(std::move(map_allocator_new));
     self_.SetDevicePointer(std::dynamic_pointer_cast<device::DeviceAddress>(device_address)->device_pointer());
   }
   PyObject *tuple_ret = PyTuple_New(3);
@@ -260,11 +260,12 @@ static PyObject *StoragePy_newSharedFd(PyObject *_unused, PyObject *args) {
     return nullptr;
   }
 
-  auto map_allocator = std::make_shared<MapAllocator>("", false, fd, size);
-  auto device_address = DeviceAddressMaker(map_allocator->data(), type_id, shape_vec)
+  auto map_allocator = std::make_unique<MapAllocator>("", false, fd, size);
+  void *base_ptr_ = map_allocator->Alloc(size);
+  auto device_address = DeviceAddressMaker(base_ptr_, type_id, shape_vec)
                           .set_maker(GetDeviceAddressMaker(device::DeviceType::kCPU))
                           .make_device_address();
-  std::dynamic_pointer_cast<device::DeviceAddress>(device_address)->set_map_allocator(map_allocator);
+  std::dynamic_pointer_cast<device::DeviceAddress>(device_address)->set_map_allocator(std::move(map_allocator));
   auto storage_base = std::make_shared<StorageBase>(device_address, type_id);
   Storage storage = Storage(storage_base);
 
