@@ -46,8 +46,10 @@ class OpTemplateParser:
     def __init__(self, op_proto: OpProto):
         self.op_proto = op_proto
         self.arg_handler_template = Template(
+            "const auto arg_handler_input_${idx} = parse_args.arg_list_[${idx}];\n"
             "parse_args.arg_list_[${idx}] = "
             "pynative::${func_str}(\"${func_name}\", \"${op_arg_name}\", parse_args.arg_list_[${idx}]);\n"
+            "trace::PassNodeInArg(arg_handler_input_${idx}, parse_args.arg_list_[${idx}]);\n"
             "parse_args.src_types_[${idx}] = ops::OP_DTYPE::DT_BEGIN;\n"
             "parse_args.dst_types_[${idx}] = ${new_type};\n"
         )
@@ -58,6 +60,7 @@ class OpTemplateParser:
             "parse_args.arg_list_[${idx}] = "
             "pynative::${func_str}(\"${func_name}\", \"${op_arg_name}\", parse_args.arg_list_[${idx}]);\n"
             "if (arg_handler_input_${idx} != parse_args.arg_list_[${idx}]) {\n"
+            "  trace::PassNodeInArg(arg_handler_input_${idx}, parse_args.arg_list_[${idx}]);\n"
             "  parse_args.src_types_[${idx}] = ops::OP_DTYPE::DT_BEGIN;\n"
             "  parse_args.dst_types_[${idx}] = ${new_type};\n"
             "}\n"

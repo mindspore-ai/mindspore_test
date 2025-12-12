@@ -57,6 +57,10 @@ class TraceJitContext(JitContext):
         tr.get_instance().new_node(prim, (prim_res, file_names, linenos, False), *args)
         return prim_res
 
+    def pass_trace_node(self, origin_obj, new_obj):
+        """Pass node when the object of a input is modified"""
+        tr.get_instance().pass_node(origin_obj, new_obj)
+
     def prepare_op(self, prim_name, prim_res, *args):
         """Prepare op"""
         logger.debug(f'prim: {prim_name}, args: {args}, prim_res: {prim_res}')
@@ -265,7 +269,7 @@ def _jit_trace_begin(fn_name, *args, **kwargs):
         >>> out = tensor_add(x, y)
     """
     if "jit_config" in kwargs:
-        jit_config = kwargs["jit_config"]
+        jit_config = kwargs.get("jit_config")
     else:
         jit_config = JitConfig().jit_config_dict
     global _using_trace
@@ -280,7 +284,7 @@ def _jit_trace_begin(fn_name, *args, **kwargs):
         logger.debug(f'_jit_trace_begin, arg: {arg}, {type(arg)}')
 
     # Generate phase for compile pipeline.
-    key = _jit_executor.generate_arguments_key(None, args, dict(), False)
+    key = _jit_executor.generate_arguments_key(None, args, {}, False)
     from mindspore.common.api import _PyNativeExecutor
     phase = fn_name + '.' + str(key)
     if _PyNativeExecutor().requires_grad():
@@ -342,7 +346,7 @@ def _jit_trace_end(*output_args, **kwargs):
         >>> out = tensor_add(x, y)
     """
     if "jit_config" in kwargs:
-        jit_config = kwargs["jit_config"]
+        jit_config = kwargs.get("jit_config")
     else:
         jit_config = JitConfig().jit_config_dict
     if _trace_jit_context.compiled:

@@ -37,7 +37,7 @@ def test_trace_1():
     """
     class TraceNet(ms.nn.Cell):
         def __init__(self):
-            super(TraceNet, self).__init__()
+            super().__init__()
             self.x = ms.Tensor(1)
 
         @ms.jit(capture_mode="trace")
@@ -64,7 +64,7 @@ def test_trace_2():
     """
     class TraceNet(ms.nn.Cell):
         def __init__(self):
-            super(TraceNet, self).__init__()
+            super().__init__()
             self.x = ms.Tensor(1)
 
         @ms.jit(capture_mode="trace")
@@ -242,7 +242,7 @@ def test_trace_side_effect_1():
     """
     class TraceNet(ms.nn.Cell):
         def __init__(self):
-            super(TraceNet, self).__init__()
+            super().__init__()
             self.x = ms.Tensor(1)
 
         @ms.jit(capture_mode="trace")
@@ -396,7 +396,7 @@ def test_nested_trace_1():
 
     class Net(ms.nn.Cell):
         def __init__(self):
-            super(Net, self).__init__()
+            super().__init__()
             self.x = ms.Tensor(1)
 
         @ms.jit(capture_mode="ast")
@@ -434,7 +434,7 @@ def test_nested_trace_2():
 
     class Net(ms.nn.Cell):
         def __init__(self):
-            super(Net, self).__init__()
+            super().__init__()
             self.x = ms.Tensor(1)
 
         @ms.jit(capture_mode="ast")
@@ -468,7 +468,7 @@ def test_nested_trace_3():
 
     class Net(ms.nn.Cell):
         def __init__(self):
-            super(Net, self).__init__()
+            super().__init__()
             self.x = ms.Tensor(1)
 
         @ms.jit(capture_mode="ast")
@@ -503,7 +503,7 @@ def test_nested_trace_side_effect_1():
 
     class TraceNet(ms.nn.Cell):
         def __init__(self):
-            super(TraceNet, self).__init__()
+            super().__init__()
             self.x = ms.Tensor(1)
 
         @ms.jit(capture_mode="ast")
@@ -549,7 +549,7 @@ def test_nested_trace_4():
 
     class Net(ms.nn.Cell):
         def __init__(self):
-            super(Net, self).__init__()
+            super().__init__()
             self.x = ms.Tensor(1)
 
         @ms.jit(capture_mode="ast")
@@ -586,7 +586,7 @@ def test_nested_ast_1():
 
     class Net(ms.nn.Cell):
         def __init__(self):
-            super(Net, self).__init__()
+            super().__init__()
             self.x = ms.Tensor(1)
 
         @ms.jit(capture_mode="trace")
@@ -624,7 +624,7 @@ def test_nested_ast_2():
 
     class Net(ms.nn.Cell):
         def __init__(self):
-            super(Net, self).__init__()
+            super().__init__()
             self.x = ms.Tensor(1)
 
         @ms.jit(capture_mode="trace")
@@ -658,7 +658,7 @@ def test_nested_ast_3():
 
     class Net(ms.nn.Cell):
         def __init__(self):
-            super(Net, self).__init__()
+            super().__init__()
             self.x = ms.Tensor(1)
 
         @ms.jit(capture_mode="trace")
@@ -694,7 +694,7 @@ def test_nested_ast_4():
 
     class Net(ms.nn.Cell):
         def __init__(self):
-            super(Net, self).__init__()
+            super().__init__()
             self.x = ms.Tensor(1)
 
         @ms.jit(capture_mode="trace")
@@ -731,7 +731,7 @@ def test_double_trace():
 
     class Net(ms.nn.Cell):
         def __init__(self):
-            super(Net, self).__init__()
+            super().__init__()
             self.x = ms.Tensor(1)
 
         @ms.jit(capture_mode="trace")
@@ -768,7 +768,7 @@ def test_nested_trace_5():
 
     class Net(ms.nn.Cell):
         def __init__(self, net):
-            super(Net, self).__init__()
+            super().__init__()
             self.x = ms.Tensor(1)
             self.net = net
 
@@ -795,7 +795,7 @@ def test_trace_tensor_type():
     """
     class TraceNet(ms.nn.Cell):
         def __init__(self):
-            super(TraceNet, self).__init__()
+            super().__init__()
             self.x = ms.Tensor(1)
 
         @ms.jit(capture_mode="trace")
@@ -824,7 +824,7 @@ def test_nested_trace_6():
 
     class Net(ms.nn.Cell):
         def __init__(self):
-            super(Net, self).__init__()
+            super().__init__()
             self.x = ms.Tensor(1)
 
         @ms.jit(capture_mode="trace")
@@ -913,7 +913,7 @@ def test_trace_setitem():
     """
     class TraceNet(ms.nn.Cell):
         def __init__(self):
-            super(TraceNet, self).__init__()
+            super().__init__()
             self.x = ms.Tensor(1)
 
         @ms.jit(capture_mode="trace", backend="ms_backend")
@@ -942,7 +942,7 @@ def test_trace_ops_with_init_inputs():
     """
     class TraceNet(ms.nn.Cell):
         def __init__(self):
-            super(TraceNet, self).__init__()
+            super().__init__()
             self.x = ms.Tensor(1)
 
         @ms.jit(capture_mode="trace")
@@ -1017,7 +1017,7 @@ def test_nested_trace_with_kwargs():
 
     class Net(ms.nn.Cell):
         def __init__(self):
-            super(Net, self).__init__()
+            super().__init__()
             self.x = ms.Tensor(1)
 
         @ms.jit(capture_mode="ast")
@@ -1031,3 +1031,24 @@ def test_nested_trace_with_kwargs():
     res_trace = net(ms.Tensor(1), ms.Tensor(3), True)
     res_jit = net(ms.Tensor(1), ms.Tensor(3), False)
     assert res_trace == res_jit
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_trace_10():
+    """
+    Feature: JIT trace function
+    Description: JIT trace function with ops getting scalar tuple.
+    Expectation: No exception
+    """
+    def get_axis(x):
+        shape = ms.ops.shape(x)
+        length = ms.ops.tuple_len(shape)
+        perm = ms.ops.make_range(0, length)
+        return perm
+
+    @ms.jit(capture_mode="trace")
+    def func_trace(x):
+        x = ms.ops.ReduceMean()(x, get_axis(x))
+        return x
+    out_trace = func_trace(ms.Tensor([1.0, 2.0, 3.0]))
+    assert out_trace == 2

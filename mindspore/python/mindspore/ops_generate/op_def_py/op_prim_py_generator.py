@@ -19,8 +19,8 @@ Module for generating Python primitive operator definitions from specifications.
 import os
 
 import common.gen_constants as K
-import common.gen_utils as gen_utils
 import common.template_utils as template
+from common import gen_utils
 from common.op_proto import OpProto
 from common.template_utils import Template
 from pyboost import pyboost_utils
@@ -129,10 +129,10 @@ class OpPrimPyGenerator(BaseOpPrimPyGenerator):
             init_args_list_str += ", " + f"""{", ".join(init_args_with_default) if init_args_with_default else ""}"""
         init_code = "\n".join(args_assign)
         init_code = self._get_init_code(init_code, op_proto)
-        init_code_str += f"    @prim_arg_register\n"
+        init_code_str += "    @prim_arg_register\n"
         init_code_str += f"    def __init__(self{init_args_list_str}):\n"
         init_code_str += f"{init_code}\n"
-        init_code_str += f"\n"
+        init_code_str += "\n"
         return init_code_str
 
     def _get_call_method_body_str(self, args_handlers, init_args, inputs_args, inputs_default, op_proto: OpProto):
@@ -150,13 +150,16 @@ class OpPrimPyGenerator(BaseOpPrimPyGenerator):
             str: A string containing the body of the call method.
         """
         call_args_list_str = ""
+        replace_node_dict = {}
         if inputs_args:
             args_with_handler = []
             for arg in inputs_args:
                 if arg in args_handlers:
                     is_optional = inputs_default.get(arg) == "None"
-                    args_with_handler.append(
-                        _generate_arg_handler(op_proto.op_class.name, arg, args_handlers[arg], is_optional))
+                    new_arg = _generate_arg_handler(
+                        op_proto.op_class.name, arg, args_handlers[arg], is_optional)
+                    replace_node_dict.update({arg: new_arg})
+                    args_with_handler.append("new_generated_" + arg)
                 else:
                     args_with_handler.append(arg)
             call_args_list_str += ", ".join(args_with_handler)
@@ -166,11 +169,19 @@ class OpPrimPyGenerator(BaseOpPrimPyGenerator):
 
         call_method_body_str = ""
         is_pyboost = op_proto.op_dispatch and op_proto.op_dispatch.enable
-        if is_pyboost:
+        node_pass = ""
+        for name, inner in replace_node_dict.items():
             call_method_body_str += f"""
+        new_generated_{name} = {inner}"""
+            node_pass += f"""
+            jit_context().pass_trace_node({name}, new_generated_{name})"""
+        if is_pyboost:
+            call_method_body_str += """
         # Add for jit context.
-        if jit_context() and jit_context().compiled:
-            return jit_context().default_output()"""
+        if jit_context():
+            if jit_context().compiled:
+                return jit_context().default_output()"""
+            call_method_body_str += node_pass
             pyboost_func_name = pyboost_utils.get_pyboost_name(op_proto.op_name)
             call_method_body_str += f"""
         res = {pyboost_func_name}(self, [{call_args_list_str}])"""
@@ -180,6 +191,10 @@ class OpPrimPyGenerator(BaseOpPrimPyGenerator):
             return jit_context().run_op(self, res, {call_args_list_str})
         return res\n"""
         else:
+            if node_pass != "":
+                call_method_body_str += """
+        if jit_context():"""
+            call_method_body_str += node_pass
             call_method_body_str += f"""
         return super().__call__({call_args_list_str})\n"""
         return call_method_body_str
