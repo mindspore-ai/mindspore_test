@@ -79,7 +79,7 @@ const AnfNodePtr PromoteCastForMul::Process(const FuncGraphPtr &graph, const Anf
   }
 
   std::vector<AnfNodePtr> new_inputs = {cnode->input(0), new_in0, new_in1};
-  auto new_node = graph->NewCNode(new_inputs);
+  auto new_node = NewCNode(new_inputs, graph);
   MS_EXCEPTION_IF_NULL(new_node);
   new_node->set_abstract(node->abstract());
   new_node->set_scope(node->scope());

@@ -12,10 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+"""Test ops mul."""
 import pytest
 import numpy as np
 import mindspore as ms
-from mindspore import ops, context
+from mindspore import ops, context, nn
 from mindspore.mint import mul
 from tests.st.utils import test_utils
 from tests.st.ops.test_tools.test_op import TEST_OP
@@ -152,3 +153,63 @@ def test_ops_mul_dynamic_shape():
             [[ms.Tensor(x1), ms.Tensor(y1)], [ms.Tensor(x2), ms.Tensor(y2)]],
             disable_mode=["GRAPH_MODE_GE"],
             case_config={'all_dim_zero': True})
+
+
+class MulNetTensorTensor(nn.Cell):
+    def __init__(self):
+        super().__init__()
+        self.x = ms.Tensor([1, -1, 1, 2], dtype=ms.float32)
+        self.y = ms.Tensor([2, 1, 2, 2], dtype=ms.float32)
+
+    def construct(self):
+        return mul(self.x, self.y)
+
+
+class MulNetTensorScalar(nn.Cell):
+    def __init__(self):
+        super().__init__()
+        self.x = ms.Tensor([1, -1, 1, 2], dtype=ms.float32)
+
+    def construct(self):
+        return mul(self.x, 1)
+
+
+class MulNetScalarTensor(nn.Cell):
+    def __init__(self):
+        super().__init__()
+        self.x = ms.Tensor([1, -1, 1, 2], dtype=ms.float32)
+
+    def construct(self):
+        return mul(1, self.x)
+
+
+class MulNetScalarScalar(nn.Cell):
+    def construct(self):
+        return mul(2, 4)
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@pytest.mark.parametrize("mode", ["kbk"])
+def test_mul_infer_value(mode):
+    """
+    Feature: Mul for infer value
+    Description: test ops mul
+    Expectation: expect correct result.
+    """
+    set_mode(mode)
+
+    net1 = MulNetTensorTensor()
+    out1 = net1()
+    assert np.allclose(out1.asnumpy(), np.array([2, -1, 2, 4]), 0.0001, 0.0001)
+
+    net2 = MulNetTensorScalar()
+    out2 = net2()
+    assert np.allclose(out2.asnumpy(), np.array([1, -1, 1, 2]), 0.0001, 0.0001)
+
+    net3 = MulNetScalarTensor()
+    out3 = net3()
+    assert np.allclose(out3.asnumpy(), np.array([1, -1, 1, 2]), 0.0001, 0.0001)
+
+    net4 = MulNetScalarScalar()
+    out4 = net4()
+    assert out4.asnumpy() == 8

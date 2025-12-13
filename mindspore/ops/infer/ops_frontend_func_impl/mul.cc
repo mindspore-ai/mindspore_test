@@ -99,7 +99,8 @@ ValuePtr MulInferValue(const PrimitivePtr &primitive, const std::vector<Abstract
   auto type_id2 = x2_tensor->data_type();
   auto out_type_id = PromoteType(type_id1, type_id2, primitive->name());
 
-  auto result_tensor = std::make_shared<tensor::Tensor>(out_type_id, x1_shape);
+  auto out_shape = x1_shape.size() > x2_shape.size() ? x1_shape : x2_shape;
+  auto result_tensor = std::make_shared<tensor::Tensor>(out_type_id, out_shape);
 
 #define MUL_DISPATCH(IN_TYPE, IN_TYPE_C)                                            \
   case kNumberType##IN_TYPE: {                                                      \
