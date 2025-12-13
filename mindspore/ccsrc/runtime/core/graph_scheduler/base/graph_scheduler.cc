@@ -2453,7 +2453,11 @@ void GraphScheduler::LinkDataArrowForDeviceTensorStore(AbstractActor *const, Abs
       device_tensor_store_key = graph_output_to_actor_[front_node_with_index].second.first;
       if (AnfAlgo::ExistOutputKernelTensor(from_kernel, 0)) {
         auto kernel_tensor = AnfAlgo::GetOutputKernelTensor(from_kernel, 0, false);
-        if (kernel_tensor != nullptr) {
+        if (kernel_tensor != nullptr && device_tensor_store_key != nullptr &&
+            device_tensor_store_key->isa<ValueNode>()) {
+          const auto &value_node = device_tensor_store_key->cast<ValueNodePtr>();
+          MS_EXCEPTION_IF_NULL(value_node);
+          kernel_tensor->set_value(value_node->value());
           SchedulerHelper::AddDeviceTensorStore(graph_output_to_actor_[front_node_with_index].second.first,
                                                 kernel_tensor);
         }
@@ -3735,7 +3739,7 @@ void GraphScheduler::PersistDeviceTensorForParameter(const AnfNodePtr &parameter
   // If the device tensor store of this device type is not exist, then create the new device tensor of this type.
   if (DeviceTensorStore::GetInstance().Fetch(front_node.get(), device_context->GetDeviceType()) == nullptr) {
     MS_LOG(INFO) << "Fetch no device tensor store by:" << front_node->fullname_with_scope()
-                 << ", type:" << device_context->GetDeviceType();
+                 << " debug string:" << front_node->DebugString() << ", type:" << device_context->GetDeviceType();
 
     const auto &kernel_tensor = AnfAlgo::CreateOutputKernelTensorWithDeviceInfo(
       {parameter, 0}, nullptr, device_tensor->GetSize(), kernel::GetFormatFromEnumToStr(old_kernel_tensor->format()),
