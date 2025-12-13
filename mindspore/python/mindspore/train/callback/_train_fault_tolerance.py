@@ -154,7 +154,8 @@ def _tft_clean_callback(is_uce_error, args, ctx):
             ret = 1
     clean_tdt_channel()
     logger.warning("Enter _tft_clean_callback resume_hccl_comm")
-    CollectiveManager.get_instance().resume_hccl_comm()
+    if is_uce_error:
+        CollectiveManager.get_instance().resume_hccl_comm()
     logger.warning("Finish _tft_clean_callback, ret: {}".format(ret))
     if ctx.tft.tft_get_repair_type() == "recover":
         _reset_snapshot_state()
