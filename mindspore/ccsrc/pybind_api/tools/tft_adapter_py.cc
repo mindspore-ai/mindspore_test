@@ -358,5 +358,6 @@ void RegTFT(py::module *m) {
   (void)m->def("_get_snapshot_params", &mindspore::GetSnapshotParams, "Get parameters from snapshot");
   (void)m->def("tft_register_config", &RegisterConfig, "Register all configs.");
   (void)m->def("_reset_error_state", &ResetErrorState, "Reset error state of ErrorHandler.");
+  (void)m->def("_reset_opt_event_info", &mindspore::tools::TftResetOptimizerEventInfo, "Reset optimizer event info.");
 }
 }  // namespace mindspore

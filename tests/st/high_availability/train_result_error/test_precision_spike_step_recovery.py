@@ -119,7 +119,7 @@ def test_precision_spike_step_recovery_02() -> None:
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark="allcards", essential_mark='essential')
-def test_precision_spike_step_recovery_03() -> None:
+def test_precision_spike_step_recovery_pp() -> None:
     '''
     Feature: precision spike step recovery
     Description: Test precision spike step recovery with TRE enabled (TRE_SNAPSHOT_STEPS=1)

@@ -31,7 +31,7 @@ from mindspore._c_expression import _pre_launch_send_recv
 from mindspore._c_expression import send_recv, reset_params, direct_copy_to_host
 from mindspore._c_expression import _reg_snapshot_params, _reset_snapshot_state, _clear_snapshot_saving_flag
 from mindspore._c_expression import CollectiveManager
-from mindspore._c_expression import _get_uce_process_strategy, _get_uce_mem_info
+from mindspore._c_expression import _get_uce_process_strategy, _get_uce_mem_info, _reset_opt_event_info
 from mindspore.ops.operations.manually_defined._inner import TensorReport
 import mindspore
 import mindspore.common.dtype as mstype
@@ -42,7 +42,7 @@ from mindspore._c_expression import set_is_arf, check_is_arf
 def _get_ckpt_dir(step, ckpt_save_path, is_tmp_file):
     """ Common func to generate ckpt dir name."""
     tmp = "_tmp" if is_tmp_file else ""
-    mid_dir = f"tft_saved_checkpoints-step_{str(step)}{tmp}"
+    mid_dir = f"ttp_saved_checkpoints-step_{str(step)}{tmp}"
     return os.path.join(ckpt_save_path, mid_dir)
 
 
@@ -395,7 +395,7 @@ class TrainFaultTolerance(Callback):
             logger.warning("TFT handle init ok.")
         device_target = context.get_context("device_target")
         if device_target != "Ascend":
-            raise ValueError(f"MindIO adataper only support on Ascend device but got device {device_target}!")
+            raise ValueError(f"MindIO adapter only support on Ascend device but got device {device_target}!")
 
     def _is_params_consistent(self):
         for key, param in self.cb_params.train_network.parameters_and_names():
@@ -579,6 +579,7 @@ class TrainFaultTolerance(Callback):
         """
         cb_params = run_context.original_args()
         self.cb_params = cb_params
+        _reset_opt_event_info()
         if self._enable_snapshot():
             param_dict = {}
             for param in cb_params.train_network.trainable_params():
