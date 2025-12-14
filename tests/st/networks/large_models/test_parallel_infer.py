@@ -40,7 +40,7 @@ class TestInferParallel:
     def setup_method():
         ascend_home_path = os.getenv('ASCEND_HOME_PATH')
         if not ascend_home_path:
-            os.environ['ASCEND_HOME_PATH'] = "/usr/local/Ascend/latest"
+            os.environ['ASCEND_HOME_PATH'] = "/usr/local/Ascend/cann"
 
     def test_base_cases(self):
         """
