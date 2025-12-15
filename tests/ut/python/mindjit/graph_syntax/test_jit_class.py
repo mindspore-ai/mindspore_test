@@ -16,7 +16,8 @@
 import pytest
 import numpy as np
 
-import mindspore.nn as nn
+from mindspore import nn
+from mindspore.nn import Cell
 import mindspore.common.dtype as mstype
 from mindspore import Tensor, context, jit_class
 
@@ -36,7 +37,7 @@ def test_ms_class_attr():
 
     class Net(nn.Cell):
         def __init__(self):
-            super(Net, self).__init__()
+            super().__init__()
             self.inner_net = InnerNet()
 
         def construct(self):
@@ -61,7 +62,7 @@ def test_ms_class_input_attr():
 
     class Net(nn.Cell):
         def __init__(self, net):
-            super(Net, self).__init__()
+            super().__init__()
             self.inner_net = net()
 
         def construct(self):
@@ -90,7 +91,7 @@ def test_ms_class_input_method():
 
     class Net(nn.Cell):
         def __init__(self, net):
-            super(Net, self).__init__()
+            super().__init__()
             self.inner_net = net()
 
         def construct(self):
@@ -120,7 +121,7 @@ def test_ms_class_nested():
 
     class Net(nn.Cell):
         def __init__(self):
-            super(Net, self).__init__()
+            super().__init__()
             self.inner_net = InnerNet()
 
         def construct(self):
@@ -193,7 +194,7 @@ def test_ms_class_type_attr():
 
     class Net(nn.Cell):
         def __init__(self):
-            super(Net, self).__init__()
+            super().__init__()
             self.inner_net = InnerNet
 
         # Support accessing attributes of class type, but do not support
@@ -220,7 +221,7 @@ def test_ms_class_create_instance_attr():
 
     class Net(nn.Cell):
         def __init__(self):
-            super(Net, self).__init__()
+            super().__init__()
             self.inner_net = InnerNet
 
         def construct(self, x):
@@ -272,7 +273,7 @@ def test_with_as_exception():
     @jit_class
     class Sample():
         def __init__(self):
-            super(Sample, self).__init__()
+            super().__init__()
             self.num = Tensor([1])
 
         def __enter__(self):
@@ -302,3 +303,38 @@ def test_with_as_exception():
         print("res:", res)
         assert res == 10
     assert "The divisor could not be zero" in str(as_exception.value)
+
+
+def test_jit_class_func():
+    """
+    Feature: JIT Class
+    Description: jit_class can only be used for user-defined class.
+    Expectation: Expected error info.
+    """
+    with pytest.raises(TypeError) as raise_info:
+        @jit_class
+        def test(x):
+            return x + 1
+
+        test(1)
+
+    assert "jit_class can only be used for class type, but got" in str(raise_info.value)
+
+
+def test_jit_class_cell():
+    """
+    Feature: JIT Class
+    Description: jit_class can only be used for user-defined class.
+    Expectation: Expected error info.
+    """
+    with pytest.raises(TypeError) as raise_info:
+        @jit_class
+        class Net(Cell):
+            def func(self, x):
+                return x
+
+        a = Tensor([1, 2])
+        net = Net()
+        net(a)
+
+    assert "jit_class is used for user-defined classes and cannot be used for nn.Cell" in str(raise_info.value)

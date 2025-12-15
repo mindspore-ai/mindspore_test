@@ -38,7 +38,7 @@ def test_kwargs_has_side_effect():
 
     class KwargsTestNet(nn.Cell):
         def __init__(self):
-            super(KwargsTestNet, self).__init__()
+            super().__init__()
             self.param = Parameter(Tensor([1.0], ms.float32), name="para1")
             self.assign = P.Assign()
 
@@ -224,23 +224,6 @@ def test_parser_args_var_mixed_002():
 
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
-def test_parser_args_var_kwargs_name_loss():
-    """
-    Feature: Support the kwargs.
-    Description: Support the kwargs in  graph mode.
-    Expectation: No error.
-    """
-    class Net(nn.Cell):
-        def construct(self, *, b, c):
-            x = b + c
-            return x
-
-    net = Net()
-    with pytest.raises(TypeError):
-        net(Tensor([5, 5, 6]), c=2)
-
-
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_parser_args_var_kwargs_index_exception():
     """
     Feature: Support the kwargs.
@@ -300,3 +283,154 @@ def test_parser_args_var_kwargs_grad():
         assert out == (1, 1)
         out1 = grad_kwargs(Tensor(1), Tensor(2))
         assert all(out1 == Tensor([1, 1]))
+
+
+@jit
+def func1(x=0, y=0, z=0):
+    return x * 100 + y * 10 + z
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_jit_with_kwargs_input_1():
+    """
+    Feature: Support the kwargs.
+    Description: Use positional arguments for default parameters.
+    Expectation: Expect the correct output.
+    """
+    output = func1(1, 2, 3)
+
+    assert output == 123
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_jit_with_kwargs_input_2():
+    """
+    Feature: Support the kwargs.
+    Description: Use positional arguments for default parameters.
+                 Number of passed parameters is less than interface parameters.
+    Expectation: Expect the correct output.
+    """
+    output = func1(1, 2)
+
+    assert output == 120
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_jit_with_kwargs_input_6():
+    """
+    Feature: Support the kwargs.
+    Description: Mix positional and keyword arguments for default parameters.
+    Expectation: Expect the correct output.
+    """
+    output = func1(1, 2, z=3)
+
+    assert output == 123
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_jit_with_kwargs_input_7():
+    """
+    Feature: Support the kwargs.
+    Description: Use out-of-order keyword arguments for default parameters.
+    Expectation: Expect the correct output.
+    """
+    output = func1(x=1, z=3, y=2)
+
+    assert output == 123
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_jit_with_kwargs_input_8():
+    """
+    Feature: Support the kwargs.
+    Description: Use keyword arguments for default parameters. Mismatched parameter count.
+    Expectation: Expect the correct output.
+    """
+    output = func1(x=1, z=3)
+
+    assert output == 103
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_jit_with_kwargs_input_9():
+    """
+    Feature: Support the kwargs.
+    Description: Use keyword arguments for default parameters. Mismatched parameter count.
+    Expectation: Expect the correct output.
+    """
+    output = func1()
+
+    assert output == 0
+
+
+@jit
+def func2(x, y=0, z=0):
+    return x * 100 + y * 10 + z
+
+@jit
+def func3(*, x=0, y=0, z=0):
+    return x * 100 + y * 10 + z
+
+@jit
+def func4(x, *, y=0, z=0):
+    return x * 100 + y * 10 + z
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_jit_with_kwargs_input_14():
+    """
+    Feature: Support the kwargs.
+    Description: Use out-of-order keyword arguments for default parameters.
+    Expectation: Expect the correct output.
+    """
+    output = func2(1, z=3, y=2)
+
+    assert output == 123
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_jit_with_kwargs_input_15():
+    """
+    Feature: Support the kwargs.
+    Description: Use positional arguments for default parameters.
+    Expectation: Expect the correct output.
+    """
+    output = func2(1, 2, 3)
+
+    assert output == 123
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_jit_with_kwargs_input_16():
+    """
+    Feature: Support the kwargs.
+    Description: Use out-of-order keyword arguments for default parameters.
+    Expectation: Expect the correct output.
+    """
+    output = func2(x=1, z=3, y=2)
+
+    assert output == 123
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_jit_with_kwargs_input_19():
+    """
+    Feature: Support the kwargs.
+    Description: Use out-of-order keyword arguments for default parameters.
+    Expectation: Expect the correct output.
+    """
+    output = func3(x=1, z=3)
+
+    assert output == 103
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_jit_with_kwargs_input_20():
+    """
+    Feature: Support the kwargs.
+    Description: Use out-of-order keyword arguments for default parameters.
+    Expectation: Expect the correct output.
+    """
+    output = func4(x=1, z=3)
+
+    assert output == 103
