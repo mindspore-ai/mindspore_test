@@ -620,6 +620,9 @@ void ExecutionOrderOptimizeWithHierarchicalMemory(const KernelGraphPtr &kernel_g
 }
 
 void AdjustExecutionOrderForHierarchicalMemoryOps(const KernelGraphPtr &kernel_graph) {
+  if (common::GetEnv("MS_DEV_HIERARCHICAL_MEMORY") != "1") {
+    return;
+  }
   CNodePtrList new_execution_order{};
   CNodePtrList remain_h2d_nodes{};
   for (const auto node : kernel_graph->execution_order()) {
