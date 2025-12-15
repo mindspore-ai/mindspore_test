@@ -12,12 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+"""test roll."""
 import numpy as np
 import pytest
 import mindspore as ms
-import mindspore.ops as ops
+from mindspore import ops
 from mindspore import Tensor, mint
-import tests.st.utils.test_utils as test_utils
+from tests.st.utils import test_utils
 from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.mark_utils import arg_mark
 
@@ -45,7 +46,7 @@ def roll_backward_func(x, shifts, dims, grad):
     #return ops.grad(roll_forward_func, (0, 1, 2))(x, shifts, dims)
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level0',
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level1',
           card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize("mode", ["pynative", "KBK"])
 def test_ops_roll_normal(mode):
