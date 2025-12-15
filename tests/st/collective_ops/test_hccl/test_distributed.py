@@ -12,6 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+"""
+The tests of mindspore, used to test communication for mint.distributed.
+"""
 import numpy as np
 import pytest
 import hashlib
@@ -89,6 +92,7 @@ def test_reinit():
     """
     group0 = new_group(ranks=list(range(size)), backend="hccl")
     group1 = new_group(ranks=list(range(size)), backend="mccl")
+    group2 = None
     if rank == 0:
         group2 = new_group([0])
 
@@ -335,6 +339,51 @@ def test_hccl_all_reduce():
 
 
 @log_function_entry_exit
+def test_hccl_all_reduce_bool():
+    """
+    Feature: test distributed op
+    Description: test comm op in python native
+    Expectation: success
+    """
+    # bool type
+    except_ones = ms.Tensor([1, 1, 1], dtype=ms.bool_)
+    except_zeros = ms.Tensor([0, 0, 0], dtype=ms.bool_)
+
+    if rank == 0:
+        sum_input_tensor = ms.Tensor([1, 1, 1], dtype=ms.bool_)
+    else:
+        sum_input_tensor = ms.Tensor([0, 0, 0], dtype=ms.bool_)
+    sum_output_handle = all_reduce(sum_input_tensor, op=ReduceOp.SUM)
+    assert sum_output_handle is None
+
+    if rank == 0:
+        max_input_tensor = ms.Tensor([1, 1, 1], dtype=ms.bool_)
+    else:
+        max_input_tensor = ms.Tensor([0, 0, 0], dtype=ms.bool_)
+    max_output_handle = all_reduce(max_input_tensor, op=ReduceOp.MAX)
+    assert max_output_handle is None
+
+    if rank == 0:
+        min_input_tensor = ms.Tensor([1, 1, 1], dtype=ms.bool_)
+    else:
+        min_input_tensor = ms.Tensor([0, 0, 0], dtype=ms.bool_)
+    min_output_handle = all_reduce(min_input_tensor, op=ReduceOp.MIN)
+    assert min_output_handle is None
+
+    if rank == 0:
+        prod_input_tensor = ms.Tensor([1, 1, 1], dtype=ms.bool_)
+    else:
+        prod_input_tensor = ms.Tensor([0, 0, 0], dtype=ms.bool_)
+    prod_output_handle = all_reduce(prod_input_tensor, op=ReduceOp.PROD)
+    assert prod_output_handle is None
+
+    assert np.allclose(sum_input_tensor.asnumpy(), except_ones.asnumpy())
+    assert np.allclose(max_input_tensor.asnumpy(), except_ones.asnumpy())
+    assert np.allclose(min_input_tensor.asnumpy(), except_zeros.asnumpy())
+    assert np.allclose(prod_input_tensor.asnumpy(), except_zeros.asnumpy())
+
+
+@log_function_entry_exit
 def test_hccl_all_gather_into_tensor():
     """
     Feature: test distributed op
@@ -402,7 +451,7 @@ def test_hccl_all_gather_into_tensor_uneven():
     ## 同步场景多维tensor
     # rank0: [0, 0], rank1: [[1, 1], [1, 1]], rank2: [[2, 2], [2, 2], [2, 2]], rank3: [[3, 3], [3, 3], [3, 3], [3, 3]]...
     input_tensor = ms.Tensor(np.ones([rank + 1, 2]).astype(np.float32) * rank)
-    total_size = sum([r + 1 for r in range(size)])
+    total_size = sum(r + 1 for r in range(size))
     output_tensor = ms.Tensor(np.zeros([total_size, 2]).astype(np.float32))
     output_split_sizes = [r + 1 for r in range(size)]
     expected_output = np.concatenate(
@@ -417,7 +466,7 @@ def test_hccl_all_gather_into_tensor_uneven():
     # # rank0: [0], rank1: [1, 1], rank2: [2, 2, 2], rank3: [3, 3, 3, 3] ...
     input_tensor = ms.Tensor(np.ones([rank + 1]).astype(np.float32) * rank)
 
-    total_size = sum([r + 1 for r in range(size)])
+    total_size = sum(r + 1 for r in range(size))
     output_tensor = ms.Tensor(np.zeros([total_size]).astype(np.float32))
     output_split_sizes = [r + 1 for r in range(size)]
     expected_output = np.concatenate([np.ones([r + 1]) * r for r in range(size)])
