@@ -123,6 +123,13 @@
     :exclude-members: tft_register, on_train_step_begin
     :members:
 
+{% elif fullname=="mindspore.Symbol" %}
+{{ fullname | underline }}
+
+.. autoclass:: {{ name }}
+    :exclude-members: to_dict
+    :members:
+
 {% elif fullname=="mindspore.saved_tensors_hooks" %}
 {{ fullname | underline }}
 
