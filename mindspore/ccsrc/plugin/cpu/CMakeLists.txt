@@ -12,9 +12,7 @@ if(ENABLE_CPU)
     file(GLOB_RECURSE _CPU_SRC_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "*.cc")
     list(REMOVE_ITEM _CPU_SRC_LIST
         "res_manager/collective/mpi_collective_comm_lib.cc"
-        "res_manager/collective/mpi_communication_group.cc"
-        "profiler/cpu_profiling.cc"
-        "profiler/cpu_data_saver.cc")
+        "res_manager/collective/mpi_communication_group.cc")
     # Windows can not register MakeCPUDeviceAddress automatically.
     if(WIN32)
         list(REMOVE_ITEM _CPU_SRC_LIST "cpu_device_address_maker.cc")

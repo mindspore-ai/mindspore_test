@@ -37,7 +37,6 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/proto_compile_config.cmake)
 
 set(PROFILER_SUB_COMP
     tools/profiler
-    plugin/cpu/profiler
 )
 
 foreach(_comp ${PROFILER_SUB_COMP})
