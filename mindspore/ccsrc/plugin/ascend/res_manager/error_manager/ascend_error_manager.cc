@@ -198,6 +198,10 @@ bool TftProcessOptimizerEvent(const CNodePtr &kernel, KernelMod *kernel_mod, voi
 
 REGISTER_COMMON_CALLBACK(TftProcessOptimizerEvent);
 
+void ResetOptimizerEventInfo() { OptimizerEventInfo::GetInstance().Reset(); }
+
+REGISTER_COMMON_CALLBACK(ResetOptimizerEventInfo);
+
 void DestroySnapshotHelper() { SnapshotHelper::GetInstance().Clear(); }
 
 REGISTER_COMMON_CALLBACK(DestroySnapshotHelper);

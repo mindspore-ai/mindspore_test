@@ -173,6 +173,8 @@ class TOOLS_EXPORT SnapshotMgr {
 };
 
 using SnapshotMgrPtr = std::shared_ptr<SnapshotMgr>;
+
+TOOLS_EXPORT void TftResetOptimizerEventInfo();
 }  // namespace tools
 }  // namespace mindspore
 

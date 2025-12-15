@@ -1,3 +1,4 @@
+
 # Copyright 2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -174,7 +175,8 @@ class ModelTrainBase:
             loss = SoftmaxCrossEntropyWithLogits(reduction='mean')
         opt_fn = opt
         if opt_fn is None:
-            opt_fn = Momentum(learning_rate=0.01, momentum=0.9, params=network.get_parameters())
+            optimizer = TrainFaultTolerance.get_optimizer_wrapper(Momentum)
+            opt_fn = optimizer(learning_rate=0.01, momentum=0.9, params=network.get_parameters())
         model = Model(network=network, loss_fn=loss, optimizer=opt_fn, amp_level=amp_level,
                       metrics=metrics, loss_scale_manager=loss_scale_manager)
         return model

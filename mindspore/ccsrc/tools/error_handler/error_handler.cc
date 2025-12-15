@@ -542,5 +542,11 @@ REGISTER_POST_LAUNCH_CALLBACK(
   WatchDogPostLaunchKernel, WatchDogPostLaunchKernel, []() { return TftConfig::GetInstance()->IsEnableWatchdog(); },
   DeviceType::kAscend, 0);
 
+void TftResetOptimizerEventInfo() {
+  static auto reset_cb = GET_COMMON_CALLBACK(ResetOptimizerEventInfo, void);
+  if (reset_cb != nullptr) {
+    reset_cb();
+  }
+}
 }  // namespace tools
 }  // namespace mindspore
