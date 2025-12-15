@@ -33,7 +33,7 @@
 #include "include/pynative/utils/runtime/op_runtime_info.h"
 #include "include/pynative/utils/runtime/op_executor.h"
 #include "include/pynative/utils/runtime/op_compiler.h"
-#include "runtime/core/actors/base/actor_common.h"
+#include "backend/ms_backend/runtime/actors/base/actor_common.h"
 #include "include/backend/common/exec_order/kernel_cache.h"
 #include "include/runtime/memory/mem_pool/mem_tracker.h"
 #include "tools/profiler/profiling.h"

@@ -23,9 +23,9 @@
 #include "tools/visible.h"
 #include "include/backend/common/kernel_graph/kernel_graph.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_tensor.h"
-#include "runtime/core/actors/base/actor_common.h"
-#include "runtime/core/actors/base/actor_set.h"
-#include "runtime/core/graph_scheduler/base/graph_scheduler.h"
+#include "backend/ms_backend/runtime/actors/base/actor_common.h"
+#include "backend/ms_backend/runtime/actors/base/actor_set.h"
+#include "backend/ms_backend/runtime/graph_scheduler/base/graph_scheduler.h"
 #include "utils/ms_context.h"
 #include "ir/tensor.h"
 

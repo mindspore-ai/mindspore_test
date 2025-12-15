@@ -18,7 +18,7 @@
 #define MINDSPORE_ASCEND_CAPTURE_GRAPH_H
 
 #include "acl/acl_mdl.h"
-#include "runtime/core/graph_executor/kernel_capture/capture_graph.h"
+#include "backend/ms_backend/runtime/graph_executor/kernel_capture/capture_graph.h"
 
 namespace mindspore::device::ascend {
 

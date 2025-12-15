@@ -15,7 +15,7 @@
  */
 
 #include "tests/ut/cpp/common/device_common_test.h"
-#include "runtime/core/graph_scheduler/base/scheduler_helper.h"
+#include "backend/ms_backend/runtime/graph_scheduler/base/scheduler_helper.h"
 
 #include "primitive/comparison_ops.h"
 #include "primitive/framework_ops.h"

@@ -24,8 +24,8 @@
 #include "include/runtime/hardware_abstract/kernel_base/kernel_tensor.h"
 #include "include/utils/callback.h"
 #include "device_address/device_type.h"
-#include "runtime/core/actors/base/actor_common.h"
-#include "runtime/core/actors/base/actor_set.h"
+#include "backend/ms_backend/runtime/actors/base/actor_common.h"
+#include "backend/ms_backend/runtime/actors/base/actor_set.h"
 #include "utils/log_adapter.h"
 #include "utils/ms_exception.h"
 

@@ -33,7 +33,7 @@
 #include "include/runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "include/runtime/pipeline/pipeline.h"
 #include "pybind_api/pynative/tensor/mbuf_device_address.h"
-#include "include/runtime/core/graph_scheduler/base/move_to.h"
+#include "include/backend/ms_backend/runtime/graph_scheduler/base/move_to.h"
 #include "utils/value_utils.h"
 #include "device_address/device_address_maker.h"
 #include "ir/tensor_new.h"
