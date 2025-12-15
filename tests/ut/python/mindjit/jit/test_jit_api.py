@@ -12,10 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-
+"""Test jit api."""
 import os
 import shutil
 import glob
+import numpy as np
+import mindspore as ms
 from mindspore import dtype as mstype
 from mindspore import Tensor, ops, nn, jit
 from mindspore.common.api import _frontend_compile
@@ -48,7 +50,7 @@ def test_jit_ast_decorator_on_function():
 
     class AddNet(nn.Cell):
         def __init__(self):
-            super(AddNet, self).__init__()
+            super().__init__()
             self.add = ops.Add()
 
         @jit
@@ -72,7 +74,7 @@ def test_jit_ast_decorator_on_class():
     @jit
     class AddNet(nn.Cell):
         def __init__(self):
-            super(AddNet, self).__init__()
+            super().__init__()
             self.add = ops.Add()
 
         def construct(self, x, y):
@@ -95,7 +97,7 @@ def test_jit_bytecode_decorator_on_function():
 
     class AddNet(nn.Cell):
         def __init__(self):
-            super(AddNet, self).__init__()
+            super().__init__()
             self.add = ops.Add()
 
         @jit(capture_mode="bytecode")
@@ -119,7 +121,7 @@ def test_jit_bytecode_decorator_on_class():
     @jit(capture_mode="bytecode")
     class AddNet(nn.Cell):
         def __init__(self):
-            super(AddNet, self).__init__()
+            super().__init__()
             self.add = ops.Add()
 
         def construct(self, x, y):
@@ -142,7 +144,7 @@ def test_jit_trace_decorator_on_function():
 
     class AddNet(nn.Cell):
         def __init__(self):
-            super(AddNet, self).__init__()
+            super().__init__()
             self.add = ops.Add()
 
         @jit(capture_mode="trace")
@@ -166,7 +168,7 @@ def test_jit_trace_decorator_on_class():
     @jit(capture_mode="trace")
     class AddNet(nn.Cell):
         def __init__(self):
-            super(AddNet, self).__init__()
+            super().__init__()
             self.add = ops.Add()
 
         def construct(self, x, y):
@@ -188,7 +190,7 @@ def test_jit_ast_function_for_construct():
     """
     class AddNet(nn.Cell):
         def __init__(self):
-            super(AddNet, self).__init__()
+            super().__init__()
             self.add = ops.Add()
 
         def construct(self, x, y):
@@ -216,7 +218,7 @@ def test_jit_bytecode_function_for_construct():
     """
     class AddNet(nn.Cell):
         def __init__(self):
-            super(AddNet, self).__init__()
+            super().__init__()
             self.add = ops.Add()
 
         def construct(self, x, y):
@@ -247,7 +249,7 @@ def test_jit_trace_function_for_construct():
     """
     class AddNet(nn.Cell):
         def __init__(self):
-            super(AddNet, self).__init__()
+            super().__init__()
             self.add = ops.Add()
 
         def construct(self, x, y):
@@ -269,7 +271,7 @@ def test_jit_trace_function_for_construct():
 
 class Net(nn.Cell):
     def __init__(self):
-        super(Net, self).__init__()
+        super().__init__()
         self.add = ops.Add()
 
     def construct(self, x, y):
@@ -327,7 +329,7 @@ def test_jit_ast_function_for_cell_class():
     """
     class AddNet(nn.Cell):
         def __init__(self):
-            super(AddNet, self).__init__()
+            super().__init__()
             self.add = ops.Add()
 
         def construct(self, x, y):
@@ -349,15 +351,6 @@ def test_jit_bytecode_function_for_cell_class():
     Expectation: Success to create a callable MindSpore graph.
     """
 
-    class AddNet(nn.Cell):
-        def __init__(self):
-            super(AddNet, self).__init__()
-            self.add = ops.Add()
-
-        def construct(self, x, y):
-            out = self.add(x, y)
-            return out
-
     x = Tensor([[0.5, 0.6, 0.4], [1.2, 1.3, 1.1]], dtype=mstype.float32)
     y = Tensor([[0.01, 0.3, 1.1], [0.1, 0.2, 1.3]], dtype=mstype.float32)
     new_add_net = jit(Net, capture_mode="bytecode")
@@ -372,15 +365,6 @@ def test_jit_trace_function_for_cell_class():
     Description: Use the jit api as a function.
     Expectation: Success to create a callable MindSpore graph.
     """
-
-    class AddNet(nn.Cell):
-        def __init__(self):
-            super(AddNet, self).__init__()
-            self.add = ops.Add()
-
-        def construct(self, x, y):
-            out = self.add(x, y)
-            return out
 
     x = Tensor([[0.5, 0.6, 0.4], [1.2, 1.3, 1.1]], dtype=mstype.float32)
     y = Tensor([[0.01, 0.3, 1.1], [0.1, 0.2, 1.3]], dtype=mstype.float32)
@@ -444,3 +428,60 @@ def test_frontend_compile_function_for_cell_instance_twice_and_set_graph_name():
     jit_net2(x, y)
     glob_list = glob.glob(os.path.join(graph_save_path, '*_validate*.ir'))
     assert len(glob_list) == 2
+
+
+def test_jit_ast_on_inner_cell_in_outer_cell():
+    """
+    Feature: Use jit api to create a callable MindSpore graph.
+    Description: An inner nn.Cell is decorated with @jit(ast), while the outer Cell is not.
+    Expectation: Only the inner Cell is compiled into a graph; the outer remains not.
+    """
+    @jit(capture_mode="ast")
+    class InnerNet(nn.Cell):
+        def construct(self, x):
+            return x + x
+
+    class OutNet(nn.Cell):
+        def __init__(self):
+            super().__init__()
+            self.inner = InnerNet()
+
+        def construct(self, x):
+            out = self.inner(x)
+            return out
+
+    net_ms = OutNet()
+    np_input = np.random.randn(2, 3, 4, 5).astype(np.float32)
+    ms_input = ms.Tensor(np_input)
+    net_ms(ms_input)
+    assert glob.glob(os.path.join(graph_save_path, '*_validate*.ir'))
+
+
+def test_jit_mixed_capture_modes_ast_inner_bytecode_outer():
+    """
+    Feature: Use jit api to create a callable MindSpore graph.
+    Description: Inner Cell is decorated with @jit(capture_mode="ast"), and
+                 outer Cell's construct uses @jit(capture_mode="bytecode").
+    Expectation: Both Cells are compiled, each with its respective capture mode, and only one 'validate.ir' is created.
+    """
+    @jit(capture_mode="ast")
+    class InnerNet(nn.Cell):
+        def construct(self, x):
+            return x + x
+
+    class OutNet(nn.Cell):
+        def __init__(self):
+            super().__init__()
+            self.inner = InnerNet()
+
+        @jit(capture_mode="bytecode")
+        def construct(self, x):
+            x = x * x
+            out = self.inner(x)
+            return out
+
+    net_ms = OutNet()
+    np_input = np.random.randn(2, 3, 4, 5).astype(np.float32)
+    ms_input = ms.Tensor(np_input)
+    net_ms(ms_input)
+    assert glob.glob(os.path.join(graph_save_path, '*_validate*.ir'))

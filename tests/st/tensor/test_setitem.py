@@ -22,36 +22,11 @@ from tests.st.pi_jit.share.utils import get_code_extra, has_graph
 
 import mindspore as ms
 from mindspore import nn
-from mindspore import Tensor, ops
+from mindspore import Tensor, Parameter, ops
+from mindspore import dtype as mstype
 import torch
 import torch.nn as nn_pt
 
-
-class Net(nn.Cell):
-    """test setitem use net"""
-    def __init__(self, index, value):
-        super().__init__()
-        self.index = index
-        self.value = value
-        self.relu = nn.ReLU()
-
-    def construct(self, input_x):
-        input_x[self.index] = self.value
-        out = self.relu(input_x)
-        return out
-
-class NetPytorch1(nn_pt.Module):
-    """test setitem use net"""
-    def __init__(self, index, value):
-        super().__init__()
-        self.index = index
-        self.value = value
-        self.relu = nn_pt.ReLU()
-
-    def forward(self, input_x):
-        input_x[self.index] = self.value
-        out = self.relu(input_x)
-        return out
 
 @arg_mark(plat_marks=['platform_ascend910b'],
           level_mark='level0',
@@ -65,6 +40,34 @@ def test_tensor_fancy_index_set_item_032(mode):
     Expectation: success
     """
     ms.set_context(mode=mode, jit_config={"jit_level": "O0"})
+
+    class Net(nn.Cell):
+        """test setitem use net"""
+
+        def __init__(self, index, value):
+            super().__init__()
+            self.index = index
+            self.value = value
+            self.relu = nn.ReLU()
+
+        def construct(self, input_x):
+            input_x[self.index] = self.value
+            out = self.relu(input_x)
+            return out
+
+    class NetPytorch1(nn_pt.Module):
+        """test setitem use net"""
+
+        def __init__(self, index, value):
+            super().__init__()
+            self.index = index
+            self.value = value
+            self.relu = nn_pt.ReLU()
+
+        def forward(self, input_x):
+            input_x[self.index] = self.value
+            out = self.relu(input_x)
+            return out
 
     input_np = np.random.randn(2, 3, 4, 5).astype(np.float32)
     value_np = np.ones((2, 3, 4, 5), np.float32)
@@ -83,6 +86,7 @@ def test_tensor_fancy_index_set_item_032(mode):
 
     assert np.allclose(output_pt.numpy(), output_ms.asnumpy(), 0.001, 0.001)
 
+
 def assert_executed_by_graph_mode(func, x, index, value):
     jcr = get_code_extra(getattr(func, "__wrapped__", func))
     if jcr is not None:
@@ -100,7 +104,8 @@ def is_index_need_skip(index, skip_list):
         if isinstance(to_skip, Tensor):
             result = (index == to_skip).all()
         elif isinstance(to_skip, (tuple, list)):
-            result = all(check_index_same(index[i], to_skip[i]) for i in range(len(to_skip)))
+            result = all(check_index_same(
+                index[i], to_skip[i]) for i in range(len(to_skip)))
         else:
             result = index == to_skip
         return bool(result)
@@ -110,6 +115,7 @@ def is_index_need_skip(index, skip_list):
             return True
 
     return False
+
 
 def previous_setitem_check_indexing(x, index, value, np_expected, capture_mode=None):
     """previous setitem run and check"""
@@ -131,6 +137,7 @@ def previous_setitem_check_indexing(x, index, value, np_expected, capture_mode=N
     assert np.allclose(np_expected, ms_output.asnumpy()), f"ms_x: {x}, index: {index}, value: {value}, " \
                                                           f"expected:{np_expected} {np_expected.shape}, " \
                                                           f"ms_output:{ms_output} {ms_output.shape}"
+
 
 @arg_mark(
     plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'],
@@ -158,7 +165,7 @@ def test_previous_setitem_level0(capture_mode):
         np_x[index] = value
         previous_setitem_check_indexing(ms_x, index, value, np_x, capture_mode)
 
-    #Basic index with bool value
+    # Basic index with bool value
     np_x = np.arange(2*3*4).reshape(2, 3, 4)
     ms_x = Tensor(np_x)
     index = slice(0, 1)
@@ -166,7 +173,7 @@ def test_previous_setitem_level0(capture_mode):
     np_x[index] = value
     previous_setitem_check_indexing(ms_x, index, value, np_x, capture_mode)
 
-    #Basic index with bool value
+    # Basic index with bool value
     np_x = np.array([False, True])
     ms_x = Tensor(np_x)
     index = 0
@@ -181,6 +188,7 @@ def test_previous_setitem_level0(capture_mode):
     value = -1.0
     np_x[index] = value
     previous_setitem_check_indexing(ms_x, index, value, np_x, capture_mode)
+
 
 @arg_mark(
     plat_marks=['cpu_linux'],
@@ -205,7 +213,8 @@ def test_previous_setitem_level1(capture_mode):
     np_expected = np.array([[[0, 1, 2, 3], [4, 5, 6, 7], [8, 9, 10, 11]],
                             [[-1, -1, -1, -1], [-1, -1, -1, -1], [-1, -1, -1, -1]]])
     value = -1
-    previous_setitem_check_indexing(ms_x, index, value, np_expected, capture_mode)
+    previous_setitem_check_indexing(
+        ms_x, index, value, np_expected, capture_mode)
 
     # Tensor index with bool
     index = Tensor([[True], [True]])
@@ -214,7 +223,8 @@ def test_previous_setitem_level1(capture_mode):
     np_expected = np.array([[[-1, -1, -1, -1], [-1, -1, -1, -1], [-1, -1, -1, -1]],
                             [[-1, -1, -1, -1], [-1, -1, -1, -1], [-1, -1, -1, -1]]])
     value = -1
-    previous_setitem_check_indexing(ms_x, index, value, np_expected, capture_mode)
+    previous_setitem_check_indexing(
+        ms_x, index, value, np_expected, capture_mode)
 
     # Slice index with value is list
     index = slice(0, 2)
@@ -223,7 +233,8 @@ def test_previous_setitem_level1(capture_mode):
     np_expected = np.array([[[-1, -1, -1, -1], [-1, -1, -1, -1], [-1, -1, -1, -1]],
                             [[-1, -1, -1, -1], [-1, -1, -1, -1], [-1, -1, -1, -1]]])
     value = [-1]
-    previous_setitem_check_indexing(ms_x, index, value, np_expected, capture_mode)
+    previous_setitem_check_indexing(
+        ms_x, index, value, np_expected, capture_mode)
 
     # Slice index with invalid start stop and step
     index = slice(0, 2, -1)
@@ -246,18 +257,23 @@ def test_previous_setitem_level1(capture_mode):
     np_expected = np.array([[[-1, -1, -1, -1], [-1, -1, -1, -1], [-1, -1, -1, -1]],
                             [[12, 13, 14, 15], [16, 17, 18, 19], [20, 21, 22, 23]]])
     value = -1
-    previous_setitem_check_indexing(ms_x, index, value, np_expected, capture_mode)
+    previous_setitem_check_indexing(
+        ms_x, index, value, np_expected, capture_mode)
+
 
 class NetSetitemCpu(nn.Cell):
     """test setitem use net"""
+
     def __init__(self, index, value):
         super().__init__()
         self.index = index
         self.value = value
+
     def construct(self, x):
         x = ops.abs(x)
         x[self.index] = self.value
         return x
+
 
 def previous_setitem_check_grad(x, index, value, np_expected, capture_mode=None):
     """setitem run and check"""
@@ -278,6 +294,8 @@ def previous_setitem_check_grad(x, index, value, np_expected, capture_mode=None)
     assert np.allclose(np_expected, ms_grad.asnumpy()), f"ms_x: {x}, index: {index}, value: {value}, " \
                                                         f"expected:{np_expected} {np_expected.shape}, " \
                                                         f"ms_grad:{ms_grad} {ms_grad.shape}"
+
+
 @arg_mark(
     plat_marks=['cpu_linux'],
     level_mark='level0',
@@ -297,6 +315,7 @@ def test_previous_setitem_with_grad_on_cpu(capture_mode):
     ms_x = Tensor(np.arange(2 * 3 * 4).reshape((2, 3, 4)).astype(np.float32))
     value = -1
     previous_setitem_check_grad(ms_x, index, value, np_expected)
+
 
 @arg_mark(
     plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'],
@@ -366,6 +385,7 @@ def test_previous_setitem_exception_index_error_without_centos(mode, capture_mod
             ms_x[([0, 2])] = -1
         else:
             _ = func_tuple_index_dim_out_data_dim(ms_x)
+
 
 @arg_mark(
     plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'],
@@ -465,7 +485,8 @@ def test_setitem(capture_mode):
         os.environ["MS_DEV_TENSOR_INDEX_BOOST"] = '1'
 
     # Basic index
-    basic_indices = [0, slice(0, 1), True, False, None, ..., (0, 2, ...), [0, 1]]
+    basic_indices = [0, slice(0, 1), True, False,
+                     None, ..., (0, 2, ...), [0, 1]]
     for index in basic_indices:
         np_x = np.arange(2*3*4).reshape(2, 3, 4)
         ms_x = Tensor(np_x)
@@ -473,7 +494,7 @@ def test_setitem(capture_mode):
         np_x[index] = value
         setitem_check_indexing(ms_x, index, value, np_x, capture_mode)
 
-    #Basic index with bool value
+    # Basic index with bool value
     np_x = np.arange(2*3*4).reshape(2, 3, 4)
     ms_x = Tensor(np_x)
     index = slice(0, 1)
@@ -481,7 +502,7 @@ def test_setitem(capture_mode):
     np_x[index] = value
     setitem_check_indexing(ms_x, index, value, np_x, capture_mode)
 
-    #Basic index with bool value
+    # Basic index with bool value
     np_x = np.array([False, True])
     ms_x = Tensor(np_x)
     index = 0
@@ -508,7 +529,8 @@ def test_setitem(capture_mode):
 
     # Numpy index
     if capture_mode is None:
-        numpy_indices = [np.array(0), np.array(True), np.array(False), (np.array(0), np.array(1)), np.array([0, 1])]
+        numpy_indices = [np.array(0), np.array(True), np.array(
+            False), (np.array(0), np.array(1)), np.array([0, 1])]
         for index in numpy_indices:
             np_x = np.arange(2*3*4).reshape(2, 3, 4)
             ms_x = Tensor(np_x)
@@ -604,6 +626,7 @@ def setitem_check_indexing_without_jit(x, index, value, np_expected, capture_mod
                                                           f"expected:{np_expected} {np_expected.shape}, " \
                                                           f"ms_output:{ms_output} {ms_output.shape}"
 
+
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('capture_mode', [None])
 def test_slice_tensor_index_setitem_without_jit(capture_mode):
@@ -625,7 +648,8 @@ def test_slice_tensor_index_setitem_without_jit(capture_mode):
         step = Tensor(1, dtype=dtype)
         slice_index = slice(start, end, step)
         value = -1
-        setitem_check_indexing_without_jit(ms_x, slice_index, value, np_expected, capture_mode)
+        setitem_check_indexing_without_jit(
+            ms_x, slice_index, value, np_expected, capture_mode)
 
 
 def setitem_check_iadd_indexing(x, index, value, np_expected, capture_mode=None):
@@ -649,6 +673,7 @@ def setitem_check_iadd_indexing(x, index, value, np_expected, capture_mode=None)
                                                           f"expected:{np_expected} {np_expected.shape}, " \
                                                           f"ms_output:{ms_output} {ms_output.shape}"
 
+
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('capture_mode', [None, 'ast'])
 def test_setitem_with_iadd(capture_mode):
@@ -662,7 +687,8 @@ def test_setitem_with_iadd(capture_mode):
         os.environ["MS_DEV_TENSOR_INDEX_BOOST"] = '1'
 
     # Basic index
-    basic_indices = [0, slice(0, 1), True, False, None, ..., (0, slice(0, 2), True), (slice(0, 2), None, ...), [0, 1]]
+    basic_indices = [0, slice(0, 1), True, False, None, ..., (0, slice(
+        0, 2), True), (slice(0, 2), None, ...), [0, 1]]
     for index in basic_indices:
         np_x = np.arange(2*3*4).reshape(2, 3, 4)
         ms_x = Tensor(np_x)
@@ -677,7 +703,8 @@ def test_setitem_with_iadd(capture_mode):
     value = -1
     np_expected = np.array([[[-1, 0, 1, 2], [3, 4, 5, 6], [7, 8, 9, 10]],
                             [[12, 13, 14, 15], [16, 17, 18, 19], [20, 21, 22, 23]]])
-    setitem_check_iadd_indexing(ms_x, tuple_index, value, np_expected, capture_mode)
+    setitem_check_iadd_indexing(
+        ms_x, tuple_index, value, np_expected, capture_mode)
 
     # Fancy index
     fancy_indices = [([0, 1], [0, 1]),
@@ -725,11 +752,13 @@ def test_setitem_with_iadd(capture_mode):
     for index, np_expected in zip(fancy_indices, np_expecteds):
         ms_x = Tensor(np.arange(2*3*4).reshape(2, 3, 4))
         value = -1
-        setitem_check_iadd_indexing(ms_x, index, value, np_expected, capture_mode)
+        setitem_check_iadd_indexing(
+            ms_x, index, value, np_expected, capture_mode)
 
 
 class NetSetitem(nn.Cell):
     """test setitem use net"""
+
     def __init__(self, index, value):
         super().__init__()
         self.index = index
@@ -791,11 +820,12 @@ def test_setitem_grad(capture_mode):
                     np.array([[[0., 0., 0., 0.,], [0., 0., 0., 0.,], [0., 0., 0., 0.,]],
                               [[0., 0., 0., 0.,], [0., 0., 0., 0.,], [0., 0., 0., 0.,]]])]
     for index, np_expected in zip(base_indices, np_expecteds):
-        ms_x = Tensor(np.arange(2 * 3 * 4).reshape((2, 3, 4)).astype(np.float32))
+        ms_x = Tensor(
+            np.arange(2 * 3 * 4).reshape((2, 3, 4)).astype(np.float32))
         value = -1
         setitem_check_grad(ms_x, index, value, np_expected, capture_mode)
 
-    #Basic index with bool value
+    # Basic index with bool value
     ms_x = Tensor(np.arange(2 * 3 * 4).reshape((2, 3, 4)).astype(np.float32))
     index = slice(0, 1)
     value = False
@@ -820,7 +850,8 @@ def test_setitem_grad(capture_mode):
     setitem_check_grad(ms_x, index, value, np_expected, capture_mode)
 
     # Tensor index
-    tensor_indices = [Tensor(0), Tensor(True), Tensor(False), slice(Tensor(0), Tensor(2)), Tensor([0, 1])]
+    tensor_indices = [Tensor(0), Tensor(True), Tensor(
+        False), slice(Tensor(0), Tensor(2)), Tensor([0, 1])]
     value = -1
     np_expecteds = [np.array([[[0., 0., 0., 0.,], [0., 0., 0., 0.,], [0., 0., 0., 0.,]],
                               [[1., 1., 1., 1.,], [1., 1., 1., 1.,], [1., 1., 1., 1.,]]]),
@@ -899,6 +930,7 @@ def test_setitem_grad(capture_mode):
 
 class NetSetitemIadd(nn.Cell):
     """test setitem use self-add net"""
+
     def __init__(self, index, value):
         super().__init__()
         self.index = index
@@ -990,6 +1022,7 @@ def test_setitem_grad_with_iadd(capture_mode, index):
 
 class NetSetitemImul(nn.Cell):
     """test setitem use self-mul net"""
+
     def __init__(self, index, value):
         super().__init__()
         self.index = index
@@ -1038,7 +1071,8 @@ def test_setitem_grad_with_imul(capture_mode):
     np_expected = np.array([[[0., 3., 3., 3.], [3., 3., 3., 3.], [3., 3., 3., 3.]],
                             [[3., 3., 3., 3.], [3., 3., 3., 3.], [3., 3., 3., 3.]]])
     for index in iadd_indices:
-        ms_x = Tensor(np.arange(2 * 3 * 4).reshape((2, 3, 4)).astype(np.float32))
+        ms_x = Tensor(
+            np.arange(2 * 3 * 4).reshape((2, 3, 4)).astype(np.float32))
         value = 3
         setitem_check_imul_grad(ms_x, index, value, np_expected, capture_mode)
 
@@ -1110,7 +1144,8 @@ def test_setitem_exception(mode, capture_mode):
             ms_x[0] = (1, 2, 3)
         else:
             _ = func5(ms_x)
-    assert "the type of value can only be bool, int, float or Tensor." in str(exc.value)
+    assert "the type of value can only be bool, int, float or Tensor." in str(
+        exc.value)
 
     @ms.jit(capture_mode=capture_mode, jit_level="O0", backend="ms_backend")
     def func6(x):
@@ -1121,7 +1156,8 @@ def test_setitem_exception(mode, capture_mode):
             ms_x[0] = [1, 2, 3]
         else:
             _ = func6(ms_x)
-    assert "the type of value can only be bool, int, float or Tensor." in str(exc.value)
+    assert "the type of value can only be bool, int, float or Tensor." in str(
+        exc.value)
 
     @ms.jit(capture_mode=capture_mode, jit_level="O0", backend="ms_backend")
     def func7(x):
@@ -1148,15 +1184,16 @@ def test_setitem_exception(mode, capture_mode):
 
     @ms.jit(capture_mode=capture_mode, jit_level="O0", backend="ms_backend")
     def func9(x):
-        x[Tensor(1.4), :, : ] = -1
+        x[Tensor(1.4), :, :] = -1
         return x
     ms_x = Tensor(np_x)
     with pytest.raises(TypeError) as exc:
         if mode == ms.PYNATIVE_MODE:
-            ms_x[Tensor(1.4), :, : ] = -1
+            ms_x[Tensor(1.4), :, :] = -1
         else:
             _ = func9(ms_x)
-    assert "For 'InplaceIndexPut', tensors used as indices must be long, int, uint8, or bool tensors" in str(exc.value)
+    assert "For 'InplaceIndexPut', tensors used as indices must be long, int, uint8, or bool tensors" in str(
+        exc.value)
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
@@ -1171,6 +1208,7 @@ def test_setitem_exception_without_jit_ast(mode, capture_mode):
     os.environ["MS_DEV_TENSOR_INDEX_BOOST"] = '1'
 
     np_x = np.arange(2 * 3 * 4).reshape((2, 3, 4)).astype(np.float32)
+
     @ms.jit(capture_mode=capture_mode, jit_level="O0", backend="ms_backend")
     def func_tensor_as_slice_index_dim_out_1(x):
         s = Tensor([0, 1])
@@ -1208,6 +1246,7 @@ def test_setitem_exception_without_jit_ast(mode, capture_mode):
         else:
             _ = func_slice_with_float_index(ms_x)
     assert "slice indices must be integers or None or Tensor" in str(exc.value)
+
 
 class IndexDynamicShapeNet(nn.Cell):
     def construct(self, x, index, value):
@@ -1248,9 +1287,12 @@ def test_setitem_index_dynamic_shape_test(capture_mode, x_shape, index_shape, va
     ms_x = Tensor(np.arange(3 * 3 * 3).reshape((3, 3, 3)).astype(np.float32))
     index = Tensor([[0, 1], [0, 1]])
     value = Tensor(-1, ms.float32)
-    x_dyn = Tensor(shape=x_shape, dtype=ms.float32) if None in x_shape else ms_x
-    index_dyn = Tensor(shape=index_shape, dtype=ms.int64) if None in index_shape else index
-    value_dyn = Tensor(shape=value_shape, dtype=ms.float32) if None in value_shape else value
+    x_dyn = Tensor(
+        shape=x_shape, dtype=ms.float32) if None in x_shape else ms_x
+    index_dyn = Tensor(shape=index_shape,
+                       dtype=ms.int64) if None in index_shape else index
+    value_dyn = Tensor(shape=value_shape,
+                       dtype=ms.float32) if None in value_shape else value
     net.set_inputs(x_dyn, index_dyn, value_dyn)
 
     ms_result = func(net, ms_x, index, value)
@@ -1311,7 +1353,6 @@ def test_setitem_index_dynamic_rank_test(capture_mode):
     ms_grad = grad_func(net, ms_x, index1, index2, cond, value)
     assert np.allclose(pt_grad, ms_grad.asnumpy()), f"pt_grad: {pt_grad}, " \
                                                     f"ms_grad: {ms_grad.asnumpy()}"
-
 
 
 class IndexDynamicRank2Net(nn.Cell):
@@ -1386,7 +1427,8 @@ def test_setitem_with_mul(mode):
     net = NetWithIndexAndMul()
     ms_y = net(ms_x)
     np_expect = np.array([[0, 0], [2, 0]])
-    assert np.allclose(np_expect, ms_y.asnumpy()), f"np_expect:{np_expect}, ms_y:{ms_y}"
+    assert np.allclose(np_expect, ms_y.asnumpy()
+                       ), f"np_expect:{np_expect}, ms_y:{ms_y}"
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
@@ -1402,7 +1444,8 @@ def test_setitem_graph_mode(mode):
     ms_x = Tensor(np_x)
     ms_x[0] = -1
     np_expect = np.array([[-1, -1, -1], [3, 4, 5]]).astype(np.float32)
-    assert np.allclose(np_expect, ms_x.asnumpy()), f"np_expect:{np_expect}, ms_x:{ms_x}"
+    assert np.allclose(np_expect, ms_x.asnumpy()
+                       ), f"np_expect:{np_expect}, ms_x:{ms_x}"
 
 
 class NetIndexBool(nn.Cell):
@@ -1474,3 +1517,279 @@ def test_setitem_repeatly():
     assert np.allclose(np.array([True, True]), x.asnumpy())
     x[1] = False
     assert np.allclose(np.array([True, False]), x.asnumpy())
+
+
+def no_jit(x, *args, **kwargs):
+    return x
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@pytest.mark.parametrize("mode", [no_jit, ms.jit])
+def test_setitem_nested_list_as_value_false(mode):
+    """
+    Feature: tensor setitem.
+    Description: Assigning a nested list as value in tensor setitem should be rejected.
+    Expectation: TypeError in no-JIT; ValueError in JIT.
+    """
+    def get_ms_net():
+        input_x = Parameter(
+            Tensor(np.arange(120).reshape(2, 3, 4, 5).astype(np.float32)))
+        b = Tensor(np.array([1]))
+
+        def net():
+            input_x[1, b, [False, True, False, False], (2, ), True] = [[2.0]]
+            out = ops.relu(input_x)
+            return out
+        return net
+
+    net = get_ms_net()
+    if mode is ms.jit:
+        with pytest.raises(ValueError):
+            mode(net)()
+    else:
+        with pytest.raises(TypeError, match="the type of value can only be bool, int, float or Tensor"):
+            mode(net)()
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@pytest.mark.parametrize("mode", [no_jit, ms.jit])
+def test_setitem_nested_tuple_as_value_false(mode):
+    """
+    Feature: tensor setitem.
+    Description: Assigning a nested tuple containing mixed scalars as value is unsupported.
+    Expectation: TypeError in no-JIT; ValueError in JIT.
+    """
+    def get_ms_net():
+        b = Tensor(np.array([1]))
+
+        def net(input_x):
+            input_x[1, b, [False, True, False, False],
+                    (2, ), True] = ((2.0, ), 3.0)
+            out = ops.ReLU()(input_x)
+            return out
+        return net
+
+    input_np = np.random.randn(2, 3, 4, 5).astype(np.float32)
+    input_me = Tensor(input_np)
+    net = get_ms_net()
+    if mode is ms.jit:
+        with pytest.raises(ValueError):
+            mode(net)(input_me)
+    else:
+        with pytest.raises(TypeError, match="the type of value can only be bool, int, float or Tensor"):
+            mode(net)(input_me)
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+def test_setitem_nested_list_as_value_ok():
+    """
+    Feature: tensor setitem.
+    Description: Assigning a correctly shaped list as value works and matches PyTorch.
+    Expectation: Forward and gradient outputs match PyTorch result.
+    """
+    def get_ms_net():
+        input_x = Parameter(
+            Tensor(np.arange(120).reshape(2, 3, 4, 5).astype(np.float32)))
+        b = Tensor(np.array([1, 0]))
+
+        def net(input_y):
+            input_x[None, True, b, (False, True, True), [2], 4] = [[2.0, 3.0]]
+            input_z = input_x + input_y
+            out = ops.relu(input_z)
+            return out
+
+        return net
+
+    class NetPytorch1(torch.nn.Module):
+        def __init__(self):
+            super().__init__()
+            self.input_x = torch.from_numpy(
+                np.arange(120).reshape(2, 3, 4, 5).astype(np.float32))
+            self.b = torch.from_numpy(np.array([1, 0]))
+            self.relu = torch.nn.ReLU()
+
+        def forward(self, input_y):
+            self.input_x[None, True, self.b, (False, True, True), [2],
+                         4] = torch.tensor([[2.0, 3.0]])
+            input_z = self.input_x + input_y
+            out = self.relu(input_z)
+            return out
+
+    input_np = np.random.randn(2, 3, 4, 5).astype(np.float32)
+    net_ms = get_ms_net()
+    net_pt = NetPytorch1()
+    ms_input = ms.Tensor(input_np)
+    pt_input = torch.tensor(input_np, requires_grad=True)
+    ms_out = ms.jit(net_ms)(ms_input)
+    pt_out = net_pt(pt_input)
+    assert np.allclose(ms_out.asnumpy(), pt_out.detach().numpy())
+    np_sens = np.random.randn(*ms_out.shape).astype(np.float32)
+    ms_sens = ms.Tensor(np_sens)
+    pt_sens = torch.tensor(np_sens)
+    ms_grad = ms.jit(ms.grad(net_ms, sens_param=True))(ms_input, ms_sens)
+    pt_grad = torch.autograd.grad(pt_out, pt_input, grad_outputs=pt_sens)
+    assert np.allclose(ms_grad.asnumpy(), pt_grad[0].detach().numpy())
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+def test_setitem_nested_tuple_as_value_in_jit_ok():
+    """
+    Feature: tensor setitem.
+    Description: Tuple value with matching shape is accepted in JIT mode.
+    Expectation: Output matches PyTorch; gradients correct.
+    """
+    b = Tensor(np.array([1, 0]))
+
+    def get_ms_net():
+        def net(input_x):
+            input_x = input_x * 1
+            input_x[None, True, b, (False, True, True), [
+                2], 4] = ((2.0, 3.0), )
+            out = ops.relu(input_x)
+            return out
+        return net
+
+    class NetPytorch1(torch.nn.Module):
+        def __init__(self):
+            super().__init__()
+            self.relu = torch.nn.ReLU()
+
+        def forward(self, input_x):
+            input_x.requires_grad = False
+            b = torch.from_numpy(np.array([1, 0]))
+            input_x[None, True, b, (False, True, True), [
+                2], 4] = torch.tensor([[2.0, 3.0]])
+            out = self.relu(input_x)
+            return out
+
+    input_np = np.random.randn(2, 3, 4, 5).astype(np.float32)
+    net_ms = get_ms_net()
+    net_pt = NetPytorch1()
+    ms_input = ms.Tensor(input_np)
+    pt_input = torch.tensor(input_np, requires_grad=True)
+    ms_out = ms.jit(net_ms)(ms_input)
+    pt_out = net_pt(pt_input)
+    assert np.allclose(ms_out.asnumpy(), pt_out.detach().numpy())
+    np_sens = np.random.randn(*ms_out.shape).astype(np.float32)
+    ms_sens = ms.Tensor(np_sens)
+    grad_ms = ms.jit(ms.grad(net_ms, sens_param=True))(ms_input, ms_sens)
+    assert not np.any(
+        grad_ms[None, True, b, (False, True, True), [2], 4].asnumpy())
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+def test_setitem_nested_tuple_as_value_in_jit_false():
+    """
+    Feature: tensor setitem.
+    Description: Tuple length does not match target slice shape.
+    Expectation: ValueError raised in JIT.
+    """
+    def get_ms_net():
+        b = Tensor(np.array([1, 0]))
+
+        def net(input_x):
+            input_x[None, True, b, (False, True, True), [
+                2], 4] = ((2.0, 3.0, 4.0), )
+            out = ops.relu(input_x)
+            return out
+        return net
+
+    input_np = np.random.randn(2, 3, 4, 5).astype(np.float32)
+    input_me = Tensor(input_np)
+    net = get_ms_net()
+    with pytest.raises(ValueError):
+        ms.jit(net)(input_me)
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@pytest.mark.parametrize(
+    "value1,value2",
+    [(Tensor([[2, 3]], mstype.int8), torch.tensor([[2, 3]], dtype=torch.float32)),
+     (Tensor([[2, 3]], mstype.int16), torch.tensor(
+         [[2, 3]], dtype=torch.float32)),
+     (Tensor([[2, 3]], mstype.int64), torch.tensor(
+         [[2, 3]], dtype=torch.float32)),
+     (Tensor([[2, 3]], mstype.float32), torch.tensor([[2, 3]], dtype=torch.float32))])
+def test_setitem_of_different_value_types_001(value1, value2):
+    """
+    Feature: tensor setitem.
+    Description: Test assignment using different value tensor types.
+    Expectation: Output matches PyTorch after ReLU.
+    """
+    def get_ms_net():
+        b = Tensor(np.array([1, 0]))
+
+        def net(input_x):
+            input_x[None, True, b, (False, True, True), [2], 4] = value1
+            out = ops.relu(input_x)
+            return out
+        return net
+
+    class NetPytorch1(torch.nn.Module):
+        def __init__(self):
+            super().__init__()
+            self.relu = torch.nn.ReLU()
+
+        def forward(self, input_x):
+            b = torch.from_numpy(np.array([1, 0]))
+            input_x[None, True, b, (False, True, True), [2], 4] = value2
+            out = self.relu(input_x)
+            return out
+
+    input_np = np.random.randn(2, 3, 4, 5).astype(np.float16)
+    net_me = get_ms_net()
+    net_torch = NetPytorch1()
+    input_me = Tensor(input_np)
+    input_torch = torch.from_numpy(input_np.astype(np.float32))
+    out_me = ms.jit(net_me)(input_me)
+    out_torch = net_torch(input_torch)
+    np.allclose(out_torch.numpy(), out_me.asnumpy(), 0.001, 0.001)
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@pytest.mark.parametrize(
+    "value1,value2",
+    [(Tensor([[2, 3]], mstype.float16), torch.tensor([[2, 3]], dtype=torch.float32)),
+     (Tensor([[2, 3]], mstype.float64),
+      torch.tensor([[2, 3]], dtype=torch.float32)),
+     (Tensor([[2, 3]], mstype.int64), torch.tensor([[2, 3]], dtype=torch.float32))])
+def test_setitem_of_different_value_types_002(value1, value2):
+    """
+    Feature: tensor setitem.
+    Description: Validate setitem behavior with non-default value dtypes.
+    Expectation: Output matches PyTorch; gradients correct.
+    """
+    b = Tensor(np.array([1, 0]))
+
+    def get_ms_net():
+        def net(input_x):
+            input_x[None, True, b, (False, True, True), [2], 4] = value1
+            out = ops.relu(input_x)
+            return out
+        return net
+
+    class NetPytorch1(torch.nn.Module):
+        def __init__(self):
+            super().__init__()
+            self.relu = torch.nn.ReLU()
+
+        def forward(self, input_x):
+            input_x.requires_grad = False
+            b = torch.from_numpy(np.array([1, 0]))
+            input_x[None, True, b, (False, True, True), [2], 4] = value2
+            out = self.relu(input_x)
+            return out
+
+    input_np = np.random.randn(2, 3, 4, 5).astype(np.float32)
+    net_ms = get_ms_net()
+    net_pt = NetPytorch1()
+    ms_input = ms.Tensor(input_np)
+    pt_input = torch.tensor(input_np, requires_grad=True)
+    ms_out = ms.jit(net_ms)(ms_input)
+    pt_out = net_pt(pt_input)
+    assert np.allclose(ms_out.asnumpy(), pt_out.detach().numpy())
+    np_sens = np.random.randn(*ms_out.shape).astype(np.float32)
+    ms_sens = ms.Tensor(np_sens)
+    grad_ms = ms.jit(ms.grad(net_ms, sens_param=True))(ms_input, ms_sens)
+    assert not np.any(
+        grad_ms[None, True, b, (False, True, True), [2], 4].asnumpy())
