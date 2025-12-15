@@ -18,7 +18,7 @@ from mindspore import context, jit
 from mindspore.ops.composite import GradOperation
 
 
-@jit
+@jit(backend="ms_backend")
 def func(x, y):
     x = x * 3
     return 2 * x[0] + y

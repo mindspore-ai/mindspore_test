@@ -28,7 +28,7 @@ class Net(nn.Cell):
             self.layers.append(nn.ReLU())
         self.flatten = nn.Flatten()
 
-    @jit
+    @jit(backend="ms_backend")
     def construct(self, x):
         out = x
         out = self.dense(x)
