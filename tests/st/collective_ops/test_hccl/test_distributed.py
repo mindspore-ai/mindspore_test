@@ -338,6 +338,51 @@ def test_hccl_all_reduce():
 
 
 @log_function_entry_exit
+def test_hccl_all_reduce_bool():
+    """
+    Feature: test distributed op
+    Description: test comm op in python native
+    Expectation: success
+    """
+    # bool type
+    except_ones = ms.Tensor([1, 1, 1], dtype=ms.bool_)
+    except_zeros = ms.Tensor([0, 0, 0], dtype=ms.bool_)
+
+    if rank == 0:
+        sum_input_tensor = ms.Tensor([1, 1, 1], dtype=ms.bool_)
+    else:
+        sum_input_tensor = ms.Tensor([0, 0, 0], dtype=ms.bool_)
+    sum_output_handle = all_reduce(sum_input_tensor, op=ReduceOp.SUM)
+    assert sum_output_handle is None
+
+    if rank == 0:
+        max_input_tensor = ms.Tensor([1, 1, 1], dtype=ms.bool_)
+    else:
+        max_input_tensor = ms.Tensor([0, 0, 0], dtype=ms.bool_)
+    max_output_handle = all_reduce(max_input_tensor, op=ReduceOp.MAX)
+    assert max_output_handle is None
+
+    if rank == 0:
+        min_input_tensor = ms.Tensor([1, 1, 1], dtype=ms.bool_)
+    else:
+        min_input_tensor = ms.Tensor([0, 0, 0], dtype=ms.bool_)
+    min_output_handle = all_reduce(min_input_tensor, op=ReduceOp.MIN)
+    assert min_output_handle is None
+
+    if rank == 0:
+        prod_input_tensor = ms.Tensor([1, 1, 1], dtype=ms.bool_)
+    else:
+        prod_input_tensor = ms.Tensor([0, 0, 0], dtype=ms.bool_)
+    prod_output_handle = all_reduce(prod_input_tensor, op=ReduceOp.PROD)
+    assert prod_output_handle is None
+
+    assert np.allclose(sum_input_tensor.asnumpy(), except_ones.asnumpy())
+    assert np.allclose(max_input_tensor.asnumpy(), except_ones.asnumpy())
+    assert np.allclose(min_input_tensor.asnumpy(), except_zeros.asnumpy())
+    assert np.allclose(prod_input_tensor.asnumpy(), except_zeros.asnumpy())
+
+
+@log_function_entry_exit
 def test_hccl_all_gather_into_tensor():
     """
     Feature: test distributed op
