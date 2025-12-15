@@ -251,6 +251,14 @@ py::object ScalarPtrToPyData(const ScalarPtr &value) {
       MS_LOG(DEBUG) << "double";
       float_v = value->cast<FP64ImmPtr>()->value();
       return float_v;
+    case kNumberTypeFloat16:
+      MS_LOG(DEBUG) << "float16";
+      float_v = static_cast<float>(value->cast<FP16ImmPtr>()->value());
+      return float_v;
+    case kNumberTypeBFloat16:
+      MS_LOG(DEBUG) << "bfloat16";
+      float_v = static_cast<float>(value->cast<BF16ImmPtr>()->value());
+      return float_v;
     case kNumberTypeBool:
       MS_LOG(DEBUG) << "bool";
       bool_v = value->cast<BoolImmPtr>()->value();

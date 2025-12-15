@@ -21,8 +21,11 @@
 #include <string>
 #include <tuple>
 #include <unordered_set>
+#include <unordered_map>
+#include <functional>
 #include <utility>
 #include <vector>
+#include <complex>
 #include "mindspore/ccsrc/include/utils/expander/infer.h"
 #include "mindspore/ccsrc/include/utils/expander/node.h"
 #include "ir/func_graph.h"
@@ -2134,6 +2137,59 @@ class COMMON_EXPORT Emitter {
                                      const NodePtr &recv_numel_list, const NodePtr &rank_size,
                                      const NodePtr &split_sizes_empty) {
     return Emit("InnerCommAllToAllV", {grad, group, send_numel_list, recv_numel_list, rank_size, split_sizes_empty});
+  }
+
+  template <typename Target, typename T>
+  NodePtr ConvertAndEmit(const T &value) {
+    return EmitValue(MakeValue<Target>(static_cast<Target>(value)));
+  }
+
+  template <typename T>
+  NodePtr CreateNode(const T &v, const TypeId &type_id) {
+    switch (type_id) {
+      case TypeId::kNumberTypeFloat16:
+        return ConvertAndEmit<float16>(v);
+      case TypeId::kNumberTypeBFloat16:
+        return ConvertAndEmit<bfloat16>(v);
+      case TypeId::kNumberTypeFloat32:
+      case TypeId::kNumberTypeFloat:
+        return ConvertAndEmit<float>(v);
+      case TypeId::kNumberTypeFloat64:
+      case TypeId::kNumberTypeDouble:
+        return ConvertAndEmit<double>(v);
+      case TypeId::kNumberTypeUInt8:
+        return ConvertAndEmit<uint8_t>(v);
+      case TypeId::kNumberTypeUInt16:
+        return ConvertAndEmit<uint16_t>(v);
+      case TypeId::kNumberTypeUInt32:
+        return ConvertAndEmit<uint32_t>(v);
+      case TypeId::kNumberTypeUInt64:
+        return ConvertAndEmit<uint64_t>(v);
+      case TypeId::kNumberTypeInt8:
+        return ConvertAndEmit<int8_t>(v);
+      case TypeId::kNumberTypeInt16:
+        return ConvertAndEmit<int16_t>(v);
+      case TypeId::kNumberTypeInt:
+      case TypeId::kNumberTypeInt32:
+        return ConvertAndEmit<int32_t>(v);
+      case TypeId::kNumberTypeInt64:
+        return ConvertAndEmit<int64_t>(v);
+      case TypeId::kNumberTypeComplex64:
+      case TypeId::kNumberTypeComplex:
+        return ConvertAndEmit<std::complex<float>>(v);
+      case TypeId::kNumberTypeComplex128:
+        return ConvertAndEmit<std::complex<double>>(v);
+      default:
+        MS_LOG(INFO) << "Unknown Tensor type: " << type_id << ". Using default type";
+        return EmitValue(MakeValue(v));
+    }
+  }
+
+  /// \brief Emit a value node by type
+  template <typename T>
+  NodePtr ValueByType(const T &value, TypePtr data_type) {
+    MS_EXCEPTION_IF_NULL(data_type);
+    return CreateNode(value, data_type->type_id());
   }
 
  protected:

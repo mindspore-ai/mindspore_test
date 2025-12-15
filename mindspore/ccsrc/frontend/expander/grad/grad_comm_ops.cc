@@ -88,8 +88,8 @@ REG_BPROP_BUILDER("AllGather").SetUnusedInputs({i0, i1}).SetBody(BODYFUNC(ib) {
   }
   auto mean_flag = GetValue<bool>(ib->GetAttr("mean_flag"));
   if (mean_flag) {
-    auto scale = ib->Tensor(1.0 / rank_size, kFloat32);
-    dx = ib->Mul(dx, scale);
+    auto scale = ib->ValueByType(1.0 / rank_size, kFloat32);
+    dx = ib->Muls(dx, scale);
   }
   return {dx};
 });
@@ -112,7 +112,7 @@ REG_BPROP_BUILDER("_MirrorOperator").SetUnusedInputs({i0, i1}).SetBody(BODYFUNC(
   auto ins_name = ib->GetInstanceName();
   dx->set_debug_info("grad_mirror" + ins_name);
   if (mean_flag) {
-    dx = ib->Mul(dx, ib->Tensor(1.0 / dev_num, ib->GetDtype(dx)));
+    dx = ib->Muls(dx, ib->ValueByType(1.0 / dev_num, ib->GetDtype(dx)));
   }
   return {dx};
 });

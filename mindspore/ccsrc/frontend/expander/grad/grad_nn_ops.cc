@@ -43,7 +43,7 @@ NodePtrList Dropout2DBpropExpander(BpropBuilder *ib) {
   auto dy = ib->TupleGetItem(dout, 0);
   mask = ib->Cast(mask, kFloat32);
   if (keep_prob != 0) {
-    dy = ib->Mul(dy, ib->Tensor((1.0 / keep_prob), ib->GetDtype(dy)));
+    dy = ib->Muls(dy, ib->ValueByType(1.0 / keep_prob, ib->GetDtype(dy)));
   }
   dy = ib->Mul(mask, dy);
   dy = ib->Cast(dy, ib->GetDtype(x));
@@ -75,6 +75,7 @@ NodePtr MeanExtGrad(BpropBuilder *ib, const NodePtr &input, const NodePtr &out, 
   grad = ib->Cast(grad, ib->GetDtype(input));
 
   NodePtr div_shape_node;
+  NodePtr dx;
   if (IsDynamic(ib->GetShape(input)) || IsDynamic(ib->GetShape(out))) {
     auto shape_out_sz = ib->DynSize(out, kFloat32);
     auto true_branch = [&](Emitter *e) -> NodePtrList { return {ib->Tensor(1, kFloat32)}; };
@@ -82,12 +83,13 @@ NodePtr MeanExtGrad(BpropBuilder *ib, const NodePtr &input, const NodePtr &out, 
     auto is_zero_out_sz = ib->Equal(shape_out_sz, ib->Tensor(0, kFloat32));
     auto div_shape = ib->Conditional(is_zero_out_sz, true_branch, false_branch);
     div_shape_node = ib->Cast(div_shape, ib->GetDtype(grad));
+    dx = ib->Div(grad, div_shape_node);
   } else {
     auto shape_out_sz = ib->GetSize(out);
     auto div_shape = shape_out_sz == 0 ? 1 : ib->GetSize(input) / shape_out_sz;
-    div_shape_node = ib->Tensor(div_shape, ib->GetDtype(grad));
+    div_shape_node = ib->ValueByType(div_shape, ib->GetDtype(grad));
+    dx = ib->Divs(grad, div_shape_node);
   }
-  auto dx = ib->Div(grad, div_shape_node);
   return dx;
 }
 
@@ -2168,7 +2170,7 @@ REG_BPROP_BUILDER("SeLU").SetUnusedInputs({i0}).SetBody(BODYFUNC(ib) {
   const auto &out = ib->GetInput(i1);
   const auto &dout = ib->GetInput(i2);
   auto tmp_grad = ib->Emit("EluGrad", {dout, out});
-  auto dx = ib->Mul(tmp_grad, ib->Tensor(scale, ib->GetDtype(tmp_grad)));
+  auto dx = ib->Muls(tmp_grad, ib->ValueByType(scale, ib->GetDtype(tmp_grad)));
   return {dx};
 });
 
@@ -2360,10 +2362,11 @@ REG_BPROP_BUILDER("SigmoidGrad").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
   const auto &y = ib->GetInput(i0);
   const auto &grad = ib->GetInput(i1);
   const auto &dout = ib->GetInput(i3);
-  auto dy = y->need_compute_grad_out()
-              ? ib->Mul((ib->Mul(dout, grad)),
-                        (ib->Sub(ib->Tensor(1, ib->GetDtype(grad)), (ib->Mul(ib->Tensor(2, ib->GetDtype(y)), y)))))
-              : ib->OutZeros(y);
+  auto dy =
+    y->need_compute_grad_out()
+      ? ib->Mul((ib->Mul(dout, grad)),
+                (ib->Sub(ib->Tensor(1, ib->GetDtype(grad)), (ib->Muls(y, ib->ValueByType(2, ib->GetDtype(y)))))))
+      : ib->OutZeros(y);
   auto dgrad = grad->need_compute_grad_out() ? ib->SigmoidGrad(y, dout) : ib->OutZeros(grad);
   return {dy, dgrad};
 });
@@ -2444,18 +2447,21 @@ REG_BPROP_BUILDER("SoftplusGrad").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
   const auto &x = ib->GetInput(i1);
   const auto &dout = ib->GetInput(i3);
   auto ddy = dy->need_compute_grad_out() ? ib->Emit("SoftplusGrad", {dout, x}) : ib->OutZeros(dy);
-  auto d2x = x->need_compute_grad_out()
-               ? ib->Div(ib->Mul(dout, dy),
-                         ib->Add(ib->Add(ib->Tensor(kConstNumberTwo, ib->GetDtype(dy)), ib->Exp(x)), ib->Exp(-x)))
-               : ib->OutZeros(x);
+  auto d2x =
+    x->need_compute_grad_out()
+      ? ib->Div(ib->Mul(dout, dy),
+                ib->Add(ib->AddScalar(ib->Exp(x), ib->ValueByType(kConstNumberTwo, ib->GetDtype(dy)), ib->Value(1)),
+                        ib->Exp(-x)))
+      : ib->OutZeros(x);
   return {ddy, d2x};
 });
 
 REG_BPROP_BUILDER("Softsign").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
   const auto &x = ib->GetInput(i0);
   const auto &dout = ib->GetInput(i2);
-  auto dx = ib->Mul(
-    dout, ib->Div(ib->Tensor(1, ib->GetDtype(x)), ib->Square(ib->Add(ib->Tensor(1, ib->GetDtype(x)), (ib->Abs(x))))));
+  auto dx =
+    ib->Mul(dout, ib->Div(ib->Tensor(1, ib->GetDtype(x)),
+                          ib->Square(ib->AddScalar(ib->Abs(x), ib->ValueByType(1, ib->GetDtype(x)), ib->Value(1)))));
   return {dx};
 });
 
@@ -2496,7 +2502,7 @@ REG_BPROP_BUILDER("TanhGrad").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
   const auto &grad = ib->GetInput(i1);
   const auto &dout = ib->GetInput(i3);
   auto dy = y->need_compute_grad_out()
-              ? ib->Mul((ib->Mul((ib->Mul(dout, ib->Tensor(-2.0, ib->GetDtype(dout)))), grad)), y)
+              ? ib->Mul((ib->Mul((ib->Muls(dout, ib->ValueByType(-2.0, ib->GetDtype(dout)))), grad)), y)
               : ib->OutZeros(y);
   auto dgrad = grad->need_compute_grad_out() ? ib->TanhGrad(y, dout) : ib->OutZeros(grad);
   return {dy, dgrad};
@@ -3011,7 +3017,7 @@ REG_BPROP_BUILDER("BCEWithLogitsLoss").FreeUselessValues_O({}).SetBody(BODYFUNC(
         auto res2 = ib->DynSize(target, ib->GetDtype(grad_target));
         grad_target = ib->Div(grad_target, res2);
       } else {
-        grad_target = ib->Div(grad_target, ib->Tensor(ib->GetSize(target), ib->GetDtype(grad_target)));
+        grad_target = ib->Divs(grad_target, ib->ValueByType(ib->GetSize(target), ib->GetDtype(grad_target)));
       }
     }
   } else {
@@ -3105,11 +3111,11 @@ REG_BPROP_BUILDER("CeLU").SetBody(BODYFUNC(ib) {
   auto alpha_value = GetValue<float>(alpha->BuildValue());
   const auto &out = ib->GetInput(i2);
   const auto &dout = ib->GetInput(i3);
-  auto greater = ib->GreaterEqual(x, ib->Tensor(0.0, x_dtype));
+  auto greater = ib->GreaterEqualScalar(x, ib->ValueByType(0.0, x_dtype));
 
-  auto dx =
-    ib->Mul(dout, ib->Select(greater, ib->Fill(1.0, ib->Shape(x), x_dtype->type_id()),
-                             ib->Add((ib->RealDiv(out, ib->Tensor(alpha_value, x_dtype))), ib->Tensor(1.0, x_dtype))));
+  auto dx = ib->Mul(dout, ib->Select(greater, ib->Fill(1.0, ib->Shape(x), x_dtype->type_id()),
+                                     ib->AddScalar((ib->RealDiv(out, ib->Tensor(alpha_value, x_dtype))),
+                                                   ib->ValueByType(1.0, x_dtype), ib->Value(1))));
   return {dx, ib->OutZeros(alpha)};
 });
 

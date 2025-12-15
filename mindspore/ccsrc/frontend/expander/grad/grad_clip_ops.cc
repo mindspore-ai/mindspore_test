@@ -50,7 +50,7 @@ REG_BPROP_BUILDER("ClipByNorm").SetBody(BODYFUNC(ib) {
   auto sqrt_dout_x = ib->Emit("SqrtGrad", {sqrt_out, max_dout_x});
   auto reduce_sum_dout_x = SumGrad(ib, square_out, reduce_sum_axis, sqrt_dout_x, true);
   auto temp_out = ib->Mul(reduce_sum_dout_x, cast_x);
-  auto square_dout_x = ib->Mul(ib->Tensor(2.0, ib->GetDtype(temp_out)), temp_out);
+  auto square_dout_x = ib->Muls(temp_out, ib->ValueByType(2.0, ib->GetDtype(temp_out)));
   auto x_dout = ib->Cast(ib->Add(mul_dout_x, square_dout_x), ib->GetDtype(x));
   auto clip_norm_dout = ib->Cast(ib->Add(mul_dout_y, max_dout_y), ib->GetDtype(clip_norm));
   return {x_dout, clip_norm_dout};

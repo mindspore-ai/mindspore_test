@@ -51,6 +51,20 @@ class MS_CORE_API KernelTensorValue : public Value {
     obj_type_id_ = kObjectTypeNumber;
   }
 
+  KernelTensorValue(float16 scalar, const TypePtr &t) : Value(t) {
+    auto scalar_data = std::vector<uint8_t>(sizeof(float16));
+    std::memcpy(scalar_data.data(), &scalar, sizeof(float16));
+    const_data_ = std::move(scalar_data);
+    obj_type_id_ = kObjectTypeNumber;
+  }
+
+  KernelTensorValue(bfloat16 scalar, const TypePtr &t) : Value(t) {
+    auto scalar_data = std::vector<uint8_t>(sizeof(bfloat16));
+    std::memcpy(scalar_data.data(), &scalar, sizeof(float16));
+    const_data_ = std::move(scalar_data);
+    obj_type_id_ = kObjectTypeNumber;
+  }
+
   // This constructor is used to construct the mutable KernelTensorValue to hold any data type (such as Tensor,
   // ValueSequence, String, Scalar) use continuous memory. This constructor only malloc raw memory to prepare store
   // value data.

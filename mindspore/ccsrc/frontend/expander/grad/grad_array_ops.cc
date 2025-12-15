@@ -168,7 +168,7 @@ NodePtrList GatherDropNegatives(BpropBuilder *ib, const NodePtr &params, const N
 
   NodePtr is_positive = is_positive_param;
   if (is_positive_param == nullptr) {
-    is_positive = ib->GreaterEqual(ids, ib->Tensor(0, ib->GetDtype(ids)));
+    is_positive = ib->GreaterEqualScalar(ids, ib->ValueByType(0, ib->GetDtype(ids)));
     auto broadcastable_shape = ib->GetShape(is_positive);
     auto gathered_shape = ib->GetShape(gathered);
     if (IsDynamic(broadcastable_shape) || IsDynamic(gathered_shape)) {
@@ -718,12 +718,13 @@ NodePtrList BinopGatherDGradCommon(BpropBuilder *ib, const std::string &op_name)
   auto k = ib->FloorMod(id, ib->Tensor(dim_after_axis, index_type));
   auto less = ib->Less(index, ib->Tensor(0, index_type));
   auto j = ib->Cast(less, index_type);
-  auto j_read = ib->Add((ib->Mul(ib->Tensor(dim_at_axis_index, index_type), j)), index);
+  auto j_read = ib->Add((ib->Muls(j, ib->ValueByType(dim_at_axis_index, index_type))), index);
   auto j_read_reshape = ib->Reshape(j_read, {-1});
-  auto i_after = ib->Mul(i, ib->Tensor(dim_at_axis_output * dim_after_axis, index_type));
-  auto read_id = ib->Add((ib->Add(i_after, (ib->Mul(j_read_reshape, ib->Tensor(dim_after_axis, index_type))))), k);
+  auto i_after = ib->Muls(i, ib->ValueByType(dim_at_axis_output * dim_after_axis, index_type));
+  auto read_id =
+    ib->Add((ib->Add(i_after, (ib->Muls(j_read_reshape, ib->ValueByType(dim_after_axis, index_type))))), k);
   auto dout_reshape = ib->Reshape(dout, {-1});
-  auto dx = ib->Gather(dout_reshape, read_id, ib->Tensor(0));
+  auto dx = ib->Gather(dout_reshape, read_id, ib->Value(0));
   dx = ib->Reshape(dx, ib->GetShape(x));
   return {ib->OutZeros(index), dx};
 }
@@ -2961,7 +2962,7 @@ REG_BPROP_BUILDER("EmbeddingLookup").SetUnusedInputs({i0, i3}).SetBody(BODYFUNC(
   const auto &dout = ib->GetInput(i4);
   auto x_shp = ib->GetShape(x);
   auto offset_v = GetIntValue(offset);
-  auto new_indices = ib->Sub(indices, ib->Tensor(offset_v, ib->GetDtype(indices)));
+  auto new_indices = ib->SubScalar(indices, ib->ValueByType(offset_v, ib->GetDtype(indices)), ib->Value(1));
   auto indices_size = ib->GetSize(new_indices);
   ShapeVector new_indices_shape;
   ShapeVector x_shp_tail;
@@ -3140,9 +3141,9 @@ REG_BPROP_BUILDER("AffineGrid").SetUnusedInputs({i0, i2}).SetBody(BODYFUNC(ib) {
       auto vecy = (h_value != 1) ? ib->LinSpace(start, stop, ib->Value(h_value)) : zero;
       auto vecz = (d_value != 1) ? ib->LinSpace(start, stop, ib->Value(d_value)) : zero;
       if (!align_corners) {
-        vecx = (vecx * ib->Tensor(w_value - 1, kFloat32)) / ib->Tensor(w_value, kFloat32);
-        vecy = (vecy * ib->Tensor(h_value - 1, kFloat32)) / ib->Tensor(h_value, kFloat32);
-        vecz = (vecz * ib->Tensor(d_value - 1, kFloat32)) / ib->Tensor(d_value, kFloat32);
+        vecx = ib->Divs(ib->Muls(vecx, ib->ValueByType(w_value - 1, kFloat32)), ib->ValueByType(w_value, kFloat32));
+        vecy = ib->Divs(ib->Muls(vecy, ib->ValueByType(h_value - 1, kFloat32)), ib->ValueByType(h_value, kFloat32));
+        vecz = ib->Divs(ib->Muls(vecz, ib->ValueByType(d_value - 1, kFloat32)), ib->ValueByType(d_value, kFloat32));
       }
       auto out = (h_value * d_value != 1) ? ib->Tile(vecx, {h_value * d_value, 1}) : vecx;
       auto one = ib->Reshape(out, {h_value * w_value * d_value, 1});
@@ -3175,8 +3176,8 @@ REG_BPROP_BUILDER("AffineGrid").SetUnusedInputs({i0, i2}).SetBody(BODYFUNC(ib) {
       auto vecx = (w_value != 1) ? ib->LinSpace(start, stop, ib->Value(w_value)) : zero;
       auto vecy = (h_value != 1) ? ib->LinSpace(start, stop, ib->Value(h_value)) : zero;
       if (!align_corners) {
-        vecx = (vecx * ib->Tensor(w_value - 1, kFloat32)) / ib->Tensor(w_value, kFloat32);
-        vecy = (vecy * ib->Tensor(h_value - 1, kFloat32)) / ib->Tensor(h_value, kFloat32);
+        vecx = ib->Divs(ib->Muls(vecx, ib->ValueByType(w_value - 1, kFloat32)), ib->ValueByType(w_value, kFloat32));
+        vecy = ib->Divs(ib->Muls(vecy, ib->ValueByType(h_value - 1, kFloat32)), ib->ValueByType(h_value, kFloat32));
       }
       auto out = (h_value != 1) ? ib->Tile(vecx, {h_value, 1}) : vecx;
       auto one = ib->Reshape(out, {h_value * w_value, 1});

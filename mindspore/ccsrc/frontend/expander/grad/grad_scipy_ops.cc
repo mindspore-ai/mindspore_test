@@ -139,7 +139,8 @@ REG_BPROP_BUILDER("Eigh").SetBody(BODYFUNC(ib) {
     // diff_inv equal diff / (diff * diff + epsilon)
     // f equal matrix_set_diag(diff_inv, F.zeros_like(w))
     auto diff = ib->Sub(ib->ExpandDims(out_0, kValueNeg2), ib->ExpandDims(out_0, kValueNeg1));
-    auto diff_inv = ib->RealDiv(diff, ib->Add(ib->Mul(diff, diff), ib->Tensor(1e-20, ib->GetDtype(diff))));
+    auto diff_inv =
+      ib->RealDiv(diff, ib->AddScalar(ib->Mul(diff, diff), ib->ValueByType(1e-20, ib->GetDtype(diff)), ib->Value(1)));
 
     auto f = ib->MatrixSetDiagV3(diff_inv, ib->ZerosLike(out_0), zero_tensor, MakeValue("RIGHT_LEFT"));
 
@@ -185,7 +186,7 @@ REG_BPROP_BUILDER("Eigh").SetBody(BODYFUNC(ib) {
     ib->Cast(ib->Slice(res, ib->Value<ShapeVector>(begin), ib->Value<ShapeVector>(size_vec)), ib->GetDtype(grad_a));
 
   //  middle_diag equal 0.5 * grad_a.diagonal(0, -2, -1)
-  auto middle_diag = ib->Mul(ib->Tensor(0.5, ib->GetDtype(grad_a_diagonal)), grad_a_diagonal);
+  auto middle_diag = ib->Muls(grad_a_diagonal, ib->ValueByType(0.5, ib->GetDtype(grad_a_diagonal)));
   grad_a = ib->MatrixSetDiagV3(grad_a, middle_diag, zero_tensor, MakeValue("RIGHT_LEFT"));
   return {grad_a};
 });

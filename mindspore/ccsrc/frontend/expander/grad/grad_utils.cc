@@ -732,7 +732,7 @@ NodePtr LGamma(BpropBuilder *ib, const NodePtr &x) {
   auto one_half = ib->Tensor(0.5, input_dtype);
   auto one = ib->Tensor(1, input_dtype);
   auto zero = ib->Tensor(0, input_dtype);
-  auto log_sqrt_two_pi = ib->Tensor((log_2 + log_pi) / 2, input_dtype);
+  auto log_sqrt_two_pi = ib->ValueByType((log_2 + log_pi) / 2, input_dtype);
   auto lanczos_gamma_plus_one_half = k_lanczos_gamma + 0.5;
   auto log_lanczos_gamma_plus_one_half = log(lanczos_gamma_plus_one_half);
   auto inf = std::numeric_limits<double>::infinity();
@@ -742,34 +742,34 @@ NodePtr LGamma(BpropBuilder *ib, const NodePtr &x) {
   auto z = ib->Select(need_to_reflect, neg_input, ib->Sub(x, one));
   auto CalculateReflectedX = [&ib, &z, &k_base_lanczos_coeff, &k_lanczos_coefficients]() -> NodePtr {
     auto z_dtype = ib->GetDtype(z);
-    NodePtr reflex_x = ib->Tensor(k_base_lanczos_coeff, z_dtype);
+    NodePtr reflex_x = ib->ValueByType(k_base_lanczos_coeff, z_dtype);
     for (int i = 0; i < 8; ++i) {
-      auto btmp = ib->Add(z, ib->Tensor(i, z_dtype));
-      btmp = ib->Add(btmp, (ib->Tensor(1, z_dtype)));
+      auto btmp = ib->AddScalar(z, ib->ValueByType(i, z_dtype), ib->Value(1));
+      btmp = ib->AddScalar(btmp, (ib->ValueByType(1, z_dtype)), ib->Value(1));
       auto product = ib->RealDiv((ib->Tensor(k_lanczos_coefficients[i], z_dtype)), btmp);
-      reflex_x = ib->Add(product, reflex_x);
+      reflex_x = ib->AddScalar(product, reflex_x, ib->Value(1));
     }
     return reflex_x;
   };
   auto reflex_x = CalculateReflectedX();
   auto lanczos_tensor = ib->Tensor(lanczos_gamma_plus_one_half, input_dtype);
-  auto log_lanczos_tensor = ib->Tensor(log_lanczos_gamma_plus_one_half, input_dtype);
+  auto log_lanczos_tensor = ib->ValueByType(log_lanczos_gamma_plus_one_half, input_dtype);
   auto t = ib->Add(z, lanczos_tensor);
-  auto log_t = ib->Add((ib->Log1p(ib->RealDiv(z, lanczos_tensor))), log_lanczos_tensor);
-  auto log_y = ib->Add(
+  auto log_t = ib->AddScalar((ib->Log1p(ib->RealDiv(z, lanczos_tensor))), log_lanczos_tensor, ib->Value(1));
+  auto log_y = ib->AddScalar(
     (ib->Add((ib->Log(reflex_x)), (ib->Mul((ib->Sub((ib->Add(z, one_half)), (ib->RealDiv(t, log_t)))), log_t)))),
-    log_sqrt_two_pi);
+    log_sqrt_two_pi, ib->Value(1));
   auto abs_input = ib->Abs(x);
   auto abs_frac_input = ib->Sub(abs_input, (ib->Floor(abs_input)));
   auto new_x = ib->Select(ib->LessEqual(x, zero), ib->Select(ib->Equal(abs_frac_input, zero), infinity, x), x);
   auto reduced_frac_input =
     ib->Select(ib->Greater(abs_frac_input, one_half), ib->Sub(one, abs_frac_input), abs_frac_input);
   auto reflection_denom =
-    ib->Log(ib->Sin(ib->Mul(ib->Tensor(pi, ib->GetDtype(reduced_frac_input)), reduced_frac_input)));
-  auto reflection =
-    ib->Select(ib->IsFinite(reflection_denom),
-               ib->Add((ib->Sub((ib->Neg(reflection_denom)), log_y)), ib->Tensor(log_pi, ib->GetDtype(log_y))),
-               ib->Neg(reflection_denom));
+    ib->Log(ib->Sin(ib->Muls(reduced_frac_input, ib->ValueByType(pi, ib->GetDtype(reduced_frac_input)))));
+  auto reflection = ib->Select(ib->IsFinite(reflection_denom),
+                               ib->AddScalar((ib->Sub((ib->Neg(reflection_denom)), log_y)),
+                                             ib->ValueByType(log_pi, ib->GetDtype(log_y)), ib->Value(1)),
+                               ib->Neg(reflection_denom));
   auto result = ib->Select(need_to_reflect, reflection, log_y);
   return ib->Select(ib->IsFinite(new_x), result, infinity);
 }

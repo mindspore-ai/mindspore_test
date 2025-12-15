@@ -53,7 +53,8 @@ NodePtr DoMatMul(BpropBuilder *ib, const NodePtr &x, const NodePtr &y) {
 }
 
 NodePtr SafeReciprocal(BpropBuilder *ib, const NodePtr &x) {
-  return ib->Mul(x, ib->Reciprocal(ib->Cast(ib->Add(ib->Square(x), ib->Tensor(1e-20, ib->GetDtype(x))), kFloat32)));
+  return ib->Mul(x, ib->Reciprocal(ib->Cast(
+                      ib->AddScalar(ib->Square(x), ib->ValueByType(1e-20, ib->GetDtype(x)), ib->Value(1)), kFloat32)));
 }
 
 /*
