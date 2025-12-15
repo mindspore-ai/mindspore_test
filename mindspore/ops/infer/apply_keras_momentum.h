@@ -28,7 +28,7 @@
 namespace mindspore {
 namespace ops {
 constexpr auto kNameApplyKerasMomentum = "ApplyKerasMomentum";
-class OPS_API ApplyKerasMomentum : public BaseOperator {
+class ApplyKerasMomentum : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(ApplyKerasMomentum);
   ApplyKerasMomentum() : BaseOperator(kNameApplyKerasMomentum) {
@@ -36,9 +36,8 @@ class OPS_API ApplyKerasMomentum : public BaseOperator {
   }
 };
 
-OPS_API abstract::AbstractBasePtr ApplyKerasMomentumInfer(const abstract::AnalysisEnginePtr &,
-                                                          const PrimitivePtr &primitive,
-                                                          const std::vector<abstract::AbstractBasePtr> &input_args);
+abstract::AbstractBasePtr ApplyKerasMomentumInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
+                                                  const std::vector<abstract::AbstractBasePtr> &input_args);
 
 using PrimApplyKerasMomentumPtr = std::shared_ptr<ApplyKerasMomentum>;
 }  // namespace ops

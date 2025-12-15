@@ -26,7 +26,7 @@
 
 namespace mindspore {
 namespace ops {
-class OPS_API FusedMatmulElemUnaryFuncImpl : public MatMulFuncImpl {
+class FusedMatmulElemUnaryFuncImpl : public MatMulFuncImpl {
  public:
   BaseShapePtr InferShape(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
   TypePtr InferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;

@@ -21,7 +21,7 @@
 
 namespace mindspore {
 namespace ops {
-class OPS_API ScalarUaddFuncImpl : public ScalarArithmeticUnaryFuncImpl {};
+class ScalarUaddFuncImpl : public ScalarArithmeticUnaryFuncImpl {};
 }  // namespace ops
 }  // namespace mindspore
 

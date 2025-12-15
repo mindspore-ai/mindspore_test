@@ -27,7 +27,7 @@ namespace mindspore {
 namespace ops {
 constexpr auto kNameConvertToDynamicRank = "ConvertToDynamic";
 /// \brief Convert to dynamic rank.
-class OPS_API ConvertToDynamic : public BaseOperator {
+class ConvertToDynamic : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(ConvertToDynamic);
   /// \brief Constructor.

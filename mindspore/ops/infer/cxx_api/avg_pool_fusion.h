@@ -26,7 +26,7 @@ namespace mindspore {
 namespace ops {
 constexpr auto kNameAvgPoolFusion = "AvgPoolFusion";
 /// \brief AvgPoolFusion defined AvgPool operator prototype of lite.
-class OPS_API AvgPoolFusion : public BaseOperator {
+class AvgPoolFusion : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(AvgPoolFusion);
   /// \brief Constructor.

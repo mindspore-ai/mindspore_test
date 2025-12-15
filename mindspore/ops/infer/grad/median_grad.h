@@ -28,7 +28,7 @@
 namespace mindspore {
 namespace ops {
 constexpr auto kNameMedianGrad = "MedianGrad";
-class OPS_API MedianGrad : public BaseOperator {
+class MedianGrad : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(MedianGrad);
   /// \brief Constructor.
@@ -55,8 +55,8 @@ class OPS_API MedianGrad : public BaseOperator {
   int64_t get_axis() const;
 };
 
-OPS_API abstract::AbstractBasePtr MedianGradInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
-                                                  const std::vector<abstract::AbstractBasePtr> &input_args);
+abstract::AbstractBasePtr MedianGradInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
+                                          const std::vector<abstract::AbstractBasePtr> &input_args);
 }  // namespace ops
 }  // namespace mindspore
 

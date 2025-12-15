@@ -25,7 +25,7 @@
 namespace mindspore {
 namespace ops {
 constexpr auto kNameSegmentMean = "SegmentMean";
-class OPS_API SegmentMean : public BaseOperator {
+class SegmentMean : public BaseOperator {
  public:
   SegmentMean() : BaseOperator(kNameSegmentMean) { InitIOName({"input_x", "segment_ids"}, {"output"}); }
   MIND_API_BASE_MEMBER(SegmentMean);

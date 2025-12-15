@@ -21,7 +21,7 @@
 
 namespace mindspore {
 namespace ops {
-class OPS_API InplaceScatterAddFuncImpl : public OpFuncImpl {
+class InplaceScatterAddFuncImpl : public OpFuncImpl {
  public:
   InplaceScatterAddFuncImpl() = default;
   ~InplaceScatterAddFuncImpl() = default;

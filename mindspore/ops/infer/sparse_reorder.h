@@ -26,7 +26,7 @@ namespace ops {
 constexpr auto kNameSparseReorder = "SparseReorder";
 /// \brief Reorder indices and values.
 /// Refer to Python API @ref mindspore.ops.SparseReorder for more details.
-class OPS_API SparseReorder : public BaseOperator {
+class SparseReorder : public BaseOperator {
  public:
   /// \brief Constructor.
   SparseReorder() : BaseOperator(kNameSparseReorder) {
@@ -34,8 +34,8 @@ class OPS_API SparseReorder : public BaseOperator {
   }
   MIND_API_BASE_MEMBER(SparseReorder);
 };
-OPS_API abstract::AbstractBasePtr SparseReorderInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
-                                                     const std::vector<abstract::AbstractBasePtr> &input_args);
+abstract::AbstractBasePtr SparseReorderInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
+                                             const std::vector<abstract::AbstractBasePtr> &input_args);
 }  // namespace ops
 }  // namespace mindspore
 

@@ -28,7 +28,7 @@
 namespace mindspore {
 namespace ops {
 constexpr auto kNameFractionalMaxPoolGradWithFixedKsize = "FractionalMaxPoolGradWithFixedKsize";
-class OPS_API FractionalMaxPoolGradWithFixedKsize : public BaseOperator {
+class FractionalMaxPoolGradWithFixedKsize : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(FractionalMaxPoolGradWithFixedKsize);
   FractionalMaxPoolGradWithFixedKsize() : BaseOperator(kNameFractionalMaxPoolGradWithFixedKsize) {
@@ -49,7 +49,7 @@ class OPS_API FractionalMaxPoolGradWithFixedKsize : public BaseOperator {
   /// \return data format attributes.
 };
 
-OPS_API abstract::AbstractBasePtr FractionalMaxPoolGradWithFixedKsizeInfer(
+abstract::AbstractBasePtr FractionalMaxPoolGradWithFixedKsizeInfer(
   const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
   const std::vector<abstract::AbstractBasePtr> &input_args);
 }  // namespace ops

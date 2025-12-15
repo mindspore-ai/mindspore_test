@@ -27,13 +27,13 @@ namespace mindspore {
 namespace ops {
 constexpr auto kNameLamb = "Lamb";
 
-class OPS_API Lamb : public BaseOperator {
+class Lamb : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(Lamb);
   Lamb() : BaseOperator(kNameLamb) {}
 };
-OPS_API abstract::AbstractBasePtr LambInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
-                                            const std::vector<abstract::AbstractBasePtr> &input_args);
+abstract::AbstractBasePtr LambInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
+                                    const std::vector<abstract::AbstractBasePtr> &input_args);
 using kPrimLambPtr = std::shared_ptr<Lamb>;
 }  // namespace ops
 }  // namespace mindspore

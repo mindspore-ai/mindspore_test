@@ -24,7 +24,7 @@
 
 namespace mindspore {
 namespace ops {
-class OPS_API HSwishFuncImpl : public OpFuncImpl {
+class HSwishFuncImpl : public OpFuncImpl {
  public:
   HSwishFuncImpl() = default;
   ~HSwishFuncImpl() = default;

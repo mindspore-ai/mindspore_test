@@ -28,7 +28,7 @@
 namespace mindspore {
 namespace ops {
 constexpr auto kNameExtractGlimpse = "ExtractGlimpse";
-class OPS_API ExtractGlimpse : public BaseOperator {
+class ExtractGlimpse : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(ExtractGlimpse);
   ExtractGlimpse() : BaseOperator(kNameExtractGlimpse) { InitIOName({"input", "size", "offsets"}, {"output"}); }
@@ -43,9 +43,8 @@ class OPS_API ExtractGlimpse : public BaseOperator {
   bool get_uniform_noise() const;
   std::string get_noise() const;
 };
-OPS_API abstract::AbstractBasePtr ExtractGlimpseInfer(const abstract::AnalysisEnginePtr &,
-                                                      const PrimitivePtr &primitive,
-                                                      const std::vector<AbstractBasePtr> &input_args);
+abstract::AbstractBasePtr ExtractGlimpseInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
+                                              const std::vector<AbstractBasePtr> &input_args);
 using PrimExtractGlimpsePtr = std::shared_ptr<ExtractGlimpse>;
 }  // namespace ops
 }  // namespace mindspore

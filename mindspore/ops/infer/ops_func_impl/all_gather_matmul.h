@@ -42,7 +42,7 @@ enum AllGatherMatmulOutputIndex : size_t {
   kAllGatherMatmulOutputNum,
 };
 
-class OPS_API AllGatherMatmulFuncImpl : public OpFuncImpl {
+class AllGatherMatmulFuncImpl : public OpFuncImpl {
  public:
   ShapeArray InferShape(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const override;
   std::vector<TypeId> InferType(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const override;

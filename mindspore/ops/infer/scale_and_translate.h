@@ -30,7 +30,7 @@ namespace ops {
 constexpr auto kNameScaleAndTranslate = "ScaleAndTranslate";
 /// \brief ScaleAndTranslate operation on the input images.
 /// Refer to Python API @ref mindspore.ops.ScaleAndTranslate for more details.
-class OPS_API ScaleAndTranslate : public BaseOperator {
+class ScaleAndTranslate : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(ScaleAndTranslate);
   /// \brief Constructor.
@@ -53,9 +53,8 @@ class OPS_API ScaleAndTranslate : public BaseOperator {
   bool get_antialias() const;
 };
 
-OPS_API abstract::AbstractBasePtr ScaleAndTranslateInfer(const abstract::AnalysisEnginePtr &,
-                                                         const PrimitivePtr &primitive,
-                                                         const std::vector<abstract::AbstractBasePtr> &input_args);
+abstract::AbstractBasePtr ScaleAndTranslateInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
+                                                 const std::vector<abstract::AbstractBasePtr> &input_args);
 }  // namespace ops
 }  // namespace mindspore
 #endif  // MINDSPORE_CORE_OPS_SCALE_AND_TRANSLATE_H_

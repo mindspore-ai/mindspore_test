@@ -25,7 +25,7 @@
 
 namespace mindspore {
 namespace ops {
-class OPS_API FillFuncImpl : public OpFuncImpl {
+class FillFuncImpl : public OpFuncImpl {
  public:
   BaseShapePtr InferShape(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
   // simply infer

@@ -21,7 +21,7 @@
 
 namespace mindspore {
 namespace ops {
-class OPS_API MaxDimFuncImpl : public MinDimFuncImpl {};
+class MaxDimFuncImpl : public MinDimFuncImpl {};
 }  // namespace ops
 }  // namespace mindspore
 

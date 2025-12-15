@@ -29,7 +29,7 @@ namespace mindspore {
 namespace ops {
 constexpr auto kNameStack = "Stack";
 /// \brief Stacks a list of tensors in specified axis. Refer to Python API @ref mindspore.ops.Tile for more details.
-class OPS_API Stack : public BaseOperator {
+class Stack : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(Stack);
   /// \brief Constructor.
@@ -44,8 +44,8 @@ class OPS_API Stack : public BaseOperator {
   int64_t get_axis() const;
 };
 
-OPS_API abstract::AbstractBasePtr StackInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
-                                             const std::vector<abstract::AbstractBasePtr> &input_args);
+abstract::AbstractBasePtr StackInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
+                                     const std::vector<abstract::AbstractBasePtr> &input_args);
 }  // namespace ops
 }  // namespace mindspore
 #endif  // MINDSPORE_CORE_OPS_STACK_H_

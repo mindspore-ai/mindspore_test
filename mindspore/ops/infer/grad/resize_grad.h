@@ -24,7 +24,7 @@
 namespace mindspore {
 namespace ops {
 constexpr auto kNameResizeGrad = "ResizeGrad";
-class OPS_API ResizeGrad : public BaseOperator {
+class ResizeGrad : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(ResizeGrad);
   ResizeGrad() : BaseOperator(kNameResizeGrad) {}
@@ -35,8 +35,8 @@ class OPS_API ResizeGrad : public BaseOperator {
   bool get_align_corners() const;
 };
 
-OPS_API abstract::AbstractBasePtr ResizeGradInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
-                                                  const std::vector<abstract::AbstractBasePtr> &input_args);
+abstract::AbstractBasePtr ResizeGradInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
+                                          const std::vector<abstract::AbstractBasePtr> &input_args);
 }  // namespace ops
 }  // namespace mindspore
 

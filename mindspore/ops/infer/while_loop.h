@@ -24,7 +24,7 @@ namespace mindspore {
 namespace ops {
 constexpr auto kNameWhileLoop = "WhileLoop";
 /// \brief WhileLoop defined the operator prototype of while loop.
-class OPS_API WhileLoop : public BaseOperator {
+class WhileLoop : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(WhileLoop);
   /// \brief Constructor.

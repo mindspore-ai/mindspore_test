@@ -26,16 +26,15 @@
 namespace mindspore {
 namespace ops {
 constexpr auto kNameLayerNormXBackpropV2 = "LayerNormXBackpropV2";
-class OPS_API LayerNormXBackpropV2 : public BaseOperator {
+class LayerNormXBackpropV2 : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(LayerNormXBackpropV2);
   LayerNormXBackpropV2() : BaseOperator(kNameLayerNormXBackpropV2) {}
   void Init() const {}
 };
 
-OPS_API abstract::AbstractBasePtr LayerNormXBackpropV2Infer(const abstract::AnalysisEnginePtr &,
-                                                            const PrimitivePtr &primitive,
-                                                            const std::vector<abstract::AbstractBasePtr> &input_args);
+abstract::AbstractBasePtr LayerNormXBackpropV2Infer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
+                                                    const std::vector<abstract::AbstractBasePtr> &input_args);
 }  // namespace ops
 }  // namespace mindspore
 

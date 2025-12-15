@@ -25,7 +25,7 @@
 namespace mindspore::ops {
 constexpr auto kNameKVCacheMgr = "KVCacheMgr";
 /// \brief Define KVCacheMgr operator prototype.
-class OPS_API KVCacheMgr : public BaseOperator {
+class KVCacheMgr : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(KVCacheMgr);
   /// \brief Constructor.

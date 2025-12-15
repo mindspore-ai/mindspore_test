@@ -27,7 +27,7 @@ namespace mindspore {
 namespace ops {
 constexpr auto kNameAddLayerNorm = "AddLayerNorm";
 /// \brief Adds two input tensors element-wise.
-class OPS_API AddLayerNorm : public BaseOperator {
+class AddLayerNorm : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(AddLayerNorm);
   /// \brief Constructor.
@@ -41,8 +41,8 @@ class OPS_API AddLayerNorm : public BaseOperator {
   void Init() const {}
 };
 
-OPS_API abstract::AbstractBasePtr AddLayerNormInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
-                                                    const std::vector<abstract::AbstractBasePtr> &input_args);
+abstract::AbstractBasePtr AddLayerNormInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
+                                            const std::vector<abstract::AbstractBasePtr> &input_args);
 }  // namespace ops
 }  // namespace mindspore
 

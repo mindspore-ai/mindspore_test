@@ -25,7 +25,7 @@
 
 namespace mindspore {
 namespace ops {
-class OPS_API AllFiniteFuncImpl : public OpFuncImpl {
+class AllFiniteFuncImpl : public OpFuncImpl {
  public:
   BaseShapePtr InferShape(const PrimitivePtr &, const std::vector<AbstractBasePtr> &) const override;
   TypePtr InferType(const PrimitivePtr &, const std::vector<AbstractBasePtr> &) const override;

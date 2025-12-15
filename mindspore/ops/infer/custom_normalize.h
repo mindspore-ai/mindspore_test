@@ -24,16 +24,15 @@
 namespace mindspore {
 namespace ops {
 constexpr auto kNameCustomNormalize = "CustomNormalize";
-class OPS_API CustomNormalize : public BaseOperator {
+class CustomNormalize : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(CustomNormalize);
   CustomNormalize() : BaseOperator(kNameCustomNormalize) {}
   void Init() const {}
 };
 
-OPS_API abstract::AbstractBasePtr CustomNormalizeInfer(const abstract::AnalysisEnginePtr &,
-                                                       const PrimitivePtr &primitive,
-                                                       const std::vector<abstract::AbstractBasePtr> &input_args);
+abstract::AbstractBasePtr CustomNormalizeInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
+                                               const std::vector<abstract::AbstractBasePtr> &input_args);
 }  // namespace ops
 }  // namespace mindspore
 

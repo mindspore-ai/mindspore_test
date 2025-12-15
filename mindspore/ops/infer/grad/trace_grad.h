@@ -25,14 +25,14 @@
 namespace mindspore {
 namespace ops {
 constexpr auto kNameTraceGrad = "TraceGrad";
-class OPS_API TraceGrad : public BaseOperator {
+class TraceGrad : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(TraceGrad);
   TraceGrad() : BaseOperator(kNameTraceGrad) {}
   void Init() const {}
 };
-OPS_API abstract::AbstractBasePtr TraceGradInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
-                                                 const std::vector<abstract::AbstractBasePtr> &input_args);
+abstract::AbstractBasePtr TraceGradInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
+                                         const std::vector<abstract::AbstractBasePtr> &input_args);
 }  // namespace ops
 }  // namespace mindspore
 #endif  // MINDSPORE_CORE_OPS_TRACE_GRAD_H_

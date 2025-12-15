@@ -26,7 +26,7 @@
 namespace mindspore {
 namespace ops {
 constexpr auto kNameDenseGrad = "DenseGrad";
-class OPS_API DenseGrad : public BaseOperator {
+class DenseGrad : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(DenseGrad);
   DenseGrad() : BaseOperator(kNameDenseGrad) { InitIOName({"x", "w", "b", "out", "dout"}, {"dx", "dw", "db"}); }

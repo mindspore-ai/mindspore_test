@@ -23,7 +23,7 @@ namespace mindspore {
 namespace ops {
 constexpr auto kNamePartial = "Partial";
 /// \brief Partial defined Partial operator prototype of lite.
-class OPS_API Partial : public BaseOperator {
+class Partial : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(Partial);
   /// \brief Constructor.

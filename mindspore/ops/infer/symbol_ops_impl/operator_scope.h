@@ -30,14 +30,14 @@ namespace ops {
 /// The operator overloading supports "+" for ScalarAdd, "-" for ScalarSub, "*" for ScalarMul and "/".
 /// when using "/", the division type should be specific (ScalarDiv, ScalarFloorDiv or ScalarCeilDiv), defaults exact
 /// division for ScalarDiv.
-class OPS_API OperatorScope {
+class OperatorScope {
  public:
   enum class DivType { EXACT_DIV, FLOOR_DIV, CEIL_DIV };
   explicit OperatorScope(const OperationEmitter &e, DivType div_type = DivType::EXACT_DIV)
       : emitter_(e), div_type_(div_type) {}
   ~OperatorScope() = default;
 
-  class OPS_API SymbolHolder {
+  class SymbolHolder {
    public:
     friend class OperatorScope;
     ~SymbolHolder() = default;

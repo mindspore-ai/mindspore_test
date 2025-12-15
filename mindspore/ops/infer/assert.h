@@ -25,7 +25,7 @@ namespace mindspore {
 namespace ops {
 constexpr auto kNameAssert = "Assert";
 /// \brief Assert defined Assert operator prototype of lite.
-class OPS_API Assert : public BaseOperator {
+class Assert : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(Assert);
   /// \brief Constructor.
@@ -47,8 +47,8 @@ class OPS_API Assert : public BaseOperator {
   int64_t get_summarize() const;
 };
 
-OPS_API abstract::AbstractBasePtr AssertInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
-                                              const std::vector<abstract::AbstractBasePtr> &input_args);
+abstract::AbstractBasePtr AssertInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
+                                      const std::vector<abstract::AbstractBasePtr> &input_args);
 }  // namespace ops
 }  // namespace mindspore
 

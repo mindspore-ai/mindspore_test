@@ -27,7 +27,7 @@
 namespace mindspore {
 namespace ops {
 constexpr auto kNameMaxPoolGradGrad = "MaxPoolGradGrad";
-class OPS_API MaxPoolGradGrad : public BaseOperator {
+class MaxPoolGradGrad : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(MaxPoolGradGrad);
   /// \brief Constructor.
@@ -73,9 +73,8 @@ class OPS_API MaxPoolGradGrad : public BaseOperator {
   PadMode get_pad_mode() const;
 };
 
-OPS_API abstract::AbstractBasePtr MaxPoolGradGradInfer(const abstract::AnalysisEnginePtr &,
-                                                       const PrimitivePtr &primitive,
-                                                       const std::vector<abstract::AbstractBasePtr> &input_args);
+abstract::AbstractBasePtr MaxPoolGradGradInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
+                                               const std::vector<abstract::AbstractBasePtr> &input_args);
 }  // namespace ops
 }  // namespace mindspore
 

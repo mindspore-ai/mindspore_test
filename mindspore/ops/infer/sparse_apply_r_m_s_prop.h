@@ -29,7 +29,7 @@ namespace mindspore {
 namespace ops {
 constexpr auto kNameSparseApplyRMSProp = "SparseApplyRMSProp";
 /// \brief Update relevant entries according to the rmsprop algorithm.
-class OPS_API SparseApplyRMSProp : public BaseOperator {
+class SparseApplyRMSProp : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(SparseApplyRMSProp);
   /// \brief Constructor.
@@ -64,9 +64,8 @@ class OPS_API SparseApplyRMSProp : public BaseOperator {
   bool get_use_locking() const;
 };
 
-OPS_API abstract::AbstractBasePtr SparseApplyRMSPropInfer(const abstract::AnalysisEnginePtr &,
-                                                          const PrimitivePtr &primitive,
-                                                          const std::vector<abstract::AbstractBasePtr> &input_args);
+abstract::AbstractBasePtr SparseApplyRMSPropInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
+                                                  const std::vector<abstract::AbstractBasePtr> &input_args);
 }  // namespace ops
 }  // namespace mindspore
 

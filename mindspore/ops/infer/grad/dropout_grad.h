@@ -25,7 +25,7 @@ namespace mindspore {
 namespace ops {
 constexpr auto kNameDropoutGrad = "DropoutGrad";
 
-class OPS_API DropoutGrad : public BaseOperator {
+class DropoutGrad : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(DropoutGrad);
   DropoutGrad() : BaseOperator(kNameDropoutGrad) {}

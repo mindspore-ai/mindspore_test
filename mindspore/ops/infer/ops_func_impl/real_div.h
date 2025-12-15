@@ -21,7 +21,7 @@
 
 namespace mindspore {
 namespace ops {
-class OPS_API RealDivFuncImpl : public OpFuncImpl {
+class RealDivFuncImpl : public OpFuncImpl {
  public:
   RealDivFuncImpl() = default;
   ~RealDivFuncImpl() = default;

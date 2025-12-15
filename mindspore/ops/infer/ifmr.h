@@ -25,7 +25,7 @@ namespace ops {
 constexpr auto kNameIFMR = "IFMR";
 /// \brief Returns the best quantitative parameters by searching.
 /// Refer to Python API @ref mindspore.ops.IFMR for more details.
-class OPS_API IFMR : public BaseOperator {
+class IFMR : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(IFMR);
   /// \brief Constructor.
@@ -69,8 +69,8 @@ class OPS_API IFMR : public BaseOperator {
   /// \return with_offset.
   bool get_with_offset() const;
 };
-OPS_API abstract::AbstractBasePtr IFMRInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
-                                            const std::vector<abstract::AbstractBasePtr> &input_args);
+abstract::AbstractBasePtr IFMRInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
+                                    const std::vector<abstract::AbstractBasePtr> &input_args);
 }  // namespace ops
 }  // namespace mindspore
 #endif  // MINDSPORE_CORE_OPS_IFMR_H_

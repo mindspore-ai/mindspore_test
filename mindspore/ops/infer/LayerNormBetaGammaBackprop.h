@@ -28,16 +28,16 @@ namespace mindspore {
 namespace ops {
 constexpr auto kNameLayerNormBetaGammaBackprop = "LayerNormBetaGammaBackprop";
 
-class OPS_API LayerNormBetaGammaBackprop : public BaseOperator {
+class LayerNormBetaGammaBackprop : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(LayerNormBetaGammaBackprop);
   LayerNormBetaGammaBackprop() : BaseOperator(kNameLayerNormBetaGammaBackprop) {}
   void Init() const {}
 };
 
-OPS_API abstract::AbstractBasePtr LayerNormBetaGammaBackpropInfer(
-  const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
-  const std::vector<abstract::AbstractBasePtr> &input_args);
+abstract::AbstractBasePtr LayerNormBetaGammaBackpropInfer(const abstract::AnalysisEnginePtr &,
+                                                          const PrimitivePtr &primitive,
+                                                          const std::vector<abstract::AbstractBasePtr> &input_args);
 }  // namespace ops
 }  // namespace mindspore
 

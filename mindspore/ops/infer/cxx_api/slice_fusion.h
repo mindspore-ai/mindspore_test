@@ -27,7 +27,7 @@ namespace mindspore {
 namespace ops {
 constexpr auto kNameSliceFusion = "SliceFusion";
 /// \brief SliceFusion defined Slice operator prototype of lite.
-class OPS_API SliceFusion : public BaseOperator {
+class SliceFusion : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(SliceFusion);
   /// \brief Constructor.

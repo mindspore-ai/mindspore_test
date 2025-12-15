@@ -26,7 +26,7 @@
 namespace mindspore {
 namespace ops {
 constexpr auto kNameSparseFillEmptyRowsGrad = "SparseFillEmptyRowsGrad";
-class OPS_API SparseFillEmptyRowsGrad : public BaseOperator {
+class SparseFillEmptyRowsGrad : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(SparseFillEmptyRowsGrad);
   SparseFillEmptyRowsGrad() : BaseOperator(kNameSparseFillEmptyRowsGrad) {
@@ -34,9 +34,9 @@ class OPS_API SparseFillEmptyRowsGrad : public BaseOperator {
   }
   void Init() const {}
 };
-OPS_API abstract::AbstractBasePtr SparseFillEmptyRowsGradInfer(
-  const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
-  const std::vector<abstract::AbstractBasePtr> &input_args);
+abstract::AbstractBasePtr SparseFillEmptyRowsGradInfer(const abstract::AnalysisEnginePtr &,
+                                                       const PrimitivePtr &primitive,
+                                                       const std::vector<abstract::AbstractBasePtr> &input_args);
 }  // namespace ops
 }  // namespace mindspore
 #endif

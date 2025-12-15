@@ -24,7 +24,7 @@
 namespace mindspore {
 namespace ops {
 constexpr auto kNameSparseAddmm = "SparseAddmm";
-class OPS_API SparseAddmm : public BaseOperator {
+class SparseAddmm : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(SparseAddmm);
   SparseAddmm() : BaseOperator(kNameSparseAddmm) {
@@ -32,8 +32,8 @@ class OPS_API SparseAddmm : public BaseOperator {
   }
   void Init() const {}
 };
-OPS_API abstract::AbstractBasePtr SparseAddmmInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
-                                                   const std::vector<abstract::AbstractBasePtr> &input_args);
+abstract::AbstractBasePtr SparseAddmmInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
+                                           const std::vector<abstract::AbstractBasePtr> &input_args);
 using PrimSparseAddmmPtr = std::shared_ptr<SparseAddmm>;
 }  // namespace ops
 }  // namespace mindspore

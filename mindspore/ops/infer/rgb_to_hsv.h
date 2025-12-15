@@ -29,13 +29,13 @@
 namespace mindspore {
 namespace ops {
 constexpr auto kNameRGBToHSV = "RGBToHSV";
-class OPS_API RGBToHSV : public BaseOperator {
+class RGBToHSV : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(RGBToHSV);
   RGBToHSV() : BaseOperator(kNameRGBToHSV) { InitIOName({"images"}, {"y"}); }
 };
-OPS_API abstract::AbstractBasePtr RGBToHSVInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
-                                                const std::vector<AbstractBasePtr> &input_args);
+abstract::AbstractBasePtr RGBToHSVInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
+                                        const std::vector<AbstractBasePtr> &input_args);
 }  // namespace ops
 }  // namespace mindspore
 

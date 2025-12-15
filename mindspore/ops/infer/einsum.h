@@ -30,7 +30,7 @@ constexpr auto kNameEinsum = "Einsum";
 
 /// \brief .
 /// Refer to Python API @ref mindspore.ops.Einsum for more details.
-class OPS_API Einsum : public BaseOperator {
+class Einsum : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(Einsum);
   /// \brief Constructor.
@@ -45,8 +45,8 @@ class OPS_API Einsum : public BaseOperator {
   std::string get_equation() const;
 };
 
-OPS_API abstract::AbstractBasePtr EinsumInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
-                                              const std::vector<abstract::AbstractBasePtr> &input_args);
+abstract::AbstractBasePtr EinsumInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
+                                      const std::vector<abstract::AbstractBasePtr> &input_args);
 }  // namespace ops
 }  // namespace mindspore
 

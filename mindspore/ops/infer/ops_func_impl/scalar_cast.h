@@ -21,7 +21,7 @@
 
 namespace mindspore {
 namespace ops {
-class OPS_API ScalarCastFuncImpl : public OpFuncImpl {
+class ScalarCastFuncImpl : public OpFuncImpl {
  public:
   ScalarCastFuncImpl() = default;
   ~ScalarCastFuncImpl() = default;

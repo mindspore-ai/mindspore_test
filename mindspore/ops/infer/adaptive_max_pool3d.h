@@ -27,14 +27,13 @@
 namespace mindspore {
 namespace ops {
 constexpr auto kNameAdaptiveMaxPool3D = "AdaptiveMaxPool3D";
-class OPS_API AdaptiveMaxPool3D : public BaseOperator {
+class AdaptiveMaxPool3D : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(AdaptiveMaxPool3D);
   AdaptiveMaxPool3D() : BaseOperator(kNameAdaptiveMaxPool3D) { InitIOName({"x", "output_size"}, {"y", "argmax"}); }
 };
-OPS_API abstract::AbstractBasePtr AdaptiveMaxPool3DInfer(const abstract::AnalysisEnginePtr &,
-                                                         const PrimitivePtr &primitive,
-                                                         const std::vector<abstract::AbstractBasePtr> &input_args);
+abstract::AbstractBasePtr AdaptiveMaxPool3DInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
+                                                 const std::vector<abstract::AbstractBasePtr> &input_args);
 using AdaptiveMaxPool3DPtr = std::shared_ptr<AdaptiveMaxPool3D>;
 }  // namespace ops
 }  // namespace mindspore

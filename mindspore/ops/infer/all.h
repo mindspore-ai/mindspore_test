@@ -23,7 +23,7 @@ namespace mindspore {
 namespace ops {
 constexpr auto kNameAll = "All";
 /// \brief All defined All operator prototype of lite.
-class OPS_API All : public BaseOperator {
+class All : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(All);
   /// \brief Constructor.

@@ -23,7 +23,7 @@
 
 namespace mindspore {
 namespace ops {
-class OPS_API FFTOrthoFuncImpl : public OpFuncImpl {
+class FFTOrthoFuncImpl : public OpFuncImpl {
  public:
   FFTOrthoFuncImpl() = default;
   ~FFTOrthoFuncImpl() = default;

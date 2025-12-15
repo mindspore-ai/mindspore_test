@@ -25,7 +25,7 @@ namespace mindspore {
 namespace ops {
 constexpr auto kNameApproximateEqual = "ApproximateEqual";
 
-class OPS_API ApproximateEqual : public BaseOperator {
+class ApproximateEqual : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(ApproximateEqual);
   ApproximateEqual() : BaseOperator(kNameApproximateEqual) { InitIOName({"x", "y"}, {"output"}); }
@@ -33,9 +33,8 @@ class OPS_API ApproximateEqual : public BaseOperator {
   void set_tolerance(const float tolerance);
   float get_tolerance() const;
 };
-OPS_API abstract::AbstractBasePtr ApproximateEqualInfer(const abstract::AnalysisEnginePtr &,
-                                                        const PrimitivePtr &primitive,
-                                                        const std::vector<abstract::AbstractBasePtr> &input_args);
+abstract::AbstractBasePtr ApproximateEqualInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
+                                                const std::vector<abstract::AbstractBasePtr> &input_args);
 using kPrimApproximateEqualPtr = std::shared_ptr<ApproximateEqual>;
 }  // namespace ops
 }  // namespace mindspore

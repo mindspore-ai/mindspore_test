@@ -28,7 +28,7 @@ namespace ops {
 constexpr auto kNameUnsortedSegmentMax = "UnsortedSegmentMax";
 /// \brief Computes the max of a tensor along segments.
 /// Refer to Python API @ref mindspore.ops.UnsortedSegmentMax for more details.
-class OPS_API UnsortedSegmentMax : public BaseOperator {
+class UnsortedSegmentMax : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(UnsortedSegmentMax);
   /// \brief Constructor.

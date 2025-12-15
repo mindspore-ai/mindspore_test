@@ -22,7 +22,7 @@
 namespace mindspore {
 namespace ops {
 /// \brief Sequence count operation.
-class OPS_API ShapeMulGrad : public BaseOperator {
+class ShapeMulGrad : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(ShapeMulGrad);
   /// \brief Constructor.

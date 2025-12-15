@@ -22,13 +22,13 @@
 namespace mindspore {
 namespace ops {
 // begin\end\strides info
-class OPS_API StridedSliceFuncImpl : public OpFuncImpl {
+class StridedSliceFuncImpl : public OpFuncImpl {
  public:
   BaseShapePtr InferShape(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
   TypePtr InferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
 };
 
-class OPS_API StridedSliceViewFuncImpl : public StridedSliceFuncImpl {};
+class StridedSliceViewFuncImpl : public StridedSliceFuncImpl {};
 
 }  // namespace ops
 }  // namespace mindspore

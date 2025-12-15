@@ -23,7 +23,7 @@
 namespace mindspore {
 namespace ops {
 /// \brief Sequence slice setitem operation.
-class OPS_API SequenceSliceSetItem : public BaseOperator {
+class SequenceSliceSetItem : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(SequenceSliceSetItem);
   /// \brief Constructor.

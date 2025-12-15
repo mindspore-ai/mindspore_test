@@ -25,7 +25,7 @@
 
 namespace mindspore {
 namespace ops {
-class OPS_API BroadcastToViewFuncImpl : public BroadcastToFuncImpl {};
+class BroadcastToViewFuncImpl : public BroadcastToFuncImpl {};
 }  // namespace ops
 }  // namespace mindspore
 

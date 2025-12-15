@@ -23,9 +23,9 @@
 namespace mindspore {
 namespace ops {
 // Infer function for TensorScatter* op.
-OPS_API abstract::AbstractBasePtr TensorScatterArithmeticInfer(
-  const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
-  const std::vector<abstract::AbstractBasePtr> &input_args);
+abstract::AbstractBasePtr TensorScatterArithmeticInfer(const abstract::AnalysisEnginePtr &,
+                                                       const PrimitivePtr &primitive,
+                                                       const std::vector<abstract::AbstractBasePtr> &input_args);
 }  // namespace ops
 }  // namespace mindspore
 

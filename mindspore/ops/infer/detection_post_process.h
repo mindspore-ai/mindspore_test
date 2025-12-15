@@ -27,7 +27,7 @@
 namespace mindspore {
 namespace ops {
 constexpr auto kNameDetectionPostProcess = "DetectionPostProcess";
-class OPS_API DetectionPostProcess : public BaseOperator {
+class DetectionPostProcess : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(DetectionPostProcess);
   DetectionPostProcess() : BaseOperator(kNameDetectionPostProcess) {}
@@ -61,9 +61,8 @@ class OPS_API DetectionPostProcess : public BaseOperator {
   bool get_out_quantized() const;
   Format get_format() const;
 };
-OPS_API abstract::AbstractBasePtr DetectionPostProcessInfer(const abstract::AnalysisEnginePtr &,
-                                                            const PrimitivePtr &primitive,
-                                                            const std::vector<abstract::AbstractBasePtr> &input_args);
+abstract::AbstractBasePtr DetectionPostProcessInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
+                                                    const std::vector<abstract::AbstractBasePtr> &input_args);
 }  // namespace ops
 }  // namespace mindspore
 

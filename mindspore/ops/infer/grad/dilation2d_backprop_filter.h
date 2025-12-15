@@ -28,7 +28,7 @@
 namespace mindspore {
 namespace ops {
 constexpr auto kNameDilation2DBackpropFilter = "Dilation2DBackpropFilter";
-class OPS_API Dilation2DBackpropFilter : public BaseOperator {
+class Dilation2DBackpropFilter : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(Dilation2DBackpropFilter);
   Dilation2DBackpropFilter() : BaseOperator(kNameDilation2DBackpropFilter) {
@@ -55,9 +55,9 @@ class OPS_API Dilation2DBackpropFilter : public BaseOperator {
   std::string get_format() const;
 };
 
-OPS_API abstract::AbstractBasePtr Dilation2DBackpropFilterInfer(
-  const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
-  const std::vector<abstract::AbstractBasePtr> &input_args);
+abstract::AbstractBasePtr Dilation2DBackpropFilterInfer(const abstract::AnalysisEnginePtr &,
+                                                        const PrimitivePtr &primitive,
+                                                        const std::vector<abstract::AbstractBasePtr> &input_args);
 }  // namespace ops
 }  // namespace mindspore
 

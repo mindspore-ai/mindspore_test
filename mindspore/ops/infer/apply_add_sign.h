@@ -28,7 +28,7 @@ namespace mindspore {
 namespace ops {
 constexpr auto kNameApplyAddSign = "ApplyAddSign";
 
-class OPS_API ApplyAddSign : public BaseOperator {
+class ApplyAddSign : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(ApplyAddSign);
   ApplyAddSign() : BaseOperator(kNameApplyAddSign) {
@@ -36,8 +36,8 @@ class OPS_API ApplyAddSign : public BaseOperator {
   }
 };
 
-OPS_API abstract::AbstractBasePtr ApplyAddSignInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
-                                                    const std::vector<abstract::AbstractBasePtr> &input_args);
+abstract::AbstractBasePtr ApplyAddSignInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
+                                            const std::vector<abstract::AbstractBasePtr> &input_args);
 using kPrimApplyAddSignPtr = std::shared_ptr<ApplyAddSign>;
 }  // namespace ops
 }  // namespace mindspore

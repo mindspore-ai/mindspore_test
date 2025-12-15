@@ -21,7 +21,7 @@
 
 namespace mindspore {
 namespace ops {
-class OPS_API SeluGradFuncImpl : public OpFuncImpl {
+class SeluGradFuncImpl : public OpFuncImpl {
  public:
   SeluGradFuncImpl() = default;
   ~SeluGradFuncImpl() = default;

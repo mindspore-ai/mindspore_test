@@ -24,7 +24,7 @@
 namespace mindspore {
 namespace ops {
 constexpr auto kNameScatterUpdate = "ScatterUpdate";
-class OPS_API ScatterUpdate : public BaseOperator {
+class ScatterUpdate : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(ScatterUpdate);
   /// \brief Constructor.

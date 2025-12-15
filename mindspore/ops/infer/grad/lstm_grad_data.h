@@ -26,7 +26,7 @@
 namespace mindspore {
 namespace ops {
 constexpr auto kNameLSTMGradData = "LSTMGradData";
-class OPS_API LSTMGradData : public BaseOperator {
+class LSTMGradData : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(LSTMGradData);
   LSTMGradData() : BaseOperator(kNameLSTMGradData) {}
@@ -55,8 +55,8 @@ class OPS_API LSTMGradData : public BaseOperator {
   void set_proj_size(const int64_t proj_size);
   int64_t get_proj_size() const;
 };
-OPS_API abstract::AbstractBasePtr LstmGradDataInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
-                                                    const std::vector<abstract::AbstractBasePtr> &input_args);
+abstract::AbstractBasePtr LstmGradDataInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
+                                            const std::vector<abstract::AbstractBasePtr> &input_args);
 }  // namespace ops
 }  // namespace mindspore
 

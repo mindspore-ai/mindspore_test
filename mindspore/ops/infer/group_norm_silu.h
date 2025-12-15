@@ -26,14 +26,14 @@ namespace mindspore {
 namespace ops {
 constexpr auto kNameGroupNormSilu = "GroupNormSilu";
 
-class OPS_API GroupNormSilu : public BaseOperator {
+class GroupNormSilu : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(GroupNormSilu);
   GroupNormSilu() : BaseOperator(kNameGroupNormSilu) { InitIOName({"x", "gamma", "beta"}, {"y", "mean", "rstd"}); }
   void Init() const {}
 };
-OPS_API abstract::AbstractBasePtr GroupNormSiluInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
-                                                     const std::vector<abstract::AbstractBasePtr> &input_args);
+abstract::AbstractBasePtr GroupNormSiluInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
+                                             const std::vector<abstract::AbstractBasePtr> &input_args);
 }  // namespace ops
 }  // namespace mindspore
 #endif  // MINDSPORE_CORE_OPS_GROUP_NORM_SILU_H_

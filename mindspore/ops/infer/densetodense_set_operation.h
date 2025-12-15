@@ -27,7 +27,7 @@ namespace ops {
 constexpr auto kNameDenseToDenseSetOperation = "DenseToDenseSetOperation";
 /// \brief Applies set operation along last dimension of 2 `Tensor` inputs.
 /// Refer to Python API @ref mindspore.ops.DenseToDenseSetOperation for more details.
-class OPS_API DenseToDenseSetOperation : public BaseOperator {
+class DenseToDenseSetOperation : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(DenseToDenseSetOperation);
   /// \brief Constructor.
@@ -37,9 +37,9 @@ class OPS_API DenseToDenseSetOperation : public BaseOperator {
   /// \brief Init. Refer to the parameters of Python API @ref mindspore.ops.DenseToDenseSetOperation for more details.
   void Init() const {}
 };
-OPS_API abstract::AbstractBasePtr DenseToDenseSetOperationInfer(
-  const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
-  const std::vector<abstract::AbstractBasePtr> &input_args);
+abstract::AbstractBasePtr DenseToDenseSetOperationInfer(const abstract::AnalysisEnginePtr &,
+                                                        const PrimitivePtr &primitive,
+                                                        const std::vector<abstract::AbstractBasePtr> &input_args);
 using kDenseToDenseSetOperationPtr = std::shared_ptr<DenseToDenseSetOperation>;
 }  // namespace ops
 }  // namespace mindspore

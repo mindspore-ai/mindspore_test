@@ -25,7 +25,7 @@ namespace ops {
 constexpr auto kNameGeGluV2 = "GeGluV2";
 /// \brief Gaussian Error Linear Units activation function.
 /// Refer to Python API @ref mindspore.ops.GeLU for more details.
-class OPS_API GeGluV2 : public BaseOperator {
+class GeGluV2 : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(GeGluV2);
   /// \brief Constructor.
@@ -33,8 +33,8 @@ class OPS_API GeGluV2 : public BaseOperator {
   /// \brief Init. Refer to the parameters of Python API @ref mindspore.ops.GeLU for the inputs.
   void Init() const {}
 };
-OPS_API abstract::AbstractBasePtr GeGluV2Infer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
-                                               const std::vector<abstract::AbstractBasePtr> &input_args) {
+abstract::AbstractBasePtr GeGluV2Infer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
+                                       const std::vector<abstract::AbstractBasePtr> &input_args) {
   return nullptr;
 }
 }  // namespace ops

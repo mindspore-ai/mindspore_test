@@ -24,12 +24,12 @@
 
 namespace mindspore {
 namespace ops {
-class OPS_API ExpandAsFuncImpl : public OpFuncImpl {
+class ExpandAsFuncImpl : public OpFuncImpl {
  public:
   BaseShapePtr InferShape(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
   TypePtr InferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
 };
-class OPS_API ExpandAsViewFuncImpl : public ExpandAsFuncImpl {};
+class ExpandAsViewFuncImpl : public ExpandAsFuncImpl {};
 }  // namespace ops
 }  // namespace mindspore
 

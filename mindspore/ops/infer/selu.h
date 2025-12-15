@@ -26,15 +26,15 @@
 namespace mindspore {
 namespace ops {
 constexpr auto kNameSeLU = "SeLU";
-class OPS_API SeLU : public BaseOperator {
+class SeLU : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(SeLU);
   SeLU() : BaseOperator(kNameSeLU) { InitIOName({"x"}, {"output"}); }
   void Init() const {}
 };
 
-OPS_API abstract::AbstractBasePtr SeLUInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
-                                            const std::vector<abstract::AbstractBasePtr> &input_args);
+abstract::AbstractBasePtr SeLUInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
+                                    const std::vector<abstract::AbstractBasePtr> &input_args);
 }  // namespace ops
 }  // namespace mindspore
 

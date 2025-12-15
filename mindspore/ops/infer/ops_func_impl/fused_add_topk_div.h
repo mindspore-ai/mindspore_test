@@ -44,7 +44,7 @@ enum FusedAddTopKDivInputIndex : size_t {
   kFusedAddTopKDivInputsNum,
 };
 
-class OPS_API FusedAddTopKDivFuncImpl : public OpFuncImpl {
+class FusedAddTopKDivFuncImpl : public OpFuncImpl {
  public:
   BaseShapePtr InferShape(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
   TypePtr InferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;

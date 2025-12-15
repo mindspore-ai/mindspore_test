@@ -24,7 +24,7 @@
 namespace mindspore {
 namespace ops {
 constexpr auto kNameScatterNdMax = "ScatterNdMax";
-class OPS_API ScatterNdMax : public BaseOperator {
+class ScatterNdMax : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(ScatterNdMax);
   ScatterNdMax() : BaseOperator(kNameScatterNdMax) { InitIOName({"input_x", "indices", "updates"}, {"y"}); }
@@ -36,8 +36,8 @@ class OPS_API ScatterNdMax : public BaseOperator {
   bool get_use_locking() const;
 };
 
-OPS_API abstract::AbstractBasePtr ScatterNdMaxInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
-                                                    const std::vector<abstract::AbstractBasePtr> &input_args);
+abstract::AbstractBasePtr ScatterNdMaxInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
+                                            const std::vector<abstract::AbstractBasePtr> &input_args);
 using kPrimScatterNdMaxPtr = std::shared_ptr<ScatterNdMax>;
 }  // namespace ops
 }  // namespace mindspore

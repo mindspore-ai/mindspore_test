@@ -24,7 +24,7 @@ namespace mindspore {
 namespace ops {
 constexpr auto kNameTopKFusion = "TopKFusion";
 /// \brief TopKFusion defined TopK operator prototype of lite.
-class OPS_API TopKFusion : public TopK {
+class TopKFusion : public TopK {
  public:
   MIND_API_BASE_MEMBER(TopKFusion);
   /// \brief Constructor.

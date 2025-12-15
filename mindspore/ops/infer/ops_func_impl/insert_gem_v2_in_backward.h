@@ -21,7 +21,7 @@
 
 namespace mindspore {
 namespace ops {
-class OPS_API InsertGemV2InBackwardFuncImpl final : public GenerateEodMaskV2FuncImpl {};
+class InsertGemV2InBackwardFuncImpl final : public GenerateEodMaskV2FuncImpl {};
 }  // namespace ops
 }  // namespace mindspore
 

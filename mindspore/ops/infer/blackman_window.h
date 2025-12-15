@@ -24,7 +24,7 @@
 namespace mindspore {
 namespace ops {
 constexpr auto kNameBlackmanWindow = "BlackmanWindow";
-class OPS_API BlackmanWindow : public BaseOperator {
+class BlackmanWindow : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(BlackmanWindow);
   BlackmanWindow() : BaseOperator(kNameBlackmanWindow) { InitIOName({"window_length"}, {"y"}); }
@@ -35,9 +35,8 @@ class OPS_API BlackmanWindow : public BaseOperator {
   bool get_periodic() const;
 };
 
-OPS_API abstract::AbstractBasePtr BlackmanWindowInfer(const abstract::AnalysisEnginePtr &,
-                                                      const PrimitivePtr &primitive,
-                                                      const std::vector<abstract::AbstractBasePtr> &input_args);
+abstract::AbstractBasePtr BlackmanWindowInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
+                                              const std::vector<abstract::AbstractBasePtr> &input_args);
 }  // namespace ops
 }  // namespace mindspore
 

@@ -21,9 +21,9 @@
 
 namespace mindspore {
 namespace ops {
-OPS_API abstract::AbstractBasePtr SparseDenseCwiseArithmeticInfer(
-  const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
-  const std::vector<abstract::AbstractBasePtr> &input_args);
+abstract::AbstractBasePtr SparseDenseCwiseArithmeticInfer(const abstract::AnalysisEnginePtr &,
+                                                          const PrimitivePtr &primitive,
+                                                          const std::vector<abstract::AbstractBasePtr> &input_args);
 }  // namespace ops
 }  // namespace mindspore
 

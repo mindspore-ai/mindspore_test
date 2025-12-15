@@ -27,7 +27,7 @@
 namespace mindspore {
 namespace ops {
 constexpr auto kNameSparseApplyAdagrad = "SparseApplyAdagrad";
-class OPS_API SparseApplyAdagrad : public BaseOperator {
+class SparseApplyAdagrad : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(SparseApplyAdagrad);
   SparseApplyAdagrad() : BaseOperator(kNameSparseApplyAdagrad) {
@@ -58,9 +58,8 @@ class OPS_API SparseApplyAdagrad : public BaseOperator {
   bool get_use_locking() const;
 };
 
-OPS_API abstract::AbstractBasePtr SparseApplyAdagradInfer(const abstract::AnalysisEnginePtr &,
-                                                          const PrimitivePtr &primitive,
-                                                          const std::vector<abstract::AbstractBasePtr> &input_args);
+abstract::AbstractBasePtr SparseApplyAdagradInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
+                                                  const std::vector<abstract::AbstractBasePtr> &input_args);
 }  // namespace ops
 }  // namespace mindspore
 #endif  // MINDSPORE_CORE_OPS_SPARSE_APPLY_ADAGRAD_H_

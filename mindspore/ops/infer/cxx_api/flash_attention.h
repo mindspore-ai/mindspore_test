@@ -24,7 +24,7 @@
 namespace mindspore {
 namespace ops {
 constexpr auto kNameFlashAttention = "FlashAttention";
-class OPS_API FlashAttention : public BaseOperator {
+class FlashAttention : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(FlashAttention);
   FlashAttention() : BaseOperator(kNameFlashAttention) { InitIOName({"q", "k", "v", "attention_mask"}, {"y"}); }

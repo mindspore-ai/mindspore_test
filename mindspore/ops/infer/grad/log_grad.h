@@ -25,7 +25,7 @@
 namespace mindspore {
 namespace ops {
 constexpr auto kNameLogGrad = "LogGrad";
-class OPS_API LogGrad : public BaseOperator {
+class LogGrad : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(LogGrad);
   LogGrad() : BaseOperator(kNameLogGrad) {}

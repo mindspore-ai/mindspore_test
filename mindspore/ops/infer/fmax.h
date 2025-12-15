@@ -27,7 +27,7 @@
 namespace mindspore {
 namespace ops {
 constexpr auto kNameFmax = "Fmax";
-class OPS_API Fmax : public BaseOperator {
+class Fmax : public BaseOperator {
  public:
   Fmax() : BaseOperator(kNameFmax) { InitIOName({"x1", "x2"}, {"y"}); }
   MIND_API_BASE_MEMBER(Fmax);

@@ -23,7 +23,7 @@
 
 namespace mindspore {
 namespace ops {
-class OPS_API SubFuncImpl : public BinaryOpFuncImpl {
+class SubFuncImpl : public BinaryOpFuncImpl {
  public:
   TypePtr InferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
 };

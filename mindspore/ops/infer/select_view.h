@@ -27,7 +27,7 @@ namespace mindspore {
 namespace ops {
 constexpr auto kNameSelectView = "SelectView";
 /// \brief Returns a slice of the input tensor based on the specified indices and axis.
-class OPS_API SelectView : public BaseOperator {
+class SelectView : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(SelectView);
   /// \brief Constructor.
@@ -37,8 +37,8 @@ class OPS_API SelectView : public BaseOperator {
   int64_t get_batch_dims() const;
 };
 
-OPS_API abstract::AbstractBasePtr SelectViewInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
-                                                  const std::vector<abstract::AbstractBasePtr> &input_args);
+abstract::AbstractBasePtr SelectViewInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
+                                          const std::vector<abstract::AbstractBasePtr> &input_args);
 }  // namespace ops
 }  // namespace mindspore
 

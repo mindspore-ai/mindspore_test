@@ -29,7 +29,7 @@ namespace mindspore {
 namespace ops {
 constexpr auto kNameXdivy = "Xdivy";
 
-class OPS_API Xdivy : public BaseOperator {
+class Xdivy : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(Xdivy);
   Xdivy() : BaseOperator(kNameXdivy) { InitIOName({"x", "y"}, {"output"}); }

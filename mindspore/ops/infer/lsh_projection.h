@@ -28,7 +28,7 @@ namespace mindspore {
 namespace ops {
 constexpr auto kNameLshProjection = "LshProjection";
 /// \brief LshProjection defined LshProjection operator prototype of lite, which is to project an input to a bit vector.
-class OPS_API LshProjection : public BaseOperator {
+class LshProjection : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(LshProjection);
   /// \brief Constructor.
@@ -50,8 +50,8 @@ class OPS_API LshProjection : public BaseOperator {
   LshProjectionType get_type() const;
 };
 
-OPS_API abstract::AbstractBasePtr LshProjectionInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
-                                                     const std::vector<abstract::AbstractBasePtr> &input_args);
+abstract::AbstractBasePtr LshProjectionInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
+                                             const std::vector<abstract::AbstractBasePtr> &input_args);
 }  // namespace ops
 }  // namespace mindspore
 

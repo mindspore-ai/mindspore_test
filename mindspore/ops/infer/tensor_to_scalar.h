@@ -23,7 +23,7 @@ namespace mindspore {
 namespace ops {
 constexpr auto kNameTensorToScalar = "TensorToScalar";
 /// \brief TensorToScalar op is used to convert tensor to tuple.
-class OPS_API TensorToScalar : public BaseOperator {
+class TensorToScalar : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(TensorToScalar);
   /// \brief Constructor.

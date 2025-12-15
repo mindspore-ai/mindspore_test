@@ -22,7 +22,7 @@
 
 namespace mindspore {
 namespace ops {
-class OPS_API IsCloseFuncImpl : public OpFuncImpl {
+class IsCloseFuncImpl : public OpFuncImpl {
  public:
   IsCloseFuncImpl() = default;
   ~IsCloseFuncImpl() = default;

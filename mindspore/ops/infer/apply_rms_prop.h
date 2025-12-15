@@ -28,7 +28,7 @@
 namespace mindspore {
 namespace ops {
 constexpr auto kNameApplyRMSProp = "ApplyRMSProp";
-class OPS_API ApplyRMSProp : public BaseOperator {
+class ApplyRMSProp : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(ApplyRMSProp);
   float get_attr(const char *attr) const;

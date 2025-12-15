@@ -21,7 +21,7 @@
 
 namespace mindspore {
 namespace ops {
-class OPS_API ArgMinWithValueFuncImpl : public ArgMaxWithValueFuncImpl {};
+class ArgMinWithValueFuncImpl : public ArgMaxWithValueFuncImpl {};
 }  // namespace ops
 }  // namespace mindspore
 

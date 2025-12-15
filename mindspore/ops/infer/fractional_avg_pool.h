@@ -27,7 +27,7 @@
 namespace mindspore {
 namespace ops {
 constexpr auto kNameFractionalAvgPool = "FractionalAvgPool";
-class OPS_API FractionalAvgPool : public BaseOperator {
+class FractionalAvgPool : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(FractionalAvgPool);
   FractionalAvgPool() : BaseOperator(kNameFractionalAvgPool) {
@@ -73,9 +73,8 @@ class OPS_API FractionalAvgPool : public BaseOperator {
   ///
   /// \return seed2 attributes.
 };
-OPS_API abstract::AbstractBasePtr FractionalAvgPoolInfer(const abstract::AnalysisEnginePtr &,
-                                                         const PrimitivePtr &primitive,
-                                                         const std::vector<abstract::AbstractBasePtr> &input_args);
+abstract::AbstractBasePtr FractionalAvgPoolInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
+                                                 const std::vector<abstract::AbstractBasePtr> &input_args);
 using PrimFractionalAvgPool = std::shared_ptr<FractionalAvgPool>;
 }  // namespace ops
 }  // namespace mindspore

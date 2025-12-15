@@ -25,7 +25,7 @@ namespace mindspore {
 namespace ops {
 constexpr auto kNameConstantOfShape = "ConstantOfShape";
 /// \brief ConstantOfShape defined ConstantOfShape operator prototype of lite.
-class OPS_API ConstantOfShape : public BaseOperator {
+class ConstantOfShape : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(ConstantOfShape);
   /// \brief Constructor.
@@ -58,9 +58,8 @@ class OPS_API ConstantOfShape : public BaseOperator {
   std::vector<float> get_value() const;
 };
 
-OPS_API abstract::AbstractBasePtr ConstantOfShapeInfer(const abstract::AnalysisEnginePtr &,
-                                                       const PrimitivePtr &primitive,
-                                                       const std::vector<abstract::AbstractBasePtr> &input_args);
+abstract::AbstractBasePtr ConstantOfShapeInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
+                                               const std::vector<abstract::AbstractBasePtr> &input_args);
 }  // namespace ops
 }  // namespace mindspore
 

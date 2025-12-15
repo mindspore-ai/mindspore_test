@@ -28,7 +28,7 @@ namespace ops {
 constexpr auto kNameSparseToDenseV2 = "SparseToDenseV2";
 /// \brief Converts a sparse representation into a dense tensor.
 /// Refer to Python API @ref mindspore.ops.SparseToDense for more details.
-class OPS_API SparseToDenseV2 : public BaseOperator {
+class SparseToDenseV2 : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(SparseToDenseV2);
   /// \brief Constructor.
@@ -44,9 +44,8 @@ class OPS_API SparseToDenseV2 : public BaseOperator {
   /// \return validate_indices.
   bool get_validate_indices() const;
 };
-OPS_API abstract::AbstractBasePtr SparseToDenseV2Infer(const abstract::AnalysisEnginePtr &,
-                                                       const PrimitivePtr &primitive,
-                                                       const std::vector<abstract::AbstractBasePtr> &input_args);
+abstract::AbstractBasePtr SparseToDenseV2Infer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
+                                               const std::vector<abstract::AbstractBasePtr> &input_args);
 }  // namespace ops
 }  // namespace mindspore
 

@@ -27,7 +27,7 @@
 namespace mindspore {
 namespace ops {
 constexpr auto kNameAdaptiveAvgPool3DGrad = "AdaptiveAvgPool3DGrad";
-class OPS_API AdaptiveAvgPool3DGrad : public BaseOperator {
+class AdaptiveAvgPool3DGrad : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(AdaptiveAvgPool3DGrad);
   AdaptiveAvgPool3DGrad() : BaseOperator(kNameAdaptiveAvgPool3DGrad) {
@@ -35,9 +35,8 @@ class OPS_API AdaptiveAvgPool3DGrad : public BaseOperator {
   }
 };
 
-OPS_API abstract::AbstractBasePtr AdaptiveAvgPool3DGradInfer(const abstract::AnalysisEnginePtr &,
-                                                             const PrimitivePtr &primitive,
-                                                             const std::vector<abstract::AbstractBasePtr> &input_args);
+abstract::AbstractBasePtr AdaptiveAvgPool3DGradInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
+                                                     const std::vector<abstract::AbstractBasePtr> &input_args);
 using PrimAdaptiveAvgPool3DGradPtr = std::shared_ptr<AdaptiveAvgPool3DGrad>;
 }  // namespace ops
 }  // namespace mindspore

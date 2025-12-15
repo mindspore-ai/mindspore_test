@@ -25,7 +25,7 @@
 namespace mindspore {
 namespace ops {
 constexpr auto kNameSparseSparseMinimum = "SparseSparseMinimum";
-class OPS_API SparseSparseMinimum : public BaseOperator {
+class SparseSparseMinimum : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(SparseSparseMinimum);
   SparseSparseMinimum() : BaseOperator(kNameSparseSparseMinimum) {

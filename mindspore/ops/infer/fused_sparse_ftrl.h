@@ -29,7 +29,7 @@ namespace mindspore {
 namespace ops {
 constexpr auto kNameFusedSparseFtrl = "FusedSparseFtrl";
 /// \brief FusedSparseFtrl operation. Refer to Python API @ref mindspore.ops.FusedSparseFtrl for more details.
-class OPS_API FusedSparseFtrl : public BaseOperator {
+class FusedSparseFtrl : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(FusedSparseFtrl);
   /// \brief Constructor.
@@ -74,9 +74,8 @@ class OPS_API FusedSparseFtrl : public BaseOperator {
   bool get_use_locking() const;
 };
 
-OPS_API abstract::AbstractBasePtr FusedSparseFtrlInfer(const abstract::AnalysisEnginePtr &,
-                                                       const PrimitivePtr &primitive,
-                                                       const std::vector<abstract::AbstractBasePtr> &input_args);
+abstract::AbstractBasePtr FusedSparseFtrlInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
+                                               const std::vector<abstract::AbstractBasePtr> &input_args);
 }  // namespace ops
 }  // namespace mindspore
 

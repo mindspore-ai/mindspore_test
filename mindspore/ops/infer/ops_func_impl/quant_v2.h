@@ -21,7 +21,7 @@
 
 namespace mindspore {
 namespace ops {
-class OPS_API QuantV2FuncImpl : public OpFuncImpl {
+class QuantV2FuncImpl : public OpFuncImpl {
  public:
   QuantV2FuncImpl() = default;
   ~QuantV2FuncImpl() = default;

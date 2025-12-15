@@ -23,7 +23,7 @@
 namespace mindspore {
 namespace ops {
 constexpr auto kNameBNGrad = "BNGrad";
-class OPS_API BNGrad : public BaseOperator {
+class BNGrad : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(BNGrad);
   BNGrad() : BaseOperator(kNameBNGrad) {}

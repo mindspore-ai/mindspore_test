@@ -23,7 +23,7 @@
 
 namespace mindspore {
 namespace ops {
-class OPS_API RFFTNFuncImpl : public OpFuncImpl {
+class RFFTNFuncImpl : public OpFuncImpl {
  public:
   RFFTNFuncImpl() = default;
   ~RFFTNFuncImpl() = default;

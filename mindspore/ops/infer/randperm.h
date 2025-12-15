@@ -28,7 +28,7 @@ namespace ops {
 constexpr auto kNameRandperm = "Randperm";
 /// \brief Parametric Rectified Linear Unit activation function.
 /// Refer to Python API @ref mindspore.ops.Randperm for more details.
-class OPS_API Randperm : public BaseOperator {
+class Randperm : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(Randperm);
   /// \brief Constructor.

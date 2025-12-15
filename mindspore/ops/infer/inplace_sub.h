@@ -28,7 +28,7 @@ namespace mindspore {
 namespace ops {
 constexpr auto kNameInplaceSub = "InplaceSub";
 /// \brief InplaceSub operation. Refer to Python API @ref mindspore.ops.InplaceSub for more details.
-class OPS_API InplaceSub : public BaseOperator {
+class InplaceSub : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(InplaceSub);
   /// \brief Constructor.
@@ -43,8 +43,8 @@ class OPS_API InplaceSub : public BaseOperator {
   std::vector<int64_t> get_indices() const;
 };
 
-OPS_API abstract::AbstractBasePtr InplaceSubInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
-                                                  const std::vector<abstract::AbstractBasePtr> &input_args);
+abstract::AbstractBasePtr InplaceSubInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
+                                          const std::vector<abstract::AbstractBasePtr> &input_args);
 using PrimInplaceSubPtr = std::shared_ptr<InplaceSub>;
 }  // namespace ops
 }  // namespace mindspore

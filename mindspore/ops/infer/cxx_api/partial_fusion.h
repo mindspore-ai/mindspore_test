@@ -23,7 +23,7 @@ namespace mindspore {
 namespace ops {
 constexpr auto kNamePartialFusion = "PartialFusion";
 /// \brief PartialFusion defined Partial operator prototype of lite.
-class OPS_API PartialFusion : public BaseOperator {
+class PartialFusion : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(PartialFusion);
   /// \brief Constructor.

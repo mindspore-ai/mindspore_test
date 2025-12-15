@@ -25,7 +25,7 @@
 namespace mindspore {
 namespace ops {
 constexpr auto kNameSegmentSum = "SegmentSum";
-class OPS_API SegmentSum : public BaseOperator {
+class SegmentSum : public BaseOperator {
  public:
   SegmentSum() : BaseOperator(kNameSegmentSum) { InitIOName({"input_x", "segment_ids"}, {"output"}); }
   MIND_API_BASE_MEMBER(SegmentSum);

@@ -28,7 +28,7 @@ namespace mindspore {
 namespace ops {
 constexpr auto kNamePad = "Pad";
 /// \brief Pads the input tensor according to the paddings. Refer to Python API @ref mindspore.ops.Pad for more details.
-class OPS_API Pad : public BaseOperator {
+class Pad : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(Pad);
   /// \brief Constructor.
@@ -43,8 +43,8 @@ class OPS_API Pad : public BaseOperator {
   /// \return paddings.
   std::vector<std::vector<int64_t>> get_paddings() const;
 };
-OPS_API abstract::AbstractBasePtr PadInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
-                                           const std::vector<abstract::AbstractBasePtr> &input_args);
+abstract::AbstractBasePtr PadInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
+                                   const std::vector<abstract::AbstractBasePtr> &input_args);
 }  // namespace ops
 }  // namespace mindspore
 

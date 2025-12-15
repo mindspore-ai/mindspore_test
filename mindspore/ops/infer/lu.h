@@ -28,13 +28,13 @@
 namespace mindspore {
 namespace ops {
 constexpr auto kNameLu = "Lu";
-class OPS_API Lu : public BaseOperator {
+class Lu : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(Lu);
   Lu() : BaseOperator(kNameLu) { InitIOName({"input"}, {"lu", "p"}); }
 };
-OPS_API abstract::AbstractBasePtr LuInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
-                                          const std::vector<abstract::AbstractBasePtr> &input_args);
+abstract::AbstractBasePtr LuInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
+                                  const std::vector<abstract::AbstractBasePtr> &input_args);
 using PrimLuPtr = std::shared_ptr<Lu>;
 }  // namespace ops
 }  // namespace mindspore

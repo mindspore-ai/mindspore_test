@@ -28,7 +28,7 @@ namespace ops {
 constexpr auto kNameArgminV2 = "ArgminV2";
 /// \brief Returns the indices of the minimum value of a tensor across the axis.
 /// Refer to Python API @ref mindspore.ops.ArgminV2 for more details.
-class OPS_API ArgminV2 : public BaseOperator {
+class ArgminV2 : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(ArgminV2);
   /// \brief Constructor.
@@ -37,8 +37,8 @@ class OPS_API ArgminV2 : public BaseOperator {
   /// \brief Init. Refer to the parameters of Python API @ref mindspore.ops.ArgminV2 for the inputs.
   void Init();
 };
-OPS_API abstract::AbstractBasePtr ArgminV2Infer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
-                                                const std::vector<abstract::AbstractBasePtr> &input_args);
+abstract::AbstractBasePtr ArgminV2Infer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
+                                        const std::vector<abstract::AbstractBasePtr> &input_args);
 using PrimArgminV2 = std::shared_ptr<ArgminV2>;
 }  // namespace ops
 }  // namespace mindspore

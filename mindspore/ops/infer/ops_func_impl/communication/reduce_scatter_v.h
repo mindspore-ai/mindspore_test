@@ -27,7 +27,7 @@
 namespace mindspore {
 namespace ops {
 constexpr auto kNameReduceScatterV = "ReduceScatterV";
-class OPS_API ReduceScatterV : public BaseOperator {
+class ReduceScatterV : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(ReduceScatterV);
   ReduceScatterV() : BaseOperator(kNameReduceScatterV) { InitIOName({"input_x"}, {"output"}); }

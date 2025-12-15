@@ -29,7 +29,7 @@ namespace ops {
 constexpr auto kNameIndexAdd = "IndexAdd";
 /// \brief Adds tensor y to specified axis and indices of tensor x.
 /// Refer to Python API @ref mindspore.ops.IndexAdd for more details.
-class OPS_API IndexAdd : public BaseOperator {
+class IndexAdd : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(IndexAdd);
   /// \brief Constructor.
@@ -43,8 +43,8 @@ class OPS_API IndexAdd : public BaseOperator {
   int64_t get_axis() const;
 };
 
-OPS_API abstract::AbstractBasePtr IndexAddInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
-                                                const std::vector<abstract::AbstractBasePtr> &input_args);
+abstract::AbstractBasePtr IndexAddInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
+                                        const std::vector<abstract::AbstractBasePtr> &input_args);
 }  // namespace ops
 }  // namespace mindspore
 

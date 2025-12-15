@@ -26,7 +26,7 @@
 namespace mindspore {
 namespace ops {
 constexpr auto kNameSend = "Send";
-class OPS_API Send : public BaseOperator {
+class Send : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(Send);
   Send() : BaseOperator(kNameSend) { InitIOName({"input_x"}, {"output"}); }

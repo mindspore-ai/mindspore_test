@@ -27,7 +27,7 @@ namespace ops {
 constexpr auto kNameReverseSequence = "ReverseSequence";
 /// \brief Reverses variable length slices.
 /// Refer to Python API @ref mindspore.ops.ReverseSequence for more details.
-class OPS_API ReverseSequence : public BaseOperator {
+class ReverseSequence : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(ReverseSequence);
   /// \brief Constructor.
@@ -47,9 +47,8 @@ class OPS_API ReverseSequence : public BaseOperator {
   /// \return batch_dim.
   int64_t get_batch_dim() const;
 };
-OPS_API abstract::AbstractBasePtr ReverseSequenceInfer(const abstract::AnalysisEnginePtr &,
-                                                       const PrimitivePtr &primitive,
-                                                       const std::vector<abstract::AbstractBasePtr> &input_args);
+abstract::AbstractBasePtr ReverseSequenceInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
+                                               const std::vector<abstract::AbstractBasePtr> &input_args);
 using PrimReverseSequence = std::shared_ptr<ReverseSequence>;
 }  // namespace ops
 }  // namespace mindspore

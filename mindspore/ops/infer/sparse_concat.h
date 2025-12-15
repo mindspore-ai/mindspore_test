@@ -27,7 +27,7 @@ namespace mindspore {
 namespace ops {
 constexpr auto kNameSparseConcat = "SparseConcat";
 
-class OPS_API SparseConcat : public BaseOperator {
+class SparseConcat : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(SparseConcat);
   /// \brief Constructor.

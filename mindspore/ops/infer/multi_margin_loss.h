@@ -30,7 +30,7 @@
 namespace mindspore {
 namespace ops {
 constexpr auto kNameMultiMarginLoss = "MultiMarginLoss";
-class OPS_API MultiMarginLoss : public BaseOperator {
+class MultiMarginLoss : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(MultiMarginLoss);
   MultiMarginLoss() : BaseOperator(kNameMultiMarginLoss) { InitIOName({"x", "target", "weight"}, {"y"}); }
@@ -43,9 +43,8 @@ class OPS_API MultiMarginLoss : public BaseOperator {
   string get_reduction() const;
 };
 
-OPS_API abstract::AbstractBasePtr MultiMarginLossInfer(const abstract::AnalysisEnginePtr &,
-                                                       const PrimitivePtr &primitive,
-                                                       const std::vector<abstract::AbstractBasePtr> &input_args);
+abstract::AbstractBasePtr MultiMarginLossInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
+                                               const std::vector<abstract::AbstractBasePtr> &input_args);
 using PrimMultiMarginLossPtr = std::shared_ptr<MultiMarginLoss>;
 }  // namespace ops
 }  // namespace mindspore

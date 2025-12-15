@@ -30,7 +30,7 @@ namespace ops {
 constexpr auto kNameFractionalMaxPoolWithFixedKsize = "FractionalMaxPoolWithFixedKsize";
 /// \brief Fractional max pooling operation.
 /// Refer to Python API @ref mindspore.ops.FractionalMaxPoolWithFixedKsize for more details.
-class OPS_API FractionalMaxPoolWithFixedKsize : public BaseOperator {
+class FractionalMaxPoolWithFixedKsize : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(FractionalMaxPoolWithFixedKsize);
   /// \brief Constructor.
@@ -62,7 +62,7 @@ class OPS_API FractionalMaxPoolWithFixedKsize : public BaseOperator {
   /// \return data format attributes.
 };
 
-OPS_API abstract::AbstractBasePtr FractionalMaxPoolWithFixedKsizeInfer(
+abstract::AbstractBasePtr FractionalMaxPoolWithFixedKsizeInfer(
   const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
   const std::vector<abstract::AbstractBasePtr> &input_args);
 }  // namespace ops

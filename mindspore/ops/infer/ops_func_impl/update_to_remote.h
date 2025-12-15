@@ -23,7 +23,7 @@
 
 namespace mindspore {
 namespace ops {
-class OPS_API UpdateToRemoteFuncImpl : public CopyToDeviceFuncImpl {};
+class UpdateToRemoteFuncImpl : public CopyToDeviceFuncImpl {};
 }  // namespace ops
 }  // namespace mindspore
 

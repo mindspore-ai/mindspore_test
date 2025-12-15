@@ -25,7 +25,7 @@
 
 namespace mindspore {
 namespace ops {
-class OPS_API InplaceMulsFuncImpl : public InplaceMulFuncImpl {};
+class InplaceMulsFuncImpl : public InplaceMulFuncImpl {};
 }  // namespace ops
 }  // namespace mindspore
 

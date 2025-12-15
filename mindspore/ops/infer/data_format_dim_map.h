@@ -26,7 +26,7 @@
 namespace mindspore {
 namespace ops {
 constexpr auto kNameDataFormatDimMap = "DataFormatDimMap";
-class OPS_API DataFormatDimMap : public BaseOperator {
+class DataFormatDimMap : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(DataFormatDimMap);
   DataFormatDimMap() : BaseOperator(kNameDataFormatDimMap) { InitIOName({"x"}, {"output"}); }
@@ -36,9 +36,8 @@ class OPS_API DataFormatDimMap : public BaseOperator {
   std::string get_src_format() const;
   std::string get_dst_format() const;
 };
-OPS_API abstract::AbstractBasePtr DataFormatDimMapInfer(const abstract::AnalysisEnginePtr &,
-                                                        const PrimitivePtr &primitive,
-                                                        const std::vector<abstract::AbstractBasePtr> &input_args);
+abstract::AbstractBasePtr DataFormatDimMapInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
+                                                const std::vector<abstract::AbstractBasePtr> &input_args);
 using kDataFormatDimMapPtr = std::shared_ptr<DataFormatDimMap>;
 }  // namespace ops
 }  // namespace mindspore

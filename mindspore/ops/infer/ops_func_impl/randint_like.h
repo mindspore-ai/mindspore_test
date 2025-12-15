@@ -22,7 +22,7 @@
 #include "infer/ops_func_impl/rand_like_ext.h"
 
 namespace mindspore::ops {
-class OPS_API RandIntLikeFuncImpl : public RandLikeExtFuncImpl {
+class RandIntLikeFuncImpl : public RandLikeExtFuncImpl {
  public:
   RandIntLikeFuncImpl() { dtype_idx_ = 5; }
   // For aclnn GetWorkspace

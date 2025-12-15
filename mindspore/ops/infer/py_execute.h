@@ -21,6 +21,7 @@
 #include <set>
 #include <vector>
 
+#include "mindapi/base/macros.h"
 #include "mindapi/base/types.h"
 #include "mindapi/helper.h"
 #include "ops/base_operator.h"
@@ -34,7 +35,7 @@ namespace ops {
 constexpr auto kNamePyExecute = "PyExecute";
 /// \brief Implement for JIT Fallback.
 /// Refer to Python API @ref mindspore.ops.PyExecute for more details.
-class OPS_API PyExecute : public BaseOperator {
+class PyExecute : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(PyExecute);
   /// \brief Constructor.

@@ -27,7 +27,7 @@ constexpr auto kNameSparseMatrixMul = "SparseMatrixMul";
 /// \brief Computes the elementwise multiply between csr sparse and dense matrix.
 /// Refer to Python API @ref mindspore.ops.SparseMatrixMul for
 /// more details.
-class OPS_API SparseMatrixMul : public BaseOperator {
+class SparseMatrixMul : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(SparseMatrixMul);
   /// \brief Constructor.

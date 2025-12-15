@@ -19,6 +19,7 @@
 #include <memory>
 #include <set>
 #include <vector>
+#include "mindapi/base/macros.h"
 #include "mindapi/base/types.h"
 #include "ops/base_operator.h"
 
@@ -63,8 +64,8 @@ class OPS_API Uniform : public BaseOperator {
   MIND_API_BASE_MEMBER(Uniform);
 };
 
-OPS_API abstract::AbstractBasePtr UniformInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
-                                               const std::vector<abstract::AbstractBasePtr> &input_args);
+abstract::AbstractBasePtr UniformInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
+                                       const std::vector<abstract::AbstractBasePtr> &input_args);
 }  // namespace ops
 }  // namespace mindspore
 

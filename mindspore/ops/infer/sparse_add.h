@@ -26,7 +26,7 @@ namespace mindspore {
 namespace ops {
 constexpr auto kNameSparseAdd = "SparseAdd";
 
-class OPS_API SparseAdd : public BaseOperator {
+class SparseAdd : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(SparseAdd);
   /// \brief Constructor.

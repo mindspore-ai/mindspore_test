@@ -37,7 +37,7 @@ enum KvScaleCacheInputIndex : size_t {
   kvScaleCacheInputsNum
 };
 
-class OPS_API KvScaleCacheFuncImpl : public OpFuncImpl {
+class KvScaleCacheFuncImpl : public OpFuncImpl {
  public:
   BaseShapePtr InferShape(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
   TypePtr InferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;

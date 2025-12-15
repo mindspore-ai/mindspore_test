@@ -29,7 +29,7 @@ namespace mindspore {
 namespace ops {
 constexpr auto kNameMedian = "Median";
 /// \brief Median operation. Refer to Python API @ref mindspore.ops.Median for more details.
-class OPS_API Median : public BaseOperator {
+class Median : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(Median);
   /// \brief Constructor.
@@ -63,8 +63,8 @@ class OPS_API Median : public BaseOperator {
   int64_t get_axis() const;
 };
 
-OPS_API abstract::AbstractBasePtr MedianInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
-                                              const std::vector<abstract::AbstractBasePtr> &input_args);
+abstract::AbstractBasePtr MedianInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
+                                      const std::vector<abstract::AbstractBasePtr> &input_args);
 }  // namespace ops
 }  // namespace mindspore
 

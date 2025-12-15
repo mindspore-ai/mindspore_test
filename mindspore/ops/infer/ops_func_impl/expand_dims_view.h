@@ -24,7 +24,7 @@
 
 namespace mindspore {
 namespace ops {
-class OPS_API ExpandDimsViewFuncImpl : public ExpandDimsFuncImpl {};
+class ExpandDimsViewFuncImpl : public ExpandDimsFuncImpl {};
 }  // namespace ops
 }  // namespace mindspore
 

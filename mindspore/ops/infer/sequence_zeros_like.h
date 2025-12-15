@@ -23,7 +23,7 @@
 namespace mindspore {
 namespace ops {
 /// \brief Sequence mul integer operation.
-class OPS_API SequenceZerosLike : public BaseOperator {
+class SequenceZerosLike : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(SequenceZerosLike);
   /// \brief Constructor.

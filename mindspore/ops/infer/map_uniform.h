@@ -29,13 +29,13 @@
 namespace mindspore {
 namespace ops {
 constexpr auto kNameMapUniform = "MapUniform";
-class OPS_API MapUniform : public BaseOperator {
+class MapUniform : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(MapUniform);
   MapUniform() : BaseOperator(kNameMapUniform) { InitIOName({"input", "per_group_size", "group_num"}, {"output"}); }
 };
-OPS_API abstract::AbstractBasePtr MapUniformInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
-                                                  const std::vector<abstract::AbstractBasePtr> &input_args);
+abstract::AbstractBasePtr MapUniformInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
+                                          const std::vector<abstract::AbstractBasePtr> &input_args);
 using PrimMapUniformPtr = std::shared_ptr<MapUniform>;
 }  // namespace ops
 }  // namespace mindspore

@@ -26,7 +26,7 @@ namespace ops {
 constexpr auto kNameMapTensorGetGrad = "MapTensorGetGrad";
 /// \brief Grad operator MapTensorGet.
 /// Refer to Python API @ref mindspore.ops.MapTensorGetGrad for more details.
-class OPS_API MapTensorGetGrad : public BaseOperator {
+class MapTensorGetGrad : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(MapTensorGetGrad);
   /// \brief Constructor.
@@ -36,9 +36,8 @@ class OPS_API MapTensorGetGrad : public BaseOperator {
   /// \brief Init.
   void Init() const {}
 };
-OPS_API abstract::AbstractBasePtr MapTensorGetGradInfer(const abstract::AnalysisEnginePtr &,
-                                                        const PrimitivePtr &primitive,
-                                                        const std::vector<abstract::AbstractBasePtr> &input_args);
+abstract::AbstractBasePtr MapTensorGetGradInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
+                                                const std::vector<abstract::AbstractBasePtr> &input_args);
 }  // namespace ops
 }  // namespace mindspore
 

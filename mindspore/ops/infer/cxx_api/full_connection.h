@@ -27,7 +27,7 @@ namespace mindspore {
 namespace ops {
 constexpr auto kNameFullConnection = "FullConnection";
 /// \brief FullConnection defined FullConnection operator prototype of lite.
-class OPS_API FullConnection : public BaseOperator {
+class FullConnection : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(FullConnection);
   /// \brief Constructor.

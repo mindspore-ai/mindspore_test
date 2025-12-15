@@ -23,7 +23,7 @@
 
 namespace mindspore::ops {
 /// \brief Implementation of InferShape and InferType functions for operator 'SliceExtView'
-class OPS_API SliceExtViewFuncImpl : public SliceExtFuncImpl {};
+class SliceExtViewFuncImpl : public SliceExtFuncImpl {};
 }  // namespace mindspore::ops
 
 #endif  // MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_SLICE_EXT_VIEW_H_

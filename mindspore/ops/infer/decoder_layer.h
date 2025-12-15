@@ -28,7 +28,7 @@ namespace mindspore {
 namespace ops {
 constexpr auto kNameDecoderLayer = "DecoderLayer";
 /// \brief DecoderLayer op in MindIR.
-class OPS_API DecoderLayer : public BaseOperator {
+class DecoderLayer : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(DecoderLayer);
   /// \brief Constructor.

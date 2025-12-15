@@ -32,7 +32,7 @@ namespace ops {
 constexpr auto kNamePdist = "Pdist";
 /// \brief Computes batched the p norm distance between each pair of row vectors in one collection.
 /// Refer to Python API @ref mindspore.ops.Pdist for more details.
-class OPS_API Pdist : public BaseOperator {
+class Pdist : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(Pdist);
   /// \brief Constructor.
@@ -45,8 +45,8 @@ class OPS_API Pdist : public BaseOperator {
   float get_p() const;
 };
 
-OPS_API abstract::AbstractBasePtr PdistInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
-                                             const std::vector<abstract::AbstractBasePtr> &input_args);
+abstract::AbstractBasePtr PdistInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
+                                     const std::vector<abstract::AbstractBasePtr> &input_args);
 }  // namespace ops
 }  // namespace mindspore
 

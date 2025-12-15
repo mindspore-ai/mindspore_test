@@ -28,7 +28,7 @@
 namespace mindspore {
 namespace ops {
 constexpr auto kNameApplyFtrl = "ApplyFtrl";
-class OPS_API ApplyFtrl : public BaseOperator {
+class ApplyFtrl : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(ApplyFtrl);
   ApplyFtrl() : BaseOperator(kNameApplyFtrl) {

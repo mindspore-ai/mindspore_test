@@ -25,7 +25,7 @@
 namespace mindspore {
 namespace ops {
 constexpr auto kNameActivationGrad = "ActivationGrad";
-class OPS_API ActivationGrad : public BaseOperator {
+class ActivationGrad : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(ActivationGrad);
   ActivationGrad() : BaseOperator(kNameActivationGrad) {}

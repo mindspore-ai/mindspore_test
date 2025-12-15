@@ -26,15 +26,14 @@ namespace mindspore {
 namespace ops {
 constexpr auto kNameCSRTensorGetValues = "CSRTensorGetValues";
 /// \brief CSRTensorGetIndices op is used to get indptr in CSRTensor.
-class OPS_API CSRTensorGetValues : public BaseOperator {
+class CSRTensorGetValues : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(CSRTensorGetValues);
   /// \brief Constructor.
   CSRTensorGetValues() : BaseOperator(kNameCSRTensorGetValues) {}
 };
-OPS_API abstract::AbstractBasePtr CSRTensorGetValuesInfer(const abstract::AnalysisEnginePtr &,
-                                                          const PrimitivePtr &primitive,
-                                                          const std::vector<abstract::AbstractBasePtr> &args_spec_list);
+abstract::AbstractBasePtr CSRTensorGetValuesInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
+                                                  const std::vector<abstract::AbstractBasePtr> &args_spec_list);
 }  // namespace ops
 }  // namespace mindspore
 

@@ -17,6 +17,7 @@
 #define MINDSPORE_CORE_OPS_SYMBOL_OPS_IMPL_SCALAR_DIV_H_
 
 #include <cmath>
+#include "mindapi/base/macros.h"
 #include "mindspore/ops/infer/symbol_ops_impl/common.h"
 
 namespace mindspore {
@@ -48,7 +49,7 @@ class OPS_API ScalarDiv : public ScalarIntOp {
   void UpdateMathInfo() override;
 };
 
-class OPS_API ScalarFloorDiv : public ScalarIntOp {
+class ScalarFloorDiv : public ScalarIntOp {
  public:
   using ScalarIntOp::ScalarIntOp;
   ScalarFloorDiv(const SymbolPtr &lhs, const SymbolPtr &rhs) : ScalarIntOp({lhs, rhs}) {}
@@ -66,7 +67,7 @@ class OPS_API ScalarFloorDiv : public ScalarIntOp {
   void UpdateMathInfo() override;
 };
 
-class OPS_API ScalarCeilDiv : public ScalarIntOp {
+class ScalarCeilDiv : public ScalarIntOp {
  public:
   using ScalarIntOp::ScalarIntOp;
   ScalarCeilDiv(const SymbolPtr &lhs, const SymbolPtr &rhs) : ScalarIntOp({lhs, rhs}) {}
@@ -83,7 +84,7 @@ class OPS_API ScalarCeilDiv : public ScalarIntOp {
   }
 };
 
-class OPS_API ScalarRealDiv : public InferValueOp {
+class ScalarRealDiv : public InferValueOp {
  public:
   using InferValueOp::InferValueOp;
   ScalarRealDiv(const SymbolPtr &lhs, const SymbolPtr &rhs) : InferValueOp({lhs, rhs}) {}

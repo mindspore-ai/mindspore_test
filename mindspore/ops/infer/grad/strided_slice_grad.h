@@ -27,7 +27,7 @@ namespace mindspore {
 namespace ops {
 constexpr auto kNameStridedSliceGrad = "StridedSliceGrad";
 
-class OPS_API StridedSliceGrad : public BaseOperator {
+class StridedSliceGrad : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(StridedSliceGrad);
   StridedSliceGrad() : BaseOperator(kNameStridedSliceGrad) {
@@ -49,9 +49,8 @@ class OPS_API StridedSliceGrad : public BaseOperator {
   std::vector<int64_t> get_shapex() const;
 };
 
-OPS_API abstract::AbstractBasePtr StridedSliceGradInfer(const abstract::AnalysisEnginePtr &,
-                                                        const PrimitivePtr &primitive,
-                                                        const std::vector<abstract::AbstractBasePtr> &input_args);
+abstract::AbstractBasePtr StridedSliceGradInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
+                                                const std::vector<abstract::AbstractBasePtr> &input_args);
 using PrimStridedSliceGradPtr = std::shared_ptr<StridedSliceGrad>;
 }  // namespace ops
 }  // namespace mindspore

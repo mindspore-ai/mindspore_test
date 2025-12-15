@@ -23,7 +23,7 @@
 
 namespace mindspore {
 namespace ops {
-class OPS_API IHFFTFuncImpl : public OpFuncImpl {
+class IHFFTFuncImpl : public OpFuncImpl {
  public:
   IHFFTFuncImpl() = default;
   ~IHFFTFuncImpl() = default;

@@ -29,7 +29,7 @@ namespace ops {
 constexpr auto kNameRenorm = "Renorm";
 /// \brief Calculates Renorm .
 /// Refer to Python API @ref mindspore.ops.Renorm for more details.
-class OPS_API Renorm : public BaseOperator {
+class Renorm : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(Renorm);
   /// \brief Constructor.
@@ -38,8 +38,8 @@ class OPS_API Renorm : public BaseOperator {
   void Init() const {}
 };
 
-OPS_API abstract::AbstractBasePtr RenormInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
-                                              const std::vector<abstract::AbstractBasePtr> &input_args);
+abstract::AbstractBasePtr RenormInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
+                                      const std::vector<abstract::AbstractBasePtr> &input_args);
 }  // namespace ops
 }  // namespace mindspore
 

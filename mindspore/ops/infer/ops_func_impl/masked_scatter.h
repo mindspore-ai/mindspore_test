@@ -24,7 +24,7 @@
 
 namespace mindspore {
 namespace ops {
-class OPS_API MaskedScatterFuncImpl : public OpFuncImpl {
+class MaskedScatterFuncImpl : public OpFuncImpl {
  public:
   // GeneralInfer
   ShapeArray InferShape(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const override;

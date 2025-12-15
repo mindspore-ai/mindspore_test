@@ -28,7 +28,7 @@ namespace ops {
 constexpr auto kNameTopK = "TopK";
 /// \brief Finds values and indices of the k largest entries along the last dimension.
 /// Refer to Python API @ref mindspore.ops.TopK for more details.
-class OPS_API TopK : public BaseOperator {
+class TopK : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(TopK);
   /// \brief Constructor.
@@ -45,8 +45,8 @@ class OPS_API TopK : public BaseOperator {
   bool get_sorted() const;
   bool get_attr(const char *attr) const;
 };
-OPS_API abstract::AbstractBasePtr TopKInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
-                                            const std::vector<abstract::AbstractBasePtr> &input_args);
+abstract::AbstractBasePtr TopKInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
+                                    const std::vector<abstract::AbstractBasePtr> &input_args);
 }  // namespace ops
 }  // namespace mindspore
 

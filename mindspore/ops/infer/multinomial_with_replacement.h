@@ -27,7 +27,7 @@
 namespace mindspore {
 namespace ops {
 constexpr auto kNameMultinomialWithReplacement = "MultinomialWithReplacement";
-class OPS_API MultinomialWithReplacement : public BaseOperator {
+class MultinomialWithReplacement : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(MultinomialWithReplacement);
   MultinomialWithReplacement() : BaseOperator(kNameMultinomialWithReplacement) {
