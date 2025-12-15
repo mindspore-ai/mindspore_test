@@ -12,10 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+"""Test cases for mint.nn.conv2d operator."""
 import numpy as np
 import pytest
+import os
+import json
 import mindspore as ms
-import mindspore.nn as nn
+from mindspore import nn
 from mindspore import Tensor
 from mindspore import ops
 from mindspore.mint.nn import Conv2d
@@ -166,7 +169,7 @@ def test_conv2d_with_bf16():
     assert np.allclose(output.asnumpy(), expected)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('context_mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_conv2d_backward(context_mode):
     """
@@ -178,6 +181,33 @@ def test_conv2d_backward(context_mode):
     ms.context.set_context(mode=context_mode)
     set_device()
     ms.device_context.ascend.op_precision.conv_allow_hf32(False)
+
+    # dump aclnn data
+    dump_path = "/home/jenkins/nn_conv2d_aclnn_data_dump"
+    if not os.path.exists(dump_path):
+        os.makedirs(dump_path, exist_ok=True)
+    set_dump_json = {
+        "dump": {
+            "dump_list": [
+                {
+                    "layer": [
+                        "conv2d",
+                    ],
+                    "model_name": "conv2d",
+                }
+            ],
+            "dump_mode": "all",
+            "dump_path": dump_path,
+        }
+    }
+    with open(os.path.join(dump_path, "set_dump.json"), "w", encoding="utf-8") as f:
+        f.write(json.dumps(set_dump_json, sort_keys=True, indent=4))
+
+    import acl
+    acl.init()
+    acl.mdl.init_dump()
+    acl.mdl.set_dump(os.path.join(dump_path, "set_dump.json"))
+
     x = Tensor([[[[0.0, 1.0, 2.0], [3.0, 4.0, 5.0], [6.0, 7.0, 8.0]],
                  [[9.0, 10.0, 11.0], [12.0, 13.0, 14.0], [15.0, 16.0, 17.0]]],
                 [[[18.0, 19.0, 20.0], [21.0, 22.0, 23.0], [24.0, 25.0, 26.0]],
@@ -213,4 +243,7 @@ def test_conv2d_backward(context_mode):
                                  [[0.1844, 0.1844, 0.1844],
                                   [0.1844, 0.1844, 0.1844],
                                   [0.1844, 0.1844, 0.1844]]]])
-    assert np.allclose(grad_output[0].asnumpy(), expected_x_grad, atol=1e-4, rtol=1e-4)
+    try:
+        assert np.allclose(grad_output[0].asnumpy(), expected_x_grad, atol=1e-4, rtol=1e-4)
+    finally:
+        acl.mdl.finalize_dump()
