@@ -16,5 +16,6 @@
 
 from mindspore._c_expression import StoragePy as StoragePy_
 
+
 class UntypedStorage(StoragePy_):
     pass

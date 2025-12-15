@@ -232,8 +232,9 @@ static PyObject *StoragePy_shareFd(PyObject *self, PyObject *noargs) {
 static PyObject *StoragePy_newSharedFd(PyObject *_unused, PyObject *args) {
   HANDLE_MS_EXCEPTION
 
-  if (PyTuple_GET_SIZE(args) != 3) {
-    MS_LOG(EXCEPTION) << "The args are invalid, expect 4 items in the tuple.";
+  Py_ssize_t args_element_count = 3;
+  if (PyTuple_GET_SIZE(args) != args_element_count) {
+    MS_LOG(EXCEPTION) << "The args are invalid, expect 3 items in the tuple.";
   }
   PyObject *_tmp_fd = PyTuple_GET_ITEM(args, 0);
   PyObject *_size = PyTuple_GET_ITEM(args, 1);

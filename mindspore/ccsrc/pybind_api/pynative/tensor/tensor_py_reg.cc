@@ -1762,7 +1762,8 @@ static PyMethodDef Tensor_methods[] = {
                                     For Ascend tensor, ``True`` is always returned.
 
                                 Returns:
-                                    Bool. If the tensor is in the shared memory, return ``True``. Otherwise, return ``False``.
+                                    Bool. If the tensor is in the shared memory, return ``True``. Otherwise,
+                                    return ``False``.
 
                                 Examples:
                                     >>> import mindspore as ms
