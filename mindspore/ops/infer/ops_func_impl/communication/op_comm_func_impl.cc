@@ -61,9 +61,9 @@ TypeId CheckInferType(const std::string &name, const TypeId type) {
 }
 
 TypeId CheckReduceInferType(const std::string &name, const TypeId type) {
-  static const std::set<TypeId> valid_types = {kNumberTypeInt8,    kNumberTypeInt16,   kNumberTypeInt32,
-                                               kNumberTypeInt64,   kNumberTypeFloat16, kNumberTypeFloat32,
-                                               kNumberTypeBFloat16};
+  static const std::set<TypeId> valid_types = {kNumberTypeBool,    kNumberTypeInt8,    kNumberTypeInt16,
+                                               kNumberTypeInt32,   kNumberTypeInt64,   kNumberTypeFloat16,
+                                               kNumberTypeFloat32, kNumberTypeBFloat16};
   (void)CheckAndConvertUtils::CheckTypeIdValid("input", type, valid_types, name);
   return type;
 }
