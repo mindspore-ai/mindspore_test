@@ -95,9 +95,8 @@ std::string GetAscendPath() {
   const std::string kCann = "cann";
   auto pos = path_tmp.rfind(kCann);
   if (pos == std::string::npos) {
-    MS_EXCEPTION(ValueError)
-      << "Get ascend path failed, please check whether CANN packages are installed correctly, \n"
-         "and environment variables are set by source ${LOCAL_ASCEND}/cann/set_env.sh.";
+    MS_EXCEPTION(ValueError) << "Get ascend path failed, please check whether CANN packages are installed correctly,\n"
+                                "and environment variables are set by source ${LOCAL_ASCEND}/cann/set_env.sh.";
   }
   return path_tmp.substr(0, pos) + kCann + "/";
 }
