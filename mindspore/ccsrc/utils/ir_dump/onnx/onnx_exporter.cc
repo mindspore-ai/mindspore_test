@@ -39,6 +39,7 @@
 #include "utils/check_convert_utils.h"
 #include "utils/hash_map.h"
 #include "utils/ms_context.h"
+#include "utils/convert_utils.h"
 #include "ops_utils/op_utils.h"
 #include "primitive/auto_generate/gen_ops_primitive_a.h"
 #include "primitive/auto_generate/gen_ops_primitive_b.h"
@@ -955,6 +956,13 @@ class OpNameInfo {
     return *this;
   }
 
+  const std::vector<std::vector<int>> &dtype_groups() const { return dtype_groups_; }
+
+  OpNameInfo &DtypeGroup(const std::vector<std::vector<int>> &dtype_groups) {
+    dtype_groups_ = dtype_groups;
+    return *this;
+  }
+
   int num_outputs() const { return num_outputs_; }
 
   OpNameInfo &set_num_outputs(int n) {
@@ -968,6 +976,7 @@ class OpNameInfo {
   std::vector<OpAttrInfo> op_attrs_;            // operator attributes map info
   std::vector<InputConversion> input_casts_;    // if input input_index has type input_type, cast it to target_type
   std::vector<OutputConversion> output_casts_;  // cast output output_index to fixed type or input type
+  std::vector<std::vector<int>> dtype_groups_;  // type promote for inputs
   int num_outputs_ = 1;
 };
 
@@ -983,7 +992,7 @@ OPERATOR_ONNX_CONVERT_DEFINE(Mod, Mod,
                                                }))
 
 OPERATOR_ONNX_CONVERT_DEFINE(Add, Add, OpNameInfo())
-OPERATOR_ONNX_CONVERT_DEFINE(Mul, Mul, OpNameInfo())
+OPERATOR_ONNX_CONVERT_DEFINE(Mul, Mul, OpNameInfo().DtypeGroup({{kZeroNum, kOneNum}}))
 OPERATOR_ONNX_CONVERT_DEFINE(Pow, Pow, OpNameInfo())
 
 OPERATOR_ONNX_CONVERT_DEFINE(ReLU, Relu, OpNameInfo())
@@ -1252,6 +1261,10 @@ class OnnxExporter {
   std::string ExportPrimitive(const FuncGraphPtr &func_graph, std::map<AnfNodePtr, std::string> *node_map_ptr,
                               const PrimitivePtr &prim, const std::vector<AnfNodePtr> &inputs,
                               onnx::GraphProto *graph_proto);
+
+  void PromoteType(const OpNameInfo &op_convert_info, const std::vector<AnfNodePtr> &inputs,
+                   const std::string &node_name, onnx::GraphProto *const graph_proto,
+                   std::vector<std::string> *input_list);
 
   static onnx::TensorProto_DataType GetOnnxDataType(TypeId type_id);
   static onnx::TensorProto_DataType GetOutputType(const AnfNodePtr &node, int64_t output_index = -1);
@@ -5791,6 +5804,35 @@ void OnnxExporter::AddOutputWithCast(onnx::NodeProto *node_proto, const std::str
   }
 }
 
+void OnnxExporter::PromoteType(const OpNameInfo &op_convert_info, const std::vector<AnfNodePtr> &inputs,
+                               const std::string &node_name, onnx::GraphProto *const graph_proto,
+                               std::vector<std::string> *input_list) {
+  for (const auto &dtype_group : op_convert_info.dtype_groups()) {
+    std::vector<TypeId> type_id_group;
+    std::transform(dtype_group.begin(), dtype_group.end(), std::back_inserter(type_id_group), [&inputs](int index) {
+      auto dtype = inputs[index]->Type();
+      MS_EXCEPTION_IF_NULL(dtype);
+      auto tensor_type = dyn_cast<TensorType>(dtype);
+      MS_EXCEPTION_IF_NULL(tensor_type);
+      return tensor_type->element()->type_id();
+    });
+    TypeId promote_type_id = type_id_group[kZeroNum];
+    for (size_t i = 1; i < type_id_group.size(); ++i) {
+      promote_type_id = ConvertTypeForTensorsOrScalars(type_id_group[i], promote_type_id);
+    }
+    MS_LOG(DEBUG) << "Type promote for " << node_name << " with type_id: " << TypeIdToString(promote_type_id);
+    auto promote_type = GetOnnxDataType(promote_type_id);
+    for (const auto &index : dtype_group) {
+      auto current_type_id = type_id_group[index];
+      if (current_type_id != promote_type_id) {
+        auto promote_input_name = node_name + "_promote_type_" + std::to_string(index);
+        AddCastOp(input_list->at(index), promote_input_name, promote_type, graph_proto);
+        input_list->at(index) = promote_input_name;
+      }
+    }
+  }
+}
+
 std::string OnnxExporter::ExportPrimitive(const FuncGraphPtr &, std::map<AnfNodePtr, std::string> *node_map_ptr,
                                           const PrimitivePtr &prim, const std::vector<AnfNodePtr> &inputs,
                                           onnx::GraphProto *const graph_proto) {
@@ -5813,6 +5855,10 @@ std::string OnnxExporter::ExportPrimitive(const FuncGraphPtr &, std::map<AnfNode
 
   std::vector<onnx::TensorProto_DataType> output_cast_types(op_convert_info.num_outputs(),
                                                             onnx::TensorProto_DataType_UNDEFINED);
+
+  // Do type promotion.
+  PromoteType(op_convert_info, inputs, node_name, graph_proto, &input_list);
+
   // Cast inputs if needed
   for (const auto &rule : op_convert_info.input_casts()) {
     auto original_type = GetOutputType(inputs[static_cast<size_t>(rule.input_index)]);
