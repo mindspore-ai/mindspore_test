@@ -603,3 +603,36 @@ def test_rand_like_with_device(mode):
     """
     test_name = f"test_rand_like_with_device_impl[{mode}]"
     _run_test_in_subprocess(test_name)
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@pytest.mark.parametrize('mode', ['pynative', 'kbk'])
+def test_random_op_with_negative_dimension(mode):
+    """
+    Feature: mint.randn function with negative dimension.
+    Description: test function call
+    Expectation: expect ValueError.
+    """
+    with pytest.raises(ValueError) as err:
+        run_randn(2, -1, mode=mode)
+        if mode == 'pynative':
+            _pynative_executor.sync()
+    assert 'input shape must be greater than or equal to 0, but got -1' in str(err.value)
+
+    with pytest.raises(ValueError) as err:
+        run_randn(-1, mode=mode)
+        if mode == 'pynative':
+            _pynative_executor.sync()
+    assert 'input shape must be greater than or equal to 0, but got -1' in str(err.value)
+
+    with pytest.raises(ValueError) as err:
+        run_rand(2, -1, mode=mode)
+        if mode == 'pynative':
+            _pynative_executor.sync()
+    assert 'input shape must be greater than or equal to 0, but got -1' in str(err.value)
+
+    with pytest.raises(ValueError) as err:
+        run_randint(0, 5, (2, -1), mode=mode)
+        if mode == 'pynative':
+            _pynative_executor.sync()
+    assert 'input shape must be greater than or equal to 0, but got -1' in str(err.value)

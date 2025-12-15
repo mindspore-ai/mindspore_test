@@ -24,6 +24,8 @@
 #include "include/pynative/utils/pyboost/functions/auto_grad_guard.h"
 #include "include/runtime/utils/dispatch/dispatch_env.h"
 #include "include/pynative/utils/pyboost/functions/dispatch.h"
+#include "mindspore/core/include/ops/op_def_utils.h"
+#include "mindspore/core/include/utils/check_convert_utils.h"
 #include "mindspore/core/include/utils/stream_guard.h"
 #include "mindspore/ops/include/primitive/auto_generate/gen_ops_primitive_e.h"
 
@@ -40,6 +42,12 @@ tensor::TensorPtr empty(const ValueTuplePtr &size, const std::optional<Int64ImmP
   ShapeVector output_shape = GetShape(size);
   TypeId data_type = GetDataType(nullptr, dtype);
   auto device_type = GetDeviceName(nullptr, device);
+
+  for (size_t i = 0; i < output_shape.size(); ++i) {
+    MS_CHECK_VALUE(output_shape[i] >= 0,
+                   CheckAndConvertUtils::FormatCheckIntegerMsg(std::to_string(i) + "th dimension of input shape",
+                                                               output_shape[i], kGreaterEqual, 0, prim::kPrimEmpty));
+  }
 
   auto device_ctx = runtime::OpRunner::GetDeviceContext(device_type);
   MS_EXCEPTION_IF_NULL(device_ctx);
