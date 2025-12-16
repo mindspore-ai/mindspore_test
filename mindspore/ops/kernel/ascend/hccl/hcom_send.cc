@@ -24,7 +24,6 @@
 #include "include/cluster/topology/cluster_context.h"
 #include "include/utils/parallel_context.h"
 #include "proto/topology.pb.h"
-#include "runtime/core/actors/base/memory_manager_actor.h"
 #include "include/runtime/hardware_abstract/collective/collective_manager.h"
 
 namespace mindspore {

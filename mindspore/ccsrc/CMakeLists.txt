@@ -59,43 +59,6 @@ if(CMAKE_SYSTEM_NAME MATCHES "Windows" OR CMAKE_SYSTEM_NAME MATCHES "Darwin")
     target_link_libraries(mindspore_profiler PRIVATE mindspore::pybind11_module)
 endif()
 
-set(MS_BACKEND_SUB_COMP
-        backend/ms_backend
-        runtime/core
-        )
-
-foreach(_comp ${MS_BACKEND_SUB_COMP})
-    add_subdirectory(${_comp})
-    string(REPLACE "/" "_" sub ${_comp})
-    if(TARGET _mindspore_${sub}_obj)
-        list(APPEND MS_BACKEND_SUB_OBJECTS_SRC $<TARGET_OBJECTS:_mindspore_${sub}_obj>)
-        add_dependencies(_mindspore_${sub}_obj proto_input)
-        if(CMAKE_SYSTEM_NAME MATCHES "Windows")
-            target_compile_definitions(_mindspore_${sub}_obj PRIVATE BACKEND_DLL)
-        endif()
-    endif()
-endforeach()
-
-
-set_property(SOURCE ${MS_BACKEND_SUB_OBJECTS_SRC} PROPERTY COMPILE_DEFINITIONS
-        SUBMODULE_ID=mindspore::SubModuleId::SM_ME)
-add_library(mindspore_ms_backend SHARED ${MS_BACKEND_SUB_OBJECTS_SRC})
-
-
-target_link_libraries(mindspore_ms_backend PRIVATE mindspore::pybind11_module)
-target_link_libraries(mindspore_ms_backend PRIVATE mindspore_core mindspore_ops
-        mindspore_common mindspore_backend_manager proto_input mindspore_hardware_abstract
-        mindspore_profiler mindspore_runtime_pipeline mindspore_backend_common mindspore_memory_pool
-        mindspore_runtime_utils)
-
-target_link_libraries(mindspore_ms_backend PRIVATE mindspore::securec)
-if(CMAKE_SYSTEM_NAME MATCHES "Darwin")
-    set_target_properties(mindspore_ms_backend PROPERTIES MACOSX_RPATH ON)
-    set_target_properties(mindspore_ms_backend PROPERTIES INSTALL_RPATH @loader_path)
-else()
-    set_target_properties(mindspore_ms_backend PROPERTIES INSTALL_RPATH $ORIGIN)
-endif()
-
 # set c_expression building
 set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
 add_subdirectory(pybind_api)
@@ -175,6 +138,7 @@ add_subdirectory(frontend)
 add_subdirectory(cluster)
 add_subdirectory(backend/common)
 add_subdirectory(backend/backend_manager)
+add_subdirectory(backend/ms_backend)
 add_subdirectory(runtime/memory/mem_pool)
 add_subdirectory(runtime/hardware_abstract)
 add_subdirectory(runtime/utils)

@@ -21,8 +21,8 @@
 #include "primitive/math_ops.h"
 #include "primitive/auto_generate/gen_ops_primitive_a.h"
 #include "primitive/auto_generate/gen_ops_primitive_r.h"
-#include "runtime/core/actors/dynamic_type/any_type_kernel_actor.h"
-#include "runtime/core/actors/base/memory_manager_actor.h"
+#include "backend/ms_backend/runtime/actors/dynamic_type/any_type_kernel_actor.h"
+#include "backend/ms_backend/runtime/actors/base/memory_manager_actor.h"
 
 namespace mindspore {
 namespace runtime {

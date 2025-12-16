@@ -23,7 +23,7 @@
 #define private public
 #define protected public
 #include "abstract/abstract_function.h"
-#include "runtime/core/graph_scheduler/control_flow/control_node_parser.h"
+#include "backend/ms_backend/runtime/graph_scheduler/control_flow/control_node_parser.h"
 #include "include/backend/common/pass_manager/graph_optimizer.h"
 #include "include/utils/anfalgo.h"
 #include "include/backend/common/kernel_graph/anf_runtime_algorithm.h"

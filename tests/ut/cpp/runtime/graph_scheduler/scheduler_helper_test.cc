@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "runtime/core/graph_scheduler/base/scheduler_helper.h"
+#include "backend/ms_backend/runtime/graph_scheduler/base/scheduler_helper.h"
 #include "abstract/abstract_function.h"
 #include "common/common_test.h"
 #include "primitive/comparison_ops.h"

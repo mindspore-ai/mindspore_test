@@ -19,7 +19,7 @@
 #include <memory>
 
 #include "include/runtime/utils/runtime_conf/runtime_conf.h"
-#include "runtime/core/actors/base/actor_common.h"
+#include "backend/ms_backend/runtime/actors/base/actor_common.h"
 
 namespace mindspore {
 namespace runtime {
