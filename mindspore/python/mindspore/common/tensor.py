@@ -1730,10 +1730,17 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
         x = self
         logical_not_op = tensor_operator_registry.get('logical_not')
         if origin_dtype == mstype.bool_:
-            return logical_not_op(logical_not_op(x))
-        if origin_dtype != mstype.float64:
-            x = x.astype("float32")
-        x = x / 1.0
+            x = logical_not_op(logical_not_op(x))
+        elif origin_dtype in (mstype.int32, mstype.int64, mstype.uint32, mstype.uint64):
+            tensor_move_op = tensor_operator_registry.get('_tensor_move')
+            x = tensor_move_op(x)
+        elif origin_dtype in mstype.complex_type:
+            x = x + 0.0
+        else:
+            if origin_dtype != mstype.float64:
+                x = x.astype("float32")
+            x = x / 1.0
+
         x = x.astype(origin_dtype)
         return x
 

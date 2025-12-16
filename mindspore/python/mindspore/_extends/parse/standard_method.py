@@ -59,7 +59,7 @@ from mindspore.ops.operations._sequence_ops import TensorToScalar
 from mindspore.ops.operations._sequence_ops import ListAppend, ListInsert, SequenceMax, SequenceMin, \
     SequenceIndex
 
-from mindspore.ops.primitive import constexpr, _primexpr
+from mindspore.ops.primitive import constexpr, _primexpr, Primitive
 
 
 __all__ = ['MultitypeFuncGraph', 'env_get',
@@ -1114,10 +1114,17 @@ def copy(x):
         return x
     origin_dtype = x.dtype
     if origin_dtype == mstype.bool_:
-        return F.logical_not(F.logical_not(x))
-    if origin_dtype != mstype.float64:
-        x = x.astype(mstype.float32)
-    x = x / 1.0
+        x = F.logical_not(F.logical_not(x))
+    elif origin_dtype in (mstype.int32, mstype.int64, mstype.uint32, mstype.uint64):
+        tensor_move_op = Primitive('TensorMove')
+        x = tensor_move_op(x)
+    elif origin_dtype in mstype.complex_type:
+        x = x + 0.0
+    else:
+        if origin_dtype != mstype.float64:
+            x = x.astype("float32")
+        x = x / 1.0
+
     x = x.astype(origin_dtype)
     return x
 

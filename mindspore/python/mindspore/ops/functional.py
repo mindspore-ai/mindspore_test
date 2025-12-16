@@ -58,6 +58,7 @@ scatter_nd_update = P.ScatterNdUpdate()
 mixed_precision_cast = _inner_ops.MixedPrecisionCast()
 _py_interpret = other_ops.PyInterpret()
 _dtype_to_enum = DtypeToEnum()
+_tensor_move = Primitive('TensorMove')
 
 # Dynamic shape
 is_sequence_value_unknown = Primitive("IsShapeUnKnown")
@@ -475,6 +476,7 @@ setattr(tensor_operator_registry, 'swapdims', swapdims)
 setattr(tensor_operator_registry, 'repeat_elements', repeat_elements)
 setattr(tensor_operator_registry, 'top_k', top_k)
 setattr(tensor_operator_registry, 'normal_', normal_)
+setattr(tensor_operator_registry, '_tensor_move', _tensor_move)
 
 __all__ = [name for name in dir() if name[0] != "_"]
 __all__.remove('Primitive')
