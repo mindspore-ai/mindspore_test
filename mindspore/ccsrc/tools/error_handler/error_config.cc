@@ -153,7 +153,7 @@ bool TftConfig::IsEnableTRE() {
   static bool enable_tre = []() {
     auto iter = GetConfigMap().find(kTftKeyTre);
     if (iter == GetConfigMap().end()) {
-      MS_LOG(WARNING) << "Can find `" << kTftKeyTre << "` in environment var `" << kMsEnableTft << "`";
+      MS_VLOG(VL_UCE) << "Can find `" << kTftKeyTre << "` in environment var `" << kMsEnableTft << "`";
       return false;
     }
     if (iter->second == kTftValueNormalTRE) {
@@ -168,15 +168,15 @@ bool TftConfig::IsEnableStepTRE() {
   static bool enable_step_tre = []() {
     auto iter = GetConfigMap().find(kTftKeyTre);
     if (iter == GetConfigMap().end()) {
-      MS_LOG(WARNING) << "Can find `" << kTftKeyTre << "` in environment var `" << kMsEnableTft << "`";
+      MS_VLOG(VL_UCE) << "Can find `" << kTftKeyTre << "` in environment var `" << kMsEnableTft << "`";
       return false;
     }
     if (iter->second != kTftValueStepTRE) {
-      MS_LOG(WARNING) << "Value of `" << kTftKeyTre << "` is `" << iter->second << "`, step tre is not enabled.";
+      MS_VLOG(VL_UCE) << "Value of `" << kTftKeyTre << "` is `" << iter->second << "`, step tre is not enabled.";
       return false;
     }
     if (GetSnapShotSteps() <= 0) {
-      MS_LOG(WARNING) << "Value of `" << kTftKeyTreSnapShotSteps << "` is `" << GetSnapShotSteps()
+      MS_VLOG(VL_UCE) << "Value of `" << kTftKeyTreSnapShotSteps << "` is `" << GetSnapShotSteps()
                       << "`, step tre is not enabled.";
       return false;
     }
@@ -189,7 +189,7 @@ int TftConfig::GetSnapShotSteps() {
   static int mem_cfg_steps = []() {
     auto iter = GetConfigMap().find(kTftKeyTreSnapShotSteps);
     if (iter == GetConfigMap().end()) {
-      MS_LOG(WARNING) << "Can find `" << kTftKeyTreSnapShotSteps << "` in environment var `" << kMsEnableTft << "`";
+      MS_VLOG(VL_UCE) << "Can find `" << kTftKeyTreSnapShotSteps << "` in environment var `" << kMsEnableTft << "`";
       return 0;
     }
     try {
@@ -241,6 +241,7 @@ std::map<std::string, std::string> &TftConfig::GetConfigMap() {
     [](std::map<std::string, std::string> &configs, bool &config_parsed) {
       auto tft_config = common::GetEnv(kMsEnableTft);
       MS_LOG(INFO) << "Value of `" << kMsEnableTft << "` is `" << tft_config << "`";
+      MS_VLOG(VL_UCE) << "Value of `" << kMsEnableTft << "` is `" << tft_config << "`";
       if (tft_config.empty()) {
         config_parsed = true;
         return;
@@ -260,6 +261,7 @@ std::map<std::string, std::string> &TftConfig::GetConfigMap() {
         auto &value = Trim(&elems[1]);
         configs[key] = value;
         MS_LOG(INFO) << "Insert key `" << key << "` with value `" << value << "`";
+        MS_VLOG(VL_UCE) << "Insert key `" << key << "` with value `" << value << "`";
       }
 
       config_parsed = true;

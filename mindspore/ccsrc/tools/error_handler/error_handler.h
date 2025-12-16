@@ -22,10 +22,7 @@
 #include <vector>
 #include "tools/visible.h"
 #include "include/backend/common/kernel_graph/kernel_graph.h"
-#include "include/runtime/hardware_abstract/kernel_base/kernel_tensor.h"
-#include "backend/ms_backend/runtime/actors/base/actor_common.h"
 #include "backend/ms_backend/runtime/actors/base/actor_set.h"
-#include "backend/ms_backend/runtime/graph_scheduler/base/graph_scheduler.h"
 #include "utils/ms_context.h"
 #include "ir/tensor.h"
 
@@ -64,9 +61,7 @@ class TOOLS_EXPORT ErrorHandler {
 
   void TftCheckBeforeGraphRun();
 
-  void TftProcessGraphRunError(runtime::ActorSet *const actor_set,
-                               runtime::OpContext<kernel::KernelTensor> *const context,
-                               runtime::GraphScheduler *const graph_scheduler);
+  void TftProcessGraphRunError(const std::function<void()> &fn_reset_actor_state, runtime::ActorSet *const actor_set);
 
   void ProcessError(const FuncInfo &fn_info, int error_code, const FuncGetRecentErrMsg &fn_get_recent_err_msg,
                     ErrorType error_type, bool throw_exception = false);
