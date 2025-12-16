@@ -34,7 +34,6 @@
 #include "include/backend/common/kernel_graph/anf_runtime_algorithm.h"
 #include "include/utils/anfalgo.h"
 #include "plugin/gpu/graph_optimizer/pass/inference/trt_pass/trt_op_factory.h"
-#include "backend/ms_backend/segment_runner.h"
 #include "mindspore/ccsrc/utils/ir_dump/anf_ir_dump.h"
 #include "primitive/auto_generate/gen_ops_primitive_t.h"
 

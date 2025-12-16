@@ -27,7 +27,6 @@
 #include "backend/common/pass/insert_tensor_move_for_communication.h"
 #include "backend/common/pass/adjust_depend_for_parallel_optimizer_recompute_all_gather.h"
 #include "include/backend/common/pass_manager/common_backend_optimization.h"
-#include "backend/ms_backend/graph_fusion/adapter/graph_kernel_optimization.h"
 #include "plugin/gpu/graph_optimizer/pass/base/replace_addn_fusion.h"
 #include "plugin/gpu/graph_optimizer/pass/train/adam_fusion.h"
 #include "plugin/gpu/graph_optimizer/pass/train/adam_weight_decay_fusion.h"

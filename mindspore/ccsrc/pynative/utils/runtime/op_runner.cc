@@ -33,7 +33,6 @@
 #include "include/pynative/utils/runtime/op_runtime_info.h"
 #include "include/pynative/utils/runtime/op_executor.h"
 #include "include/pynative/utils/runtime/op_compiler.h"
-#include "backend/ms_backend/runtime/actors/base/actor_common.h"
 #include "include/backend/common/exec_order/kernel_cache.h"
 #include "include/runtime/memory/mem_pool/mem_tracker.h"
 #include "tools/profiler/profiling.h"
@@ -41,11 +40,15 @@
 #include "pybind_api/gil_scoped_long_running.h"
 #include "pynative/utils/runtime/ir_converter.h"
 #include "utils/stream_guard.h"
+#include "primitive/structure_op_name.h"
+#include "primitive/framework_op_name.h"
 using mindspore::profiler::ProfilerManager;
 using EdgePtr = mindspore::pynative::EdgePtr;
 
 namespace mindspore::runtime {
 namespace {
+const std::set<std::string> no_dyn_need_update_ops = {kDynamicGetNextV2OpName, kDynamicGetNextAscendOpName,
+                                                      kGetNextOpName, kGetNextFromQueueOpName, kReceiveOpName};
 constexpr size_t kContextSize = 5;
 std::unique_ptr<std::mutex> kDeviceContextMutex = std::make_unique<std::mutex>();
 std::array<DeviceContext *, kContextSize> kDeviceContexts = {nullptr, nullptr, nullptr, nullptr, nullptr};
