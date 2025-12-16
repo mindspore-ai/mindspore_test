@@ -25,7 +25,7 @@
 namespace mindspore {
 namespace ops {
 constexpr auto kNameLpNorm = "LpNorm";
-class OPS_API LpNorm : public BaseOperator {
+class LpNorm : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(LpNorm);
   LpNorm() : BaseOperator(kNameLpNorm) { InitIOName({"input"}, {"output"}); }
@@ -50,8 +50,8 @@ class OPS_API LpNorm : public BaseOperator {
   float get_epsilon() const;
 };
 
-OPS_API abstract::AbstractBasePtr LpNormInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
-                                              const std::vector<abstract::AbstractBasePtr> &input_args);
+abstract::AbstractBasePtr LpNormInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
+                                      const std::vector<abstract::AbstractBasePtr> &input_args);
 
 using PrimLpNormPtr = std::shared_ptr<LpNorm>;
 }  // namespace ops

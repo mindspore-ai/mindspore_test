@@ -23,7 +23,7 @@ namespace mindspore {
 namespace ops {
 constexpr auto kNameScaleFusion = "ScaleFusion";
 /// \brief ScaleFusion defined Scale operator prototype of lite.
-class OPS_API ScaleFusion : public Scale {
+class ScaleFusion : public Scale {
  public:
   MIND_API_BASE_MEMBER(ScaleFusion);
   /// \brief Constructor.

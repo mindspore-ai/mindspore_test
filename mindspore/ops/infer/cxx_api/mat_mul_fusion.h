@@ -24,7 +24,7 @@ namespace mindspore {
 namespace ops {
 constexpr auto kNameMatMulFusion = "MatMulFusion";
 /// \brief Multiplies matrix a and matrix b. Refer to Python API @ref mindspore.ops.MatMul for more details.
-class OPS_API MatMulFusion : public BaseOperator {
+class MatMulFusion : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(MatMulFusion);
   /// \brief Constructor.

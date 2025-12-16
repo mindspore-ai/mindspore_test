@@ -30,7 +30,7 @@ namespace mindspore {
 namespace ops {
 constexpr auto kNameQuantDTypeCast = "QuantDTypeCast";
 /// \brief QuantDTypeCast QuantDTypeCast the QuantDTypeCast operator prototype.
-class OPS_API QuantDTypeCast : public BaseOperator {
+class QuantDTypeCast : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(QuantDTypeCast);
   /// \brief Constructor.
@@ -72,9 +72,8 @@ class OPS_API QuantDTypeCast : public BaseOperator {
   /// \return the per-channel prefer dim.
   int64_t get_axis() const;
 };
-OPS_API abstract::AbstractBasePtr QuantDTypeCastInfer(const abstract::AnalysisEnginePtr &,
-                                                      const PrimitivePtr &primitive,
-                                                      const std::vector<abstract::AbstractBasePtr> &input_args);
+abstract::AbstractBasePtr QuantDTypeCastInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
+                                              const std::vector<abstract::AbstractBasePtr> &input_args);
 }  // namespace ops
 }  // namespace mindspore
 

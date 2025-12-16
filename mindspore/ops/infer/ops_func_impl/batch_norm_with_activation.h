@@ -20,7 +20,7 @@
 #include "infer/ops_func_impl/batch_norm.h"
 
 namespace mindspore::ops {
-class OPS_API BatchNormWithActivationFuncImpl : public BatchNormFuncImpl {};
+class BatchNormWithActivationFuncImpl : public BatchNormFuncImpl {};
 }  // namespace mindspore::ops
 
 #endif  // MINDSPORE_CORE_OPS_BATCH_NORMAL_WITH_ACTIVATION_H_

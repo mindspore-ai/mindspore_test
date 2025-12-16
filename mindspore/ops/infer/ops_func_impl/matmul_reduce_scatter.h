@@ -40,7 +40,7 @@ enum MatmulReduceScatterOutputIndex : size_t {
   kMatmulReduceScatterOutputNum,
 };
 
-class OPS_API MatmulReduceScatterFuncImpl : public OpFuncImpl {
+class MatmulReduceScatterFuncImpl : public OpFuncImpl {
  public:
   ShapeArray InferShape(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const override;
   std::vector<TypeId> InferType(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const override;

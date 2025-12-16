@@ -25,7 +25,7 @@
 namespace mindspore {
 namespace ops {
 constexpr auto kNameSparseTensorDenseMatmul = "SparseTensorDenseMatmul";
-class OPS_API SparseTensorDenseMatmul : public BaseOperator {
+class SparseTensorDenseMatmul : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(SparseTensorDenseMatmul);
   SparseTensorDenseMatmul() : BaseOperator(kNameSparseTensorDenseMatmul) {
@@ -37,9 +37,9 @@ class OPS_API SparseTensorDenseMatmul : public BaseOperator {
   void set_adjoint_dt(const bool adjoint_dt);
   bool get_adjoint_dt() const;
 };
-OPS_API abstract::AbstractBasePtr SparseTensorDenseMatmulInfer(
-  const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
-  const std::vector<abstract::AbstractBasePtr> &input_args);
+abstract::AbstractBasePtr SparseTensorDenseMatmulInfer(const abstract::AnalysisEnginePtr &,
+                                                       const PrimitivePtr &primitive,
+                                                       const std::vector<abstract::AbstractBasePtr> &input_args);
 }  // namespace ops
 }  // namespace mindspore
 

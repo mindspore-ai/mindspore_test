@@ -29,7 +29,7 @@
 namespace mindspore {
 namespace ops {
 constexpr auto kNameMapCacheIdx = "MapCacheIdx";
-class OPS_API MapCacheIdx : public BaseOperator {
+class MapCacheIdx : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(MapCacheIdx);
   MapCacheIdx() : BaseOperator(kNameMapCacheIdx) {
@@ -37,8 +37,8 @@ class OPS_API MapCacheIdx : public BaseOperator {
                {"cache_idx", "old_emb_idx", "miss_emb_idx", "swap_cache_idx"});
   }
 };
-OPS_API abstract::AbstractBasePtr MapCacheIdxInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
-                                                   const std::vector<abstract::AbstractBasePtr> &input_args);
+abstract::AbstractBasePtr MapCacheIdxInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
+                                           const std::vector<abstract::AbstractBasePtr> &input_args);
 using PrimMapCacheIdxPtr = std::shared_ptr<MapCacheIdx>;
 }  // namespace ops
 }  // namespace mindspore

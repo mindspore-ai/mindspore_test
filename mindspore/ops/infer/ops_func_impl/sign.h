@@ -23,7 +23,7 @@
 
 namespace mindspore {
 namespace ops {
-class OPS_API SignFuncImpl : public OpFuncImpl {
+class SignFuncImpl : public OpFuncImpl {
  public:
   SignFuncImpl() = default;
   ~SignFuncImpl() = default;

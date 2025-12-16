@@ -22,7 +22,7 @@
 
 namespace mindspore {
 namespace ops {
-class OPS_API GeluExtFuncImpl final : public OpFuncImpl {
+class GeluExtFuncImpl final : public OpFuncImpl {
  public:
   ShapeArray InferShape(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const override;
   std::vector<TypeId> InferType(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const override;

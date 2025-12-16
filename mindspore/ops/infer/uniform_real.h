@@ -30,7 +30,7 @@ constexpr auto kNameUniformReal = "UniformReal";
 /// \brief Produces random floating-point values i, uniformly distributed to the interval [0, 1).
 /// Refer to Python API @ref mindspore.ops.UniformReal for more details.
 
-class OPS_API UniformReal : public BaseOperator {
+class UniformReal : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(UniformReal);
   /// \brief Constructor.
@@ -52,7 +52,7 @@ class OPS_API UniformReal : public BaseOperator {
 };
 
 constexpr auto kNameCudnnUniformReal = "CudnnUniformReal";
-class OPS_API CudnnUniformReal : public BaseOperator {
+class CudnnUniformReal : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(CudnnUniformReal);
   /// \brief Constructor.

@@ -30,7 +30,7 @@ namespace mindspore {
 namespace ops {
 constexpr auto kNameSkipGram = "SkipGram";
 /// \brief SkipGram defined the SkipGram operator prototype.
-class OPS_API SkipGram : public BaseOperator {
+class SkipGram : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(SkipGram);
   /// \brief Constructor.
@@ -75,8 +75,8 @@ class OPS_API SkipGram : public BaseOperator {
   /// \return an integer value.
   int64_t get_ngram_size() const;
 };
-OPS_API abstract::AbstractBasePtr SkipGramInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
-                                                const std::vector<abstract::AbstractBasePtr> &input_args);
+abstract::AbstractBasePtr SkipGramInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
+                                        const std::vector<abstract::AbstractBasePtr> &input_args);
 }  // namespace ops
 }  // namespace mindspore
 

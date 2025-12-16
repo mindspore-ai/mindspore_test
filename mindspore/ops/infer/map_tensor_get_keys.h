@@ -26,7 +26,7 @@ namespace ops {
 constexpr auto kNameMapTensorGetKeys = "MapTensorGetKeys";
 /// \brief Get all keys as a tensor from a MapTensor.
 /// Refer to Python API @ref mindspore.ops.MapTensorGetKeys for more details.
-class OPS_API MapTensorGetKeys : public BaseOperator {
+class MapTensorGetKeys : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(MapTensorGetKeys);
   /// \brief Constructor.
@@ -34,9 +34,8 @@ class OPS_API MapTensorGetKeys : public BaseOperator {
   /// \brief Init.
   void Init() const {}
 };
-OPS_API abstract::AbstractBasePtr MapTensorGetKeysInfer(const abstract::AnalysisEnginePtr &,
-                                                        const PrimitivePtr &primitive,
-                                                        const std::vector<abstract::AbstractBasePtr> &input_args);
+abstract::AbstractBasePtr MapTensorGetKeysInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
+                                                const std::vector<abstract::AbstractBasePtr> &input_args);
 }  // namespace ops
 }  // namespace mindspore
 

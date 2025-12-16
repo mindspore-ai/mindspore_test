@@ -27,16 +27,15 @@ namespace mindspore {
 namespace ops {
 constexpr auto kNameDynamicBroadcastTo = "DynamicBroadcastTo";
 
-class OPS_API DynamicBroadcastTo : public BaseOperator {
+class DynamicBroadcastTo : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(DynamicBroadcastTo);
   DynamicBroadcastTo() : BaseOperator(kNameDynamicBroadcastTo) { InitIOName({"x", "shape"}, {"y"}); }
   void Init() const {}
 };
 
-OPS_API abstract::AbstractBasePtr DynamicBroadcastToInfer(const abstract::AnalysisEnginePtr &,
-                                                          const PrimitivePtr &primitive,
-                                                          const std::vector<abstract::AbstractBasePtr> &input_args);
+abstract::AbstractBasePtr DynamicBroadcastToInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
+                                                  const std::vector<abstract::AbstractBasePtr> &input_args);
 using PrimDynamicBroadcastToPtr = std::shared_ptr<DynamicBroadcastTo>;
 }  // namespace ops
 }  // namespace mindspore

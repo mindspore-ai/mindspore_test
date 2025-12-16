@@ -30,7 +30,7 @@
 namespace mindspore {
 namespace ops {
 constexpr auto kNameTridiagonalMatMul = "TridiagonalMatMul";
-class OPS_API TridiagonalMatMul : public BaseOperator {
+class TridiagonalMatMul : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(TridiagonalMatMul);
   TridiagonalMatMul() : BaseOperator(kNameTridiagonalMatMul) {
@@ -38,9 +38,8 @@ class OPS_API TridiagonalMatMul : public BaseOperator {
   }
 };
 
-OPS_API abstract::AbstractBasePtr TridiagonalMatMulInfer(const abstract::AnalysisEnginePtr &,
-                                                         const PrimitivePtr &primitive,
-                                                         const std::vector<AbstractBasePtr> &input_args);
+abstract::AbstractBasePtr TridiagonalMatMulInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
+                                                 const std::vector<AbstractBasePtr> &input_args);
 using PrimTridiagonalMatMulPtr = std::shared_ptr<TridiagonalMatMul>;
 }  // namespace ops
 }  // namespace mindspore

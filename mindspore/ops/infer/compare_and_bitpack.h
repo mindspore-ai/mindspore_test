@@ -26,7 +26,7 @@ namespace mindspore {
 namespace ops {
 constexpr auto kNameCompareAndBitpack = "CompareAndBitpack";
 
-class OPS_API CompareAndBitpack : public BaseOperator {
+class CompareAndBitpack : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(CompareAndBitpack);
   CompareAndBitpack() : BaseOperator(kNameCompareAndBitpack) { InitIOName({"x", "threshold"}, {"y"}); }

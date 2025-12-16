@@ -20,7 +20,7 @@
 #include "infer/ops_func_impl/batch_norm.h"
 
 namespace mindspore::ops {
-class OPS_API BatchNormWithAddAndActivationFuncImpl : public BatchNormFuncImpl {
+class BatchNormWithAddAndActivationFuncImpl : public BatchNormFuncImpl {
  protected:
   size_t GetAttrPosZero() const override { return 6; }
 };

@@ -26,7 +26,7 @@
 namespace mindspore {
 namespace ops {
 constexpr auto kNameBNTrainingReduceGrad = "BNTrainingReduceGrad";
-class OPS_API BNTrainingReduceGrad : public BaseOperator {
+class BNTrainingReduceGrad : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(BNTrainingReduceGrad);
   BNTrainingReduceGrad() : BaseOperator(kNameBNTrainingReduceGrad) {
@@ -40,9 +40,8 @@ class OPS_API BNTrainingReduceGrad : public BaseOperator {
   float get_epsilon() const;
 };
 
-OPS_API abstract::AbstractBasePtr BNTrainingReduceGradInfer(const abstract::AnalysisEnginePtr &,
-                                                            const PrimitivePtr &primitive,
-                                                            const std::vector<abstract::AbstractBasePtr> &input_args);
+abstract::AbstractBasePtr BNTrainingReduceGradInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
+                                                    const std::vector<abstract::AbstractBasePtr> &input_args);
 }  // namespace ops
 }  // namespace mindspore
 

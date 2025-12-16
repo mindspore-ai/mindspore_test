@@ -23,7 +23,7 @@
 namespace mindspore {
 namespace ops {
 /// \brief Sequence max operation.
-class OPS_API SequenceMax : public BaseOperator {
+class SequenceMax : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(SequenceMax);
   /// \brief Constructor.
@@ -32,7 +32,7 @@ class OPS_API SequenceMax : public BaseOperator {
   void Init() const {}
 };
 /// \brief Sequence min operation.
-class OPS_API SequenceMin : public BaseOperator {
+class SequenceMin : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(SequenceMin);
   /// \brief Constructor.

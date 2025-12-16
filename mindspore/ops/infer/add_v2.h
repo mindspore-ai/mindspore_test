@@ -27,7 +27,7 @@ namespace mindspore {
 namespace ops {
 constexpr auto kNameAddV2 = "AddV2";
 /// \brief Adds two input tensors element-wise.
-class OPS_API AddV2 : public BaseOperator {
+class AddV2 : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(AddV2);
   /// \brief Constructor.
@@ -37,8 +37,8 @@ class OPS_API AddV2 : public BaseOperator {
   void Init() const {}
 };
 
-OPS_API abstract::AbstractBasePtr AddV2Infer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
-                                             const std::vector<abstract::AbstractBasePtr> &input_args);
+abstract::AbstractBasePtr AddV2Infer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
+                                     const std::vector<abstract::AbstractBasePtr> &input_args);
 }  // namespace ops
 }  // namespace mindspore
 

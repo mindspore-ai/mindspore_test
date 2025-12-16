@@ -23,7 +23,7 @@ namespace mindspore {
 namespace ops {
 constexpr auto kNameSwitch = "Switch";
 /// \brief Switch defined Switch operator prototype of lite.
-class OPS_API Switch : public BaseOperator {
+class Switch : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(Switch);
   /// \brief Constructor.

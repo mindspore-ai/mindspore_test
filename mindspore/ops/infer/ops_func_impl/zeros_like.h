@@ -21,6 +21,6 @@
 #include "mindapi/base/macros.h"
 
 namespace mindspore::ops {
-class OPS_API ZerosLikeFuncImpl : public EltwiseOpFuncImpl {};
+class ZerosLikeFuncImpl : public EltwiseOpFuncImpl {};
 }  // namespace mindspore::ops
 #endif  // MINDSPORE_CORE_OPS_OP_FUNC_IMPL_ZEROS_LIKE_H

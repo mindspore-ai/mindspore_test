@@ -23,7 +23,7 @@
 namespace mindspore {
 namespace ops {
 constexpr auto kNameFill = "Fill";
-class OPS_API Fill : public BaseOperator {
+class Fill : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(Fill);
   Fill() : BaseOperator(kNameFill) { InitIOName({"type", "shape", "value"}, {"y"}); }

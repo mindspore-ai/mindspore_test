@@ -22,7 +22,7 @@
 
 namespace mindspore {
 namespace ops {
-class OPS_API FFTShapeCopyFuncImpl : public OpFuncImpl {
+class FFTShapeCopyFuncImpl : public OpFuncImpl {
  public:
   FFTShapeCopyFuncImpl() = default;
   ~FFTShapeCopyFuncImpl() = default;

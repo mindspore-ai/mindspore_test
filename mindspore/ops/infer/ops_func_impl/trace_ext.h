@@ -22,7 +22,7 @@
 #include "ops/ops_func_impl/op_func_impl.h"
 
 namespace mindspore::ops {
-class OPS_API TraceExtFuncImpl : public OpFuncImpl {
+class TraceExtFuncImpl : public OpFuncImpl {
  public:
   TraceExtFuncImpl() = default;
   ~TraceExtFuncImpl() = default;

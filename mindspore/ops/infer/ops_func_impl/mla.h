@@ -41,7 +41,7 @@ enum MlaInputIndex : size_t {
   kMlaInputsNum
 };
 
-class OPS_API MlaFuncImpl : public OpFuncImpl {
+class MlaFuncImpl : public OpFuncImpl {
  public:
   ShapeArray InferShape(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const override;
   std::vector<TypeId> InferType(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const override;

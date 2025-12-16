@@ -26,7 +26,7 @@
 namespace mindspore {
 namespace ops {
 constexpr auto kNameAllGather = "AllGather";
-class OPS_API AllGather : public BaseOperator {
+class AllGather : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(AllGather);
   AllGather() : BaseOperator(kNameAllGather) { InitIOName({"input_x"}, {"output"}); }

@@ -30,7 +30,7 @@
 namespace mindspore {
 namespace ops {
 constexpr auto kNamePdistGrad = "PdistGrad";
-class OPS_API PdistGrad : public BaseOperator {
+class PdistGrad : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(PdistGrad);
   /// \brief Constructor.
@@ -43,8 +43,8 @@ class OPS_API PdistGrad : public BaseOperator {
   float get_p() const;
 };
 
-OPS_API abstract::AbstractBasePtr PdistGradInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
-                                                 const std::vector<abstract::AbstractBasePtr> &input_args);
+abstract::AbstractBasePtr PdistGradInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
+                                         const std::vector<abstract::AbstractBasePtr> &input_args);
 }  // namespace ops
 }  // namespace mindspore
 

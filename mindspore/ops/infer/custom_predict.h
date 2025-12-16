@@ -24,7 +24,7 @@
 namespace mindspore {
 namespace ops {
 constexpr auto kNameCustomPredict = "CustomPredict";
-class OPS_API CustomPredict : public BaseOperator {
+class CustomPredict : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(CustomPredict);
   CustomPredict() : BaseOperator(kNameCustomPredict) {}
@@ -34,8 +34,8 @@ class OPS_API CustomPredict : public BaseOperator {
   int64_t get_output_num() const;
   float get_weight_threshold() const;
 };
-OPS_API abstract::AbstractBasePtr CustomPredictInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
-                                                     const std::vector<abstract::AbstractBasePtr> &input_args);
+abstract::AbstractBasePtr CustomPredictInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
+                                             const std::vector<abstract::AbstractBasePtr> &input_args);
 }  // namespace ops
 }  // namespace mindspore
 

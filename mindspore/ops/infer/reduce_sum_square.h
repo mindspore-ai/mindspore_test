@@ -27,7 +27,7 @@
 namespace mindspore {
 namespace ops {
 constexpr auto kNameReduceSumSquare = "ReduceSumSquare";
-class OPS_API ReduceSumSquare : public Reduce {
+class ReduceSumSquare : public Reduce {
  public:
   MIND_API_BASE_MEMBER(ReduceSumSquare);
   ReduceSumSquare() : Reduce(kNameReduceSumSquare) { InitIOName({"input_x", "axis"}, {"y"}); }

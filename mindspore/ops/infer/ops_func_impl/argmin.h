@@ -23,7 +23,7 @@
 
 namespace mindspore {
 namespace ops {
-class OPS_API ArgminFuncImpl : public ArgmaxFuncImpl {};
+class ArgminFuncImpl : public ArgmaxFuncImpl {};
 }  // namespace ops
 }  // namespace mindspore
 

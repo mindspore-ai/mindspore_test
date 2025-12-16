@@ -27,15 +27,14 @@
 namespace mindspore {
 namespace ops {
 constexpr auto kNameInplaceIndexAdd = "InplaceIndexAdd";
-class OPS_API InplaceIndexAdd : public BaseOperator {
+class InplaceIndexAdd : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(InplaceIndexAdd);
   /// \brief Constructor.
   InplaceIndexAdd() : BaseOperator(kNameInplaceIndexAdd) { InitIOName({"var", "indices", "updates"}, {"var"}); }
 };
-OPS_API abstract::AbstractBasePtr InplaceIndexAddInfer(const abstract::AnalysisEnginePtr &,
-                                                       const PrimitivePtr &primitive,
-                                                       const std::vector<abstract::AbstractBasePtr> &input_args);
+abstract::AbstractBasePtr InplaceIndexAddInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
+                                               const std::vector<abstract::AbstractBasePtr> &input_args);
 }  // namespace ops
 }  // namespace mindspore
 #endif  // MINDSPORE_CORE_OPS_INPLACE_INDEX_ADD_H_

@@ -29,7 +29,7 @@ namespace ops {
 constexpr auto kNameHistogram = "Histogram";
 /// \brief Computes the histogram of a tensor.
 /// Refer to Python API @ref mindspore.ops.Histogram for more details.
-class OPS_API Histogram : public BaseOperator {
+class Histogram : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(Histogram);
 

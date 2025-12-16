@@ -28,16 +28,15 @@ namespace ops {
 constexpr auto kNameAdjustSaturation = "AdjustSaturation";
 /// \brief Convert the images to HSV and multiply the saturation (S) channel by `scale` and clipping.
 /// Refer to Python API @ref mindspore.ops.AdjustSaturation for more details.
-class OPS_API AdjustSaturation : public BaseOperator {
+class AdjustSaturation : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(AdjustSaturation);
   /// \brief Constructor.
   AdjustSaturation() : BaseOperator(kNameAdjustSaturation) { InitIOName({"image", "scale"}, {"y"}); }
 };
 
-OPS_API abstract::AbstractBasePtr AdjustSaturationInfer(const abstract::AnalysisEnginePtr &,
-                                                        const PrimitivePtr &primitive,
-                                                        const std::vector<AbstractBasePtr> &input_args);
+abstract::AbstractBasePtr AdjustSaturationInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
+                                                const std::vector<AbstractBasePtr> &input_args);
 using PrimAdjustSaturationPtr = std::shared_ptr<AdjustSaturation>;
 }  // namespace ops
 }  // namespace mindspore

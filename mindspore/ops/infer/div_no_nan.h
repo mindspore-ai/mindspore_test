@@ -26,13 +26,13 @@ namespace mindspore {
 namespace ops {
 constexpr auto kNameDivNoNan = "DivNoNan";
 
-class OPS_API DivNoNan : public BaseOperator {
+class DivNoNan : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(DivNoNan);
   DivNoNan() : BaseOperator(kNameDivNoNan) { InitIOName({"x1", "x2"}, {"y"}); }
 };
-OPS_API abstract::AbstractBasePtr DivNoNanInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
-                                                const std::vector<abstract::AbstractBasePtr> &input_args);
+abstract::AbstractBasePtr DivNoNanInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
+                                        const std::vector<abstract::AbstractBasePtr> &input_args);
 using kPrimDivNoNanPtr = std::shared_ptr<DivNoNan>;
 }  // namespace ops
 }  // namespace mindspore

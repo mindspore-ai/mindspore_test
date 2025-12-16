@@ -28,15 +28,14 @@
 namespace mindspore {
 namespace ops {
 constexpr auto kNameBoundingBoxDecode = "BoundingBoxDecode";
-class OPS_API BoundingBoxDecode : public BaseOperator {
+class BoundingBoxDecode : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(BoundingBoxDecode);
   BoundingBoxDecode() : BaseOperator(kNameBoundingBoxDecode) { InitIOName({"anchor_box", "deltas"}, {"output"}); }
 };
 
-OPS_API abstract::AbstractBasePtr BoundingBoxDecodeInfer(const abstract::AnalysisEnginePtr &,
-                                                         const PrimitivePtr &primitive,
-                                                         const std::vector<abstract::AbstractBasePtr> &input_args);
+abstract::AbstractBasePtr BoundingBoxDecodeInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
+                                                 const std::vector<abstract::AbstractBasePtr> &input_args);
 }  // namespace ops
 }  // namespace mindspore
 

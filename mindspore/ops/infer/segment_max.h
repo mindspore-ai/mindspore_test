@@ -25,7 +25,7 @@
 namespace mindspore {
 namespace ops {
 constexpr auto kNameSegmentMax = "SegmentMax";
-class OPS_API SegmentMax : public BaseOperator {
+class SegmentMax : public BaseOperator {
  public:
   SegmentMax() : BaseOperator(kNameSegmentMax) { InitIOName({"input_x", "segment_ids"}, {"output"}); }
   MIND_API_BASE_MEMBER(SegmentMax);

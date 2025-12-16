@@ -25,7 +25,7 @@
 namespace mindspore {
 namespace ops {
 constexpr auto kNameScatterNonAliasingAdd = "ScatterNonAliasingAdd";
-class OPS_API ScatterNonAliasingAdd : public BaseOperator {
+class ScatterNonAliasingAdd : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(ScatterNonAliasingAdd);
   ScatterNonAliasingAdd() : BaseOperator(kNameScatterNonAliasingAdd) {
@@ -33,9 +33,8 @@ class OPS_API ScatterNonAliasingAdd : public BaseOperator {
   }
 };
 
-OPS_API abstract::AbstractBasePtr ScatterNonAliasingAddInfer(const abstract::AnalysisEnginePtr &,
-                                                             const PrimitivePtr &primitive,
-                                                             const std::vector<abstract::AbstractBasePtr> &input_args);
+abstract::AbstractBasePtr ScatterNonAliasingAddInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
+                                                     const std::vector<abstract::AbstractBasePtr> &input_args);
 using kPrimScatterNonAliasingAddPtr = std::shared_ptr<ScatterNonAliasingAdd>;
 }  // namespace ops
 }  // namespace mindspore

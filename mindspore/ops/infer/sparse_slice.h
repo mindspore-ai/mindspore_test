@@ -27,7 +27,7 @@ namespace ops {
 constexpr auto kNameSparseSlice = "SparseSlice";
 /// \brief Slices a SparseTensor based on the "start" and "size".
 /// Refer to Python API @ref mindspore.ops.SparseSlice for more details.
-class OPS_API SparseSlice : public BaseOperator {
+class SparseSlice : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(SparseSlice);
   /// \brief Constructor.

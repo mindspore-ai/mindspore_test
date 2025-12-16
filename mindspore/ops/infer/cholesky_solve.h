@@ -29,7 +29,7 @@
 namespace mindspore {
 namespace ops {
 constexpr auto kNameCholeskySolve = "CholeskySolve";
-class OPS_API CholeskySolve : public BaseOperator {
+class CholeskySolve : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(CholeskySolve);
   CholeskySolve() : BaseOperator(kNameCholeskySolve) { InitIOName({"x1", "x2"}, {"y"}); }
@@ -43,8 +43,8 @@ class OPS_API CholeskySolve : public BaseOperator {
   /// \return upper.
   bool get_upper() const;
 };
-OPS_API abstract::AbstractBasePtr CholeskySolveInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
-                                                     const std::vector<abstract::AbstractBasePtr> &input_args);
+abstract::AbstractBasePtr CholeskySolveInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
+                                             const std::vector<abstract::AbstractBasePtr> &input_args);
 }  // namespace ops
 }  // namespace mindspore
 

@@ -23,7 +23,7 @@
 namespace mindspore {
 namespace ops {
 /// \brief List inplace reverse operation 'input_data.reverse()'.
-class OPS_API ListInplaceReverse : public BaseOperator {
+class ListInplaceReverse : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(ListInplaceReverse);
   /// \brief Constructor.

@@ -22,7 +22,7 @@
 
 namespace mindspore {
 namespace ops {
-class OPS_API MinFuncImpl : public MaxFuncImpl {};
+class MinFuncImpl : public MaxFuncImpl {};
 }  // namespace ops
 }  // namespace mindspore
 

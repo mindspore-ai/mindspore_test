@@ -22,7 +22,7 @@
 
 namespace mindspore {
 namespace ops {
-class OPS_API TensorScatterAddFuncImpl : public TensorScatterArithmeticFuncImpl {};
+class TensorScatterAddFuncImpl : public TensorScatterArithmeticFuncImpl {};
 }  // namespace ops
 }  // namespace mindspore
 

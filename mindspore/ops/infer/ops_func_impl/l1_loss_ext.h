@@ -24,7 +24,7 @@
 
 namespace mindspore {
 namespace ops {
-class OPS_API L1LossExtFuncImpl : public OpFuncImpl {
+class L1LossExtFuncImpl : public OpFuncImpl {
  public:
   L1LossExtFuncImpl() = default;
   ~L1LossExtFuncImpl() = default;

@@ -30,7 +30,7 @@ constexpr auto kNameUniformInt = "UniformInt";
 /// \brief Produces random floating-point values i, uniformly distributed to the interval [minval, maxval).
 /// Refer to Python API @ref mindspore.ops.UniformReal for more details.
 
-class OPS_API UniformInt : public BaseOperator {
+class UniformInt : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(UniformInt);
   /// \brief Constructor.

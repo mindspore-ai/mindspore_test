@@ -27,7 +27,7 @@ constexpr auto kNameCTCLoss = "CTCLoss";
 
 /// \brief Calculates the CTC (Connectionist Temporal Classification) loss and the gradient.
 /// Refer to Python API @ref mindspore.ops.CTCLoss for more details.
-class OPS_API CTCLoss : public BaseOperator {
+class CTCLoss : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(CTCLoss);
   /// \brief Constructor.
@@ -35,8 +35,8 @@ class OPS_API CTCLoss : public BaseOperator {
   /// \brief Init. Refer to the parameters of Python API @ref mindspore.ops.CTCLoss for the inputs.
   void Init() const {}
 };
-OPS_API abstract::AbstractBasePtr CTCLossInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
-                                               const std::vector<abstract::AbstractBasePtr> &input_args);
+abstract::AbstractBasePtr CTCLossInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
+                                       const std::vector<abstract::AbstractBasePtr> &input_args);
 }  // namespace ops
 }  // namespace mindspore
 

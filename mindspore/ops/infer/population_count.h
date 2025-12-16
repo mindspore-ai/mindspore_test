@@ -28,16 +28,15 @@ namespace mindspore {
 namespace ops {
 constexpr auto kNamePopulationCount = "PopulationCount";
 /// \brief Returns a new tensor with the truncated integer values of the elements of input.
-class OPS_API PopulationCount : public BaseOperator {
+class PopulationCount : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(PopulationCount);
   /// \brief Constructor.
   PopulationCount() : BaseOperator(kNamePopulationCount) { InitIOName({"input_x"}, {"output_y"}); }
 };
 
-OPS_API abstract::AbstractBasePtr PopulationCountInfer(const abstract::AnalysisEnginePtr &,
-                                                       const PrimitivePtr &primitive,
-                                                       const std::vector<abstract::AbstractBasePtr> &input_args);
+abstract::AbstractBasePtr PopulationCountInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
+                                               const std::vector<abstract::AbstractBasePtr> &input_args);
 
 using PrimPopulationCountPtr = std::shared_ptr<PopulationCount>;
 }  // namespace ops

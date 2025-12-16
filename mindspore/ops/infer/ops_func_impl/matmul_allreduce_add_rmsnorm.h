@@ -20,7 +20,7 @@
 
 namespace mindspore {
 namespace ops {
-class OPS_API MatmulAllReduceAddRmsNormFuncImpl : public OpFuncImpl {
+class MatmulAllReduceAddRmsNormFuncImpl : public OpFuncImpl {
  public:
   ShapeArray InferShape(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const override;
   TypeIdList InferType(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const override;

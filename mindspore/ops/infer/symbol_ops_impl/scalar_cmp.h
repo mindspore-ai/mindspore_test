@@ -21,7 +21,7 @@
 namespace mindspore {
 namespace symshape {
 namespace ops {
-class OPS_API ScalarCmpOp : public InferValueOp {
+class ScalarCmpOp : public InferValueOp {
  public:
   using InferValueOp::InferValueOp;
   ScalarCmpOp(const SymbolPtr &a, const SymbolPtr &b) : InferValueOp({a, b}) {}
@@ -35,7 +35,7 @@ class OPS_API ScalarCmpOp : public InferValueOp {
   virtual bool Compare(const IntSymbol *a, const IntSymbol *b) const = 0;
 };
 
-class OPS_API ScalarEq final : public ScalarCmpOp {
+class ScalarEq final : public ScalarCmpOp {
  public:
   using ScalarCmpOp::ScalarCmpOp;
   MS_DECLARE_PARENT(ScalarEq, ScalarCmpOp)
@@ -43,7 +43,7 @@ class OPS_API ScalarEq final : public ScalarCmpOp {
   bool Compare(const IntSymbol *a, const IntSymbol *b) const override { return *a == *b; }
 };
 
-class OPS_API ScalarGt final : public ScalarCmpOp {
+class ScalarGt final : public ScalarCmpOp {
  public:
   using ScalarCmpOp::ScalarCmpOp;
   MS_DECLARE_PARENT(ScalarGt, ScalarCmpOp)
@@ -51,7 +51,7 @@ class OPS_API ScalarGt final : public ScalarCmpOp {
   bool Compare(const IntSymbol *a, const IntSymbol *b) const override { return *a > *b; }
 };
 
-class OPS_API ScalarGe final : public ScalarCmpOp {
+class ScalarGe final : public ScalarCmpOp {
  public:
   using ScalarCmpOp::ScalarCmpOp;
   MS_DECLARE_PARENT(ScalarGe, ScalarCmpOp)
@@ -59,7 +59,7 @@ class OPS_API ScalarGe final : public ScalarCmpOp {
   bool Compare(const IntSymbol *a, const IntSymbol *b) const override { return *a >= *b; }
 };
 
-class OPS_API ScalarLt final : public ScalarCmpOp {
+class ScalarLt final : public ScalarCmpOp {
  public:
   using ScalarCmpOp::ScalarCmpOp;
   MS_DECLARE_PARENT(ScalarLt, ScalarCmpOp)
@@ -67,7 +67,7 @@ class OPS_API ScalarLt final : public ScalarCmpOp {
   bool Compare(const IntSymbol *a, const IntSymbol *b) const override { return *a < *b; }
 };
 
-class OPS_API ScalarLe final : public ScalarCmpOp {
+class ScalarLe final : public ScalarCmpOp {
  public:
   using ScalarCmpOp::ScalarCmpOp;
   MS_DECLARE_PARENT(ScalarLe, ScalarCmpOp)

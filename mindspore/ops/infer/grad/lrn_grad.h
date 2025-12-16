@@ -27,7 +27,7 @@ namespace mindspore {
 namespace ops {
 constexpr auto kNameLRNGrad = "LRNGrad";
 /// \brief Local Response Normalization's Grad. Refer to Python API @ref mindspore.ops.LRNGrad for more details.
-class OPS_API LRNGrad : public BaseOperator {
+class LRNGrad : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(LRNGrad);
   /// \brief Constructor.
@@ -59,8 +59,8 @@ class OPS_API LRNGrad : public BaseOperator {
   /// \return beta.
   float get_beta() const;
 };
-OPS_API abstract::AbstractBasePtr LrnGradInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
-                                               const std::vector<abstract::AbstractBasePtr> &input_args);
+abstract::AbstractBasePtr LrnGradInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
+                                       const std::vector<abstract::AbstractBasePtr> &input_args);
 }  // namespace ops
 }  // namespace mindspore
 #endif  // MINDSPORE_CORE_OPS_LRN_GRAD_H_

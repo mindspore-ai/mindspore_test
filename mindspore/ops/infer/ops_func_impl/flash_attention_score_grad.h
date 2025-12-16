@@ -66,7 +66,7 @@ enum FASGradSparseMode : int64_t {
   kFAGSparseBlockLocal,
 };
 
-class OPS_API FlashAttentionScoreGradFuncImpl : public OpFuncImpl {
+class FlashAttentionScoreGradFuncImpl : public OpFuncImpl {
  public:
   ShapeArray InferShape(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const override;
   std::vector<TypeId> InferType(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const override;

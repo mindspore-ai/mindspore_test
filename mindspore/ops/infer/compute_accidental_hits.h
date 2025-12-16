@@ -27,7 +27,7 @@ namespace mindspore {
 namespace ops {
 constexpr auto kNameComputeAccidentalHits = "ComputeAccidentalHits";
 /// \brief Compute accidental hits of sampled classes which match target classes.
-class OPS_API ComputeAccidentalHits : public BaseOperator {
+class ComputeAccidentalHits : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(ComputeAccidentalHits);
   /// \brief Constructor.
@@ -36,8 +36,8 @@ class OPS_API ComputeAccidentalHits : public BaseOperator {
   }
 };
 
-OPS_API AbstractBasePtr ComputeAccidentalHitsInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
-                                                   const std::vector<AbstractBasePtr> &input_args);
+AbstractBasePtr ComputeAccidentalHitsInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
+                                           const std::vector<AbstractBasePtr> &input_args);
 
 using PrimComputeAccidentalHitsPtr = std::shared_ptr<ComputeAccidentalHits>;
 }  // namespace ops

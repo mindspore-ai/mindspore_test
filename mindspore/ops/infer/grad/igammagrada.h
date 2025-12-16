@@ -27,15 +27,15 @@ namespace mindspore {
 namespace ops {
 constexpr auto kNameIgammaGradA = "IgammaGradA";
 /// \brief Computes the gradient of igamma(a, x) wrt a.
-class OPS_API IgammaGradA : public BaseOperator {
+class IgammaGradA : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(IgammaGradA);
   /// \brief Constructor.
   IgammaGradA() : BaseOperator(kNameIgammaGradA) { InitIOName({"a", "x"}, {"z"}); }
 };
 
-OPS_API abstract::AbstractBasePtr IgammaGradAInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
-                                                   const std::vector<abstract::AbstractBasePtr> &input_args);
+abstract::AbstractBasePtr IgammaGradAInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
+                                           const std::vector<abstract::AbstractBasePtr> &input_args);
 using kPrimIgammaGradAPtr = std::shared_ptr<IgammaGradA>;
 }  // namespace ops
 }  // namespace mindspore

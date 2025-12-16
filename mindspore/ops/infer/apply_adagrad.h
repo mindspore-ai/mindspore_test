@@ -28,7 +28,7 @@
 namespace mindspore {
 namespace ops {
 constexpr auto kNameApplyAdagrad = "ApplyAdagrad";
-class OPS_API ApplyAdagrad : public BaseOperator {
+class ApplyAdagrad : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(ApplyAdagrad);
   ApplyAdagrad() : BaseOperator(kNameApplyAdagrad) { InitIOName({"var", "accum", "lr", "grad"}, {"var", "accum"}); }
@@ -40,9 +40,8 @@ class OPS_API ApplyAdagrad : public BaseOperator {
   bool get_update_slots() const;
 };
 
-OPS_API abstract::AbstractBasePtr ApplyAdagradInferFunc(const abstract::AnalysisEnginePtr &,
-                                                        const PrimitivePtr &primitive,
-                                                        const std::vector<abstract::AbstractBasePtr> &input_args);
+abstract::AbstractBasePtr ApplyAdagradInferFunc(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
+                                                const std::vector<abstract::AbstractBasePtr> &input_args);
 using kPrimApplyAdagradPtr = std::shared_ptr<ApplyAdagrad>;
 }  // namespace ops
 }  // namespace mindspore

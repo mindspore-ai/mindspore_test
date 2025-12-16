@@ -27,7 +27,7 @@ namespace mindspore {
 namespace ops {
 constexpr auto kNameNMSWithMask = "NMSWithMask";
 /// \brief NMSWithMask operator. Refer to Python API @ref mindspore.ops.NMSWithMask for more details.
-class OPS_API NMSWithMask : public BaseOperator {
+class NMSWithMask : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(NMSWithMask);
   /// \brief Constructor.
@@ -47,8 +47,8 @@ class OPS_API NMSWithMask : public BaseOperator {
   std::vector<float> get_iou_threshold() const;
 };
 
-OPS_API abstract::AbstractBasePtr NMSWithMaskInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
-                                                   const std::vector<abstract::AbstractBasePtr> &input_args);
+abstract::AbstractBasePtr NMSWithMaskInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
+                                           const std::vector<abstract::AbstractBasePtr> &input_args);
 }  // namespace ops
 }  // namespace mindspore
 

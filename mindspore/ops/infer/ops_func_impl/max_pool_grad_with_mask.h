@@ -22,7 +22,7 @@
 
 namespace mindspore {
 namespace ops {
-class OPS_API MaxPoolGradWithMaskFuncImpl : public OpFuncImpl {
+class MaxPoolGradWithMaskFuncImpl : public OpFuncImpl {
  public:
   ShapeArray InferShape(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const override;
 

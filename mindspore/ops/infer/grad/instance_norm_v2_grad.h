@@ -27,7 +27,7 @@ namespace mindspore {
 namespace ops {
 constexpr auto kNameInstanceNormV2Grad = "InstanceNormV2Grad";
 /// \brief InstanceNormV2Grad defined the InstanceNormV2Grad operator prototype.
-class OPS_API InstanceNormV2Grad : public BaseOperator {
+class InstanceNormV2Grad : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(InstanceNormV2Grad);
   /// \brief Constructor.
@@ -36,9 +36,8 @@ class OPS_API InstanceNormV2Grad : public BaseOperator {
   }
 };
 
-OPS_API abstract::AbstractBasePtr InstanceNormV2GradInfer(const abstract::AnalysisEnginePtr &,
-                                                          const PrimitivePtr &primitive,
-                                                          const std::vector<abstract::AbstractBasePtr> &input_args);
+abstract::AbstractBasePtr InstanceNormV2GradInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
+                                                  const std::vector<abstract::AbstractBasePtr> &input_args);
 using PrimInstanceNormV2GradPtr = std::shared_ptr<InstanceNormV2Grad>;
 }  // namespace ops
 }  // namespace mindspore

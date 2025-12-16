@@ -29,7 +29,7 @@ namespace mindspore {
 namespace ops {
 constexpr auto kNameCSRReduceSum = "CSRReduceSum";
 /// \brief CSRTensor reducesum.
-class OPS_API CSRReduceSum : public BaseOperator {
+class CSRReduceSum : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(CSRReduceSum);
   /// \brief Constructor.
@@ -37,8 +37,8 @@ class OPS_API CSRReduceSum : public BaseOperator {
     InitIOName({"indptr", "indices", "values", "dense_shape", "axis"}, {"output"});
   }
 };
-OPS_API abstract::AbstractBasePtr CSRReduceSumInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
-                                                    const std::vector<abstract::AbstractBasePtr> &input_args);
+abstract::AbstractBasePtr CSRReduceSumInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
+                                            const std::vector<abstract::AbstractBasePtr> &input_args);
 }  // namespace ops
 }  // namespace mindspore
 

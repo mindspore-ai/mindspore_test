@@ -27,7 +27,7 @@
 namespace mindspore {
 namespace ops {
 constexpr auto kNameMatrixPower = "MatrixPower";
-class OPS_API MatrixPower : public BaseOperator {
+class MatrixPower : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(MatrixPower);
   MatrixPower() : BaseOperator(kNameMatrixPower) { InitIOName({"x"}, {"y"}); }
@@ -36,8 +36,8 @@ class OPS_API MatrixPower : public BaseOperator {
   int64_t get_exponent() const;
 };
 
-OPS_API abstract::AbstractBasePtr MatrixPowerInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
-                                                   const std::vector<abstract::AbstractBasePtr> &input_args);
+abstract::AbstractBasePtr MatrixPowerInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
+                                           const std::vector<abstract::AbstractBasePtr> &input_args);
 using PrimMatrixPowerPtr = std::shared_ptr<MatrixPower>;
 }  // namespace ops
 }  // namespace mindspore

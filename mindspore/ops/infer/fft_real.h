@@ -26,7 +26,7 @@ namespace mindspore {
 namespace ops {
 constexpr auto kNameFftReal = "FftReal";
 /// \brief FftReal defined Real-part acquisition operator prototype.
-class OPS_API FftReal : public BaseOperator {
+class FftReal : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(FftReal);
   /// \brief Constructor.
@@ -36,8 +36,8 @@ class OPS_API FftReal : public BaseOperator {
   void Init() const {}
 };
 
-OPS_API abstract::AbstractBasePtr FftRealInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
-                                               const std::vector<abstract::AbstractBasePtr> &input_args);
+abstract::AbstractBasePtr FftRealInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
+                                       const std::vector<abstract::AbstractBasePtr> &input_args);
 }  // namespace ops
 }  // namespace mindspore
 

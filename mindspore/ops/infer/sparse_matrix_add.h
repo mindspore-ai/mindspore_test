@@ -27,7 +27,7 @@ namespace ops {
 constexpr auto kNameSparseMatrixAdd = "SparseMatrixAdd";
 /// \brief Computes the softmax cross-entropy value between logits and sparse encoding labels.
 /// Refer to Python API @ref mindspore.ops.SparseMatrixAdd for more details.
-class OPS_API SparseMatrixAdd : public BaseOperator {
+class SparseMatrixAdd : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(SparseMatrixAdd);
   /// \brief Constructor.
@@ -45,9 +45,8 @@ class OPS_API SparseMatrixAdd : public BaseOperator {
   /// \return dense shape.
   std::vector<int64_t> get_dense_shape() const;
 };
-OPS_API abstract::AbstractBasePtr SparseMatrixAddInfer(const abstract::AnalysisEnginePtr &,
-                                                       const PrimitivePtr &primitive,
-                                                       const std::vector<abstract::AbstractBasePtr> &input_args);
+abstract::AbstractBasePtr SparseMatrixAddInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
+                                               const std::vector<abstract::AbstractBasePtr> &input_args);
 }  // namespace ops
 }  // namespace mindspore
 

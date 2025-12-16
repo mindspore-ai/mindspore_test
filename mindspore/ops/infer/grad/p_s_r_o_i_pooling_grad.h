@@ -28,15 +28,14 @@ namespace mindspore {
 namespace ops {
 constexpr auto kNamePSROIPoolingGrad = "PSROIPoolingGrad";
 
-class OPS_API PSROIPoolingGrad : public BaseOperator {
+class PSROIPoolingGrad : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(PSROIPoolingGrad);
   PSROIPoolingGrad() : BaseOperator(kNamePSROIPoolingGrad) {}
 };
 
-OPS_API abstract::AbstractBasePtr PSROIPoolingGradInfer(const abstract::AnalysisEnginePtr &,
-                                                        const PrimitivePtr &primitive,
-                                                        const std::vector<abstract::AbstractBasePtr> &input_args);
+abstract::AbstractBasePtr PSROIPoolingGradInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
+                                                const std::vector<abstract::AbstractBasePtr> &input_args);
 }  // namespace ops
 }  // namespace mindspore
 

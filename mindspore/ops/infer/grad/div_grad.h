@@ -22,7 +22,7 @@
 namespace mindspore {
 namespace ops {
 constexpr auto kNameDivGrad = "DivGrad";
-class OPS_API DivGrad : public BaseOperator {
+class DivGrad : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(DivGrad);
   DivGrad() : BaseOperator(kNameDivGrad) {}

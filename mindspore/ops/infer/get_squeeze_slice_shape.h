@@ -23,7 +23,7 @@ namespace mindspore {
 namespace ops {
 constexpr auto kNameGetSqueezeSliceShape = "GetSqueezeSliceShape";
 /// \brief Get Squeezed shape when setitem int index in tuple basic indices with dynamic shape tensor.
-class OPS_API GetSqueezeSliceShape : public BaseOperator {
+class GetSqueezeSliceShape : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(GetSqueezeSliceShape);
   /// \brief Constructor.

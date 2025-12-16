@@ -37,7 +37,7 @@ enum ReshapeAndCacheInputIndex : size_t {
   kReshapeAndCacheInputsNum
 };
 
-class OPS_API ReshapeAndCacheFuncImpl : public OpFuncImpl {
+class ReshapeAndCacheFuncImpl : public OpFuncImpl {
  public:
   BaseShapePtr InferShape(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
   TypePtr InferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;

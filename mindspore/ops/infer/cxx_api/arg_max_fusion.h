@@ -26,7 +26,7 @@ namespace mindspore {
 namespace ops {
 constexpr auto kNameArgMaxFusion = "ArgMaxFusion";
 /// \brief ArgMaxFusion defined ArgMax operator prototype of lite.
-class OPS_API ArgMaxFusion : public BaseOperator {
+class ArgMaxFusion : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(ArgMaxFusion);
   /// \brief Constructor.

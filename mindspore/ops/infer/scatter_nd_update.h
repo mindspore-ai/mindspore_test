@@ -27,7 +27,7 @@ namespace ops {
 constexpr auto kNameScatterNdUpdate = "ScatterNdUpdate";
 /// \brief Updates tensor values by using input indices and value.
 /// Refer to Python API @ref mindspore.ops.ScatterNdUpdate for more details.
-class OPS_API ScatterNdUpdate : public BaseOperator {
+class ScatterNdUpdate : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(ScatterNdUpdate);
   /// \brief Constructor.
@@ -39,9 +39,8 @@ class OPS_API ScatterNdUpdate : public BaseOperator {
 
   bool get_use_locking() const;
 };
-OPS_API abstract::AbstractBasePtr ScatterNdUpdateInfer(const abstract::AnalysisEnginePtr &,
-                                                       const PrimitivePtr &primitive,
-                                                       const std::vector<abstract::AbstractBasePtr> &input_args);
+abstract::AbstractBasePtr ScatterNdUpdateInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
+                                               const std::vector<abstract::AbstractBasePtr> &input_args);
 using kPrimScatterNdUpdatePtr = std::shared_ptr<ScatterNdUpdate>;
 }  // namespace ops
 }  // namespace mindspore

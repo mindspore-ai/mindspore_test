@@ -25,7 +25,7 @@
 namespace mindspore {
 namespace ops {
 constexpr auto kNameQuantile = "Quantile";
-class OPS_API Quantile : public BaseOperator {
+class Quantile : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(Quantile);
   Quantile() : BaseOperator(kNameQuantile) { InitIOName({"input", "q"}, {"out"}); }

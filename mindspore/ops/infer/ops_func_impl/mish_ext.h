@@ -24,7 +24,7 @@
 
 namespace mindspore {
 namespace ops {
-class OPS_API MishExtFuncImpl : public OpFuncImpl {
+class MishExtFuncImpl : public OpFuncImpl {
  public:
   MishExtFuncImpl() = default;
   ~MishExtFuncImpl() = default;

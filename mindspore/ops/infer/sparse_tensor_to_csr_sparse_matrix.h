@@ -25,7 +25,7 @@
 namespace mindspore {
 namespace ops {
 constexpr auto kNameSparseTensorToCSRSparseMatrix = "SparseTensorToCSRSparseMatrix";
-class OPS_API SparseTensorToCSRSparseMatrix : public BaseOperator {
+class SparseTensorToCSRSparseMatrix : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(SparseTensorToCSRSparseMatrix);
   SparseTensorToCSRSparseMatrix() : BaseOperator(kNameSparseTensorToCSRSparseMatrix) {
@@ -33,9 +33,9 @@ class OPS_API SparseTensorToCSRSparseMatrix : public BaseOperator {
                {"y_dense_shape", "y_batch_pointers", "y_row_pointers", "y_col_indices", "y_values"});
   }
 };
-OPS_API abstract::AbstractBasePtr SparseTensorToCSRSparseMatrixInfer(
-  const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
-  const std::vector<abstract::AbstractBasePtr> &input_args);
+abstract::AbstractBasePtr SparseTensorToCSRSparseMatrixInfer(const abstract::AnalysisEnginePtr &,
+                                                             const PrimitivePtr &primitive,
+                                                             const std::vector<abstract::AbstractBasePtr> &input_args);
 using PrimSparseTensorToCSRSparseMatrixPtr = std::shared_ptr<SparseTensorToCSRSparseMatrix>;
 }  // namespace ops
 }  // namespace mindspore

@@ -26,7 +26,7 @@
 namespace mindspore {
 namespace ops {
 constexpr auto kNameMinimumGradGrad = "MinimumGradGrad";
-class OPS_API MinimumGradGrad : public BaseOperator {
+class MinimumGradGrad : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(MinimumGradGrad);
   MinimumGradGrad() : BaseOperator(kNameMinimumGradGrad) {
@@ -38,9 +38,8 @@ class OPS_API MinimumGradGrad : public BaseOperator {
   bool get_grad_x() const;
   bool get_grad_y() const;
 };
-OPS_API abstract::AbstractBasePtr MinimumGradGradInfer(const abstract::AnalysisEnginePtr &,
-                                                       const PrimitivePtr &primitive,
-                                                       const std::vector<abstract::AbstractBasePtr> &input_args);
+abstract::AbstractBasePtr MinimumGradGradInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
+                                               const std::vector<abstract::AbstractBasePtr> &input_args);
 }  // namespace ops
 }  // namespace mindspore
 #endif  // MINDSPORE_CORE_OPS_GRAD_MINIMUM_GRAD_GRAD_H_

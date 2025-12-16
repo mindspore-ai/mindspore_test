@@ -27,7 +27,7 @@ namespace ops {
 constexpr auto kNameNthElement = "NthElement";
 /// \brief Finds values of the n-th order statistic for the last dimension.
 /// Refer to Python API @ref mindspore.ops.NthElement for more details.
-class OPS_API NthElement : public BaseOperator {
+class NthElement : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(NthElement);
   /// \brief Constructor.
@@ -42,8 +42,8 @@ class OPS_API NthElement : public BaseOperator {
   /// \return reverse.
   bool get_reverse() const;
 };
-OPS_API abstract::AbstractBasePtr NthElementInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
-                                                  const std::vector<abstract::AbstractBasePtr> &input_args);
+abstract::AbstractBasePtr NthElementInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
+                                          const std::vector<abstract::AbstractBasePtr> &input_args);
 }  // namespace ops
 }  // namespace mindspore
 

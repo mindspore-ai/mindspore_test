@@ -24,14 +24,14 @@ namespace mindspore {
 namespace ops {
 constexpr auto kNameTruncateDiv = "TruncateDiv";
 
-class OPS_API TruncateDiv : public BaseOperator {
+class TruncateDiv : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(TruncateDiv);
   TruncateDiv() : BaseOperator(kNameTruncateDiv) { InitIOName({"x", "y"}, {"output"}); }
   void Init() const {}
 };
-OPS_API abstract::AbstractBasePtr TruncateDivInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
-                                                   const std::vector<abstract::AbstractBasePtr> &input_args);
+abstract::AbstractBasePtr TruncateDivInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
+                                           const std::vector<abstract::AbstractBasePtr> &input_args);
 }  // namespace ops
 }  // namespace mindspore
 

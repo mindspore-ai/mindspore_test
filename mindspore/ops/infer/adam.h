@@ -28,7 +28,7 @@ namespace ops {
 constexpr auto kNameAdam = "Adam";
 /// \brief Updates gradients by the Adaptive Moment Estimation (Adam) algorithm.
 /// Refer to Python API @ref mindspore.ops.Adam for more details.
-class OPS_API Adam : public BaseOperator {
+class Adam : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(Adam);
   /// \brief Constructor.
@@ -49,8 +49,8 @@ class OPS_API Adam : public BaseOperator {
   bool get_use_nesterov() const;
 };
 using kPrimAdamPtr = std::shared_ptr<Adam>;
-OPS_API abstract::AbstractBasePtr ApplyAdamInferFunc(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
-                                                     const std::vector<abstract::AbstractBasePtr> &input_args);
+abstract::AbstractBasePtr ApplyAdamInferFunc(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
+                                             const std::vector<abstract::AbstractBasePtr> &input_args);
 }  // namespace ops
 }  // namespace mindspore
 

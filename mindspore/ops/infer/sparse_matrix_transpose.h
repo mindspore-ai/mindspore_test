@@ -26,7 +26,7 @@ namespace mindspore {
 namespace ops {
 constexpr auto kNameSparseMatrixTranspose = "SparseMatrixTranspose";
 /// \brief Return the transpose of input CSR tensor.
-class OPS_API SparseMatrixTranspose : public BaseOperator {
+class SparseMatrixTranspose : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(SparseMatrixTranspose);
   /// \brief Constructor.
@@ -42,9 +42,8 @@ class OPS_API SparseMatrixTranspose : public BaseOperator {
   bool get_conjugate() const;
 };
 
-OPS_API abstract::AbstractBasePtr SparseMatrixTransposeInfer(const abstract::AnalysisEnginePtr &,
-                                                             const PrimitivePtr &primitive,
-                                                             const std::vector<abstract::AbstractBasePtr> &input_args);
+abstract::AbstractBasePtr SparseMatrixTransposeInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
+                                                     const std::vector<abstract::AbstractBasePtr> &input_args);
 using PrimSparseMatrixTransposePtr = std::shared_ptr<SparseMatrixTranspose>;
 }  // namespace ops
 }  // namespace mindspore

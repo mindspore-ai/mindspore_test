@@ -24,14 +24,14 @@
 namespace mindspore {
 namespace ops {
 constexpr auto kNameDynamicStitch = "DynamicStitch";
-class OPS_API DynamicStitch : public BaseOperator {
+class DynamicStitch : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(DynamicStitch);
   DynamicStitch() : BaseOperator(kNameDynamicStitch) {}
   void Init() const {}
 };
-OPS_API abstract::AbstractBasePtr DynamicStitchInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
-                                                     const std::vector<abstract::AbstractBasePtr> &input_args);
+abstract::AbstractBasePtr DynamicStitchInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
+                                             const std::vector<abstract::AbstractBasePtr> &input_args);
 }  // namespace ops
 }  // namespace mindspore
 

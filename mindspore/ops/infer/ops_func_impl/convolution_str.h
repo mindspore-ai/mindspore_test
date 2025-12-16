@@ -21,7 +21,7 @@
 
 namespace mindspore {
 namespace ops {
-class OPS_API ConvolutionStrFuncImpl final : public ConvPaddingFuncImpl {};
+class ConvolutionStrFuncImpl final : public ConvPaddingFuncImpl {};
 }  // namespace ops
 }  // namespace mindspore
 

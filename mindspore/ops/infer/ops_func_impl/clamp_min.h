@@ -22,7 +22,7 @@
 
 namespace mindspore {
 namespace ops {
-class OPS_API ClampMinFuncImpl : public EltwiseOpFuncImpl {};
+class ClampMinFuncImpl : public EltwiseOpFuncImpl {};
 }  // namespace ops
 }  // namespace mindspore
 

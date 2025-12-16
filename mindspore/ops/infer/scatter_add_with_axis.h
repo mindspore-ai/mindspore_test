@@ -27,7 +27,7 @@ namespace ops {
 constexpr auto kNameScatterAddWithAxis = "ScatterAddWithAxis";
 /// \brief Updates tensor values by using input indices and value.
 /// Refer to Python API @ref mindspore.ops.ScatterAddWithAxis for more details.
-class OPS_API ScatterAddWithAxis : public BaseOperator {
+class ScatterAddWithAxis : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(ScatterAddWithAxis);
   /// \brief Constructor.
@@ -40,9 +40,8 @@ class OPS_API ScatterAddWithAxis : public BaseOperator {
   /// \brief Get axis.
   int64_t get_axis() const;
 };
-OPS_API abstract::AbstractBasePtr ScatterAddWithAxisInfer(const abstract::AnalysisEnginePtr &,
-                                                          const PrimitivePtr &primitive,
-                                                          const std::vector<abstract::AbstractBasePtr> &input_args);
+abstract::AbstractBasePtr ScatterAddWithAxisInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
+                                                  const std::vector<abstract::AbstractBasePtr> &input_args);
 using kPrimScatterAddWithAxisPtr = std::shared_ptr<ScatterAddWithAxis>;
 }  // namespace ops
 }  // namespace mindspore

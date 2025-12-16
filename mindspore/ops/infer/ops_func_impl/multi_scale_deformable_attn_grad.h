@@ -22,7 +22,7 @@
 
 namespace mindspore {
 namespace ops {
-class OPS_API MultiScaleDeformableAttnGradFuncImpl : public OpFuncImpl {
+class MultiScaleDeformableAttnGradFuncImpl : public OpFuncImpl {
  public:
   ShapeArray InferShape(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const override;
   std::vector<TypeId> InferType(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const override;

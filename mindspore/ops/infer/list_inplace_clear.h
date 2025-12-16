@@ -23,7 +23,7 @@
 namespace mindspore {
 namespace ops {
 /// \brief List inplace clear operation 'input_data.clear(target)'.
-class OPS_API ListInplaceClear : public BaseOperator {
+class ListInplaceClear : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(ListInplaceClear);
   /// \brief Constructor.

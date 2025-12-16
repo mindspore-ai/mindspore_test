@@ -28,7 +28,7 @@ namespace mindspore {
 namespace ops {
 constexpr auto kNameNoRepeatNGram = "NoRepeatNGram";
 /// \brief
-class OPS_API NoRepeatNGram : public BaseOperator {
+class NoRepeatNGram : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(NoRepeatNGram);
   /// \brief Constructor.
@@ -43,8 +43,8 @@ class OPS_API NoRepeatNGram : public BaseOperator {
   int64_t get_ngram() const;
 };
 
-OPS_API abstract::AbstractBasePtr NoRepeatNGramInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
-                                                     const std::vector<abstract::AbstractBasePtr> &input_args);
+abstract::AbstractBasePtr NoRepeatNGramInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
+                                             const std::vector<abstract::AbstractBasePtr> &input_args);
 }  // namespace ops
 }  // namespace mindspore
 

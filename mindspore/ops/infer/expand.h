@@ -28,7 +28,7 @@ namespace ops {
 constexpr auto kNameExpand = "Expand";
 /// \brief Expand the tensor ‘x‘ to the size of ‘shape‘
 ///// Refer to Python API @ref mindspore.ops.Expand for more details.
-class OPS_API Expand : public BaseOperator {
+class Expand : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(Expand);
   /// \brief Constructor.
@@ -37,8 +37,8 @@ class OPS_API Expand : public BaseOperator {
   void Init() const {}
 };
 
-OPS_API abstract::AbstractBasePtr ExpandInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
-                                              const std::vector<abstract::AbstractBasePtr> &input_args);
+abstract::AbstractBasePtr ExpandInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
+                                      const std::vector<abstract::AbstractBasePtr> &input_args);
 
 using PrimExpand = std::shared_ptr<Expand>;
 }  // namespace ops

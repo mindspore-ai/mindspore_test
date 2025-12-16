@@ -29,7 +29,7 @@ namespace mindspore {
 namespace ops {
 constexpr auto kNameFusedSparseProximalAdagrad = "FusedSparseProximalAdagrad";
 /// \brief Softmax operation. Refer to Python API @ref mindspore.ops.Softmax for more details.
-class OPS_API FusedSparseProximalAdagrad : public BaseOperator {
+class FusedSparseProximalAdagrad : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(FusedSparseProximalAdagrad);
   /// \brief Constructor.
@@ -46,9 +46,9 @@ class OPS_API FusedSparseProximalAdagrad : public BaseOperator {
   bool get_use_locking() const;
 };
 
-OPS_API abstract::AbstractBasePtr FusedSparseProximalAdagradInfer(
-  const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
-  const std::vector<abstract::AbstractBasePtr> &input_args);
+abstract::AbstractBasePtr FusedSparseProximalAdagradInfer(const abstract::AnalysisEnginePtr &,
+                                                          const PrimitivePtr &primitive,
+                                                          const std::vector<abstract::AbstractBasePtr> &input_args);
 }  // namespace ops
 }  // namespace mindspore
 

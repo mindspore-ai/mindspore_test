@@ -24,15 +24,15 @@
 namespace mindspore {
 namespace ops {
 constexpr auto kNameScatterMul = "ScatterMul";
-class OPS_API ScatterMul : public BaseOperator {
+class ScatterMul : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(ScatterMul);
   /// \brief Constructor.
   ScatterMul() : BaseOperator(kNameScatterMul) { InitIOName({"input_x", "indices", "updates"}, {"output"}); }
 };
 
-OPS_API abstract::AbstractBasePtr ScatterMulInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
-                                                  const std::vector<abstract::AbstractBasePtr> &input_args);
+abstract::AbstractBasePtr ScatterMulInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
+                                          const std::vector<abstract::AbstractBasePtr> &input_args);
 }  // namespace ops
 }  // namespace mindspore
 

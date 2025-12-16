@@ -28,7 +28,7 @@ constexpr auto kNameDropoutDoMask = "DropoutDoMask";
 
 /// \brief Applies dropout mask on the input tensor.
 /// Refer to Python API @ref mindspore.ops.DropoutDoMask for more details.
-class OPS_API DropoutDoMask : public BaseOperator {
+class DropoutDoMask : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(DropoutDoMask);
   /// \brief Constructor.
@@ -36,8 +36,8 @@ class OPS_API DropoutDoMask : public BaseOperator {
   /// \brief Init. Refer to the parameters of Python API @ref mindspore.ops.DropoutDoMask for the inputs.
   void Init() const {}
 };
-OPS_API abstract::AbstractBasePtr DropoutDoMaskInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
-                                                     const std::vector<abstract::AbstractBasePtr> &input_args);
+abstract::AbstractBasePtr DropoutDoMaskInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
+                                             const std::vector<abstract::AbstractBasePtr> &input_args);
 }  // namespace ops
 }  // namespace mindspore
 

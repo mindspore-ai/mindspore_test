@@ -27,7 +27,7 @@
 namespace mindspore {
 namespace ops {
 constexpr auto kNamePoolGrad = "PoolGrad";
-class OPS_API PoolGrad : public BaseOperator {
+class PoolGrad : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(PoolGrad);
   PoolGrad() : BaseOperator(kNamePoolGrad) { InitIOName({"x_origin", "out_origin", "grad"}, {"output"}); }

@@ -27,15 +27,14 @@
 namespace mindspore {
 namespace ops {
 constexpr auto kNameSparseSegmentSqrtN = "SparseSegmentSqrtN";
-class OPS_API SparseSegmentSqrtN : public BaseOperator {
+class SparseSegmentSqrtN : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(SparseSegmentSqrtN);
   SparseSegmentSqrtN() : BaseOperator(kNameSparseSegmentSqrtN) { InitIOName({"x", "indices", "segment_ids"}, {"y"}); }
 };
 
-OPS_API abstract::AbstractBasePtr SparseSegmentSqrtNInfer(const abstract::AnalysisEnginePtr &,
-                                                          const PrimitivePtr &primitive,
-                                                          const std::vector<abstract::AbstractBasePtr> &input_args);
+abstract::AbstractBasePtr SparseSegmentSqrtNInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
+                                                  const std::vector<abstract::AbstractBasePtr> &input_args);
 using PrimSparseSegmentSqrtNPtr = std::shared_ptr<SparseSegmentSqrtN>;
 }  // namespace ops
 }  // namespace mindspore

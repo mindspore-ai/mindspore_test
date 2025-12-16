@@ -26,7 +26,7 @@
 namespace mindspore {
 namespace ops {
 constexpr auto kNameClipByValue = "ClipByValue";
-class OPS_API ClipByValue : public BaseOperator {
+class ClipByValue : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(ClipByValue);
   ClipByValue() : BaseOperator(kNameClipByValue) { InitIOName({"x", "clip_value_min", "clip_value_max"}, {"output"}); }
@@ -35,8 +35,8 @@ class OPS_API ClipByValue : public BaseOperator {
   }
   void Init() const {}
 };
-OPS_API abstract::AbstractBasePtr ClipByValueInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
-                                                   const std::vector<abstract::AbstractBasePtr> &input_args);
+abstract::AbstractBasePtr ClipByValueInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
+                                           const std::vector<abstract::AbstractBasePtr> &input_args);
 using kPrimClipByValuePtr = std::shared_ptr<ClipByValue>;
 }  // namespace ops
 }  // namespace mindspore

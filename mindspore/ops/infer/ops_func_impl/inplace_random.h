@@ -23,7 +23,7 @@
 #include "primitive/op_name.h"
 
 namespace mindspore::ops {
-class OPS_API InplaceRandomFuncImpl : public OpFuncImpl {
+class InplaceRandomFuncImpl : public OpFuncImpl {
  public:
   TypeIdList InferType(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const override {
     return {input_infos[kInputIndex0]->GetType()};

@@ -24,7 +24,7 @@
 namespace mindspore {
 namespace ops {
 constexpr auto kNameNeighborExchangeV2 = "NeighborExchangeV2";
-class OPS_API NeighborExchangeV2 : public BaseOperator {
+class NeighborExchangeV2 : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(NeighborExchangeV2);
   NeighborExchangeV2() : BaseOperator(kNameNeighborExchangeV2) {}
@@ -32,9 +32,8 @@ class OPS_API NeighborExchangeV2 : public BaseOperator {
 };
 using kPrimNeighborExchangeV2Ptr = std::shared_ptr<NeighborExchangeV2>;
 
-OPS_API abstract::AbstractBasePtr NeighborExchangeV2Infer(const abstract::AnalysisEnginePtr &,
-                                                          const PrimitivePtr &primitive,
-                                                          const std::vector<abstract::AbstractBasePtr> &input_args);
+abstract::AbstractBasePtr NeighborExchangeV2Infer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
+                                                  const std::vector<abstract::AbstractBasePtr> &input_args);
 }  // namespace ops
 }  // namespace mindspore
 

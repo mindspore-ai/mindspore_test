@@ -27,7 +27,7 @@ namespace ops {
 constexpr auto kNameSparseMatrixNNZ = "SparseMatrixNNZ";
 /// \brief return the number of not zero elements in the sparse matrix input.
 /// Refer to Python API @ref mindspore.ops.SparseMatrixNNZ for more details.
-class OPS_API SparseMatrixNNZ : public BaseOperator {
+class SparseMatrixNNZ : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(SparseMatrixNNZ);
   /// \brief Constructor.
@@ -35,9 +35,8 @@ class OPS_API SparseMatrixNNZ : public BaseOperator {
     InitIOName({"x_dense_shape", "x_batch_pointers", "x_row_pointers", "x_col_indices", "x_values"}, {"y"});
   }
 };
-OPS_API abstract::AbstractBasePtr SparseMatrixNNZInfer(const abstract::AnalysisEnginePtr &,
-                                                       const PrimitivePtr &primitive,
-                                                       const std::vector<abstract::AbstractBasePtr> &input_args);
+abstract::AbstractBasePtr SparseMatrixNNZInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
+                                               const std::vector<abstract::AbstractBasePtr> &input_args);
 }  // namespace ops
 }  // namespace mindspore
 

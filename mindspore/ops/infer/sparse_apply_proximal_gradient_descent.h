@@ -29,7 +29,7 @@
 namespace mindspore {
 namespace ops {
 constexpr auto kNameSparseApplyProximalGradientDescent = "SparseApplyProximalGradientDescent";
-class OPS_API SparseApplyProximalGradientDescent : public BaseOperator {
+class SparseApplyProximalGradientDescent : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(SparseApplyProximalGradientDescent);
   SparseApplyProximalGradientDescent() : BaseOperator(kNameSparseApplyProximalGradientDescent) {}
@@ -41,8 +41,9 @@ class OPS_API SparseApplyProximalGradientDescent : public BaseOperator {
   bool get_use_locking() const;
 };
 
-OPS_API abstract::AbstractBasePtr SparseApplyProximalGradientDescentInfer(
-  const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args);
+abstract::AbstractBasePtr SparseApplyProximalGradientDescentInfer(const abstract::AnalysisEnginePtr &,
+                                                                  const PrimitivePtr &primitive,
+                                                                  const std::vector<AbstractBasePtr> &input_args);
 using kPrimSparseApplyProximalGradientDescentPtr = std::shared_ptr<SparseApplyProximalGradientDescent>;
 }  // namespace ops
 }  // namespace mindspore

@@ -27,7 +27,7 @@ namespace mindspore {
 namespace ops {
 constexpr auto kNameTensorDump = "TensorDump";
 
-class OPS_API TensorDump : public BaseOperator {
+class TensorDump : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(TensorDump);
 

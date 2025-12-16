@@ -26,7 +26,7 @@ namespace mindspore {
 namespace ops {
 constexpr auto kNameTensorListFromTensor = "TensorListFromTensor";
 /// \brief TensorListFromTensor defined TensorListFromTensor operator prototype of lite.
-class OPS_API TensorListFromTensor : public BaseOperator {
+class TensorListFromTensor : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(TensorListFromTensor);
   /// \brief Constructor.
@@ -54,9 +54,8 @@ class OPS_API TensorListFromTensor : public BaseOperator {
   /// \brief Method to get the op's shape_type attributes.
   int64_t get_shape_type() const;
 };
-OPS_API abstract::AbstractBasePtr TensorListFromTensorInfer(const abstract::AnalysisEnginePtr &,
-                                                            const PrimitivePtr &primitive,
-                                                            const std::vector<abstract::AbstractBasePtr> &input_args);
+abstract::AbstractBasePtr TensorListFromTensorInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
+                                                    const std::vector<abstract::AbstractBasePtr> &input_args);
 }  // namespace ops
 }  // namespace mindspore
 

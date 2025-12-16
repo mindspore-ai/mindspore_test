@@ -29,7 +29,7 @@ namespace ops {
 constexpr auto kNameBatchToSpaceNDV2 = "BatchToSpaceNDV2";
 /// \brief Divides batch dimension with blocks and interleaves these blocks back into spatial dimensions.
 /// Refer to Python API @ref mindspore.ops.BatchToSpaceNDV2 for more details.
-class OPS_API BatchToSpaceNDV2 : public BaseOperator {
+class BatchToSpaceNDV2 : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(BatchToSpaceNDV2);
   /// \brief Constructor.
@@ -37,9 +37,8 @@ class OPS_API BatchToSpaceNDV2 : public BaseOperator {
   /// \brief Init. Refer to the parameters of Python API @ref mindspore.ops.BatchToSpaceNDV2 for the inputs.
   void Init() const {}
 };
-OPS_API abstract::AbstractBasePtr BatchToSpaceNDV2Infer(const abstract::AnalysisEnginePtr &,
-                                                        const PrimitivePtr &primitive,
-                                                        const std::vector<abstract::AbstractBasePtr> &input_args);
+abstract::AbstractBasePtr BatchToSpaceNDV2Infer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
+                                                const std::vector<abstract::AbstractBasePtr> &input_args);
 using kPrimBatchToSpaceNDV2Ptr = std::shared_ptr<BatchToSpaceNDV2>;
 }  // namespace ops
 }  // namespace mindspore

@@ -24,7 +24,7 @@
 
 namespace mindspore {
 namespace ops {
-class OPS_API StackExtFuncImpl : public OpFuncImpl {
+class StackExtFuncImpl : public OpFuncImpl {
  public:
   StackExtFuncImpl() = default;
   ~StackExtFuncImpl() = default;

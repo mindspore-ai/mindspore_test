@@ -24,7 +24,7 @@
 
 namespace mindspore {
 namespace ops {
-class OPS_API MishGradExtFuncImpl : public OpFuncImpl {
+class MishGradExtFuncImpl : public OpFuncImpl {
  public:
   MishGradExtFuncImpl() = default;
   ~MishGradExtFuncImpl() = default;

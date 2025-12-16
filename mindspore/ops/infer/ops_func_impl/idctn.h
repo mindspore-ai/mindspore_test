@@ -23,7 +23,7 @@
 
 namespace mindspore {
 namespace ops {
-class OPS_API IDCTNFuncImpl : public OpFuncImpl {
+class IDCTNFuncImpl : public OpFuncImpl {
  public:
   IDCTNFuncImpl() = default;
   ~IDCTNFuncImpl() = default;

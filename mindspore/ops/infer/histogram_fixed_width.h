@@ -31,7 +31,7 @@ namespace mindspore {
 namespace ops {
 constexpr auto kNameHistogramFixedWidth = "HistogramFixedWidth";
 /// Refer to Python API @ref mindspore.ops.HistogramFixedWidth for more details.
-class OPS_API HistogramFixedWidth : public BaseOperator {
+class HistogramFixedWidth : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(HistogramFixedWidth);
 
@@ -47,9 +47,8 @@ class OPS_API HistogramFixedWidth : public BaseOperator {
 
   TypeId get_dtype() const;
 };
-OPS_API abstract::AbstractBasePtr HistogramFixedWidthInfer(const abstract::AnalysisEnginePtr &,
-                                                           const PrimitivePtr &primitive,
-                                                           const std::vector<abstract::AbstractBasePtr> &input_args);
+abstract::AbstractBasePtr HistogramFixedWidthInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
+                                                   const std::vector<abstract::AbstractBasePtr> &input_args);
 }  // namespace ops
 }  // namespace mindspore
 

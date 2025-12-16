@@ -21,7 +21,7 @@
 
 namespace mindspore {
 namespace ops {
-class OPS_API RightShiftFuncImpl : public OpFuncImpl {
+class RightShiftFuncImpl : public OpFuncImpl {
  public:
   RightShiftFuncImpl() = default;
   ~RightShiftFuncImpl() = default;

@@ -23,7 +23,7 @@
 namespace mindspore {
 namespace ops {
 /// \brief List append operation 'input_data.append(target)'.
-class OPS_API ListAppend : public BaseOperator {
+class ListAppend : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(ListAppend);
   /// \brief Constructor.

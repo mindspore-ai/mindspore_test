@@ -29,7 +29,7 @@ constexpr auto kNameHistogramSummary = "HistogramSummary";
 
 /// \brief Outputs a tensor to a protocol buffer through a tensor summary operator.
 /// Refer to Python API @ref mindspore.ops.HistogramSummary for more details.
-class OPS_API HistogramSummary : public BaseOperator {
+class HistogramSummary : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(HistogramSummary);
   /// \brief Constructor.

@@ -33,7 +33,7 @@ using SymbolPtr = std::shared_ptr<Symbol>;
 using SymbolPtrList = std::vector<SymbolPtr>;
 
 namespace ops {
-class OPS_API InferShapeOp : public Operation {
+class InferShapeOp : public Operation {
  public:
   using Operation::Operation;
   ~InferShapeOp() override = default;
@@ -44,14 +44,14 @@ class OPS_API InferShapeOp : public Operation {
   void UpdateMathInfo() override { SetPositive(output_as<ListSymbol>()); }
 };
 
-class OPS_API InferValueOp : public Operation {
+class InferValueOp : public Operation {
  public:
   using Operation::Operation;
   ~InferValueOp() override = default;
   MS_DECLARE_PARENT(InferValueOp, Operation)
 };
 
-class OPS_API ScalarIntOp : public InferValueOp {
+class ScalarIntOp : public InferValueOp {
  public:
   using InferValueOp::InferValueOp;
   MS_DECLARE_PARENT(ScalarIntOp, InferValueOp)

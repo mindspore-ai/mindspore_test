@@ -26,7 +26,7 @@ namespace mindspore {
 namespace ops {
 constexpr auto kNameSparseSparseMaximum = "SparseSparseMaximum";
 
-class OPS_API SparseSparseMaximum : public BaseOperator {
+class SparseSparseMaximum : public BaseOperator {
  public:
   /// \brief Constructor.
   MIND_API_BASE_MEMBER(SparseSparseMaximum);

@@ -30,7 +30,7 @@ namespace ops {
 constexpr auto kNameDenseToCSRSparseMatrix = "DenseToCSRSparseMatrix";
 /// \brief Converts a dense matrix to its CSR sparse form.
 /// Refer to Python API @ref mindspore.ops.DenseToCSRSparseMatrix for more details.
-class OPS_API DenseToCSRSparseMatrix : public BaseOperator {
+class DenseToCSRSparseMatrix : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(DenseToCSRSparseMatrix);
   /// \brief Constructor.
@@ -39,9 +39,9 @@ class OPS_API DenseToCSRSparseMatrix : public BaseOperator {
                {"y_dense_shape", "y_batch_pointers", "y_row_pointers", "y_col_indices", "y_values"});
   }
 };
-OPS_API abstract::AbstractBasePtr DenseToCSRSparseMatrixInfer(const abstract::AnalysisEnginePtr &,
-                                                              const PrimitivePtr &primitive,
-                                                              const std::vector<abstract::AbstractBasePtr> &input_args);
+abstract::AbstractBasePtr DenseToCSRSparseMatrixInfer(const abstract::AnalysisEnginePtr &,
+                                                      const PrimitivePtr &primitive,
+                                                      const std::vector<abstract::AbstractBasePtr> &input_args);
 }  // namespace ops
 }  // namespace mindspore
 

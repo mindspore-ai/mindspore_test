@@ -35,8 +35,8 @@ class PSROIPooling : public BaseOperator {
   PSROIPooling() : BaseOperator(kNamePSROIPooling) { InitIOName({"input", "rois"}, {"output"}); }
 };
 
-OPS_API abstract::AbstractBasePtr PSROIPoolingInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
-                                                    const std::vector<abstract::AbstractBasePtr> &input_args);
+abstract::AbstractBasePtr PSROIPoolingInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
+                                            const std::vector<abstract::AbstractBasePtr> &input_args);
 }  // namespace ops
 }  // namespace mindspore
 

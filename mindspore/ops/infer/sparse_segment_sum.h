@@ -30,7 +30,7 @@ namespace ops {
 constexpr auto kNameSparseSegmentSum = "SparseSegmentSum";
 /// \brief Computes the sum along sparse segments of a tensor.
 /// Refer to Python API @ref mindspore.ops.SparseSegmentSum for more details.
-class OPS_API SparseSegmentSum : public BaseOperator {
+class SparseSegmentSum : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(SparseSegmentSum);
   /// \brief Constructor.

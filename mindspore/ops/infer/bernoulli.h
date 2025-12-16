@@ -28,7 +28,7 @@ namespace ops {
 constexpr auto kNameBernoulli = "Bernoulli";
 /// \brief Draw random numbers from a Bernoulli distribution.
 /// \brief Refer to Python API @ref mindspore.ops.Bernoulli for more details.
-class OPS_API Bernoulli : public BaseOperator {
+class Bernoulli : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(Bernoulli);
   /// \brief Constructor.
@@ -45,8 +45,8 @@ class OPS_API Bernoulli : public BaseOperator {
   int64_t get_seed() const;
 };
 
-OPS_API abstract::AbstractBasePtr BernoulliInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
-                                                 const std::vector<abstract::AbstractBasePtr> &input_args);
+abstract::AbstractBasePtr BernoulliInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
+                                         const std::vector<abstract::AbstractBasePtr> &input_args);
 }  // namespace ops
 }  // namespace mindspore
 

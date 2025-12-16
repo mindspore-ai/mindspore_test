@@ -28,7 +28,7 @@ namespace ops {
 constexpr auto kNameCombinedNonMaxSuppression = "CombinedNonMaxSuppression";
 /// \brief Greedily selects a subset of bounding boxes in descending order of score.
 /// Refer to Python API @ref mindspore.ops.CombineNonMaxSuppression for more details.
-class OPS_API CombinedNonMaxSuppression : public BaseOperator {
+class CombinedNonMaxSuppression : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(CombinedNonMaxSuppression);
   /// \brief Constructor.
@@ -39,9 +39,9 @@ class OPS_API CombinedNonMaxSuppression : public BaseOperator {
   bool get_pad_per_class() const;
   bool get_clip_boxes() const;
 };
-OPS_API abstract::AbstractBasePtr CombinedNonMaxSuppressionInfer(
-  const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
-  const std::vector<abstract::AbstractBasePtr> &input_args);
+abstract::AbstractBasePtr CombinedNonMaxSuppressionInfer(const abstract::AnalysisEnginePtr &,
+                                                         const PrimitivePtr &primitive,
+                                                         const std::vector<abstract::AbstractBasePtr> &input_args);
 
 using kPrimCombinedNonMaxSuppressionPtr = std::shared_ptr<CombinedNonMaxSuppression>;
 }  // namespace ops

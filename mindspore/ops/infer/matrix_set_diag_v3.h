@@ -30,7 +30,7 @@ constexpr auto kNameMatrixSetDiagV3 = "MatrixSetDiagV3";
 
 /// \brief Returns a batched matrix tensor with new batched diagonal values.
 /// Refer to Python API @ref mindspore.ops.MatrixSetDiagV3 for more details.
-class OPS_API MatrixSetDiagV3 : public BaseOperator {
+class MatrixSetDiagV3 : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(MatrixSetDiagV3);
   /// \brief Constructor.
@@ -43,9 +43,8 @@ class OPS_API MatrixSetDiagV3 : public BaseOperator {
   std::string get_align() const;
 };
 
-OPS_API abstract::AbstractBasePtr MatrixSetDiagV3Infer(const abstract::AnalysisEnginePtr &,
-                                                       const PrimitivePtr &primitive,
-                                                       const std::vector<abstract::AbstractBasePtr> &input_args);
+abstract::AbstractBasePtr MatrixSetDiagV3Infer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
+                                               const std::vector<abstract::AbstractBasePtr> &input_args);
 
 using PrimMatrixSetDiagV3Ptr = std::shared_ptr<MatrixSetDiagV3>;
 }  // namespace ops

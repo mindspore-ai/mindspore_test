@@ -28,15 +28,15 @@ namespace ops {
 constexpr auto kNameIgammac = "Igammac";
 /// \brief Compute the upper regularized incomplete Gamma function Q(a, x).
 /// Refer to Python API @ref mindspore.ops.Igammac for more details.
-class OPS_API Igammac : public BaseOperator {
+class Igammac : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(Igammac);
   /// \brief Constructor.
   Igammac() : BaseOperator(kNameIgammac) { InitIOName({"a", "x"}, {"z"}); }
 };
 
-OPS_API abstract::AbstractBasePtr IgammacInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
-                                               const std::vector<abstract::AbstractBasePtr> &input_args);
+abstract::AbstractBasePtr IgammacInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
+                                       const std::vector<abstract::AbstractBasePtr> &input_args);
 using kPrimIgammacPtr = std::shared_ptr<Igammac>;
 }  // namespace ops
 }  // namespace mindspore

@@ -27,7 +27,7 @@ namespace ops {
 constexpr auto kRandomShuffle = "RandomShuffle";
 /// \brief Randomly shuffles a Tensor along its first dimension.
 /// Refer to Python API @ref mindspore.ops.RandomShuffle for more details.
-class OPS_API RandomShuffle : public BaseOperator {
+class RandomShuffle : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(RandomShuffle);
   /// \brief Constructor.
@@ -50,8 +50,8 @@ class OPS_API RandomShuffle : public BaseOperator {
   int64_t get_seed2() const;
 };
 
-OPS_API abstract::AbstractBasePtr RandomShuffleInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
-                                                     const std::vector<abstract::AbstractBasePtr> &input_args);
+abstract::AbstractBasePtr RandomShuffleInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
+                                             const std::vector<abstract::AbstractBasePtr> &input_args);
 using PrimRandomShufflePtr = std::shared_ptr<RandomShuffle>;
 }  // namespace ops
 }  // namespace mindspore

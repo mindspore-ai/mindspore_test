@@ -25,7 +25,7 @@
 
 namespace mindspore {
 namespace ops {
-class OPS_API CopyToHostFuncImpl : public CopyToDeviceFuncImpl {};
+class CopyToHostFuncImpl : public CopyToDeviceFuncImpl {};
 }  // namespace ops
 }  // namespace mindspore
 #endif  // MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_COPY_TO_HOST_H_

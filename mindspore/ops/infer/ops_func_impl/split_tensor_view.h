@@ -25,7 +25,7 @@
 
 namespace mindspore {
 namespace ops {
-class OPS_API SplitTensorViewFuncImpl : public SplitTensorFuncImpl {};
+class SplitTensorViewFuncImpl : public SplitTensorFuncImpl {};
 }  // namespace ops
 }  // namespace mindspore
 

@@ -25,16 +25,15 @@
 namespace mindspore {
 namespace ops {
 constexpr auto kNameApplyPowerSign = "ApplyPowerSign";
-class OPS_API ApplyPowerSign : public BaseOperator {
+class ApplyPowerSign : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(ApplyPowerSign);
   ApplyPowerSign() : BaseOperator(kNameApplyPowerSign) {
     InitIOName({"var", "m", "lr", "logbase", "sign_decay", "beta", "grad"}, {"var", "m"});
   }
 };
-OPS_API abstract::AbstractBasePtr ApplyPowerSignInfer(const abstract::AnalysisEnginePtr &,
-                                                      const PrimitivePtr &primitive,
-                                                      const std::vector<abstract::AbstractBasePtr> &input_args);
+abstract::AbstractBasePtr ApplyPowerSignInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
+                                              const std::vector<abstract::AbstractBasePtr> &input_args);
 using kPrimApplyPowerSignDPtr = std::shared_ptr<ApplyPowerSign>;
 }  // namespace ops
 }  // namespace mindspore

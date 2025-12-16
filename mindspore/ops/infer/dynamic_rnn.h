@@ -25,7 +25,7 @@
 namespace mindspore {
 namespace ops {
 constexpr auto kNameDynamicRNN = "DynamicRNN";
-class OPS_API DynamicRNN : public BaseOperator {
+class DynamicRNN : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(DynamicRNN);
 
@@ -36,8 +36,8 @@ class OPS_API DynamicRNN : public BaseOperator {
   void Init() const {}
 };
 
-OPS_API abstract::AbstractBasePtr DynamicRNNInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
-                                                  const std::vector<abstract::AbstractBasePtr> &input_args);
+abstract::AbstractBasePtr DynamicRNNInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
+                                          const std::vector<abstract::AbstractBasePtr> &input_args);
 }  // namespace ops
 }  // namespace mindspore
 

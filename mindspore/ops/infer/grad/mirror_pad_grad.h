@@ -31,7 +31,7 @@ namespace ops {
 constexpr auto kNameMirrorPadGrad = "MirrorPadGrad";
 /// \brief Pads the input tensor according to the paddings. Refer to Python API
 /// @ref mindspore.ops.MirrorPadGrad for more details.
-class OPS_API MirrorPadGrad : public BaseOperator {
+class MirrorPadGrad : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(MirrorPadGrad);
   /// \brief Constructor.

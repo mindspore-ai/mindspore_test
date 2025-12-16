@@ -17,6 +17,7 @@
 #ifndef MINDSPORE_CORE_OPS_DYNAMIC_BROADCAST_GRADIENT_ARGS_H_
 #define MINDSPORE_CORE_OPS_DYNAMIC_BROADCAST_GRADIENT_ARGS_H_
 #include <memory>
+#include "mindapi/base/macros.h"
 #include "mindapi/base/types.h"
 #include "ops/base_operator.h"
 #include "mindapi/base/shape_vector.h"
@@ -24,7 +25,7 @@
 namespace mindspore {
 namespace ops {
 constexpr auto kNameDynamicBroadcastGradientArgs = "DynamicBroadcastGradientArgs";
-class OPS_API DynamicBroadcastGradientArgs : public BaseOperator {
+class DynamicBroadcastGradientArgs : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(DynamicBroadcastGradientArgs);
   DynamicBroadcastGradientArgs() : BaseOperator(kNameDynamicBroadcastGradientArgs) {}

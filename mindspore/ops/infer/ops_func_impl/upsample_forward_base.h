@@ -24,7 +24,7 @@
 
 namespace mindspore {
 namespace ops {
-class OPS_API UpsampleForwardBaseFuncImpl : public OpFuncImpl {
+class UpsampleForwardBaseFuncImpl : public OpFuncImpl {
  public:
   UpsampleForwardBaseFuncImpl() = default;
   ~UpsampleForwardBaseFuncImpl() override = default;

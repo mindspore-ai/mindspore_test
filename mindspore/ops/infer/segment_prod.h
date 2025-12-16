@@ -25,7 +25,7 @@
 namespace mindspore {
 namespace ops {
 constexpr auto kNameSegmentProd = "SegmentProd";
-class OPS_API SegmentProd : public BaseOperator {
+class SegmentProd : public BaseOperator {
  public:
   SegmentProd() : BaseOperator(kNameSegmentProd) { InitIOName({"input_x", "segment_ids"}, {"output"}); }
   MIND_API_BASE_MEMBER(SegmentProd);

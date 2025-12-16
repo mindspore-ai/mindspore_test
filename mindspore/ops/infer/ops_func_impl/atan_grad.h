@@ -22,7 +22,7 @@
 
 namespace mindspore {
 namespace ops {
-class OPS_API AtanGradFuncImpl : public EltwiseGradOpFuncImpl {};
+class AtanGradFuncImpl : public EltwiseGradOpFuncImpl {};
 }  // namespace ops
 }  // namespace mindspore
 

@@ -24,7 +24,7 @@
 
 namespace mindspore {
 namespace ops {
-class OPS_API ReduceMeanFuncImpl : public OpFuncImpl {
+class ReduceMeanFuncImpl : public OpFuncImpl {
  public:
   ReduceMeanFuncImpl() = default;
   virtual ~ReduceMeanFuncImpl() = default;

@@ -23,7 +23,7 @@
 
 namespace mindspore {
 namespace ops {
-class OPS_API SoftplusExtFuncImpl : public OpFuncImpl {
+class SoftplusExtFuncImpl : public OpFuncImpl {
  public:
   BaseShapePtr InferShape(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
 
