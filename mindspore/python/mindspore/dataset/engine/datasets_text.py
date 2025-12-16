@@ -800,7 +800,7 @@ class IMDBDataset(MappableDataset, TextBaseDataset):
         dataset_dir (str): Path to the root directory that contains the dataset.
         usage (str, optional): Usage of this dataset, can be ``'train'`` , ``'test'`` or ``'all'`` .
             Default: ``None`` , will read all samples.
-        num_samples (int, optional): The number of images to be included in the dataset.
+        num_samples (int, optional): The number of samples to be included in the dataset.
             Default: ``None`` , will include all samples.
         num_parallel_workers (int, optional): Number of worker threads to read the data.
             Default: ``None`` , will use global default workers(8), it can be set
@@ -834,7 +834,6 @@ class IMDBDataset(MappableDataset, TextBaseDataset):
           <https://www.mindspore.cn/docs/en/master/api_python/samples/dataset/dataset_gallery.html>`_
 
     Note:
-        - The shape of the test column.
         - The parameters `num_samples` , `shuffle` , `num_shards` , `shard_id` can be used to control the sampler
           used in the dataset, and their effects when combined with parameter `sampler` are as follows.
 

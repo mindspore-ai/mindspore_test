@@ -2144,7 +2144,7 @@ class ImageFolderDataset(MappableDataset, VisionBaseDataset):
             dataset. Default: ``None`` , expected order behavior shown in the table below.
         extensions (list[str], optional): List of file extensions to be
             included in the dataset. Default: ``None`` .
-        class_indexing (dict, optional): A str-to-int mapping from folder name to index
+        class_indexing (dict, optional): A str-to-int mapping from folder name to index.
             Default: ``None`` , the folder names will be sorted
             alphabetically and each class will be given a
             unique index starting from 0.
@@ -2164,12 +2164,12 @@ class ImageFolderDataset(MappableDataset, VisionBaseDataset):
 
     Raises:
         RuntimeError: If `dataset_dir` does not contain data files.
-        ValueError: If `num_parallel_workers` exceeds the max thread numbers.
         RuntimeError: If `sampler` and `shuffle` are specified at the same time.
         RuntimeError: If `sampler` and `num_shards`/`shard_id` are specified at the same time.
         RuntimeError: If `num_shards` is specified but `shard_id` is None.
         RuntimeError: If `shard_id` is specified but `num_shards` is None.
         RuntimeError: If `class_indexing` is not a dictionary.
+        ValueError: If `num_parallel_workers` exceeds the max thread numbers.
         ValueError: If `shard_id` is not in range of [0, `num_shards` ).
 
     Tutorial Examples:
@@ -2506,16 +2506,14 @@ class LFWDataset(MappableDataset, VisionBaseDataset):
 
     When `task` is 'people', the generated dataset has two columns: :py:obj:`[image, label]`;
     When `task` is 'pairs', the generated dataset has three columns: :py:obj:`[image1, image2, label]` .
-    The tensor of column :py:obj:`image` is of the uint8 type.
-    The tensor of column :py:obj:`image1` is of the uint8 type.
-    The tensor of column :py:obj:`image2` is of the uint8 type.
+    The tensor of column :py:obj:`image` , :py:obj:`image1` , and :py:obj:`image2` are of the uint8 type.
     The tensor of column :py:obj:`label` is a scalar of the uint32 type.
 
     Args:
         dataset_dir (str): Path to the root directory that contains the dataset.
-        task (str, optional): Set the task type of reading lfw data, support ``'people'`` and ``'pairs'``.
+        task (str, optional): Set the task type of reading LFW data, support ``'people'`` and ``'pairs'``.
             Default: ``None`` , means ``'people'``.
-        usage (str, optional): The image split to use, support '``10fold'``, ``'train'``, ``'test'`` and ``'all'``.
+        usage (str, optional): The image split to use, support ``'10fold'``, ``'train'``, ``'test'`` and ``'all'``.
             Default: ``None`` , will read samples including ``'train'`` and ``'test'``.
         image_set (str, optional): Type of image funneling to use, support ``'original'``, ``'funneled'`` or
             ``'deepfunneled'``. Default: ``None`` , will use ``'funneled'``.
@@ -2571,7 +2569,7 @@ class LFWDataset(MappableDataset, VisionBaseDataset):
 
     About LFW dataset:
 
-    LFW (Labelled Faces in the Wild) dataset is one of the most commonly used and widely open datasets in
+    LFW (Labeled Faces in the Wild) dataset is one of the most commonly used and widely open datasets in
     the field of face recognition. It was released by Gary B. Huang and his team at Massachusetts Institute
     of Technology in 2007. The dataset includes nearly 50,000 images of 13,233 individuals, which are sourced
     from various internet platforms and contain diverse environmental factors such as different poses, lighting
@@ -2624,7 +2622,7 @@ class LFWDataset(MappableDataset, VisionBaseDataset):
             title={LFW: A Database for Studying Recognition in Unconstrained Environments},
             author={Gary B. Huang and Manu Ramesh and Tamara Berg and Erik Learned-Miller},
             institution ={University of Massachusetts, Amherst},
-            year={2007}
+            year={2007},
             number={07-49},
             month={October},
             howpublished = {http://vis-www.cs.umass.edu/lfw}
@@ -2648,15 +2646,15 @@ class LFWDataset(MappableDataset, VisionBaseDataset):
 
 class LSUNDataset(MappableDataset, VisionBaseDataset):
     """
-    LSUN(Large-scale Scene UNderstarding) dataset.
+    LSUN(Large-Scale Scene Understanding) dataset.
 
     The generated dataset has two columns: :py:obj:`[image, label]` .
     The tensor of column :py:obj:`image` is of the uint8 type.
-    The tensor of column :py:obj:`label` is of a scalar of uint32 type.
+    The tensor of column :py:obj:`label` is a scalar of uint32 type.
 
     Args:
         dataset_dir (str): Path to the root directory that contains the dataset.
-        usage (str, optional): Usage of this dataset, can be ``"train"`` , ``"test"`` , ``"valid"`` or ``"all"``
+        usage (str, optional): Usage of this dataset, can be ``"train"`` , ``"test"`` , ``"valid"`` or ``"all"`` .
             Default: ``None`` , will be set to ``"all"`` .
         classes (Union[str, list[str]], optional): Choose the specific classes to load. Default: ``None`` ,
             means loading all classes in root directory.
@@ -2722,7 +2720,7 @@ class LSUNDataset(MappableDataset, VisionBaseDataset):
     This dataset contains ten different categories of scenes, including bedrooms, living rooms,
     restaurants, lounges, studies, kitchens, bathrooms, corridors, children's room, and outdoors.
     Each category contains tens of thousands of images from different perspectives, and these
-    images are high-quality, high-resolusion real-world images.
+    images are high-quality, high-resolution real-world images.
 
     You can unzip the dataset files into this directory structure and read by MindSpore's API.
 
@@ -2774,7 +2772,7 @@ class ManifestDataset(MappableDataset, VisionBaseDataset):
 
     The generated dataset has two columns: :py:obj:`[image, label]` .
     The tensor of column :py:obj:`image` is of the uint8 type.
-    The tensor of column :py:obj:`label` is of a scalar of uint64 type.
+    The tensor of column :py:obj:`label` is a scalar of uint64 type.
 
     Args:
         dataset_file (str): File to be read.
@@ -2792,7 +2790,7 @@ class ManifestDataset(MappableDataset, VisionBaseDataset):
         class_indexing (dict, optional): A str-to-int mapping from label name to index.
             Default: ``None`` , the folder names will be sorted alphabetically and each
             class will be given a unique index starting from 0.
-        decode (bool, optional): decode the images after reading. Default: ``False``.
+        decode (bool, optional): Decode the images after reading. Default: ``False``.
         num_shards (int, optional): Number of shards that the dataset will be divided
             into. Default: ``None`` . When this argument is specified, `num_samples` reflects
             the max number of samples per shard.
@@ -2805,13 +2803,13 @@ class ManifestDataset(MappableDataset, VisionBaseDataset):
             Default: ``None`` , which means no cache is used.
 
     Raises:
-        RuntimeError: If dataset_files are not valid or do not exist.
-        ValueError: If `num_parallel_workers` exceeds the max thread numbers.
+        RuntimeError: If `dataset_file` are not valid or do not exist.
         RuntimeError: If `sampler` and `shuffle` are specified at the same time.
         RuntimeError: If `sampler` and `num_shards`/`shard_id` are specified at the same time.
         RuntimeError: If `num_shards` is specified but `shard_id` is None.
         RuntimeError: If `shard_id` is specified but `num_shards` is None.
         RuntimeError: If class_indexing is not a dictionary.
+        ValueError: If `num_parallel_workers` exceeds the max thread numbers.  
         ValueError: If `shard_id` is not in range of [0, `num_shards` ).
 
     Tutorial Examples:
@@ -2929,12 +2927,12 @@ class MnistDataset(MappableDataset, VisionBaseDataset):
 
     Raises:
         RuntimeError: If `dataset_dir` does not contain data files.
-        ValueError: If `num_parallel_workers` exceeds the max thread numbers.
-        ValueError: If `usage` is not ``'train'``、``'test'`` or ``'all'``.
         RuntimeError: If `sampler` and `shuffle` are specified at the same time.
         RuntimeError: If `sampler` and `num_shards`/`shard_id` are specified at the same time.
         RuntimeError: If `num_shards` is specified but shard_id is None.
         RuntimeError: If `shard_id` is specified but `num_shards` is None.
+        ValueError: If `num_parallel_workers` exceeds the max thread numbers.
+        ValueError: If `usage` is not ``'train'``, ``'test'`` or ``'all'``.
         ValueError: If `shard_id` is not in range of [0, `num_shards` ).
 
     Tutorial Examples:
@@ -3073,18 +3071,18 @@ class OmniglotDataset(MappableDataset, VisionBaseDataset):
         └── omniglot_dataset_directory
              ├── images_background/
              │    ├── character_class1/
-             ├    ├──── 01.jpg
+             │    ├──── 01.jpg
              │    ├──── 02.jpg
              │    ├── character_class2/
-             ├    ├──── 01.jpg
+             │    ├──── 01.jpg
              │    ├──── 02.jpg
              │    ├── ...
              ├── images_evaluation/
              │    ├── character_class1/
-             ├    ├──── 01.jpg
+             │    ├──── 01.jpg
              │    ├──── 02.jpg
              │    ├── character_class2/
-             ├    ├──── 01.jpg
+             │    ├──── 01.jpg
              │    ├──── 02.jpg
              │    ├── ...
 
@@ -3123,8 +3121,9 @@ class PhotoTourDataset(MappableDataset, VisionBaseDataset):
 
     According to the given `usage` configuration, the generated dataset has different output columns:
 
-    - `usage` = 'train', output columns: `[image, dtype=uint8]` .
-    - `usage` ≠ 'train', output columns: `[image1, dtype=uint8]` , `[image2, dtype=uint8]` , `[matches, dtype=uint32]` .
+    - When `usage` is ``'train'``, output columns: `[image, dtype=uint8]` .
+    - When `usage` is not ``'train'``, output columns: `[image1, dtype=uint8]` ,
+      `[image2, dtype=uint8]` , `[matches, dtype=uint32]` .
 
     Args:
         dataset_dir (str): Path to the root directory that contains the dataset.
@@ -3346,14 +3345,14 @@ class Places365Dataset(MappableDataset, VisionBaseDataset):
             │    ├── ...
             ├── data_large_challenge/
             │    ├── ...
-            ├── data_256_challenge /
+            ├── data_256_challenge/
             │    ├── ...
 
     Citation:
 
     .. code-block::
 
-        article{zhou2017places,
+        @article{zhou2017places,
             title={Places: A 10 million Image Database for Scene Recognition},
             author={Zhou, Bolei and Lapedriza, Agata and Khosla, Aditya and Oliva, Aude and Torralba, Antonio},
             journal={IEEE Transactions on Pattern Analysis and Machine Intelligence},
@@ -3467,7 +3466,7 @@ class QMnistDataset(MappableDataset, VisionBaseDataset):
 
         @incollection{qmnist-2019,
            title = "Cold Case: The Lost MNIST Digits",
-           author = "Chhavi Yadav and L\'{e}on Bottou",\
+           author = "Chhavi Yadav and L\'{e}on Bottou",
            booktitle = {Advances in Neural Information Processing Systems 32},
            year = {2019},
            publisher = {Curran Associates, Inc.},

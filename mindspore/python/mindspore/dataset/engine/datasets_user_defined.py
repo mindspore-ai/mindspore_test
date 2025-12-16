@@ -834,7 +834,7 @@ class GeneratorDataset(MappableDataset, UnionBaseDataset):
             Random accessible input is required.
         python_multiprocessing (bool, optional): Parallelize Python operations with multiple worker process. This
             option could be beneficial if the Python operation is computational heavy. Default: ``True``.
-        max_rowsize(int, optional): Maximum size of data (in MB) that is used for shared memory
+        max_rowsize (int, optional): Maximum size of data (in MB) that is used for shared memory
             allocation to copy data between processes, the total occupied shared memory will increase as
             ``num_parallel_workers`` and :func:`mindspore.dataset.config.set_prefetch_size` increase. If set to ``-1``,
             shared memory will be dynamically allocated with the actual size of data. This is only used if
@@ -856,10 +856,10 @@ class GeneratorDataset(MappableDataset, UnionBaseDataset):
         - The parameter `column_types` , `schema` and `max_rowsize` will be deprecated in a future version.
         - If you configure `python_multiprocessing=True` (Default: ``True`` ) and `num_parallel_workers>1`
           (default: ``1`` ) indicates that the multiprocessing mode is started for data load acceleration.
-          At this time, as the datasetiterates, the memory consumption of the subprocess will gradually increase,
+          At this time, as the dataset iterates, the memory consumption of the subprocess will gradually increase,
           mainly because the subprocess of the user-defined dataset obtains the member variables from the main
           process in the Copy On Write way.
-          Example: If you define a dataset with `__ init__` function which contains a large number of member variable
+          Example: If you define a dataset with `__init__` function which contains a large number of member variable
           data (for example, a very large file name list is loaded during the dataset construction) and uses the
           multiprocessing mode, which may cause the problem of OOM (the estimated total memory usage is:
           `(num_parallel_workers+1) * size of the parent process` ). The simplest solution is to replace Python objects
@@ -874,7 +874,7 @@ class GeneratorDataset(MappableDataset, UnionBaseDataset):
           function.
 
         - Input `source` accepts user-defined Python functions (PyFuncs), and sets the multiprocessing start method
-          to `spawn` mode by ds.config.set_multiprocessing_start_method("spawn") with `python_ multiprocessing=True`
+          to `spawn` mode by ds.config.set_multiprocessing_start_method("spawn") with `python_multiprocessing=True`
           and `num_parallel_workers>1` supports adding network computing operators from mindspore.nn and mindspore.ops
           or others into this `source`, otherwise adding to the `source` is not supported.
         - When the user defined dataset by `source` calls the DVPP operator during dataset loading and processing,
@@ -1264,7 +1264,7 @@ class NumpySlicesDataset(GeneratorDataset):
     The column names and column types of generated dataset depend on Python data defined by users.
 
     Args:
-        data (Union[list, tuple, dict]) Input of given data. Supported data types include: list, tuple, dict and other
+        data (Union[list, tuple, dict]): Input of given data. Supported data types include: list, tuple, dict and other
             NumPy formats. Input data will be sliced along the first dimension and generate additional rows, if input is
             list, there will be one column in each row, otherwise there tends to be multi columns. Large data is not
             recommended to be loaded in this way as data is loading into memory.
@@ -1360,7 +1360,7 @@ class PaddedDataset(GeneratorDataset):
     Mainly used to add to the original dataset and assign it to the corresponding shard.
 
     Args:
-        padded_samples (list(dict)): Samples provided by user.
+        padded_samples (list[dict]): Samples provided by user.
 
     Raises:
         TypeError: If padded_samples is not an instance of list.
