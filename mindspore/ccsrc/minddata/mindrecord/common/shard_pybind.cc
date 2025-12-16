@@ -41,14 +41,18 @@ namespace mindspore::mindrecord {
 inline void THROW_IF_ERROR(Status status) {
   if (status.IsError()) {
     std::string error_msg = MDLogAdapter::Apply(&status).ToString();
-    // Decode the error message to UTF-8 and replace non UTF-8 characters with backslash.
-    py::handle utf8_str_handle = PyUnicode_DecodeUTF8(error_msg.data(), error_msg.size(), "backslashreplace");
-    if (!utf8_str_handle) {
-      throw py::error_already_set();
+    {
+      py::gil_scoped_acquire acquire;
+      // Decode the error message to UTF-8 and replace non UTF-8 characters with backslash.
+      py::handle utf8_str_handle = PyUnicode_DecodeUTF8(error_msg.data(), error_msg.size(), "backslashreplace");
+      if (!utf8_str_handle) {
+        throw py::error_already_set();
+      }
+      // The handle must be stolen to avoid memory leak.
+      py::str utf8_str = py::reinterpret_steal<py::str>(utf8_str_handle);
+      error_msg = utf8_str.cast<std::string>();
     }
-    // The handle must be stolen to avoid memory leak.
-    py::str utf8_str = py::reinterpret_steal<py::str>(utf8_str_handle);
-    throw std::runtime_error(utf8_str);
+    throw std::runtime_error(error_msg);
   }
   return;
 }
