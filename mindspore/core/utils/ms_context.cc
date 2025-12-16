@@ -589,11 +589,6 @@ void MsContext::SetJitInferBoost(const std::string &infer_boost) {
 
   if (infer_boost == "on") {
     enable_infer_boost_ = true;
-    MS_LOG(DEBUG) << "MSContext enable ms infer boost";
-    SetMsInternalEnableCustomKernelList();
-    common::SetEnv("ASDOPS_LOG_LEVEL", "ERROR", 0);
-    common::SetEnv("ASDOPS_LOG_TO_STDOUT", "1", 0);
-    return;
   }
 
   if (infer_boost == "off") {
@@ -766,6 +761,14 @@ void MsContext::SetMsInternalEnableCustomKernelList() {
 
 bool MsContext::IsEnableInferBoost() {
   if (enable_infer_boost_.has_value()) {
+    // Tricky: current the set kernel list will call aclinit
+    // for dp ep model infer, it will set_device after
+    // set_context, so we need set kernel list at first
+    // time to read the inferboost in framework
+    if (enable_infer_boost_) {
+      MS_LOG(INFO) << "MSContext enable ms internal kernels";
+      SetMsInternalEnableCustomKernelList();
+    }
     return enable_infer_boost_.value();
   }
 
