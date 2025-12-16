@@ -189,7 +189,7 @@ class CustomOOC():
         if self.args.ascend_cann_package_path != "":
             cann_package_path = self.args.ascend_cann_package_path
         else:
-            cann_package_path = os.environ.get('ASCEND_AICPU_PATH')
+            cann_package_path = os.environ.get('ASCEND_HOME_PATH')
             if cann_package_path is None:
                 cann_package_path = "/usr/local/Ascend/cann"
 
@@ -224,7 +224,7 @@ class CustomOOC():
         """clear log and build out"""
         if self.args.clear:
             command = ['rm', '-rf', 'build_out', 'install.log', 'build.log', 'generate.log']
-            result = subprocess.run(command, shell=False, stderr=subprocess.STDOUT)
+            result = subprocess.run(command, shell=False, stderr=subprocess.STDOUT, check=False)
             if result.returncode == 0:
                 logger.info("Delete build_out install.log build.log successfully!")
             else:
@@ -246,7 +246,7 @@ class CustomOOC():
                 raise RuntimeError("There is no custom run in {}".format(build_out_path))
             result = subprocess.run(['bash', run_path[0]], stdout=os.fdopen(
                 os.open("install.log", os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o700), "w"),
-                                    stderr=subprocess.STDOUT)
+                                    stderr=subprocess.STDOUT, check=False)
             if result.returncode == 0:
                 logger.info("Install custom run opp successfully!")
                 logger.info(
@@ -254,7 +254,7 @@ class CustomOOC():
                     "make the custom operator effective in the current path.".format(
                         self.args.install_path, self.args.vendor_name))
             else:
-                with open('install.log', 'r') as file:
+                with open('install.log', 'r', encoding='utf-8') as file:
                     for line in file:
                         logger.error(line.strip())
                 raise RuntimeError("Install failed!")
@@ -289,17 +289,17 @@ class CustomOOC():
         if self.args.ascend_cann_package_path != "":
             result = subprocess.run(['bash', 'start.sh', self.custom_project, self.args.ascend_cann_package_path],
                                     stdout=log_file,
-                                    stderr=subprocess.STDOUT)
+                                    stderr=subprocess.STDOUT, check=False)
         else:
             result = subprocess.run(['bash', 'start.sh', self.custom_project],
                                     stdout=log_file,
-                                    stderr=subprocess.STDOUT)
+                                    stderr=subprocess.STDOUT, check=False)
 
         log_file.close()
         if result.returncode == 0:
             logger.info("Compile custom op successfully!")
         else:
-            with open('build.log', 'r') as file:
+            with open('build.log', 'r', encoding='utf-8') as file:
                 for line in file:
                     logger.error(line.strip())
             raise RuntimeError("Compile failed! Please see build.log in current directory for detail info.")
