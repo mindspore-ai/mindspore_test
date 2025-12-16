@@ -65,9 +65,9 @@ void SwapManager::FreeDeviceMemory(void *ptr) {
   device_memory_pool_->FreeTensorMem(ptr);
 }
 
-void *SwapManager::AllocHostMemory(size_t size) {
+void *SwapManager::AllocHostMemory(size_t size, uint32_t stream_id) {
   MS_EXCEPTION_IF_NULL(pin_mem_pool_);
-  return pin_mem_pool_->AllocPinMem(size);
+  return pin_mem_pool_->AllocPinMem(size, stream_id);
 }
 
 void SwapManager::FreeHostMemory(void *ptr) {
