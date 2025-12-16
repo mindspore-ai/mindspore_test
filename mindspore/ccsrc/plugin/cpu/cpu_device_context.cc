@@ -512,6 +512,14 @@ void CPUKernelExecutor::CreateKernel(const std::vector<CNodePtr> &nodes) const {
     const auto kernel_type = AnfAlgo::GetKernelType(node);
     if (kernel_type == KernelType::HOST_KERNEL) {
       kernel::KernelModPtr kernel_mod_ptr = kernel::HostOpBuild(node);
+      if (kernel::CheckResizeCondition(node)) {
+        std::vector<KernelTensor *> input_kernel_tensors = AnfAlgo::GetOrCreateAllInputKernelTensors(node);
+        std::vector<KernelTensor *> output_kernel_tensors = AnfAlgo::GetOrCreateAllOutputKernelTensors(node);
+        if (kernel_mod_ptr->Resize(input_kernel_tensors, output_kernel_tensors) == kernel::KRET_RESIZE_FAILED) {
+          MS_LOG(EXCEPTION) << "#dmsg#Kernel resize failed:#dmsg#internal kernel op[" << node->fullname_with_scope()
+                            << "] Resize failed.";
+        }
+      }
       AnfAlgo::SetKernelMod(kernel_mod_ptr, node.get());
       continue;
     }
