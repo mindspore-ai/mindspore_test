@@ -23,6 +23,9 @@ from mindspore.onnx import export
 from tests.mark_utils import arg_mark
 
 
+ms.set_context(mode=ms.GRAPH_MODE)
+
+
 class NetGeLU(nn.Cell):
     def __init__(self, mul_size):
         super().__init__()
@@ -37,15 +40,15 @@ class NetGeLU(nn.Cell):
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
-def test_ms_onnx_export_01():
+def test_ms_onnx_export_gelu():
     """
     Feature: Onnx
     Description: Test onnx export
-    Expectation: No exception
+    Expectation: The exported ONNX file meets expectations.
     """
     ms.set_context(mode=ms.GRAPH_MODE)
     _cur_dir = os.path.dirname(os.path.realpath(__file__))
-    file_name = os.path.join(_cur_dir, "test_ms_onnx_export_01")
+    file_name = os.path.join(_cur_dir, "test_ms_onnx_export_gelu")
     onnx_file_name = file_name + '.onnx'
 
     mul_size = (3,)
@@ -66,3 +69,238 @@ def test_ms_onnx_export_01():
     finally:
         if os.path.exists(onnx_file_name):
             os.remove(onnx_file_name)
+
+
+class SiLUNet(nn.Cell):
+    def __init__(self):
+        super().__init__()
+        self.silu = nn.SiLU()
+
+    def construct(self, x):
+        output = self.silu(x)
+        return output
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_export_onnx_001():
+    """
+    Feature: Onnx
+    Description: Test onnx export with silu
+    Expectation: The exported ONNX file meets expectations.
+    """
+    input_np = np.random.randint(low=-25, high=25, size=(5, 7, 7)).astype(np.float16)
+    x = Tensor(input_np)
+    net = SiLUNet()
+    output = net(x)
+    onnx_file = './silu_onnx_001.onnx'
+    try:
+        export(net, x, file_name=onnx_file)
+        session = ort.InferenceSession(onnx_file)
+        output_onnx = session.run(None, {"x": input_np})
+        assert np.allclose(output, output_onnx[0], rtol=1e-3, atol=1e-3), "silu not equal, please check"
+    finally:
+        if os.path.exists(onnx_file):
+            os.remove(onnx_file)
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_export_onnx_002():
+    """
+    Feature: Onnx
+    Description: Test onnx export with silu
+    Expectation: The exported ONNX file meets expectations.
+    """
+    input_np = np.random.randn(9, 8, 9, 7, 7, 3, 4).astype(np.float32)
+    x = Tensor(input_np)
+    net = SiLUNet()
+    output = net(x)
+    onnx_file = './silu_onnx_002.onnx'
+    try:
+        export(net, x, file_name=onnx_file)
+        session = ort.InferenceSession(onnx_file)
+        output_onnx = session.run(None, {"x": input_np})
+        assert np.allclose(output, output_onnx[0], rtol=1e-4, atol=1e-4), "silu not equal, please check"
+    finally:
+        if os.path.exists(onnx_file):
+            os.remove(onnx_file)
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_export_onnx_003():
+    """
+    Feature: Onnx
+    Description: Test onnx export with silu
+    Expectation: The exported ONNX file meets expectations.
+    """
+    input_np = np.random.randn(9, ).astype(np.float32)
+    x = Tensor(input_np)
+    net = SiLUNet()
+    output = net(x)
+    onnx_file = './silu_onnx_003.onnx'
+    try:
+        export(net, x, file_name=onnx_file)
+        session = ort.InferenceSession(onnx_file)
+        output_onnx = session.run(None, {"x": input_np})
+        assert np.allclose(output, output_onnx[0], rtol=1e-4, atol=1e-4), "silu not equal, please check"
+    finally:
+        if os.path.exists(onnx_file):
+            os.remove(onnx_file)
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_export_onnx_004():
+    """
+    Feature: Onnx
+    Description: Test onnx export with softmax
+    Expectation: The exported ONNX file meets expectations.
+    """
+    input_np = np.random.randn(64, 12, 128, 128).astype(np.float32)
+    x = Tensor(input_np)
+    net = SoftmaxNet(-1)
+    output = net(x)
+    onnx_file = './softmax_onnx_004.onnx'
+    try:
+        export(net, x, file_name=onnx_file)
+        session = ort.InferenceSession(onnx_file)
+        output_onnx = session.run(None, {"x": input_np})
+        assert np.allclose(output, output_onnx[0], rtol=1e-4, atol=1e-4), "softmax not equal, please check"
+    finally:
+        if os.path.exists(onnx_file):
+            os.remove(onnx_file)
+
+
+class SoftmaxNet(nn.Cell):
+    def __init__(self, axis=1):
+        super().__init__()
+        self.softmax = nn.Softmax(axis)
+
+    def construct(self, x):
+        return self.softmax(x)
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_export_onnx_005():
+    """
+    Feature: Onnx
+    Description: Test onnx export with softmax
+    Expectation: The exported ONNX file meets expectations.
+    """
+    input_np = np.random.randn(2, 32).astype(np.float32)
+    x = Tensor(input_np)
+    net = SoftmaxNet(1)
+    output = net(x)
+    onnx_file = './softmax_onnx_005.onnx'
+    try:
+        export(net, x, file_name=onnx_file)
+        session = ort.InferenceSession(onnx_file)
+        output_onnx = session.run(None, {"x": input_np})
+        assert np.allclose(output, output_onnx[0], rtol=1e-4, atol=1e-4), "softmax not equal, please check"
+    finally:
+        if os.path.exists(onnx_file):
+            os.remove(onnx_file)
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_export_onnx_006():
+    """
+    Feature: Onnx
+    Description: Test onnx export with softmax
+    Expectation: The exported ONNX file meets expectations.
+    """
+    input_np = np.random.randn(200, 3, 128).astype(np.float32)
+    x = Tensor(input_np)
+    net = SoftmaxNet(2)
+    output = net(x)
+    onnx_file = './softmax_onnx_006.onnx'
+    try:
+        export(net, x, file_name=onnx_file)
+        session = ort.InferenceSession(onnx_file)
+        output_onnx = session.run(None, {"x": input_np})
+        assert np.allclose(output, output_onnx[0], rtol=1e-4, atol=1e-4), "softmax not equal, please check"
+    finally:
+        if os.path.exists(onnx_file):
+            os.remove(onnx_file)
+
+
+class MulsNet(nn.Cell):
+    def __init__(self, other):
+        super().__init__()
+        self.y = other
+
+    def construct(self, x):
+        z = x * self.y
+        return z
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_export_onnx_007():
+    """
+    Feature: Onnx
+    Description: Test onnx export with mul operator.
+    Expectation: The exported ONNX file meets expectations.
+    """
+    np_x = np.random.randn(1, ).astype(np.float32)
+    other_x = 2
+    x = Tensor(np_x)
+    other = Tensor(other_x)
+    net = MulsNet(other)
+    ms_output = net(x)
+    onnx_file = './muls_onnx_007.onnx'
+    try:
+        export(net, x, file_name=onnx_file)
+        session = ort.InferenceSession(onnx_file)
+        inputs = {"x": np_x}
+        output = session.run(None, inputs)[0]
+        assert np.array_equal(ms_output.asnumpy(), output), "muls not equal, please check"
+    finally:
+        if os.path.exists(onnx_file):
+            os.remove(onnx_file)
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_export_onnx_008():
+    """
+    Feature: Onnx
+    Description: Test onnx export with mul operator.
+    Expectation: The exported ONNX file meets expectations.
+    """
+    np_x = np.random.randint(-128, 127, (9, 7, 4, 9, 5)).astype(np.int8)
+    other_x = -6
+    x = Tensor(np_x)
+    other = Tensor([other_x])
+    net = MulsNet(other)
+    ms_output = net(x)
+    onnx_file = './muls_onnx_008.onnx'
+    try:
+        export(net, x, file_name=onnx_file)
+        session = ort.InferenceSession(onnx_file)
+        inputs = {"x": np_x}
+        output = session.run(None, inputs)[0]
+        assert np.array_equal(ms_output.asnumpy(), output), "muls not equal, please check"
+    finally:
+        if os.path.exists(onnx_file):
+            os.remove(onnx_file)
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_export_onnx_009():
+    """
+    Feature: Onnx
+    Description: Test onnx export with mul operator.
+    Expectation: The exported ONNX file meets expectations.
+    """
+    np_x = np.random.randn(4718592).astype(np.float16)
+    other = 0.7898204683379066
+    x = Tensor(np_x)
+    net = MulsNet(other)
+    ms_output = net(x)
+    onnx_file = './muls_onnx_009.onnx'
+    try:
+        export(net, x, file_name=onnx_file)
+        session = ort.InferenceSession(onnx_file)
+        inputs = {"x": np_x}
+        output = session.run(None, inputs)[0]
+        assert np.array_equal(ms_output.asnumpy(), output), "muls not equal, please check"
+    finally:
+        if os.path.exists(onnx_file):
+            os.remove(onnx_file)
