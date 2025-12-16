@@ -845,20 +845,17 @@ def mean(input, dim=None, keepdim=False, *, dtype=None):
     r"""
     mean(input, *, dtype=None) -> Tensor
 
-    Reduces all dimension of a tensor by averaging all elements.
+    Compute the mean of the tensor.
 
     Args:
-        input (Tensor[Number]): The input tensor. The dtype of the tensor to be reduced is number.
-            :math:`(N, *)` where :math:`*` means, any number of additional dimensions.
+        input (Tensor[Number]): The input tensor. 
 
     Keyword Args:
-        dtype (:class:`mindspore.dtype`, optional): The desired data type of returned Tensor. Default: ``None`` .
+        dtype (:class:`mindspore.dtype`, optional): The desired data type of returned tensor. Default ``None`` .
 
     Returns:
         Tensor.
 
-    Raises:
-        TypeError: If `input` is not a Tensor.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
@@ -866,12 +863,11 @@ def mean(input, dim=None, keepdim=False, *, dtype=None):
     Examples:
         >>> import mindspore
         >>> import numpy as np
-        >>> from mindspore import Tensor, mint
-        >>> x = Tensor(np.array([[[2, 2, 2, 2, 2, 2], [2, 2, 2, 2, 2, 2], [2, 2, 2, 2, 2, 2]],
+        >>> x = mindspore.tensor(np.array([[[2, 2, 2, 2, 2, 2], [2, 2, 2, 2, 2, 2], [2, 2, 2, 2, 2, 2]],
         ... [[4, 4, 4, 4, 4, 4], [5, 5, 5, 5, 5, 5], [6, 6, 6, 6, 6, 6]],
         ... [[6, 6, 6, 6, 6, 6], [8, 8, 8, 8, 8, 8], [10, 10, 10, 10, 10, 10]]]),
         ... mindspore.float32)
-        >>> output = mint.mean(x)
+        >>> output = mindspore.mint.mean(x)
         >>> print(output)
         5.0
         >>> print(output.shape)
@@ -880,39 +876,21 @@ def mean(input, dim=None, keepdim=False, *, dtype=None):
     .. function:: mean(input, dim, keepdim=False, *, dtype=None) -> Tensor
         :noindex:
 
-    Reduces all dimension of a tensor by averaging all elements in the dimension, by default.
-    And reduce a dimension of `input` along the specified `dim`. `keepdim`
-    determines whether the dimensions of the output and input are the same.
+    Compute the mean(s) of the tensor along the specified dimension(s).
 
     Note:
         The `dim` with tensor type is only used for compatibility with older versions and is not recommended.
 
     Args:
-        input (Tensor[Number]): The input tensor. The dtype of the tensor to be reduced is number.
-            :math:`(N, *)` where :math:`*` means, any number of additional dimensions.
-        dim (Union[int, tuple(int), list(int), Tensor]): The dimensions to reduce.
-            Only constant value is allowed. Assume the rank of `input` is r, and the value range is [-r,r).
-        keepdim (bool): If ``True`` , keep these reduced dimensions and the length is 1.
-            If ``False`` , don't keep these dimensions. Default: ``False`` .
+        input (Tensor[Number]): The input tensor. 
+        dim (Union[int, tuple(int), list(int), Tensor]): Specify the dimension(s) for computation. 
+        keepdim (bool): Whether the output tensor has `dim` retained. Default ``False`` .
 
     Keyword Args:
-        dtype (:class:`mindspore.dtype`, optional): The desired data type of returned Tensor. Default: ``None`` .
+        dtype (:class:`mindspore.dtype`, optional): The desired data type of returned tensor. Default ``None`` .
 
     Returns:
         Tensor.
-
-        - If `dim` is int, set as 1, and `keepdim` is ``False`` ,
-          the shape of output is :math:`(input_0, input_2, ..., input_R)`.
-        - If `dim` is tuple(int) or list(int), set as (1, 2), and `keepdim` is ``False`` ,
-          the shape of output is :math:`(input_0, input_3, ..., input_R)`.
-        - If `dim` is 1-D Tensor, set as [1, 2], and `keepdim` is ``False`` ,
-          the shape of output is :math:`(input_0, input_3, ..., input_R)`.
-
-    Raises:
-        TypeError: If `input` is not a Tensor.
-        TypeError: If `dim` is not one of the following: int, tuple, list or Tensor.
-        TypeError: If `keepdim` is not a bool.
-        ValueError: If `dim` is out of range.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
@@ -920,12 +898,11 @@ def mean(input, dim=None, keepdim=False, *, dtype=None):
     Examples:
         >>> import mindspore
         >>> import numpy as np
-        >>> from mindspore import Tensor, mint
-        >>> x = Tensor(np.array([[[2, 2, 2, 2, 2, 2], [2, 2, 2, 2, 2, 2], [2, 2, 2, 2, 2, 2]],
+        >>> x = mindspore.tensor(np.array([[[2, 2, 2, 2, 2, 2], [2, 2, 2, 2, 2, 2], [2, 2, 2, 2, 2, 2]],
         ... [[4, 4, 4, 4, 4, 4], [5, 5, 5, 5, 5, 5], [6, 6, 6, 6, 6, 6]],
         ... [[6, 6, 6, 6, 6, 6], [8, 8, 8, 8, 8, 8], [10, 10, 10, 10, 10, 10]]]),
         ... mindspore.float32)
-        >>> output = mint.mean(x, 0, True)
+        >>> output = mindspore.mint.mean(x, 0, True)
         >>> print(output)
         [[[4. 4. 4. 4. 4. 4.]
           [5. 5. 5. 5. 5. 5.]
