@@ -84,3 +84,97 @@ def test_any_type_ref_count():
     out = root_graph(x, y)
     print(out)
     assert np.allclose(out.asnumpy(), np.ones(shape).astype(np.float32) * 4)
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_any_type_value_tuple_input():
+    """
+    Feature: Test any type.
+    Description: Test value tuple for pyexecute.
+    Expectation: Run success.
+    """
+    shape = (3, 4)
+    root_graph = BackendGraph()
+    root_para_1 = root_graph.add_parameter(ms.float32, shape)
+    root_para_2 = root_graph.add_parameter(ms.float32, shape)
+    add = root_graph.add_cnode("Add", root_para_1, root_para_2)
+    script_valuenode = root_graph.add_valuenode("print(x, y)")
+    key_valuenode = root_graph.add_valuenode(("x", "y"))
+    make_tuple = root_graph.add_cnode("MakeTuple", key_valuenode, add)
+    get_item_1 = root_graph.add_cnode("TupleGetItem", make_tuple, root_graph.add_valuenode(1))
+    mul = root_graph.add_cnode("Mul", get_item_1, root_para_2)
+    pyexecute = root_graph.add_cnode("PyExecute", script_valuenode, key_valuenode, make_tuple, mul)
+    root_graph.set_target(pyexecute, "CPU")
+    depend = root_graph.add_cnode("Depend", get_item_1, pyexecute)
+    root_graph.add_return(depend)
+    root_graph.infer()
+    print(root_graph)
+    root_graph.compile()
+    x = Tensor(np.ones(shape).astype(np.float32))
+    y = Tensor(np.ones(shape).astype(np.float32))
+    out = root_graph(x, y)
+    assert np.allclose(out.asnumpy(), np.ones(shape).astype(np.float32) * 2)
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_any_type_same_output_1():
+    """
+    Feature: Test any type.
+    Description: Test twice output of same pyexecute.
+    Expectation: Run success.
+    """
+    shape = (3, 4)
+    root_graph = BackendGraph()
+    root_para_1 = root_graph.add_parameter(ms.float32, shape)
+    root_para_2 = root_graph.add_parameter(ms.float32, shape)
+    maketuple_1 = root_graph.add_cnode("MakeTuple", root_para_1, root_para_2)
+    script_valuenode = root_graph.add_valuenode("x+y")
+    key_valuenode = root_graph.add_valuenode(("x", "y"))
+    pyexecute = root_graph.add_cnode("PyExecute", script_valuenode, key_valuenode, maketuple_1)
+    root_graph.set_target(pyexecute, "CPU")
+    maketuple_2 = root_graph.add_cnode("MakeTuple", pyexecute, pyexecute)
+    root_graph.add_return(maketuple_2)
+    root_graph.infer()
+    print(root_graph)
+    root_graph.compile()
+    x1 = Tensor(np.ones(shape).astype(np.float32))
+    y1 = Tensor(np.ones(shape).astype(np.float32))
+    out = root_graph(x1, y1)
+    print(out)
+    assert np.allclose(out[0].asnumpy(), np.ones(shape).astype(np.float32) * 2)
+    assert np.allclose(out[1].asnumpy(), np.ones(shape).astype(np.float32) * 2)
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_any_type_same_output_2():
+    """
+    Feature: Test any type.
+    Description: Test twice output of same pyexecute.
+    Expectation: Run success.
+    """
+    shape = ()
+    root_graph = BackendGraph()
+    root_para_1 = root_graph.add_parameter(ms.float32, shape)
+    root_para_2 = root_graph.add_parameter(ms.float32, shape)
+    maketuple_1 = root_graph.add_cnode("MakeTuple", root_para_1, root_para_2)
+    script_valuenode = root_graph.add_valuenode("(lambda a, b: 3 if a + b == 2 else 3.3333)(x, y)")
+    key_valuenode = root_graph.add_valuenode(("x", "y"))
+    pyexecute = root_graph.add_cnode("PyExecute", script_valuenode, key_valuenode, maketuple_1)
+    root_graph.set_target(pyexecute, "CPU")
+    maketuple_2 = root_graph.add_cnode("MakeTuple", pyexecute, pyexecute)
+    root_graph.add_return(maketuple_2)
+    root_graph.infer()
+    print(root_graph)
+    root_graph.compile()
+    x1 = Tensor(np.ones(shape).astype(np.float32))
+    y1 = Tensor(np.ones(shape).astype(np.float32))
+    out = root_graph(x1, y1)
+    print(out)
+    assert np.allclose(out[0], 3)
+    assert np.allclose(out[1], 3)
+
+    x2 = Tensor(2, ms.float32)
+    out = root_graph(x2, y1)
+    print(out)
+    assert np.allclose(out[0], 3.3333)
+    assert np.allclose(out[1], 3.3333)

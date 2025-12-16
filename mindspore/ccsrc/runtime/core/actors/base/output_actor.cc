@@ -704,13 +704,17 @@ void OutputActor::HandleOutput() {
     MS_EXCEPTION_IF_NULL(device_context);
     MS_EXCEPTION_IF_NULL(device_context->device_res_manager_);
     if (repeat_index.find(i) != repeat_index.end() && i > repeat_index[i] && outputs_[repeat_index[i]] != nullptr) {
+      if (kernel_tensor->user_data()) {
+        tensor->CloneUserData(*(kernel_tensor->user_data()));
+      }
       const auto &src_address = outputs_[repeat_index[i]]->device_address();
       MS_EXCEPTION_IF_NULL(src_address);
       tensor_device_address->set_device_pointer(src_address->device_pointer());
       tensor_device_address->SetDeviceType(src_address->GetDeviceType());
       MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
         << "Output actor share the same pointer:" << src_address->device_pointer()
-        << " between device address:" << tensor_device_address->ToString() << " and:" << src_address->ToString();
+        << " between device address:" << tensor_device_address->ToString() << " and:" << src_address->ToString()
+        << " kernel tensor:" << kernel_tensor->ToString();
       continue;
     }
     // If the output node whose output address ptr can't be changed, then alloc the new device memory and copy the data:

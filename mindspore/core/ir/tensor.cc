@@ -171,6 +171,7 @@ Tensor &Tensor::AssignValue(const Tensor &tensor) {
     contiguous_callback_ = tensor.contiguous_callback_;
     MetaTensor::operator=(tensor);
     device_sync_ = tensor.device_address();
+    set_format(tensor.format());
     need_pipeline_sync_ = tensor.need_pipeline_sync_;
     sync_status_ = tensor.sync_status_;
     version_ = tensor.version_;

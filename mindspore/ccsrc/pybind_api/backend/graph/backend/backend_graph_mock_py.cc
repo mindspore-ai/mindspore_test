@@ -444,7 +444,8 @@ class BackendFuncGraphMock {
     auto run = resource_->GetResult("output").cast<RunPtr>();
     MS_EXCEPTION_IF_NULL(run);
     BaseRef output = (*run)(input_list);
-    return pipeline::BaseRefToPyDataWithUserData(output, nullptr);
+    MS_EXCEPTION_IF_NULL(func_graph_->output());
+    return pipeline::BaseRefToPyDataWithUserData(output, func_graph_->output()->abstract());
   }
 
   FuncGraphPtr func_graph_;
