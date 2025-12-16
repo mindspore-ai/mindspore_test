@@ -293,9 +293,9 @@ void RegisterLoadCollectiveCallback(const std::function<CollectiveCommunicationL
   gLoadCollectiveCommLibCallback = func;
 }
 
-void *PinMemoryAllocator::Alloc(size_t size, uint32_t) {
+void *PinMemoryAllocator::Alloc(size_t size, uint32_t stream_id) {
   MS_EXCEPTION_IF_NULL(swap_manager_);
-  auto host_ptr = swap_manager_->AllocHostMemory(size);
+  auto host_ptr = swap_manager_->AllocHostMemory(size, stream_id);
   if (host_ptr == nullptr) {
     MS_LOG(ERROR) << "Allocate pin memory failed, size: " << size;
   }
