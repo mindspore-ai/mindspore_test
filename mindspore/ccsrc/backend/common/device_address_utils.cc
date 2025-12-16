@@ -129,7 +129,7 @@ const DeviceContext *GetDeviceContextForOffloadedParameter(const DeviceContext *
 }
 
 bool IsRemoteParameterNode(const mindspore::AnfNodePtr &node) {
-  static const bool skip = ((common::GetEnv("MS_DEV_HIERARCHICAL_MEMORY") != "1"));
+  static const bool skip = ((common::GetEnv("MS_DEV_HYPER_OFFLOAD") != "1"));
   if (skip) {
     return false;
   }
@@ -138,7 +138,7 @@ bool IsRemoteParameterNode(const mindspore::AnfNodePtr &node) {
 }
 
 bool IsRemoteParameterTensor(const TensorPtr &tensor) {
-  if ((common::GetEnv("MS_DEV_HIERARCHICAL_MEMORY") != "1")) {
+  if ((common::GetEnv("MS_DEV_HYPER_OFFLOAD") != "1")) {
     return false;
   }
   constexpr auto kParameterDeviceUserDataName = "parameter_device";

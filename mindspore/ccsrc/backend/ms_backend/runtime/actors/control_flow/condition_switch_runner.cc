@@ -18,7 +18,7 @@
 #include <utility>
 #include "backend/ms_backend/runtime/actors/control_flow/condition_gather_runner.h"
 #include "backend/ms_backend/runtime/graph_executor/pipeline/runtime_pipeline.h"
-#include "backend/ms_backend/runtime/actors/remote_memory/mem_use_analyzer.h"
+#include "backend/ms_backend/runtime/actors/hyper_offload/mem_use_analyzer.h"
 
 namespace mindspore {
 namespace runtime {
@@ -163,7 +163,7 @@ void ConditionSwitchRunner::ExecuteLaunchKernelTask(OpContext<KernelTensor> *con
   MS_EXCEPTION_IF_NULL(kernel_);
   MS_LOG(DEBUG) << "Begin launch kernel: " << kernel_->fullname_with_scope();
 
-  if (enable_remote_mem_slide_) {
+  if (enable_hyper_offload_slide_) {
     MemUseAnalyzer::GetInstance().LaunchTaskBefore(this, device_contexts_[0]);
   }
 
@@ -221,7 +221,7 @@ void ConditionSwitchRunner::ExecuteLaunchKernelTask(OpContext<KernelTensor> *con
   }
   MS_LOG(DEBUG) << "End launch kernel: " << kernel_->fullname_with_scope();
 
-  if (enable_remote_mem_slide_) {
+  if (enable_hyper_offload_slide_) {
     MemUseAnalyzer::GetInstance().LaunchTaskAfter(this, device_contexts_[0]);
   }
 }

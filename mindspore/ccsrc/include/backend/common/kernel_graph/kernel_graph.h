@@ -582,19 +582,19 @@ class BACKEND_COMMON_EXPORT KernelGraph : public FuncGraph {
   void CacheRootWeight(const std::vector<AnfNodePtr> &weights);
   const std::vector<AnfNodePtr> &GetRootWeights() const { return root_weights_; }
 
-  /// \brief Get the stream ID for remote memory copy-in operations
+  /// \brief Get the stream ID for hyper offload copy-in operations
   /// \return Stream ID for copy-in operations
   size_t GetRemoteCopyInStreamId() { return remote_copy_in_stream_id_; }
 
-  /// \brief Get the stream ID for remote memory copy-out operations
+  /// \brief Get the stream ID for hyper offload copy-out operations
   /// \return Stream ID for copy-out operations
   size_t GetRemoteCopyOutStreamId() { return remote_copy_out_stream_id_; }
 
-  /// \brief Set the stream ID for remote memory copy-in operations
+  /// \brief Set the stream ID for hyper offload copy-in operations
   /// \param[in] stream_id Stream ID to be set for copy-in operations
   void SetRemoteCopyInStreamId(size_t stream_id) { remote_copy_in_stream_id_ = stream_id; }
 
-  /// \brief Set the stream ID for remote memory copy-out operations
+  /// \brief Set the stream ID for hyper offload copy-out operations
   /// \param[in] stream_id Stream ID to be set for copy-out operations
   void SetRemoteCopyOutStreamId(size_t stream_id) { remote_copy_out_stream_id_ = stream_id; }
 
@@ -735,7 +735,7 @@ class BACKEND_COMMON_EXPORT KernelGraph : public FuncGraph {
   bool is_from_cache_{false};
   std::vector<AnfNodePtr> root_weights_;
 
-  // Remote memory stream id
+  // Hyper offload stream id
   size_t remote_copy_in_stream_id_{0};
   size_t remote_copy_out_stream_id_{0};
 };

@@ -46,8 +46,8 @@
 #include "primitive/auto_generate/gen_ops_primitive_s.h"
 #include "include/runtime/hardware_abstract/collective/collective_manager.h"
 #include "include/backend/common/exec_order/execute_order_tracker.h"
-#include "backend/ms_backend/runtime/actors/remote_memory/mem_counted_cache.h"
-#include "backend/ms_backend/runtime/actors/remote_memory/mem_use_analyzer.h"
+#include "backend/ms_backend/runtime/actors/hyper_offload/mem_counted_cache.h"
+#include "backend/ms_backend/runtime/actors/hyper_offload/mem_use_analyzer.h"
 
 namespace mindspore {
 namespace runtime {
@@ -1203,9 +1203,9 @@ void SuperKernelActor::RunGraphKernelByKernel(OpContext<KernelTensor> *const con
     GraphCaptureManager::GetInstance().SetInReplay(need_replay_graph);
 
     if (!need_capture_graph && !need_replay_graph) {
-      static const bool use_hierarchical_memory = common::GetEnv("MS_DEV_HIERARCHICAL_MEMORY") == "1" &&
-                                                  common::GetCompileConfig("ENABLE_REMOTE_MEM_SLIDE") == "1";
-      if (use_hierarchical_memory) {
+      static const bool use_hyper_offload =
+        common::GetEnv("MS_DEV_HYPER_OFFLOAD") == "1" && common::GetCompileConfig("ENABLE_HYPER_OFFLOAD_SLIDE") == "1";
+      if (use_hyper_offload) {
         MemUseAnalyzer::GetInstance().InitGraphInfo(this, device_contexts_[0]);
       }
       if (!LaunchAllKernels(context, is_high_perf_mode_ && IsHighPerfModeAtExec())) {
@@ -2416,11 +2416,11 @@ void SuperKernelActor::LinkKernelActorByDeviceType(const CNodePtr &kernel, size_
 
   // If input tensor device type is not equal to device context type, throw exception.
   // e.g. ascend_op(d2h(node)).
-  static bool enable_hierarchical_memory = common::GetEnv("MS_DEV_HIERARCHICAL_MEMORY") == "1";
+  static bool enable_hyper_offload = common::GetEnv("MS_DEV_HYPER_OFFLOAD") == "1";
   bool check_type_valid = device_context->GetDeviceType() == input_device_tensor->GetDeviceType() ||
                           input_device_tensor->GetDeviceType() == input_device_context->GetDeviceType() ||
                           SchedulerHelper::IsIgnoredInputAddressV2(kernel_actor, input_index);
-  if (enable_hierarchical_memory && !check_type_valid) {
+  if (enable_hyper_offload && !check_type_valid) {
     MS_LOG(EXCEPTION) << "Invalid input device tensor type for kernel:" << kernel->fullname_with_scope()
                       << " with device context type:" << device_context->GetDeviceType() << " but the " << input_index
                       << "th input device tensor type is " << input_device_tensor->GetDeviceType()
@@ -2527,8 +2527,8 @@ void SuperKernelActor::UpdateOutputKernelTensors(const std::vector<std::pair<Ker
     auto data = kernel_tensor_pair.first.get();
     MS_EXCEPTION_IF_NULL(data);
     if (new_kernel_tensors_map.find(data->data_) != new_kernel_tensors_map.end()) {
-      MS_VLOG(VL_REMOTE_MEM_DEBUG) << "Original kernel tensor: " << data->data_->ToString()
-                                   << ", new kernel tensor: " << new_kernel_tensors_map[data->data_]->ToString();
+      MS_VLOG(VL_HYPER_OFFLOAD_DEBUG) << "Original kernel tensor: " << data->data_->ToString()
+                                      << ", new kernel tensor: " << new_kernel_tensors_map[data->data_]->ToString();
       data->data_->device_address()->SetDevicePtr(
         new_kernel_tensors_map[data->data_]->device_address()->GetDevicePtr());
       new_kernel_tensors_map[data->data_]->device_address()->SetDevicePtr(nullptr);

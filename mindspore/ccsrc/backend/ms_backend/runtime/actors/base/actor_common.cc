@@ -1291,8 +1291,8 @@ void PrepareParameter(const std::pair<KernelWithIndex, size_t> &parameter_index,
                         << " parameter store device type:"
                         << graph_parameter_store->GetParameterDeviceType(outer_index, inner_index);
     }
-    static const bool use_hierarchical_memory = (common::GetEnv("MS_DEV_HIERARCHICAL_MEMORY") == "1");
-    if (!(use_hierarchical_memory && device_tensor != nullptr && device_tensor->remote())) {
+    static const bool use_hyper_offload = (common::GetEnv("MS_DEV_HYPER_OFFLOAD") == "1");
+    if (!(use_hyper_offload && device_tensor != nullptr && device_tensor->remote())) {
       PrepareParameterWithCopy(parameter_index, tensor, from_aid, is_first_user, stream_id, has_h2d_copy);
       return;
     }

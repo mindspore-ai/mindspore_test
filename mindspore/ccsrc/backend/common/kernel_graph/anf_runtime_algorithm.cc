@@ -1015,7 +1015,8 @@ KernelTensorPtr AnfRuntimeAlgorithm::CreateKernelTensor(const abstract::BaseShap
   auto device_address =
     std::make_shared<device::DeviceAddress>(device_ptr, size, device::GetDeviceTypeByName(device_name), 0);
   MS_EXCEPTION_IF_NULL(device_address);
-  if (common::GetEnv("MS_DEV_HIERARCHICAL_MEMORY") == "1") {
+  static bool enable_hyper_offload = common::GetEnv("MS_DEV_HYPER_OFFLOAD") == "1";
+  if (enable_hyper_offload) {
     device_address->set_remote(is_remote);
   }
   // Currently, address_common and device_address are not unified. Kernel tensor may use info from address_common

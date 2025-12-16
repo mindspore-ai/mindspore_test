@@ -320,9 +320,9 @@ void AddEventForUsersSetEvent(const AnfNodePtr &node, std::map<uint32_t, uint32_
 }
 
 void SetRemoteCopyIdForKernelGraph(const KernelGraphPtr &kernel_graph) {
-  static const bool use_hierarchical_memory =
-    common::GetEnv("MS_DEV_HIERARCHICAL_MEMORY") == "1" && common::GetCompileConfig("ENABLE_REMOTE_MEM_SLIDE") == "1";
-  if (!use_hierarchical_memory) {
+  static const bool use_hyper_offload =
+    common::GetEnv("MS_DEV_HYPER_OFFLOAD") == "1" && common::GetCompileConfig("ENABLE_HYPER_OFFLOAD_SLIDE") == "1";
+  if (!use_hyper_offload) {
     return;
   }
   // Create Copy In Stream

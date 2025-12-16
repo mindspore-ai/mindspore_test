@@ -317,8 +317,8 @@ class KernelRunner {
   // Flag for kernel actor should insert event for parameter.
   bool insert_input_event_{false};
 
-  // Remote mem enable flag
-  bool enable_remote_mem_slide_{false};
+  // Hyper offload enable flag
+  bool enable_hyper_offload_slide_{false};
 
  protected:
   friend class GraphScheduler;

@@ -50,7 +50,7 @@
 #include "utils/compile_config.h"
 #include "primitive/structure_op_name.h"
 #include "primitive/auto_generate/gen_ops_primitive_s.h"
-#include "backend/ms_backend/runtime/actors/remote_memory/mem_use_analyzer.h"
+#include "backend/ms_backend/runtime/actors/hyper_offload/mem_use_analyzer.h"
 
 namespace mindspore {
 namespace runtime {
@@ -288,8 +288,8 @@ KernelRunner::KernelRunner(const std::string &name, const CNodePtr &kernel, cons
   // shape depend need kernel is cnode.
   SetShapeDependInfo();
 
-  enable_remote_mem_slide_ =
-    common::GetEnv("MS_DEV_HIERARCHICAL_MEMORY") == "1" && common::GetCompileConfig("ENABLE_REMOTE_MEM_SLIDE") == "1";
+  enable_hyper_offload_slide_ =
+    common::GetEnv("MS_DEV_HYPER_OFFLOAD") == "1" && common::GetCompileConfig("ENABLE_HYPER_OFFLOAD_SLIDE") == "1";
 }
 
 void KernelRunner::Init() {
@@ -1269,7 +1269,7 @@ void KernelRunner::ExecuteLaunchKernelTask(OpContext<KernelTensor> *const contex
     return;
   }
 
-  if (enable_remote_mem_slide_) {
+  if (enable_hyper_offload_slide_) {
     MemUseAnalyzer::GetInstance().LaunchTaskBefore(this, device_contexts_[0]);
   }
 
@@ -1333,7 +1333,7 @@ void KernelRunner::ExecuteLaunchKernelTask(OpContext<KernelTensor> *const contex
     }
   }
 
-  if (enable_remote_mem_slide_) {
+  if (enable_hyper_offload_slide_) {
     MemUseAnalyzer::GetInstance().LaunchTaskAfter(this, device_contexts_[0]);
   }
 }
@@ -1345,7 +1345,7 @@ void KernelRunner::ExecuteLaunchKernelTaskHP(OpContext<KernelTensor> *const cont
     return;
   }
 
-  if (enable_remote_mem_slide_) {
+  if (enable_hyper_offload_slide_) {
     MemUseAnalyzer::GetInstance().LaunchTaskBefore(this, device_contexts_[0]);
   }
 
@@ -1398,7 +1398,7 @@ void KernelRunner::ExecuteLaunchKernelTaskHP(OpContext<KernelTensor> *const cont
     }
   }
 
-  if (enable_remote_mem_slide_) {
+  if (enable_hyper_offload_slide_) {
     MemUseAnalyzer::GetInstance().LaunchTaskAfter(this, device_contexts_[0]);
   }
 }

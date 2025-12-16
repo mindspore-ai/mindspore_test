@@ -496,7 +496,7 @@ void ResetNodeId(const std::vector<KernelGraphPtr> &graphs) {
   }
 }
 void SetOffloadUserData(const KernelGraphPtr &kernel_graph, const backend::BackendJitConfig &backend_jit_config) {
-  if (common::GetEnv("MS_DEV_HIERARCHICAL_MEMORY") != "1") {
+  if (common::GetEnv("MS_DEV_HYPER_OFFLOAD") != "1") {
     return;
   }
   if (backend_jit_config.offload_activation) {
