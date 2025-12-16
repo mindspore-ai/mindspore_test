@@ -733,30 +733,26 @@ def softmax(input, dim, *, dtype=None):
 
 def equal(input, other):
     r"""
-    Computes the equivalence between two tensors.
+    Compute the equivalence of the two inputs element-wise.
 
     Note:
         `input` and `other` comply with the implicit type conversion rules to make the data types consistent.
 
     Args:
-        input (Tensor): The first input.
-        other (Tensor): The second input.
+        input (Tensor): The first input tensor.
+        other (Tensor): The second input tensor.
 
     Returns:
-        bool.
-
-    Raises:
-        TypeError: If `input` or `other` is not a Tensor.
+        Boolean tensor
 
     Supported Platforms:
         ``Ascend``
 
     Examples:
         >>> import mindspore
-        >>> from mindspore import Tensor, mint
-        >>> x = Tensor([1, 2, 3], mindspore.int32)
-        >>> y = Tensor([1, 2, 4], mindspore.int32)
-        >>> output = mint.equal(x, y)
+        >>> x = mindspore.tensor([1, 2, 3], mindspore.int32)
+        >>> y = mindspore.tensor([1, 2, 4], mindspore.int32)
+        >>> output = mindspore.mint.equal(x, y)
         >>> print(output)
         False
     """
