@@ -662,8 +662,7 @@ def concat(tensors, dim=0):
 
 def cummax(input, dim):
     r"""
-    Returns a tuple (values, indices) where `values` is the cumulative maximum value of input Tensor `input`
-    along the dimension `dim`, and `indices` is the index location of each maximum value.
+    Return the cumulative maximum values and their indices along the given dimension of the tensor.
 
     .. math::
         \begin{array}{ll} \\
@@ -674,39 +673,40 @@ def cummax(input, dim):
         GE backend is not supported in Ascend.
 
     Args:
-        input (Tensor): The input Tensor. Rank of `input` must be greater than 0.
-        dim (int): The dimension to do the operation over. The value of `dim` must be in the range
-            `[-input.ndim, input.ndim - 1]`.
+        input (Tensor): The input tensor.
+        dim (int): The dimension to compute the cumulative maximum along.
 
     Returns:
-        tuple [Tensor], tuple of 2 Tensors, containing the cumulative maximum of elements and the index.
-        The shape of each output tensor is the same as that of input `input`.
-
-    Raises:
-        TypeError: If `input` is not a Tensor.
-        TypeError: If `dim` is not an int.
-        ValueError: If `dim` is out the range of `[-input.ndim, input.ndim - 1]`.
+        Tuple(max, max_indices) of 2 tensors.
 
     Supported Platforms:
         ``Ascend``
 
     Examples:
         >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor
-        >>> from mindspore import ops
-        >>> x = Tensor(np.array([[3, 4, 6, 10], [1, 6, 7, 9], [4, 3, 8, 7], [1, 3, 7, 9]]).astype(np.float32))
-        >>> output = mint.cummax(x, dim=0)
-        >>> print(output[0])
-        [[ 3.  4.  6. 10.]
-         [ 3.  6.  7. 10.]
-         [ 4.  6.  8. 10.]
-         [ 4.  6.  8. 10.]]
-        >>> print(output[1])
-        [[0 0 0 0]
-         [0 1 1 0]
-         [2 1 2 0]
-         [2 1 2 0]]
+        >>> x = mindspore.tensor([[3, 4, 6, 10], [1, 6, 7, 9], [4, 3, 8, 7], [1, 3, 7, 9]])
+        >>> mindspore.mint.cummax(x, dim=0)
+        (Tensor(shape=[4, 4], dtype=Int64, value=
+        [[ 3,  4,  6, 10]
+         [ 3,  6,  7, 10]
+         [ 4,  6,  8, 10]
+         [ 4,  6,  8, 10]]),
+        Tensor(shape=[4, 4], dtype=Int64, value=
+        [[0, 0, 0, 0]
+         [0, 1, 1, 0]
+         [2, 1, 2, 0]
+         [2, 1, 2, 0]]))
+        >>> mindspore.mint.cummax(x, dim=1)
+        (Tensor(shape=[4, 4], dtype=Int64, value=
+        [[ 3,  4,  6, 10]
+         [ 1,  6,  7,  9]
+         [ 4,  4,  8,  8]
+         [ 1,  3,  7,  9]]),
+        Tensor(shape=[4, 4], dtype=Int64, value=
+        [[0, 1, 2, 3]
+         [0, 1, 2, 3]
+         [0, 0, 2, 2]
+         [0, 1, 2, 3]]))
     """
     return ops.auto_generate.cummax(input, dim)
 
