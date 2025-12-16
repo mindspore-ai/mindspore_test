@@ -10101,7 +10101,7 @@ def isposinf(input):
 
 def isneginf(input):
     """
-    Return a boolean tensor indicating which elements are negative infinity.
+    Return whether each element in the input is a negative infinity number.
 
     .. warning::
         For Ascend, it is only supported on platforms above Atlas A2.
