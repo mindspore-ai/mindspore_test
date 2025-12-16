@@ -1833,7 +1833,7 @@ def scatter_tensor(output_tensor, input_tensor, src=0, group=None, async_op=Fals
 
         >>> import mindspore as ms
         >>> from mindspore.mint.distributed import init_process_group
-        >>> from mindspore.communication.comm_func import scatter_tensor
+        >>> from mindspore.mint.distributed import scatter_tensor
         >>> import numpy as np
         >>> # Launch 2 processes.
         >>>
@@ -1925,7 +1925,7 @@ def gather_into_tensor(output_tensor, input_tensor, dst=0, group=None, async_op=
         >>> import mindspore.nn as nn
         >>> from mindspore.mint.distributed import init_process_group
         >>> from mindspore import Tensor
-        >>> from mindspore.communication.comm_func import gather_into_tensor
+        >>> from mindspore.mint.distributed import gather_into_tensor
         >>> # Launch 2 processes.
         >>>
         >>> init_process_group()
@@ -2080,7 +2080,7 @@ def barrier(group=None, async_op=False, device_ids=None):
             This example should be run with 2 devices.
 
         >>> from mindspore.mint.distributed import init_process_group
-        >>> from mindspore.communication.comm_func import barrier
+        >>> from mindspore.mint.distributed import barrier
         >>> # Launch 2 processes.
         >>> init_process_group()
         >>> barrier()
