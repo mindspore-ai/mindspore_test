@@ -8,7 +8,7 @@ isneginf:
     Args:
         input (Tensor):  The input tensor.
 
-    Return:
+    Returns:
         Tensor
 
     Supported Platforms:
