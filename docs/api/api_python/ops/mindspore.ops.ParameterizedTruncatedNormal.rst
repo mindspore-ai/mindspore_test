@@ -37,5 +37,5 @@ mindspore.ops.ParameterizedTruncatedNormal
         - **ValueError** -  当其 `shape` 为 :math:`(batch\_size, *)` 时， `mean` 、 `stdevs` 、 `min` 或者 `max` 的shape不是 :math:`()` 或者 :math:`(batch\_size, )` 。
         - **ValueError** - `shape` 的元素不全大于零。
         - **ValueError** - `stdevs` 的值不全大于零。
-        - **ValueError** - `shape` 的的元素个数小于2。
+        - **ValueError** - `shape` 的元素个数小于2。
         - **ValueError** - `shape` 不是一维Tensor。
