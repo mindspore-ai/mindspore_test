@@ -2723,7 +2723,7 @@ class MappableDataset(SourceDataset):
 
     def use_sampler(self, new_sampler):
         """
-        Replace the last child sampler of the current dataset, remaining the parent sampler unchanged.
+        Replace the last child sampler of the current dataset, leaving the parent sampler unchanged.
 
         Args:
             new_sampler (Sampler): The new sampler to replace with.
@@ -4785,7 +4785,7 @@ class Schema:
 
     def parse_columns(self, columns):
         """
-        Parse the columns and add it to self.
+        Parse the columns and add them to the schema.
 
         Args:
             columns (Union[dict, list[dict], tuple[dict]]): Dataset attribute information, decoded from schema file.
@@ -4832,12 +4832,12 @@ class Schema:
         Get schema file from JSON object.
 
         Args:
-            json_obj(dictionary): Object of JSON parsed.
+            json_obj (dict): Object of JSON parsed.
 
         Raises:
-            RuntimeError: if there is unknown item in the object.
-            RuntimeError: if dataset type is missing in the object.
-            RuntimeError: if columns are missing in the object.
+            RuntimeError: If there is an unknown item in the object.
+            RuntimeError: If dataset type is missing in the object.
+            RuntimeError: If columns are missing in the object.
 
         Examples:
             >>> import json
