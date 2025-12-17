@@ -1721,7 +1721,7 @@ class Model:
 
         Args:
             valid_dataset (Dataset): Dataset to evaluate the model.
-            callbacks (Optional[list(Callback), Callback], optional): List of callback objects or callback object,
+            callbacks ([list(Callback), Callback], optional): List of callback objects or callback object,
                                                             which should be executed while evaluation.
                                                             Default: ``None`` .
             dataset_sink_mode (bool, optional): Determines whether to pass the data through dataset channel.
@@ -2145,7 +2145,7 @@ class Model:
             predict_data (Union[Tensor, list[Tensor], tuple[Tensor]], optional):
                 The predict data, can be a single tensor,
                 a list of tensor, or a tuple of tensor.
-            skip_backend_compile (bool): Only run the frontend compile process,
+            skip_backend_compile (bool, optional): Only run the frontend compile process,
                 skip the compile process on the device side. Set this flag to True may
                 lead to recompiling process can not hit cache.
 

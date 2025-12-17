@@ -157,7 +157,7 @@ def obfuscate_ckpt(network, ckpt_files, target_modules=None, obf_config=None, sa
         ValueError: If the first string of `target_modules` contains characters other than uppercase and lowercase
             letters, numbers, ``'_'`` and ``'/'``.
         ValueError: If the second string of `target_modules` is empty or contains characters other than uppercase and
-            lowercase letters, numbers, ``'_'`` and ``'|'``.
+            lowercase letters, numbers, ``'_'`` and ``'/'``.
         ValueError: If the third string of `target_modules` is not in the format of 'obfuscate_layers:all' or
             'obfuscate_layers:int'.
 

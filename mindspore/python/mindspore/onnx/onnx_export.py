@@ -56,7 +56,7 @@ def export(net, *inputs, file_name, input_names=None, output_names=None, export_
             Default: ``None`` .
 
             - Set a dict with scheme: {input_node_name: {axis_index:axis_name}},
-              for example, {"input1": {0:"batch_size", 1: "seq_len"}, "input2": {{0:"batch_size"}}.
+              for example, {"input1": {0:"batch_size", 1: "seq_len"}, "input2": {0:"batch_size"}}.
             - By default, the shapes of all input tensors in the exported model exactly match those specified in
               `inputs`.
 
