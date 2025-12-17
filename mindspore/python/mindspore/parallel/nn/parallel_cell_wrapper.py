@@ -167,11 +167,11 @@ class Pipeline(PipelineCell):
             Default ``None``.
 
     Raises:
-        TypeError: The type of `net` is not cell.
+        TypeError: The type of `network` is not cell.
         TypeError: If the type of `micro_size` is not int.
         ValueError: When `micro_size` is 0 or negative value.
         KeyError: `dict` cell name matching exception,
-            there are remaining configuration items after traversing all `cell` under the current net.
+            there are remaining configuration items after traversing all `cell` under the current `network`.
 
     Supported Platforms:
         ``Ascend``

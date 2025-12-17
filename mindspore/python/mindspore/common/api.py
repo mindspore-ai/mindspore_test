@@ -1258,9 +1258,11 @@ def jit(
               - off: Disable inference mode, use forward for inference. The performance is poor.
 
     Returns:
-        Function, if `fn` is not None, returns a callable function that will execute the compiled function; If `fn` is
-        None, returns a decorator and when this decorator invokes with a single `fn` argument, the callable function is
-        equal to the case when `fn` is not None.
+        Function, if `fn` is not None, returns a callable function that will execute the compiled function;
+        If `function` is
+        None, returns a decorator and when this decorator invokes with a single `function` argument,
+        the callable function is
+        equal to the case when `function` is not None.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``

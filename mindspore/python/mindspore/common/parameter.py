@@ -864,14 +864,14 @@ class Parameter(Tensor_):
 
         Args:
             layout (Union[None, tuple]): The parameter's layout info.
-                layout [dev_mat, tensor_map, slice_shape, filed_size, uniform_split, opt_shard_group].
+                layout [dev_mat, tensor_map, slice_shape, field_size, uniform_split, opt_shard_group].
                 Default: ``None``.
                 It's not None only when using `AutoParallel(cell)` to enable parallel mode.
 
                 - dev_mat (list(int)): The parameter's device matrix.
                 - tensor_map (list(int)): The parameter's tensor map.
                 - slice_shape (list(int)): The parameter's slice shape.
-                - filed_size (int): The parameter's filed size.
+                - field_size (int): The parameter's field size.
                 - uniform_split (bool): Whether the parameter is split evenly.
                 - opt_shard_group (str): The group of the parameter while running optimizer parallel.
 
