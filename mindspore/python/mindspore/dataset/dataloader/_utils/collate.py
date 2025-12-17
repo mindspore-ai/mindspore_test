@@ -14,14 +14,14 @@
 # ==============================================================================
 """Collate module."""
 
-import collections
 import copy
 import re
+from collections.abc import Mapping, MutableMapping, MutableSequence, Sequence
 from typing import Any, Callable, Optional, Union
 
 import numpy as np
 
-from mindspore.common import float64, Tensor
+from mindspore.common import Tensor, float64
 
 # S: bytes string type (bytes).
 # a: old version alias for bytes string type (same as S).
@@ -29,9 +29,67 @@ from mindspore.common import float64, Tensor
 # O: Python object type.
 np_str_obj_array_pattern = re.compile(r"[SaUO]")
 
-DEFAULT_COLLATE_ERR_MSG_FORMAT = (
-    "default_collate: batch must contain tensors, numpy arrays, numbers, dicts or lists; found {}"
-)
+
+def convert_tensor(data: Tensor) -> Tensor:
+    """Default convert function for :class:`mindspore.Tensor`."""
+    return data
+
+
+def convert_numpy_scalar(data: Union[np.number, np.bool_]) -> Tensor:
+    """Default convert function for :class:`numpy.number` and :class:`numpy.bool_`."""
+    return Tensor(data)
+
+
+def convert_numpy_array(data: np.ndarray) -> Union[Tensor, np.ndarray]:
+    """Default convert function for :class:`numpy.ndarray`."""
+    # NumPy arrays with dtype `str`, `bytes` or `object` cannot be converted to Tensor.
+    if np_str_obj_array_pattern.search(data.dtype.str) is not None:
+        return data
+    return Tensor.from_numpy(data)
+
+
+def convert_mapping(data: Mapping) -> Mapping:
+    """Default convert function for :class:`collections.abc.Mapping`."""
+    try:
+        if isinstance(data, MutableMapping):
+            # To preserve the original Mapping structure and its properties,
+            # shallow copy and update the values in-place.
+            clone = copy.copy(data)
+            clone.update({key: default_convert(data[key]) for key in data})
+            return clone
+        return type(data)({key: default_convert(data[key]) for key in data})
+    except TypeError:
+        # If creating the original Mapping type fails,
+        # fall back to creating a dictionary.
+        return {key: default_convert(data[key]) for key in data}
+
+
+def convert_namedtuple(data: tuple) -> tuple:
+    """Default convert function for :class:`collections.namedtuple`."""
+    return type(data)(*(default_convert(d) for d in data))
+
+
+def convert_tuple(data: tuple) -> list:
+    """Default convert function for :class:`tuple`."""
+    # Convert to list for backwards compatibility.
+    return [default_convert(d) for d in data]
+
+
+def convert_sequence(data: Sequence) -> Sequence:
+    """Default convert function for :class:`collections.abc.Sequence` except for :class:`str` and :class:`bytes`."""
+    try:
+        if isinstance(data, MutableSequence):
+            # To preserve the original Sequence structure and its properties,
+            # shallow copy and update the values in-place.
+            clone = copy.copy(data)
+            for i, d in enumerate(data):
+                clone[i] = default_convert(d)
+            return clone
+        return type(data)([default_convert(d) for d in data])
+    except TypeError:
+        # If creating the original Sequence type fails,
+        # fall back to creating a list.
+        return [default_convert(d) for d in data]
 
 
 def default_convert(data: Any) -> Any:
@@ -73,56 +131,85 @@ def default_convert(data: Any) -> Any:
         >>> default_convert(np.array(["text"]))
         array(['text'], dtype='<U4')
     """
-
-    elem_type = type(data)
-
     if isinstance(data, Tensor):
-        return data
-
+        return convert_tensor(data)
     if isinstance(data, (np.number, np.bool_)):
-        return Tensor(data)
-
-    # only convert numeric numpy, ignore str/obj numpy
+        return convert_numpy_scalar(data)
     if isinstance(data, np.ndarray):
-        if np_str_obj_array_pattern.search(data.dtype.str) is not None:
-            return data
-        return Tensor.from_numpy(data)
+        return convert_numpy_array(data)
+    if isinstance(data, Mapping):
+        return convert_mapping(data)
+    if isinstance(data, tuple) and hasattr(data, "_fields"):
+        return convert_namedtuple(data)
+    if isinstance(data, tuple):
+        return convert_tuple(data)
+    if isinstance(data, Sequence) and not isinstance(data, (str, bytes)):
+        return convert_sequence(data)
+    return data
 
-    if isinstance(data, collections.abc.Mapping):
-        try:
-            if isinstance(data, collections.abc.MutableMapping):
-                # The mapping type may have extra properties, so we can't just
-                # use `type(data)(...)` to create the new mapping.
-                # Create a clone and update it if the mapping type is mutable.
-                clone = copy.copy(data)
-                clone.update({key: default_convert(data[key]) for key in data})
-                return clone
-            return elem_type({key: default_convert(data[key]) for key in data})
-        except TypeError:
-            # The mapping type may not support `__copy__` / `update(mapping)`
-            # or `__init__(iterable)`.
-            return {key: default_convert(data[key]) for key in data}
-    elif isinstance(data, tuple) and hasattr(data, "_fields"):  # namedtuple
-        return elem_type(*(default_convert(d) for d in data))
-    elif isinstance(data, tuple):
-        return [default_convert(d) for d in data]  # Backwards compatibility.
-    elif isinstance(data, collections.abc.Sequence) and not isinstance(data, (str, bytes)):
-        try:
-            if isinstance(data, collections.abc.MutableSequence):
-                # The sequence type may have extra properties, so we can't just
-                # use `type(data)(...)` to create the new sequence.
-                # Create a clone and update it if the sequence type is mutable.
-                clone = copy.copy(data)  # type: ignore[arg-type]
-                for i, d in enumerate(data):
-                    clone[i] = default_convert(d)
-                return clone
-            return elem_type([default_convert(d) for d in data])
-        except TypeError:
-            # The sequence type may not support `__copy__` / `__setitem__(index, item)`
-            # or `__init__(iterable)` (e.g., `range`).
-            return [default_convert(d) for d in data]
-    else:
-        return data
+
+def collate_mapping_fn(
+    batch: list[Mapping],
+    *,
+    collate_fn_map: Optional[dict[Union[type, tuple[type, ...]], Callable]] = None,
+) -> Mapping:
+    """Collate function for :class:`collections.abc.Mapping`."""
+    elem = batch[0]
+
+    try:
+        if isinstance(elem, MutableMapping):
+            # To preserve the original Mapping structure and its properties,
+            # shallow copy and update the values in-place.
+            clone = copy.copy(elem)
+            clone.update({key: collate([d[key] for d in batch], collate_fn_map=collate_fn_map) for key in elem})
+            return clone
+        return type(elem)({key: collate([d[key] for d in batch], collate_fn_map=collate_fn_map) for key in elem})
+    except TypeError:
+        # If creating the original Mapping type fails,
+        # fall back to creating a dictionary.
+        return {key: collate([d[key] for d in batch], collate_fn_map=collate_fn_map) for key in elem}
+
+
+def collate_namedtuple_fn(
+    batch: list[tuple], *, collate_fn_map: Optional[dict[Union[type, tuple[type, ...]], Callable]] = None
+) -> tuple:
+    """Collate function for :class:`collections.namedtuple`."""
+    elem = batch[0]
+    return type(elem)(*(collate(samples, collate_fn_map=collate_fn_map) for samples in zip(*batch)))
+
+
+def collate_sequence_fn(
+    batch: list[Sequence],
+    *,
+    collate_fn_map: Optional[dict[Union[type, tuple[type, ...]], Callable]] = None,
+) -> Sequence:
+    """Collate function for :class:`collections.abc.Sequence`."""
+    elem = batch[0]
+
+    if len({len(elem) for elem in batch}) > 1:
+        raise RuntimeError("Each element in list of batch must be of equal size.")
+
+    # Group elements at the same position from all samples together.
+    # For example, [[1,2], [3,4], [5,6]] -> [(1,3,5), (2,4,6)].
+    transposed = list(zip(*batch))
+
+    if isinstance(elem, tuple):
+        # Convert to list for backwards compatibility.
+        return [collate(samples, collate_fn_map=collate_fn_map) for samples in transposed]
+
+    try:
+        if isinstance(elem, MutableSequence):
+            # To preserve the original Sequence structure and its properties,
+            # shallow copy and update the values in-place.
+            clone = copy.copy(elem)
+            for i, samples in enumerate(transposed):
+                clone[i] = collate(samples, collate_fn_map=collate_fn_map)
+            return clone
+        return type(elem)([collate(samples, collate_fn_map=collate_fn_map) for samples in transposed])
+    except TypeError:
+        # If creating the original Sequence type fails,
+        # fall back to creating a list.
+        return [collate(samples, collate_fn_map=collate_fn_map) for samples in transposed]
 
 
 def collate(
@@ -178,10 +265,10 @@ def collate(
         >>> collate([(0, 3), (1, 4), (2, 5)], collate_fn_map=collate_map)
         [Tensor(shape=[3], dtype=Int64, value= [0, 1, 2]), Tensor(shape=[3], dtype=Int64, value= [3, 4, 5])]
     """
-
     elem = batch[0]
     elem_type = type(elem)
 
+    # For types in collate_fn_map, call the corresponding collate function.
     if collate_fn_map is not None:
         if elem_type in collate_fn_map:
             return collate_fn_map[elem_type](batch, collate_fn_map=collate_fn_map)
@@ -189,100 +276,67 @@ def collate(
         for collate_type in collate_fn_map:
             if isinstance(elem, collate_type):
                 return collate_fn_map[collate_type](batch, collate_fn_map=collate_fn_map)
-    # for those types not in collate_fn_map
-    if isinstance(elem, collections.abc.Mapping):
-        try:
-            if isinstance(elem, collections.abc.MutableMapping):
-                # The mapping type may have extra properties, so we can't just
-                # use `type(data)(...)` to create the new mapping.
-                # Create a clone and update it if the mapping type is mutable.
-                clone = copy.copy(elem)
-                clone.update({key: collate([d[key] for d in batch], collate_fn_map=collate_fn_map) for key in elem})
-                return clone
-            return elem_type({key: collate([d[key] for d in batch], collate_fn_map=collate_fn_map) for key in elem})
-        except TypeError:
-            # The mapping type may not support `copy()` / `update(mapping)`
-            # or `__init__(iterable)`.
-            return {key: collate([d[key] for d in batch], collate_fn_map=collate_fn_map) for key in elem}
-    elif isinstance(elem, tuple) and hasattr(elem, "_fields"):  # namedtuple
-        return elem_type(*(collate(samples, collate_fn_map=collate_fn_map) for samples in zip(*batch)))
-    elif isinstance(elem, collections.abc.Sequence):
-        # check to make sure that the elements in batch have consistent size
-        it = iter(batch)
-        elem_size = len(next(it))
-        if not all(len(elem) == elem_size for elem in it):
-            raise RuntimeError("each element in list of batch must be of equal size")
-        transposed = list(zip(*batch))  # It may be accessed twice, so we use a list.
 
-        if isinstance(elem, tuple):
-            return [
-                collate(samples, collate_fn_map=collate_fn_map) for samples in transposed
-            ]  # Backwards compatibility.
+    # For collection types, call collate function recursively.
+    if isinstance(elem, Mapping):
+        return collate_mapping_fn(batch, collate_fn_map=collate_fn_map)
+    if isinstance(elem, tuple) and hasattr(elem, "_fields"):
+        return collate_namedtuple_fn(batch, collate_fn_map=collate_fn_map)
+    if isinstance(elem, Sequence):
+        return collate_sequence_fn(batch, collate_fn_map=collate_fn_map)
 
-        try:
-            if isinstance(elem, collections.abc.MutableSequence):
-                # The sequence type may have extra properties, so we can't just
-                # use `type(data)(...)` to create the new sequence.
-                # Create a clone and update it if the sequence type is mutable.
-                clone = copy.copy(elem)  # type: ignore[arg-type]
-                for i, samples in enumerate(transposed):
-                    clone[i] = collate(samples, collate_fn_map=collate_fn_map)
-                return clone
-            return elem_type([collate(samples, collate_fn_map=collate_fn_map) for samples in transposed])
-        except TypeError:
-            # The sequence type may not support `copy()` / `__setitem__(index, item)`
-            # or `__init__(iterable)` (e.g., `range`).
-            return [collate(samples, collate_fn_map=collate_fn_map) for samples in transposed]
-
-    raise TypeError(DEFAULT_COLLATE_ERR_MSG_FORMAT.format(elem_type))
+    raise TypeError(f"Cannot find the appropriate collate function for type {type(elem)} in collate_fn_map.")
 
 
 # pylint: disable=unused-argument
 def collate_tensor_fn(
-    batch,
+    batch: list[Tensor],
     *,
     collate_fn_map: Optional[dict[Union[type, tuple[type, ...]], Callable]] = None,
-):
+) -> Tensor:
     """Collate function for :class:`mindspore.Tensor`."""
-
     return Tensor(np.stack(batch, axis=0))
 
 
-def collate_numpy_array_fn(batch, *, collate_fn_map: Optional[dict[Union[type, tuple[type, ...]], Callable]] = None):
+def collate_numpy_array_fn(
+    batch: list[np.ndarray], *, collate_fn_map: Optional[dict[Union[type, tuple[type, ...]], Callable]] = None
+) -> Tensor:
     """Collate function for :class:`numpy.ndarray`."""
-
     elem = batch[0]
-    # array of string classes and object
+
+    # NumPy arrays with dtype `str`, `bytes` or `object` cannot be converted to Tensor.
     if np_str_obj_array_pattern.search(elem.dtype.str) is not None:
-        raise TypeError(DEFAULT_COLLATE_ERR_MSG_FORMAT.format(elem.dtype))
+        raise TypeError(f"NumPy arrays with dtype {elem.dtype} are not supported for collation.")
     return collate([Tensor.from_numpy(b) for b in batch], collate_fn_map=collate_fn_map)
 
 
 def collate_numpy_scalar_fn(
-    batch,
+    batch: list[Union[np.bool_, np.number, np.object_]],
     *,
     collate_fn_map: Optional[dict[Union[type, tuple[type, ...]], Callable]] = None,
-):
+) -> Tensor:
     """Collate function for :class:`numpy.number`, :class:`numpy.bool_` and :class:`numpy.object_`."""
-
     return Tensor(batch)
 
 
-def collate_float_fn(batch, *, collate_fn_map: Optional[dict[Union[type, tuple[type, ...]], Callable]] = None):
+def collate_float_fn(
+    batch: list[float], *, collate_fn_map: Optional[dict[Union[type, tuple[type, ...]], Callable]] = None
+) -> Tensor:
     """Collate function for :class:`float`."""
-
     return Tensor(batch, dtype=float64)
 
 
-def collate_int_fn(batch, *, collate_fn_map: Optional[dict[Union[type, tuple[type, ...]], Callable]] = None):
+def collate_int_fn(
+    batch: list[int], *, collate_fn_map: Optional[dict[Union[type, tuple[type, ...]], Callable]] = None
+) -> Tensor:
     """Collate function for :class:`int`."""
-
     return Tensor(batch)
 
 
-def collate_str_fn(batch, *, collate_fn_map: Optional[dict[Union[type, tuple[type, ...]], Callable]] = None):
+def collate_str_fn(
+    batch: list[Union[str, bytes]], *, collate_fn_map: Optional[dict[Union[type, tuple[type, ...]], Callable]] = None
+) -> list[Union[str, bytes]]:
     """Collate function for :class:`str` and :class:`bytes`."""
-
     return batch
 
 
@@ -331,5 +385,4 @@ def default_collate(batch: list) -> Any:
         >>> default_collate([(0, 3), (1, 4), (2, 5)])
         [Tensor(shape=[3], dtype=Int64, value= [0, 1, 2]), Tensor(shape=[3], dtype=Int64, value= [3, 4, 5])]
     """
-
     return collate(batch, collate_fn_map=default_collate_fn_map)
