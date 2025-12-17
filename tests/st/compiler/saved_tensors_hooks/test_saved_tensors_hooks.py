@@ -31,7 +31,7 @@ NUM_5 = 5
 
 def pack1(tensor):
     print("pack1 ", tensor)
-    return tensor + NUM_1  # @prefech_count: 5
+    return tensor + NUM_1
 
 
 def unpack1(tensor):

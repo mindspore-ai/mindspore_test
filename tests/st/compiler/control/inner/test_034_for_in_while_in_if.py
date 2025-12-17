@@ -17,7 +17,6 @@
 
 import mindspore as ms
 from mindspore import Tensor, ops
-from mindspore.nn import Cell
 from tests.mark_utils import arg_mark
 
 
@@ -28,25 +27,20 @@ def test_for_in_while_in_if():
     Description: Nested control flow (for-in-while-in-if) in jit.
     Expectation: Executes correctly and gradients are computable.
     """
-    class Net(Cell):
-        def __init__(self):
-            super().__init__()
-            self.i = Tensor(16, ms.int32)
+    i = Tensor(16, ms.int32)
 
-        def construct(self, x, y):
-            if x > y:
-                while y != self.i:
-                    for _ in range(1, 3):
-                        x = x * 2
-                        break
+    def net(x, y):
+        if x > y:
+            while y != i:
+                for _ in range(1, 3):
                     x = x * 2
-                    y = y * 2
-                    continue
-                return x, y
-
+                    break
+                x = x * 2
+                y = y * 2
+                continue
             return x, y
+        return x, y
 
-    net = Net()
     input_x = Tensor(4, ms.int32)
     input_y = Tensor(2, ms.int32)
 

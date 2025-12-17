@@ -185,7 +185,7 @@ FuncGraphPtr GradOneFuncGraph(const FuncGraphPtr &ori_func_graph, const opt::Opt
     }
   };
 
-  WithSavedTensorsHooks with_scope(func_graph);
+  SavedTensorsHooks saved_tensors_hooks_scope(func_graph);
   auto f = std::make_shared<DFunctor>(func_graph, resources, is_top, is_grad_by_j);
   auto user_defined = f->KUserDefined(func_graph);
   if (user_defined != nullptr) {
