@@ -91,6 +91,7 @@ class MsCollectiveCommLib : public CollectiveCommunicationLib {
   bool CheckIfVal(const std::string &group_name, CommunicationGroupInfo *group_info);
   void ClearUniqueID(const std::string &group_name) const override;
   uint32_t GetGroupRanks(const std::string &group_name);
+  void UpdateToDefaultInfo() override;
 
  private:
   MsCollectiveCommLib();
@@ -106,6 +107,12 @@ class MsCollectiveCommLib : public CollectiveCommunicationLib {
 
   // This compute graph node is maintained by the cluster context and used for metadata synchronization.
   std::shared_ptr<distributed::cluster::topology::TcpNodeBase> client_node_;
+
+  std::shared_ptr<distributed::cluster::topology::TcpNodeBase> default_tcp_client_node_;
+
+  uint32_t default_global_rank_;
+  uint32_t default_global_rank_size_;
+  uint32_t default_local_rank_id_;
 
   std::unique_ptr<AllReduceLauncher> launcher_;
 

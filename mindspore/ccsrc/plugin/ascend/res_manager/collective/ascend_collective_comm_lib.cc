@@ -154,7 +154,7 @@ bool AscendCollectiveCommLib::InitializeHccl() {
 
 bool AscendCollectiveCommLib::Initialize(uint32_t global_rank, uint32_t global_rank_size, uint32_t local_rank_id) {
   if (initialized_) {
-    return true;
+    MS_LOG(WARNING) << "AscendCollectiveCommLib has already been init.";
   }
   try {
     if (!common::GetEnv(kSimulationLevel).empty()) {
@@ -188,6 +188,13 @@ bool AscendCollectiveCommLib::Initialize(uint32_t global_rank, uint32_t global_r
   local_rank_id_ = local_rank_id;
   initialized_ = true;
   finalized_ = false;
+
+  if (global_group_name_ == kHCCLGlobalGroupName) {
+    default_global_rank_ = global_rank_id_;
+    default_global_rank_size_ = global_rank_size_;
+    default_local_rank_id_ = local_rank_id_;
+  }
+
   return true;
 }
 
@@ -322,6 +329,15 @@ std::string AscendCollectiveCommLib::CommName(const std::string &group_name) {
   auto group = std::dynamic_pointer_cast<AscendCommunicationGroup>(groups_[group_name]);
   CHECK_IF_NULL(group);
   return group->inner_comm_name();
+}
+
+void AscendCollectiveCommLib::UpdateToDefaultInfo() {
+  if (global_group_name_ == kHCCLGlobalGroupName) {
+    return;
+  }
+  global_rank_id_ = default_global_rank_;
+  global_rank_size_ = default_global_rank_size_;
+  local_rank_id_ = default_local_rank_id_;
 }
 
 uint32_t AscendCollectiveCommLib::GetRankId(const std::string &group_name) {

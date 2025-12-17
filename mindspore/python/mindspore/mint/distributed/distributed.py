@@ -77,13 +77,15 @@ from mindspore.ops.auto_generate.gen_ops_prim import (
     dist_comm_batch_isend_irecv_op,
 )
 from mindspore._c_expression import TCPStoreClient, GroupOptions, _finalize_collective
+from ._utils import _parse_tcp_url_for_ipv4
 
 _pickler = pickle.Pickler
 _unpickler = pickle.Unpickler
 BACKEND_HCCL = "hccl"
 BACKEND_MCCL = "mccl"
-_GROPU_SIZE_CACHE = {}
-_GROPU_RANK_CACHE = {}
+_GROUP_SIZE_CACHE = {}
+_GROUP_RANK_CACHE = {}
+_INIT_STORE_CACHE = {}
 
 safe_builtins = {
     'range',
@@ -96,19 +98,17 @@ safe_builtins = {
 
 def get_cache_group_size(group=GlobalComm.WORLD_COMM_GROUP):
     """get cache group size."""
-    global _GROPU_SIZE_CACHE
-    if group not in _GROPU_SIZE_CACHE:
-        _GROPU_SIZE_CACHE[group] = _get_size_helper(group)
-    group_size = _GROPU_SIZE_CACHE[group]
+    if group not in _GROUP_SIZE_CACHE:
+        _GROUP_SIZE_CACHE[group] = _get_size_helper(group)
+    group_size = _GROUP_SIZE_CACHE[group]
     return group_size
 
 
 def get_cache_group_rank(group=GlobalComm.WORLD_COMM_GROUP):
     """get cache rank id."""
-    global _GROPU_RANK_CACHE
-    if group not in _GROPU_RANK_CACHE:
-        _GROPU_RANK_CACHE[group] = _get_rank_helper(group)
-    group_rank = _GROPU_RANK_CACHE[group]
+    if group not in _GROUP_RANK_CACHE:
+        _GROUP_RANK_CACHE[group] = _get_rank_helper(group)
+    group_rank = _GROUP_RANK_CACHE[group]
     return group_rank
 
 
@@ -488,14 +488,17 @@ def is_initialized():
 
 
 @args_type_check(init_method=str, timeout=timedelta, world_size=int, rank=int, store=TCPStore)
-def init_process_group(backend="hccl",
-                       init_method=None,
-                       timeout=None,
-                       world_size=-1,
-                       rank=-1,
-                       store=None,
-                       pg_options=None,
-                       device_id=None):
+def init_process_group(
+    backend="hccl",
+    init_method=None,
+    timeout=None,
+    world_size=-1,
+    rank=-1,
+    store=None,
+    group_name="",
+    pg_options=None,
+    device_id=None,
+):
     """
     Init collective communication lib. And create a default collective communication group.
 
@@ -555,35 +558,62 @@ def init_process_group(backend="hccl",
         logger.warning("pg_options is ignored, setting is invalid")
     if device_id is not None:
         logger.warning("device_id is ignored, setting is invalid")
+
     if backend != "hccl":
         raise ValueError(
             "Only support hccl now, please setting backend to hccl or using default value"
         )
 
     if init_method is not None and store is not None:
-        raise ValueError(
-            "Only one of init_method and store is supported."
-        )
+        raise ValueError("Only one of init_method and store is supported.")
+
     if init_method is not None or store is not None:
         if world_size <= 0:
-            raise ValueError(
-                "Specified world_size must be a positive integer."
-            )
+            raise ValueError("Specified world_size must be a positive integer.")
         if rank < 0:
-            raise ValueError(
-                "Specified rank must be a non-negative integer."
-            )
+            raise ValueError("Specified rank must be a non-negative integer.")
+
         if timeout is None:
             timeout = timedelta(seconds=300)
-        timeout_ms = int(timeout.total_seconds() * 1000)
-        _init_without_sched(backend, init_method, timeout_ms, world_size, rank, store)
+
+        if init_method is not None:
+            is_master = rank == 0
+            try:
+                ip, port = _parse_tcp_url_for_ipv4(init_method)
+            except Exception as e:
+                raise RuntimeError(
+                    f"Failed to parse TCP URL from 'init_method': {init_method}"
+                ) from e
+            store = TCPStore(
+                host_name=ip,
+                port=port,
+                world_size=world_size,
+                is_master=is_master,
+                timeout=timeout,
+            )
+
+        if not group_name:
+            store_prefix = "default_group"
+        else:
+            store_prefix = group_name
+        _INIT_STORE_CACHE[store_prefix] = store
+
+        _init_without_sched(
+            backend=backend,
+            timeout=timeout,
+            world_size=world_size,
+            rank=rank,
+            store=store,
+            group_name=group_name,
+        )
     else:
         init(backend)
 
-    if world_size != -1 and world_size != get_group_size():
+    group_size = get_group_size(group_name) if group_name else get_group_size()
+    if world_size != -1 and world_size != group_size:
         raise ValueError(
             "world_size is wrong, please using default value or setting: ",
-            get_group_size(),
+            group_size,
         )
 
 
@@ -1794,7 +1824,7 @@ def batch_isend_irecv(p2p_op_list):
     remotes_ranks = []
     tags = []
     if not p2p_op_list:
-        raise TypeError(f"p2p_op_list can not be empty list.")
+        raise TypeError("p2p_op_list can not be empty list.")
     for _, p2p_op in enumerate(p2p_op_list):
         if not isinstance(p2p_op, P2POp):
             raise TypeError("The elements in p2p_op_list must be type of P2POp.")
@@ -2220,7 +2250,6 @@ def send(tensor, dst=0, group=None, tag=0):
     _dst = _get_group_rank_from_world_rank_from_cache_helper(dst, group)
     output = dist_comm_isend_op(tensor, _dst, group, tag)
     _deal_comm_outputs(output, False)
-
 
 
 def recv(tensor, src=0, group=None, tag=0):
@@ -3141,7 +3170,7 @@ def scatter_object_list(scatter_object_output_list, scatter_object_input_list, s
             "but got 'group' type : {}.".format(type(group))
         )
     if not isinstance(scatter_object_output_list, list) or not scatter_object_output_list:
-        raise TypeError(f"The scatter_object_output_list can not be empty.")
+        raise TypeError("The scatter_object_output_list can not be empty.")
     if not isinstance(src, int):
         raise TypeError("For scatter_object_list, the src must be int")
     group_size = get_cache_group_size(group)
@@ -3313,12 +3342,13 @@ def broadcast_object_list(object_list, src=0, group=None, device=None):
     if not isinstance(src, int):
         raise TypeError("For broadcast_object_list, the src must be int")
     if not isinstance(object_list, list) or not object_list:
-        raise TypeError(f"The object_list can not be empty.")
+        raise TypeError("The object_list can not be empty.")
     rank_id = get_cache_group_rank()
     tensor_sizes = []
     tensor_list = []
     size = 0
     object_size_list = [Tensor([0], dtype=mstype.int32) for i in range(len(object_list))]
+    object_tensor = Tensor(np.zeros((0)).astype(np.int8))
     if rank_id == src:
         tensor_list, tensor_sizes = zip(
             *[_object_to_tensor(obj) for obj in object_list]
