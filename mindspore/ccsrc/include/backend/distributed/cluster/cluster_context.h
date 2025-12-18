@@ -53,7 +53,8 @@ class BACKEND_COMMON_EXPORT ClusterContext {
 
   // Initialize the cluster configuration and build network.
   bool Initialize();
-  bool Initialize(int64_t timeout, uint32_t world_size, uint32_t node_id, TCPStoreClientPtr store);
+  bool Initialize(int64_t timeout, uint32_t world_size, uint32_t node_id, TCPStoreClientPtr store,
+                  std::string group_name);
 
   // Finalize the cluster and process exits. If timeout is set to UINT32_MAX, this method will block without timeout.
   bool Finalize(uint32_t timeout = kDefaultFinishTimeout);
@@ -146,6 +147,8 @@ class BACKEND_COMMON_EXPORT ClusterContext {
   std::shared_ptr<topology::NodeBase> node_base_;
 
   TCPStoreClientPtr tcp_store_client_;
+
+  std::map<std::string, TCPStoreClientPtr> tcp_store_mgr_;
 
   // Node id of this process in the cluster.
   std::string node_id_;

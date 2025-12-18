@@ -16,7 +16,6 @@
 This test is for multiprocess launch.
 """
 import os
-import time
 import numpy as np
 import mindspore.multiprocessing as mp
 import mindspore as ms
@@ -101,7 +100,6 @@ def run(world_size, rank):
         assert get_group_size() == 2
         assert get_local_rank_size() == 2
 
-    time.sleep(5)
     if rank in [0, 1, 2, 3]:
         create_group("self_group", [0, 1, 2, 3])
 
@@ -142,7 +140,6 @@ def run(world_size, rank):
         assert output_handle is None
         assert np.allclose(output_tensor1.asnumpy(), except_output_tensor.asnumpy())
 
-    time.sleep(5)
     print(f"===== done pid: {os.getpid()}  rank: {rank} =====", flush=True)
 
 
@@ -158,4 +155,4 @@ if __name__ == "__main__":
         p.join()
     for p in process_list:
         if p.exitcode != 0:
-            print(f"Process {p.pid} exits with exception! Error code: {p.exitcode}.", flush=True)
+            raise RuntimeError(f"Process {p.pid} exits with exception! Error code: {p.exitcode}.")
