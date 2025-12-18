@@ -26,7 +26,6 @@
 #include "ir/graph_utils.h"
 #include "include/utils/utils.h"
 #include "include/utils/parallel_context.h"
-#include "backend/ms_backend/graph_fusion/core/graph_kernel_utils.h"
 #include "include/runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel_flags.h"
 #include "mindspore/core/include/utils/ms_context.h"
 #include "include/utils/anfalgo.h"
@@ -284,8 +283,8 @@ std::optional<std::string> ExtractAccuRefKeyFromAssignAddCNode(const CNodePtr &c
     const auto &sub_graph_cnode_list = sub_graph->GetOrderedCnodes();
     // Add -> Assign
     auto target = std::find_if(sub_graph_cnode_list.begin(), sub_graph_cnode_list.end(), [](const CNodePtr &cur_cnode) {
-      return IsPrimitiveCNode(cur_cnode, prim::kPrimAssign) && cur_cnode->HasAttr(graphkernel::kAttrExpandFrom) &&
-             GetValue<std::string>(cur_cnode->GetAttr(graphkernel::kAttrExpandFrom)) == prim::kPrimAssignAdd->name();
+      return IsPrimitiveCNode(cur_cnode, prim::kPrimAssign) && cur_cnode->HasAttr("expand_from") &&
+             GetValue<std::string>(cur_cnode->GetAttr("expand_from")) == prim::kPrimAssignAdd->name();
     });
     if (target != sub_graph_cnode_list.end()) {
       assign_cnode = *target;

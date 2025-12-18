@@ -28,7 +28,6 @@
 #include "primitive/math_ops.h"
 #include "primitive/other_ops.h"  // collective communication operations
 #include "include/runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel_flags.h"
-#include "backend/ms_backend/graph_fusion/graph_kernel_helper.h"
 #include "utils/check_convert_utils.h"
 #include "plugin/ascend/res_manager/collective/dvm_collective_comm_lib.h"
 #include "primitive/auto_generate/gen_ops_primitive_b.h"
