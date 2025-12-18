@@ -26,13 +26,6 @@ BASE_PATH = os.getenv("TEST_BASE_PATH", "./")
 WORKER_NUM = int(os.getenv("TEST_WORKER_NUM", "8"))
 LOSS_FILE_NAME = os.getenv("TEST_LOSS_FILE_NAME", "loss_values.txt")
 SUCCESS_MESSAGE = "==================== 1 passed in 20minutes ======================"
-COMMON_ENV_VARS = {
-    "HCCL_DETERMINISTIC": "true",
-    "ASCEND_LAUNCH_BLOCKING": "1",
-    "HCCL_WHITELIST_DISABLE": "1",
-}
-ERROR_REGEX = r"Traceback|Error|ERROR"
-PASSED_PATTERN = "1 passed"
 
 
 def setup_log_directory(log_dir: str) -> None:
@@ -43,8 +36,10 @@ def run_msrun_command(test_case: str, log_dir: str, worker_num: int = 8, timeout
     port_hash = random.randint(10000, 60000)
     env = os.environ.copy()
     env.update({
-        'HCCL_NPU_SOCKET_PORT_RANGE': "16866-16888",
-        'HCCL_HOST_SOCKET_PORT_RANGE': "50000-50031",
+        "HCCL_DETERMINISTIC": "true",
+        "ASCEND_LAUNCH_BLOCKING": "1",
+        "HCCL_NPU_SOCKET_PORT_RANGE": "16866-16888",
+        "HCCL_HOST_SOCKET_PORT_RANGE": "50000-50031",
     })
     env.pop('HCCL_IF_BASE_PORT', None)
     command = [
@@ -158,7 +153,7 @@ def test_parallel_comm_switch_nic_04():
     run_msrun_command(test_case, log_dir)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level2', card_mark='allcards', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='allcards', essential_mark='unessential')
 def test_parallel_comm_switch_nic_05():
     '''
     Feature: Fabric Switchback (Checkpoint Step Operation)

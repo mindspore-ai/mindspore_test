@@ -17,10 +17,12 @@ Test cases of parallel_comm_switch_nic
 """
 import os
 import numpy as np
+import mindspore as ms
 from mindspore import Tensor
 from mindspore import log as logger
 from mindspore import Parameter
 from mindspore.nn import Cell
+from mindspore.communication import init
 import mindspore.ops.operations as P
 from mindspore.parallel.auto_parallel import AutoParallel
 from mindspore.parallel.shard import Layout
@@ -32,7 +34,7 @@ from ..utils.dataset import FakeData
 from ..utils.context_base import contextbase
 from ..utils.compare_base import comparebase
 from ..utils.modeltrain_base import modeltrainbase
-from ..utils._utils import clean_all_ckpt_files, find_newest_ckpt_file, find_newest_ckpt_file_by_name
+from ..utils._utils import clean_all_ckpt_files, find_newest_ckpt_file_by_name
 
 
 def setup_function():
@@ -88,38 +90,45 @@ class CommSwitchNic(Callback):
                 self.count += 1
 
 
-def load_newest_ckpt_from_model_train(model, epoch, dataset, callback, dataset_sink_mode=True,
+def load_newest_ckpt_from_model_train(model, epoch, dataset, callback=None,
+                                      dataset_sink_mode=True,
                                       ckpt_path="./", ckpt_prefix="ckpt_ms", async_save=False,
                                       save_checkpoint_steps=1, sink_size=-1,
-                                      integrated_save=True,
-                                      load_format="default"):
+                                      integrated_save=True):
     logger.info("MindSporeTest::configure Config to save Checkpoint")
-    ckpt_config = CheckpointConfig(keep_checkpoint_max=5, integrated_save=integrated_save,
-                                   save_checkpoint_steps=save_checkpoint_steps,
-                                   async_save=async_save)
+    ckpt_config = CheckpointConfig(
+        keep_checkpoint_max=5,
+        integrated_save=integrated_save,
+        save_checkpoint_steps=save_checkpoint_steps,
+        sync_save=async_save)
     ckpt_callback = ModelCheckpoint(prefix=ckpt_prefix, directory=ckpt_path, config=ckpt_config)
     logger.info(f"MindSporeTest::clean all Checkpoint file under {ckpt_path}")
     clean_all_ckpt_files(ckpt_path)
+    callbacks = [ckpt_callback]
+    if callback is not None and isinstance(callback, Callback):
+        if isinstance(callback, list):
+            callbacks.extend([cb for cb in callback if isinstance(cb, Callback)])
+        else:
+            callbacks.append(callback)
     logger.info(f"MindSporeTest::Model train and save checkpoint under {ckpt_path}")
     model.train(epoch=epoch, train_dataset=dataset, dataset_sink_mode=dataset_sink_mode,
-                callbacks=[ckpt_callback, callback], sink_size=sink_size)
+                callbacks=callbacks, sink_size=sink_size)
     logger.info("MindSporeTest::load the newest checkpoint file and return")
-    if load_format == "default":
-        newest_ckpt_file = find_newest_ckpt_file(ckpt_path)
-    else:
-        newest_ckpt_file = find_newest_ckpt_file_by_name(ckpt_path)
+    newest_ckpt_file = find_newest_ckpt_file_by_name(ckpt_path)
     return load_checkpoint(newest_ckpt_file)
 
 
 def test_parallel_comm_switch_nic_01():
-    np.random.seed(666)
+    init()
+    ms.set_seed(666)
     standalone_net = SimpleNet(mul_size=(128, 32))
     standalone_dataset = FakeData(size=1280, batch_size=128, image_size=(32,), num_classes=32)
     standalone_model = modeltrainbase.create_train_model(standalone_net, loss=None)
-    standalone_ckpt = modeltrainbase.load_newest_ckpt_from_model_train(
-        standalone_model, epoch=1, dataset=standalone_dataset, dataset_sink_mode=False,
+    standalone_ckpt = load_newest_ckpt_from_model_train(
+        standalone_model, epoch=1, dataset=standalone_dataset, callback=None, dataset_sink_mode=False,
         ckpt_path="./rank_{}_ckpt".format(contextbase.get_parallel_variable_from_env("RANK_ID")),
-        ckpt_prefix="ckpt_standalone", load_format="name")
+        ckpt_prefix="ckpt_standalone")
+    init()
     layout = Layout((2, 4), ("dp", "mp"))
     in_strategy1 = (layout("dp", "mp"), layout("dp", "mp"))
     in_strategy2 = (layout("mp", "dp"), layout("mp", "dp"))
@@ -132,7 +141,7 @@ def test_parallel_comm_switch_nic_01():
     parallel_ckpt = load_newest_ckpt_from_model_train(
         parallel_model, epoch=1, dataset=parallel_dataset, callback=callback, dataset_sink_mode=False,
         ckpt_path="./rank_{}_ckpt".format(contextbase.get_parallel_variable_from_env("RANK_ID")),
-        ckpt_prefix="ckpt_parallel", integrated_save=True)
+        ckpt_prefix="ckpt_parallel")
     net_cmp = SimpleNet(mul_size=(128, 32))
     inputs_np = Tensor(np.random.randn(128, 32).astype(np.float32))
     label = Tensor(np.random.randn(128, 32).astype(np.float32))
@@ -140,14 +149,16 @@ def test_parallel_comm_switch_nic_01():
 
 
 def test_parallel_comm_switch_nic_02():
-    np.random.seed(666)
+    init()
+    ms.set_seed(666)
     standalone_net = SimpleNet(mul_size=(128, 32))
     standalone_dataset = FakeData(size=2560, batch_size=128, image_size=(32,), num_classes=32)
     standalone_model = modeltrainbase.create_train_model(standalone_net, loss=None)
-    standalone_ckpt = modeltrainbase.load_newest_ckpt_from_model_train(
-        standalone_model, epoch=1, dataset=standalone_dataset, dataset_sink_mode=False,
+    standalone_ckpt = load_newest_ckpt_from_model_train(
+        standalone_model, epoch=1, dataset=standalone_dataset, callback=None, dataset_sink_mode=False,
         ckpt_path="./rank_{}_ckpt".format(contextbase.get_parallel_variable_from_env("RANK_ID")),
-        ckpt_prefix="ckpt_standalone", load_format="name")
+        ckpt_prefix="ckpt_standalone")
+    init()
     layout = Layout((2, 4, 1), ("dp", "mp", "sp"))
     in_strategy1 = (layout("dp", "mp"), layout("dp", "mp"))
     in_strategy2 = (layout("mp", "sp"), layout("mp", "sp"))
@@ -161,7 +172,7 @@ def test_parallel_comm_switch_nic_02():
     parallel_ckpt = load_newest_ckpt_from_model_train(
         parallel_model, epoch=1, dataset=parallel_dataset, callback=callback, dataset_sink_mode=False,
         ckpt_path="./rank_{}_ckpt".format(contextbase.get_parallel_variable_from_env("RANK_ID")),
-        ckpt_prefix="ckpt_parallel", load_format="name")
+        ckpt_prefix="ckpt_parallel")
     net_cmp = SimpleNet(mul_size=(128, 32))
     inputs_np = Tensor(np.random.randn(128, 32).astype(np.float32))
     label = Tensor(np.random.randn(128, 32).astype(np.float32))
@@ -169,14 +180,16 @@ def test_parallel_comm_switch_nic_02():
 
 
 def test_parallel_comm_switch_nic_03():
-    np.random.seed(666)
+    init()
+    ms.set_seed(666)
     standalone_net = SimpleNet(mul_size=(128, 32))
     standalone_dataset = FakeData(size=2560, batch_size=128, image_size=(32,), num_classes=32)
     standalone_model = modeltrainbase.create_train_model(standalone_net, loss=None)
-    standalone_ckpt = modeltrainbase.load_newest_ckpt_from_model_train(
-        standalone_model, epoch=1, dataset=standalone_dataset, dataset_sink_mode=False,
+    standalone_ckpt = load_newest_ckpt_from_model_train(
+        standalone_model, epoch=1, dataset=standalone_dataset, callback=None, dataset_sink_mode=False,
         ckpt_path="./rank_{}_ckpt".format(contextbase.get_parallel_variable_from_env("RANK_ID")),
-        ckpt_prefix="ckpt_standalone", load_format="name")
+        ckpt_prefix="ckpt_standalone")
+    init()
     layout = Layout((2, 2, 2), ("dp", "mp", "sp"))
     in_strategy1 = (layout("dp", "sp"), layout("dp", "sp"))
     in_strategy2 = (layout("dp", "mp"), layout("dp", "mp"))
@@ -190,7 +203,7 @@ def test_parallel_comm_switch_nic_03():
     parallel_ckpt = load_newest_ckpt_from_model_train(
         parallel_model, epoch=1, dataset=parallel_dataset, callback=callback, dataset_sink_mode=False,
         ckpt_path="./rank_{}_ckpt".format(contextbase.get_parallel_variable_from_env("RANK_ID")),
-        ckpt_prefix="ckpt_parallel", load_format="name")
+        ckpt_prefix="ckpt_parallel")
     net_cmp = SimpleNet(mul_size=(128, 32))
     inputs_np = Tensor(np.random.randn(128, 32).astype(np.float32))
     label = Tensor(np.random.randn(128, 32).astype(np.float32))
@@ -198,14 +211,16 @@ def test_parallel_comm_switch_nic_03():
 
 
 def test_parallel_comm_switch_nic_04():
-    np.random.seed(666)
+    init()
+    ms.set_seed(666)
     standalone_net = SimpleNet(mul_size=(128, 32))
     standalone_dataset = FakeData(size=2560, batch_size=128, image_size=(32,), num_classes=32)
     standalone_model = modeltrainbase.create_train_model(standalone_net, loss=None)
-    standalone_ckpt = modeltrainbase.load_newest_ckpt_from_model_train(
-        standalone_model, epoch=1, dataset=standalone_dataset, dataset_sink_mode=False,
+    standalone_ckpt = load_newest_ckpt_from_model_train(
+        standalone_model, epoch=1, dataset=standalone_dataset, callback=None, dataset_sink_mode=False,
         ckpt_path="./rank_{}_ckpt".format(contextbase.get_parallel_variable_from_env("RANK_ID")),
-        ckpt_prefix="ckpt_standalone", load_format="name")
+        ckpt_prefix="ckpt_standalone")
+    init()
     os.environ['MS_ENABLE_TFT'] = "{TSP:1}"
     callback = CommSwitchNic([0, 6, 7],
                              [True, True, True], [11, 12])
@@ -215,7 +230,7 @@ def test_parallel_comm_switch_nic_04():
     parallel_ckpt = load_newest_ckpt_from_model_train(
         parallel_model, epoch=1, dataset=parallel_dataset, callback=callback, dataset_sink_mode=False,
         ckpt_path="./rank_{}_ckpt".format(contextbase.get_parallel_variable_from_env("RANK_ID")),
-        ckpt_prefix="ckpt_parallel", load_format="name")
+        ckpt_prefix="ckpt_parallel")
     net_cmp = SimpleNet(mul_size=(128, 32))
     inputs_np = Tensor(np.random.randn(128, 32).astype(np.float32))
     label = Tensor(np.random.randn(128, 32).astype(np.float32))
@@ -223,14 +238,16 @@ def test_parallel_comm_switch_nic_04():
 
 
 def test_parallel_comm_switch_nic_05():
-    np.random.seed(666)
+    init()
+    ms.set_seed(666)
     standalone_net = SimpleNet(mul_size=(128, 32))
     standalone_dataset = FakeData(size=2560, batch_size=128, image_size=(32,), num_classes=32)
     standalone_model = modeltrainbase.create_train_model(standalone_net, loss=None)
-    standalone_ckpt = modeltrainbase.load_newest_ckpt_from_model_train(
-        standalone_model, epoch=1, dataset=standalone_dataset, dataset_sink_mode=False,
+    standalone_ckpt = load_newest_ckpt_from_model_train(
+        standalone_model, epoch=1, dataset=standalone_dataset, callback=None, dataset_sink_mode=False,
         ckpt_path="./rank_{}_ckpt".format(contextbase.get_parallel_variable_from_env("RANK_ID")),
-        ckpt_prefix="ckpt_standalone", load_format="name")
+        ckpt_prefix="ckpt_standalone")
+    init()
     layout = Layout((2, 2, 2), ("dp", "mp", "sp"))
     in_strategy1 = (layout(("dp", "mp"), "sp"), layout(("dp", "mp"), "sp"))
     in_strategy2 = (layout(("dp", "sp"), "mp"), layout(("dp", "sp"), "mp"))
@@ -245,7 +262,7 @@ def test_parallel_comm_switch_nic_05():
         parallel_model, epoch=1, dataset=parallel_dataset, callback=callback, save_checkpoint_steps=10,
         dataset_sink_mode=False,
         ckpt_path="./rank_{}_ckpt".format(contextbase.get_parallel_variable_from_env("RANK_ID")),
-        ckpt_prefix="ckpt_parallel", load_format="name")
+        ckpt_prefix="ckpt_parallel")
     net_cmp = SimpleNet(mul_size=(128, 32))
     inputs_np = Tensor(np.random.randn(128, 32).astype(np.float32))
     label = Tensor(np.random.randn(128, 32).astype(np.float32))
