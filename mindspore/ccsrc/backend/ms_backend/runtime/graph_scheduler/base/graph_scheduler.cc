@@ -1157,10 +1157,10 @@ void GraphScheduler::Run(ActorSet *const actor_set, const std::vector<std::vecto
 
     // trigger Train Fault Tolerance callbacks for resuming training
     static auto tft_process_error_cb =
-      GET_COMMON_CALLBACK(TftProcessGraphRunError, void, const std::function<void()> &, ActorSet *const);
+      GET_COMMON_CALLBACK(TftProcessGraphRunError, void, const std::function<void()> &, const std::function<void()> &);
     if (tft_process_error_cb != nullptr) {
       tft_process_error_cb([this, actor_set, op_context_ptr]() { this->ResetActorState(actor_set, op_context_ptr); },
-                           actor_set);
+                           [actor_set]() { actor_set->is_execution_failed_ = false; });
     }
 
     // May set exception in the wait time, need throw the exception to avoid affecting the next execution.

@@ -22,14 +22,16 @@
 #include <vector>
 #include "error_handler/error_config.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_tensor.h"
+#include "include/runtime/hardware_abstract/device_context/device_context.h"
+#include "include/runtime/hardware_abstract/kernel_base/kernel.h"
 #include "include/utils/callback.h"
 #include "device_address/device_type.h"
-#include "backend/ms_backend/runtime/actors/base/actor_set.h"
 #include "utils/log_adapter.h"
 #include "utils/ms_exception.h"
 
 namespace mindspore {
 namespace tools {
+using mindspore::device::DeviceContext;
 using mindspore::device::DeviceResManager;
 using mindspore::device::DeviceType;
 using mindspore::kernel::KernelMod;
@@ -132,7 +134,7 @@ void ErrorHandler::TftCheckBeforeGraphRun() {
 }
 
 void ErrorHandler::TftProcessGraphRunError(const std::function<void()> &fn_reset_actor_state,
-                                           runtime::ActorSet *const actor_set) {
+                                           const std::function<void()> &fn_reset_actor_set_state) {
   if (!(tools::TftConfig::GetInstance()->IsEnableUCE() || tools::TftConfig::GetInstance()->IsEnableHCCE() ||
         tools::TftConfig::GetInstance()->IsEnableARF())) {
     return;
@@ -158,7 +160,7 @@ void ErrorHandler::TftProcessGraphRunError(const std::function<void()> &fn_reset
   if (GetUceFlag()) {
     MS_LOG(EXCEPTION) << GetErrorMsg();
   } else if (GetForceStopFlag()) {
-    actor_set->is_execution_failed_ = false;
+    fn_reset_actor_set_state();
     MS_LOG(EXCEPTION) << GetForceStopErrorMsg();
   }
 }
@@ -288,8 +290,9 @@ REGISTER_COMMON_CALLBACK(DestroySnapshotMgr);
 
 void TftCheckBeforeGraphRun() { ErrorHandler::GetInstance().TftCheckBeforeGraphRun(); }
 
-void TftProcessGraphRunError(const std::function<void()> &fn_reset_actor_state, runtime::ActorSet *const actor_set) {
-  ErrorHandler::GetInstance().TftProcessGraphRunError(fn_reset_actor_state, actor_set);
+void TftProcessGraphRunError(const std::function<void()> &fn_reset_actor_state,
+                             const std::function<void()> &fn_reset_actor_set_state) {
+  ErrorHandler::GetInstance().TftProcessGraphRunError(fn_reset_actor_state, fn_reset_actor_set_state);
 }
 
 void TftSaveConstants(const std::vector<KernelGraphPtr> &graphs) { ErrorHandler::GetInstance().SaveConstants(graphs); }
