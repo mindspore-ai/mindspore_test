@@ -1128,7 +1128,7 @@ REG_BPROP_BUILDER("SortExt").FreeUselessValues_IO({i0, i2, i3}, {i0}).SetBody(BO
 
   auto indices = ib->TupleGetItem(ib->GetInput(i4), i1);
   auto dout0 = ib->TupleGetItem(ib->GetInput(i5), i0);
-  auto res = ib->ZerosLikeExt(input, ib->Value(static_cast<int64_t>(ib->GetDtypeId(dout0))));
+  auto res = ib->Zeros(ib->Shape(input), ib->Value(static_cast<int64_t>(ib->GetDtypeId(dout0))));
   (void)ib->InplaceScatterSrc(res, dim, indices, dout0);
   return {res, ib->OutZeros(dim), ib->OutZeros(ib->GetInput(i2)), ib->OutZeros(ib->GetInput(i3))};
 });
@@ -1930,7 +1930,9 @@ REG_BPROP_BUILDER("InplaceIndexFillTensor").FreeUselessValues_IO({i0, i3}, {}).S
 });
 
 REG_BPROP_BUILDER("InplaceFillScalar").SetUnusedInputs({i0, i1, i2}).SetBody(BODYFUNC(ib) {
-  return {ib->ZerosLikeExt(ib->GetInput(i3), ib->EmitValue(kNone)), ib->OutZeros(ib->GetInput(i1))};
+  const auto &x = ib->GetInput(i3);
+  auto dx = ib->Zeros(ib->Shape(x), ib->Value(static_cast<int64_t>(ib->GetDtypeId(x))));
+  return {dx, ib->OutZeros(ib->GetInput(i1))};
 });
 
 REG_BPROP_BUILDER("InplaceFillTensor").SetUnusedInputs({i0, i1, i2}).SetBody(BODYFUNC(ib) {
@@ -1941,7 +1943,9 @@ REG_BPROP_BUILDER("InplaceFillTensor").SetUnusedInputs({i0, i1, i2}).SetBody(BOD
   } else {
     value_grad = ib->OutZeros(value);
   }
-  return {ib->ZerosLikeExt(ib->GetInput(i3), ib->EmitValue(kNone)), value_grad};
+  const auto &x = ib->GetInput(i3);
+  auto dx = ib->Zeros(ib->Shape(x), ib->Value(static_cast<int64_t>(ib->GetDtypeId(x))));
+  return {dx, value_grad};
 });
 
 REG_BPROP_BUILDER("InplaceMaskedFillScalar").SetUnusedInputs({i0, i2, i3}).SetBody(BODYFUNC(ib) {
@@ -2202,7 +2206,7 @@ REG_BPROP_BUILDER("InplaceNormal").SetUnusedInputs({i0, i1, i2, i3, i4, i5, i6})
   const auto &std = ib->GetInput(i2);
   const auto &seed = ib->GetInput(i3);
   const auto &offset = ib->GetInput(i4);
-  auto dx = ib->ZerosLikeExt(x, ib->Value(static_cast<int64_t>(ib->GetDtypeId(x))));
+  auto dx = ib->Zeros(ib->Shape(x), ib->Value(static_cast<int64_t>(ib->GetDtypeId(x))));
   return {dx, ib->OutZeros(mean), ib->OutZeros(std), ib->OutZeros(seed), ib->OutZeros(offset)};
 });
 
@@ -2225,7 +2229,7 @@ REG_BPROP_BUILDER("InplaceUniform").SetUnusedInputs({i0, i1, i2, i3, i4, i5}).Se
   const auto &seed = ib->GetInput(i3);
   const auto &offset = ib->GetInput(i4);
   const auto &dout = ib->GetInput(i6);
-  auto dx = ib->ZerosLikeExt(dout, ib->Value(static_cast<int64_t>(ib->GetDtypeId(x))));
+  auto dx = ib->Zeros(ib->Shape(dout), ib->Value(static_cast<int64_t>(ib->GetDtypeId(x))));
   return {dx, ib->OutZeros(from), ib->OutZeros(to), ib->OutZeros(seed), ib->OutZeros(offset)};
 });
 
@@ -2506,7 +2510,7 @@ REG_BPROP_BUILDER("SliceExt").FreeUselessValues_IO({i0}, {}).SetBody(BODYFUNC(ib
   const auto &step = ib->GetInput(i4);
   const auto &dout = ib->GetInput(i6);
 
-  auto dx = ib->Zeros(x);
+  auto dx = ib->Zeros(ib->Shape(x), ib->Value(static_cast<int64_t>(ib->GetDtypeId(x))));
   (void)ib->InplaceCopy(ib->SliceExt(dx, axis, begin, end, step), dout);
   return {dx, ib->OutZeros(axis), ib->OutZeros(begin), ib->OutZeros(end), ib->OutZeros(step)};
 });
@@ -2519,7 +2523,7 @@ REG_BPROP_BUILDER("SliceExtView").FreeUselessValues_IO({i0}, {}).SetBody(BODYFUN
   const auto &step = ib->GetInput(i4);
   const auto &dout = ib->GetInput(i6);
 
-  auto dx = ib->Zeros(x);
+  auto dx = ib->Zeros(ib->Shape(x), ib->Value(static_cast<int64_t>(ib->GetDtypeId(x))));
   (void)ib->InplaceCopy(ib->SliceExtView(dx, axis, begin, end, step), dout);
   return {dx, ib->OutZeros(axis), ib->OutZeros(begin), ib->OutZeros(end), ib->OutZeros(step)};
 });
@@ -2985,7 +2989,7 @@ REG_BPROP_BUILDER("MaskedSelect").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
   const auto &mask = ib->GetInput(i1);
   const auto &dout = ib->GetInput(i3);
   auto dx = ib->MaskedSelectGrad(x, mask, dout);
-  auto dmask = ib->ZerosLikeExt(mask, ib->EmitValue(kNone));
+  auto dmask = ib->Zeros(ib->Shape(mask), ib->Value(static_cast<int64_t>(ib->GetDtypeId(mask))));
   auto x_shape = ib->GetShape(x);
   auto dx_shape = ib->GetShape(dx);
   if (x_shape != dx_shape) {
@@ -3609,7 +3613,10 @@ REG_BPROP_BUILDER("Repeat").FreeUselessValues_IO({i0}, {}).SetBody(BODYFUNC(ib) 
     const auto pre_reduce = calc_result[1], new_shape = calc_result[2], reduce = calc_result[3];
     auto input_grad = ib->Conditional(
       IsEmptySequence(ib, return_zeros),
-      [&input](Emitter *e) -> NodePtrList { return {e->ZerosLikeExt(input, e->EmitValue(kNone))}; },
+      [&input](Emitter *e) -> NodePtrList {
+        auto input_dtype = e->Value(static_cast<int64_t>(input->dtype()->type_id()));
+        return {e->Zeros(e->Shape(input), input_dtype)};
+      },
       [&grad, &pre_reduce, &new_shape, &reduce](Emitter *e) -> NodePtrList {
         auto grad1 = e->Conditional(
           IsEmptySequence(e, pre_reduce), [&grad](Emitter *e) -> NodePtrList { return {grad}; },
@@ -3628,7 +3635,9 @@ REG_BPROP_BUILDER("Repeat").FreeUselessValues_IO({i0}, {}).SetBody(BODYFUNC(ib) 
     auto repeats_val = repeats_optional->ToVector();
     // Fast path for empty
     if (IsShapeNone(input_shape) || IsShapeNone(repeats_val)) {
-      return {ib->ZerosLikeExt(input, ib->Value(static_cast<int64_t>(ib->GetDtypeId(input)))), ib->OutZeros(repeats)};
+      auto input_dtype = ib->Value(static_cast<int64_t>(ib->GetDtypeId(input)));
+      auto dx = ib->Zeros(ib->Shape(input), input_dtype);
+      return {dx, ib->OutZeros(repeats)};
     }
     const auto [pre_reduce, new_shape, reduce] = RepeatGradShapesCalcCommonFunc(input_shape, repeats_val);
     if (!pre_reduce.empty()) {
@@ -3806,7 +3815,7 @@ REG_BPROP_BUILDER("AsStrided").FreeUselessValues_IO({i0}, {}).SetBody(BODYFUNC(i
 
   // For input overlap, all change to base tensor should be dived by count.
   if (input_maybe_overlap) {
-    auto count = ib->ZerosLikeExt(storage, ib->Value(static_cast<int64_t>(TypeId::kNumberTypeFloat32)));
+    auto count = ib->Zeros(ib->Shape(storage), ib->Value(static_cast<int64_t>(TypeId::kNumberTypeFloat32)));
     auto input_indices = ib->AsStrided(flatten_full_indices, ib->Value(simplify_input_shape),
                                        ib->Value(simplify_input_strides), ib->Value(input_effective_offset));
     auto flatten_input_indices = ib->Reshape(input_indices, {-1});
@@ -3826,7 +3835,7 @@ REG_BPROP_BUILDER("Take").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
   const auto &input = ib->GetInput(i0);
   const auto &index = ib->GetInput(i1);
   const auto &dout = ib->GetInput(i3);
-  auto input_zero = ib->ZerosLikeExt(input, ib->Value(static_cast<int64_t>(ib->GetDtypeId(input))));
+  auto input_zero = ib->Zeros(ib->Shape(input), ib->Value(static_cast<int64_t>(ib->GetDtypeId(input))));
   auto grad = ib->InplacePut(input_zero, index, dout, ib->Value<bool>(true));
   return {grad, ib->OutZeros(index)};
 });
@@ -3854,7 +3863,7 @@ REG_BPROP_BUILDER("InplacePut").SetUnusedInputs({i0, i4}).SetBody(BODYFUNC(ib) {
       grad = InplacePutGrad(ib, index, source, accumulate_opt.value(), dout, type_node);
     }
   } else {
-    grad = ib->ZerosLikeExt(input, ib->Value(static_cast<int64_t>(ib->GetDtypeId(input))));
+    grad = ib->Zeros(ib->Shape(input), ib->Value(static_cast<int64_t>(ib->GetDtypeId(input))));
   }
   NodePtr source_grad;
   if (source->need_compute_grad_out()) {

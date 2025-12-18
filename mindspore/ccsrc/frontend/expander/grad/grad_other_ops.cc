@@ -42,7 +42,7 @@ REG_BPROP_BUILDER("InplaceCopy").FreeUselessValues_IO({i0, i1, i2}, {}).SetBody(
 
 REG_BPROP_BUILDER("InplaceZero").SetUnusedInputs({i0, i1, i2}).SetBody(BODYFUNC(ib) {
   const auto &input = ib->GetInput(i0);
-  auto res = ib->ZerosLikeExt(input, ib->Value(static_cast<int64_t>(ib->GetDtypeId(input))));
+  auto res = ib->Zeros(ib->Shape(input), ib->Value(static_cast<int64_t>(ib->GetDtypeId(input))));
   return {res};
 });
 

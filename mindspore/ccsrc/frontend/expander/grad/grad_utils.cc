@@ -491,7 +491,7 @@ NodePtr InplacePutGrad(Emitter *ib, const NodePtr &index, const NodePtr &source,
     return dout;
   }
   auto clone_grad = ib->Clone(dout);
-  auto grad = ib->InplacePut(clone_grad, index, ib->ZerosLikeExt(source, type), ib->Value<bool>(false));
+  auto grad = ib->InplacePut(clone_grad, index, ib->Zeros(ib->Shape(source), type), ib->Value<bool>(false));
   return grad;
 }
 
@@ -628,7 +628,7 @@ NodePtr ScatterOrTensorScatterElements(BpropBuilder *ib, const NodePtr &input, c
                                        const NodePtr &src, const NodePtr &reduce) {
   auto dim_val = dim->BuildValue();
   if (!IsValueKnown(dim_val)) {
-    NodePtr dx_zeros = ib->Zeros(input);
+    NodePtr dx_zeros = ib->Zeros(ib->Shape(input), ib->Value(static_cast<int64_t>(ib->GetDtypeId(input))));
     (void)ib->InplaceScatterSrc(dx_zeros, dim, index, src);
     return dx_zeros;
   }
@@ -673,7 +673,7 @@ NodePtr ArgminOrArgmaxGrad(BpropBuilder *ib, const NodePtr &x, const NodePtr &ax
     auto dout_ori = [&dout_value](Emitter *e) -> NodePtrList { return {dout_value}; };
     dout_value = ib->Conditional(cond, dout_ori, dout_expand);
   }
-  NodePtr dx_zeros = ib->Zeros(x);
+  NodePtr dx_zeros = ib->Zeros(ib->Shape(x), ib->Value(static_cast<int64_t>(ib->GetDtypeId(x))));
   auto reduce_value = ib->Value(static_cast<int64_t>(Reduce::REDUCE_NONE));
   auto dx = Scatter_(ib, dx_zeros, axis, indices, dout_value, reduce_value);
   return dx;
@@ -706,7 +706,7 @@ inline NodePtr ReduceCommonOpGrad(BpropBuilder *ib, const NodePtr &x, const Node
     auto dout_ori = [&dout_value](Emitter *e) -> NodePtrList { return {dout_value}; };
     dout_value = ib->Conditional(cond, dout_ori, dout_expand);
   }
-  NodePtr dx_zeros = ib->Zeros(x);
+  NodePtr dx_zeros = ib->Zeros(ib->Shape(x), ib->Value(static_cast<int64_t>(ib->GetDtypeId(x))));
   auto reduce_value = ib->Value(static_cast<int64_t>(Reduce::REDUCE_NONE));
   auto dx = ScatterOrTensorScatterElements(ib, dx_zeros, axis, indices, dout_value, reduce_value);
   return dx;

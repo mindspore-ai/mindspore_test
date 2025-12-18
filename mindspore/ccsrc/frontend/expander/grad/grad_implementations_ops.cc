@@ -57,14 +57,14 @@ REG_BPROP_BUILDER("CopyToHost").SetUnusedInputs({i0, i2}).SetBody(BODYFUNC(ib) {
 REG_BPROP_BUILDER("Free").SetUnusedInputs({i2, i3}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(i0);
   auto sync = ib->GetInput(i1);
-  auto dx = ib->ZerosLikeExt(x, ib->Value(static_cast<int64_t>(ib->GetDtypeId(x))));
+  auto dx = ib->Zeros(ib->Shape(x), ib->Value(static_cast<int64_t>(ib->GetDtypeId(x))));
   return {dx, ib->OutZeros(sync)};
 });
 
 REG_BPROP_BUILDER("SetData").SetUnusedInputs({i2, i3}).SetBody(BODYFUNC(ib) {
   auto input = ib->GetInput(i0);
   auto value = ib->GetInput(i1);
-  auto dx = ib->ZerosLikeExt(input, ib->Value(static_cast<int64_t>(ib->GetDtypeId(input))));
+  auto dx = ib->Zeros(ib->Shape(input), ib->Value(static_cast<int64_t>(ib->GetDtypeId(input))));
   return {dx, ib->OutZeros(value)};
 });
 

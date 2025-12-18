@@ -927,12 +927,15 @@ REG_BPROP_BUILDER("AddLayerNormV2").FreeUselessValues_IO({i3}, {0, 3}).SetBody(B
   auto sum_optional = ib->TupleGetItem(dout, i3);
   if (!additional_out_opt.has_value()) {
     auto true_branch = [&sum_optional](Emitter *e) -> NodePtrList { return {sum_optional}; };
-    auto false_branch = [&dy, &ib](Emitter *e) -> NodePtrList { return {e->ZerosLikeExt(dy, ib->EmitValue(kNone))}; };
+    auto false_branch = [&dy](Emitter *e) -> NodePtrList {
+      auto dy_dtype = e->Value(static_cast<int64_t>(dy->dtype()->type_id()));
+      return {e->Zeros(e->Shape(dy), dy_dtype)};
+    };
     auto additional_out_true = ib->Equal(additionalOut, ib->Value<bool>(true));
     sum_optional = ib->Conditional(additional_out_true, true_branch, false_branch);
   } else {
     if (!additional_out_opt.value()) {
-      sum_optional = ib->ZerosLikeExt(dy, ib->EmitValue(kNone));
+      sum_optional = ib->Zeros(ib->Shape(dy), ib->Value(static_cast<int64_t>(ib->GetDtypeId(dy))));
     }
   }
   auto grad_out = ib->AddLayerNormGrad(dy, x1, x2, rstd, mean, gamma, sum_optional);
@@ -1101,7 +1104,7 @@ REG_BPROP_BUILDER("ThresholdGrad").FreeUselessValues(FreeTensorsOfThresholdGrad)
     dx = ib->OutZeros(grad_output);
   }
   if (input->need_compute_grad_out()) {
-    dy = ib->ZerosLikeExt(input, ib->Value(static_cast<int64_t>(ib->GetDtypeId(dout))));
+    dy = ib->Zeros(ib->Shape(input), ib->Value(static_cast<int64_t>(ib->GetDtypeId(dout))));
   } else {
     dy = ib->OutZeros(input);
   }
@@ -1172,7 +1175,7 @@ REG_BPROP_BUILDER("TopkExt").FreeUselessValues_IO({i0, i3, i4}, {i0}).SetBody(BO
   auto indices = ib->TupleGetItem(out, i1);
   auto dout0 = ib->TupleGetItem(dout, i0);
   const auto &dim = ib->GetInput(i2);
-  auto out_grad = ib->ZerosLikeExt(input_x, ib->Value(static_cast<int64_t>(ib->GetDtypeId(input_x))));
+  auto out_grad = ib->Zeros(ib->Shape(input_x), ib->Value(static_cast<int64_t>(ib->GetDtypeId(input_x))));
   (void)ib->InplaceScatterSrc(out_grad, dim, indices, dout0);
   return {out_grad, ib->OutZeros(ib->GetInput(i1)), ib->OutZeros(ib->GetInput(i2)), ib->OutZeros(ib->GetInput(i3)),
           ib->OutZeros(ib->GetInput(i4))};
@@ -1189,7 +1192,7 @@ REG_BPROP_BUILDER("Kthvalue").FreeUselessValues_IO({i1}, {i0}).SetBody(BODYFUNC(
   auto dout0 = ib->TupleGetItem(dout, i0);
   const auto &dim = ib->GetInput(i2);
   auto dim_opt = mindspore::GetScalarValue<int64_t>(dim->BuildValue());
-  auto zeros = ib->ZerosLikeExt(input_x, ib->Value(static_cast<int64_t>(ib->GetDtypeId(input_x))));
+  auto zeros = ib->Zeros(ib->Shape(input_x), ib->Value(static_cast<int64_t>(ib->GetDtypeId(input_x))));
   auto reduce = ib->Value(static_cast<int64_t>(Reduce::REDUCE_NONE));
   if (keepdim_opt.has_value()) {
     if (!keepdim_opt.value()) {
