@@ -3651,37 +3651,78 @@ REG_BPROP_BUILDER("Repeat").FreeUselessValues_IO({i0}, {}).SetBody(BODYFUNC(ib) 
   }
 });
 
-REG_BPROP_BUILDER("RepeatInterleaveInt").FreeUselessValues_IO({i0}, {}).SetBody(BODYFUNC(ib) {
+NodePtr RepeatInterleaveIntGrad(BpropBuilder *ib, const NodePtr &dout, const NodePtr &x, const NodePtr &repeats,
+                                const NodePtr &dim) {
+  auto dout_shape = ib->GetShape(dout);
+  auto dim_value = dim->BuildValue();
+  MS_EXCEPTION_IF_NULL(dim_value);
+  auto dim_pos = dim_value->isa<None>() ? ib->Value<int64_t>(-1) : dim;
+  auto dim_pos_opt = GetScalarValue<int64_t>(dim_pos->BuildValue());
+  auto repeats_opt = GetScalarValue<int64_t>(repeats->BuildValue());
+
+  NodePtr dx = nullptr;
+  if (MS_UNLIKELY(!dim_pos_opt.has_value() || !repeats_opt.has_value() || IsDynamic(dout_shape))) {
+    // If dim/repeats/dout_shape is unknown, the fast path is invalid, because we can't get the dout_new_shape.
+    auto new_repeats = ib->Reshape(ib->ScalarToTensor(repeats, kInt64), ib->Value<ShapeVector>({1}));
+    auto grad = ib->RepeatInterleaveGrad(dout, new_repeats, dim_pos);
+    dx = ib->Reshape(grad, ib->Shape(x));
+  } else {
+    // Fast gradient path of repeat_interleave with scalar repeats.
+    if (MS_UNLIKELY(repeats_opt.value() == 0)) {
+      return ib->OutZeros(x);
+    }
+    auto dout_rank = SizeToLong(dout_shape.size());
+    auto real_dim = dim_pos_opt.value() < 0 ? dim_pos_opt.value() + dout_rank : dim_pos_opt.value();
+    ShapeVector dout_new_shape = {};
+    for (int64_t dim_idx = 0; dim_idx < dout_rank; ++dim_idx) {
+      if (dim_idx != real_dim) {
+        dout_new_shape.emplace_back(dout_shape[dim_idx]);
+      } else {
+        dout_new_shape.emplace_back(dout_shape[dim_idx] / repeats_opt.value());
+        dout_new_shape.emplace_back(repeats_opt.value());
+      }
+    }
+    auto new_view_shape = ib->Value<ShapeVector>(dout_new_shape);
+    auto sum_dim = ib->Value(ShapeVector{real_dim + 1});
+    auto dout_reshape = ib->Reshape(dout, new_view_shape);
+    auto dout_sum = ib->SumExt(dout_reshape, sum_dim, ib->Value<bool>(false));
+    dx = ib->Reshape(dout_sum, ib->Shape(x));
+  }
+  return dx;
+}
+
+REG_BPROP_BUILDER("RepeatInterleaveInt").FreeUselessValues_IO({i0, i3}, {}).SetBody(BODYFUNC(ib) {
   const auto &x = ib->GetInput(i0);
   const auto &repeats = ib->GetInput(i1);
-  auto axis = ib->GetInput(i2);
+  const auto &dim = ib->GetInput(i2);
   const auto &output_size = ib->GetInput(i3);
   const auto &dout = ib->GetInput(i5);
-  auto x_shape = ib->Shape(x);
-  auto axis_node = axis->BuildValue();
-  if (axis_node->isa<None>()) {
-    axis = ib->Value(static_cast<int64_t>(-1));
-  }
-  auto new_repeats = ib->Emitter::Reshape(ib->ScalarToTensor(repeats, kInt64), ib->Value(std::vector<int64_t>{1}));
-  auto grad = ib->RepeatInterleaveGrad(dout, new_repeats, axis);
-  auto result = ib->Reshape(grad, x_shape);
-  return {result, ib->OutZeros(repeats), ib->OutZeros(axis), ib->OutZeros(output_size)};
+  auto dx = RepeatInterleaveIntGrad(ib, dout, x, repeats, dim);
+  return {dx, ib->OutZeros(repeats), ib->OutZeros(dim), ib->OutZeros(output_size)};
 });
 
 REG_BPROP_BUILDER("RepeatInterleaveTensor").FreeUselessValues_IO({i0, i3}, {}).SetBody(BODYFUNC(ib) {
   const auto &x = ib->GetInput(i0);
   const auto &repeats = ib->GetInput(i1);
-  auto axis = ib->GetInput(i2);
+  const auto &dim = ib->GetInput(i2);
   const auto &output_size = ib->GetInput(i3);
   const auto &dout = ib->GetInput(i5);
-  auto x_shape = ib->Shape(x);
-  auto axis_node = axis->BuildValue();
-  if (axis_node->isa<None>()) {
-    axis = ib->Value(static_cast<int64_t>(-1));
+
+  auto repeats_shape = ib->GetShape(repeats);
+  if (MS_LIKELY(!IsDynamic(repeats_shape))) {
+    auto repeats_numel = std::accumulate(repeats_shape.begin(), repeats_shape.end(), 1LL, std::multiplies<int64_t>());
+    if (repeats_numel == 1) {
+      auto dx = RepeatInterleaveIntGrad(ib, dout, x, ib->TensorToScalar(repeats), dim);
+      return {dx, ib->OutZeros(repeats), ib->OutZeros(dim), ib->OutZeros(output_size)};
+    }
   }
-  auto grad = ib->RepeatInterleaveGrad(dout, repeats, axis);
-  auto result = ib->Reshape(grad, x_shape);
-  return {result, ib->OutZeros(repeats), ib->OutZeros(axis), ib->OutZeros(output_size)};
+
+  auto dim_value = dim->BuildValue();
+  MS_EXCEPTION_IF_NULL(dim_value);
+  auto real_dim = dim_value->isa<None>() ? ib->Value<int64_t>(-1) : dim;
+  auto grad = ib->RepeatInterleaveGrad(dout, repeats, real_dim);
+  auto dx = ib->Reshape(grad, ib->Shape(x));
+  return {dx, ib->OutZeros(repeats), ib->OutZeros(dim), ib->OutZeros(output_size)};
 });
 
 REG_BPROP_BUILDER("GenerateEodMaskV2").SetBody(BODYFUNC(ib) {
