@@ -144,7 +144,8 @@ bool ClusterContext::Initialize() {
   return true;
 }
 
-bool ClusterContext::Initialize(int64_t timeout, uint32_t world_size, uint32_t node_id, TCPStoreClientPtr store) {
+bool ClusterContext::Initialize(int64_t timeout, uint32_t world_size, uint32_t node_id, TCPStoreClientPtr store,
+                                std::string group_name) {
   if (inited_) {
     MS_LOG(INFO) << "The cluster has been initialized.";
   }
@@ -154,6 +155,7 @@ bool ClusterContext::Initialize(int64_t timeout, uint32_t world_size, uint32_t n
   common::SetEnv(kEnvWorkerNum, std::to_string(world_size).c_str());
   common::SetEnv(kNodeId, std::to_string(node_id).c_str());
 
+  tcp_store_mgr_[group_name] = store;
   tcp_store_client_ = store;
   MS_EXCEPTION_IF_NULL(tcp_store_client_);
   std::string ip = tcp_store_client_->ip();

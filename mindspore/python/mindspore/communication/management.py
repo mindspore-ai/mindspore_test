@@ -100,14 +100,12 @@ def _set_envs(group_name=""):
     Some environmental variables must be set after `init` is completed.
     This takes compatibility into account because user scripts may get 'DEVICE_ID' or 'RANK_ID' envs.
     """
-    rank_id = str(get_rank(group_name) if group_name else get_rank())
-    os.environ["RANK_ID"] = rank_id
-
+    if group_name:
+        return
+    os.environ["RANK_ID"] = str(get_rank())
     os.environ["DEVICE_ID"] = str(context.get_context("device_id"))
-
     if os.getenv("RANK_SIZE") is None:
-        rank_size = str(get_group_size(group_name) if group_name else get_group_size())
-        os.environ["RANK_SIZE"] = rank_size
+        os.environ["RANK_SIZE"] = str(get_group_size())
 
 
 def _check_hccl():

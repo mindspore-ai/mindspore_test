@@ -46,7 +46,7 @@ BACKEND_COMMON_EXPORT bool Finalize();
 // Initialize and finalize the cluster based on MindSpore communication framework.
 BACKEND_COMMON_EXPORT bool InitializeCluster();
 BACKEND_COMMON_EXPORT bool InitializeCluster(int64_t timeout, uint32_t world_size, uint32_t node_id,
-                                             cluster::TCPStoreClientPtr store);
+                                             cluster::TCPStoreClientPtr store, std::string group_name);
 BACKEND_COMMON_EXPORT bool FinalizeCluster();
 
 // Initialize and finalize collective communication for distributed execution.

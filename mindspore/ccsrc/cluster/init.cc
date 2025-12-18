@@ -78,7 +78,7 @@ bool Initialize() {
 
 bool Initialize(int64_t timeout, uint32_t world_size, uint32_t node_id, cluster::TCPStoreClientPtr store,
                 const std::string &group_name) {
-  if (!InitializeCluster(timeout, world_size, node_id, store)) {
+  if (!InitializeCluster(timeout, world_size, node_id, store, group_name)) {
     MS_LOG(EXCEPTION) << "Failed to initialize distributed job cluster without scheduler!";
   }
 
@@ -155,9 +155,10 @@ bool InitializeCluster() {
   return true;
 }
 
-bool InitializeCluster(int64_t timeout, uint32_t world_size, uint32_t node_id, cluster::TCPStoreClientPtr store) {
+bool InitializeCluster(int64_t timeout, uint32_t world_size, uint32_t node_id, cluster::TCPStoreClientPtr store,
+                       std::string group_name) {
   MS_LOG(WARNING) << "Start initializing cluster without scheduler process...";
-  if (!cluster::ClusterContext::instance()->Initialize(timeout, world_size, node_id, store)) {
+  if (!cluster::ClusterContext::instance()->Initialize(timeout, world_size, node_id, store, group_name)) {
     MS_LOG(ERROR) << "Failed to initialize cluster.";
     return false;
   }

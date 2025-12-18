@@ -85,7 +85,6 @@ BACKEND_HCCL = "hccl"
 BACKEND_MCCL = "mccl"
 _GROUP_SIZE_CACHE = {}
 _GROUP_RANK_CACHE = {}
-_INIT_STORE_CACHE = {}
 
 safe_builtins = {
     'range',
@@ -591,12 +590,6 @@ def init_process_group(
                 is_master=is_master,
                 timeout=timeout,
             )
-
-        if not group_name:
-            store_prefix = "default_group"
-        else:
-            store_prefix = group_name
-        _INIT_STORE_CACHE[store_prefix] = store
 
         _init_without_sched(
             backend=backend,
