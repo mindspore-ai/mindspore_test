@@ -16,6 +16,7 @@
 
 #include "backend/ms_backend/runtime/graph_scheduler/base/graph_scheduler.h"
 #include <algorithm>
+#include <functional>
 #include <queue>
 #include <vector>
 #include <set>
@@ -1155,10 +1156,11 @@ void GraphScheduler::Run(ActorSet *const actor_set, const std::vector<std::vecto
     ResetPipelineAndTraceMemoryStatus();
 
     // trigger Train Fault Tolerance callbacks for resuming training
-    static auto tft_process_error_cb = GET_COMMON_CALLBACK(TftProcessGraphRunError, void, ActorSet *const,
-                                                           OpContext<KernelTensor> *const, GraphScheduler *const);
+    static auto tft_process_error_cb =
+      GET_COMMON_CALLBACK(TftProcessGraphRunError, void, const std::function<void()> &, ActorSet *const);
     if (tft_process_error_cb != nullptr) {
-      tft_process_error_cb(actor_set, op_context_ptr, this);
+      tft_process_error_cb([this, actor_set, op_context_ptr]() { this->ResetActorState(actor_set, op_context_ptr); },
+                           actor_set);
     }
 
     // May set exception in the wait time, need throw the exception to avoid affecting the next execution.
