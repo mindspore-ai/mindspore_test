@@ -12,11 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+"""
+Tests for Tensor.masked_fill.
+"""
 import numpy as np
 import pytest
 from tests.mark_utils import arg_mark
 import mindspore as ms
-import mindspore.nn as nn
+from mindspore import nn
 from mindspore import Tensor
 
 
@@ -46,6 +49,11 @@ def test_tensor_masked_fill(mode):
         input_x = Tensor(np.array([1., 2., 3., 4.]), ms_type)
         mask = Tensor(np.array([True, True, False, True]), ms.bool_)
         value = Tensor(0.5, dtype=ms_type)
+        output = net(input_x, mask, value)
+        expected = np.array([0.5, 0.5, 3., 0.5], dtype=np_type)
+        assert np.allclose(output.asnumpy(), expected)
+
+        value = 0.5
         output = net(input_x, mask, value)
         expected = np.array([0.5, 0.5, 3., 0.5], dtype=np_type)
         assert np.allclose(output.asnumpy(), expected)
