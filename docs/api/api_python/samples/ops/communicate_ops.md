@@ -338,22 +338,10 @@ else:
     print(output)
 ```
 
-使用shell脚本启动2卡脚本，下述中的`rank_table_file`文件可以使用[models](https://gitee.com/mindspore/models)下面的hccl_tools.py生成，对应的目录文件为`models/utils/hccl_tools`。示例shell脚本如下：
+使用shell脚本启动2卡脚本，示例shell脚本如下：
 
 ```shell
-export MINDSPORE_HCCL_CONFIG_PATH=rank_table_file
-export DEVICE_NUM=2
-BASE_PATH=$(cd "$(dirname $0)"; pwd)
-for((i=0; i<$DEVICE_NUM; i++)); do
-    rm -rf ${BASE_PATH}/rank${i}
-    mkdir ${BASE_PATH}/rank${i}
-    cp -r ${BASE_PATH}/neighborexchange.py ${BASE_PATH}/rank${i}/
-    cd ${BASE_PATH}/rank${i}
-    export RANK_ID=${i}
-    export DEVICE_ID=${i}
-    echo "start training for device $i"
-    python neighborexchange.py > log.txt 2>&1 &
-done
+msrun --worker_num=2 --local_worker_num=2 --master_port=8118 --log_dir=msrun_log --join=True --cluster_time_out=300 neighborexchange.py
 ```
 
 rank0的结果为：
@@ -420,22 +408,10 @@ else:
     print(output)
 ```
 
-使用shell脚本启动2卡脚本，下述中的`rank_table_file`文件可以使用[models](https://gitee.com/mindspore/models)下面的hccl_tools.py生成，对应的目录文件为`models/utils/hccl_tools`。示例shell脚本如下：
+使用shell脚本启动2卡脚本，示例shell脚本如下：
 
 ```shell
-export MINDSPORE_HCCL_CONFIG_PATH=rank_table_file
-export DEVICE_NUM=2
-BASE_PATH=$(cd "$(dirname $0)"; pwd)
-for((i=0; i<$DEVICE_NUM; i++)); do
-    rm -rf ${BASE_PATH}/rank${i}
-    mkdir ${BASE_PATH}/rank${i}
-    cp -r ${BASE_PATH}/neighborexchangev2.py ${BASE_PATH}/rank${i}/
-    cd ${BASE_PATH}/rank${i}
-    export RANK_ID=${i}
-    export DEVICE_ID=${i}
-    echo "start training for device $i"
-    python neighborexchangev2.py > log.txt 2>&1 &
-done
+msrun --worker_num=2 --local_worker_num=2 --master_port=8118 --log_dir=msrun_log --join=True --cluster_time_out=300 neighborexchangev2.py
 ```
 
 rank 0结果为：
@@ -488,22 +464,10 @@ output = net(input_x)
 print(output)
 ```
 
-使用shell脚本启动8卡脚本，下述中的`rank_table_file`文件可以使用[models](https://gitee.com/mindspore/models)下面的hccl_tools.py生成，对应的目录文件为`models/utils/hccl_tools`。示例shell脚本如下：
+使用shell脚本启动8卡脚本，示例shell脚本如下：
 
 ```shell
-export MINDSPORE_HCCL_CONFIG_PATH=rank_table_file
-export DEVICE_NUM=8
-BASE_PATH=$(cd "$(dirname $0)"; pwd)
-for((i=0; i<$DEVICE_NUM; i++)); do
-    rm -rf ${BASE_PATH}/rank${i}
-    mkdir ${BASE_PATH}/rank${i}
-    cp -r ${BASE_PATH}/alltoall.py ${BASE_PATH}/rank${i}/
-    cd ${BASE_PATH}/rank${i}
-    export RANK_ID=${i}
-    export DEVICE_ID=${i}
-    echo "start training for device $i"
-    python alltoall.py > log.txt 2>&1 &
-done
+msrun --worker_num=8 --local_worker_num=8 --master_port=8118 --log_dir=msrun_log --join=True --cluster_time_out=300 alltoall.py
 ```
 
 rank0~rank7的结果为：
@@ -548,22 +512,10 @@ output = net(send_tensor, send_numel_list, recv_numel_list)
 print(output)
 ```
 
-使用shell脚本启动2卡脚本，下述中的`rank_table_file`文件可以使用[models](https://gitee.com/mindspore/models)下面的hccl_tools.py生成，对应的目录文件为`models/utils/hccl_tools`。示例shell脚本如下：
+使用shell脚本启动2卡脚本，示例shell脚本如下：
 
 ```shell
-export MINDSPORE_HCCL_CONFIG_PATH=rank_table_file
-export DEVICE_NUM=2
-BASE_PATH=$(cd "$(dirname $0)"; pwd)
-for((i=0; i<$DEVICE_NUM; i++)); do
-    rm -rf ${BASE_PATH}/rank${i}
-    mkdir ${BASE_PATH}/rank${i}
-    cp -r ${BASE_PATH}/alltoallv.py ${BASE_PATH}/rank${i}/
-    cd ${BASE_PATH}/rank${i}
-    export RANK_ID=${i}
-    export DEVICE_ID=${i}
-    echo "start training for device $i"
-    python alltoallv.py > log.txt 2>&1 &
-done
+msrun --worker_num=2 --local_worker_num=2 --master_port=8118 --log_dir=msrun_log --join=True --cluster_time_out=300 alltoallv.py
 ```
 
 rank0的结果为：
@@ -604,22 +556,10 @@ output = net(send_tensor, send_count_matrix)
 print(output)
 ```
 
-使用shell脚本启动2卡脚本，下述中的`rank_table_file`文件可以使用[models](https://gitee.com/mindspore/models)下面的hccl_tools.py生成，对应的目录文件为`models/utils/hccl_tools`。示例shell脚本如下：
+使用shell脚本启动2卡脚本，示例shell脚本如下：
 
 ```shell
-export MINDSPORE_HCCL_CONFIG_PATH=rank_table_file
-export DEVICE_NUM=2
-BASE_PATH=$(cd "$(dirname $0)"; pwd)
-for((i=0; i<$DEVICE_NUM; i++)); do
-    rm -rf ${BASE_PATH}/rank${i}
-    mkdir ${BASE_PATH}/rank${i}
-    cp -r ${BASE_PATH}/alltoallv.py ${BASE_PATH}/rank${i}/
-    cd ${BASE_PATH}/rank${i}
-    export RANK_ID=${i}
-    export DEVICE_ID=${i}
-    echo "start training for device $i"
-    python alltoallv.py > log.txt 2>&1 &
-done
+msrun --worker_num=2 --local_worker_num=2 --master_port=8118 --log_dir=msrun_log --join=True --cluster_time_out=300 alltoallvc.py
 ```
 
 rank0的结果为：
