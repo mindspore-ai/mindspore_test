@@ -66,7 +66,7 @@ class ASCEND_RES_MANAGER_EXPORT AscendUvmHal {
   // Detach device memory
   bool DetachDevice(int32_t device_id, void *addr, size_t size, bool sync, void *stream_ptr) const;
 
-  // Copy between host and remote memory
+  // Copy between host and hyper offload
   bool CopyHostToRemote(void *src_addr, void *dst_addr, size_t size, void *stream_ptr, size_t offset = 0,
                         bool sync = false) const;
   bool CopyRemoteToHost(void *src_addr, void *dst_addr, size_t size, void *stream_ptr, size_t offset = 0,

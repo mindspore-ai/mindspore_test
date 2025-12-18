@@ -127,7 +127,7 @@ def test_to_jit():
         x = Tensor(1.0, ms.float32).to("CPU")
         return x.to(device, dtype)
 
-    os.environ["MS_DEV_HIERARCHICAL_MEMORY"] = "1"
+    os.environ["MS_DEV_HYPER_OFFLOAD"] = "1"
     dtypes = [ms.float16, ms.float32, ms.float64, ms.int32, ms.int64]
     devices = ["Ascend", "CPU"]
 
@@ -186,7 +186,7 @@ def test_to_jit():
         assert y.asnumpy() == 1.0
     assert "Invalid input device tensor type for kernel" in str(err.value)
 
-    os.environ["MS_DEV_HIERARCHICAL_MEMORY"] = "0"
+    os.environ["MS_DEV_HYPER_OFFLOAD"] = "0"
 
 
 def test_to_device_grad():
@@ -353,7 +353,7 @@ def test_tensor_to_device_for_graph():
             y = x.to("CPU")
             return y + x  # x on "Ascend", but y on "CPU"
 
-    os.environ["MS_DEV_HIERARCHICAL_MEMORY"] = "1"
+    os.environ["MS_DEV_HYPER_OFFLOAD"] = "1"
     input_np = np.ones((1024, 2048), dtype=np.float32)
     input1 = Tensor(input_np)
     net1 = Net1()
@@ -375,7 +375,7 @@ def test_tensor_to_device_for_graph():
         net3.construct = ms.jit(net3.construct, backend="ms_backend")
         output = net3(input3)  # pylint: disable=W0612
     assert "Invalid input device tensor type for kernel" in str(err.value)
-    os.environ["MS_DEV_HIERARCHICAL_MEMORY"] = "0"
+    os.environ["MS_DEV_HYPER_OFFLOAD"] = "0"
 
 
 @arg_mark(plat_marks=['platform_ascend910b'],

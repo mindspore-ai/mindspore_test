@@ -26,9 +26,9 @@ import mindspore as ms
 
 @pytest.fixture(scope="module", autouse=True)
 def setup_teardown():
-    os.environ["MS_DEV_HIERARCHICAL_MEMORY"] = "1"
+    os.environ["MS_DEV_HYPER_OFFLOAD"] = "1"
     yield
-    os.environ["MS_DEV_HIERARCHICAL_MEMORY"] = "0"
+    os.environ["MS_DEV_HYPER_OFFLOAD"] = "0"
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
