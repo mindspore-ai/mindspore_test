@@ -340,25 +340,15 @@ def tensor_to_number(data, dst_type, op_name):
     return tensor_to_scalar_(data)
 
 
-def is_int_tensor_mixed(data_sequence):
-    """Check if the sequence contains both int and tensor."""
-    contain_int = False
-    contain_tensor = False
-    for data in data_sequence:
-        if isinstance(data, Tensor):
-            contain_tensor = True
-        elif isinstance(data, int):
-            contain_int = True
-    return contain_int and contain_tensor
-
-
 _tensor_to_scalar = TensorToScalar()
-def normalize_int_tensor(data):
+def normalize_int_tensor(op_name, arg_name, data):
     """Normalize int tensor."""
+    if not is_integral_mstype(data.dtype):
+        raise ValueError(f"For '{op_name}', the input '{arg_name}' should be integral tensor, but got {data.dtype}.")
     data = ops.cast(data, ms.int64)
     return _tensor_to_scalar(data)
 
-def normalize_int_sequence(data, to_tuple=True):
+def normalize_int_sequence(op_name, arg_name, data, to_tuple=True):
     """Normalize mixed int sequence."""
     if is_sequence_shape_unknown(data):
         return data
@@ -366,8 +356,10 @@ def normalize_int_sequence(data, to_tuple=True):
     for x in data:
         if isinstance(x, int):
             res.append(x)
+        elif isinstance(x, Tensor):
+            res.append(normalize_int_tensor(op_name, arg_name, x))
         else:
-            res.append(normalize_int_tensor(x))
+            return data # invalid input, pass it through
     return tuple(res) if to_tuple else res
 
 def do_type_cast(data, dst_type, op_name):
@@ -380,8 +372,6 @@ def do_type_cast(data, dst_type, op_name):
     elif is_tuple(dst_type):
         if isinstance(data, (int, float, bool)):
             return scalar_to_tuple(data)
-        if isinstance(data, tuple) and is_int_tensor_mixed(data):
-            return normalize_int_sequence(data)
         if isinstance(data, list):
             return list_to_tuple(data)
         if isinstance(data, Tensor):
@@ -389,8 +379,6 @@ def do_type_cast(data, dst_type, op_name):
     elif is_list(dst_type):
         if isinstance(data, (int, float, bool)):
             return tuple_to_list(scalar_to_tuple(data))
-        if isinstance(data, list) and is_int_tensor_mixed(data):
-            return normalize_int_sequence(data, to_tuple=False)
         if isinstance(data, tuple):
             return tuple_to_list(data)
         if isinstance(data, Tensor):
