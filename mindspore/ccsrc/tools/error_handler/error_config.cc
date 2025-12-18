@@ -285,7 +285,8 @@ bool IsEnableArf() { return mindspore::tools::TftConfig::GetInstance()->IsEnable
 
 bool IsTftDisableHighPerfMode() {
   auto tft_inst = tools::TftConfig::GetInstance();
-  return tft_inst->IsEnableUCE() || tft_inst->IsEnableStepTRE() || tft_inst->IsEnableSaveHcclOpStatus();
+  return tft_inst->IsEnableUCE() || tft_inst->IsEnableStepTRE() || tft_inst->IsEnableSaveHcclOpStatus() ||
+         tft_inst->IsEnableARF();
 }
 
 REGISTER_COMMON_CALLBACK(IsEnableUce);
