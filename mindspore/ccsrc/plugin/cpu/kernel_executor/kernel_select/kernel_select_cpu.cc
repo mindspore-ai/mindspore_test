@@ -45,7 +45,6 @@
 #include "primitive/auto_generate/gen_ops_primitive_t.h"
 #include "include/backend/common/kernel_graph/anf_runtime_algorithm.h"
 #include "include/utils/callback.h"
-#include "kernel/cpu/custom/kernel_mod_impl/op_plugin_utils.h"
 #include "ops/op_def.h"
 #include "ops_utils/op_utils.h"
 
@@ -759,7 +758,7 @@ std::pair<std::string, ExceptionType> SetKernelInfoWithMsg(const CNodePtr &kerne
     static std::once_flag once;
     std::call_once(once, callback::CommonCallback::GetInstance().GetCallback<void>(
                            "RegisterOpPluginKernels"));  // register op plugin kernels
-    static const auto &op_plugin_kernels = kernel::op_plugin::GetAllOpPluginKernelNames();
+    static const auto &op_plugin_kernels = ops::GetAllOpPluginKernelNames();
     if (op_plugin_kernels.find(op_name) != op_plugin_kernels.end()) {
       UpdateCustomKernelBuildInfo(kernel_node, false);
       return {};

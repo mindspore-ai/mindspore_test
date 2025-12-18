@@ -360,3 +360,28 @@ def test_tensor_tuple_input(mode):
     expect = np.array([[1, 2, 3], [4, 5, 6]], dtype=np.float32)
     output = stack_func(inputs)
     assert np.allclose(output.asnumpy(), expect)
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
+@pytest.mark.parametrize('mode', ['pynative', 'kbk'])
+def test_py_method_dispatch(mode):
+    """
+    Feature: op_plugin kernel
+    Description: Test op_plugin kernel for py_method interface
+    Expectation: Correct result.
+    """
+    @test_utils.run_with_cell
+    def add_scalar_func(x, alpha):
+        return mint.add(x, alpha)
+
+    def add_scalar_tensor(x, alpha):
+        return x.add(alpha)
+
+    set_mode(mode)
+    x = Tensor([1, 2, 3], dtype=ms.float32)
+    alpha = 1.0
+    expect = np.array([-1, -1, -1], dtype=np.float32)
+    output_func = add_scalar_func(x, alpha)
+    output_tensor = add_scalar_tensor(x, alpha)
+    assert np.allclose(output_func.asnumpy(), expect)
+    assert np.allclose(output_tensor.asnumpy(), expect)

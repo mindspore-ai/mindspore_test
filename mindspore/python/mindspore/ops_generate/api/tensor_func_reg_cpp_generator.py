@@ -57,7 +57,10 @@ class TensorFuncRegCppGenerator(BaseGenerator):
             "tensor_class->def(\"${func_name}\", TensorMethod${cpp_func_name});\n")
         self.single_case_template = Template(
             'case ${case_id}:\n'
+            '  {\n'
+            '  ${dispatch_lambda_def}\n'
             '  ${device_dispatcher}\n'
+            '  }\n'
             '  break;\n'
         )
         self.single_case_in_ut_template = Template(
@@ -77,34 +80,47 @@ class TensorFuncRegCppGenerator(BaseGenerator):
             '}'
         )
         self.pyboost_return_template = Template(
-            'if (parse_args.has_fallback()) {\n'
-            '  auto op_call = std::make_shared<TensorOverloadCall>("${class_name}", callback);\n'
-            '  return pynative::HandleFallback(self, py_args, py_kwargs, py::cast(op_call));\n'
-            '}\n'
-            '${arg_handler_processor}\n'
-            'MS_LOG(INFO) << "Call Tensor${class_name}";\n'
-            'auto res = mindspore::pynative::'
-            '${pyboost_function}(mindspore::prim::kPrim${class_name}, parse_args.src_types_, ${convert_args});\n'
-            'trace::CapturePy(parse_args.arg_list_, mindspore::prim::kPrim${class_name}, &res);\n'
-            'return res;\n'
+            'return pyboost_call();\n'
+        )
+        self.pyboost_call_lambda_template = Template(
+            'const auto pyboost_call = [&]{\n'
+            '  if (parse_args.has_fallback()) {\n'
+            '    auto op_call = std::make_shared<TensorOverloadCall>("${class_name}", callback);\n'
+            '    return pynative::HandleFallback(self, py_args, py_kwargs, py::cast(op_call));\n'
+            '  }\n'
+            '  ${arg_handler_processor}\n'
+            '  MS_LOG(INFO) << "Call Tensor${class_name}";\n'
+            '  auto res = mindspore::pynative::'
+            '  ${pyboost_function}(mindspore::prim::kPrim${class_name}, parse_args.src_types_, ${convert_args});\n'
+            '  trace::CapturePy(parse_args.arg_list_, mindspore::prim::kPrim${class_name}, &res);\n'
+            '  return res;\n'
+            '};\n'
+        )
+        self.callback_python_lambda_template = Template(
+            'const auto callback_python = [&]{\n'
+            '  if (parse_args.has_fallback()) {\n'
+            '    auto op_call = std::make_shared<TensorOverloadCall>("${class_name}", callback);\n'
+            '    return pynative::HandleFallback(self, py_args, py_kwargs, py::cast(op_call));\n'
+            '  }\n'
+            '  py::object self_new = py::reinterpret_borrow<py::object>(self);\n'
+            '  py::args py_args_new = py::reinterpret_borrow<py::args>(py_args);\n'
+            '  py::dict empty_dict = py::dict();\n'
+            '  py::kwargs py_kwargs_new = py::kwargs(empty_dict);\n'
+            '  if (py_kwargs != NULL && py_kwargs != Py_None) {\n'
+            '    py_kwargs_new = py::reinterpret_borrow<py::kwargs>(py_kwargs);\n'
+            '  }\n'
+            '  MS_LOG(INFO) << "Callback python method: ${py_method}";\n'
+            '  py::function fn = python_adapter::GetPyFn(\"mindspore.ops.tensor_method\", \"${py_method}\");\n'
+            '  py::object res = fn(self_new, *py_args_new, **py_kwargs_new);\n'
+            '  MS_LOG(INFO) << "after Callback python method: ${py_method}";\n'
+            '  return res.release().ptr();\n'
+            '};\n'
         )
         self.callback_python_template = Template(
-            'if (parse_args.has_fallback()) {\n'
-            '  auto op_call = std::make_shared<TensorOverloadCall>("${class_name}", callback);\n'
-            '  return pynative::HandleFallback(self, py_args, py_kwargs, py::cast(op_call));\n'
+            'if (ops::IsOpPluginKernel("${op_name}")) {\n'
+            '  return pyboost_call();\n'
             '}\n'
-            'py::object self_new = py::reinterpret_borrow<py::object>(self);\n'
-            'py::args py_args_new = py::reinterpret_borrow<py::args>(py_args);\n'
-            'py::dict empty_dict = py::dict();\n'
-            'py::kwargs py_kwargs_new = py::kwargs(empty_dict);\n'
-            'if (py_kwargs != NULL && py_kwargs != Py_None) {\n'
-            '  py_kwargs_new = py::reinterpret_borrow<py::kwargs>(py_kwargs);\n'
-            '}\n'
-            'MS_LOG(INFO) << "Callback python method: ${py_method}";\n'
-            'py::function fn = python_adapter::GetPyFn(\"mindspore.ops.tensor_method\", \"${py_method}\");\n'
-            'py::object res = fn(self_new, *py_args_new, **py_kwargs_new);\n'
-            'MS_LOG(INFO) << "after Callback python method: ${py_method}";\n'
-            'return res.release().ptr();\n'
+            'return callback_python();\n'
         )
         self.callback_python_in_ut_template = Template(
             'MS_LOG(INFO) << "Callback python method in UT: ${py_method}";\n'
@@ -266,6 +282,7 @@ class TensorFuncRegCppGenerator(BaseGenerator):
         for func_api_name, func_proto in single_op_func_data.items():
             func_name = func_proto.func_name
             cpp_func_name = pyboost_utils.format_func_api_name(func_api_name)
+            dispatch_lambda_def_str = self._get_dispatch_lambda_def_str(func_proto)
             device_dispatcher_str = self._get_device_dispatchers_str(
                 func_proto)
             signature_str = self._generate_single_signature_str(
@@ -278,6 +295,7 @@ class TensorFuncRegCppGenerator(BaseGenerator):
                 py_method=func_proto.py_method)
             tensor_func_single_call_body = self.TENSOR_FUNC_CALL_BODY.replace(cpp_func_name=cpp_func_name,
                                                                               func_name=func_name,
+                                                                              dispatch_lambda_def=dispatch_lambda_def_str,
                                                                               device_dispatcher=device_dispatcher_str,
                                                                               signatures=signature_str,
                                                                               max_args=max_size,
@@ -403,7 +421,9 @@ class TensorFuncRegCppGenerator(BaseGenerator):
         for idx, func_proto in enumerate(func_protos):
             device_dispatcher_str = self._get_device_dispatchers_str(
                 func_proto)
+            dispatch_lambda_def_str = self._get_dispatch_lambda_def_str(func_proto)
             dispatch_cases_str += self.single_case_template.replace(case_id=idx,
+                                                                    dispatch_lambda_def=dispatch_lambda_def_str,
                                                                     device_dispatcher=device_dispatcher_str)
         dispatch_cases_str += 'default:\n'
         dispatch_cases_str += '  Py_RETURN_NONE;'
@@ -477,10 +497,50 @@ class TensorFuncRegCppGenerator(BaseGenerator):
                                                         convert_args=convert_args_str)
 
         if func_proto_device == 'py_method':
-            return self.callback_python_template.replace(py_method=func_proto.py_method,
-                                                         class_name=func_proto.op_proto.op_class.name)
+            return self.callback_python_template.replace(op_name=func_proto.op_proto.op_class.name)
 
         raise TypeError("Only support pyboost or python_method.")
+
+    def _get_dispatch_lambda_def_str(self, func_proto):
+        """
+        Generates the dispatch lambda function definition for pyboost call and python callback
+
+        Args:
+            func_proto (TensorFuncProto): Function prototype to generate the dispatcher for.
+
+        Returns:
+            str: Generated dispatch lambda function definition string.
+        """
+        devices = ['cpu', 'gpu', 'ascend']
+        arg_handler_processor_str = self._get_arg_handler_processor(func_proto.func_name, func_proto.op_proto)
+        op_parser = OpTemplateParser(func_proto.op_proto)
+        op_pyboost_func_name = op_parser.get_pyboost_func_name() + "_OP"
+        convert_args_str = op_parser.get_convert_args_str(func_proto.op_proto, is_tensor_api=True)
+        self_index = op_parser.get_input_tensor_index(func_proto.op_proto)
+
+        dispatch_lambda_str = ''
+        has_pyboost_call = False
+        for device in devices:
+            if getattr(func_proto, device) == 'pyboost':
+                has_pyboost_call = True
+                break
+        if has_pyboost_call:
+            dispatch_lambda_str += self.pyboost_call_lambda_template.replace(arg_handler_processor=arg_handler_processor_str,
+                                                        class_name=func_proto.op_proto.op_class.name,
+                                                        op_name=func_proto.op_proto.op_name,
+                                                        pyboost_function=op_pyboost_func_name,
+                                                        self_index=self_index,
+                                                        convert_args=convert_args_str)
+        else:
+            dispatch_lambda_str += 'const auto pyboost_call = []{ Py_RETURN_NONE; };\n'
+
+        for device in devices:
+            if getattr(func_proto, device) == 'py_method':
+                dispatch_lambda_str += self.callback_python_lambda_template.replace(py_method=func_proto.py_method,
+                                                            class_name=func_proto.op_proto.op_class.name)
+                break
+
+        return dispatch_lambda_str
 
     def _get_arg_handler_processor(self, func_name, op_proto):
         op_parser = OpTemplateParser(op_proto)

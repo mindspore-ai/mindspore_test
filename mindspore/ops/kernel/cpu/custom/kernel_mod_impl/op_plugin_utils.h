@@ -35,9 +35,6 @@ struct OpPluginKernelParam {
   void *stream{nullptr};
 };
 
-OPS_HOST_API void *GetOpPluginHandle();
-OPS_HOST_API bool IsOpPluginKernel(const std::string &op_name);
-OPS_HOST_API const std::unordered_set<std::string> &GetAllOpPluginKernelNames();
 int LaunchOpPluginKernel(const std::string &op_name, size_t nparam, void **params, int *ndims, int64_t **shapes,
                          const char **type_pointer_list, void *kernel_info, void *stream = nullptr);
 int LaunchOpPluginKernel(const std::string &op_name, OpPluginKernelParam *param);

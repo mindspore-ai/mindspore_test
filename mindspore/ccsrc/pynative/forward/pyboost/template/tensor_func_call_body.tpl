@@ -15,6 +15,7 @@ PyObject* TensorMethod${cpp_func_name}(PyObject* self, PyObject* py_args, PyObje
 
   #ifndef ENABLE_TEST
     auto backend = DeviceManagerConf::GetInstance()->device_type();
+    ${dispatch_lambda_def}
     ${device_dispatcher}
     Py_RETURN_NONE;
   #else

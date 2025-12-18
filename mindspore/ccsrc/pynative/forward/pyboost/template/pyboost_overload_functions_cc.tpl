@@ -21,6 +21,7 @@
 #include "include/frontend/jit/trace/trace_recorder_interface.h"
 #include "include/pynative/forward/pyboost/auto_generate/pyboost_core.h"
 #include "pybind_api/pynative/pynative_api.h"
+#include "mindspore/ops/ops_utils/op_utils.h"
 ${ops_inc}
 
 

@@ -25,6 +25,7 @@
 #include "include/pynative/forward/pyboost/auto_generate/pyboost_core.h"
 #include "include/pynative/utils/pynative_utils.h"
 #include "include/frontend/jit/trace/trace_recorder_interface.h"
+#include "mindspore/ops/ops_utils/op_utils.h"
 ${ops_inc}
 
 namespace mindspore {

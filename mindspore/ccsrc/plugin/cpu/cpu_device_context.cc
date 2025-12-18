@@ -74,8 +74,8 @@
 #include "include/runtime/utils/runtime_conf/runtime_conf.h"
 #include "include/runtime/memory/mem_pool/mem_tracker.h"
 #include "kernel/cpu/contiguous_cpu_kernel.h"
-#include "kernel/cpu/custom/kernel_mod_impl/op_plugin_utils.h"
 #include "kernel/cpu/custom/kernel_mod_impl/custom_op_plugin_kernel.h"
+#include "ops_utils/op_utils.h"
 #include "mindspore/ops/kernel/host/host_kernel_mod.h"
 #include "mindspore/ops/kernel/host/host_kernel_build.h"
 
@@ -484,7 +484,7 @@ void CPUKernelExecutor::SetOperatorInfo(const KernelGraphPtr &graph) const {
 }
 
 kernel::KernelModPtr CPUKernelExecutor::CreateKernelMod(const std::string &op_name) const {
-  if (kernel::op_plugin::IsOpPluginKernel(op_name)) {
+  if (ops::IsOpPluginKernel(op_name)) {
     return kernel::Factory<kernel::op_plugin::CustomOpPluginCpuKernelMod>::Instance().Create(op_name);
   }
   return kernel::Factory<kernel::NativeCpuKernelMod>::Instance().Create(op_name);

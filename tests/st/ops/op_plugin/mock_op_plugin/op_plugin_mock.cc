@@ -22,7 +22,7 @@
 #include <iterator>
 
 const std::unordered_set<std::string> register_op_name = {"LogicalAnd", "CumsumExt", "InplaceReLU", "InplaceNormal",
-                                                          "Randn",      "StackExt",  "SumExt"};
+                                                          "Randn",      "StackExt",  "SumExt",      "AddScalar"};
 
 extern "C" {
 
