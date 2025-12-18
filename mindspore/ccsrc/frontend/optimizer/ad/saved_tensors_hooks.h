@@ -17,6 +17,9 @@
 #ifndef MINDSPORE_CCSRC_FRONTEND_OPTIMIZER_AD_SAVED_TENSORS_HOOKS_H_
 #define MINDSPORE_CCSRC_FRONTEND_OPTIMIZER_AD_SAVED_TENSORS_HOOKS_H_
 
+#include <stack>
+#include <utility>
+
 #include "ir/anf.h"
 #include "ir/manager.h"
 
@@ -25,6 +28,20 @@ namespace ad {
 
 class SavedTensorsHooks {
  public:
+  class Stack {
+   public:
+    static Stack &GetInstance();
+    void Enter(const FuncGraphPtr &pack_hook, const FuncGraphPtr &unpack_hook);
+    void Exit();
+    const FuncGraphPtr pack_hook() const;
+    const FuncGraphPtr unpack_hook() const;
+
+   private:
+    Stack() = default;
+    ~Stack() = default;
+    std::stack<std::pair<FuncGraphPtr, FuncGraphPtr>> stk_;
+  };
+
   explicit SavedTensorsHooks(const FuncGraphPtr &func_graph);
   ~SavedTensorsHooks();
 
