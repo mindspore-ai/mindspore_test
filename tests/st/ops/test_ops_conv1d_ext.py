@@ -15,8 +15,6 @@
 """Test cases for mint.nn.functional.conv1d operator."""
 import numpy as np
 import pytest
-import os
-import json
 import mindspore as ms
 from mindspore import nn
 from mindspore import Tensor
@@ -35,7 +33,7 @@ class Net1d(nn.Cell):
         return self.mint_conv1d(input_x, weight, bias, stride, padding, dilation, groups)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0',
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1',
           card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', [ms.PYNATIVE_MODE, ms.GRAPH_MODE])
 def test_ops_conv1d_default(mode):
@@ -48,33 +46,6 @@ def test_ops_conv1d_default(mode):
     if mode == ms.GRAPH_MODE:
         ms.set_context(jit_level='O0')
     ms.context.set_context(ascend_config={"conv_allow_hf32": False})
-
-    # dump aclnn data
-    dump_path = "/home/jenkins/conv1d_aclnn_data_dump"
-    if not os.path.exists(dump_path):
-        os.makedirs(dump_path, exist_ok=True)
-    set_dump_json = {
-        "dump": {
-            "dump_list": [
-                {
-                    "layer": [
-                        "conv1d",
-                    ],
-                    "model_name": "conv1d",
-                }
-            ],
-            "dump_mode": "all",
-            "dump_path": dump_path,
-        }
-    }
-    with open(os.path.join(dump_path, "set_dump.json"), "w", encoding="utf-8") as f:
-        f.write(json.dumps(set_dump_json, sort_keys=True, indent=4))
-
-    import acl
-    acl.init()
-    acl.mdl.init_dump()
-    acl.mdl.set_dump(os.path.join(dump_path, "set_dump.json"))
-
     ## forward
     x = Tensor(np.linspace(0, 5, 1 * 4 * 8),
                ms.float32).reshape(1, 4, 8)
@@ -103,15 +74,12 @@ def test_ops_conv1d_default(mode):
                            [14.516129, 15.32258, 16.129032, 16.935484],
                            [20.967741, 21.774193, 22.580647, 23.387096]]]
 
-    try:
-        assert np.allclose(grad_output[0].asnumpy(), expect_input_grad, atol=1e-4, rtol=1e-4)
-        assert np.allclose(grad_output[1].asnumpy(), expect_weight_grad, atol=1e-4, rtol=1e-4)
-        assert np.allclose(grad_output[2].asnumpy(), expect_bias_grad, atol=1e-4, rtol=1e-4)
-    finally:
-        acl.mdl.finalize_dump()
+    assert np.allclose(grad_output[0].asnumpy(), expect_input_grad, atol=1e-4, rtol=1e-4)
+    assert np.allclose(grad_output[1].asnumpy(), expect_weight_grad, atol=1e-4, rtol=1e-4)
+    assert np.allclose(grad_output[2].asnumpy(), expect_bias_grad, atol=1e-4, rtol=1e-4)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0',
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1',
           card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('mode', [ms.PYNATIVE_MODE, ms.GRAPH_MODE])
 def test_ops_conv1d_pad_mode_same(mode):
@@ -124,33 +92,6 @@ def test_ops_conv1d_pad_mode_same(mode):
     if mode == ms.GRAPH_MODE:
         ms.set_context(jit_level='O0')
     ms.context.set_context(ascend_config={"conv_allow_hf32": False})
-
-    # dump aclnn data
-    dump_path = "/home/jenkins/conv1d_pad_mode_same_aclnn_data_dump"
-    if not os.path.exists(dump_path):
-        os.makedirs(dump_path, exist_ok=True)
-    set_dump_json = {
-        "dump": {
-            "dump_list": [
-                {
-                    "layer": [
-                        "conv1d",
-                    ],
-                    "model_name": "conv1d",
-                }
-            ],
-            "dump_mode": "all",
-            "dump_path": dump_path,
-        }
-    }
-    with open(os.path.join(dump_path, "set_dump.json"), "w", encoding="utf-8") as f:
-        f.write(json.dumps(set_dump_json, sort_keys=True, indent=4))
-
-    import acl
-    acl.init()
-    acl.mdl.init_dump()
-    acl.mdl.set_dump(os.path.join(dump_path, "set_dump.json"))
-
     ## forward
     x = Tensor(np.linspace(0, 5, 1 * 4 * 8),
                ms.float32).reshape(1, 4, 8)
@@ -179,12 +120,9 @@ def test_ops_conv1d_pad_mode_same(mode):
                            [14.516129, 15.32258, 16.129032, 16.935484],
                            [20.967741, 21.774193, 22.580647, 23.387096]]]
 
-    try:
-        assert np.allclose(grad_output[0].asnumpy(), expect_input_grad, atol=1e-4, rtol=1e-4)
-        assert np.allclose(grad_output[1].asnumpy(), expect_weight_grad, atol=1e-4, rtol=1e-4)
-        assert np.allclose(grad_output[2].asnumpy(), expect_bias_grad, atol=1e-4, rtol=1e-4)
-    finally:
-        acl.mdl.finalize_dump()
+    assert np.allclose(grad_output[0].asnumpy(), expect_input_grad, atol=1e-4, rtol=1e-4)
+    assert np.allclose(grad_output[1].asnumpy(), expect_weight_grad, atol=1e-4, rtol=1e-4)
+    assert np.allclose(grad_output[2].asnumpy(), expect_bias_grad, atol=1e-4, rtol=1e-4)
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1',

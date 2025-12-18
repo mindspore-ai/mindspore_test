@@ -17,9 +17,6 @@ Test cases for conv2d functional operator.
 """
 import numpy as np
 import pytest
-import hashlib
-import json
-import os
 import mindspore as ms
 from mindspore import nn
 from mindspore import Tensor
@@ -38,16 +35,6 @@ class Net2d(nn.Cell):
 
     def construct(self, input_x, weight, bias=None, stride=1, padding=0, dilation=1, groups=1):
         return self.mint_conv2d(input_x, weight, bias, stride, padding, dilation, groups)
-
-
-def array_to_hash(data):
-    """
-    Feature: array_to_hash
-    Description: convert array to hash
-    Expectation: success
-    """
-    data_bytes = data.tobytes()
-    return hashlib.md5(data_bytes).hexdigest()
 
 
 @pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
@@ -204,32 +191,6 @@ def test_conv2d_backward(context_mode):
     if get_device() == "Ascend":
         ms.device_context.ascend.op_precision.conv_allow_hf32(False)
 
-    # dump aclnn data
-    dump_path = "/home/jenkins/conv2d_aclnn_data_dump"
-    if not os.path.exists(dump_path):
-        os.makedirs(dump_path, exist_ok=True)
-    set_dump_json = {
-        "dump": {
-            "dump_list": [
-                {
-                    "layer": [
-                        "conv2d",
-                    ],
-                    "model_name": "conv2d",
-                }
-            ],
-            "dump_mode": "all",
-            "dump_path": dump_path,
-        }
-    }
-    with open(os.path.join(dump_path, "set_dump.json"), "w", encoding="utf-8") as f:
-        f.write(json.dumps(set_dump_json, sort_keys=True, indent=4))
-
-    import acl
-    acl.init()
-    acl.mdl.init_dump()
-    acl.mdl.set_dump(os.path.join(dump_path, "set_dump.json"))
-
     net = Net2d()
     stride = 1
     padding = 0
@@ -266,13 +227,9 @@ def test_conv2d_backward(context_mode):
                                   [0.1844, 0.1844, 0.1844]]]])
     expected_weight_grad = np.array([[[[594.]], [[837.]]], [[[594.]], [[837.]]]])
     expected_bias_grad = np.array([27., 27.])
-    print("===grad_output[0].asnumpy()====", array_to_hash(grad_output[0].asnumpy()))
-    try:
-        assert np.allclose(grad_output[0].asnumpy(), expected_x_grad, atol=1e-4, rtol=1e-4)
-        assert np.allclose(grad_output[1].asnumpy(), expected_weight_grad, atol=1e-4, rtol=1e-4)
-        assert np.allclose(grad_output[2].asnumpy(), expected_bias_grad, atol=1e-4, rtol=1e-4)
-    finally:
-        acl.mdl.finalize_dump()
+    assert np.allclose(grad_output[0].asnumpy(), expected_x_grad, atol=1e-4, rtol=1e-4)
+    assert np.allclose(grad_output[1].asnumpy(), expected_weight_grad, atol=1e-4, rtol=1e-4)
+    assert np.allclose(grad_output[2].asnumpy(), expected_bias_grad, atol=1e-4, rtol=1e-4)
 
 
 @pytest.mark.parametrize('context_mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
