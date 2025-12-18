@@ -2066,7 +2066,7 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
             Numpy argument `refcheck` is not supported.
 
         Args:
-            new_shape (Union[ints, tuple(int)]): Shape of resized tensor.
+            new_shape (Union[int, tuple(int)]): Shape of resized tensor.
 
         Returns:
             Tensor.
