@@ -266,14 +266,6 @@ class COMMON_EXPORT Emitter {
   // By comparing x with itself, test whether x is NaN
   inline NodePtr IsNanFunc(const NodePtr &x) { return NotEqual(x, x); }
 
-  NodePtr Zeros(const NodePtr &x) {
-    auto x_shape = x->shape();
-    if (!IsDynamicRank(x_shape)) {
-      return Emit("Zeros", {Shape(x), Value<int64_t>(x->dtype()->type_id())});
-    }
-    return ZerosLike(x);
-  }
-
   virtual NodePtr InplaceCopy(const NodePtr &variable, const NodePtr &value, bool non_blocking = false) {
     return Emit("InplaceCopy", {variable, value, Value<bool>(non_blocking)},
                 {{GRAPH_FLAG_SIDE_EFFECT_MEM, MakeValue(true)}});
