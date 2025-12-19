@@ -3717,15 +3717,6 @@ REG_BPROP_BUILDER("RepeatInterleaveTensor").FreeUselessValues_IO({i0, i3}, {}).S
   const auto &output_size = ib->GetInput(i3);
   const auto &dout = ib->GetInput(i5);
 
-  auto repeats_shape = ib->GetShape(repeats);
-  if (MS_LIKELY(!IsDynamic(repeats_shape))) {
-    auto repeats_numel = std::accumulate(repeats_shape.begin(), repeats_shape.end(), 1LL, std::multiplies<int64_t>());
-    if (repeats_numel == 1) {
-      auto dx = RepeatInterleaveIntGrad(ib, dout, x, ib->TensorToScalar(repeats), dim);
-      return {dx, ib->OutZeros(repeats), ib->OutZeros(dim), ib->OutZeros(output_size)};
-    }
-  }
-
   auto dim_value = dim->BuildValue();
   MS_EXCEPTION_IF_NULL(dim_value);
   auto real_dim = dim_value->isa<None>() ? ib->Value<int64_t>(-1) : dim;
