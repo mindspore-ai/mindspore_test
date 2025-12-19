@@ -30,7 +30,7 @@ class BackupAndRestore(Callback):
     Callback to back up and restore the parameters during training.
 
     Note:
-        This function can only use in training.
+        This function can only be used in training.
 
     Args:
         backup_dir (str): Path to store and load the checkpoint file.

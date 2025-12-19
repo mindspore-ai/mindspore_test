@@ -68,7 +68,7 @@ class Accuracy(EvaluationBase):
     def update(self, *inputs):
         """
         Updates the local variables. For ``'classification'``, if the index of the maximum of the predict value
-        matches the label, the predict result is correct. For ``'multilabel'``, the predict value match the label,
+        matches the label, the predict result is correct. For ``'multilabel'``, the predict value matches the label,
         the predict result is correct.
 
         Args:
