@@ -43,7 +43,7 @@ def generate_expect_backward_output(input_tensor, repeats, dim):
     else:
         if dim == 0:
             output = [r * np.ones_like(input_tensor[0], np.float32) for r in repeats]
-        elif dim == 1:
+        elif dim == 1 or dim == -1:
             output = [repeats for i in range(input_tensor.shape[0])]
         elif dim is None:
             output = np.reshape(repeats, input_tensor.shape)
