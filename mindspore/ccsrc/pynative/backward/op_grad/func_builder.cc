@@ -36,7 +36,7 @@
 #include "frontend/operator/cc_implementations.h"
 #include "include/pynative/utils/pyboost/op_register.h"
 #include "pynative/backward/op_grad/auto_generate/pyboost_native_grad_functions.h"
-#include "primitive/auto_generate/gen_ops_primitive_o.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_o.h"
 
 namespace mindspore::pynative::autograd {
 namespace {
@@ -184,6 +184,60 @@ bool ParseCond(const NodePtr &cond) {
     }
   }
   MS_LOG(EXCEPTION) << "For control flow, the cond should be Tensor[bool] or bool, but got: " << cond_val->ToString();
+}
+
+template <typename T, typename U>
+bool InnerScalarEq(T x, U y) {
+  if (std::isinf(static_cast<double>(x)) && std::isinf(static_cast<double>(y))) {
+    return (x > 0 && y > 0) || (x < 0 && y < 0);
+  }
+  double error = static_cast<double>(x) - static_cast<double>(y);
+  error = fabs(error);
+  return error < DBL_EPSILON;
+}
+
+ValuePtr ScalarEqual(const ValuePtr &x, const ValuePtr &y) {
+  MS_EXCEPTION_IF_NULL(y);
+  if (x->isa<FP32Imm>() && y->isa<FP32Imm>()) {
+    MS_EXCEPTION_IF_NULL(x);
+    bool sum = InnerScalarEq(GetValue<float>(x), GetValue<float>(y));
+    return MakeValue(sum);
+  }
+  if (x->isa<Int32Imm>() && y->isa<Int32Imm>()) {
+    bool sum = InnerScalarEq(GetValue<int>(x), GetValue<int>(y));
+    return MakeValue(sum);
+  }
+  if (x->isa<FP32Imm>() && y->isa<Int32Imm>()) {
+    bool sum = InnerScalarEq(GetValue<float>(x), GetValue<int>(y));
+    return MakeValue(sum);
+  }
+  if (x->isa<FP32Imm>() && y->isa<Int64Imm>()) {
+    bool sum = InnerScalarEq(GetValue<float>(x), GetValue<int64_t>(y));
+    return MakeValue(sum);
+  }
+  if (x->isa<Int32Imm>() && y->isa<FP32Imm>()) {
+    bool sum = InnerScalarEq(GetValue<int>(x), GetValue<float>(y));
+    return MakeValue(sum);
+  }
+  if (x->isa<Int64Imm>() && y->isa<FP32Imm>()) {
+    bool sum = InnerScalarEq(GetValue<int64_t>(x), GetValue<float>(y));
+    return MakeValue(sum);
+  }
+  if (x->isa<Int64Imm>() && y->isa<Int64Imm>()) {
+    bool sum = InnerScalarEq(GetValue<int64_t>(x), GetValue<int64_t>(y));
+    return MakeValue(sum);
+  }
+  if (x->isa<Int64Imm>() && y->isa<Int32Imm>()) {
+    bool sum = InnerScalarEq(GetValue<int64_t>(x), GetValue<int>(y));
+    return MakeValue(sum);
+  }
+  if (x->isa<Int32Imm>() && y->isa<Int64Imm>()) {
+    bool sum = InnerScalarEq(GetValue<int>(x), GetValue<int64_t>(y));
+    return MakeValue(sum);
+  }
+  MS_EXCEPTION(TypeError) << "Unsupported input type for Scalar" << ", type of x:" << x->type_name()
+                          << ", value of x:" << x->ToString() << ", type of y:" << y->type_name()
+                          << ", value of y:" << y->ToString();
 }
 }  // namespace
 
@@ -664,7 +718,7 @@ NodePtr FuncBuilder::ScalarEq(const NodePtr &lhs, const NodePtr &rhs, const Type
   if (lhs_val->isa<BoolImm>() && rhs_val->isa<BoolImm>()) {
     result = MakeValue(GetValue<bool>(lhs_val) == GetValue<bool>(rhs_val));
   } else {
-    result = prim::ScalarEq({lhs->Value(), rhs->Value()});
+    result = ScalarEqual(lhs->Value(), rhs->Value());
   }
   MS_LOG(DEBUG) << "ScalarEq op: lhs " << lhs_val->ToString() << ", rhs " << rhs_val->ToString();
   return NewFuncNode(result, nullptr, InputType::kOpOutput);
