@@ -412,6 +412,14 @@ py::object CaptureRun(const py::args &args, const py::object &res, const py::obj
 
 bool IsTracing() { return trace::TraceRecorder::GetInstance()->BuildingTraceGraph(); }
 
+void PassNodeInArg(PyObject *origin_obj, PyObject *new_obj) {
+  if (IsTracing()) {
+    auto origin_object_py = py::reinterpret_borrow<py::object>(origin_obj);
+    auto new_object_py = py::reinterpret_borrow<py::object>(new_obj);
+    trace::TraceRecorder::GetInstance()->PassNode(origin_object_py, new_object_py);
+  }
+}
+
 bool Compiled() {
   auto jit_context = python_adapter::CallPyFn("mindspore.common.jit_context", "jit_context");
   if (py::isinstance<py::none>(jit_context)) {
@@ -429,6 +437,14 @@ void TraceRecorder::Clear() {
   side_effect_nodes_.clear();
   args_ = py::tuple();
   phase_.clear();
+}
+
+void TraceRecorder::PassNode(const py::object &origin_obj, const py::object &new_obj) {
+  auto origin_node = GetNode(origin_obj, nullptr);
+  if (origin_node == nullptr) {
+    return;
+  }
+  SetNode(new_obj, origin_node, origin_node->debug_info());
 }
 
 FuncGraphPtr TraceRecorder::InitTopGraph(const DebugInfoPtr &debug_info) {
@@ -1050,7 +1066,8 @@ void RegTraceRecorderPy(const py::module *m) {
     .def("run_graph", &TraceRecorder::RunGraph, "Run the built graph.")
     .def("new_node", &TraceRecorder::NewNode, "Append a new CNode into current graph.")
     .def("sync_tensor_node", &TraceRecorder::SyncTensorNode, "Sync node from a tensor to another.")
-    .def("new_fg_node", &TraceRecorder::NewFuncGraphNode, "Append a new CNode of func graph into current graph.");
+    .def("new_fg_node", &TraceRecorder::NewFuncGraphNode, "Append a new CNode of func graph into current graph.")
+    .def("pass_node", &TraceRecorder::PassNode, "Pass node when the object of a input is modified");
 }
 }  // namespace trace
 }  // namespace mindspore

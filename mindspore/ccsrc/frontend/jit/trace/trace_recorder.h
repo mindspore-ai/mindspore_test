@@ -71,6 +71,7 @@ class TraceRecorder {
   FuncGraphPtr BuildEndGraph(const py::list &file_names, const py::list &linenos, const py::args &output_args,
                              bool nested = false);
   py::object InitTraceGraphInputs(const AbstractBasePtr &abs, const AnfNodePtr &param);
+  void PassNode(const py::object &origin_obj, const py::object &new_obj);
 
  private:
   AnfNodePtr GetNode(const py::object &obj, const DebugInfoPtr &debug_info, bool set_abstract = false);

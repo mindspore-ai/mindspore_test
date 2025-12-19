@@ -43,6 +43,7 @@ FRONTEND_EXPORT void CapturePy(const std::vector<PyObject *> &args_vec, const Pr
 FRONTEND_EXPORT void CaptureResolveOperation(const py::tuple &args, const std::string &named_primitive,
                                              py::object *res);
 FRONTEND_EXPORT bool IsTracing();
+FRONTEND_EXPORT void PassNodeInArg(PyObject *origin_obj, PyObject *new_obj);
 }  // namespace trace
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_INCLUDE_FRONTEND_JIT_TRACE_RECORDER_INTERFACE_H_
