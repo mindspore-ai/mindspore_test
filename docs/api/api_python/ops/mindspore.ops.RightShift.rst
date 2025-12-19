@@ -19,7 +19,7 @@ mindspore.ops.RightShift
         - **input_y** (Tensor) - 右移位数。数据类型必须和 `input_x` 一致。
 
     输出：
-        - **output** (Tensor) - 输出Tensor，据类型和 `input_x` 一致。
+        - **output** (Tensor) - 输出Tensor，数据类型和 `input_x` 一致。
 
     异常：
         - **TypeError** - `input_x` 或者 `input_y` 不是Tensor。
