@@ -617,6 +617,9 @@ std::pair<FuncGraphPtr, FuncGraphPtr> CacheFuncGraphBeforeOpt(const FuncGraphPtr
   }
   CacheFuncGraph(compile_cache_manager, jit_grad_graph, loaded, false);
   CacheFuncGraph(compile_cache_manager_forward, jit_primal_graph, loaded, false);
+  auto jit_config = PhaseManager::GetInstance().jit_config();
+  forward_graph_before_opt->set_user_data<std::map<std::string, std::string>>(
+    "jit_config", std::make_shared<std::map<std::string, std::string>>(jit_config));
   return std::pair(grad_graph_before_opt, forward_graph_before_opt);
 }
 

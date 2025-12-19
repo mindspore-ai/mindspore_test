@@ -20,7 +20,7 @@ from mindspore.common import dtype as mstype
 
 
 class Net(nn.Cell):
-    @jit
+    @jit(backend="ms_backend")
     def construct(self, x, y):
         z = x * y
         z = z * y

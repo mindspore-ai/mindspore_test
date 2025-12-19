@@ -559,6 +559,11 @@ void ExecutorPy::InitCompileCacheResource(const ResourcePtr &resource, const std
   InitCompileCacheInfo(resource, phase);
   bool enable_compile_cache = resource->EnableCompileCache();
   bool use_compile_cache = enable_compile_cache && resource->func_graph();
+  if (use_compile_cache) {
+    auto jit_config = PhaseManager::GetInstance().jit_config();
+    resource->func_graph()->set_user_data<std::map<std::string, std::string>>(
+      "jit_config", std::make_shared<std::map<std::string, std::string>>(jit_config));
+  }
   auto &compile_cache_context = CompileCacheContext::GetInstance();
   compile_cache_context.SetUseCompileCache(use_compile_cache);
   ConfigManager::GetInstance().ResetQueue(queue_name_);
