@@ -20,7 +20,6 @@ pytest tests/st/test_model/test_llama_model/test_parallel_train.py
 import os
 from multiprocessing.pool import Pool
 
-from tests.mark_utils import arg_mark
 
 def run_command(command_info):
     cmd, log_path = command_info
@@ -37,7 +36,6 @@ def check_results(commands, results):
     assert error_idx == []
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='allcards', essential_mark='essential')
 def test_train():
     """
     Feature: Trainer.train()
