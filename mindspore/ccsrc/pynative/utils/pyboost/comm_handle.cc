@@ -84,11 +84,14 @@ void CommHandle::ReleaseMultiStreamEvent(size_t cur_stream_id) {
 void WaitTaskFunc(CommHandlePtr comm_handle) {
   MS_EXCEPTION_IF_NULL(comm_handle);
   auto cur_stream_id = comm_handle->device_ctx()->device_res_manager_->GetCurrentStreamId();
-  auto wait_fn = [cur_stream_id, comm_handle]() {
+  auto default_stream_id = comm_handle->device_ctx()->device_res_manager_->DefaultStream();
+  auto wait_fn = [cur_stream_id, comm_handle, default_stream_id]() {
     runtime::OpExecutor::DispatchLaunchTask(
+      // wait device event, wait_stream_id is the stream id of the device event
       [cur_stream_id, comm_handle]() { comm_handle->WaitDeviceEvent(cur_stream_id); });
 
-    comm_handle->ReleaseMultiStreamEvent(cur_stream_id);
+    // release event after stream wait, memory_stream_id is 0
+    comm_handle->ReleaseMultiStreamEvent(default_stream_id);
   };
   if (!runtime::OpExecutor::NeedSync()) {
     runtime::OpExecutor::GetInstance().PushSimpleOpRunTask(

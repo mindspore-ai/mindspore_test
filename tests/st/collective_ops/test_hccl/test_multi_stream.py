@@ -12,7 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-
+"""test multi stream"""
+import pytest
 import numpy as np
 import mindspore as ms
 from mindspore import nn
@@ -62,3 +63,36 @@ def test_hccl_multi_stream():
         recv_net = RecvNet()
         output = recv_net(_x2)
         assert np.allclose(output.asnumpy(), expect)
+
+
+def test_comm_multi_stream():
+    """
+    Feature: multiple stream of hccl.
+    Description: test assign stream based on communication domain.
+    Expectation: expect correct result.
+    """
+    x = ms.Tensor(np.ones([3, 3, 3, 3]).astype(np.float32))
+    s1 = ms.runtime.Stream()
+    with ms.runtime.StreamCtx(s1):
+        output, handle = all_reduce(x, op=ReduceOp.SUM, async_op=True)
+        # wait allreduce at s1 not the default stream
+        handle.wait()
+    output = output + 1
+    print(output)
+
+def test_comm_multi_stream_raise_error():
+    """
+    Feature: multiple stream of hccl.
+    Description: test assign stream based on communication domain.
+    Expectation: expect correct result.
+    """
+    with pytest.raises(RuntimeError):
+        x = ms.Tensor(np.ones([3, 3, 3, 3]).astype(np.float32))
+        s1 = ms.runtime.Stream()
+        with ms.runtime.StreamCtx(s1):
+            output, handle = all_reduce(x, op=ReduceOp.SUM, async_op=True)
+            # don't call handle.wait()
+            del handle
+        ms.runtime.synchronize()
+        output = output + 1
+        print(output)

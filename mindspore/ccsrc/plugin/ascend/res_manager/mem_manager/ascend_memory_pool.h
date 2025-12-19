@@ -115,9 +115,7 @@ class DefaultEnhancedAscendMemoryPool : public DefaultAscendMemoryPool {
 
   bool RecordEvent(int64_t task_id_on_stream, uint32_t user_stream_id,
                    const std::vector<std::pair<uint32_t, DeviceMemPtr>> &memory_stream_addresses,
-                   const DeviceEventPtr &event) override {
-    return instance_->RecordEvent(task_id_on_stream, user_stream_id, memory_stream_addresses, event);
-  }
+                   const DeviceEventPtr &event) override;
 
   bool WaitEvent(int64_t task_id_on_stream, uint32_t user_stream_id, uint32_t memory_stream_id) override;
 
